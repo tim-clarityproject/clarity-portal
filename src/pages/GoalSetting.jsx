@@ -1,8 +1,9 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
+import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -10,12 +11,23 @@ export default function GoalSetting() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData } = useContext(FormContext);
-  const [goal, setGoal] = useState(location.state?.goal || '');
+  const [goal, setGoal] = useState(location.state?.goal || loadAutoSave()?.goal || '');
   const [showBackWarning, setShowBackWarning] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
+
+  // Auto-save form data when goal changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (goal.trim()) {
+        autoSaveFormData({ goal, path });
+      }
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timer);
+  }, [goal, path]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

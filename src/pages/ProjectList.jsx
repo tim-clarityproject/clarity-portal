@@ -1,9 +1,10 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
+import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -15,9 +16,22 @@ export default function ProjectList() {
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
 
-  const [projects, setProjects] = useState(location.state?.projects || ['', '']);
+  const [projects, setProjects] = useState(location.state?.projects || loadAutoSave()?.projects || ['', '']);
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const goal = location.state?.goal || '';
+  const goal = location.state?.goal || loadAutoSave()?.goal || '';
+  const path = location.state?.path || 'team';
+
+  // Auto-save form data when projects change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const filledProjects = projects.filter(p => p.trim());
+      if (filledProjects.length > 0) {
+        autoSaveFormData({ projects: filledProjects, path });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [projects, path]);
 
   const handleProjectChange = (index, value) => {
     const newProjects = [...projects];

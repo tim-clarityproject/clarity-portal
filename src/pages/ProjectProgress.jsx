@@ -1,8 +1,9 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
+import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -10,12 +11,23 @@ export default function ProjectProgress() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData } = useContext(FormContext);
-  const projects = location.state?.projects || [];
+  const projects = location.state?.projects || loadAutoSave()?.projects || [];
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
 
-  const [progress, setProgress] = useState(location.state?.progress || {});
+  const [progress, setProgress] = useState(location.state?.progress || loadAutoSave()?.progress || {});
   const [showSaveModal, setShowSaveModal] = useState(false);
+
+  // Auto-save form data when progress changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (Object.keys(progress).length > 0) {
+        autoSaveFormData({ progress, path });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [progress, path]);
 
   const handleProgressChange = (projectIndex, value) => {
     const newProgress = { ...progress };

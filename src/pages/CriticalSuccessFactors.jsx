@@ -1,9 +1,10 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
+import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -11,11 +12,23 @@ export default function CriticalSuccessFactors() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData } = useContext(FormContext);
-  const [factors, setFactors] = useState(location.state?.factors || ['', '']);
+  const [factors, setFactors] = useState(location.state?.factors || loadAutoSave()?.factors || ['', '']);
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
+
+  // Auto-save form data when factors change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const filledFactors = factors.filter(f => f.trim());
+      if (filledFactors.length > 0) {
+        autoSaveFormData({ factors: filledFactors, path });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [factors, path]);
 
   const handleFactorChange = (index, value) => {
     const newFactors = [...factors];

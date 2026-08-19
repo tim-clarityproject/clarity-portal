@@ -1,9 +1,10 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
+import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -15,9 +16,21 @@ export default function ProjectMatrix() {
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
 
-  const [projects, setProjects] = useState(location.state?.projects || ['', '']);
-  const [matrix, setMatrix] = useState(location.state?.matrix || {});
+  const [projects, setProjects] = useState(location.state?.projects || loadAutoSave()?.projects || ['', '']);
+  const [matrix, setMatrix] = useState(location.state?.matrix || loadAutoSave()?.matrix || {});
   const [showSaveModal, setShowSaveModal] = useState(false);
+
+  // Auto-save form data when matrix changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const filledProjects = projects.filter(p => p.trim());
+      if (filledProjects.length > 0) {
+        autoSaveFormData({ projects: filledProjects, matrix, path });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [matrix, projects, path]);
 
   const handleProjectChange = (index, value) => {
     const newProjects = [...projects];
