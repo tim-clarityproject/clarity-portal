@@ -61,7 +61,7 @@ export default function Welcome() {
                 e.target.style.backgroundColor = 'transparent';
               }}
             >
-              Reflect
+              Log a Reflection
             </button>
           </div>
         </div>
