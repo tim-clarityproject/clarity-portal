@@ -19,7 +19,6 @@ export default function ProjectList() {
   const [projects, setProjects] = useState(location.state?.projects || loadAutoSave()?.projects || ['', '']);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const goal = location.state?.goal || loadAutoSave()?.goal || '';
-  const path = location.state?.path || 'team';
 
   // Auto-save form data when projects change
   useEffect(() => {
