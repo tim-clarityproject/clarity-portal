@@ -24,7 +24,7 @@ export default function ProjectProgress() {
   const handleSubmit = (e) => {
     e.preventDefault();
     updateFormData('progress', progress);
-    navigate('/project-scatter', { state: { ...formData, progress, ...location.state, isGuest } });
+    navigate('/project-scatter', { state: { ...location.state, ...formData, progress, isGuest } });
   };
 
   return (

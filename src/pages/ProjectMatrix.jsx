@@ -50,7 +50,7 @@ export default function ProjectMatrix() {
       updateFormData('projects', filledProjects);
       updateFormData('matrix', matrix);
       navigate('/project-progress', {
-        state: { ...formData, projects: filledProjects, matrix, ...location.state, isGuest }
+        state: { ...location.state, ...formData, goal: location.state?.goal, factors, projects: filledProjects, matrix, path, isGuest }
       });
     }
   };

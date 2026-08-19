@@ -20,7 +20,7 @@ export default function GoalSetting() {
     if (goal.trim()) {
       updateFormData('goal', goal);
       const nextPage = path === 'team' ? '/critical-success-factors' : '/risks-assessment';
-      navigate(nextPage, { state: { ...formData, goal, ...location.state, isGuest } });
+      navigate(nextPage, { state: { ...location.state, ...formData, goal, path, isGuest } });
     }
   };
 
