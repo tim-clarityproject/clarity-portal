@@ -23,50 +23,42 @@ export default function Welcome() {
             <button
               onClick={() => navigate('/decisions-log', { state: { ...location.state, isGuest } })}
               style={{
-                padding: '24px 32px',
-                backgroundColor: '#f9f9f9',
-                border: '2px solid #e5e5e5',
+                padding: '16px 48px',
+                backgroundColor: '#F08571',
+                color: 'white',
+                fontWeight: 'bold',
+                border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '16px',
-                fontWeight: '600',
-                color: '#333',
                 transition: 'all 0.2s',
-                textAlign: 'left',
               }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#f0f0f0';
-                e.target.style.borderColor = '#F08571';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#f9f9f9';
-                e.target.style.borderColor = '#e5e5e5';
-              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
             >
-              Make a decision
+              Make a Decision
             </button>
 
             <button
               onClick={() => navigate('/my-journal', { state: { ...location.state, isGuest } })}
               style={{
-                padding: '24px 32px',
-                backgroundColor: '#f9f9f9',
+                padding: '16px 48px',
+                backgroundColor: 'transparent',
                 border: '2px solid #e5e5e5',
                 borderRadius: '8px',
+                color: '#333',
+                fontWeight: '600',
                 cursor: 'pointer',
                 fontSize: '16px',
-                fontWeight: '600',
-                color: '#333',
                 transition: 'all 0.2s',
-                textAlign: 'left',
               }}
               onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#f0f0f0';
                 e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#f9f9f9';
                 e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
               }}
             >
               Reflect
