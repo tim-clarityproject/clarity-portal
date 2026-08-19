@@ -19,7 +19,8 @@ import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
 import MyJournal from './pages/MyJournal';
 import JournalLog from './pages/JournalLog';
-import DecisionsLog from './pages/DecisionsLog';
+import DecisionTools from './pages/DecisionTools';
+import DecisionHistory from './pages/DecisionHistory';
 import GrowStep1Goal from './pages/GrowStep1Goal';
 import GrowStep2Reality from './pages/GrowStep2Reality';
 import GrowStep3Options from './pages/GrowStep3Options';
@@ -58,7 +59,8 @@ function AppContent() {
       <Route path="/results" element={<Results />} />
       <Route path="/my-journal" element={<MyJournal />} />
       <Route path="/journal-log" element={<JournalLog />} />
-      <Route path="/decisions-log" element={<DecisionsLog />} />
+      <Route path="/decision-tools" element={<DecisionTools />} />
+      <Route path="/decision-history" element={<DecisionHistory />} />
       <Route path="/grow-step-1" element={<GrowStep1Goal />} />
       <Route path="/grow-step-2" element={<GrowStep2Reality />} />
       <Route path="/grow-step-3" element={<GrowStep3Options />} />

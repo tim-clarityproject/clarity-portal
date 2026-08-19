@@ -139,7 +139,7 @@ export default function HomeHeader({ isGuest = false }) {
             <>
               <button
                 onClick={() => {
-                  navigate('/decisions-log', { state: location.state });
+                  navigate('/decision-tools', { state: location.state });
                   setMenuOpen(false);
                   setDecisionsSubmenuOpen(false);
                 }}
@@ -162,7 +162,7 @@ export default function HomeHeader({ isGuest = false }) {
               </button>
               <button
                 onClick={() => {
-                  navigate('/decisions-log', { state: location.state });
+                  navigate('/decision-history', { state: location.state });
                   setMenuOpen(false);
                   setDecisionsSubmenuOpen(false);
                 }}
