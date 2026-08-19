@@ -94,35 +94,26 @@ export default function DecisionsLog() {
         {/* Available Tools Section */}
         <div style={{ marginBottom: '48px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>Decision-Making Tools</h2>
-          <button
-            onClick={() => navigate('/grow-step-1', { state: { isGuest } })}
-            style={{
-              width: '100%',
-              padding: '24px',
-              backgroundColor: '#f9f9f9',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#333',
-              transition: 'all 0.2s',
-              textAlign: 'left',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#f0f0f0';
-              e.target.style.borderColor = '#F08571';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#f9f9f9';
-              e.target.style.borderColor = '#e5e5e5';
-            }}
-          >
-            <div>
-              <p style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600' }}>GROW Model</p>
-              <p style={{ margin: 0, fontSize: '13px', color: '#999' }}>Goal, Reality, Options, Will Do</p>
-            </div>
-          </button>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate('/grow-step-1', { state: { isGuest } })}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#F08571',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'white',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+            >
+              GROW Model
+            </button>
+          </div>
         </div>
 
         {/* Past Decisions Section */}
