@@ -170,9 +170,9 @@ export default function DecisionsLog() {
           </div>
         </div>
 
-        {/* Past Decisions Section */}
+        {/* Decision History Section */}
         <div>
-          <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>Past Decisions</h2>
+          <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>Decision History</h2>
           {isLoading ? (
             <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
           ) : decisions.length === 0 ? (
