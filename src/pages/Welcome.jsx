@@ -43,7 +43,7 @@ export default function Welcome() {
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 32px 32px' }}>
         <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center', marginTop: '32px' }}>
           <div style={{ marginBottom: '64px' }}>
-            <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black' }}>
+            <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', marginBottom: '0' }}>
               {displayName ? `Hi ${displayName}, let's do this` : "Let's do this"}
             </h1>
           </div>
