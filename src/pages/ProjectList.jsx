@@ -15,6 +15,7 @@ export default function ProjectList() {
   const isGuest = location.state?.isGuest || false;
 
   const [projects, setProjects] = useState(location.state?.projects || ['', '']);
+  const goal = location.state?.goal || '';
 
   const handleProjectChange = (index, value) => {
     const newProjects = [...projects];
@@ -38,7 +39,7 @@ export default function ProjectList() {
     if (filledProjects.length >= 1) {
       updateFormData('projects', filledProjects);
       navigate('/project-matrix', {
-        state: { ...formData, projects: filledProjects, ...location.state, isGuest }
+        state: { ...formData, goal, factors, projects: filledProjects, path, ...location.state, isGuest }
       });
     }
   };
