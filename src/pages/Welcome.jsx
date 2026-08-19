@@ -1,22 +1,39 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
 export default function Welcome() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const [firstName, setFirstName] = useState('');
   const isGuest = location.state?.isGuest || false;
 
-  const getUserName = () => {
-    if (!user || isGuest) return null;
-    const email = user.email || '';
-    const name = email.split('@')[0];
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  };
+  useEffect(() => {
+    const fetchUserName = async () => {
+      if (!user || isGuest) return;
 
-  const displayName = getUserName();
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('first_name')
+          .eq('id', user.id)
+          .single();
+
+        if (data && data.first_name) {
+          setFirstName(data.first_name);
+        }
+      } catch (err) {
+        console.error('Error fetching user name:', err);
+      }
+    };
+
+    fetchUserName();
+  }, [user, isGuest]);
+
+  const displayName = firstName || null;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
