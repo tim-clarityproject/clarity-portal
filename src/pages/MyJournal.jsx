@@ -9,20 +9,21 @@ export default function MyJournal() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(location.state?.selectedDate || new Date().toISOString().split('T')[0]);
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const isGuest = location.state?.isGuest || false;
+  const isEditMode = !!location.state?.selectedDate;
 
   const question = "What are you grateful for today? What progress did you make?";
 
   useEffect(() => {
-    if (user && !isGuest) {
+    if (user && !isGuest && isEditMode) {
       loadEntry(selectedDate);
     }
-  }, [selectedDate, user, isGuest]);
+  }, [selectedDate, user, isGuest, isEditMode]);
 
   const loadEntry = async (date) => {
     if (!user) return;
@@ -192,6 +193,31 @@ export default function MyJournal() {
             onMouseLeave={(e) => !isGuest && !isSaving && (e.target.style.backgroundColor = '#F08571')}
           >
             {isSaving ? 'Saving...' : 'Save Entry'}
+          </button>
+
+          <button
+            onClick={() => setContent('')}
+            style={{
+              padding: '14px 24px',
+              backgroundColor: 'transparent',
+              border: '2px solid #e5e5e5',
+              borderRadius: '8px',
+              color: '#d32f2f',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#d32f2f';
+              e.target.style.backgroundColor = '#ffebee';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.backgroundColor = 'transparent';
+            }}
+          >
+            Discard
           </button>
 
           <button
