@@ -228,7 +228,20 @@ export default function MyJournal() {
           </button>
 
           <button
-            onClick={() => navigate('/journal-history', { state: { isGuest } })}
+            onClick={() => {
+              if (content.trim()) {
+                const choice = window.confirm('Save this as a draft first?\n\nOK = Save draft\nCancel = Discard and view history');
+                if (choice) {
+                  handleSave().then(() => {
+                    navigate('/journal-history', { state: { isGuest } });
+                  });
+                } else {
+                  navigate('/journal-history', { state: { isGuest } });
+                }
+              } else {
+                navigate('/journal-history', { state: { isGuest } });
+              }
+            }}
             style={{
               padding: '14px 24px',
               backgroundColor: 'transparent',
