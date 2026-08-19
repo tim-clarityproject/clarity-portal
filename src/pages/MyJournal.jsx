@@ -197,16 +197,16 @@ export default function MyJournal() {
 
           <button
             onClick={() => {
-              if (window.confirm('Discard this entry? It will be lost forever.')) {
+              if (window.confirm('Delete this entry? It will be lost forever.')) {
                 navigate('/journal-history', { state: { isGuest } });
               }
             }}
             style={{
-              padding: '8px 14px',
+              padding: '6px 12px',
               backgroundColor: '#e5e5e5',
               color: '#d32f2f',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '4px',
               cursor: 'pointer',
               fontSize: '12px',
               fontWeight: '600',
@@ -215,7 +215,7 @@ export default function MyJournal() {
             onMouseEnter={(e) => e.target.style.backgroundColor = '#d0d0d0'}
             onMouseLeave={(e) => e.target.style.backgroundColor = '#e5e5e5'}
           >
-            Discard
+            Delete
           </button>
 
           <button
