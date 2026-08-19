@@ -30,11 +30,10 @@ export default function MyJournal() {
         .from('journal_entries')
         .select('*')
         .eq('user_id', user.id)
-        .eq('entry_date', date)
-        .single();
+        .eq('entry_date', date);
 
-      if (data) {
-        setContent(data.content);
+      if (data && data.length > 0) {
+        setContent(data[0].content);
       } else {
         setContent('');
       }
