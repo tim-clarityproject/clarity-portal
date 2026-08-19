@@ -7,6 +7,7 @@ export default function HomeHeader({ isGuest = false }) {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
+  const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
 
@@ -152,7 +153,10 @@ export default function HomeHeader({ isGuest = false }) {
           </button>
 
           <button
-            onClick={() => handleMenuClick('/my-journal')}
+            onClick={(e) => {
+              e.stopPropagation();
+              setJournalSubmenuOpen(!journalSubmenuOpen);
+            }}
             style={{
               width: '100%',
               padding: '12px 16px',
@@ -164,12 +168,67 @@ export default function HomeHeader({ isGuest = false }) {
               cursor: 'pointer',
               transition: 'backgroundColor 0.2s',
               borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
             onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
             My Journal
+            <ChevronDown size={16} style={{ transform: journalSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
           </button>
+
+          {journalSubmenuOpen && (
+            <>
+              <button
+                onClick={() => {
+                  navigate('/my-journal', { state: location.state });
+                  setMenuOpen(false);
+                  setJournalSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Write a Reflection
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/journal-log', { state: location.state });
+                  setMenuOpen(false);
+                  setJournalSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Journal Log
+              </button>
+            </>
+          )}
 
           <button
             onClick={(e) => {
