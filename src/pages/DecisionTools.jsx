@@ -24,7 +24,7 @@ export default function DecisionTools() {
           >
             <BackArrow />
           </button>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>Decision Tools</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>Make a Decision</h1>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
