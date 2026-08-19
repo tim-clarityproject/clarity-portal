@@ -81,7 +81,7 @@ export default function DecisionTools() {
             </button>
 
             <button
-              onClick={() => navigate('/choose-focus', { state: { isGuest } })}
+              onClick={() => navigate('/goal-setting', { state: { path: 'team', isGuest } })}
               style={{
                 padding: '20px',
                 backgroundColor: 'white',
