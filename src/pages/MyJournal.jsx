@@ -196,17 +196,24 @@ export default function MyJournal() {
           </button>
 
           <button
-            onClick={() => setContent('')}
+            onClick={() => {
+              if (window.confirm('Discard this entry? It will be lost forever.')) {
+                setContent('');
+              }
+            }}
+            title="Discard entry"
             style={{
-              padding: '14px 24px',
+              padding: '12px 16px',
               backgroundColor: 'transparent',
               border: '2px solid #e5e5e5',
               borderRadius: '8px',
               color: '#d32f2f',
-              fontWeight: '600',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '16px',
               transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = '#d32f2f';
@@ -217,7 +224,7 @@ export default function MyJournal() {
               e.target.style.backgroundColor = 'transparent';
             }}
           >
-            Discard
+            🗑️
           </button>
 
           <button
