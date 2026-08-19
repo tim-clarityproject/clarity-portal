@@ -36,7 +36,7 @@ export default function CriticalSuccessFactors() {
     const filledFactors = factors.filter(factor => factor.trim());
     if (filledFactors.length >= 1) {
       updateFormData('factors', filledFactors);
-      navigate('/project-list', { state: { ...formData, goal: location.state?.goal, factors: filledFactors, path, ...location.state, isGuest } });
+      navigate('/project-list', { state: { ...location.state, ...formData, goal: location.state?.goal, factors: filledFactors, path, isGuest } });
     }
   };
 

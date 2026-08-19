@@ -39,7 +39,7 @@ export default function ProjectList() {
     if (filledProjects.length >= 1) {
       updateFormData('projects', filledProjects);
       navigate('/project-matrix', {
-        state: { ...formData, goal, factors, projects: filledProjects, path, ...location.state, isGuest }
+        state: { ...location.state, ...formData, goal, factors, projects: filledProjects, path, isGuest }
       });
     }
   };
