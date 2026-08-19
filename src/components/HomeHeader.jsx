@@ -158,7 +158,10 @@ export default function HomeHeader({ isGuest = false }) {
           {decisionsSubmenuOpen && (
             <>
               <button
-                onClick={() => setDecisionToolsOpen(!decisionToolsOpen)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDecisionToolsOpen(!decisionToolsOpen);
+                }}
                 style={{
                   width: '100%',
                   padding: '12px 16px 12px 32px',
