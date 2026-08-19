@@ -48,7 +48,7 @@ export default function GrowStep4WillDo() {
           }]);
       }
 
-      navigate('/decisions-log', { state: { isGuest } });
+      navigate('/decision-history', { state: { isGuest } });
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
@@ -150,7 +150,7 @@ export default function GrowStep4WillDo() {
           </button>
 
           <button
-            onClick={() => navigate('/decisions-log', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history', { state: { isGuest } })}
             style={{
               padding: '14px 24px',
               backgroundColor: 'transparent',

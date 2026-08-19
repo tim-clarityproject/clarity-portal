@@ -34,7 +34,7 @@ export default function GrowStep1Goal() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
         <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
-            onClick={() => navigate('/decisions-log', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history', { state: { isGuest } })}
             style={{
               backgroundColor: 'transparent',
               border: 'none',
@@ -94,7 +94,7 @@ export default function GrowStep1Goal() {
           </button>
 
           <button
-            onClick={() => navigate('/decisions-log', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history', { state: { isGuest } })}
             style={{
               padding: '14px 24px',
               backgroundColor: 'transparent',
