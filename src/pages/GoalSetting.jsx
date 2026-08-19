@@ -73,7 +73,7 @@ export default function GoalSetting() {
               <button
                 onClick={() => {
                   updateFormData('goal', goal);
-                  navigate('/choose-focus', { state: { ...location.state, isGuest } });
+                  navigate('/decision-tools', { state: { ...location.state, isGuest } });
                 }}
                 style={{
                   padding: '14px 24px',
@@ -127,7 +127,7 @@ export default function GoalSetting() {
                 Keep Editing
               </button>
               <button
-                onClick={() => navigate('/choose-focus', { state: { ...location.state, isGuest } })}
+                onClick={() => navigate('/decision-tools', { state: { ...location.state, isGuest } })}
                 style={{
                   padding: '14px 24px',
                   backgroundColor: 'transparent',

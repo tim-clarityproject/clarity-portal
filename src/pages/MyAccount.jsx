@@ -71,7 +71,7 @@ export default function MyAccount() {
               You haven't created any plans yet
             </p>
             <button
-              onClick={() => navigate('/choose-focus', { state: { isGuest } })}
+              onClick={() => navigate('/decision-tools', { state: { isGuest } })}
               style={{
                 padding: '16px 48px',
                 backgroundColor: '#F08571',
@@ -159,7 +159,7 @@ export default function MyAccount() {
                 </div>
 
                 <button
-                  onClick={() => navigate('/choose-focus', { state: { isGuest } })}
+                  onClick={() => navigate('/decision-tools', { state: { isGuest } })}
                   style={{
                     width: '100%',
                     padding: '12px 16px',

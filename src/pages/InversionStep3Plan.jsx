@@ -48,7 +48,7 @@ export default function InversionStep3Plan() {
           }]);
       }
 
-      navigate('/decision-history', { state: { isGuest } });
+      navigate('/decision-tools', { state: { isGuest } });
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
@@ -204,7 +204,7 @@ export default function InversionStep3Plan() {
           </button>
 
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-tools', { state: { isGuest } })}
             style={{
               padding: '14px 24px',
               backgroundColor: 'transparent',

@@ -6,7 +6,6 @@ import Login from './pages/Login';
 import Welcome from './pages/Welcome';
 import CreateAccount from './pages/CreateAccount';
 import MyAccount from './pages/MyAccount';
-import ChooseFocus from './pages/ChooseFocus';
 import GoalSetting from './pages/GoalSetting';
 import RisksAssessment from './pages/RisksAssessment';
 import Strategies from './pages/Strategies';
@@ -46,7 +45,6 @@ function AppContent() {
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/create-account" element={<CreateAccount />} />
       <Route path="/my-account" element={<MyAccount />} />
-      <Route path="/choose-focus" element={<ChooseFocus />} />
       <Route path="/goal-setting" element={<GoalSetting />} />
       <Route path="/risks-assessment" element={<RisksAssessment />} />
       <Route path="/strategies" element={<Strategies />} />
