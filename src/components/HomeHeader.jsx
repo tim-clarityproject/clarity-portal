@@ -173,7 +173,10 @@ export default function HomeHeader({ isGuest = false }) {
 
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => setDecisionsSubmenuOpen(!decisionsSubmenuOpen)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDecisionsSubmenuOpen(!decisionsSubmenuOpen);
+              }}
               style={{
                 width: '100%',
                 padding: '12px 16px',
