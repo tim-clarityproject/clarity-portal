@@ -1,13 +1,15 @@
--- Create decisions table for storing GROW model decisions
+-- Create decisions table for storing decision-making tool results
 CREATE TABLE IF NOT EXISTS decisions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  tool_type TEXT NOT NULL DEFAULT 'grow' CHECK (tool_type IN ('grow')),
+  tool_type TEXT NOT NULL DEFAULT 'grow' CHECK (tool_type IN ('grow', 'inversion')),
   goal TEXT,
   constraints TEXT,
   opportunities TEXT,
   options JSONB DEFAULT '[]',
   will_do TEXT,
+  fuckups JSONB DEFAULT '[]',
+  plan TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );

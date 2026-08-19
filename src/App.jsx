@@ -24,6 +24,9 @@ import GrowStep1Goal from './pages/GrowStep1Goal';
 import GrowStep2Reality from './pages/GrowStep2Reality';
 import GrowStep3Options from './pages/GrowStep3Options';
 import GrowStep4WillDo from './pages/GrowStep4WillDo';
+import InversionStep1Goal from './pages/InversionStep1Goal';
+import InversionStep2Fuckups from './pages/InversionStep2Fuckups';
+import InversionStep3Plan from './pages/InversionStep3Plan';
 
 function AppContent() {
   const { isLoading } = useContext(AuthContext);
@@ -60,6 +63,9 @@ function AppContent() {
       <Route path="/grow-step-2" element={<GrowStep2Reality />} />
       <Route path="/grow-step-3" element={<GrowStep3Options />} />
       <Route path="/grow-step-4" element={<GrowStep4WillDo />} />
+      <Route path="/inversion-step-1" element={<InversionStep1Goal />} />
+      <Route path="/inversion-step-2" element={<InversionStep2Fuckups />} />
+      <Route path="/inversion-step-3" element={<InversionStep3Plan />} />
     </Routes>
   );
 }

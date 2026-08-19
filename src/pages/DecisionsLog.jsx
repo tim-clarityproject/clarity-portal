@@ -113,6 +113,24 @@ export default function DecisionsLog() {
             >
               GROW Model
             </button>
+            <button
+              onClick={() => navigate('/inversion-step-1', { state: { isGuest } })}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#F08571',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: 'white',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+            >
+              Inversion
+            </button>
           </div>
         </div>
 
