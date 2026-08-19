@@ -149,6 +149,28 @@ export default function HomeHeader({ isGuest = false }) {
             My Team's Performance
           </button>
 
+          {!isGuest && (
+            <button
+              onClick={() => handleMenuClick('/my-journal')}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: '#333',
+                textAlign: 'left',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'backgroundColor 0.2s',
+                borderBottom: '1px solid #f0f0f0',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              My Journal
+            </button>
+          )}
+
           {isGuest && (
             <button
               onClick={handleCreateAccount}

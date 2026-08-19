@@ -16,6 +16,8 @@ import ProjectProgress from './pages/ProjectProgress';
 import ProjectScatter from './pages/ProjectScatter';
 import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
+import MyJournal from './pages/MyJournal';
+import JournalHistory from './pages/JournalHistory';
 
 export default function App() {
   return (
@@ -38,6 +40,8 @@ export default function App() {
           <Route path="/project-scatter" element={<ProjectScatter />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/my-journal" element={<MyJournal />} />
+          <Route path="/journal-history" element={<JournalHistory />} />
         </Routes>
         </BrowserRouter>
       </FormProvider>
