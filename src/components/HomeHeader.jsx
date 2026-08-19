@@ -1,10 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 export default function HomeHeader({ isGuest = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
 
@@ -169,25 +171,88 @@ export default function HomeHeader({ isGuest = false }) {
             My Journal
           </button>
 
-          <button
-            onClick={() => handleMenuClick('/decisions-log')}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: '#333',
-              textAlign: 'left',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'backgroundColor 0.2s',
-              borderBottom: '1px solid #f0f0f0',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            My Decisions
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setDecisionsSubmenuOpen(!decisionsSubmenuOpen)}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: '#333',
+                textAlign: 'left',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'backgroundColor 0.2s',
+                borderBottom: '1px solid #f0f0f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              My Decisions
+              <ChevronDown size={16} style={{ transform: decisionsSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+            </button>
+
+            {decisionsSubmenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: '0',
+                right: '0',
+                backgroundColor: '#f9f9f9',
+                borderBottom: '1px solid #f0f0f0',
+              }}>
+                <button
+                  onClick={() => {
+                    navigate('/decisions-log', { state: location.state });
+                    setMenuOpen(false);
+                    setDecisionsSubmenuOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px 12px 32px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: '#666',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    transition: 'backgroundColor 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  Decision Log
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/grow-step-1', { state: { ...location.state, isGuest: false } });
+                    setMenuOpen(false);
+                    setDecisionsSubmenuOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px 12px 32px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: '#666',
+                    textAlign: 'left',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    transition: 'backgroundColor 0.2s',
+                    borderBottom: '1px solid #f0f0f0',
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  Make a Decision
+                </button>
+              </div>
+            )}
+          </div>
 
           {isGuest && (
             <button
