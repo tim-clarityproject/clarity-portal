@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
+import SaveProgressModal from '../components/SaveProgressModal';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -14,6 +15,7 @@ export default function ProjectProgress() {
   const isGuest = location.state?.isGuest || false;
 
   const [progress, setProgress] = useState(location.state?.progress || {});
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   const handleProgressChange = (projectIndex, value) => {
     const newProgress = { ...progress };
@@ -131,12 +133,42 @@ export default function ProjectProgress() {
           >
             Continue
           </button>
+          <button
+            onClick={() => setShowSaveModal(true)}
+            style={{
+              padding: '16px 32px',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              fontWeight: 'bold',
+              border: '2px solid #F08571',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.borderColor = '#e07560';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.borderColor = '#F08571';
+            }}
+          >
+            Save & Exit
+          </button>
         </div>
 
         <div style={{ textAlign: 'center', color: '#999', fontSize: '14px' }}>
           Step 4/5
         </div>
       </div>
+
+      <SaveProgressModal
+        formData={formData}
+        currentPage="project-progress"
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+      />
     </div>
   );
 }

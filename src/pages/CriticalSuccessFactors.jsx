@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
+import SaveProgressModal from '../components/SaveProgressModal';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -11,6 +12,7 @@ export default function CriticalSuccessFactors() {
   const location = useLocation();
   const { formData, updateFormData } = useContext(FormContext);
   const [factors, setFactors] = useState(location.state?.factors || ['', '']);
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
@@ -194,6 +196,29 @@ export default function CriticalSuccessFactors() {
           >
             Continue
           </button>
+          <button
+            onClick={() => setShowSaveModal(true)}
+            style={{
+              padding: '16px 32px',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              fontWeight: 'bold',
+              border: '2px solid #F08571',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.borderColor = '#e07560';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.borderColor = '#F08571';
+            }}
+          >
+            Save & Exit
+          </button>
         </div>
 
         <div style={{ textAlign: 'center', color: '#999', fontSize: '14px' }}>
@@ -201,6 +226,12 @@ export default function CriticalSuccessFactors() {
         </div>
       </div>
 
+      <SaveProgressModal
+        formData={formData}
+        currentPage="critical-success-factors"
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+      />
     </div>
   );
 }

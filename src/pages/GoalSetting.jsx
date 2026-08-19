@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
+import SaveProgressModal from '../components/SaveProgressModal';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -11,6 +12,7 @@ export default function GoalSetting() {
   const { formData, updateFormData } = useContext(FormContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
   const [showBackWarning, setShowBackWarning] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
@@ -217,7 +219,7 @@ export default function GoalSetting() {
               if (goal.trim()) {
                 updateFormData('goal', goal);
                 const nextPage = path === 'team' ? '/critical-success-factors' : '/risks-assessment';
-                navigate(nextPage, { state: { ...formData, goal, ...location.state } });
+                navigate(nextPage, { state: { ...location.state, ...formData, goal, path, isGuest } });
               }
             }}
             disabled={!goal.trim()}
@@ -236,6 +238,29 @@ export default function GoalSetting() {
           >
             Continue
           </button>
+          <button
+            onClick={() => setShowSaveModal(true)}
+            style={{
+              padding: '16px 32px',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              fontWeight: 'bold',
+              border: '2px solid #F08571',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.borderColor = '#e07560';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.borderColor = '#F08571';
+            }}
+          >
+            Save & Exit
+          </button>
         </div>
 
         <div style={{ textAlign: 'center', color: '#999', fontSize: '14px' }}>
@@ -243,6 +268,12 @@ export default function GoalSetting() {
         </div>
       </div>
 
+      <SaveProgressModal
+        formData={formData}
+        currentPage="goal-setting"
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+      />
     </div>
   );
 }
