@@ -88,7 +88,7 @@ export default function DecisionsLog() {
           >
             <BackArrow />
           </button>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>My Decisions</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>My Decisions & Tools</h1>
         </div>
 
         {/* Available Tools Section */}
