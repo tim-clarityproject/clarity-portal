@@ -10,7 +10,9 @@ export default function Login() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
@@ -22,8 +24,18 @@ export default function Login() {
       return;
     }
 
-    if (isSignUp && (!firstName.trim() || !lastName.trim())) {
+    if (isSignUp && showEmailModal && (!firstName.trim() || !lastName.trim())) {
       setError('Please enter your first and last name');
+      return;
+    }
+
+    if (isSignUp && showEmailModal && password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (isSignUp && showEmailModal && password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -113,9 +125,9 @@ export default function Login() {
             )}
           </div>
 
-          {isSignUp && (
+          {isSignUp && !showEmailModal && (
             <>
-              {/* Social Login - Only for Signup */}
+              {/* Social Login & Email Options for Signup */}
               <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button
                   type="button"
@@ -183,20 +195,40 @@ export default function Login() {
                   </svg>
                   Facebook
                 </button>
-              </div>
 
-              {/* Divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e5e5' }} />
-                <span style={{ color: '#999', fontSize: '12px' }}>or</span>
-                <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e5e5' }} />
+                <button
+                  type="button"
+                  onClick={() => setShowEmailModal(true)}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: '#fff',
+                    border: '2px solid #e5e5e5',
+                    borderRadius: '8px',
+                    color: '#333',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.borderColor = '#F08571';
+                    e.target.style.backgroundColor = '#FEE5DE';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.borderColor = '#e5e5e5';
+                    e.target.style.backgroundColor = '#fff';
+                  }}
+                >
+                  Email
+                </button>
               </div>
             </>
           )}
 
 
+          {(!isSignUp || showEmailModal) && (
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {isSignUp && (
+            {isSignUp && showEmailModal && (
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#333', fontWeight: '500' }}>
@@ -291,6 +323,31 @@ export default function Login() {
               />
             </div>
 
+            {isSignUp && showEmailModal && (
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e5e5',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#F08571'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                />
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={!email.trim() || !password.trim() || isLoading}
@@ -311,7 +368,44 @@ export default function Login() {
             >
               {isLoading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Login')}
             </button>
+
+            {isSignUp && showEmailModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setFirstName('');
+                  setLastName('');
+                  setEmail('');
+                  setPassword('');
+                  setConfirmPassword('');
+                  setError('');
+                }}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: 'transparent',
+                  border: '2px solid #e5e5e5',
+                  borderRadius: '8px',
+                  color: '#333',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.borderColor = '#F08571';
+                  e.target.style.backgroundColor = '#FEE5DE';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.borderColor = '#e5e5e5';
+                  e.target.style.backgroundColor = 'transparent';
+                }}
+              >
+                Back
+              </button>
+            )}
           </form>
+          )}
 
           <div style={{ marginTop: '24px', textAlign: 'center' }}>
             <button
