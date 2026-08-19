@@ -1,10 +1,22 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import HomeHeader from '../components/HomeHeader';
 
 export default function Welcome() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
+
+  const getUserName = () => {
+    if (!user || isGuest) return null;
+    const email = user.email || '';
+    const name = email.split('@')[0];
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  };
+
+  const displayName = getUserName();
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
@@ -15,7 +27,7 @@ export default function Welcome() {
         <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center', marginTop: '32px' }}>
           <div style={{ marginBottom: '64px' }}>
             <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black' }}>
-              Welcome to The Clarity Portal
+              {displayName ? `Hi ${displayName}, let's do this` : "Let's do this"}
             </h1>
           </div>
 
