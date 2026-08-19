@@ -1,5 +1,6 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -169,21 +170,23 @@ export default function JournalHistory() {
                     </button>
                     <button
                       onClick={(e) => handleDelete(entry.id, e)}
+                      title="Delete entry"
                       style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#e5e5e5',
+                        padding: '8px',
+                        backgroundColor: 'transparent',
                         color: '#d32f2f',
                         border: 'none',
                         borderRadius: '4px',
                         cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '600',
                         transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#d0d0d0'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e5e5e5'}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                     >
-                      Delete
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
