@@ -198,7 +198,7 @@ export default function MyJournal() {
           <button
             onClick={() => {
               if (window.confirm('Discard this entry? It will be lost forever.')) {
-                setContent('');
+                navigate('/journal-history', { state: { isGuest } });
               }
             }}
             style={{
