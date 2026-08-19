@@ -99,17 +99,23 @@ export default function DecisionsLog() {
               onClick={() => navigate('/grow-step-1', { state: { isGuest } })}
               style={{
                 padding: '12px 24px',
-                backgroundColor: '#F08571',
-                border: 'none',
+                backgroundColor: 'transparent',
+                border: '2px solid #e5e5e5',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: '600',
-                color: 'white',
+                color: '#333',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }}
             >
               GROW Model
             </button>
@@ -117,17 +123,23 @@ export default function DecisionsLog() {
               onClick={() => navigate('/inversion-step-1', { state: { isGuest } })}
               style={{
                 padding: '12px 24px',
-                backgroundColor: '#F08571',
-                border: 'none',
+                backgroundColor: 'transparent',
+                border: '2px solid #e5e5e5',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: '600',
-                color: 'white',
+                color: '#333',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }}
             >
               Inversion
             </button>
