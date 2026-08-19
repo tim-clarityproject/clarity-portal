@@ -1,10 +1,13 @@
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login, signup, isLoading } = useContext(AuthContext);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -19,12 +22,26 @@ export default function Login() {
       return;
     }
 
+    if (isSignUp && (!firstName.trim() || !lastName.trim())) {
+      setError('Please enter your first and last name');
+      return;
+    }
+
     try {
       const success = isSignUp
         ? await signup(email, password)
         : await login(email, password);
 
       if (success) {
+        if (isSignUp) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('profiles')
+              .update({ first_name: firstName, last_name: lastName })
+              .eq('id', user.id);
+          }
+        }
         navigate('/welcome');
       } else {
         setError(isSignUp ? 'Failed to create account' : 'Invalid email or password');
@@ -179,6 +196,55 @@ export default function Login() {
 
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {isSignUp && (
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="John"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '2px solid #e5e5e5',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#F08571'}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#333', fontWeight: '500' }}>
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Doe"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '2px solid #e5e5e5',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#F08571'}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#333', fontWeight: '500' }}>
                 Email
