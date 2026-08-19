@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
 import BackArrow from '../components/BackArrow';
+import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
 
 export default function GrowStep1Goal() {
@@ -93,31 +94,9 @@ export default function GrowStep1Goal() {
             Next
           </button>
 
-          <button
-            onClick={() => navigate('/decision-tools', { state: { isGuest } })}
-            style={{
-              padding: '14px 24px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              color: '#333',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            Cancel
-          </button>
         </div>
+
+        <SaveDiscardButtons formData={{ goal }} pageType="decision" />
       </div>
     </div>
   );
