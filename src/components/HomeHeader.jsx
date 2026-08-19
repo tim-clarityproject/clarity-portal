@@ -108,35 +108,100 @@ export default function HomeHeader({ isGuest = false }) {
             Home
           </button>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setDecisionsSubmenuOpen(!decisionsSubmenuOpen);
-            }}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: '#333',
-              textAlign: 'left',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'backgroundColor 0.2s',
-              borderBottom: '1px solid #f0f0f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            My Decisions
-            <ChevronDown size={16} style={{ transform: decisionsSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
-          </button>
+          <div style={{ display: 'flex' }}>
+            <button
+              onClick={() => {
+                navigate('/decisions-log', { state: location.state });
+                setMenuOpen(false);
+              }}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: '#333',
+                textAlign: 'left',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'backgroundColor 0.2s',
+                borderBottom: '1px solid #f0f0f0',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              Make a Decision
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setDecisionsSubmenuOpen(!decisionsSubmenuOpen);
+              }}
+              style={{
+                padding: '12px 16px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: '#333',
+                cursor: 'pointer',
+                transition: 'backgroundColor 0.2s',
+                borderBottom: '1px solid #f0f0f0',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              <ChevronDown size={16} style={{ transform: decisionsSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+            </button>
+          </div>
 
           {decisionsSubmenuOpen && (
             <>
+              <button
+                onClick={() => {
+                  navigate('/grow-step-1', { state: { ...location.state, isGuest: false } });
+                  setMenuOpen(false);
+                  setDecisionsSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                GROW Model
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/inversion-step-1', { state: { ...location.state, isGuest: false } });
+                  setMenuOpen(false);
+                  setDecisionsSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Inversion
+              </button>
               <button
                 onClick={() => {
                   navigate('/decisions-log', { state: location.state });
@@ -159,29 +224,6 @@ export default function HomeHeader({ isGuest = false }) {
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Decision Log
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/grow-step-1', { state: { ...location.state, isGuest: false } });
-                  setMenuOpen(false);
-                  setDecisionsSubmenuOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px 12px 32px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: '#666',
-                  textAlign: 'left',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'backgroundColor 0.2s',
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Make a Decision
               </button>
             </>
           )}
