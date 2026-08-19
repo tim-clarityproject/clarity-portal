@@ -53,31 +53,29 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision' }) 
 
       <button
         onClick={handleDiscard}
+        title="Discard this entry"
         style={{
-          padding: '12px 24px',
+          padding: '12px',
           backgroundColor: 'transparent',
           color: '#d32f2f',
-          fontWeight: '600',
-          border: '2px solid #ffcdd2',
+          border: 'none',
           borderRadius: '8px',
           cursor: 'pointer',
-          fontSize: '14px',
           transition: 'all 0.2s',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          justifyContent: 'center',
         }}
         onMouseEnter={(e) => {
           e.target.style.backgroundColor = '#ffebee';
-          e.target.style.borderColor = '#ef5350';
+          e.target.style.color = '#ef5350';
         }}
         onMouseLeave={(e) => {
           e.target.style.backgroundColor = 'transparent';
-          e.target.style.borderColor = '#ffcdd2';
+          e.target.style.color = '#d32f2f';
         }}
       >
-        <Trash2 size={18} />
-        Discard
+        <Trash2 size={20} />
       </button>
     </div>
   );
