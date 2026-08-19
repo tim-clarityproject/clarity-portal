@@ -11,6 +11,7 @@ export default function MyJournal() {
   const { user } = useContext(AuthContext);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const isGuest = location.state?.isGuest || false;
@@ -25,6 +26,7 @@ export default function MyJournal() {
 
   const loadEntry = async (date) => {
     if (!user) return;
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('journal_entries')
@@ -39,6 +41,8 @@ export default function MyJournal() {
       }
     } catch (err) {
       setContent('');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -141,6 +145,7 @@ export default function MyJournal() {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            disabled={isLoading}
             placeholder="Write your reflection here..."
             style={{
               width: '100%',
@@ -153,9 +158,11 @@ export default function MyJournal() {
               boxSizing: 'border-box',
               outline: 'none',
               resize: 'vertical',
+              opacity: isLoading ? 0.6 : 1,
+              cursor: isLoading ? 'not-allowed' : 'text',
             }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+            onFocus={(e) => !isLoading && (e.target.style.borderColor = '#F08571')}
+            onBlur={(e) => !isLoading && (e.target.style.borderColor = '#e5e5e5')}
           />
         </div>
 
