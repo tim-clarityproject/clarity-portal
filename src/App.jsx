@@ -1,5 +1,6 @@
+import { useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, AuthContext } from './context/AuthContext';
 import { FormProvider } from './context/FormContext';
 import Login from './pages/Login';
 import Welcome from './pages/Welcome';
@@ -19,30 +20,46 @@ import Results from './pages/Results';
 import MyJournal from './pages/MyJournal';
 import JournalHistory from './pages/JournalHistory';
 
+function AppContent() {
+  const { isLoading } = useContext(AuthContext);
+
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
+        <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/welcome" element={<Welcome />} />
+      <Route path="/create-account" element={<CreateAccount />} />
+      <Route path="/my-account" element={<MyAccount />} />
+      <Route path="/choose-focus" element={<ChooseFocus />} />
+      <Route path="/goal-setting" element={<GoalSetting />} />
+      <Route path="/risks-assessment" element={<RisksAssessment />} />
+      <Route path="/strategies" element={<Strategies />} />
+      <Route path="/critical-success-factors" element={<CriticalSuccessFactors />} />
+      <Route path="/project-list" element={<ProjectList />} />
+      <Route path="/project-matrix" element={<ProjectMatrix />} />
+      <Route path="/project-progress" element={<ProjectProgress />} />
+      <Route path="/project-scatter" element={<ProjectScatter />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/results" element={<Results />} />
+      <Route path="/my-journal" element={<MyJournal />} />
+      <Route path="/journal-history" element={<JournalHistory />} />
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <FormProvider>
         <BrowserRouter>
-          <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/welcome" element={<Welcome />} />
-          <Route path="/create-account" element={<CreateAccount />} />
-          <Route path="/my-account" element={<MyAccount />} />
-          <Route path="/choose-focus" element={<ChooseFocus />} />
-          <Route path="/goal-setting" element={<GoalSetting />} />
-          <Route path="/risks-assessment" element={<RisksAssessment />} />
-          <Route path="/strategies" element={<Strategies />} />
-          <Route path="/critical-success-factors" element={<CriticalSuccessFactors />} />
-          <Route path="/project-list" element={<ProjectList />} />
-          <Route path="/project-matrix" element={<ProjectMatrix />} />
-          <Route path="/project-progress" element={<ProjectProgress />} />
-          <Route path="/project-scatter" element={<ProjectScatter />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/results" element={<Results />} />
-          <Route path="/my-journal" element={<MyJournal />} />
-          <Route path="/journal-history" element={<JournalHistory />} />
-        </Routes>
+          <AppContent />
         </BrowserRouter>
       </FormProvider>
     </AuthProvider>
