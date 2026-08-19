@@ -201,30 +201,21 @@ export default function MyJournal() {
                 setContent('');
               }
             }}
-            title="Discard entry"
             style={{
-              padding: '12px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
+              padding: '8px 14px',
+              backgroundColor: '#e5e5e5',
               color: '#d32f2f',
+              border: 'none',
+              borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '16px',
+              fontSize: '12px',
+              fontWeight: '600',
               transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
             }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#d32f2f';
-              e.target.style.backgroundColor = '#ffebee';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#d0d0d0'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#e5e5e5'}
           >
-            🗑️
+            Discard
           </button>
 
           <button
