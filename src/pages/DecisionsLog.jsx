@@ -144,7 +144,7 @@ export default function DecisionsLog() {
               Inversion
             </button>
             <button
-              onClick={() => alert('Strategic Alignment tool coming soon')}
+              onClick={() => navigate('/goal-setting', { state: { path: 'team', isGuest } })}
               style={{
                 padding: '12px 24px',
                 backgroundColor: 'transparent',
