@@ -171,6 +171,20 @@ export default function DecisionsLog() {
                         <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
                           {decision.goal ? truncateContent(decision.goal, 60) : 'Untitled Decision'}
                         </p>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#fff',
+                            backgroundColor: '#F08571',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          {decision.tool_type === 'grow' ? 'GROW' : 'Inversion'}
+                        </span>
                         <span style={{ fontSize: '12px', color: '#999' }}>
                           {formatTime(decision.created_at)}
                         </span>
