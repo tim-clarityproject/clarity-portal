@@ -107,128 +107,6 @@ export default function HomeHeader({ isGuest = false }) {
           >
             Home
           </button>
-          <button
-            onClick={() => {
-              navigate('/goal-setting', { state: { path: 'personal', isGuest: location.state?.isGuest || false } });
-              setMenuOpen(false);
-            }}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: '#333',
-              textAlign: 'left',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'backgroundColor 0.2s',
-              borderBottom: '1px solid #f0f0f0',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            My Performance
-          </button>
-          <button
-            onClick={() => {
-              navigate('/goal-setting', { state: { path: 'team', isGuest: location.state?.isGuest || false } });
-              setMenuOpen(false);
-            }}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: '#333',
-              textAlign: 'left',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'backgroundColor 0.2s',
-              borderBottom: '1px solid #f0f0f0',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            My Team's Performance
-          </button>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setJournalSubmenuOpen(!journalSubmenuOpen);
-            }}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: '#333',
-              textAlign: 'left',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'backgroundColor 0.2s',
-              borderBottom: '1px solid #f0f0f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            My Journal
-            <ChevronDown size={16} style={{ transform: journalSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
-          </button>
-
-          {journalSubmenuOpen && (
-            <>
-              <button
-                onClick={() => {
-                  navigate('/my-journal', { state: location.state });
-                  setMenuOpen(false);
-                  setJournalSubmenuOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px 12px 32px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: '#666',
-                  textAlign: 'left',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'backgroundColor 0.2s',
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Write a Reflection
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/journal-log', { state: location.state });
-                  setMenuOpen(false);
-                  setJournalSubmenuOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px 12px 32px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: '#666',
-                  textAlign: 'left',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'backgroundColor 0.2s',
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Journal Log
-              </button>
-            </>
-          )}
 
           <button
             onClick={(e) => {
@@ -304,6 +182,84 @@ export default function HomeHeader({ isGuest = false }) {
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Make a Decision
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setJournalSubmenuOpen(!journalSubmenuOpen);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#333',
+              textAlign: 'left',
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'backgroundColor 0.2s',
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            My Journal
+            <ChevronDown size={16} style={{ transform: journalSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+          </button>
+
+          {journalSubmenuOpen && (
+            <>
+              <button
+                onClick={() => {
+                  navigate('/my-journal', { state: location.state });
+                  setMenuOpen(false);
+                  setJournalSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Write a Reflection
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/journal-log', { state: location.state });
+                  setMenuOpen(false);
+                  setJournalSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Journal Log
               </button>
             </>
           )}

@@ -143,6 +143,30 @@ export default function DecisionsLog() {
             >
               Inversion
             </button>
+            <button
+              onClick={() => alert('Strategic Alignment tool coming soon')}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: 'transparent',
+                border: '2px solid #e5e5e5',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#333',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }}
+            >
+              Strategic Alignment
+            </button>
           </div>
         </div>
 
