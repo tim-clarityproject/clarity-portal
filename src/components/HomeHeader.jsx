@@ -7,6 +7,7 @@ export default function HomeHeader({ isGuest = false }) {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
+  const [decisionToolsOpen, setDecisionToolsOpen] = useState(false);
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
@@ -157,11 +158,7 @@ export default function HomeHeader({ isGuest = false }) {
           {decisionsSubmenuOpen && (
             <>
               <button
-                onClick={() => {
-                  navigate('/grow-step-1', { state: { ...location.state, isGuest: false } });
-                  setMenuOpen(false);
-                  setDecisionsSubmenuOpen(false);
-                }}
+                onClick={() => setDecisionToolsOpen(!decisionToolsOpen)}
                 style={{
                   width: '100%',
                   padding: '12px 16px 12px 32px',
@@ -173,35 +170,70 @@ export default function HomeHeader({ isGuest = false }) {
                   cursor: 'pointer',
                   transition: 'backgroundColor 0.2s',
                   borderBottom: '1px solid #f0f0f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                 }}
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                GROW Model
+                Decision Tools
+                <ChevronDown size={14} style={{ transform: decisionToolsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
               </button>
-              <button
-                onClick={() => {
-                  navigate('/inversion-step-1', { state: { ...location.state, isGuest: false } });
-                  setMenuOpen(false);
-                  setDecisionsSubmenuOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px 12px 32px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: '#666',
-                  textAlign: 'left',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'backgroundColor 0.2s',
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Inversion
-              </button>
+
+              {decisionToolsOpen && (
+                <>
+                  <button
+                    onClick={() => {
+                      navigate('/grow-step-1', { state: { ...location.state, isGuest: false } });
+                      setMenuOpen(false);
+                      setDecisionsSubmenuOpen(false);
+                      setDecisionToolsOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px 12px 48px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: '#666',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      transition: 'backgroundColor 0.2s',
+                      borderBottom: '1px solid #f0f0f0',
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    GROW Model
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate('/inversion-step-1', { state: { ...location.state, isGuest: false } });
+                      setMenuOpen(false);
+                      setDecisionsSubmenuOpen(false);
+                      setDecisionToolsOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px 12px 48px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: '#666',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      transition: 'backgroundColor 0.2s',
+                      borderBottom: '1px solid #f0f0f0',
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    Inversion
+                  </button>
+                </>
+              )}
+
               <button
                 onClick={() => {
                   navigate('/decisions-log', { state: location.state });
