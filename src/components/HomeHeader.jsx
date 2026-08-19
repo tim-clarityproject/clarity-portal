@@ -6,6 +6,7 @@ export default function HomeHeader({ isGuest = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
@@ -108,9 +109,9 @@ export default function HomeHeader({ isGuest = false }) {
           </button>
 
           <button
-            onClick={() => {
-              navigate('/decisions-log', { state: location.state });
-              setMenuOpen(false);
+            onClick={(e) => {
+              e.stopPropagation();
+              setDecisionsSubmenuOpen(!decisionsSubmenuOpen);
             }}
             style={{
               width: '100%',
@@ -123,12 +124,67 @@ export default function HomeHeader({ isGuest = false }) {
               cursor: 'pointer',
               transition: 'backgroundColor 0.2s',
               borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
             onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
             Make a Decision
+            <ChevronDown size={16} style={{ transform: decisionsSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
           </button>
+
+          {decisionsSubmenuOpen && (
+            <>
+              <button
+                onClick={() => {
+                  navigate('/decisions-log', { state: location.state });
+                  setMenuOpen(false);
+                  setDecisionsSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Decision Tools
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/decisions-log', { state: location.state });
+                  setMenuOpen(false);
+                  setDecisionsSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Decision History
+              </button>
+            </>
+          )}
 
           <button
             onClick={(e) => {
