@@ -50,7 +50,7 @@ export default function Welcome() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <button
-              onClick={() => navigate('/decisions-log', { state: { ...location.state, isGuest } })}
+              onClick={() => navigate('/decision-tools', { state: { ...location.state, isGuest } })}
               style={{
                 padding: '16px 48px',
                 backgroundColor: '#F08571',
