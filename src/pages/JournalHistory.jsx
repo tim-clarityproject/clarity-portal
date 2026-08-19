@@ -43,6 +43,28 @@ export default function JournalHistory() {
     return date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
   };
 
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '';
+    const date = new Date(timeStr);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleDelete = async (entryId, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this entry?')) return;
+
+    try {
+      await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', entryId);
+      setEntries(entries.filter(e => e.id !== entryId));
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      alert('Failed to delete entry');
+    }
+  };
+
   const truncateContent = (content, length = 100) => {
     return content.length > length ? content.substring(0, length) + '...' : content;
   };
@@ -112,18 +134,58 @@ export default function JournalHistory() {
                   e.currentTarget.style.borderColor = '#e5e5e5';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', width: '100%' }}>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 6px 0' }}>
-                      {formatDate(entry.entry_date)}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                        {formatDate(entry.entry_date)}
+                      </p>
+                      <span style={{ fontSize: '12px', color: '#999' }}>
+                        {formatTime(entry.created_at)}
+                      </span>
+                    </div>
                     <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
                       {truncateContent(entry.content)}
                     </p>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#999', marginLeft: '12px', whiteSpace: 'nowrap' }}>
-                    {entry.content.split(' ').length} words
-                  </span>
+                  <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                    <button
+                      onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date } })}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#F08571',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(entry.id, e)}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#e5e5e5',
+                        color: '#d32f2f',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#d0d0d0'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e5e5e5'}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </button>
             ))}
