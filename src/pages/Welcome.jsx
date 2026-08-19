@@ -11,8 +11,8 @@ export default function Welcome() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }}>
-        <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 32px 32px' }}>
+        <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center', marginTop: '32px' }}>
           <div style={{ marginBottom: '64px' }}>
             <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black' }}>
               Welcome to The Clarity Portal
