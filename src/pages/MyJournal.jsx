@@ -199,7 +199,7 @@ export default function MyJournal() {
           <button
             onClick={() => {
               if (window.confirm('Delete this entry? It will be lost forever.')) {
-                navigate('/journal-history', { state: { isGuest } });
+                navigate('/journal-log', { state: { isGuest } });
               }
             }}
             title="Delete entry"
@@ -227,13 +227,13 @@ export default function MyJournal() {
                 const choice = window.confirm('Save this as a draft first?\n\nOK = Save draft\nCancel = Discard and view history');
                 if (choice) {
                   handleSave().then(() => {
-                    navigate('/journal-history', { state: { isGuest } });
+                    navigate('/journal-log', { state: { isGuest } });
                   });
                 } else {
-                  navigate('/journal-history', { state: { isGuest } });
+                  navigate('/journal-log', { state: { isGuest } });
                 }
               } else {
-                navigate('/journal-history', { state: { isGuest } });
+                navigate('/journal-log', { state: { isGuest } });
               }
             }}
             style={{

@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 import BackArrow from '../components/BackArrow';
 
-export default function JournalHistory() {
+export default function JournalLog() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
@@ -87,7 +87,7 @@ export default function JournalHistory() {
           >
             <BackArrow />
           </button>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>Journal History</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>Journal Log</h1>
         </div>
 
         {isLoading ? (

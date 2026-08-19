@@ -12,31 +12,66 @@ export default function Welcome() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }}>
-        <div style={{ width: '100%', textAlign: 'center' }}>
+        <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center' }}>
           <div style={{ marginBottom: '64px' }}>
             <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black' }}>
               Welcome to The Clarity Portal
             </h1>
           </div>
 
-          <button
-            onClick={() => navigate('/choose-focus', { state: { ...location.state, isGuest } })}
-            style={{
-              padding: '16px 48px',
-              backgroundColor: '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-          >
-            Let's Go
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <button
+              onClick={() => navigate('/decisions-log', { state: { ...location.state, isGuest } })}
+              style={{
+                padding: '24px 32px',
+                backgroundColor: '#f9f9f9',
+                border: '2px solid #e5e5e5',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#333',
+                transition: 'all 0.2s',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#f0f0f0';
+                e.target.style.borderColor = '#F08571';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#f9f9f9';
+                e.target.style.borderColor = '#e5e5e5';
+              }}
+            >
+              Make a decision
+            </button>
+
+            <button
+              onClick={() => navigate('/my-journal', { state: { ...location.state, isGuest } })}
+              style={{
+                padding: '24px 32px',
+                backgroundColor: '#f9f9f9',
+                border: '2px solid #e5e5e5',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#333',
+                transition: 'all 0.2s',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#f0f0f0';
+                e.target.style.borderColor = '#F08571';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#f9f9f9';
+                e.target.style.borderColor = '#e5e5e5';
+              }}
+            >
+              Reflect
+            </button>
+          </div>
         </div>
       </div>
     </div>

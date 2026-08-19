@@ -18,7 +18,12 @@ import ProjectScatter from './pages/ProjectScatter';
 import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
 import MyJournal from './pages/MyJournal';
-import JournalHistory from './pages/JournalHistory';
+import JournalLog from './pages/JournalLog';
+import DecisionsLog from './pages/DecisionsLog';
+import GrowStep1Goal from './pages/GrowStep1Goal';
+import GrowStep2Reality from './pages/GrowStep2Reality';
+import GrowStep3Options from './pages/GrowStep3Options';
+import GrowStep4WillDo from './pages/GrowStep4WillDo';
 
 function AppContent() {
   const { isLoading } = useContext(AuthContext);
@@ -49,7 +54,12 @@ function AppContent() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/results" element={<Results />} />
       <Route path="/my-journal" element={<MyJournal />} />
-      <Route path="/journal-history" element={<JournalHistory />} />
+      <Route path="/journal-log" element={<JournalLog />} />
+      <Route path="/decisions-log" element={<DecisionsLog />} />
+      <Route path="/grow-step-1" element={<GrowStep1Goal />} />
+      <Route path="/grow-step-2" element={<GrowStep2Reality />} />
+      <Route path="/grow-step-3" element={<GrowStep3Options />} />
+      <Route path="/grow-step-4" element={<GrowStep4WillDo />} />
     </Routes>
   );
 }
