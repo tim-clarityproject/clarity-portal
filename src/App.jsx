@@ -40,11 +40,11 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if user needs to accept terms
+  // Check terms acceptance and handle redirects
   useEffect(() => {
     if (isLoading || !user) return;
 
-    const checkTermsAcceptance = async () => {
+    const handleRedirects = async () => {
       try {
         const { data: profile } = await supabase
           .from('profiles')
@@ -52,25 +52,23 @@ function AppContent() {
           .eq('id', user.id)
           .single();
 
+        // Terms check takes priority
         if (profile && !profile.terms_accepted && !location.pathname.includes('accept-terms')) {
-          // User hasn't accepted terms, redirect to terms page
           navigate('/accept-terms', { replace: true });
+          return;
+        }
+
+        // OAuth redirect (only if terms are accepted)
+        if (location.hash.includes('access_token')) {
+          navigate('/welcome', { replace: true });
         }
       } catch (error) {
-        console.error('Error checking terms acceptance:', error);
+        console.error('Error in redirects:', error);
       }
     };
 
-    checkTermsAcceptance();
-  }, [user, isLoading, location.pathname, navigate]);
-
-  // Handle OAuth redirect after auth detection - send new users to welcome
-  useEffect(() => {
-    if (!isLoading && user && location.hash.includes('access_token')) {
-      // OAuth redirect - navigate to welcome and clear the hash
-      navigate('/welcome', { replace: true });
-    }
-  }, [isLoading, user, location.hash, navigate]);
+    handleRedirects();
+  }, [user, isLoading, location.pathname, location.hash, navigate]);
 
   if (isLoading) {
     return (
