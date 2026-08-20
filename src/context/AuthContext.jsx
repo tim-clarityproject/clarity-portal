@@ -65,13 +65,13 @@ export function AuthProvider({ children }) {
               .eq('id', session.user.id)
               .single();
 
-            // Update if we have a name and profile is missing one
-            if ((firstName || lastName) && (!profile?.first_name || !profile?.last_name)) {
+            // Update only if profile is completely empty (never been set)
+            if ((firstName || lastName) && !profile?.first_name && !profile?.last_name) {
               await supabase
                 .from('profiles')
                 .update({
-                  first_name: firstName || profile?.first_name || '',
-                  last_name: lastName || profile?.last_name || '',
+                  first_name: firstName || '',
+                  last_name: lastName || '',
                 })
                 .eq('id', session.user.id);
               console.log('Profile updated with OAuth name:', { firstName, lastName });
