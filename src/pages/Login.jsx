@@ -1,11 +1,11 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, signup, isLoading } = useContext(AuthContext);
+  const { login, signup, isLoading, user } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -14,6 +14,13 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !isLoading) {
+      navigate('/welcome');
+    }
+  }, [user, isLoading, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
