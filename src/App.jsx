@@ -32,6 +32,7 @@ import AuthCallback from './pages/AuthCallback';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DataStorageNotice from './pages/DataStorageNotice';
+import EditPersonalDetails from './pages/EditPersonalDetails';
 
 function AppContent() {
   const { isLoading } = useContext(AuthContext);
@@ -75,6 +76,7 @@ function AppContent() {
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/data-storage-notice" element={<DataStorageNotice />} />
+      <Route path="/edit-profile" element={<EditPersonalDetails />} />
     </Routes>
   );
 }

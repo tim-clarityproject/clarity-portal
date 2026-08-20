@@ -10,10 +10,8 @@ export default function MyAccount() {
   const { user } = useContext(AuthContext);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -49,29 +47,6 @@ export default function MyAccount() {
     fetchUserData();
   }, [user]);
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
-
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error saving profile:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -90,116 +65,47 @@ export default function MyAccount() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        {/* Personal Details Section */}
+        {/* Profile Card */}
         <div style={{
           marginBottom: '48px',
           padding: '24px',
           backgroundColor: '#fafafa',
           borderRadius: '12px',
           border: '1px solid #e5e5e5',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', margin: 0 }}>
-              Personal Details
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '8px', margin: 0 }}>
+              {firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Profile'}
             </h2>
-            <button
-              onClick={() => isEditing ? handleSaveProfile() : setIsEditing(true)}
-              disabled={isSaving}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: isEditing ? '#F08571' : 'transparent',
-                color: isEditing ? 'white' : '#F08571',
-                border: isEditing ? 'none' : '2px solid #F08571',
-                borderRadius: '6px',
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                fontSize: '13px',
-                fontWeight: '600',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (!isSaving && isEditing) e.target.style.backgroundColor = '#e07560';
-                if (!isSaving && !isEditing) e.target.style.backgroundColor = '#FEE5DE';
-              }}
-              onMouseLeave={(e) => {
-                if (!isSaving && isEditing) e.target.style.backgroundColor = '#F08571';
-                if (!isSaving && !isEditing) e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              {isSaving ? 'Saving...' : isEditing ? 'Save' : 'Edit'}
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: '#666', fontWeight: '600' }}>
-                First Name
-              </label>
-              <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                disabled={!isEditing}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: isEditing ? 'white' : '#f5f5f5',
-                  color: '#333',
-                  cursor: isEditing ? 'text' : 'default',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: '#666', fontWeight: '600' }}>
-                Last Name
-              </label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                disabled={!isEditing}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: isEditing ? 'white' : '#f5f5f5',
-                  color: '#333',
-                  cursor: isEditing ? 'text' : 'default',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginTop: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: '#666', fontWeight: '600' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={user?.email || ''}
-              disabled
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: '1px solid #e5e5e5',
-                borderRadius: '6px',
-                fontSize: '14px',
-                backgroundColor: '#f5f5f5',
-                color: '#999',
-                cursor: 'default',
-                boxSizing: 'border-box',
-              }}
-            />
-            <p style={{ fontSize: '12px', color: '#999', marginTop: '8px', margin: 0 }}>
-              Email cannot be changed
+            <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+              {user?.email}
             </p>
           </div>
+          <button
+            onClick={() => navigate('/edit-profile')}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: 'transparent',
+              border: '2px solid #F08571',
+              borderRadius: '8px',
+              color: '#F08571',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#FEE5DE';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+            }}
+          >
+            Edit Profile
+          </button>
         </div>
 
         <div style={{ marginBottom: '48px' }}>
