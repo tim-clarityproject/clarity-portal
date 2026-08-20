@@ -78,6 +78,10 @@ export function AuthProvider({ children }) {
                   terms_accepted: false,
                 });
               console.log('New profile created:', { firstName, lastName, email: session.user.email });
+
+              // Refresh cache with new profile data
+              const userData = await dataSyncManager.loadUserData(session.user.id);
+              sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
             }
             // Update only if profile exists and is completely empty (never been set)
             else if ((firstName || lastName) && !profile?.first_name && !profile?.last_name) {
