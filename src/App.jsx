@@ -33,11 +33,36 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
+import TermsAcceptance from './pages/TermsAcceptance';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Check if user needs to accept terms
+  useEffect(() => {
+    if (isLoading || !user) return;
+
+    const checkTermsAcceptance = async () => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('terms_accepted')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && !profile.terms_accepted && !location.pathname.includes('accept-terms')) {
+          // User hasn't accepted terms, redirect to terms page
+          navigate('/accept-terms', { replace: true });
+        }
+      } catch (error) {
+        console.error('Error checking terms acceptance:', error);
+      }
+    };
+
+    checkTermsAcceptance();
+  }, [user, isLoading, location.pathname, navigate]);
 
   // Handle OAuth redirect after auth detection - send new users to welcome
   useEffect(() => {
@@ -87,6 +112,7 @@ function AppContent() {
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/data-storage-notice" element={<DataStorageNotice />} />
       <Route path="/edit-profile" element={<EditPersonalDetails />} />
+      <Route path="/accept-terms" element={<TermsAcceptance />} />
     </Routes>
   );
 }

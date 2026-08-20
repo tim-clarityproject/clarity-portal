@@ -60,6 +60,19 @@ export default function CreateAccount() {
     try {
       const success = await signup(email, password);
       if (success) {
+        // Set terms as accepted for email signups (they checked the box)
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('profiles')
+              .update({ first_name: firstName, last_name: lastName, terms_accepted: true })
+              .eq('id', user.id);
+          }
+        } catch (profileErr) {
+          console.error('Error updating profile:', profileErr);
+        }
+
         // Show verification email message
         setVerificationEmailSent(true);
         setFirstName('');
