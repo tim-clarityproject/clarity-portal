@@ -119,6 +119,14 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     try {
       await auth.signUp(email, password);
+      // Automatically log in after signup
+      await auth.signIn(email, password);
+      const session = await sessionManager.getSession();
+      if (session?.user) {
+        sessionManager.saveSessionMetadata(session);
+        const userData = await dataSyncManager.loadUserData(session.user.id);
+        sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+      }
       return true;
     } catch (err) {
       console.error('Signup error:', err);
