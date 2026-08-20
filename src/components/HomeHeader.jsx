@@ -1,10 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 export default function HomeHeader({ isGuest = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useContext(AuthContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
@@ -28,7 +30,8 @@ export default function HomeHeader({ isGuest = false }) {
     setMenuOpen(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
     setMenuOpen(false);
   };
