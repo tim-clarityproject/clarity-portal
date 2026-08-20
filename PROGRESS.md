@@ -104,6 +104,7 @@ Before releasing to real users, complete these:
 ### HIGH PRIORITY (Before wider rollout)
 - [x] Remove Facebook OAuth
 - [x] Remove Guest User functionality
+- [ ] Profile picture upload functionality (Supabase Storage bucket configuration)
 - [ ] Password strength validation
 - [ ] Email confirmation with SendGrid SMTP
 - [ ] Test error handling edge cases

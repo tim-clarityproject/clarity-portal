@@ -43,9 +43,12 @@ export default function Welcome() {
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 32px 32px' }}>
         <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center', marginTop: '32px' }}>
           <div style={{ marginBottom: '64px' }}>
-            <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', marginBottom: '0' }}>
-              {displayName ? `Welcome, ${displayName}. Let's Do This.` : "Let's Do This."}
+            <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', marginBottom: '16px' }}>
+              {displayName ? `Welcome, ${displayName}.` : 'Welcome.'}
             </h1>
+            <p style={{ fontSize: '24px', color: '#666', marginBottom: '0', margin: 0 }}>
+              What's on your mind?
+            </p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
