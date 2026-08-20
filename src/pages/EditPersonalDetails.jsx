@@ -14,6 +14,7 @@ export default function EditPersonalDetails() {
   const [profilePicture, setProfilePicture] = useState('');
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState('');
+  const [profilePictureDeleted, setProfilePictureDeleted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -74,11 +75,19 @@ export default function EditPersonalDetails() {
     }
 
     setProfilePictureFile(file);
+    setProfilePictureDeleted(false);
     const reader = new FileReader();
     reader.onload = (e) => {
       setProfilePicturePreview(e.target?.result || '');
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleDeleteProfilePicture = () => {
+    setProfilePictureFile(null);
+    setProfilePicturePreview('');
+    setProfilePicture('');
+    setProfilePictureDeleted(true);
   };
 
   const handleSaveProfile = async () => {
@@ -90,8 +99,12 @@ export default function EditPersonalDetails() {
     try {
       let pictureUrl = profilePicture;
 
+      // Handle picture deletion
+      if (profilePictureDeleted) {
+        pictureUrl = null;
+      }
       // Upload new profile picture if selected
-      if (profilePictureFile) {
+      else if (profilePictureFile) {
         const fileExt = profilePictureFile.name.split('.').pop();
         const fileName = `${user.id}-${Date.now()}.${fileExt}`;
         const filePath = `profile-pictures/${fileName}`;
@@ -199,17 +212,45 @@ export default function EditPersonalDetails() {
 
               {profilePicturePreview && (
                 <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-                  <img
-                    src={profilePicturePreview}
-                    alt="Profile"
-                    style={{
-                      width: '120px',
-                      height: '120px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '2px solid #F08571',
-                    }}
-                  />
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <img
+                      src={profilePicturePreview}
+                      alt="Profile"
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid #F08571',
+                      }}
+                    />
+                    <button
+                      onClick={handleDeleteProfilePicture}
+                      type="button"
+                      style={{
+                        position: 'absolute',
+                        bottom: '-8px',
+                        right: '-8px',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: '#d32f2f',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#b71c1c'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#d32f2f'}
+                      title="Delete profile picture"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               )}
 
