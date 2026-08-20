@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, auth } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -14,6 +14,20 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [error, setError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  const handleOAuthSignIn = async (provider) => {
+    try {
+      setError('');
+      if (provider === 'google') {
+        await auth.signInWithGoogle();
+      } else if (provider === 'facebook') {
+        await auth.signInWithFacebook();
+      }
+    } catch (err) {
+      setError(err.message || `Failed to sign in with ${provider}`);
+    }
+  };
 
   // Redirect if already logged in
   useEffect(() => {
@@ -138,6 +152,7 @@ export default function Login() {
               <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button
                   type="button"
+                  onClick={() => handleOAuthSignIn('google')}
                   style={{
                     padding: '12px 24px',
                     backgroundColor: '#fff',
@@ -173,6 +188,7 @@ export default function Login() {
 
                 <button
                   type="button"
+                  onClick={() => handleOAuthSignIn('facebook')}
                   style={{
                     padding: '12px 24px',
                     backgroundColor: '#fff',

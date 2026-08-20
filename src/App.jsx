@@ -28,6 +28,7 @@ import GrowStep4WillDo from './pages/GrowStep4WillDo';
 import InversionStep1Goal from './pages/InversionStep1Goal';
 import InversionStep2Fuckups from './pages/InversionStep2Fuckups';
 import InversionStep3Plan from './pages/InversionStep3Plan';
+import AuthCallback from './pages/AuthCallback';
 
 function AppContent() {
   const { isLoading } = useContext(AuthContext);
@@ -43,6 +44,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/create-account" element={<CreateAccount />} />
       <Route path="/my-account" element={<MyAccount />} />
