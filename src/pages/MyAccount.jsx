@@ -122,37 +122,24 @@ export default function MyAccount() {
         </div>
 
         {/* Delete Account Section */}
-        <div style={{
-          marginTop: '48px',
-          padding: '24px',
-          backgroundColor: '#fff3f3',
-          borderRadius: '12px',
-          border: '1px solid #ffcccc',
-        }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#c0574c', marginBottom: '12px', margin: 0 }}>
-            Danger Zone
-          </h3>
-          <p style={{ fontSize: '13px', color: '#666', marginBottom: '16px', margin: '0 0 16px 0' }}>
-            Permanently delete your account and all associated data
-          </p>
+        <div style={{ marginTop: '48px', textAlign: 'center' }}>
           <button
             onClick={handleDeleteAccount}
             disabled={isDeleting}
             style={{
-              padding: '12px 24px',
-              backgroundColor: isDeleting ? '#ccc' : '#d32f2f',
-              color: 'white',
+              backgroundColor: 'transparent',
               border: 'none',
-              borderRadius: '8px',
-              fontWeight: '600',
+              color: '#999',
               cursor: isDeleting ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
+              fontSize: '12px',
+              textDecoration: 'none',
+              transition: 'color 0.2s',
+              opacity: isDeleting ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => !isDeleting && (e.target.style.backgroundColor = '#b71c1c')}
-            onMouseLeave={(e) => !isDeleting && (e.target.style.backgroundColor = '#d32f2f')}
+            onMouseEnter={(e) => !isDeleting && (e.target.style.color = '#c0574c')}
+            onMouseLeave={(e) => !isDeleting && (e.target.style.color = '#999')}
           >
-            {isDeleting ? 'Deleting...' : 'Delete Account'}
+            {isDeleting ? 'Deleting account...' : 'Delete account'}
           </button>
         </div>
       </div>
