@@ -118,9 +118,26 @@ export function AuthProvider({ children }) {
   const signup = async (email, password) => {
     setIsLoading(true);
     try {
-      await auth.signUp(email, password);
-      // Automatically log in after signup
+      try {
+        await auth.signUp(email, password);
+        console.log('Signup successful, new account created');
+      } catch (signupErr) {
+        // If user already exists, that's ok - we'll log them in
+        if (signupErr.message?.includes('already registered') || signupErr.status === 422) {
+          console.log('Account already exists, logging in instead');
+        } else {
+          throw signupErr;
+        }
+      }
+
+      // Wait a moment for account to be fully initialized in database
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Log in the user
       await auth.signIn(email, password);
+      console.log('Login successful');
+
+      // Get session and load user data
       const session = await sessionManager.getSession();
       if (session?.user) {
         sessionManager.saveSessionMetadata(session);
@@ -129,7 +146,7 @@ export function AuthProvider({ children }) {
       }
       return true;
     } catch (err) {
-      console.error('Signup error:', err);
+      console.error('Signup/login error:', err.message || err);
       return false;
     } finally {
       setIsLoading(false);

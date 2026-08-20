@@ -72,17 +72,23 @@ export default function Login() {
 
       if (success) {
         if (isSignUp) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase
-              .from('profiles')
-              .update({ first_name: firstName, last_name: lastName })
-              .eq('id', user.id);
+          // Update profile with name info after successful signup/login
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase
+                .from('profiles')
+                .update({ first_name: firstName, last_name: lastName })
+                .eq('id', user.id);
+            }
+          } catch (profileErr) {
+            console.warn('Could not update profile:', profileErr);
+            // Don't fail the signup if profile update fails
           }
         }
         navigate('/welcome');
       } else {
-        setError(isSignUp ? 'Failed to create account' : 'Invalid email or password');
+        setError(isSignUp ? 'Failed to create account. Please try again.' : 'Invalid email or password');
       }
     } catch (err) {
       setError(err.message || 'An error occurred');
