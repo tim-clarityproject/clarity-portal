@@ -12,9 +12,24 @@ export default function Welcome() {
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
-    const fetchUserName = async () => {
-      if (!user || isGuest) return;
+    if (!user || isGuest) return;
 
+    // Try cached data first (from AuthContext)
+    try {
+      const cachedData = sessionStorage.getItem('clarity-user-data');
+      if (cachedData) {
+        const userData = JSON.parse(cachedData);
+        if (userData.first_name) {
+          setFirstName(userData.first_name);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Error reading cached data:', err);
+    }
+
+    // Fallback: fetch from Supabase if not cached
+    const fetchUserName = async () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
