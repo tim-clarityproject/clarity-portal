@@ -17,6 +17,7 @@ export default function CreateAccount() {
   const [isLoading, setIsLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   const handleOAuthSignUp = async (provider) => {
     try {
@@ -93,6 +94,18 @@ export default function CreateAccount() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
       <HomeHeader isGuest={true} />
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }}>
@@ -170,11 +183,40 @@ export default function CreateAccount() {
               <div style={{ textAlign: 'center', marginBottom: '24px', fontSize: '14px', color: '#999' }}>
                 or
               </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailForm(!showEmailForm)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 24px',
+                    backgroundColor: showEmailForm ? '#FEE5DE' : '#fff',
+                    border: '2px solid #e5e5e5',
+                    borderRadius: '8px',
+                    color: '#333',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.borderColor = '#F08571';
+                    if (!showEmailForm) e.target.style.backgroundColor = '#FEE5DE';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.borderColor = '#e5e5e5';
+                    if (!showEmailForm) e.target.style.backgroundColor = '#fff';
+                  }}
+                >
+                  Sign up with Email
+                </button>
+              </div>
             </>
           )}
 
-          {!verificationEmailSent && (
-          <form onSubmit={handleCreateAccount} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {!verificationEmailSent && showEmailForm && (
+          <form onSubmit={handleCreateAccount} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'slideDown 0.2s ease-out', marginBottom: '12px' }}>
             <div style={{ display: 'flex', gap: '12px' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#333', fontWeight: '500' }}>
