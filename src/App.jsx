@@ -1,5 +1,5 @@
-import { useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useContext, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { FormProvider } from './context/FormContext';
 import './lib/debugStorage'; // Make debugging utilities available
@@ -35,7 +35,19 @@ import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
 
 function AppContent() {
-  const { isLoading } = useContext(AuthContext);
+  const { isLoading, user } = useContext(AuthContext);
+  const location = useLocation();
+
+  // Handle OAuth redirect after auth detection - send new users to welcome
+  useEffect(() => {
+    if (!isLoading && user && location.pathname === '/') {
+      // User just authenticated, redirect to welcome
+      if (location.hash.includes('access_token')) {
+        // OAuth redirect
+        window.location.pathname = '/welcome';
+      }
+    }
+  }, [isLoading, user, location]);
 
   if (isLoading) {
     return (
