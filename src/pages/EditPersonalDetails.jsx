@@ -26,13 +26,18 @@ export default function EditPersonalDetails() {
       }
 
       try {
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('first_name, last_name, role, organisation, profile_picture_url')
           .eq('id', user.id)
           .single();
 
+        if (error) {
+          console.error('Error fetching profile:', error);
+        }
+
         if (profile) {
+          console.log('Profile loaded:', profile);
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
           setRole(profile.role || '');
