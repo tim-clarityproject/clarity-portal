@@ -427,35 +427,6 @@ export default function Login() {
           </div>
 
           <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #e5e5e5' }}>
-            <p style={{ color: '#999', fontSize: '12px', marginBottom: '16px', textAlign: 'center' }}>
-              Or continue as
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate('/welcome', { state: { isGuest: true } })}
-              style={{
-                width: '100%',
-                padding: '12px 24px',
-                backgroundColor: 'transparent',
-                border: '2px solid #5ECCC0',
-                borderRadius: '8px',
-                color: '#5ECCC0',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#5ECCC0';
-                e.target.style.color = 'white';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-                e.target.style.color = '#5ECCC0';
-              }}
-            >
-              Guest User
-            </button>
           </div>
         </div>
       </div>
