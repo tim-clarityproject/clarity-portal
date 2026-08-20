@@ -12,6 +12,8 @@ export default function EditPersonalDetails() {
   const [role, setRole] = useState('');
   const [organisation, setOrganisation] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -35,7 +37,10 @@ export default function EditPersonalDetails() {
           setLastName(profile.last_name || '');
           setRole(profile.role || '');
           setOrganisation(profile.organisation || '');
-          setProfilePicture(profile.profile_picture_url || '');
+          if (profile.profile_picture_url) {
+            setProfilePicture(profile.profile_picture_url);
+            setProfilePicturePreview(profile.profile_picture_url);
+          }
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -47,6 +52,30 @@ export default function EditPersonalDetails() {
     fetchProfile();
   }, [user]);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      setMessage('Please upload a PNG or JPG image');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage('File size must be less than 5MB');
+      return;
+    }
+
+    setProfilePictureFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setProfilePicturePreview(e.target?.result || '');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveProfile = async () => {
     if (!user) return;
 
@@ -54,6 +83,28 @@ export default function EditPersonalDetails() {
     setMessage('');
 
     try {
+      let pictureUrl = profilePicture;
+
+      // Upload new profile picture if selected
+      if (profilePictureFile) {
+        const fileExt = profilePictureFile.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const filePath = `profile-pictures/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('profiles')
+          .upload(filePath, profilePictureFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data } = supabase.storage
+          .from('profiles')
+          .getPublicUrl(filePath);
+
+        pictureUrl = data.publicUrl;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -61,12 +112,14 @@ export default function EditPersonalDetails() {
           last_name: lastName,
           role: role,
           organisation: organisation,
-          profile_picture_url: profilePicture,
+          profile_picture_url: pictureUrl,
         })
         .eq('id', user.id);
 
       if (error) throw error;
 
+      setProfilePictureFile(null);
+      setProfilePicture(pictureUrl);
       setMessage('Profile updated successfully!');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
@@ -115,28 +168,61 @@ export default function EditPersonalDetails() {
             {/* Profile Picture */}
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#333', fontWeight: '600' }}>
-                Profile Picture URL
+                Profile Picture
               </label>
-              <input
-                type="text"
-                value={profilePicture}
-                onChange={(e) => setProfilePicture(e.target.value)}
-                placeholder="https://example.com/photo.jpg"
+
+              {profilePicturePreview && (
+                <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+                  <img
+                    src={profilePicturePreview}
+                    alt="Profile"
+                    style={{
+                      width: '120px',
+                      height: '120px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid #F08571',
+                    }}
+                  />
+                </div>
+              )}
+
+              <label
+                htmlFor="profile-picture-input"
                 style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '2px solid #e5e5e5',
+                  display: 'block',
+                  padding: '24px 16px',
+                  border: '2px dashed #e5e5e5',
                   borderRadius: '8px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box',
-                  outline: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  backgroundColor: '#fafafa',
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#F08571'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#F08571';
+                  e.currentTarget.style.backgroundColor = '#FEE5DE';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e5e5';
+                  e.currentTarget.style.backgroundColor = '#fafafa';
+                }}
+              >
+                <p style={{ margin: '0 0 8px', fontSize: '14px', fontWeight: '600', color: '#333' }}>
+                  Click to upload or drag and drop
+                </p>
+                <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>
+                  PNG or JPG (max 5MB)
+                </p>
+              </label>
+
+              <input
+                id="profile-picture-input"
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
               />
-              <p style={{ fontSize: '12px', color: '#999', marginTop: '6px', margin: 0 }}>
-                Enter the URL of your profile picture
-              </p>
             </div>
 
             {/* First Name */}
