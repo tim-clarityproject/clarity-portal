@@ -10,6 +10,7 @@ export default function MyAccount() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(true);
+  const isGuest = false;
 
   useEffect(() => {
     const fetchUserData = async () => {
