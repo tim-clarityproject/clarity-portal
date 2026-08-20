@@ -21,10 +21,17 @@ export default function MyAccount() {
     setIsDeleting(true);
     try {
       // Delete profile and related data (cascade will handle other tables)
-      await supabase
+      const { error } = await supabase
         .from('profiles')
         .delete()
         .eq('id', user.id);
+
+      if (error) {
+        console.error('Delete error:', error);
+        alert('Failed to delete account: ' + error.message);
+        setIsDeleting(false);
+        return;
+      }
 
       // Sign out the user
       await logout();
@@ -34,7 +41,6 @@ export default function MyAccount() {
     } catch (error) {
       console.error('Error deleting account:', error);
       alert('Failed to delete account. Please try again.');
-    } finally {
       setIsDeleting(false);
     }
   };
