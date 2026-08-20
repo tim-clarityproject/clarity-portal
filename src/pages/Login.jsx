@@ -60,6 +60,11 @@ export default function Login() {
       return;
     }
 
+    if (isSignUp && !termsAccepted) {
+      setError('Please accept the Terms of Service to continue');
+      return;
+    }
+
     try {
       const success = isSignUp
         ? await signup(email, password)
@@ -347,23 +352,74 @@ export default function Login() {
               </div>
             )}
 
+            {isSignUp && showEmailModal && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    marginTop: '2px',
+                    cursor: 'pointer',
+                    accentColor: '#F08571',
+                    flexShrink: 0,
+                  }}
+                />
+                <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer' }}>
+                  I agree to the{' '}
+                  <a
+                    href="/terms-of-service"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#F08571', textDecoration: 'none' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Terms of Service
+                  </a>
+                  ,{' '}
+                  <a
+                    href="/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#F08571', textDecoration: 'none' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Privacy Policy
+                  </a>
+                  , and{' '}
+                  <a
+                    href="/data-storage-notice"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#F08571', textDecoration: 'none' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Data Storage Notice
+                  </a>
+                </label>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={!email.trim() || !password.trim() || isLoading}
+              disabled={!email.trim() || !password.trim() || isLoading || (isSignUp && showEmailModal && !termsAccepted)}
               style={{
                 padding: '16px 32px',
-                backgroundColor: (!email.trim() || !password.trim() || isLoading) ? '#ccc' : '#F08571',
+                backgroundColor: (!email.trim() || !password.trim() || isLoading || (isSignUp && showEmailModal && !termsAccepted)) ? '#ccc' : '#F08571',
                 color: 'white',
                 fontWeight: 'bold',
                 border: 'none',
                 borderRadius: '8px',
-                cursor: (!email.trim() || !password.trim() || isLoading) ? 'not-allowed' : 'pointer',
+                cursor: (!email.trim() || !password.trim() || isLoading || (isSignUp && showEmailModal && !termsAccepted)) ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
                 fontSize: '14px',
                 marginTop: '8px',
               }}
-              onMouseEnter={(e) => (!email.trim() || !password.trim() || isLoading) || (e.target.style.backgroundColor = '#e07560')}
-              onMouseLeave={(e) => (!email.trim() || !password.trim() || isLoading) || (e.target.style.backgroundColor = '#F08571')}
+              onMouseEnter={(e) => (!email.trim() || !password.trim() || isLoading || (isSignUp && showEmailModal && !termsAccepted)) || (e.target.style.backgroundColor = '#e07560')}
+              onMouseLeave={(e) => (!email.trim() || !password.trim() || isLoading || (isSignUp && showEmailModal && !termsAccepted)) || (e.target.style.backgroundColor = '#F08571')}
             >
               {isLoading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Login')}
             </button>
@@ -426,7 +482,33 @@ export default function Login() {
             </button>
           </div>
 
-          <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #e5e5e5' }}>
+          <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #e5e5e5', textAlign: 'center' }}>
+            <p style={{ fontSize: '12px', color: '#999', marginBottom: '12px' }}>
+              <a
+                href="/terms-of-service"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#F08571', textDecoration: 'none', marginRight: '16px' }}
+              >
+                Terms
+              </a>
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#F08571', textDecoration: 'none', marginRight: '16px' }}
+              >
+                Privacy
+              </a>
+              <a
+                href="/data-storage-notice"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#F08571', textDecoration: 'none' }}
+              >
+                Data Storage
+              </a>
+            </p>
           </div>
         </div>
       </div>

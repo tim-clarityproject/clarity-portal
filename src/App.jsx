@@ -29,6 +29,9 @@ import InversionStep1Goal from './pages/InversionStep1Goal';
 import InversionStep2Fuckups from './pages/InversionStep2Fuckups';
 import InversionStep3Plan from './pages/InversionStep3Plan';
 import AuthCallback from './pages/AuthCallback';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import DataStorageNotice from './pages/DataStorageNotice';
 
 function AppContent() {
   const { isLoading } = useContext(AuthContext);
@@ -69,6 +72,9 @@ function AppContent() {
       <Route path="/inversion-step-1" element={<InversionStep1Goal />} />
       <Route path="/inversion-step-2" element={<InversionStep2Fuckups />} />
       <Route path="/inversion-step-3" element={<InversionStep3Plan />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/data-storage-notice" element={<DataStorageNotice />} />
     </Routes>
   );
 }
