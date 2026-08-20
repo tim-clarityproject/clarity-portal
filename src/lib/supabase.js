@@ -12,7 +12,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Key exists:', !!supabaseAnonKey);
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Configure Supabase with persistent session storage
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    storageKey: 'clarity-portal-auth',
+    storage: window.localStorage,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'implicit',
+  },
+});
 
 // Auth functions
 export const auth = {

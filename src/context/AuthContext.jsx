@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
 import { supabase, auth } from '../lib/supabase';
+import { sessionManager } from '../lib/sessionManager';
 
 export const AuthContext = createContext();
 
@@ -10,21 +11,17 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        console.log('Checking session...');
-        // First, check if there's an existing session
+        // Check if there's an existing session (persisted in localStorage)
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('Session found:', session?.user?.email);
         if (session?.user) {
-          console.log('Setting user from session:', session.user.email);
           setUser(session.user);
         } else {
-          console.log('No session, trying getCurrentUser');
           const currentUser = await auth.getCurrentUser();
-          console.log('Current user:', currentUser?.email);
           setUser(currentUser);
         }
       } catch (error) {
         console.error('Error checking user:', error);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -32,22 +29,52 @@ export function AuthProvider({ children }) {
 
     checkUser();
 
-    const subscription = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, 'User:', session?.user?.email);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
+      // Handle token refresh events to keep session alive
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        console.log('Session active:', session?.user?.email);
+      }
     });
 
     return () => {
-      if (subscription?.subscription) {
-        subscription.subscription.unsubscribe();
-      }
+      subscription?.unsubscribe();
     };
   }, []);
+
+  // Handle session refresh on tab visibility change and periodic refresh
+  useEffect(() => {
+    if (!user) return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        // Tab became visible - refresh session to extend expiry
+        await sessionManager.refreshSession();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Periodically refresh session every 12 hours to keep it alive
+    const refreshInterval = setInterval(() => {
+      sessionManager.refreshSession();
+    }, 12 * 60 * 60 * 1000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(refreshInterval);
+    };
+  }, [user]);
 
   const login = async (email, password) => {
     setIsLoading(true);
     try {
       await auth.signIn(email, password);
+      // Get and save session metadata after successful login
+      const session = await sessionManager.getSession();
+      if (session) {
+        sessionManager.saveSessionMetadata(session);
+      }
       return true;
     } catch (err) {
       console.error('Login error:', err);
@@ -74,6 +101,7 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     try {
       await auth.signOut();
+      sessionManager.clearSession();
       setUser(null);
     } catch (err) {
       console.error('Logout error:', err);
