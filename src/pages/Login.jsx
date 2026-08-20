@@ -76,13 +76,19 @@ export default function Login() {
           try {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-              await supabase
+              const { error } = await supabase
                 .from('profiles')
                 .update({ first_name: firstName, last_name: lastName })
                 .eq('id', user.id);
+
+              if (error) {
+                console.warn('Profile update error:', error);
+              } else {
+                console.log('Profile updated successfully with:', { firstName, lastName });
+              }
             }
           } catch (profileErr) {
-            console.warn('Could not update profile:', profileErr);
+            console.error('Could not update profile:', profileErr);
             // Don't fail the signup if profile update fails
           }
         }
