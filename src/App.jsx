@@ -51,26 +51,33 @@ function AppContent() {
 
         if (!termsAccepted) {
           try {
-            const { data: profile } = await supabase
+            const { data: profile, error } = await supabase
               .from('profiles')
               .select('terms_accepted')
               .eq('id', user.id)
               .single();
 
-            termsAccepted = profile?.terms_accepted || false;
+            if (error) {
+              console.warn('Profile not found or error fetching:', error);
+              // For new users, terms_accepted defaults to false
+              termsAccepted = false;
+            } else {
+              termsAccepted = profile?.terms_accepted || false;
+            }
           } catch (err) {
             console.warn('Could not fetch terms from profile:', err);
+            termsAccepted = false;
           }
         }
 
-        // Redirect to terms if not accepted
+        // Redirect to terms if not accepted (highest priority)
         if (!termsAccepted && !location.pathname.includes('accept-terms')) {
           navigate('/accept-terms', { replace: true });
           return;
         }
 
-        // OAuth redirect (only if terms are accepted)
-        if (location.hash.includes('access_token') && termsAccepted) {
+        // Only redirect to welcome if terms are accepted
+        if (termsAccepted && location.hash.includes('access_token')) {
           navigate('/welcome', { replace: true });
         }
       } catch (error) {
