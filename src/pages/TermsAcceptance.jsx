@@ -71,15 +71,15 @@ export default function TermsAcceptance() {
 
             <p style={{ fontSize: '13px', lineHeight: '1.6', color: '#666', marginTop: '16px', marginBottom: 0 }}>
               For complete details, please review our{' '}
-              <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: '#F08571', textDecoration: 'none', fontWeight: '500' }}>
+              <a href={`${window.location.origin}/terms-of-service`} target="_blank" rel="noopener noreferrer" style={{ color: '#F08571', textDecoration: 'none', fontWeight: '500' }}>
                 Terms of Service
               </a>
               ,{' '}
-              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: '#F08571', textDecoration: 'none', fontWeight: '500' }}>
+              <a href={`${window.location.origin}/privacy-policy`} target="_blank" rel="noopener noreferrer" style={{ color: '#F08571', textDecoration: 'none', fontWeight: '500' }}>
                 Privacy Policy
               </a>
               , and{' '}
-              <a href="/data-storage-notice" target="_blank" rel="noopener noreferrer" style={{ color: '#F08571', textDecoration: 'none', fontWeight: '500' }}>
+              <a href={`${window.location.origin}/data-storage-notice`} target="_blank" rel="noopener noreferrer" style={{ color: '#F08571', textDecoration: 'none', fontWeight: '500' }}>
                 Data Storage Notice
               </a>
               .

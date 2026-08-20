@@ -362,7 +362,7 @@ export default function CreateAccount() {
               <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer', lineHeight: '1.5', margin: 0 }}>
                 I agree to the{' '}
                 <a
-                  href="/terms-of-service"
+                  href={`${window.location.origin}/terms-of-service`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -376,7 +376,7 @@ export default function CreateAccount() {
                 </a>
                 ,{' '}
                 <a
-                  href="/privacy-policy"
+                  href={`${window.location.origin}/privacy-policy`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -390,7 +390,7 @@ export default function CreateAccount() {
                 </a>
                 , and{' '}
                 <a
-                  href="/data-storage-notice"
+                  href={`${window.location.origin}/data-storage-notice`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{

@@ -418,7 +418,7 @@ export default function Login() {
                 <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer', lineHeight: '1.5', margin: 0 }}>
                   I agree to the{' '}
                   <a
-                    href="/terms-of-service"
+                    href={`${window.location.origin}/terms-of-service`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -435,7 +435,7 @@ export default function Login() {
                   </a>
                   ,{' '}
                   <a
-                    href="/privacy-policy"
+                    href={`${window.location.origin}/privacy-policy`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -452,7 +452,7 @@ export default function Login() {
                   </a>
                   , and{' '}
                   <a
-                    href="/data-storage-notice"
+                    href={`${window.location.origin}/data-storage-notice`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -553,7 +553,7 @@ export default function Login() {
           <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #e5e5e5', textAlign: 'center' }}>
             <p style={{ fontSize: '12px', color: '#999', marginBottom: '12px' }}>
               <a
-                href="/terms-of-service"
+                href={`${window.location.origin}/terms-of-service`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#F08571', textDecoration: 'none', marginRight: '16px' }}
@@ -561,7 +561,7 @@ export default function Login() {
                 Terms
               </a>
               <a
-                href="/privacy-policy"
+                href={`${window.location.origin}/privacy-policy`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#F08571', textDecoration: 'none', marginRight: '16px' }}
@@ -569,7 +569,7 @@ export default function Login() {
                 Privacy
               </a>
               <a
-                href="/data-storage-notice"
+                href={`${window.location.origin}/data-storage-notice`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#F08571', textDecoration: 'none' }}
