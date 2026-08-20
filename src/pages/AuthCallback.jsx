@@ -1,18 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    // Supabase automatically handles the OAuth callback and sets the session
-    // Just redirect to welcome page
+    // Wait for auth context to recognize the user, then redirect
     const timer = setTimeout(() => {
-      navigate('/welcome');
-    }, 500);
+      if (user) {
+        navigate('/welcome');
+      } else {
+        // If auth failed, go back to login
+        navigate('/');
+      }
+    }, 1000);
 
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [navigate, user]);
 
   return (
     <div style={{
