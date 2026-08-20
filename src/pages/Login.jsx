@@ -359,28 +359,55 @@ export default function Login() {
             )}
 
             {isSignUp && showEmailModal && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+                padding: '12px 16px',
+                backgroundColor: '#fafafa',
+                borderRadius: '8px',
+                border: '1px solid #e5e5e5',
+                transition: 'all 0.2s',
+              }}>
                 <input
                   type="checkbox"
                   id="terms"
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
                   style={{
-                    width: '18px',
-                    height: '18px',
-                    marginTop: '2px',
+                    width: '20px',
+                    height: '20px',
+                    marginTop: '0px',
                     cursor: 'pointer',
                     accentColor: '#F08571',
                     flexShrink: 0,
+                    border: '2px solid #e5e5e5',
+                    borderRadius: '4px',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.borderColor = '#F08571';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.borderColor = e.target.checked ? '#F08571' : '#e5e5e5';
+                    e.target.style.boxShadow = 'none';
                   }}
                 />
-                <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer' }}>
+                <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer', lineHeight: '1.5', margin: 0 }}>
                   I agree to the{' '}
                   <a
                     href="/terms-of-service"
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: '#F08571', textDecoration: 'none' }}
+                    style={{
+                      color: '#F08571',
+                      textDecoration: 'none',
+                      fontWeight: '500',
+                      transition: 'opacity 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+                    onMouseLeave={(e) => e.target.style.opacity = '1'}
                     onClick={(e) => e.stopPropagation()}
                   >
                     Terms of Service
@@ -390,7 +417,14 @@ export default function Login() {
                     href="/privacy-policy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: '#F08571', textDecoration: 'none' }}
+                    style={{
+                      color: '#F08571',
+                      textDecoration: 'none',
+                      fontWeight: '500',
+                      transition: 'opacity 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+                    onMouseLeave={(e) => e.target.style.opacity = '1'}
                     onClick={(e) => e.stopPropagation()}
                   >
                     Privacy Policy
@@ -400,7 +434,14 @@ export default function Login() {
                     href="/data-storage-notice"
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: '#F08571', textDecoration: 'none' }}
+                    style={{
+                      color: '#F08571',
+                      textDecoration: 'none',
+                      fontWeight: '500',
+                      transition: 'opacity 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+                    onMouseLeave={(e) => e.target.style.opacity = '1'}
                     onClick={(e) => e.stopPropagation()}
                   >
                     Data Storage Notice
