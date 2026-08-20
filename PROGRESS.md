@@ -75,7 +75,11 @@
 
 ## 🔴 Blocked / Known Issues
 
-### None currently blocking MVP - all auth/backend issues resolved!
+### Account Deletion (Fix Tomorrow)
+- ❌ Delete account button only deletes profile, not auth user
+- Auth user still exists in Supabase after deletion
+- User can re-login with same credentials
+- **Fix needed**: Create Supabase edge function to delete both profile AND auth user
 
 Previous blockers (RESOLVED):
 - ❌ UK Supabase project (eu-west-2) had DNS resolution issues - switched to US region
