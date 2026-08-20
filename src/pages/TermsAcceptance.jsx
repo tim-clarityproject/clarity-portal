@@ -14,10 +14,18 @@ export default function TermsAcceptance() {
 
     setIsAccepting(true);
     try {
-      await supabase
-        .from('profiles')
-        .update({ terms_accepted: true })
-        .eq('id', user.id);
+      // Save to localStorage as fallback
+      localStorage.setItem(`terms_${user.id}`, 'true');
+
+      // Try to update database
+      try {
+        await supabase
+          .from('profiles')
+          .update({ terms_accepted: true })
+          .eq('id', user.id);
+      } catch (dbError) {
+        console.warn('Could not save to database, using localStorage fallback:', dbError);
+      }
 
       navigate('/welcome');
     } catch (error) {

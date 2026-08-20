@@ -46,20 +46,31 @@ function AppContent() {
 
     const handleRedirects = async () => {
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('terms_accepted')
-          .eq('id', user.id)
-          .single();
+        // Check if user needs to accept terms (with fallback to localStorage)
+        let termsAccepted = localStorage.getItem(`terms_${user.id}`) === 'true';
 
-        // Terms check takes priority
-        if (profile && !profile.terms_accepted && !location.pathname.includes('accept-terms')) {
+        if (!termsAccepted) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('terms_accepted')
+              .eq('id', user.id)
+              .single();
+
+            termsAccepted = profile?.terms_accepted || false;
+          } catch (err) {
+            console.warn('Could not fetch terms from profile:', err);
+          }
+        }
+
+        // Redirect to terms if not accepted
+        if (!termsAccepted && !location.pathname.includes('accept-terms')) {
           navigate('/accept-terms', { replace: true });
           return;
         }
 
         // OAuth redirect (only if terms are accepted)
-        if (location.hash.includes('access_token')) {
+        if (location.hash.includes('access_token') && termsAccepted) {
           navigate('/welcome', { replace: true });
         }
       } catch (error) {
