@@ -51,19 +51,27 @@ export function AuthProvider({ children }) {
 
       if (session?.user) {
         // Handle OAuth sign-in - extract name from Google/OAuth provider
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
           try {
             const metadata = session.user.user_metadata || {};
-            const firstName = metadata.name?.split(' ')[0] || metadata.full_name?.split(' ')[0] || '';
-            const lastName = metadata.name?.split(' ').slice(1).join(' ') || metadata.full_name?.split(' ').slice(1).join(' ') || '';
+            // Try different field names Google might use
+            const firstName = metadata.given_name || metadata.name?.split(' ')[0] || metadata.full_name?.split(' ')[0] || '';
+            const lastName = metadata.family_name || metadata.name?.split(' ').slice(1).join(' ') || metadata.full_name?.split(' ').slice(1).join(' ') || '';
 
-            if (firstName || lastName) {
-              // Update profile with OAuth name data
+            // Check current profile
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', session.user.id)
+              .single();
+
+            // Update if we have a name and profile is missing one
+            if ((firstName || lastName) && (!profile?.first_name || !profile?.last_name)) {
               await supabase
                 .from('profiles')
                 .update({
-                  first_name: firstName,
-                  last_name: lastName,
+                  first_name: firstName || profile?.first_name || '',
+                  last_name: lastName || profile?.last_name || '',
                 })
                 .eq('id', session.user.id);
               console.log('Profile updated with OAuth name:', { firstName, lastName });
