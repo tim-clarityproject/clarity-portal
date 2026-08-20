@@ -126,6 +126,25 @@ export default function EditPersonalDetails() {
       setProfilePictureFile(null);
       setProfilePicture(pictureUrl);
       setMessage('Profile updated successfully!');
+
+      // Refresh profile data from Supabase to show updated info
+      const { data: freshProfile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, role, organisation, profile_picture_url')
+        .eq('id', user.id)
+        .single();
+
+      if (freshProfile) {
+        setFirstName(freshProfile.first_name || '');
+        setLastName(freshProfile.last_name || '');
+        setRole(freshProfile.role || '');
+        setOrganisation(freshProfile.organisation || '');
+        if (freshProfile.profile_picture_url) {
+          setProfilePicture(freshProfile.profile_picture_url);
+          setProfilePicturePreview(freshProfile.profile_picture_url);
+        }
+      }
+
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Error saving profile:', error);
