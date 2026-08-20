@@ -107,16 +107,6 @@ export const auth = {
     return data;
   },
 
-  async signInWithFacebook() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'facebook',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) throw error;
-    return data;
-  },
 };
 
 // Plans functions
