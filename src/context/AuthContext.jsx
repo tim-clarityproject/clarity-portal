@@ -14,13 +14,17 @@ export function AuthProvider({ children }) {
       try {
         // Check if there's an existing session (persisted in localStorage)
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Session check - found session:', !!session?.user);
+
         if (session?.user) {
+          console.log('Restoring user from session:', session.user.email);
           setUser(session.user);
           // Load user's data from Supabase
           const userData = await dataSyncManager.loadUserData(session.user.id);
           sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
         } else {
           const currentUser = await auth.getCurrentUser();
+          console.log('Current user check:', currentUser?.email);
           if (currentUser) {
             setUser(currentUser);
             // Load user's data from Supabase

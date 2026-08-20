@@ -12,12 +12,28 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Key exists:', !!supabaseAnonKey);
 }
 
+// Custom storage adapter for Supabase sessions
+const customStorage = {
+  getItem: (key) => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(key);
+  },
+  setItem: (key, value) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(key, value);
+  },
+  removeItem: (key) => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(key);
+  },
+};
+
 // Configure Supabase with persistent session storage
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     storageKey: 'clarity-portal-auth',
-    storage: window.localStorage,
+    storage: customStorage,
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'implicit',
