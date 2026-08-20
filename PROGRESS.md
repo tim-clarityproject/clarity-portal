@@ -94,7 +94,8 @@ Before releasing to real users, complete these:
 - [x] Google OAuth implementation
 - [x] Legal documents (Terms, Privacy, Data Storage)
 - [x] Terms acceptance on sign-up
-- [ ] Email verification flow
+- [x] Email verification flow
+- [x] Terms acceptance for all users (Google + Email)
 - [ ] Fill out Personal strategy/content streams
 - [ ] Fill out Team strategy/content streams
 - [ ] Test full flow end-to-end (5+ times with different data)
@@ -111,6 +112,7 @@ Before releasing to real users, complete these:
 - [ ] Rate limiting on API endpoints
 
 ### MEDIUM PRIORITY (Can be post-MVP)
+- [ ] Welcome page typing animation (Welcome, [Name] + subtitle)
 - [ ] Analytics setup (e.g., Mixpanel, Segment)
 - [ ] Accessibility audit (WCAG compliance)
 - [ ] Export plan as PDF
