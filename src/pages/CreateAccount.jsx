@@ -426,7 +426,6 @@ export default function CreateAccount() {
               {isLoading ? 'Creating...' : 'Create Account'}
             </button>
           </form>
-          </>
           )}
 
           <div style={{ marginTop: '24px', textAlign: 'center' }}>
