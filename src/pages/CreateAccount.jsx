@@ -18,6 +18,8 @@ export default function CreateAccount() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [expandedSection, setExpandedSection] = useState(null);
 
   const handleOAuthSignUp = async (provider) => {
     try {
@@ -335,7 +337,7 @@ export default function CreateAccount() {
 
             <div style={{
               display: 'flex',
-              alignItems: 'flex-start',
+              alignItems: 'center',
               gap: '12px',
               padding: '12px 16px',
               backgroundColor: '#fafafa',
@@ -350,59 +352,32 @@ export default function CreateAccount() {
                 style={{
                   width: '20px',
                   height: '20px',
-                  marginTop: '0px',
                   cursor: 'pointer',
                   accentColor: '#F08571',
                   flexShrink: 0,
-                  border: '2px solid #e5e5e5',
-                  borderRadius: '4px',
-                  transition: 'all 0.2s',
+                  margin: 0,
                 }}
               />
-              <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer', lineHeight: '1.5', margin: 0 }}>
-                I agree to the{' '}
-                <a
-                  href={`${window.location.origin}/terms-of-service`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: '#F08571',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Terms of Service
-                </a>
-                ,{' '}
-                <a
-                  href={`${window.location.origin}/privacy-policy`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: '#F08571',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Privacy Policy
-                </a>
-                , and{' '}
-                <a
-                  href={`${window.location.origin}/data-storage-notice`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: '#F08571',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Data Storage Notice
-                </a>
+              <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer', margin: 0, flex: 1 }}>
+                I agree to the terms
               </label>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#F08571',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+              >
+                Review Terms
+              </button>
             </div>
 
             <button
@@ -447,6 +422,132 @@ export default function CreateAccount() {
               Back to portal
             </button>
           </div>
+
+          {showTermsModal && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              zIndex: 1000,
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                padding: '32px',
+                maxWidth: '600px',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                width: '100%',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: 'black' }}>Review Terms</h2>
+                  <button
+                    onClick={() => setShowTermsModal(false)}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      fontSize: '24px',
+                      cursor: 'pointer',
+                      color: '#999',
+                      padding: '0',
+                      width: '30px',
+                      height: '30px',
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {['Terms of Service', 'Privacy Policy', 'Data Storage Notice'].map((title) => (
+                  <div key={title} style={{ marginBottom: '12px', borderRadius: '8px', border: '1px solid #e5e5e5', overflow: 'hidden' }}>
+                    <button
+                      onClick={() => setExpandedSection(expandedSection === title ? null : title)}
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        backgroundColor: expandedSection === title ? '#FEE5DE' : '#fafafa',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontWeight: '600',
+                        fontSize: '13px',
+                        color: '#333',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = expandedSection === title ? '#FEE5DE' : '#fafafa'}
+                    >
+                      {title}
+                      <span style={{ fontSize: '14px', transition: 'transform 0.2s', transform: expandedSection === title ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                        ▼
+                      </span>
+                    </button>
+                    {expandedSection === title && (
+                      <div style={{ padding: '14px', backgroundColor: 'white', borderTop: '1px solid #e5e5e5', color: '#333', lineHeight: '1.5', fontSize: '12px', maxHeight: '300px', overflowY: 'auto' }}>
+                        {title === 'Terms of Service' && (
+                          <div>
+                            <p style={{ marginBottom: '12px' }}><strong>1. Acceptance of Terms</strong><br/>By accessing and using the Clarity Portal, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>2. Use License</strong><br/>Permission is granted to temporarily download one copy of the materials for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:<br/>• Modify or copy the materials<br/>• Use the materials for any commercial purpose<br/>• Attempt to decompile or reverse engineer any software<br/>• Remove any copyright or other proprietary notations<br/>• Transfer the materials to another person or server</p>
+                            <p style={{ marginBottom: '12px' }}><strong>3. Disclaimer</strong><br/>The materials on the Clarity Portal are provided "as is". We make no warranties, expressed or implied, and hereby disclaim all other warranties.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>4. Limitations</strong><br/>In no event shall The Clarity Project or its suppliers be liable for any damages arising out of the use or inability to use the materials.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>5. Accuracy of Materials</strong><br/>Materials appearing on the portal could include errors. The Clarity Project may make changes at any time without notice.</p>
+                            <p><strong>6. Governing Law</strong><br/>These terms and conditions are governed by and construed in accordance with the laws of the United Kingdom.</p>
+                          </div>
+                        )}
+                        {title === 'Privacy Policy' && (
+                          <div>
+                            <p style={{ marginBottom: '12px' }}><strong>Information We Collect</strong><br/>We collect information you provide directly to us, such as when you create an account, including name, email address, and profile information.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>How We Use Your Information</strong><br/>We use the information we collect to:<br/>• Provide, maintain, and improve our services<br/>• Send you technical notices and support messages<br/>• Respond to your comments and questions<br/>• Comply with legal obligations</p>
+                            <p style={{ marginBottom: '12px' }}><strong>Data Security</strong><br/>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>Your Rights</strong><br/>You have the right to access, correct, or delete your personal data. Contact us at support@clarityproject.org to exercise these rights.</p>
+                            <p><strong>Changes to This Policy</strong><br/>We may update this Privacy Policy from time to time. Your continued use of the Clarity Portal indicates your acceptance of any changes.</p>
+                          </div>
+                        )}
+                        {title === 'Data Storage Notice' && (
+                          <div>
+                            <p style={{ marginBottom: '12px' }}><strong>Where Your Data Is Stored</strong><br/>Your personal data and portal activity are stored on Supabase servers located in the United States. By using the Clarity Portal, you consent to your data being processed and stored in the United States.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>Data Retention</strong><br/>We retain your personal data for as long as your account is active. You can request deletion of your account and associated data at any time.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>Data Access</strong><br/>Your data is protected by row-level security policies that ensure only you can access your own information.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>International Data Transfer</strong><br/>If you are located outside the United States, your personal data will be transferred to, stored in, and processed in the United States.</p>
+                            <p><strong>Questions?</strong><br/>For questions about how we store and process your data, please contact support@clarityproject.org.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => setShowTermsModal(false)}
+                  style={{
+                    width: '100%',
+                    marginTop: '20px',
+                    padding: '12px',
+                    backgroundColor: '#F08571',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '14px',
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

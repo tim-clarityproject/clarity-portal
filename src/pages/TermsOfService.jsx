@@ -7,7 +7,7 @@ export default function TermsOfService() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', padding: '40px 20px' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/create-account')}
           style={{
             backgroundColor: 'transparent',
             border: 'none',
