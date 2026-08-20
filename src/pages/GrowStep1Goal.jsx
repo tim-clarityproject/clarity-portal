@@ -96,7 +96,7 @@ export default function GrowStep1Goal() {
 
         </div>
 
-        <SaveDiscardButtons formData={{ goal }} pageType="decision" />
+        <SaveDiscardButtons formData={{ goal }} pageType="decision" toolType="grow" />
       </div>
     </div>
   );

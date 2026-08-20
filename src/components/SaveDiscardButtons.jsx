@@ -1,15 +1,32 @@
 import { Trash2 } from 'lucide-react';
-import { saveProgress, clearProgress } from '../lib/saveProgress';
+import { useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { saveProgress, clearProgress } from '../lib/saveProgress';
+import { AuthContext } from '../context/AuthContext';
+import { dataSyncManager } from '../lib/dataSyncManager';
 
-export default function SaveDiscardButtons({ formData, pageType = 'decision' }) {
+export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
 
-  const handleSaveAsDraft = () => {
+  const handleSaveAsDraft = async () => {
     const pageIdentifier = location.pathname.replace('/', '');
+
+    // Save to localStorage
     saveProgress(pageIdentifier, formData, location.state);
+
+    // If authenticated, also save to Supabase
+    if (user && toolType) {
+      try {
+        await dataSyncManager.syncLocalToServer(user.id, toolType, formData);
+      } catch (error) {
+        console.error('Error syncing to server:', error);
+        // Still show success message - local save succeeded
+      }
+    }
+
     alert('Progress saved! You can return to this later.');
   };
 

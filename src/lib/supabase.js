@@ -136,6 +136,191 @@ export const plans = {
   },
 };
 
+// Decisions functions (GROW & Inversion models)
+export const decisions = {
+  async saveDecision(userId, toolType, formData, title = null) {
+    const { data, error } = await supabase
+      .from('decisions')
+      .insert([
+        {
+          user_id: userId,
+          tool_type: toolType, // 'grow' or 'inversion'
+          title: title || formData.goal || 'Untitled Decision',
+          form_data: formData,
+          status: 'draft',
+        },
+      ])
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async updateDecision(decisionId, formData) {
+    const { data, error } = await supabase
+      .from('decisions')
+      .update({
+        form_data: formData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', decisionId)
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async completeDecision(decisionId) {
+    const { data, error } = await supabase
+      .from('decisions')
+      .update({
+        status: 'completed',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', decisionId)
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async getUserDecisions(userId) {
+    const { data, error } = await supabase
+      .from('decisions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async getDecisionById(decisionId) {
+    const { data, error } = await supabase
+      .from('decisions')
+      .select('*')
+      .eq('id', decisionId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteDecision(decisionId) {
+    const { error } = await supabase
+      .from('decisions')
+      .delete()
+      .eq('id', decisionId);
+    if (error) throw error;
+  },
+};
+
+// Reflections/Journal functions
+export const reflections = {
+  async saveReflection(userId, content, title = null, linkedDecisionId = null) {
+    const { data, error } = await supabase
+      .from('reflections')
+      .insert([
+        {
+          user_id: userId,
+          title: title || 'Journal Entry',
+          content,
+          linked_decision_id: linkedDecisionId,
+        },
+      ])
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async updateReflection(reflectionId, content, title = null) {
+    const { data, error } = await supabase
+      .from('reflections')
+      .update({
+        content,
+        title: title || undefined,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', reflectionId)
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async getUserReflections(userId) {
+    const { data, error } = await supabase
+      .from('reflections')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async getReflectionById(reflectionId) {
+    const { data, error } = await supabase
+      .from('reflections')
+      .select('*')
+      .eq('id', reflectionId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteReflection(reflectionId) {
+    const { error } = await supabase
+      .from('reflections')
+      .delete()
+      .eq('id', reflectionId);
+    if (error) throw error;
+  },
+};
+
+// Strategic Alignment (team planning)
+export const strategicAlignments = {
+  async saveAlignment(userId, formData, title = null) {
+    const { data, error } = await supabase
+      .from('strategic_alignments')
+      .insert([
+        {
+          user_id: userId,
+          title: title || formData.goal || 'Strategic Alignment',
+          form_data: formData,
+          status: 'draft',
+        },
+      ])
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async updateAlignment(alignmentId, formData) {
+    const { data, error } = await supabase
+      .from('strategic_alignments')
+      .update({
+        form_data: formData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', alignmentId)
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async getUserAlignments(userId) {
+    const { data, error } = await supabase
+      .from('strategic_alignments')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteAlignment(alignmentId) {
+    const { error } = await supabase
+      .from('strategic_alignments')
+      .delete()
+      .eq('id', alignmentId);
+    if (error) throw error;
+  },
+};
+
 // Guest sessions functions
 export const guestSessions = {
   async createSession(sessionId, formData = {}) {

@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from 'react';
 import { supabase, auth } from '../lib/supabase';
 import { sessionManager } from '../lib/sessionManager';
+import { dataSyncManager } from '../lib/dataSyncManager';
 
 export const AuthContext = createContext();
 
@@ -15,9 +16,19 @@ export function AuthProvider({ children }) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           setUser(session.user);
+          // Load user's data from Supabase
+          const userData = await dataSyncManager.loadUserData(session.user.id);
+          sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
         } else {
           const currentUser = await auth.getCurrentUser();
-          setUser(currentUser);
+          if (currentUser) {
+            setUser(currentUser);
+            // Load user's data from Supabase
+            const userData = await dataSyncManager.loadUserData(currentUser.id);
+            sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+          } else {
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('Error checking user:', error);
@@ -31,9 +42,15 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
-      // Handle token refresh events to keep session alive
-      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
-        console.log('Session active:', session?.user?.email);
+      if (session?.user) {
+        // Load user data whenever auth state changes to SIGNED_IN
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          dataSyncManager.loadUserData(session.user.id).then(userData => {
+            sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+          });
+        }
+      } else {
+        sessionStorage.removeItem('clarity-user-data');
       }
     });
 
@@ -72,8 +89,12 @@ export function AuthProvider({ children }) {
       await auth.signIn(email, password);
       // Get and save session metadata after successful login
       const session = await sessionManager.getSession();
-      if (session) {
+      if (session?.user) {
         sessionManager.saveSessionMetadata(session);
+        // Load user's data from Supabase
+        const userData = await dataSyncManager.loadUserData(session.user.id);
+        // Store user data in sessionStorage for quick access
+        sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
       }
       return true;
     } catch (err) {

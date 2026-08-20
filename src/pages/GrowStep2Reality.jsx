@@ -148,7 +148,7 @@ export default function GrowStep2Reality() {
           </button>
         </div>
 
-        <SaveDiscardButtons formData={{ constraints, opportunities }} pageType="decision" />
+        <SaveDiscardButtons formData={{ constraints, opportunities }} pageType="decision" toolType="grow" />
       </div>
     </div>
   );
