@@ -382,21 +382,21 @@ export default function CreateAccount() {
 
             <button
               type="submit"
-              disabled={!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || isLoading}
+              disabled={!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !termsAccepted || isLoading}
               style={{
                 padding: '16px 32px',
-                backgroundColor: (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || isLoading) ? '#ccc' : '#F08571',
+                backgroundColor: (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !termsAccepted || isLoading) ? '#ccc' : '#F08571',
                 color: 'white',
                 fontWeight: 'bold',
                 border: 'none',
                 borderRadius: '8px',
-                cursor: (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || isLoading) ? 'not-allowed' : 'pointer',
+                cursor: (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !termsAccepted || isLoading) ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
                 fontSize: '14px',
                 marginTop: '8px',
               }}
-              onMouseEnter={(e) => (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || isLoading) || (e.target.style.backgroundColor = '#e07560')}
-              onMouseLeave={(e) => (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || isLoading) || (e.target.style.backgroundColor = '#F08571')}
+              onMouseEnter={(e) => (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !termsAccepted || isLoading) || (e.target.style.backgroundColor = '#e07560')}
+              onMouseLeave={(e) => (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !termsAccepted || isLoading) || (e.target.style.backgroundColor = '#F08571')}
             >
               {isLoading ? 'Creating...' : 'Create Account'}
             </button>
