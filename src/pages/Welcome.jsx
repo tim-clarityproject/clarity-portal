@@ -9,9 +9,6 @@ export default function Welcome() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
-  const [displayedText, setDisplayedText] = useState('');
-  const [showSubtitle, setShowSubtitle] = useState(false);
-  const [showButtons, setShowButtons] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -36,35 +33,6 @@ export default function Welcome() {
     fetchUserName();
   }, [user, isGuest]);
 
-  // Typing animation effect
-  useEffect(() => {
-    if (!firstName) {
-      console.log('firstName not yet loaded');
-      return;
-    }
-
-    console.log('Starting typing animation for:', firstName);
-    const text = `Welcome, ${firstName}.`;
-    let index = 0;
-    setDisplayedText('');
-
-    const typeTimer = setInterval(() => {
-      if (index < text.length) {
-        setDisplayedText(text.substring(0, index + 1));
-        index++;
-      } else {
-        clearInterval(typeTimer);
-        console.log('Typing complete, showing subtitle');
-        // Show subtitle after title finishes
-        setTimeout(() => setShowSubtitle(true), 400);
-        // Show buttons after subtitle delay
-        setTimeout(() => setShowButtons(true), 1200);
-      }
-    }, 50);
-
-    return () => clearInterval(typeTimer);
-  }, [firstName]);
-
   const displayName = firstName || null;
 
   return (
@@ -74,45 +42,16 @@ export default function Welcome() {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 32px 32px' }}>
         <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center', marginTop: '32px' }}>
-          <div style={{ marginBottom: '64px', minHeight: '140px' }}>
-            <h1 style={{
-              fontSize: '48px',
-              fontWeight: 'bold',
-              color: 'black',
-              marginBottom: '16px',
-              minHeight: '60px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              {displayedText || 'Welcome.'}
-              {displayedText && displayedText.length < `Welcome, ${firstName}.`.length && (
-                <span style={{ animation: 'blink 1s infinite', marginLeft: '4px' }}>|</span>
-              )}
+          <div style={{ marginBottom: '64px' }}>
+            <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', marginBottom: '16px' }}>
+              {displayName ? `Welcome, ${displayName}.` : 'Welcome.'}
             </h1>
-            {showSubtitle && (
-              <p style={{
-                fontSize: '24px',
-                color: '#666',
-                margin: 0,
-                animation: 'fadeIn 0.6s ease-in'
-              }}>
-                What's on your mind?
-              </p>
-            )}
-            <style>{`
-              @keyframes blink {
-                0%, 49%, 100% { opacity: 1; }
-                50% { opacity: 0; }
-              }
-              @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-              }
-            `}</style>
+            <p style={{ fontSize: '24px', color: '#666', marginBottom: '0', margin: 0 }}>
+              What's on your mind?
+            </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', opacity: showButtons ? 1 : 0, transition: 'opacity 0.6s ease-in' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <button
               onClick={() => navigate('/decision-tools', { state: { ...location.state, isGuest } })}
               style={{
