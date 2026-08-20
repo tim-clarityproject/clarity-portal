@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { FormProvider } from './context/FormContext';
+import './lib/debugStorage'; // Make debugging utilities available
 import Login from './pages/Login';
 import Welcome from './pages/Welcome';
 import CreateAccount from './pages/CreateAccount';
