@@ -15,6 +15,7 @@ export default function Login() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [error, setError] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [verificationEmailSent, setVerificationEmailSent] = useState(false);
 
   const handleOAuthSignIn = async (provider) => {
     try {
@@ -72,29 +73,24 @@ export default function Login() {
 
       if (success) {
         if (isSignUp) {
-          // Update profile with name info after successful signup/login
-          try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              const { error } = await supabase
-                .from('profiles')
-                .update({ first_name: firstName, last_name: lastName })
-                .eq('id', user.id);
-
-              if (error) {
-                console.warn('Profile update error:', error);
-              } else {
-                console.log('Profile updated successfully with:', { firstName, lastName });
-              }
-            }
-          } catch (profileErr) {
-            console.error('Could not update profile:', profileErr);
-            // Don't fail the signup if profile update fails
-          }
+          // Show verification email message
+          setVerificationEmailSent(true);
+          setShowEmailModal(false);
+          setIsSignUp(false);
+          setEmail('');
+          setPassword('');
+          setFirstName('');
+          setLastName('');
+        } else {
+          // Login succeeded, redirect to welcome
+          navigate('/welcome');
         }
-        navigate('/welcome');
       } else {
-        setError(isSignUp ? 'Failed to create account. Please try again.' : 'Invalid email or password');
+        if (isSignUp) {
+          setError('Failed to create account. Please try again.');
+        } else {
+          setError('Invalid email or password. Please check and try again.');
+        }
       }
     } catch (err) {
       setError(err.message || 'An error occurred');
@@ -160,6 +156,19 @@ export default function Login() {
               <p style={{ color: '#d32f2f', fontSize: '13px', marginTop: '8px' }}>
                 {error}
               </p>
+            )}
+            {verificationEmailSent && (
+              <div style={{
+                marginTop: '16px',
+                padding: '12px 16px',
+                backgroundColor: '#e8f5e9',
+                borderRadius: '8px',
+                border: '1px solid #4caf50'
+              }}>
+                <p style={{ color: '#2e7d32', fontSize: '13px', margin: 0, fontWeight: '500' }}>
+                  ✓ Account created! Check your email for a verification link to complete signup.
+                </p>
+              </div>
             )}
           </div>
 

@@ -151,33 +151,20 @@ export function AuthProvider({ children }) {
     try {
       try {
         await auth.signUp(email, password);
-        console.log('Signup successful, new account created');
+        console.log('Signup successful, verification email sent');
+        // Don't auto-login - wait for email verification
+        return true;
       } catch (signupErr) {
-        // If user already exists, that's ok - we'll log them in
+        // If user already exists, check if they're verified
         if (signupErr.message?.includes('already registered') || signupErr.status === 422) {
-          console.log('Account already exists, logging in instead');
+          console.log('Account already exists');
+          return false;
         } else {
           throw signupErr;
         }
       }
-
-      // Wait a moment for account to be fully initialized in database
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Log in the user
-      await auth.signIn(email, password);
-      console.log('Login successful');
-
-      // Get session and load user data
-      const session = await sessionManager.getSession();
-      if (session?.user) {
-        sessionManager.saveSessionMetadata(session);
-        const userData = await dataSyncManager.loadUserData(session.user.id);
-        sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
-      }
-      return true;
     } catch (err) {
-      console.error('Signup/login error:', err.message || err);
+      console.error('Signup error:', err.message || err);
       return false;
     } finally {
       setIsLoading(false);
