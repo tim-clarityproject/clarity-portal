@@ -38,10 +38,15 @@ export default function Welcome() {
 
   // Typing animation effect
   useEffect(() => {
-    if (!firstName) return;
+    if (!firstName) {
+      console.log('firstName not yet loaded');
+      return;
+    }
 
+    console.log('Starting typing animation for:', firstName);
     const text = `Welcome, ${firstName}.`;
     let index = 0;
+    setDisplayedText('');
 
     const typeTimer = setInterval(() => {
       if (index < text.length) {
@@ -49,6 +54,7 @@ export default function Welcome() {
         index++;
       } else {
         clearInterval(typeTimer);
+        console.log('Typing complete, showing subtitle');
         // Show subtitle after title finishes
         setTimeout(() => setShowSubtitle(true), 400);
         // Show buttons after subtitle delay
