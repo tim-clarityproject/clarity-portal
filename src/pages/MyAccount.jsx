@@ -6,11 +6,38 @@ import HomeHeader from '../components/HomeHeader';
 
 export default function MyAccount() {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isGuest = false;
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Delete profile and related data (cascade will handle other tables)
+      await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+
+      // Sign out the user
+      await logout();
+
+      // Redirect to login
+      setTimeout(() => navigate('/'), 500);
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Failed to delete account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -91,6 +118,41 @@ export default function MyAccount() {
             }}
           >
             Edit Profile
+          </button>
+        </div>
+
+        {/* Delete Account Section */}
+        <div style={{
+          marginTop: '48px',
+          padding: '24px',
+          backgroundColor: '#fff3f3',
+          borderRadius: '12px',
+          border: '1px solid #ffcccc',
+        }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#c0574c', marginBottom: '12px', margin: 0 }}>
+            Danger Zone
+          </h3>
+          <p style={{ fontSize: '13px', color: '#666', marginBottom: '16px', margin: '0 0 16px 0' }}>
+            Permanently delete your account and all associated data
+          </p>
+          <button
+            onClick={handleDeleteAccount}
+            disabled={isDeleting}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: isDeleting ? '#ccc' : '#d32f2f',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: isDeleting ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => !isDeleting && (e.target.style.backgroundColor = '#b71c1c')}
+            onMouseLeave={(e) => !isDeleting && (e.target.style.backgroundColor = '#d32f2f')}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete Account'}
           </button>
         </div>
       </div>
