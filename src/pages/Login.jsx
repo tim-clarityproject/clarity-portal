@@ -163,7 +163,7 @@ export default function Login() {
             )}
           </div>
 
-          {/* Show OAuth and Email options when not in email modal */}
+          {/* Show Google option when not in email modal */}
           {!showEmailModal && (
             <>
               <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -201,40 +201,6 @@ export default function Login() {
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                   </svg>
                   {isSignUp ? 'Sign up with Google' : 'Login with Google'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowEmailModal(true)}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: '#fff',
-                    border: '2px solid #e5e5e5',
-                    borderRadius: '8px',
-                    color: '#333',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.borderColor = '#F08571';
-                    e.target.style.backgroundColor = '#FEE5DE';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.borderColor = '#e5e5e5';
-                    e.target.style.backgroundColor = '#fff';
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M22 6l-10 7L2 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  {isSignUp ? 'Sign up with Email' : 'Login with Email'}
                 </button>
               </div>
             </>
