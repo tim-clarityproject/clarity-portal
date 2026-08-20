@@ -211,6 +211,47 @@ export default function Login() {
                   </svg>
                   {isSignUp ? 'Sign up with Google' : 'Login with Google'}
                 </button>
+
+                {isSignUp && (
+                  <>
+                    <div style={{ textAlign: 'center', fontSize: '14px', color: '#999', marginBottom: '12px' }}>
+                      or
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmailModal(true)}
+                      style={{
+                        padding: '12px 24px',
+                        backgroundColor: '#fff',
+                        border: '2px solid #e5e5e5',
+                        borderRadius: '8px',
+                        color: '#333',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.borderColor = '#F08571';
+                        e.target.style.backgroundColor = '#FEE5DE';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.borderColor = '#e5e5e5';
+                        e.target.style.backgroundColor = '#fff';
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M22 6l-10 7L2 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Sign up with Email
+                    </button>
+                  </>
+                )}
               </div>
             </>
           )}
