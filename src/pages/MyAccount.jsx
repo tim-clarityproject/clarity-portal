@@ -129,15 +129,15 @@ export default function MyAccount() {
             style={{
               backgroundColor: 'transparent',
               border: 'none',
-              color: '#999',
+              color: '#c0574c',
               cursor: isDeleting ? 'not-allowed' : 'pointer',
               fontSize: '12px',
               textDecoration: 'none',
-              transition: 'color 0.2s',
+              transition: 'opacity 0.2s',
               opacity: isDeleting ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => !isDeleting && (e.target.style.color = '#c0574c')}
-            onMouseLeave={(e) => !isDeleting && (e.target.style.color = '#999')}
+            onMouseEnter={(e) => !isDeleting && (e.target.style.textDecoration = 'underline')}
+            onMouseLeave={(e) => !isDeleting && (e.target.style.textDecoration = 'none')}
           >
             {isDeleting ? 'Deleting account...' : 'Delete account'}
           </button>
