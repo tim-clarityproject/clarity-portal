@@ -59,14 +59,28 @@ export function AuthProvider({ children }) {
             const lastName = metadata.family_name || metadata.name?.split(' ').slice(1).join(' ') || metadata.full_name?.split(' ').slice(1).join(' ') || '';
 
             // Check current profile
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('first_name, last_name')
               .eq('id', session.user.id)
               .single();
 
-            // Update only if profile is completely empty (never been set)
-            if ((firstName || lastName) && !profile?.first_name && !profile?.last_name) {
+            // If profile doesn't exist, create it (new Google OAuth user)
+            if (profileError && profileError.code === 'PGRST116') {
+              console.log('Creating new profile for Google OAuth user');
+              await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  first_name: firstName || '',
+                  last_name: lastName || '',
+                  email: session.user.email || '',
+                  terms_accepted: false,
+                });
+              console.log('New profile created:', { firstName, lastName, email: session.user.email });
+            }
+            // Update only if profile exists and is completely empty (never been set)
+            else if ((firstName || lastName) && !profile?.first_name && !profile?.last_name) {
               await supabase
                 .from('profiles')
                 .update({
