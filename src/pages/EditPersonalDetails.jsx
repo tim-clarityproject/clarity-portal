@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -238,17 +239,17 @@ export default function EditPersonalDetails() {
                         color: 'white',
                         border: 'none',
                         cursor: 'pointer',
-                        fontSize: '18px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         transition: 'all 0.2s',
+                        padding: 0,
                       }}
                       onMouseEnter={(e) => e.target.style.backgroundColor = '#b71c1c'}
                       onMouseLeave={(e) => e.target.style.backgroundColor = '#d32f2f'}
                       title="Delete profile picture"
                     >
-                      🗑️
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
