@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { plans as plansAPI } from '../lib/supabase';
+import { plans as plansAPI, supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
 export default function MyAccount() {
@@ -10,27 +10,67 @@ export default function MyAccount() {
   const { user } = useContext(AuthContext);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
-    const fetchPlans = async () => {
+    const fetchUserData = async () => {
       if (!user) {
         setLoading(false);
         return;
       }
 
       try {
+        // Fetch profile data
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setFirstName(profile.first_name || '');
+          setLastName(profile.last_name || '');
+        }
+
+        // Fetch plans
         const userPlans = await plansAPI.getUserPlans(user.id);
         setPlans(userPlans || []);
       } catch (error) {
-        console.error('Error fetching plans:', error);
+        console.error('Error fetching user data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPlans();
+    fetchUserData();
   }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -50,6 +90,118 @@ export default function MyAccount() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
+        {/* Personal Details Section */}
+        <div style={{
+          marginBottom: '48px',
+          padding: '24px',
+          backgroundColor: '#fafafa',
+          borderRadius: '12px',
+          border: '1px solid #e5e5e5',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', margin: 0 }}>
+              Personal Details
+            </h2>
+            <button
+              onClick={() => isEditing ? handleSaveProfile() : setIsEditing(true)}
+              disabled={isSaving}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: isEditing ? '#F08571' : 'transparent',
+                color: isEditing ? 'white' : '#F08571',
+                border: isEditing ? 'none' : '2px solid #F08571',
+                borderRadius: '6px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                fontWeight: '600',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (!isSaving && isEditing) e.target.style.backgroundColor = '#e07560';
+                if (!isSaving && !isEditing) e.target.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                if (!isSaving && isEditing) e.target.style.backgroundColor = '#F08571';
+                if (!isSaving && !isEditing) e.target.style.backgroundColor = 'transparent';
+              }}
+            >
+              {isSaving ? 'Saving...' : isEditing ? 'Save' : 'Edit'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: '#666', fontWeight: '600' }}>
+                First Name
+              </label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                disabled={!isEditing}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  backgroundColor: isEditing ? 'white' : '#f5f5f5',
+                  color: '#333',
+                  cursor: isEditing ? 'text' : 'default',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: '#666', fontWeight: '600' }}>
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                disabled={!isEditing}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  backgroundColor: isEditing ? 'white' : '#f5f5f5',
+                  color: '#333',
+                  cursor: isEditing ? 'text' : 'default',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: '#666', fontWeight: '600' }}>
+              Email
+            </label>
+            <input
+              type="email"
+              value={user?.email || ''}
+              disabled
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid #e5e5e5',
+                borderRadius: '6px',
+                fontSize: '14px',
+                backgroundColor: '#f5f5f5',
+                color: '#999',
+                cursor: 'default',
+                boxSizing: 'border-box',
+              }}
+            />
+            <p style={{ fontSize: '12px', color: '#999', marginTop: '8px', margin: 0 }}>
+              Email cannot be changed
+            </p>
+          </div>
+        </div>
+
         <div style={{ marginBottom: '48px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
             My Plans
