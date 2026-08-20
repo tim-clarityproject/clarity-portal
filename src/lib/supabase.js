@@ -12,23 +12,42 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Key exists:', !!supabaseAnonKey);
 }
 
-// Custom storage adapter for Supabase sessions
+// Custom storage adapter for Supabase sessions with better error handling
 const customStorage = {
   getItem: (key) => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(key);
+    try {
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
+      const value = localStorage.getItem(key);
+      if (value) {
+        console.log(`Retrieved ${key} from storage`);
+      }
+      return value;
+    } catch (e) {
+      console.error(`Error retrieving ${key}:`, e);
+      return null;
+    }
   },
   setItem: (key, value) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(key, value);
+    try {
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+      localStorage.setItem(key, value);
+      console.log(`Stored ${key} in localStorage`);
+    } catch (e) {
+      console.error(`Error storing ${key}:`, e);
+    }
   },
   removeItem: (key) => {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(key);
+    try {
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+      localStorage.removeItem(key);
+      console.log(`Removed ${key} from localStorage`);
+    } catch (e) {
+      console.error(`Error removing ${key}:`, e);
+    }
   },
 };
 
-// Configure Supabase with persistent session storage
+// Configure Supabase with persistent session storage and long token lifetime
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -37,6 +56,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'implicit',
+    // Keep access token alive for longer periods
+    tokenRefreshMarginSeconds: 60,
   },
 });
 

@@ -44,14 +44,20 @@ export function AuthProvider({ children }) {
 
     checkUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Subscribe to auth state changes (handles logout, token refresh, etc)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event, 'User:', session?.user?.email);
       setUser(session?.user || null);
+
       if (session?.user) {
-        // Load user data whenever auth state changes to SIGNED_IN
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          dataSyncManager.loadUserData(session.user.id).then(userData => {
+        // Load user data whenever auth state changes to SIGNED_IN or TOKEN_REFRESHED
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+          try {
+            const userData = await dataSyncManager.loadUserData(session.user.id);
             sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
-          });
+          } catch (error) {
+            console.error('Error loading user data:', error);
+          }
         }
       } else {
         sessionStorage.removeItem('clarity-user-data');
