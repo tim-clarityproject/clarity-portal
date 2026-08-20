@@ -44,7 +44,7 @@ export default function Welcome() {
         <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center', marginTop: '32px' }}>
           <div style={{ marginBottom: '64px' }}>
             <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', marginBottom: '0' }}>
-              {displayName ? `Hi ${displayName}, let's do this` : "Let's do this"}
+              {displayName ? `Welcome, ${displayName}. Let's Do This.` : "Let's Do This."}
             </h1>
           </div>
 
