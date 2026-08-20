@@ -125,7 +125,6 @@ export default function EditPersonalDetails() {
 
       setProfilePictureFile(null);
       setProfilePicture(pictureUrl);
-      setMessage('Profile updated successfully!');
 
       // Refresh profile data from Supabase to show updated info
       const { data: freshProfile } = await supabase
@@ -145,7 +144,10 @@ export default function EditPersonalDetails() {
         }
       }
 
-      setTimeout(() => setMessage(''), 3000);
+      // Redirect back to My Account after a short delay
+      setTimeout(() => {
+        navigate('/my-account');
+      }, 800);
     } catch (error) {
       console.error('Error saving profile:', error);
       setMessage('Error saving profile. Please try again.');
