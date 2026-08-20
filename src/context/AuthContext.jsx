@@ -50,6 +50,29 @@ export function AuthProvider({ children }) {
       setUser(session?.user || null);
 
       if (session?.user) {
+        // Handle OAuth sign-in - extract name from Google/OAuth provider
+        if (event === 'SIGNED_IN') {
+          try {
+            const metadata = session.user.user_metadata || {};
+            const firstName = metadata.name?.split(' ')[0] || metadata.full_name?.split(' ')[0] || '';
+            const lastName = metadata.name?.split(' ').slice(1).join(' ') || metadata.full_name?.split(' ').slice(1).join(' ') || '';
+
+            if (firstName || lastName) {
+              // Update profile with OAuth name data
+              await supabase
+                .from('profiles')
+                .update({
+                  first_name: firstName,
+                  last_name: lastName,
+                })
+                .eq('id', session.user.id);
+              console.log('Profile updated with OAuth name:', { firstName, lastName });
+            }
+          } catch (error) {
+            console.error('Error updating profile with OAuth name:', error);
+          }
+        }
+
         // Load user data whenever auth state changes to SIGNED_IN or TOKEN_REFRESHED
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           try {
