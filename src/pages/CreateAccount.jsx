@@ -143,7 +143,7 @@ export default function CreateAccount() {
 
           {!verificationEmailSent && (
             <>
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '16px' }}>
                 <button
                   type="button"
                   onClick={() => handleOAuthSignUp('google')}
@@ -182,7 +182,7 @@ export default function CreateAccount() {
                 </button>
               </div>
 
-              <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px', fontSize: '14px', color: '#999' }}>
+              <div style={{ textAlign: 'center', marginTop: '16px', marginBottom: '16px', fontSize: '14px', color: '#999' }}>
                 or
               </div>
 
