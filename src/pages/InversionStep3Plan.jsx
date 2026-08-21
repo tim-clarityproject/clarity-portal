@@ -39,7 +39,7 @@ export default function InversionStep3Plan() {
 
     setIsSaving(true);
     try {
-      const decisionData = {
+      const formDataComplete = {
         goal,
         fuckups,
         plan,
@@ -49,7 +49,7 @@ export default function InversionStep3Plan() {
         await supabase
           .from('decisions')
           .update({
-            ...decisionData,
+            form_data: formDataComplete,
             status: 'completed',
             draft: false
           })
@@ -60,9 +60,10 @@ export default function InversionStep3Plan() {
           .insert([{
             user_id: user.id,
             tool_type: 'inversion',
+            goal: goal || 'Untitled Decision',
+            form_data: formDataComplete,
             status: 'completed',
-            draft: false,
-            ...decisionData
+            draft: false
           }]);
       }
 

@@ -33,7 +33,7 @@ export default function GrowStep4WillDo() {
 
     setIsSaving(true);
     try {
-      const decisionData = {
+      const formDataComplete = {
         goal: location.state?.goal,
         constraints: location.state?.constraints,
         opportunities: location.state?.opportunities,
@@ -45,7 +45,7 @@ export default function GrowStep4WillDo() {
         await supabase
           .from('decisions')
           .update({
-            ...decisionData,
+            form_data: formDataComplete,
             status: 'completed',
             draft: false
           })
@@ -56,9 +56,10 @@ export default function GrowStep4WillDo() {
           .insert([{
             user_id: user.id,
             tool_type: 'grow',
+            goal: location.state?.goal || 'Untitled Decision',
+            form_data: formDataComplete,
             status: 'completed',
-            draft: false,
-            ...decisionData
+            draft: false
           }]);
       }
 
