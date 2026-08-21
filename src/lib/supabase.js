@@ -187,7 +187,7 @@ export const plans = {
 
 // Decisions functions (GROW & Inversion models)
 export const decisions = {
-  async saveDecision(userId, toolType, formData, title = null) {
+  async saveDecision(userId, toolType, formData, title = null, isDraft = false) {
     const { data, error } = await supabase
       .from('decisions')
       .insert([
@@ -196,7 +196,8 @@ export const decisions = {
           tool_type: toolType, // 'grow' or 'inversion'
           title: title || formData.goal || 'Untitled Decision',
           form_data: formData,
-          status: 'draft',
+          status: isDraft ? 'draft' : 'completed',
+          draft: isDraft,
         },
       ])
       .select();

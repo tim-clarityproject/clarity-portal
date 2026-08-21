@@ -92,10 +92,10 @@ export const dataSyncManager = {
   },
 
   // Sync local auto-save to Supabase (for background sync)
-  async syncLocalToServer(userId, toolType, formData) {
+  async syncLocalToServer(userId, toolType, formData, isDraft = false) {
     try {
       if (toolType === 'grow' || toolType === 'inversion') {
-        await decisions.saveDecision(userId, toolType, formData);
+        await decisions.saveDecision(userId, toolType, formData, null, isDraft);
       } else if (toolType === 'journal') {
         const content = formData.content || formData.text || '';
         await reflections.saveReflection(userId, content);

@@ -145,10 +145,26 @@ export default function DecisionHistory() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', width: '100%' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
                         {decision.goal ? truncateContent(decision.goal, 60) : 'Untitled Decision'}
                       </p>
+                      {(decision.draft || decision.status === 'draft') && (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#fff',
+                            backgroundColor: '#999',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          Draft
+                        </span>
+                      )}
                       <span
                         style={{
                           fontSize: '11px',
@@ -161,7 +177,7 @@ export default function DecisionHistory() {
                           letterSpacing: '0.5px',
                         }}
                       >
-                        {decision.tool_type === 'grow' ? 'GROW' : 'Inversion'}
+                        {decision.tool_type === 'grow' ? 'GROW' : decision.tool_type === 'inversion' ? 'Inversion' : decision.tool_type === 'strategic-alignment' ? 'Strategic' : 'Decision'}
                       </span>
                       <span style={{ fontSize: '12px', color: '#999' }}>
                         {formatTime(decision.created_at)}

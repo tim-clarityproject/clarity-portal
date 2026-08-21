@@ -40,7 +40,7 @@ export default function Results() {
       await plansAPI.savePlan(user.id, planName, path, formData);
       setSavedMessage('Plan saved successfully!');
       setTimeout(() => {
-        navigate('/my-account', { state: { isGuest: false } });
+        navigate('/decision-history', { state: { isGuest: false } });
       }, 1500);
     } catch (error) {
       console.error('Error saving plan:', error);
