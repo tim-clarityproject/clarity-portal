@@ -40,6 +40,7 @@ export default function InversionStep2Fuckups() {
       updateFormData('fuckups', filledFuckups);
       navigate('/inversion-step-3', {
         state: {
+          ...location.state,
           ...formData,
           fuckups: filledFuckups,
           isGuest,

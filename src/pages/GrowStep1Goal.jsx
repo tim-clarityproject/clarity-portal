@@ -32,13 +32,13 @@ export default function GrowStep1Goal() {
           .single();
 
         if (data) {
-          setGoal(data.goal || '');
-          updateFormData('goal', data.goal || '');
-          // Load all GROW data into formData
-          updateFormData('goal', data.goal || '');
-          updateFormData('reality', data.reality || '');
-          updateFormData('options', data.options || '');
-          updateFormData('willDo', data.will_do || '');
+          const formDataLoaded = data.form_data || {};
+          setGoal(formDataLoaded.goal || '');
+          updateFormData('goal', formDataLoaded.goal || '');
+          updateFormData('constraints', formDataLoaded.constraints || '');
+          updateFormData('opportunities', formDataLoaded.opportunities || '');
+          updateFormData('options', formDataLoaded.options || []);
+          updateFormData('willDo', formDataLoaded.will_do || '');
         }
       } catch (err) {
         console.error('Error loading decision:', err);

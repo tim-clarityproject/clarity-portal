@@ -40,6 +40,7 @@ export default function GrowStep3Options() {
       updateFormData('options', filledOptions);
       navigate('/grow-step-4', {
         state: {
+          ...location.state,
           ...formData,
           options: filledOptions,
           isGuest,

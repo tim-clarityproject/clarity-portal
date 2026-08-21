@@ -44,7 +44,11 @@ export default function GrowStep4WillDo() {
       if (location.state?.decisionId) {
         await supabase
           .from('decisions')
-          .update(decisionData)
+          .update({
+            ...decisionData,
+            status: 'completed',
+            draft: false
+          })
           .eq('id', location.state.decisionId);
       } else {
         await supabase
@@ -52,11 +56,13 @@ export default function GrowStep4WillDo() {
           .insert([{
             user_id: user.id,
             tool_type: 'grow',
+            status: 'completed',
+            draft: false,
             ...decisionData
           }]);
       }
 
-      navigate('/decision-tools', { state: { isGuest } });
+      navigate('/decision-history', { state: { isGuest } });
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);

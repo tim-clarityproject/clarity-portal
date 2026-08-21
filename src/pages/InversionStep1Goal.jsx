@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
@@ -12,8 +13,41 @@ export default function InversionStep1Goal() {
   const { formData, updateFormData } = useContext(FormContext);
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
+  const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
+  useEffect(() => {
+    const loadDecision = async () => {
+      const decisionId = location.state?.decisionId;
+      if (!decisionId || !user) return;
+
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('decisions')
+          .select('*')
+          .eq('id', decisionId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (data) {
+          const formDataLoaded = data.form_data || {};
+          setGoal(formDataLoaded.goal || '');
+          updateFormData('goal', formDataLoaded.goal || '');
+          updateFormData('fuckups', formDataLoaded.fuckups || []);
+          updateFormData('plan', formDataLoaded.plan || '');
+        }
+      } catch (err) {
+        console.error('Error loading decision:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDecision();
+  }, [location.state?.decisionId, user, updateFormData]);
+
+  // Also load from location.state if available (when navigating between steps)
   useEffect(() => {
     if (location.state?.goal) {
       setGoal(location.state.goal);

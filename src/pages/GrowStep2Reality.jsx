@@ -25,6 +25,7 @@ export default function GrowStep2Reality() {
       updateFormData('opportunities', opportunities);
       navigate('/grow-step-3', {
         state: {
+          ...location.state,
           ...formData,
           constraints,
           opportunities,
