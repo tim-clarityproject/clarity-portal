@@ -3,7 +3,7 @@ import { useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { saveProgress, clearProgress } from '../lib/saveProgress';
 import { AuthContext } from '../context/AuthContext';
-import { dataSyncManager } from '../lib/dataSyncManager';
+import { supabase } from '../lib/supabase';
 
 export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null }) {
   const navigate = useNavigate();
@@ -17,12 +17,21 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
     // Save to localStorage
     saveProgress(pageIdentifier, formData, location.state);
 
-    // If authenticated, also save to Supabase with draft flag
+    // If authenticated, save to Supabase with draft flag
     if (user && toolType) {
       try {
-        await dataSyncManager.syncLocalToServer(user.id, toolType, formData, true); // true = draft
+        await supabase
+          .from('decisions')
+          .insert([{
+            user_id: user.id,
+            tool_type: toolType,
+            goal: formData.goal || 'Untitled Decision',
+            form_data: formData,
+            status: 'draft',
+            draft: true
+          }]);
       } catch (error) {
-        console.error('Error syncing to server:', error);
+        console.error('Error saving draft to server:', error);
       }
     }
 
