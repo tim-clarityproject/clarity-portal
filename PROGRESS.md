@@ -75,6 +75,12 @@
 
 ## 🔴 Blocked / Known Issues
 
+### Decision Reopening (CRITICAL - Fix Tomorrow)
+- ❌ Saved decisions show blank form when reopened
+- Data IS saved to Supabase correctly
+- But FormContext isn't loading the data when user clicks to reopen
+- **Fix needed**: Load decision data from Supabase into FormContext on decision selection
+
 ### Account Deletion (Fix Tomorrow)
 - ❌ Delete account button only deletes profile, not auth user
 - Auth user still exists in Supabase after deletion
