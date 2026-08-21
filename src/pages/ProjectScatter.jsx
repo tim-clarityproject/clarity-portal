@@ -1,13 +1,16 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import BackArrow from '../components/BackArrow';
-
+import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
 export default function ProjectScatter() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const projects = location.state?.projects || [];
   const matrix = location.state?.matrix || {};
@@ -15,6 +18,37 @@ export default function ProjectScatter() {
   const factors = location.state?.factors || [];
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
+
+  const handleSaveToLog = async () => {
+    if (isGuest || !user) {
+      alert('Please log in to save decisions');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await supabase
+        .from('decisions')
+        .insert([{
+          user_id: user.id,
+          tool_type: 'strategic-alignment',
+          goal: `Portfolio Matrix: ${projects.join(', ')}`,
+          details: {
+            projects,
+            matrix,
+            progress,
+            factors
+          }
+        }]);
+
+      navigate('/decision-history', { state: { isGuest } });
+    } catch (error) {
+      console.error('Error saving decision:', error);
+      alert('Failed to save to decision log');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Calculate importance totals for each project
   const projectData = projects.map((project, index) => {
@@ -246,10 +280,26 @@ export default function ProjectScatter() {
           {path === 'team' ? (
             <>
               <button
-                onClick={() => {
-                  // Save functionality - could print to PDF or download
-                  window.print();
+                onClick={handleSaveToLog}
+                disabled={isSaving || isGuest}
+                style={{
+                  padding: '16px 32px',
+                  backgroundColor: isSaving || isGuest ? '#ccc' : '#F08571',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isSaving || isGuest ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
                 }}
+                onMouseEnter={(e) => !(isSaving || isGuest) && (e.target.style.backgroundColor = '#e07560')}
+                onMouseLeave={(e) => !(isSaving || isGuest) && (e.target.style.backgroundColor = '#F08571')}
+              >
+                {isSaving ? 'Saving...' : 'Save to Log'}
+              </button>
+
+              <button
+                onClick={() => window.print()}
                 style={{
                   padding: '16px 32px',
                   backgroundColor: 'transparent',
@@ -267,18 +317,17 @@ export default function ProjectScatter() {
                   e.target.style.backgroundColor = 'transparent';
                 }}
               >
-                Save
+                Export as PDF
               </button>
+
               <button
                 onClick={() => {
-                  // Share functionality
                   if (navigator.share) {
                     navigator.share({
                       title: 'Project Portfolio Matrix',
                       text: 'Check out my project portfolio analysis',
                     });
                   } else {
-                    // Fallback: copy current URL to clipboard
                     navigator.clipboard.writeText(window.location.href);
                     alert('Link copied to clipboard!');
                   }
@@ -300,23 +349,48 @@ export default function ProjectScatter() {
               </button>
             </>
           ) : (
-            <button
-              onClick={() => navigate('/results', { state: { ...location.state, isGuest } })}
-              style={{
-                padding: '16px 32px',
-                backgroundColor: '#F08571',
-                color: 'white',
-                fontWeight: 'bold',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-            >
-              Continue
-            </button>
+            <>
+              <button
+                onClick={handleSaveToLog}
+                disabled={isSaving || isGuest}
+                style={{
+                  padding: '16px 32px',
+                  backgroundColor: isSaving || isGuest ? '#ccc' : '#F08571',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isSaving || isGuest ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => !(isSaving || isGuest) && (e.target.style.backgroundColor = '#e07560')}
+                onMouseLeave={(e) => !(isSaving || isGuest) && (e.target.style.backgroundColor = '#F08571')}
+              >
+                {isSaving ? 'Saving...' : 'Save to Log'}
+              </button>
+
+              <button
+                onClick={() => window.print()}
+                style={{
+                  padding: '16px 32px',
+                  backgroundColor: 'transparent',
+                  color: '#F08571',
+                  fontWeight: 'bold',
+                  border: '2px solid #F08571',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#FEE5DE';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                }}
+              >
+                Export as PDF
+              </button>
+            </>
           )}
         </div>
 
