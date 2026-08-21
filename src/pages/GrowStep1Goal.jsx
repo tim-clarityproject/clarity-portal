@@ -1,7 +1,8 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
@@ -12,7 +13,42 @@ export default function GrowStep1Goal() {
   const { formData, updateFormData } = useContext(FormContext);
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
+  const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
+
+  // Load existing decision if decisionId is provided
+  useEffect(() => {
+    const loadDecision = async () => {
+      const decisionId = location.state?.decisionId;
+      if (!decisionId || !user) return;
+
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('decisions')
+          .select('*')
+          .eq('id', decisionId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (data) {
+          setGoal(data.goal || '');
+          updateFormData('goal', data.goal || '');
+          // Load all GROW data into formData
+          updateFormData('goal', data.goal || '');
+          updateFormData('reality', data.reality || '');
+          updateFormData('options', data.options || '');
+          updateFormData('willDo', data.will_do || '');
+        }
+      } catch (err) {
+        console.error('Error loading decision:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDecision();
+  }, [location.state?.decisionId, user, updateFormData]);
 
   const handleNext = () => {
     if (goal.trim()) {
@@ -50,6 +86,8 @@ export default function GrowStep1Goal() {
 
         <div style={{ marginBottom: '32px' }}>
           <p style={{ fontSize: '13px', color: '#999', marginBottom: '24px' }}>Step 1 of 4</p>
+
+          {isLoading && <p style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>Loading decision...</p>}
 
           <textarea
             value={goal}

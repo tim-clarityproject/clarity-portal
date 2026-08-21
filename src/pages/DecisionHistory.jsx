@@ -124,7 +124,7 @@ export default function DecisionHistory() {
             {decisions.map((decision) => (
               <button
                 key={decision.id}
-                onClick={() => navigate('/grow-step-1', { state: { isGuest, decisionId: decision.id } })}
+                onClick={() => navigate('/grow-step-1', { state: { isGuest, decisionId: decision.id, ...decision } })}
                 style={{
                   padding: '16px',
                   backgroundColor: '#f9f9f9',

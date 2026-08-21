@@ -17,17 +17,17 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
     // Save to localStorage
     saveProgress(pageIdentifier, formData, location.state);
 
-    // If authenticated, also save to Supabase
+    // If authenticated, also save to Supabase with draft flag
     if (user && toolType) {
       try {
-        await dataSyncManager.syncLocalToServer(user.id, toolType, formData);
+        await dataSyncManager.syncLocalToServer(user.id, toolType, formData, true); // true = draft
       } catch (error) {
         console.error('Error syncing to server:', error);
-        // Still show success message - local save succeeded
       }
     }
 
-    alert('Progress saved! You can return to this later.');
+    // Navigate to decision history
+    navigate('/decision-history', { state: { isGuest } });
   };
 
   const handleDiscard = () => {

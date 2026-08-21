@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
@@ -13,6 +13,13 @@ export default function GrowStep4WillDo() {
   const { formData, updateFormData } = useContext(FormContext);
   const { user } = useContext(AuthContext);
   const [willDo, setWillDo] = useState(location.state?.will_do || '');
+
+  useEffect(() => {
+    if (location.state?.will_do) {
+      setWillDo(location.state.will_do);
+      updateFormData('willDo', location.state.will_do);
+    }
+  }, [location.state?.will_do, updateFormData]);
   const [isSaving, setIsSaving] = useState(false);
   const isGuest = location.state?.isGuest || false;
 

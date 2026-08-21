@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
@@ -12,6 +12,12 @@ export default function GrowStep2Reality() {
   const [constraints, setConstraints] = useState(location.state?.constraints || '');
   const [opportunities, setOpportunities] = useState(location.state?.opportunities || '');
   const isGuest = location.state?.isGuest || false;
+
+  // Load saved data from location.state
+  useEffect(() => {
+    if (location.state?.constraints) updateFormData('constraints', location.state.constraints);
+    if (location.state?.opportunities) updateFormData('opportunities', location.state.opportunities);
+  }, [location.state?.constraints, location.state?.opportunities, updateFormData]);
 
   const handleNext = () => {
     if (constraints.trim() || opportunities.trim()) {

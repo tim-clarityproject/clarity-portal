@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
@@ -11,6 +11,13 @@ export default function GrowStep3Options() {
   const { formData, updateFormData } = useContext(FormContext);
   const [options, setOptions] = useState(location.state?.options || ['', '']);
   const isGuest = location.state?.isGuest || false;
+
+  useEffect(() => {
+    if (location.state?.options) {
+      setOptions(location.state.options);
+      updateFormData('options', location.state.options);
+    }
+  }, [location.state?.options, updateFormData]);
 
   const handleOptionChange = (index, value) => {
     const newOptions = [...options];
