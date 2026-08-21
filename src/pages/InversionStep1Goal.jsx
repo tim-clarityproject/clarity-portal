@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
@@ -13,6 +13,13 @@ export default function InversionStep1Goal() {
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
   const isGuest = location.state?.isGuest || false;
+
+  useEffect(() => {
+    if (location.state?.goal) {
+      setGoal(location.state.goal);
+      updateFormData('goal', location.state.goal);
+    }
+  }, [location.state?.goal, updateFormData]);
 
   const handleNext = () => {
     if (goal.trim()) {

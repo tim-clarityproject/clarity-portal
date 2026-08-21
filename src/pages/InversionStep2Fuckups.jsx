@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
@@ -11,6 +11,13 @@ export default function InversionStep2Fuckups() {
   const { formData, updateFormData } = useContext(FormContext);
   const [fuckups, setFuckups] = useState(location.state?.fuckups || ['', '']);
   const isGuest = location.state?.isGuest || false;
+
+  useEffect(() => {
+    if (location.state?.fuckups) {
+      setFuckups(location.state.fuckups);
+      updateFormData('fuckups', location.state.fuckups);
+    }
+  }, [location.state?.fuckups, updateFormData]);
 
   const handleFuckupChange = (index, value) => {
     const newFuckups = [...fuckups];

@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
@@ -17,6 +17,17 @@ export default function InversionStep3Plan() {
   const [isSaving, setIsSaving] = useState(false);
   const isGuest = location.state?.isGuest || false;
   const fuckups = location.state?.fuckups || [];
+
+  useEffect(() => {
+    if (location.state?.goal) {
+      setGoal(location.state.goal);
+      updateFormData('goal', location.state.goal);
+    }
+    if (location.state?.plan) {
+      setPlan(location.state.plan);
+      updateFormData('plan', location.state.plan);
+    }
+  }, [location.state?.goal, location.state?.plan, updateFormData]);
 
   const handleSave = async () => {
     if (!plan.trim() || !goal.trim()) return;
