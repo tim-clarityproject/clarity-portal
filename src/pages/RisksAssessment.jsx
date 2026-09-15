@@ -3,14 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
+import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
 import HomeHeader from '../components/HomeHeader';
 
 export default function RisksAssessment() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData } = useContext(FormContext);
-  const [risks, setRisks] = useState(location.state?.risks || ['', '']);
+  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
+  const [risks, setRisks] = useState(() => location.state?.risks || getFieldValue('risks') || ['', '', '']);
 
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
@@ -19,16 +20,19 @@ export default function RisksAssessment() {
     const newRisks = [...risks];
     newRisks[index] = value;
     setRisks(newRisks);
+    updateFormData('risks', newRisks);
   };
 
   const handleAddRisk = () => {
     const newRisks = [...risks, ''];
     setRisks(newRisks);
+    updateFormData('risks', newRisks);
   };
 
   const handleRemoveRisk = (index) => {
     const newRisks = risks.filter((_, i) => i !== index);
     setRisks(newRisks);
+    updateFormData('risks', newRisks);
   };
 
   const handleSubmit = (e) => {
@@ -36,7 +40,8 @@ export default function RisksAssessment() {
     const filledRisks = risks.filter(risk => risk.trim());
     if (filledRisks.length >= 1) {
       updateFormData('risks', filledRisks);
-      navigate('/strategies', { state: { ...formData, risks: filledRisks, path, ...location.state, isGuest } });
+      const nextPage = path === 'team' ? '/critical-success-factors' : '/strategies';
+      navigate(nextPage, { state: { ...location.state, path, ...formData, risks: filledRisks, isGuest } });
     }
   };
 
@@ -56,9 +61,17 @@ export default function RisksAssessment() {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black' }}>
-            List all the ways you could f*ck this up
+          {location.state?.problemTitle && (
+            <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {location.state.problemTitle}
+            </p>
+          )}
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>
+            If you wanted to make sure you failed, what would you do?
           </h1>
+          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '50%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -69,145 +82,88 @@ export default function RisksAssessment() {
                   style={{
                     color: '#F08571',
                     fontWeight: 'bold',
-                    fontSize: '16px',
-                    minWidth: '20px',
-                    textAlign: 'center',
-                    lineHeight: '1',
+                    fontSize: '20px',
+                    minWidth: '24px',
                   }}
                 >
-                  {index + 1}
+                  {index + 1}.
                 </span>
-                <div style={{ position: 'relative', flex: 1 }}>
-                  <input
-                    type="text"
-                    value={risk}
-                    onChange={(e) => handleRiskChange(index, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && filledCount >= 1) {
-                        handleSubmit(e);
-                      }
-                    }}
-                    placeholder="Type here..."
+                <input
+                  type="text"
+                  value={risk}
+                  onChange={(e) => handleRiskChange(index, e.target.value)}
+                  placeholder="Type here"
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '2px solid #e5e5e5',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#F08571'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                />
+                {index >= 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveRisk(index)}
                     style={{
-                      width: '100%',
-                      padding: '12px 28px',
-                      border: '2px solid #e5e5e5',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      textAlign: 'center',
-                      outline: 'none',
-                      boxSizing: 'border-box',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#F08571',
+                      padding: '4px',
                     }}
-                    onFocus={(e) => e.target.style.borderColor = '#F08571'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-                  />
-                  {index >= 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveRisk(index)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        padding: '4px',
-                        backgroundColor: 'transparent',
-                        color: '#999',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        transition: 'color 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.target.style.color = '#d32f2f'}
-                      onMouseLeave={(e) => e.target.style.color = '#999'}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                )}
               </div>
             ))}
-
-            <button
-              type="button"
-              onClick={handleAddRisk}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: 'transparent',
-                color: '#F08571',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                transition: 'color 0.2s',
-                marginTop: '12px',
-              }}
-              onMouseEnter={(e) => e.target.style.color = '#e07560'}
-              onMouseLeave={(e) => e.target.style.color = '#F08571'}
-            >
-              Add another way
-            </button>
           </div>
-        </form>
 
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
           <button
             type="button"
-            onClick={() => navigate('/goal-setting', { state: { ...formData, ...location.state } })}
+            onClick={handleAddRisk}
             style={{
+              padding: '12px 24px',
               backgroundColor: 'transparent',
-              border: 'none',
+              color: '#5ECCC0',
+              border: '2px dashed #5ECCC0',
+              borderRadius: '8px',
               cursor: 'pointer',
-              padding: '8px',
-              padding: '0',
+              fontWeight: '600',
+              marginBottom: '32px',
+              maxWidth: '512px',
+              margin: '0 auto 32px',
+              width: '100%',
               transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
             }}
             onMouseEnter={(e) => {
-              const div = e.target.querySelector('div');
-              if (div) {
-                div.style.backgroundColor = '#e8e8e8';
-                div.style.transform = 'translateX(-2px)';
-              }
+              e.target.style.backgroundColor = '#F0FFFE';
+              e.target.style.borderStyle = 'solid';
             }}
             onMouseLeave={(e) => {
-              const div = e.target.querySelector('div');
-              if (div) {
-                div.style.backgroundColor = '#f5f5f5';
-                div.style.transform = 'translateX(0)';
-              }
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.borderStyle = 'dashed';
             }}
           >
-            <BackArrow />
+            + Add another
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            style={{
-              padding: '16px 32px',
-              backgroundColor: !canSubmit ? '#ccc' : '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: !canSubmit ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => !canSubmit || (e.target.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => !canSubmit || (e.target.style.backgroundColor = '#F08571')}
-          >
-            Continue
-          </button>
-        </div>
+        </form>
 
-        <div style={{ textAlign: 'center', color: '#999', fontSize: '14px' }}>
-          Step 2/4
-        </div>
+        <SaveDiscardButtons
+          formData={{ risks }}
+          pageType="decision"
+          toolType={path === 'team' ? 'team-focus' : 'grow'}
+          onNext={handleSubmit}
+          canNext={canSubmit}
+          onBack={() => navigate('/goal-setting', { state: { ...location.state, path, isGuest } })}
+        />
       </div>
-
     </div>
   );
 }

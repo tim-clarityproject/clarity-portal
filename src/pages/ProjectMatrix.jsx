@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
+import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
@@ -11,13 +12,13 @@ import HomeHeader from '../components/HomeHeader';
 export default function ProjectMatrix() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData } = useContext(FormContext);
+  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const factors = location.state?.factors || [];
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
 
   const [projects, setProjects] = useState(location.state?.projects || loadAutoSave()?.projects || ['', '']);
-  const [matrix, setMatrix] = useState(location.state?.matrix || loadAutoSave()?.matrix || {});
+  const [matrix, setMatrix] = useState(() => location.state?.matrix || getFieldValue('matrix') || loadAutoSave()?.matrix || {});
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   // Auto-save form data when matrix changes
@@ -36,11 +37,13 @@ export default function ProjectMatrix() {
     const newProjects = [...projects];
     newProjects[index] = value;
     setProjects(newProjects);
+    updateFormData('projects', newProjects);
   };
 
   const handleAddProject = () => {
     const newProjects = [...projects, ''];
     setProjects(newProjects);
+    updateFormData('projects', newProjects);
   };
 
   const handleRemoveProject = (index) => {
@@ -48,7 +51,9 @@ export default function ProjectMatrix() {
     const newMatrix = { ...matrix };
     delete newMatrix[index];
     setProjects(newProjects);
+    updateFormData('projects', newProjects);
     setMatrix(newMatrix);
+    updateFormData('matrix', newMatrix);
   };
 
   const handleMatrixChange = (projectIndex, factorIndex, value) => {
@@ -56,6 +61,7 @@ export default function ProjectMatrix() {
     const key = `${projectIndex}-${factorIndex}`;
     newMatrix[key] = value;
     setMatrix(newMatrix);
+    updateFormData('matrix', newMatrix);
   };
 
   const handleSubmit = (e) => {
@@ -79,9 +85,12 @@ export default function ProjectMatrix() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', lineHeight: '1.4', wordSpacing: '0.1em' }}>
-            How do your projects contribute to your Critical Success Factors?
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', lineHeight: '1.4', wordSpacing: '0.1em', marginBottom: '24px' }}>
+            How much does each project/line of effort contribute to your Critical Success Factors?
           </h1>
+          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '80%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          </div>
         </div>
 
         <div style={{ marginBottom: '24px', display: 'flex', gap: '24px', justifyContent: 'center', fontSize: '13px', color: '#666' }}>
@@ -116,9 +125,8 @@ export default function ProjectMatrix() {
                     {factor}
                   </th>
                 ))}
-                <th style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '2px solid #333', fontWeight: 'bold', backgroundColor: '#f9f9f9', minWidth: '120px', borderLeft: '1px solid #e5e5e5' }}>
-                  <div style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>Total</div>
-                  Importance
+                <th style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '2px solid #333', fontWeight: 'bold', backgroundColor: '#f9f9f9', minWidth: '120px', borderLeft: '1px solid #e5e5e5', fontSize: '14px', color: '#333' }}>
+                  Strategic Importance Score
                 </th>
               </tr>
             </thead>
@@ -129,7 +137,7 @@ export default function ProjectMatrix() {
                     <div style={{ position: 'relative', flex: 1 }}>
                       <input type="text" value={project} onChange={(e) => handleProjectChange(projectIndex, e.target.value)} placeholder="Project name..." style={{ width: '100%', padding: '12px 28px', border: '2px solid #e5e5e5', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} onFocus={(e) => e.target.style.borderColor = '#F08571'} onBlur={(e) => e.target.style.borderColor = '#e5e5e5'} />
                       {projectIndex >= 1 && (
-                        <button type="button" onClick={() => handleRemoveProject(projectIndex)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', padding: '4px', backgroundColor: 'transparent', color: '#999', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#d32f2f'} onMouseLeave={(e) => e.target.style.color = '#999'}>
+                        <button type="button" onClick={() => handleRemoveProject(projectIndex)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', padding: '4px', backgroundColor: 'transparent', color: '#999', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#F08571'} onMouseLeave={(e) => e.target.style.color = '#999'}>
                           <Trash2 size={18} />
                         </button>
                       )}
@@ -143,11 +151,11 @@ export default function ProjectMatrix() {
                     return (
                       <td key={key} style={{ padding: '12px 16px', borderBottom: '1px solid #e5e5e5', borderLeft: '1px solid #e5e5e5', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px' }}>
-                          <button onClick={() => { if (currentValue < 3) { handleMatrixChange(projectIndex, factorIndex, currentValue + 1); } }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1' }} onMouseEnter={(e) => e.target.style.color = '#333'} onMouseLeave={(e) => e.target.style.color = '#999'} title="Increase">▲</button>
-                          <div style={{ width: '40px', height: '32px', backgroundColor: getColor(currentValue), borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '12px', color: currentValue === 0 ? '#999' : 'white', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s', title: 'Click to cycle or use arrows' }}>
+                          <button onClick={() => { if (currentValue > 0) { handleMatrixChange(projectIndex, factorIndex, currentValue - 1); } }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.color = '#333'} onMouseLeave={(e) => e.target.style.color = '#999'} title="Decrease">−</button>
+                          <div style={{ width: '40px', height: '32px', backgroundColor: getColor(currentValue), borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '10px', color: currentValue === 0 ? '#999' : 'white', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s', title: 'Click to cycle or use buttons', lineHeight: '1', letterSpacing: '-0.3px' }}>
                             {getLabel(currentValue)}
                           </div>
-                          <button onClick={() => { if (currentValue > 0) { handleMatrixChange(projectIndex, factorIndex, currentValue - 1); } }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1' }} onMouseEnter={(e) => e.target.style.color = '#333'} onMouseLeave={(e) => e.target.style.color = '#999'} title="Decrease">▼</button>
+                          <button onClick={() => { if (currentValue < 3) { handleMatrixChange(projectIndex, factorIndex, currentValue + 1); } }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.color = '#333'} onMouseLeave={(e) => e.target.style.color = '#999'} title="Increase">+</button>
                         </div>
                       </td>
                     );
@@ -165,41 +173,14 @@ export default function ProjectMatrix() {
           Add another
         </button>
 
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
-          <button type="button" onClick={() => navigate('/project-list', { state: { ...formData, ...location.state, isGuest } })} style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', padding: '0', transition: 'all 0.2s', display: 'flex', alignItems: 'center' }} onMouseEnter={(e) => { const div = e.target.querySelector('div'); if (div) { div.style.backgroundColor = '#e8e8e8'; div.style.transform = 'translateX(-2px)'; } }} onMouseLeave={(e) => { const div = e.target.querySelector('div'); if (div) { div.style.backgroundColor = '#f5f5f5'; div.style.transform = 'translateX(0)'; } }}>
-            <BackArrow />
-          </button>
-          <button onClick={handleSubmit} disabled={!canSubmit} style={{ padding: '16px 32px', backgroundColor: !canSubmit ? '#ccc' : '#F08571', color: 'white', fontWeight: 'bold', border: 'none', borderRadius: '8px', cursor: !canSubmit ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => !canSubmit || (e.target.style.backgroundColor = '#e07560')} onMouseLeave={(e) => !canSubmit || (e.target.style.backgroundColor = '#F08571')}>
-            Continue
-          </button>
-          <button
-            onClick={() => setShowSaveModal(true)}
-            style={{
-              padding: '16px 32px',
-              backgroundColor: 'transparent',
-              color: '#F08571',
-              fontWeight: 'bold',
-              border: '2px solid #F08571',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#FEE5DE';
-              e.target.style.borderColor = '#e07560';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-              e.target.style.borderColor = '#F08571';
-            }}
-          >
-            Save & Exit
-          </button>
-        </div>
-
-        <div style={{ textAlign: 'center', color: '#999', fontSize: '14px' }}>
-          Step 3/5
-        </div>
+        <SaveDiscardButtons
+          formData={{ matrix }}
+          pageType="decision"
+          toolType="team-focus"
+          onNext={handleSubmit}
+          canNext={canSubmit}
+          onBack={() => navigate('/project-list', { state: { ...formData, ...location.state, isGuest } })}
+        />
       </div>
 
       <SaveProgressModal

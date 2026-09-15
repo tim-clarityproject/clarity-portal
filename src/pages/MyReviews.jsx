@@ -5,12 +5,13 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
-export default function JournalLog() {
+export default function MyReviews() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [filterType, setFilterType] = useState('all');
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -84,15 +85,102 @@ export default function JournalLog() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>Review Log</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>My Reviews</h1>
+
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+          <button
+            onClick={() => setFilterType('all')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: filterType === 'all' ? '#F08571' : 'transparent',
+              color: filterType === 'all' ? 'white' : '#333',
+              border: `2px solid ${filterType === 'all' ? '#F08571' : '#e5e5e5'}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (filterType !== 'all') {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (filterType !== 'all') {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            All Reviews
+          </button>
+          <button
+            onClick={() => setFilterType('after-action')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: filterType === 'after-action' ? '#F08571' : 'transparent',
+              color: filterType === 'after-action' ? 'white' : '#333',
+              border: `2px solid ${filterType === 'after-action' ? '#F08571' : '#e5e5e5'}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (filterType !== 'after-action') {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (filterType !== 'after-action') {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            After Action Reviews
+          </button>
+          <button
+            onClick={() => setFilterType('progress')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: filterType === 'progress' ? '#F08571' : 'transparent',
+              color: filterType === 'progress' ? 'white' : '#333',
+              border: `2px solid ${filterType === 'progress' ? '#F08571' : '#e5e5e5'}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (filterType !== 'progress') {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (filterType !== 'progress') {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            Progress Reviews
+          </button>
+        </div>
 
         {isLoading ? (
           <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
-        ) : entries.length === 0 ? (
+        ) : entries.filter(e => filterType === 'all' || e.review_type === filterType).length === 0 ? (
           <div style={{ textAlign: 'center', paddingTop: '32px' }}>
-            <p style={{ color: '#999', fontSize: '14px', marginBottom: '16px' }}>No journal entries yet</p>
+            <p style={{ color: '#999', fontSize: '14px', marginBottom: '16px' }}>No reviews yet</p>
             <button
-              onClick={() => navigate('/my-journal', { state: { isGuest } })}
+              onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: filterType === 'all' ? 'after-action' : filterType } })}
               style={{
                 padding: '12px 24px',
                 backgroundColor: '#F08571',
@@ -104,15 +192,15 @@ export default function JournalLog() {
                 fontSize: '14px',
               }}
             >
-              Write First Entry
+              Create First Review
             </button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {entries.map((entry) => (
+            {entries.filter(e => filterType === 'all' || e.review_type === filterType).map((entry) => (
               <button
                 key={entry.id}
-                onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date } })}
+                onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } })}
                 style={{
                   padding: '16px',
                   backgroundColor: '#f9f9f9',
@@ -147,7 +235,7 @@ export default function JournalLog() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
                     <button
-                      onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date } })}
+                      onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } })}
                       style={{
                         padding: '6px 12px',
                         backgroundColor: '#F08571',

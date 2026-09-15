@@ -1,49 +1,41 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
+import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import SaveProgressModal from '../components/SaveProgressModal';
-import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
 export default function CriticalSuccessFactors() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData } = useContext(FormContext);
-  const [factors, setFactors] = useState(location.state?.factors || loadAutoSave()?.factors || ['', '']);
+  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
+  const [factors, setFactors] = useState(() => location.state?.factors || getFieldValue('factors') || ['', '']);
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
-
-  // Auto-save form data when factors change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const filledFactors = factors.filter(f => f.trim());
-      if (filledFactors.length > 0) {
-        autoSaveFormData({ factors: filledFactors, path });
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [factors, path]);
+  const risks = location.state?.risks || getFieldValue('risks') || [];
 
   const handleFactorChange = (index, value) => {
     const newFactors = [...factors];
     newFactors[index] = value;
     setFactors(newFactors);
+    updateFormData('factors', newFactors);
   };
 
   const handleAddFactor = () => {
     const newFactors = [...factors, ''];
     setFactors(newFactors);
+    updateFormData('factors', newFactors);
   };
 
   const handleRemoveFactor = (index) => {
     const newFactors = factors.filter((_, i) => i !== index);
     setFactors(newFactors);
+    updateFormData('factors', newFactors);
   };
 
   const handleSubmit = (e) => {
@@ -65,178 +57,125 @@ export default function CriticalSuccessFactors() {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black' }}>
-            List your Critical Success Factors
+          {location.state?.problemTitle && (
+            <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {location.state.problemTitle}
+            </p>
+          )}
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>
+            List the factors you feel are critical to achieving your team's objective
           </h1>
+          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '40%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', flex: 1, maxWidth: '512px', margin: '0 auto 24px', width: '100%' }}>
-            {factors.map((factor, index) => (
-              <div key={index} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px', height: '48px' }}>
-                <span
+        {/* Two Column Layout */}
+        <div style={{ display: 'flex', gap: '48px', flex: 1 }}>
+          {/* Left Column - Risks */}
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '16px', textAlign: 'center' }}>
+              How you would fail
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {risks.map((risk, index) => (
+                <div
+                  key={index}
                   style={{
-                    color: '#F08571',
-                    fontWeight: 'bold',
-                    fontSize: '16px',
-                    minWidth: '20px',
-                    textAlign: 'center',
-                    lineHeight: '1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    height: '80px',
                   }}
                 >
-                  {index + 1}
-                </span>
-                <div style={{ position: 'relative', flex: 1 }}>
-                  <input
-                    type="text"
-                    value={factor}
-                    onChange={(e) => handleFactorChange(index, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && filledCount >= 1) {
-                        handleSubmit(e);
-                      }
+                  <span
+                    style={{
+                      color: '#F08571',
+                      fontWeight: 'bold',
+                      fontSize: '16px',
+                      minWidth: '20px',
+                      textAlign: 'center',
+                      lineHeight: '1',
                     }}
+                  >
+                    {index + 1}
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: '12px 16px',
+                      backgroundColor: '#f5f5f5',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: '#333',
+                    }}
+                  >
+                    {risk}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Column - Critical Success Factors */}
+          <div style={{ flex: 1 }}>
+            <div style={{ marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '4px', textAlign: 'center' }}>
+                Critical Success Factors
+              </h2>
+              <p style={{ fontSize: '12px', color: '#999', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
+                (Hint: The opposite of how you would fail)
+              </p>
+            </div>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+              {risks.map((risk, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '80px' }}>
+                  <span
+                    style={{
+                      color: '#F08571',
+                      fontWeight: 'bold',
+                      fontSize: '16px',
+                      minWidth: '20px',
+                      textAlign: 'center',
+                      lineHeight: '1',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {String.fromCharCode(65 + index)}
+                  </span>
+                  <textarea
+                    value={factors[index] || ''}
+                    onChange={(e) => handleFactorChange(index, e.target.value)}
                     placeholder="Type here..."
                     style={{
-                      width: '100%',
-                      padding: '12px 28px',
+                      flex: 1,
+                      padding: '12px 16px',
                       border: '2px solid #e5e5e5',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      textAlign: 'center',
+                      fontFamily: 'inherit',
+                      resize: 'none',
                       outline: 'none',
-                      boxSizing: 'border-box',
+                      minHeight: '80px',
                     }}
                     onFocus={(e) => e.target.style.borderColor = '#F08571'}
                     onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
                   />
-                  {index >= 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFactor(index)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        padding: '4px',
-                        backgroundColor: 'transparent',
-                        color: '#999',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.target.style.color = '#d32f2f'}
-                      onMouseLeave={(e) => e.target.style.color = '#999'}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
                 </div>
-              </div>
-            ))}
-
-            <button
-              type="button"
-              onClick={handleAddFactor}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: 'transparent',
-                color: '#F08571',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                transition: 'all 0.2s',
-                marginTop: '12px',
-              }}
-              onMouseEnter={(e) => e.target.style.color = '#e07560'}
-              onMouseLeave={(e) => e.target.style.color = '#F08571'}
-            >
-              Add another
-            </button>
+              ))}
+            </form>
           </div>
-        </form>
-
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/goal-setting', { state: { ...formData, ...location.state, isGuest } })}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '0',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-            onMouseEnter={(e) => {
-              const div = e.target.querySelector('div');
-              if (div) {
-                div.style.backgroundColor = '#e8e8e8';
-                div.style.transform = 'translateX(-2px)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              const div = e.target.querySelector('div');
-              if (div) {
-                div.style.backgroundColor = '#f5f5f5';
-                div.style.transform = 'translateX(0)';
-              }
-            }}
-          >
-            <BackArrow />
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            style={{
-              padding: '16px 32px',
-              backgroundColor: !canSubmit ? '#ccc' : '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: !canSubmit ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => !canSubmit || (e.target.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => !canSubmit || (e.target.style.backgroundColor = '#F08571')}
-          >
-            Continue
-          </button>
-          <button
-            onClick={() => setShowSaveModal(true)}
-            style={{
-              padding: '16px 32px',
-              backgroundColor: 'transparent',
-              color: '#F08571',
-              fontWeight: 'bold',
-              border: '2px solid #F08571',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#FEE5DE';
-              e.target.style.borderColor = '#e07560';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-              e.target.style.borderColor = '#F08571';
-            }}
-          >
-            Save & Exit
-          </button>
         </div>
 
-        <div style={{ textAlign: 'center', color: '#999', fontSize: '14px' }}>
-          Step 2/5
-        </div>
+        <SaveDiscardButtons
+          formData={{ factors }}
+          pageType="decision"
+          toolType="goal-setting"
+          onNext={handleSubmit}
+          canNext={canSubmit}
+          onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state, isGuest } })}
+        />
       </div>
 
       <SaveProgressModal

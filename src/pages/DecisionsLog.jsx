@@ -235,7 +235,7 @@ export default function DecisionsLog() {
                       style={{
                         padding: '8px',
                         backgroundColor: 'transparent',
-                        color: '#d32f2f',
+                        color: '#F08571',
                         border: 'none',
                         borderRadius: '4px',
                         cursor: 'pointer',

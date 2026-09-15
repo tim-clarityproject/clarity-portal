@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { FormProvider } from './context/FormContext';
 import './lib/debugStorage'; // Make debugging utilities available
+import WhatsAppWidget from './components/WhatsAppWidget';
 import Login from './pages/Login';
 import Welcome from './pages/Welcome';
 import CreateAccount from './pages/CreateAccount';
@@ -19,15 +20,19 @@ import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
 import MyJournal from './pages/MyJournal';
 import JournalLog from './pages/JournalLog';
+import MyReviews from './pages/MyReviews';
 import DecisionTools from './pages/DecisionTools';
 import DecisionHistory from './pages/DecisionHistory';
 import GrowStep1Goal from './pages/GrowStep1Goal';
 import GrowStep2Reality from './pages/GrowStep2Reality';
 import GrowStep3Options from './pages/GrowStep3Options';
+import GrowStep3bPrioritize from './pages/GrowStep3bPrioritize';
 import GrowStep4WillDo from './pages/GrowStep4WillDo';
 import InversionStep1Goal from './pages/InversionStep1Goal';
 import InversionStep2Fuckups from './pages/InversionStep2Fuckups';
 import InversionStep3Plan from './pages/InversionStep3Plan';
+import ToughConversationStep1Feedback from './pages/ToughConversationStep1Feedback';
+import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coaching';
 import AuthCallback from './pages/AuthCallback';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -115,15 +120,19 @@ function AppContent() {
       <Route path="/results" element={<Results />} />
       <Route path="/my-journal" element={<MyJournal />} />
       <Route path="/journal-log" element={<JournalLog />} />
+      <Route path="/my-reviews" element={<MyReviews />} />
       <Route path="/decision-tools" element={<DecisionTools />} />
       <Route path="/decision-history" element={<DecisionHistory />} />
       <Route path="/grow-step-1" element={<GrowStep1Goal />} />
       <Route path="/grow-step-2" element={<GrowStep2Reality />} />
       <Route path="/grow-step-3" element={<GrowStep3Options />} />
+      <Route path="/grow-step-3b-prioritize" element={<GrowStep3bPrioritize />} />
       <Route path="/grow-step-4" element={<GrowStep4WillDo />} />
       <Route path="/inversion-step-1" element={<InversionStep1Goal />} />
       <Route path="/inversion-step-2" element={<InversionStep2Fuckups />} />
       <Route path="/inversion-step-3" element={<InversionStep3Plan />} />
+      <Route path="/tough-conversation-step-1" element={<ToughConversationStep1Feedback />} />
+      <Route path="/tough-conversation-step-2" element={<ToughConversationStep2Coaching />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/data-storage-notice" element={<DataStorageNotice />} />
@@ -139,6 +148,7 @@ export default function App() {
       <FormProvider>
         <BrowserRouter>
           <AppContent />
+          <WhatsAppWidget />
         </BrowserRouter>
       </FormProvider>
     </AuthProvider>

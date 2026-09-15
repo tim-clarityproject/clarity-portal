@@ -5,7 +5,7 @@ import { saveProgress, clearProgress } from '../lib/saveProgress';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null }) {
+export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, nextLabel = 'Continue' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
@@ -51,8 +51,65 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
   };
 
   return (
-    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
+    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginTop: '24px' }}>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: 'transparent',
+            border: '2px solid #e5e5e5',
+            borderRadius: '8px',
+            color: '#333',
+            fontWeight: '600',
+            cursor: 'pointer',
+            fontSize: '14px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.borderColor = '#F08571';
+            e.target.style.backgroundColor = '#FEE5DE';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.borderColor = '#e5e5e5';
+            e.target.style.backgroundColor = 'transparent';
+          }}
+        >
+          Back
+        </button>
+      )}
+
       <button
+        type="button"
+        onClick={handleDiscard}
+        title="Discard this entry"
+        style={{
+          padding: '12px',
+          backgroundColor: 'transparent',
+          color: '#F08571',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = '#FEE5DE';
+          e.target.style.color = '#e07560';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+          e.target.style.color = '#F08571';
+        }}
+      >
+        <Trash2 size={20} />
+      </button>
+
+      <button
+        type="button"
         onClick={handleSaveAsDraft}
         style={{
           padding: '12px 24px',
@@ -64,6 +121,10 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           cursor: 'pointer',
           fontSize: '14px',
           transition: 'all 0.2s',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
         }}
         onMouseEnter={(e) => {
           e.target.style.backgroundColor = '#FEE5DE';
@@ -77,32 +138,28 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
         Save as Draft
       </button>
 
-      <button
-        onClick={handleDiscard}
-        title="Discard this entry"
-        style={{
-          padding: '12px',
-          backgroundColor: 'transparent',
-          color: '#d32f2f',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.backgroundColor = '#ffebee';
-          e.target.style.color = '#ef5350';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.backgroundColor = 'transparent';
-          e.target.style.color = '#d32f2f';
-        }}
-      >
-        <Trash2 size={20} />
-      </button>
+      {onNext && (
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!canNext}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: !canNext ? '#ccc' : '#F08571',
+            color: 'white',
+            fontWeight: 'bold',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: !canNext ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => !canNext || (e.target.style.backgroundColor = '#e07560')}
+          onMouseLeave={(e) => !canNext || (e.target.style.backgroundColor = '#F08571')}
+        >
+          {nextLabel}
+        </button>
+      )}
     </div>
   );
 }

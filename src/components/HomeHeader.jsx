@@ -12,12 +12,21 @@ export default function HomeHeader({ isGuest = false }) {
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Close menu if clicking anywhere except the hamburger button
-      if (menuOpen && hamburgerRef.current && !hamburgerRef.current.contains(event.target)) {
+      // Close menu if clicking anywhere except the hamburger button or menu
+      if (
+        menuOpen &&
+        hamburgerRef.current &&
+        menuRef.current &&
+        !hamburgerRef.current.contains(event.target) &&
+        !menuRef.current.contains(event.target)
+      ) {
         setMenuOpen(false);
+        setDecisionsSubmenuOpen(false);
+        setJournalSubmenuOpen(false);
       }
     };
 
@@ -79,6 +88,7 @@ export default function HomeHeader({ isGuest = false }) {
       {/* Menu Dropdown */}
       {menuOpen && (
         <div
+          ref={menuRef}
           style={{
             position: 'absolute',
             top: '100%',
@@ -87,7 +97,7 @@ export default function HomeHeader({ isGuest = false }) {
             border: '1px solid #e5e5e5',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            minWidth: '160px',
+            width: '180px',
             zIndex: 1000,
           }}
         >
@@ -115,6 +125,9 @@ export default function HomeHeader({ isGuest = false }) {
             onClick={(e) => {
               e.stopPropagation();
               setDecisionsSubmenuOpen(!decisionsSubmenuOpen);
+              if (!decisionsSubmenuOpen) {
+                setJournalSubmenuOpen(false);
+              }
             }}
             style={{
               width: '100%',
@@ -134,7 +147,7 @@ export default function HomeHeader({ isGuest = false }) {
             onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
-            Make a Decision
+            Decide
             <ChevronDown size={16} style={{ transform: decisionsSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
           </button>
 
@@ -184,7 +197,7 @@ export default function HomeHeader({ isGuest = false }) {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                Decision History
+                My Decisions
               </button>
             </>
           )}
@@ -193,6 +206,9 @@ export default function HomeHeader({ isGuest = false }) {
             onClick={(e) => {
               e.stopPropagation();
               setJournalSubmenuOpen(!journalSubmenuOpen);
+              if (!journalSubmenuOpen) {
+                setDecisionsSubmenuOpen(false);
+              }
             }}
             style={{
               width: '100%',
@@ -208,19 +224,20 @@ export default function HomeHeader({ isGuest = false }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '24px',
             }}
             onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
-            My Journal
-            <ChevronDown size={16} style={{ transform: journalSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+            Review
+            <ChevronDown size={16} style={{ transform: journalSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }} />
           </button>
 
           {journalSubmenuOpen && (
             <>
               <button
                 onClick={() => {
-                  navigate('/my-journal', { state: location.state });
+                  navigate('/my-journal', { state: { ...location.state, reviewType: 'after-action' } });
                   setMenuOpen(false);
                   setJournalSubmenuOpen(false);
                 }}
@@ -239,11 +256,11 @@ export default function HomeHeader({ isGuest = false }) {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                Write a Reflection
+                After Action Review
               </button>
               <button
                 onClick={() => {
-                  navigate('/journal-log', { state: location.state });
+                  navigate('/my-journal', { state: { ...location.state, reviewType: 'progress' } });
                   setMenuOpen(false);
                   setJournalSubmenuOpen(false);
                 }}
@@ -262,7 +279,30 @@ export default function HomeHeader({ isGuest = false }) {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                Journal Log
+                Progress Review
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/my-reviews', { state: location.state });
+                  setMenuOpen(false);
+                  setJournalSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                My Reviews
               </button>
             </>
           )}

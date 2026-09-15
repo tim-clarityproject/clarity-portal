@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useContext } from 'react';
 import BackArrow from '../components/BackArrow';
+import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -11,6 +12,7 @@ export default function ProjectScatter() {
   const { user } = useContext(AuthContext);
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [hoveredQuadrant, setHoveredQuadrant] = useState(null);
 
   const projects = location.state?.projects || [];
   const matrix = location.state?.matrix || {};
@@ -66,7 +68,9 @@ export default function ProjectScatter() {
     };
   });
 
-  const maxImportance = Math.max(...projectData.map(d => d.importance), 1);
+  // Max possible importance is (number of CSFs × 3), then add 2 for padding
+  const maxPossibleImportance = factors.length > 0 ? factors.length * 3 : 3;
+  const maxImportance = maxPossibleImportance;
   const importanceThreshold = maxImportance / 2;
   const progressThreshold = 3;
 
@@ -96,13 +100,48 @@ export default function ProjectScatter() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @page {
+          margin: 0.3in 0.5in;
+          padding: 0;
+        }
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          html {
+            margin: 0;
+            padding: 0;
+          }
+          button {
+            display: none !important;
+          }
+          [class*="SaveDiscardButtons"] {
+            display: none !important;
+          }
+          svg {
+            page-break-inside: avoid;
+          }
+          div {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          /* Prevent breaking within grid sections */
+          div[style*="display: grid"] {
+            page-break-inside: avoid;
+          }
+        }
+      `}</style>
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '40px 32px' }}>
         <div style={{ marginBottom: '32px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', lineHeight: '1.4' }}>
-            Project Portfolio Matrix
+            Are you allocating your resources (time, capital, energy, staff) appropriately?
           </h1>
         </div>
 
@@ -113,14 +152,55 @@ export default function ProjectScatter() {
             <rect x={leftPadding} y={topPadding} width={plotWidth} height={plotHeight} fill="transparent" pointerEvents="none" />
 
             {/* Quadrant backgrounds */}
-            {/* Top-Left: Visionaries (Coral/Reddish) */}
-            <rect x={leftPadding} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="#F08571" opacity="0.06" />
-            {/* Top-Right: Leaders (Mint) */}
-            <rect x={midX} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="#5ECCC0" opacity="0.1" />
-            {/* Bottom-Left: Niche (Light Gray) */}
-            <rect x={leftPadding} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="#D1D5DB" opacity="0.04" />
+            {/* Top-Left: Visionaries (Coral) */}
+            <rect
+              x={leftPadding}
+              y={topPadding}
+              width={plotWidth / 2}
+              height={plotHeight / 2}
+              fill="#F08571"
+              opacity={hoveredQuadrant === 'topLeft' ? '0.15' : '0.08'}
+              style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
+              onMouseEnter={() => setHoveredQuadrant('topLeft')}
+              onMouseLeave={() => setHoveredQuadrant(null)}
+            />
+            {/* Top-Right: Leaders (Teal) */}
+            <rect
+              x={midX}
+              y={topPadding}
+              width={plotWidth / 2}
+              height={plotHeight / 2}
+              fill="#5ECCC0"
+              opacity={hoveredQuadrant === 'topRight' ? '0.2' : '0.12'}
+              style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
+              onMouseEnter={() => setHoveredQuadrant('topRight')}
+              onMouseLeave={() => setHoveredQuadrant(null)}
+            />
+            {/* Bottom-Left: Niche (Gray) */}
+            <rect
+              x={leftPadding}
+              y={midY}
+              width={plotWidth / 2}
+              height={plotHeight / 2}
+              fill="#e5e5e5"
+              opacity={hoveredQuadrant === 'bottomLeft' ? '0.15' : '0.08'}
+              style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
+              onMouseEnter={() => setHoveredQuadrant('bottomLeft')}
+              onMouseLeave={() => setHoveredQuadrant(null)}
+            />
             {/* Bottom-Right: Rising Stars (Coral Light) */}
-            <rect x={midX} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="#F08571" opacity="0.03" />
+            <rect
+              x={midX}
+              y={midY}
+              width={plotWidth / 2}
+              height={plotHeight / 2}
+              fill="#F08571"
+              opacity={hoveredQuadrant === 'bottomRight' ? '0.12' : '0.05'}
+              style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
+              onMouseEnter={() => setHoveredQuadrant('bottomRight')}
+              onMouseLeave={() => setHoveredQuadrant(null)}
+            />
+
 
             {/* Axis lines */}
             <line x1={leftPadding} y1={midY} x2={svgWidth - rightPadding} y2={midY} stroke="#333" strokeWidth="2" />
@@ -130,7 +210,7 @@ export default function ProjectScatter() {
             {[1, 2, 3, 4, 5].map((tick) => (
               <g key={`x-tick-${tick}`}>
                 <line x1={scaleX(tick)} y1={midY} x2={scaleX(tick)} y2={midY + 6} stroke="#333" strokeWidth="1" />
-                <text x={scaleX(tick)} y={midY + 22} textAnchor="middle" fontSize="12" fill="#333">
+                <text x={scaleX(tick)} y={midY + 22} textAnchor="middle" fontSize="12" fill="#333" fontWeight="500" pointerEvents="none" style={{ textShadow: '0 0 3px rgba(255,255,255,0.8)' }}>
                   {tick}
                 </text>
               </g>
@@ -140,7 +220,7 @@ export default function ProjectScatter() {
             {Array.from({ length: Math.ceil(maxImportance + 2) + 1 }, (_, i) => i).map((tick, idx) => (
               <g key={`y-tick-${idx}`}>
                 <line x1={midX - 4} y1={scaleY(tick)} x2={midX + 4} y2={scaleY(tick)} stroke="#333" strokeWidth="1" />
-                <text x={midX - 15} y={scaleY(tick) + 4} textAnchor="end" fontSize="12" fill="#333">
+                <text x={midX - 15} y={scaleY(tick) + 4} textAnchor="end" fontSize="12" fill="#333" fontWeight="500" pointerEvents="none" style={{ textShadow: '0 0 3px rgba(255,255,255,0.8)' }}>
                   {tick}
                 </text>
               </g>
@@ -151,7 +231,7 @@ export default function ProjectScatter() {
               Project Progress
             </text>
             <text x={midX} y={topPadding - 15} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold">
-              Project Importance
+              Strategic Importance
             </text>
 
             {/* Data points with labels */}
@@ -201,6 +281,47 @@ export default function ProjectScatter() {
             })}
           </svg>
 
+          {/* Quadrant Tips */}
+          <div style={{ marginTop: '48px', marginBottom: '48px', width: '100%', maxWidth: '850px', padding: '24px', backgroundColor: '#f9f9f9', borderRadius: '12px', border: '1px solid #e5e5e5' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textAlign: 'center' }}>
+              What does each quadrant mean?
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+              <div
+                style={{ padding: '12px', backgroundColor: 'rgba(240, 133, 113, 0.1)', borderRadius: '8px', borderLeft: '3px solid #F08571', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={() => setHoveredQuadrant('topLeft')}
+                onMouseLeave={() => setHoveredQuadrant(null)}
+              >
+                <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Do you need to allocate resource to these projects?</div>
+                <div style={{ fontSize: '11px', color: '#666' }}>High importance, low progress</div>
+              </div>
+              <div
+                style={{ padding: '12px', backgroundColor: 'rgba(94, 204, 192, 0.1)', borderRadius: '8px', borderLeft: '3px solid #5ECCC0', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={() => setHoveredQuadrant('topRight')}
+                onMouseLeave={() => setHoveredQuadrant(null)}
+              >
+                <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>These projects are doing great.</div>
+                <div style={{ fontSize: '11px', color: '#666' }}>High importance, high progress</div>
+              </div>
+              <div
+                style={{ padding: '12px', backgroundColor: 'rgba(229, 229, 229, 0.3)', borderRadius: '8px', borderLeft: '3px solid #999', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={() => setHoveredQuadrant('bottomLeft')}
+                onMouseLeave={() => setHoveredQuadrant(null)}
+              >
+                <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
+                <div style={{ fontSize: '11px', color: '#666' }}>Low importance, low progress</div>
+              </div>
+              <div
+                style={{ padding: '12px', backgroundColor: 'rgba(240, 133, 113, 0.05)', borderRadius: '8px', borderLeft: '3px solid #F08571', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={() => setHoveredQuadrant('bottomRight')}
+                onMouseLeave={() => setHoveredQuadrant(null)}
+              >
+                <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
+                <div style={{ fontSize: '11px', color: '#666' }}>Low importance, high progress</div>
+              </div>
+            </div>
+          </div>
+
           {/* Project breakdown */}
           <div style={{ marginTop: '48px', width: '100%', maxWidth: '850px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
@@ -226,14 +347,14 @@ export default function ProjectScatter() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '13px' }}>
                       <div>
-                        <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Progress</div>
+                        <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Project Progress</div>
                         <div style={{ fontWeight: '600', color: '#F08571', fontSize: '18px' }}>
                           {project.progress}/5
                         </div>
                       </div>
                       <div>
-                        <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Importance</div>
-                        <div style={{ fontWeight: '600', color: '#5ECCC0', fontSize: '18px' }}>
+                        <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Strategic Importance</div>
+                        <div style={{ fontWeight: '600', color: '#000', fontSize: '18px' }}>
                           {project.importance}
                         </div>
                       </div>
@@ -257,69 +378,44 @@ export default function ProjectScatter() {
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', marginBottom: '24px' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/project-progress', { state: { ...location.state, isGuest } })}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              color: '#666',
-              transition: 'color 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-            onMouseEnter={(e) => e.target.style.color = '#000'}
-            onMouseLeave={(e) => e.target.style.color = '#666'}
-          >
-            <BackArrow />
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center' }}>
+          <SaveDiscardButtons
+            formData={{ matrix, progress, factors }}
+            pageType="decision"
+            toolType="team-focus"
+            onNext={handleSaveToLog}
+            canNext={true}
+            onBack={() => navigate('/project-progress', { state: { ...location.state, isGuest } })}
+            nextLabel="Finish"
+          />
 
-          {path === 'team' ? (
-            <>
-              <button
-                onClick={handleSaveToLog}
-                disabled={isSaving || isGuest}
-                style={{
-                  padding: '16px 32px',
-                  backgroundColor: isSaving || isGuest ? '#ccc' : '#F08571',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: isSaving || isGuest ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => !(isSaving || isGuest) && (e.target.style.backgroundColor = '#e07560')}
-                onMouseLeave={(e) => !(isSaving || isGuest) && (e.target.style.backgroundColor = '#F08571')}
-              >
-                {isSaving ? 'Saving...' : 'Save to Log'}
-              </button>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center' }}>
+            <button
+              onClick={() => window.print()}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: 'transparent',
+                border: '2px solid #e5e5e5',
+                borderRadius: '8px',
+                color: '#333',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontSize: '14px',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }}
+            >
+              Export as PDF
+            </button>
 
-              <button
-                onClick={() => window.print()}
-                style={{
-                  padding: '16px 32px',
-                  backgroundColor: 'transparent',
-                  color: '#F08571',
-                  fontWeight: 'bold',
-                  border: '2px solid #F08571',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#FEE5DE';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                }}
-              >
-                Export as PDF
-              </button>
-
+            {path === 'team' && (
               <button
                 onClick={() => {
                   if (navigator.share) {
@@ -333,65 +429,29 @@ export default function ProjectScatter() {
                   }
                 }}
                 style={{
-                  padding: '16px 32px',
-                  backgroundColor: '#5ECCC0',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#4CB8A8'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#5ECCC0'}
-              >
-                Share
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleSaveToLog}
-                disabled={isSaving || isGuest}
-                style={{
-                  padding: '16px 32px',
-                  backgroundColor: isSaving || isGuest ? '#ccc' : '#F08571',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: isSaving || isGuest ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => !(isSaving || isGuest) && (e.target.style.backgroundColor = '#e07560')}
-                onMouseLeave={(e) => !(isSaving || isGuest) && (e.target.style.backgroundColor = '#F08571')}
-              >
-                {isSaving ? 'Saving...' : 'Save to Log'}
-              </button>
-
-              <button
-                onClick={() => window.print()}
-                style={{
-                  padding: '16px 32px',
+                  padding: '12px 24px',
                   backgroundColor: 'transparent',
-                  color: '#F08571',
-                  fontWeight: 'bold',
-                  border: '2px solid #F08571',
+                  border: '2px solid #e5e5e5',
                   borderRadius: '8px',
+                  color: '#333',
+                  fontWeight: '600',
                   cursor: 'pointer',
+                  fontSize: '14px',
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
+                  e.target.style.borderColor = '#F08571';
                   e.target.style.backgroundColor = '#FEE5DE';
                 }}
                 onMouseLeave={(e) => {
+                  e.target.style.borderColor = '#e5e5e5';
                   e.target.style.backgroundColor = 'transparent';
                 }}
               >
-                Export as PDF
+                Share
               </button>
-            </>
-          )}
+            )}
+          </div>
         </div>
 
       </div>

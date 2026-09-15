@@ -8,8 +8,8 @@ import HomeHeader from '../components/HomeHeader';
 export default function InversionStep2Fuckups() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData } = useContext(FormContext);
-  const [fuckups, setFuckups] = useState(location.state?.fuckups || ['', '']);
+  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
+  const [fuckups, setFuckups] = useState(() => location.state?.fuckups || getFieldValue('fuckups') || ['', '']);
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -23,15 +23,19 @@ export default function InversionStep2Fuckups() {
     const newFuckups = [...fuckups];
     newFuckups[index] = value;
     setFuckups(newFuckups);
+    updateFormData('fuckups', newFuckups);
   };
 
   const handleAddFuckup = () => {
-    setFuckups([...fuckups, '']);
+    const newFuckups = [...fuckups, ''];
+    setFuckups(newFuckups);
+    updateFormData('fuckups', newFuckups);
   };
 
   const handleRemoveFuckup = (index) => {
     const newFuckups = fuckups.filter((_, i) => i !== index);
     setFuckups(newFuckups);
+    updateFormData('fuckups', newFuckups);
   };
 
   const handleNext = () => {
@@ -58,22 +62,42 @@ export default function InversionStep2Fuckups() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/inversion-step-1', { state: { ...formData, isGuest, decisionId: location.state?.decisionId } })}
+            onClick={() => navigate('/decision-history', { state: { isGuest } })}
             style={{
+              padding: '8px 16px',
               backgroundColor: 'transparent',
-              border: 'none',
+              border: '2px solid #e5e5e5',
+              borderRadius: '6px',
+              color: '#333',
+              fontSize: '13px',
+              fontWeight: '600',
               cursor: 'pointer',
-              padding: '0',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#F08571';
+              e.target.style.backgroundColor = '#FEE5DE';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.backgroundColor = 'transparent';
             }}
           >
-            <BackArrow />
+            My Decisions
           </button>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>List all the ways you could fuck this up</h1>
         </div>
+        {location.state?.problemTitle && (
+          <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {location.state.problemTitle}
+          </p>
+        )}
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>List all the ways you could fuck this up</h1>
 
-        <p style={{ fontSize: '13px', color: '#999', marginBottom: '32px' }}>Step 2 of 3</p>
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '66.67%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+        </div>
 
         <div style={{ marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {fuckups.map((fuckup, index) => (
@@ -103,7 +127,7 @@ export default function InversionStep2Fuckups() {
                   style={{
                     padding: '8px',
                     backgroundColor: 'transparent',
-                    color: '#d32f2f',
+                    color: '#F08571',
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
@@ -152,53 +176,14 @@ export default function InversionStep2Fuckups() {
           + Add
         </button>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={handleNext}
-            disabled={!canSubmit}
-            style={{
-              flex: 1,
-              padding: '14px 24px',
-              backgroundColor: !canSubmit ? '#ccc' : '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: !canSubmit ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => !canSubmit || (e.target.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => !canSubmit || (e.target.style.backgroundColor = '#F08571')}
-          >
-            Next
-          </button>
-
-          <button
-            onClick={() => navigate('/inversion-step-1', { state: { ...formData, isGuest, decisionId: location.state?.decisionId } })}
-            style={{
-              padding: '14px 24px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              color: '#333',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            Back
-          </button>
-        </div>
+        <SaveDiscardButtons
+          formData={{ fuckups }}
+          pageType="decision"
+          toolType="inversion"
+          onNext={handleNext}
+          canNext={canSubmit}
+          onBack={() => navigate('/inversion-step-1', { state: { ...formData, isGuest, decisionId: location.state?.decisionId } })}
+        />
       </div>
     </div>
   );

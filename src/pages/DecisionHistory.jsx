@@ -76,19 +76,32 @@ export default function DecisionHistory() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>My Decisions</h1>
           <button
             onClick={() => navigate('/decision-tools', { state: { isGuest } })}
             style={{
+              padding: '8px 16px',
               backgroundColor: 'transparent',
-              border: 'none',
+              border: '2px solid #e5e5e5',
+              borderRadius: '6px',
+              color: '#333',
+              fontSize: '13px',
+              fontWeight: '600',
               cursor: 'pointer',
-              padding: '0',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#F08571';
+              e.target.style.backgroundColor = '#FEE5DE';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.backgroundColor = 'transparent';
             }}
           >
-            <BackArrow />
+            Decision Tools
           </button>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>Decision History</h1>
         </div>
 
         {isLoading ? (
@@ -189,27 +202,54 @@ export default function DecisionHistory() {
                       {formatDate(decision.created_at)}
                     </p>
                   </div>
-                  <button
-                    onClick={(e) => handleDelete(decision.id, e)}
-                    title="Delete decision"
-                    style={{
-                      padding: '8px',
-                      backgroundColor: 'transparent',
-                      color: '#d32f2f',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginLeft: '12px',
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', marginLeft: '12px', alignItems: 'center' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/my-journal', { state: { isGuest, reviewType: 'after-action', decisionContext: decision.goal || 'Untitled Decision' } });
+                      }}
+                      title="Review decision"
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: 'transparent',
+                        color: '#F08571',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      Review
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(decision.id, e)}
+                      title="Delete decision"
+                      style={{
+                        padding: '8px',
+                        backgroundColor: 'transparent',
+                        color: '#F08571',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               </button>
             );

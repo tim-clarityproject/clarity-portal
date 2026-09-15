@@ -23,7 +23,7 @@ export default function OAuthButtons() {
   return (
     <div>
       {error && (
-        <p style={{ color: '#d32f2f', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
+        <p style={{ color: '#F08571', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
           {error}
         </p>
       )}
