@@ -59,7 +59,7 @@ export default function GrowStep1Goal() {
     };
 
     loadDecision();
-  }, [location.state?.decisionId, user, updateFormData]);
+  }, [location.state?.decisionId, user?.id]);
 
   const problemTitle = location.state?.problemTitle;
   const decisionId = location.state?.decisionId;

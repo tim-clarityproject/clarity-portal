@@ -56,7 +56,7 @@ export default function InversionStep1Goal() {
     };
 
     loadDecision();
-  }, [location.state?.decisionId, user, updateFormData]);
+  }, [location.state?.decisionId, user?.id]);
 
   // Also load from location.state if available (when navigating between steps)
   useEffect(() => {
