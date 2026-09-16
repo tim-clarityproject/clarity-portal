@@ -20,7 +20,9 @@ export default function GrowStep3bPrioritize() {
   // Clear prioritized options when starting a fresh decision
   useEffect(() => {
     if (!location.state?.decisionId) {
+      setAvailableOptions([]);
       setPrioritizedOptions([]);
+      updateFormData('availableOptions', []);
       updateFormData('prioritizedOptions', []);
     }
   }, [location.state?.decisionId]);

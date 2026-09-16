@@ -19,6 +19,16 @@ export default function InversionStep3Plan() {
   const isGuest = location.state?.isGuest || false;
   const fuckups = location.state?.fuckups || [];
 
+  // Clear plan when starting a fresh decision
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setGoal('');
+      setPlan('');
+      updateFormData('goal', '');
+      updateFormData('plan', '');
+    }
+  }, [location.state?.decisionId]);
+
   useEffect(() => {
     if (location.state?.goal) {
       setGoal(location.state.goal);

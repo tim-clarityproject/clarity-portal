@@ -228,7 +228,7 @@ export default function DecisionHistory() {
                         e.currentTarget.style.backgroundColor = 'transparent';
                       }}
                     >
-                      Review
+                      After-Action Review
                     </button>
                     <button
                       onClick={(e) => handleDelete(decision.id, e)}
