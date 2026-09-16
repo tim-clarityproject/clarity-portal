@@ -164,7 +164,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const signup = async (email, password) => {
+  const signup = async (email, password, firstName = '', lastName = '') => {
     setIsLoading(true);
     try {
       try {
@@ -174,6 +174,18 @@ export function AuthProvider({ children }) {
         await auth.signIn(email, password);
         const session = await sessionManager.getSession();
         if (session?.user) {
+          // Save first and last name to profile if provided
+          if (firstName || lastName) {
+            await supabase
+              .from('profiles')
+              .upsert({
+                id: session.user.id,
+                first_name: firstName,
+                last_name: lastName,
+                email: email,
+              })
+              .select();
+          }
           sessionManager.saveSessionMetadata(session);
           const userData = await dataSyncManager.loadUserData(session.user.id);
           sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));

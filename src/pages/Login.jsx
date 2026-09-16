@@ -56,7 +56,7 @@ export default function Login() {
 
     try {
       const success = isSignUp
-        ? await signup(email, password)
+        ? await signup(email, password, firstName, lastName)
         : await login(email, password);
 
       if (success) {
