@@ -17,12 +17,13 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
     // If authenticated, save to Supabase with draft flag
     if (user && toolType) {
       try {
+        const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
             tool_type: toolType,
-            title: formData.goal || 'Untitled Decision',
+            title: dateTitle,
             form_data: formData,
             status: 'draft',
             draft: true

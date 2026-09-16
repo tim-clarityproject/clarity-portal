@@ -56,12 +56,13 @@ export default function InversionStep3Plan() {
           })
           .eq('id', location.state.decisionId);
       } else {
+        const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
             tool_type: 'inversion',
-            title: goal || 'Untitled Decision',
+            title: dateTitle,
             form_data: formDataComplete,
             status: 'completed',
             draft: false
