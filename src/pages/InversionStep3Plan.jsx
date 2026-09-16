@@ -60,7 +60,7 @@ export default function InversionStep3Plan() {
           .insert([{
             user_id: user.id,
             tool_type: 'inversion',
-            goal: goal || 'Untitled Decision',
+            title: goal || 'Untitled Decision',
             form_data: formDataComplete,
             status: 'completed',
             draft: false

@@ -23,6 +23,12 @@ const ALL_PROBLEMS = [
   { id: 'team-performance', title: 'Team health & performance', tools: ['team-performance'], status: 'coming-soon' },
 ];
 
+const GREETING_TRANSLATIONS = {
+  'Good Morning': ['Good Morning', 'Buenos Días', 'Bonjour', 'Guten Morgen', 'Buongiorno', 'Bom Dia', 'おはようございます', 'शुभ प्रातः'],
+  'Good Afternoon': ['Good Afternoon', 'Buenas Tardes', 'Bon Après-midi', 'Guten Nachmittag', 'Buon Pomeriggio', 'Boa Tarde', 'こんにちは', 'शुभ दोपहर'],
+  'Good Evening': ['Good Evening', 'Buenas Noches', 'Bonsoir', 'Guten Abend', 'Buonasera', 'Boa Noite', 'こんばんは', 'शुभ संध्या'],
+};
+
 export default function Welcome() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,6 +40,8 @@ export default function Welcome() {
   const [displayedQuestion, setDisplayedQuestion] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPastDecisions, setShowPastDecisions] = useState(false);
+  const [languageIndex, setLanguageIndex] = useState(0);
+  const [isTypingComplete, setIsTypingComplete] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -76,25 +84,30 @@ export default function Welcome() {
     setShowPastDecisions(false);
     setDisplayedGreeting('');
     setDisplayedQuestion('');
+    setLanguageIndex(0);
+    setIsTypingComplete(false);
 
-    const greeting = displayName ? `${getTimeGreeting()}, ${displayName}.` : `${getTimeGreeting()}.`;
+    const timeGreeting = getTimeGreeting();
+    const greetingTranslations = GREETING_TRANSLATIONS[timeGreeting];
     const question = 'What are we making a decision about?';
 
     let greetingIndex = 0;
     let questionIndex = 0;
     let isGreetingDone = false;
 
-    const interval = setInterval(() => {
-      if (!isGreetingDone && greetingIndex < greeting.length) {
-        setDisplayedGreeting(greeting.substring(0, greetingIndex + 1));
+    const typeInterval = setInterval(() => {
+      if (!isGreetingDone && greetingIndex < timeGreeting.length) {
+        setDisplayedGreeting(timeGreeting.substring(0, greetingIndex + 1));
         greetingIndex++;
       } else if (!isGreetingDone) {
         isGreetingDone = true;
+        setIsTypingComplete(true);
       } else if (questionIndex < question.length) {
         setDisplayedQuestion(question.substring(0, questionIndex + 1));
         questionIndex++;
       } else {
-        clearInterval(interval);
+        clearInterval(typeInterval);
+        clearInterval(rotateInterval);
         // Show dropdown after typing completes
         setTimeout(() => setShowDropdown(true), 200);
         // Show past decisions button after dropdown appears
@@ -102,7 +115,15 @@ export default function Welcome() {
       }
     }, 40);
 
-    return () => clearInterval(interval);
+    // Language rotation interval (starts after greeting is typed)
+    const rotateInterval = setInterval(() => {
+      setLanguageIndex((prev) => (prev + 1) % greetingTranslations.length);
+    }, 3000);
+
+    return () => {
+      clearInterval(typeInterval);
+      clearInterval(rotateInterval);
+    };
   }, [firstName]);
 
   const displayName = firstName || null;
@@ -115,6 +136,25 @@ export default function Welcome() {
     if (hour < 17) return 'Good Afternoon';
     if (hour < 22) return 'Good Evening';
     return 'Good Morning';
+  };
+
+  const getCurrentGreetingPhrase = () => {
+    const timeGreeting = getTimeGreeting();
+    const translations = GREETING_TRANSLATIONS[timeGreeting];
+    return translations[languageIndex] || timeGreeting;
+  };
+
+  const getGreetingDisplay = () => {
+    let phrase;
+    if (isTypingComplete) {
+      // Show rotating language after typing is complete
+      phrase = getCurrentGreetingPhrase();
+    } else {
+      // Show typed greeting during typing animation
+      phrase = displayedGreeting;
+    }
+    const namePart = displayName ? `, ${displayName}.` : '.';
+    return { phrase, namePart };
   };
 
   const handleProblemSelect = (problem) => {
@@ -137,9 +177,25 @@ export default function Welcome() {
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px' }}>
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '44px', fontWeight: 'bold', color: 'black', marginBottom: '8px', minHeight: '60px' }}>
-              {displayedGreeting}
-              {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `${getTimeGreeting()}, ${displayName}.`.length : `${getTimeGreeting()}.`.length) && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
+            <h1 style={{ fontSize: '44px', fontWeight: 'bold', color: 'black', marginBottom: '8px', minHeight: '60px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {displayedGreeting || isTypingComplete ? (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ position: 'relative', height: '60px', overflow: 'hidden', display: 'flex', alignItems: 'center', minWidth: '280px' }}>
+                    <div
+                      key={`greeting-${languageIndex}`}
+                      style={{
+                        animation: isTypingComplete && languageIndex > 0 ? 'slideUp 0.6s ease-in-out' : 'none',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {getGreetingDisplay().phrase}
+                    </div>
+                  </div>
+                  <span>{getGreetingDisplay().namePart}</span>
+                </div>
+              ) : (
+                <span style={{ animation: 'blink 0.7s infinite' }}>|</span>
+              )}
             </h1>
             <p style={{ fontSize: '20px', color: '#666', margin: 0, minHeight: '30px' }}>
               {displayedQuestion}
@@ -151,6 +207,16 @@ export default function Welcome() {
             @keyframes blink {
               0%, 49% { opacity: 1; }
               50%, 100% { opacity: 0; }
+            }
+            @keyframes slideUp {
+              from {
+                opacity: 0;
+                transform: translateY(100%);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
             }
           `}</style>
 

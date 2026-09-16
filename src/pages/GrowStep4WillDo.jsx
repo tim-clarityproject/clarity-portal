@@ -109,7 +109,7 @@ export default function GrowStep4WillDo() {
           .insert([{
             user_id: user.id,
             tool_type: 'grow',
-            goal: location.state?.goal || 'Untitled Decision',
+            title: location.state?.goal || 'Untitled Decision',
             form_data: formDataComplete,
             status: 'completed',
             draft: false

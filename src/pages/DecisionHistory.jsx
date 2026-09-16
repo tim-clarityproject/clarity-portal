@@ -162,7 +162,7 @@ export default function DecisionHistory() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {decision.goal ? truncateContent(decision.goal, 60) : 'Untitled Decision'}
+                        {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
                       </p>
                       {(decision.draft || decision.status === 'draft') && (
                         <span
@@ -206,7 +206,7 @@ export default function DecisionHistory() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate('/my-journal', { state: { isGuest, reviewType: 'after-action', decisionContext: decision.goal || 'Untitled Decision' } });
+                        navigate('/my-journal', { state: { isGuest, reviewType: 'after-action', decisionContext: decision.title || 'Untitled Decision' } });
                       }}
                       title="Review decision"
                       style={{

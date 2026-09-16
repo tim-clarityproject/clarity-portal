@@ -25,7 +25,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           .insert([{
             user_id: user.id,
             tool_type: toolType,
-            goal: formData.goal || 'Untitled Decision',
+            title: formData.goal || 'Untitled Decision',
             form_data: formData,
             status: 'draft',
             draft: true
