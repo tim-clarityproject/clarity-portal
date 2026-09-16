@@ -146,7 +146,7 @@ export default function ToughConversationStep2Coaching() {
       if (decisionId) {
         await supabase
           .from('decisions')
-          .update({ tough_conversation_data: data, draft: false })
+          .update({ form_data: data, draft: false })
           .eq('id', decisionId)
           .eq('user_id', user.id);
       } else {
@@ -157,7 +157,7 @@ export default function ToughConversationStep2Coaching() {
             user_id: user.id,
             tool_type: 'tough-conversation',
             title,
-            tough_conversation_data: data,
+            form_data: data,
             draft: false,
           });
       }
