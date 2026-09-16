@@ -26,7 +26,7 @@ export default function GrowStep1Goal() {
       updateFormData('options', []);
       updateFormData('willDo', '');
     }
-  }, [location.state?.decisionId, updateFormData]);
+  }, [location.state?.decisionId]);
 
   // Load existing decision if decisionId is provided
   useEffect(() => {

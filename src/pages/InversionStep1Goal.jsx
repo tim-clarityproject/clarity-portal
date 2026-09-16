@@ -24,7 +24,7 @@ export default function InversionStep1Goal() {
       updateFormData('fuckups', []);
       updateFormData('plan', '');
     }
-  }, [location.state?.decisionId, updateFormData]);
+  }, [location.state?.decisionId]);
 
   useEffect(() => {
     const loadDecision = async () => {
