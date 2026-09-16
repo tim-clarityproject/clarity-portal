@@ -57,6 +57,7 @@ export default function EditPersonalDetails() {
     setMessage('');
 
     try {
+      console.log('Saving profile for user:', user.id);
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -67,7 +68,13 @@ export default function EditPersonalDetails() {
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+
+      console.log('Profile saved successfully');
+      setMessage('✓ Profile saved successfully!');
 
       // Refresh profile data from Supabase to show updated info
       const { data: freshProfile } = await supabase
@@ -86,10 +93,10 @@ export default function EditPersonalDetails() {
       // Redirect back to My Account after a short delay
       setTimeout(() => {
         navigate('/my-account');
-      }, 800);
+      }, 1500);
     } catch (error) {
       console.error('Error saving profile:', error);
-      setMessage('Error saving profile. Please try again.');
+      setMessage(`Error: ${error.message || 'Could not save profile. Check console for details.'}`);
     } finally {
       setIsSaving(false);
     }
