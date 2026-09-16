@@ -2,7 +2,6 @@ import { createContext, useState, useEffect } from 'react';
 
 export const FormContext = createContext();
 
-const STORAGE_KEY = 'clarity_form_data';
 const DEFAULT_FORM_DATA = {
   goal: '',
   risks: [],
@@ -14,23 +13,14 @@ const DEFAULT_FORM_DATA = {
   ratings: {},
 };
 
-function loadFromStorage() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : DEFAULT_FORM_DATA;
-  } catch (e) {
-    console.error('Failed to load form data from localStorage:', e);
-    return DEFAULT_FORM_DATA;
-  }
-}
-
 export function FormProvider({ children }) {
-  const [formData, setFormData] = useState(loadFromStorage);
+  const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
 
-  // Persist to localStorage whenever formData changes
+  // Clean up any old localStorage data on provider mount
+  // FormContext now manages in-progress data only, not cross-session persistence
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-  }, [formData]);
+    localStorage.removeItem('clarity_form_data');
+  }, []);
 
   const updateFormData = (key, value) => {
     setFormData((prev) => ({

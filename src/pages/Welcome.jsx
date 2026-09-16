@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
@@ -27,6 +28,7 @@ export default function Welcome() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const { clearFormData } = useContext(FormContext);
   const [firstName, setFirstName] = useState('');
   const [selectedProblem, setSelectedProblem] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -122,6 +124,9 @@ export default function Welcome() {
 
   const handleProblemSelect = (problem) => {
     if (problem.status === 'coming-soon') return;
+
+    // Clear FormContext when starting a fresh decision
+    clearFormData();
 
     if (problem.tools[0] === 'grow') {
       navigate('/grow-step-1', { state: { isGuest, ...location.state, problemTitle: problem.title } });
