@@ -12,20 +12,19 @@ export default function ToughConversationStep1Feedback() {
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
-  const [observation, setObservation] = useState(location.state?.observation || '');
-  const [impact, setImpact] = useState(location.state?.impact || '');
-  const [need, setNeed] = useState(location.state?.need || '');
+  // Only use location.state data, never initialize from localStorage on fresh start
+  const isFreshStart = !location.state?.decisionId && !location.state?.observation;
 
-  // Clear fields only on true fresh start (no decisionId AND coming from Welcome)
+  const [observation, setObservation] = useState(isFreshStart ? '' : (location.state?.observation || ''));
+  const [impact, setImpact] = useState(isFreshStart ? '' : (location.state?.impact || ''));
+  const [need, setNeed] = useState(isFreshStart ? '' : (location.state?.need || ''));
+
+  // Clear localStorage on fresh start
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.observation) {
-      setObservation('');
-      setImpact('');
-      setNeed('');
-      // Also clear localStorage to prevent old data from persisting
+    if (isFreshStart) {
       localStorage.removeItem('clarity_form_data');
     }
-  }, []);
+  }, [isFreshStart]);
 
   const cleanPhrase = (text, phrasesToRemove, lowercaseFirst = false) => {
     let cleaned = text.trim();

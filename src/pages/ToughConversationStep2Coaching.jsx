@@ -24,25 +24,23 @@ export default function ToughConversationStep2Coaching() {
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
-  const [observation, setObservation] = useState(location.state?.observation || '');
-  const [impact, setImpact] = useState(location.state?.impact || '');
-  const [need, setNeed] = useState(location.state?.need || '');
-  const [selectedQuestions, setSelectedQuestions] = useState(location.state?.selectedQuestions || []);
+  const isFreshStart = !location.state?.decisionId && !location.state?.observation;
+
+  const [observation, setObservation] = useState(isFreshStart ? '' : (location.state?.observation || ''));
+  const [impact, setImpact] = useState(isFreshStart ? '' : (location.state?.impact || ''));
+  const [need, setNeed] = useState(isFreshStart ? '' : (location.state?.need || ''));
+  const [selectedQuestions, setSelectedQuestions] = useState(isFreshStart ? [] : (location.state?.selectedQuestions || []));
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
-  const [customQuestion, setCustomQuestion] = useState(location.state?.customQuestion || '');
+  const [customQuestion, setCustomQuestion] = useState(isFreshStart ? '' : (location.state?.customQuestion || ''));
   const [copied, setCopied] = useState(false);
 
-  // Clear fields only on true fresh start (no decisionId AND no observation from Step 1)
+  // Clear localStorage on fresh start
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.observation) {
-      setObservation('');
-      setImpact('');
-      setNeed('');
-      setSelectedQuestions([]);
-      setCustomQuestion('');
+    if (isFreshStart) {
+      localStorage.removeItem('clarity_form_data');
     }
-  }, []);
+  }, [isFreshStart]);
 
   const cleanPhrase = (text, phrasesToRemove, lowercaseFirst = false) => {
     let cleaned = text.trim();
