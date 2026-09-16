@@ -17,6 +17,14 @@ export default function GrowStep3bPrioritize() {
   const [editingSource, setEditingSource] = useState(null);
   const isGuest = location.state?.isGuest || false;
 
+  // Clear prioritized options when starting a fresh decision
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setPrioritizedOptions([]);
+      updateFormData('prioritizedOptions', []);
+    }
+  }, [location.state?.decisionId]);
+
   const handleEditStart = (index, value, source) => {
     setEditingIndex(index);
     setEditingValue(value);

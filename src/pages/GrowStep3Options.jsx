@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback } from 'react';
+import { useState, useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
@@ -14,6 +14,14 @@ export default function GrowStep3Options() {
   const isGuest = location.state?.isGuest || false;
   const problemTitle = location.state?.problemTitle;
   const decisionId = location.state?.decisionId;
+
+  // Clear options when starting a fresh decision
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setOptions(['', '', '']);
+      updateFormData('options', ['', '', '']);
+    }
+  }, [location.state?.decisionId]);
 
   const handleOptionChange = (index, value) => {
     const newOptions = [...options];

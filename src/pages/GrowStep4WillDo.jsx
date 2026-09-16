@@ -20,6 +20,14 @@ export default function GrowStep4WillDo() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState('');
 
+  // Clear willDo when starting a fresh decision
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setWillDo('');
+      updateFormData('willDo', '');
+    }
+  }, [location.state?.decisionId]);
+
   const handleEditStart = (index, value) => {
     setEditingIndex(index);
     setEditingValue(value);

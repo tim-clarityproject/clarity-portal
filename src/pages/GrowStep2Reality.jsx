@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback } from 'react';
+import { useState, useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
@@ -12,6 +12,16 @@ export default function GrowStep2Reality() {
   const [constraints, setConstraints] = useState(() => location.state?.constraints || getFieldValue('constraints') || '');
   const [opportunities, setOpportunities] = useState(() => location.state?.opportunities || getFieldValue('opportunities') || '');
   const isGuest = location.state?.isGuest || false;
+
+  // Clear fields when starting a fresh decision
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setConstraints('');
+      setOpportunities('');
+      updateFormData('constraints', '');
+      updateFormData('opportunities', '');
+    }
+  }, [location.state?.decisionId]);
 
   const handleNext = useCallback(() => {
     if (constraints.trim() || opportunities.trim()) {
