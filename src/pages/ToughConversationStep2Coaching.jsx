@@ -150,11 +150,13 @@ export default function ToughConversationStep2Coaching() {
           .eq('id', decisionId)
           .eq('user_id', user.id);
       } else {
+        const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
             tool_type: 'tough-conversation',
+            title: dateTitle,
             tough_conversation_data: data,
             draft: false,
           });
