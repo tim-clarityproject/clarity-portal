@@ -16,6 +16,18 @@ export default function GrowStep1Goal() {
   const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
+  // Clear form when starting a fresh decision (no decisionId)
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setGoal('');
+      updateFormData('goal', '');
+      updateFormData('constraints', '');
+      updateFormData('opportunities', '');
+      updateFormData('options', []);
+      updateFormData('willDo', '');
+    }
+  }, [location.state?.decisionId, updateFormData]);
+
   // Load existing decision if decisionId is provided
   useEffect(() => {
     const loadDecision = async () => {

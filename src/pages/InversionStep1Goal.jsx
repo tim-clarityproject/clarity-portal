@@ -16,6 +16,16 @@ export default function InversionStep1Goal() {
   const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
+  // Clear form when starting a fresh decision (no decisionId)
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setGoal('');
+      updateFormData('goal', '');
+      updateFormData('fuckups', []);
+      updateFormData('plan', '');
+    }
+  }, [location.state?.decisionId, updateFormData]);
+
   useEffect(() => {
     const loadDecision = async () => {
       const decisionId = location.state?.decisionId;
