@@ -68,14 +68,15 @@ export default function ToughConversationStep1Feedback() {
       };
 
       if (decisionId) {
-        await supabase
+        const { error } = await supabase
           .from('decisions')
           .update({ form_data: data, draft: true })
           .eq('id', decisionId)
           .eq('user_id', user.id);
+        if (error) throw error;
       } else {
         const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        await supabase
+        const { error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
@@ -84,6 +85,7 @@ export default function ToughConversationStep1Feedback() {
             form_data: data,
             draft: true,
           });
+        if (error) throw error;
       }
       alert('Saved as draft');
     } catch (error) {

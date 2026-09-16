@@ -13,21 +13,23 @@ export default function InversionStep3Plan() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const [goal, setGoal] = useState(location.state?.goal || '');
-  const [plan, setPlan] = useState(() => location.state?.plan || getFieldValue('plan') || '');
+  const isFreshStart = !location.state?.decisionId && !location.state?.fuckups;
+  const [goal, setGoal] = useState(isFreshStart ? '' : (location.state?.goal || ''));
+  const [plan, setPlan] = useState(() => isFreshStart ? '' : (location.state?.plan || getFieldValue('plan') || ''));
   const [isSaving, setIsSaving] = useState(false);
   const isGuest = location.state?.isGuest || false;
   const fuckups = location.state?.fuckups || [];
 
-  // Clear plan only on true fresh start (no decisionId AND no fuckups from Step 2)
+  // Clear plan only on true fresh start
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.fuckups) {
+    if (isFreshStart) {
       setGoal('');
       setPlan('');
       updateFormData('goal', '');
       updateFormData('plan', '');
+      localStorage.removeItem('clarity_form_data');
     }
-  }, []);
+  }, [isFreshStart, updateFormData]);
 
   useEffect(() => {
     if (location.state?.goal) {
@@ -57,7 +59,7 @@ export default function InversionStep3Plan() {
       };
 
       if (location.state?.decisionId) {
-        await supabase
+        const { error } = await supabase
           .from('decisions')
           .update({
             form_data: formDataComplete,
@@ -65,9 +67,10 @@ export default function InversionStep3Plan() {
             draft: false
           })
           .eq('id', location.state.decisionId);
+        if (error) throw error;
       } else {
         const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        await supabase
+        const { error } = await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
@@ -77,6 +80,7 @@ export default function InversionStep3Plan() {
             status: 'completed',
             draft: false
           }]);
+        if (error) throw error;
       }
 
       clearProgress();

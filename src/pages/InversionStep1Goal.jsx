@@ -12,21 +12,21 @@ export default function InversionStep1Goal() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const [goal, setGoal] = useState(() => location.state?.goal || getFieldValue('goal') || '');
+  const isFreshStart = !location.state?.decisionId && !location.state?.goal;
+  const [goal, setGoal] = useState(() => isFreshStart ? '' : (location.state?.goal || getFieldValue('goal') || ''));
   const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
-  // Clear form only on true fresh start (no decisionId AND coming from Welcome)
+  // Clear form only on true fresh start
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.goal) {
+    if (isFreshStart) {
       setGoal('');
       updateFormData('goal', '');
       updateFormData('fuckups', []);
       updateFormData('plan', '');
-      // Also clear localStorage to prevent old data from persisting
       localStorage.removeItem('clarity_form_data');
     }
-  }, []);
+  }, [isFreshStart, updateFormData]);
 
   useEffect(() => {
     const loadDecision = async () => {

@@ -13,20 +13,22 @@ export default function GrowStep4WillDo() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const [willDo, setWillDo] = useState(() => location.state?.will_do || getFieldValue('willDo') || '');
-  const [options, setOptions] = useState(() => location.state?.options || getFieldValue('options') || []);
+  const isFreshStart = !location.state?.decisionId && !location.state?.options;
+  const [willDo, setWillDo] = useState(() => isFreshStart ? '' : (location.state?.will_do || getFieldValue('willDo') || ''));
+  const [options, setOptions] = useState(() => isFreshStart ? [] : (location.state?.options || getFieldValue('options') || []));
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState('');
 
-  // Clear willDo only on true fresh start (no decisionId AND no options from Step 3b)
+  // Clear willDo only on true fresh start
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.options) {
+    if (isFreshStart) {
       setWillDo('');
       updateFormData('willDo', '');
+      localStorage.removeItem('clarity_form_data');
     }
-  }, []);
+  }, [isFreshStart, updateFormData]);
 
   const handleEditStart = (index, value) => {
     setEditingIndex(index);
@@ -104,7 +106,7 @@ export default function GrowStep4WillDo() {
       };
 
       if (location.state?.decisionId) {
-        await supabase
+        const { error } = await supabase
           .from('decisions')
           .update({
             form_data: formDataComplete,
@@ -112,9 +114,10 @@ export default function GrowStep4WillDo() {
             draft: false
           })
           .eq('id', location.state.decisionId);
+        if (error) throw error;
       } else {
         const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        await supabase
+        const { error } = await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
@@ -124,6 +127,7 @@ export default function GrowStep4WillDo() {
             status: 'completed',
             draft: false
           }]);
+        if (error) throw error;
       }
 
       clearProgress();
