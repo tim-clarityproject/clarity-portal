@@ -23,6 +23,8 @@ export default function InversionStep1Goal() {
       updateFormData('goal', '');
       updateFormData('fuckups', []);
       updateFormData('plan', '');
+      // Also clear localStorage to prevent old data from persisting
+      localStorage.removeItem('clarity_form_data');
     }
   }, []);
 

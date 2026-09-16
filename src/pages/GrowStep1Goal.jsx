@@ -25,6 +25,8 @@ export default function GrowStep1Goal() {
       updateFormData('opportunities', '');
       updateFormData('options', []);
       updateFormData('willDo', '');
+      // Also clear localStorage to prevent old data from persisting
+      localStorage.removeItem('clarity_form_data');
     }
   }, []);
 
