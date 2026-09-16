@@ -14,7 +14,7 @@ export default function InversionStep3Plan() {
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
-  const [plan, setPlan] = useState(() => location.state?.plan || getFieldValue('plan') || '');
+  const [plan, setPlan] = useState(() => location.state?.plan || '');
   const [isSaving, setIsSaving] = useState(false);
   const isGuest = location.state?.isGuest || false;
   const fuckups = location.state?.fuckups || [];

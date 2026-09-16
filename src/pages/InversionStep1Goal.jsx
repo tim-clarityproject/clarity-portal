@@ -12,7 +12,7 @@ export default function InversionStep1Goal() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const [goal, setGoal] = useState(() => location.state?.goal || getFieldValue('goal') || '');
+  const [goal, setGoal] = useState(() => location.state?.goal || '');
   const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
 

@@ -9,7 +9,7 @@ export default function InversionStep2Fuckups() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [fuckups, setFuckups] = useState(() => location.state?.fuckups || getFieldValue('fuckups') || ['', '']);
+  const [fuckups, setFuckups] = useState(() => location.state?.fuckups || ['', '']);
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {

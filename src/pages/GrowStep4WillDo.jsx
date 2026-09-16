@@ -13,8 +13,8 @@ export default function GrowStep4WillDo() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const [willDo, setWillDo] = useState(() => location.state?.will_do || getFieldValue('willDo') || '');
-  const [options, setOptions] = useState(() => location.state?.options || getFieldValue('options') || []);
+  const [willDo, setWillDo] = useState(() => location.state?.will_do || '');
+  const [options, setOptions] = useState(() => location.state?.options || []);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);

@@ -9,7 +9,7 @@ export default function GrowStep3Options() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [options, setOptions] = useState(() => location.state?.options || getFieldValue('options') || ['', '', '']);
+  const [options, setOptions] = useState(() => location.state?.options || ['', '', '']);
   const [timerSeconds, setTimerSeconds] = useState(location.state?.timerSeconds || null);
   const isGuest = location.state?.isGuest || false;
   const problemTitle = location.state?.problemTitle;

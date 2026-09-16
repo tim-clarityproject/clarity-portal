@@ -8,8 +8,8 @@ export default function GrowStep3bPrioritize() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [availableOptions, setAvailableOptions] = useState(() => location.state?.availableOptions || location.state?.options || getFieldValue('availableOptions') || []);
-  const [prioritizedOptions, setPrioritizedOptions] = useState(() => location.state?.prioritizedOptions || getFieldValue('prioritizedOptions') || []);
+  const [availableOptions, setAvailableOptions] = useState(() => location.state?.availableOptions || location.state?.options || []);
+  const [prioritizedOptions, setPrioritizedOptions] = useState(() => location.state?.prioritizedOptions || []);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
