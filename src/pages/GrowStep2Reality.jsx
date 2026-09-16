@@ -9,21 +9,19 @@ export default function GrowStep2Reality() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const isFreshStart = !location.state?.decisionId && !location.state?.goal;
-  const [constraints, setConstraints] = useState(() => isFreshStart ? '' : (location.state?.constraints || getFieldValue('constraints') || ''));
-  const [opportunities, setOpportunities] = useState(() => isFreshStart ? '' : (location.state?.opportunities || getFieldValue('opportunities') || ''));
+  const [constraints, setConstraints] = useState(location.state?.constraints || '');
+  const [opportunities, setOpportunities] = useState(location.state?.opportunities || '');
   const isGuest = location.state?.isGuest || false;
 
-  // Clear fields only on true fresh start
   useEffect(() => {
-    if (isFreshStart) {
+    if (!location.state?.decisionId && !location.state?.goal) {
       setConstraints('');
       setOpportunities('');
       updateFormData('constraints', '');
       updateFormData('opportunities', '');
       localStorage.removeItem('clarity_form_data');
     }
-  }, [isFreshStart, updateFormData]);
+  }, []);
 
   const handleNext = useCallback(() => {
     if (constraints.trim() || opportunities.trim()) {

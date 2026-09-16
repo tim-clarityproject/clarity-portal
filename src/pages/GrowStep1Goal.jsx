@@ -12,14 +12,13 @@ export default function GrowStep1Goal() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const isFreshStart = !location.state?.decisionId && !location.state?.goal;
-  const [goal, setGoal] = useState(() => isFreshStart ? '' : (location.state?.goal || getFieldValue('goal') || ''));
+  const [goal, setGoal] = useState(location.state?.goal || '');
   const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
-  // Clear form and localStorage only on true fresh start
+  // Clear form and localStorage on fresh start
   useEffect(() => {
-    if (isFreshStart) {
+    if (!location.state?.decisionId && !location.state?.goal) {
       setGoal('');
       updateFormData('goal', '');
       updateFormData('constraints', '');
@@ -28,7 +27,7 @@ export default function GrowStep1Goal() {
       updateFormData('willDo', '');
       localStorage.removeItem('clarity_form_data');
     }
-  }, [isFreshStart, updateFormData]);
+  }, []);
 
   // Load existing decision if decisionId is provided
   useEffect(() => {

@@ -8,9 +8,8 @@ export default function GrowStep3bPrioritize() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const isFreshStart = !location.state?.decisionId && !location.state?.options;
-  const [availableOptions, setAvailableOptions] = useState(() => isFreshStart ? [] : (location.state?.availableOptions || location.state?.options || getFieldValue('availableOptions') || []));
-  const [prioritizedOptions, setPrioritizedOptions] = useState(() => isFreshStart ? [] : (location.state?.prioritizedOptions || getFieldValue('prioritizedOptions') || []));
+  const [availableOptions, setAvailableOptions] = useState(() => location.state?.availableOptions || location.state?.options || getFieldValue('availableOptions') || []);
+  const [prioritizedOptions, setPrioritizedOptions] = useState(() => location.state?.prioritizedOptions || getFieldValue('prioritizedOptions') || []);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -18,16 +17,15 @@ export default function GrowStep3bPrioritize() {
   const [editingSource, setEditingSource] = useState(null);
   const isGuest = location.state?.isGuest || false;
 
-  // Clear prioritized options only on true fresh start
   useEffect(() => {
-    if (isFreshStart) {
+    if (!location.state?.decisionId && !location.state?.options) {
       setAvailableOptions([]);
       setPrioritizedOptions([]);
       updateFormData('availableOptions', []);
       updateFormData('prioritizedOptions', []);
       localStorage.removeItem('clarity_form_data');
     }
-  }, [isFreshStart, updateFormData]);
+  }, []);
 
   const handleEditStart = (index, value, source) => {
     setEditingIndex(index);

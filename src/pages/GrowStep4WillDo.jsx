@@ -13,22 +13,20 @@ export default function GrowStep4WillDo() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const isFreshStart = !location.state?.decisionId && !location.state?.options;
-  const [willDo, setWillDo] = useState(() => isFreshStart ? '' : (location.state?.will_do || getFieldValue('willDo') || ''));
-  const [options, setOptions] = useState(() => isFreshStart ? [] : (location.state?.options || getFieldValue('options') || []));
+  const [willDo, setWillDo] = useState(() => location.state?.will_do || getFieldValue('willDo') || '');
+  const [options, setOptions] = useState(() => location.state?.options || getFieldValue('options') || []);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState('');
 
-  // Clear willDo only on true fresh start
   useEffect(() => {
-    if (isFreshStart) {
+    if (!location.state?.decisionId && !location.state?.options) {
       setWillDo('');
       updateFormData('willDo', '');
       localStorage.removeItem('clarity_form_data');
     }
-  }, [isFreshStart, updateFormData]);
+  }, []);
 
   const handleEditStart = (index, value) => {
     setEditingIndex(index);

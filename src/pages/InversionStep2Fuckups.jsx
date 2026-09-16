@@ -9,18 +9,16 @@ export default function InversionStep2Fuckups() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const isFreshStart = !location.state?.decisionId && !location.state?.goal;
-  const [fuckups, setFuckups] = useState(() => isFreshStart ? ['', ''] : (location.state?.fuckups || getFieldValue('fuckups') || ['', '']));
+  const [fuckups, setFuckups] = useState(() => location.state?.fuckups || getFieldValue('fuckups') || ['', '']);
   const isGuest = location.state?.isGuest || false;
 
-  // Clear fuckups only on true fresh start
   useEffect(() => {
-    if (isFreshStart) {
+    if (!location.state?.decisionId && !location.state?.goal) {
       setFuckups(['', '']);
       updateFormData('fuckups', ['', '']);
       localStorage.removeItem('clarity_form_data');
     }
-  }, [isFreshStart, updateFormData]);
+  }, []);
 
   useEffect(() => {
     if (location.state?.fuckups) {

@@ -13,23 +13,21 @@ export default function InversionStep3Plan() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const isFreshStart = !location.state?.decisionId && !location.state?.fuckups;
-  const [goal, setGoal] = useState(isFreshStart ? '' : (location.state?.goal || ''));
-  const [plan, setPlan] = useState(() => isFreshStart ? '' : (location.state?.plan || getFieldValue('plan') || ''));
+  const [goal, setGoal] = useState(location.state?.goal || '');
+  const [plan, setPlan] = useState(() => location.state?.plan || getFieldValue('plan') || '');
   const [isSaving, setIsSaving] = useState(false);
   const isGuest = location.state?.isGuest || false;
   const fuckups = location.state?.fuckups || [];
 
-  // Clear plan only on true fresh start
   useEffect(() => {
-    if (isFreshStart) {
+    if (!location.state?.decisionId && !location.state?.fuckups) {
       setGoal('');
       setPlan('');
       updateFormData('goal', '');
       updateFormData('plan', '');
       localStorage.removeItem('clarity_form_data');
     }
-  }, [isFreshStart, updateFormData]);
+  }, []);
 
   useEffect(() => {
     if (location.state?.goal) {

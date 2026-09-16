@@ -9,21 +9,19 @@ export default function GrowStep3Options() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const isFreshStart = !location.state?.decisionId && !location.state?.constraints;
-  const [options, setOptions] = useState(() => isFreshStart ? ['', '', ''] : (location.state?.options || getFieldValue('options') || ['', '', '']));
+  const [options, setOptions] = useState(() => location.state?.options || getFieldValue('options') || ['', '', '']);
   const [timerSeconds, setTimerSeconds] = useState(location.state?.timerSeconds || null);
   const isGuest = location.state?.isGuest || false;
   const problemTitle = location.state?.problemTitle;
   const decisionId = location.state?.decisionId;
 
-  // Clear options only on true fresh start
   useEffect(() => {
-    if (isFreshStart) {
+    if (!location.state?.decisionId && !location.state?.constraints) {
       setOptions(['', '', '']);
       updateFormData('options', ['', '', '']);
       localStorage.removeItem('clarity_form_data');
     }
-  }, [isFreshStart, updateFormData]);
+  }, []);
 
   const handleOptionChange = (index, value) => {
     const newOptions = [...options];
