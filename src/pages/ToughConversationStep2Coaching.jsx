@@ -130,7 +130,10 @@ export default function ToughConversationStep2Coaching() {
   }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId]);
 
   const handleComplete = useCallback(async () => {
-    if (!user || isGuest) return;
+    if (!user || isGuest) {
+      alert('Please log in to save decisions');
+      return;
+    }
 
     try {
       const data = {
@@ -141,15 +144,18 @@ export default function ToughConversationStep2Coaching() {
         customQuestion,
       };
 
+      console.log('Saving tough conversation:', { decisionId, data });
+
       if (decisionId) {
-        await supabase
+        const { error } = await supabase
           .from('decisions')
           .update({ form_data: data, draft: false })
           .eq('id', decisionId)
           .eq('user_id', user.id);
+        if (error) throw error;
       } else {
         const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        await supabase
+        const { error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
@@ -158,13 +164,15 @@ export default function ToughConversationStep2Coaching() {
             form_data: data,
             draft: false,
           });
+        if (error) throw error;
       }
+      console.log('Save successful, navigating to decision-history');
       navigate('/decision-history', { state: { isGuest } });
     } catch (error) {
       console.error('Error saving:', error);
-      alert('Failed to save');
+      alert(`Failed to save: ${error.message || error}`);
     }
-  }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate]);
+  }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate, location.state]);
 
   const handleBack = useCallback(() => {
     navigate('/tough-conversation-step-1', {
