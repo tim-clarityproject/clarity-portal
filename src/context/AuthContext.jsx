@@ -169,8 +169,15 @@ export function AuthProvider({ children }) {
     try {
       try {
         await auth.signUp(email, password);
-        console.log('Signup successful, verification email sent');
-        // Don't auto-login - wait for email verification
+        console.log('Signup successful, auto-logging in');
+        // Auto-login after signup
+        await auth.signIn(email, password);
+        const session = await sessionManager.getSession();
+        if (session?.user) {
+          sessionManager.saveSessionMetadata(session);
+          const userData = await dataSyncManager.loadUserData(session.user.id);
+          sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+        }
         return true;
       } catch (signupErr) {
         // If user already exists, check if they're verified
