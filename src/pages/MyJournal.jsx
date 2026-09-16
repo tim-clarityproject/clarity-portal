@@ -123,7 +123,9 @@ export default function MyJournal() {
       }
 
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => {
+        navigate('/my-reviews', { state: { isGuest } });
+      }, 1000);
     } catch (error) {
       console.error('Error saving review:', error);
       alert('Failed to save review');

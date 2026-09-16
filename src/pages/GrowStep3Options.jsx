@@ -15,13 +15,13 @@ export default function GrowStep3Options() {
   const problemTitle = location.state?.problemTitle;
   const decisionId = location.state?.decisionId;
 
-  // Clear options when starting a fresh decision
+  // Clear options only on true fresh start (no decisionId AND no constraints from Step 2)
   useEffect(() => {
-    if (!location.state?.decisionId) {
+    if (!location.state?.decisionId && !location.state?.constraints) {
       setOptions(['', '', '']);
       updateFormData('options', ['', '', '']);
     }
-  }, [location.state?.decisionId]);
+  }, []);
 
   const handleOptionChange = (index, value) => {
     const newOptions = [...options];
@@ -49,6 +49,9 @@ export default function GrowStep3Options() {
       navigate('/grow-step-3b-prioritize', {
         state: {
           problemTitle,
+          goal: location.state?.goal,
+          constraints: location.state?.constraints,
+          opportunities: location.state?.opportunities,
           options: filledOptions,
           timerSeconds,
           isGuest,

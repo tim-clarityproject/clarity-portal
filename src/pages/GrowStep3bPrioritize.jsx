@@ -17,15 +17,15 @@ export default function GrowStep3bPrioritize() {
   const [editingSource, setEditingSource] = useState(null);
   const isGuest = location.state?.isGuest || false;
 
-  // Clear prioritized options when starting a fresh decision
+  // Clear prioritized options only on true fresh start (no decisionId AND no options from Step 3)
   useEffect(() => {
-    if (!location.state?.decisionId) {
+    if (!location.state?.decisionId && !location.state?.options) {
       setAvailableOptions([]);
       setPrioritizedOptions([]);
       updateFormData('availableOptions', []);
       updateFormData('prioritizedOptions', []);
     }
-  }, [location.state?.decisionId]);
+  }, []);
 
   const handleEditStart = (index, value, source) => {
     setEditingIndex(index);
@@ -153,6 +153,9 @@ export default function GrowStep3bPrioritize() {
     navigate('/grow-step-4', {
       state: {
         problemTitle: location.state?.problemTitle,
+        goal: location.state?.goal,
+        constraints: location.state?.constraints,
+        opportunities: location.state?.opportunities,
         options: prioritizedOptions,
         availableOptions: availableOptions,
         prioritizedOptions: prioritizedOptions,

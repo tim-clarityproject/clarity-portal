@@ -13,15 +13,15 @@ export default function GrowStep2Reality() {
   const [opportunities, setOpportunities] = useState(() => location.state?.opportunities || getFieldValue('opportunities') || '');
   const isGuest = location.state?.isGuest || false;
 
-  // Clear fields when starting a fresh decision
+  // Clear fields only on true fresh start (no decisionId AND no goal from Step 1)
   useEffect(() => {
-    if (!location.state?.decisionId) {
+    if (!location.state?.decisionId && !location.state?.goal) {
       setConstraints('');
       setOpportunities('');
       updateFormData('constraints', '');
       updateFormData('opportunities', '');
     }
-  }, [location.state?.decisionId]);
+  }, []);
 
   const handleNext = useCallback(() => {
     if (constraints.trim() || opportunities.trim()) {

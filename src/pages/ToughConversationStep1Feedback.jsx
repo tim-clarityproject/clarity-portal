@@ -16,14 +16,14 @@ export default function ToughConversationStep1Feedback() {
   const [impact, setImpact] = useState(location.state?.impact || '');
   const [need, setNeed] = useState(location.state?.need || '');
 
-  // Clear fields when starting a fresh decision
+  // Clear fields only on true fresh start (no decisionId AND coming from Welcome)
   useEffect(() => {
-    if (!location.state?.decisionId) {
+    if (!location.state?.decisionId && !location.state?.observation) {
       setObservation('');
       setImpact('');
       setNeed('');
     }
-  }, [location.state?.decisionId]);
+  }, []);
 
   const cleanPhrase = (text, phrasesToRemove, lowercaseFirst = false) => {
     let cleaned = text.trim();

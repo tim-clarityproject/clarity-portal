@@ -12,13 +12,13 @@ export default function InversionStep2Fuckups() {
   const [fuckups, setFuckups] = useState(() => location.state?.fuckups || getFieldValue('fuckups') || ['', '']);
   const isGuest = location.state?.isGuest || false;
 
-  // Clear fuckups when starting a fresh decision
+  // Clear fuckups only on true fresh start (no decisionId AND no goal from Step 1)
   useEffect(() => {
-    if (!location.state?.decisionId) {
+    if (!location.state?.decisionId && !location.state?.goal) {
       setFuckups(['', '']);
       updateFormData('fuckups', ['', '']);
     }
-  }, [location.state?.decisionId]);
+  }, []);
 
   useEffect(() => {
     if (location.state?.fuckups) {

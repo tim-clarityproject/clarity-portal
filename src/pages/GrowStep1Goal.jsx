@@ -16,9 +16,9 @@ export default function GrowStep1Goal() {
   const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
-  // Clear form when starting a fresh decision (no decisionId)
+  // Clear form only on true fresh start (no decisionId AND coming from Welcome, not from a previous step)
   useEffect(() => {
-    if (!location.state?.decisionId) {
+    if (!location.state?.decisionId && !location.state?.goal) {
       setGoal('');
       updateFormData('goal', '');
       updateFormData('constraints', '');
@@ -26,7 +26,7 @@ export default function GrowStep1Goal() {
       updateFormData('options', []);
       updateFormData('willDo', '');
     }
-  }, [location.state?.decisionId]);
+  }, []);
 
   // Load existing decision if decisionId is provided
   useEffect(() => {

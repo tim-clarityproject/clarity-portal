@@ -33,16 +33,16 @@ export default function ToughConversationStep2Coaching() {
   const [customQuestion, setCustomQuestion] = useState(location.state?.customQuestion || '');
   const [copied, setCopied] = useState(false);
 
-  // Clear fields when starting a fresh decision
+  // Clear fields only on true fresh start (no decisionId AND no observation from Step 1)
   useEffect(() => {
-    if (!location.state?.decisionId) {
+    if (!location.state?.decisionId && !location.state?.observation) {
       setObservation('');
       setImpact('');
       setNeed('');
       setSelectedQuestions([]);
       setCustomQuestion('');
     }
-  }, [location.state?.decisionId]);
+  }, []);
 
   const cleanPhrase = (text, phrasesToRemove, lowercaseFirst = false) => {
     let cleaned = text.trim();
