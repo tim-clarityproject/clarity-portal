@@ -88,10 +88,10 @@ export default function GrowStep4WillDo() {
     setIsSaving(true);
     try {
       const formDataComplete = {
-        goal: location.state?.goal,
-        constraints: location.state?.constraints,
-        opportunities: location.state?.opportunities,
-        options: options,
+        goal: getFieldValue('goal') || location.state?.goal,
+        constraints: getFieldValue('constraints') || location.state?.constraints,
+        opportunities: getFieldValue('opportunities') || location.state?.opportunities,
+        options: options || getFieldValue('options') || [],
         will_do: willDo,
       };
 
