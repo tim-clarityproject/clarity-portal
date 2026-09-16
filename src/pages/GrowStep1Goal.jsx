@@ -20,10 +20,14 @@ export default function GrowStep1Goal() {
   useEffect(() => {
     const loadDecision = async () => {
       const decisionId = location.state?.decisionId;
-      if (!decisionId || !user) return;
+      if (!decisionId || !user) {
+        setIsLoading(false);
+        return;
+      }
 
       setIsLoading(true);
       try {
+        console.log('Loading decision:', decisionId);
         const { data, error } = await supabase
           .from('decisions')
           .select('*')
@@ -31,10 +35,17 @@ export default function GrowStep1Goal() {
           .eq('user_id', user.id)
           .single();
 
+        if (error) {
+          console.error('Error fetching decision:', error);
+          setIsLoading(false);
+          return;
+        }
+
         if (data) {
+          console.log('Decision loaded:', data);
           const formDataLoaded = data.form_data || {};
-          setGoal(formDataLoaded.goal || '');
-          updateFormData('goal', formDataLoaded.goal || '');
+          setGoal(formDataLoaded.goal || data.title || '');
+          updateFormData('goal', formDataLoaded.goal || data.title || '');
           updateFormData('constraints', formDataLoaded.constraints || '');
           updateFormData('opportunities', formDataLoaded.opportunities || '');
           updateFormData('options', formDataLoaded.options || []);
