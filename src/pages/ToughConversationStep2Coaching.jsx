@@ -1,4 +1,4 @@
-import { useState, useCallback, useContext } from 'react';
+import { useState, useCallback, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -32,6 +32,17 @@ export default function ToughConversationStep2Coaching() {
   const [editValue, setEditValue] = useState('');
   const [customQuestion, setCustomQuestion] = useState(location.state?.customQuestion || '');
   const [copied, setCopied] = useState(false);
+
+  // Clear fields when starting a fresh decision
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setObservation('');
+      setImpact('');
+      setNeed('');
+      setSelectedQuestions([]);
+      setCustomQuestion('');
+    }
+  }, [location.state?.decisionId]);
 
   const cleanPhrase = (text, phrasesToRemove, lowercaseFirst = false) => {
     let cleaned = text.trim();
@@ -102,11 +113,13 @@ export default function ToughConversationStep2Coaching() {
           .eq('id', decisionId)
           .eq('user_id', user.id);
       } else {
+        const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
             tool_type: 'tough-conversation',
+            title: dateTitle,
             tough_conversation_data: data,
             draft: true,
           });

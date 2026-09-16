@@ -1,4 +1,4 @@
-import { useState, useCallback, useContext } from 'react';
+import { useState, useCallback, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -15,6 +15,15 @@ export default function ToughConversationStep1Feedback() {
   const [observation, setObservation] = useState(location.state?.observation || '');
   const [impact, setImpact] = useState(location.state?.impact || '');
   const [need, setNeed] = useState(location.state?.need || '');
+
+  // Clear fields when starting a fresh decision
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      setObservation('');
+      setImpact('');
+      setNeed('');
+    }
+  }, [location.state?.decisionId]);
 
   const cleanPhrase = (text, phrasesToRemove, lowercaseFirst = false) => {
     let cleaned = text.trim();
