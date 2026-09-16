@@ -113,13 +113,13 @@ export default function GrowStep4WillDo() {
           })
           .eq('id', location.state.decisionId);
       } else {
-        const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
             tool_type: 'grow',
-            title: dateTitle,
+            title,
             form_data: formDataComplete,
             status: 'completed',
             draft: false
