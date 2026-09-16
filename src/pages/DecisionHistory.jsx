@@ -137,11 +137,10 @@ export default function DecisionHistory() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {decisions.map((decision) => {
-              const firstStep = decision.tool_type === 'inversion' ? '/inversion-step-1' : '/grow-step-1';
               return (
               <button
                 key={decision.id}
-                onClick={() => navigate(firstStep, { state: { isGuest, decisionId: decision.id, ...decision } })}
+                onClick={() => navigate('/decision-summary', { state: { isGuest, decisionId: decision.id, ...decision } })}
                 style={{
                   padding: '16px',
                   backgroundColor: '#f9f9f9',
