@@ -197,8 +197,6 @@ export default function Login() {
                       </svg>
                       Sign up with Email
                     </button>
-                  </>
-                )}
               </div>
             </>
           )}
