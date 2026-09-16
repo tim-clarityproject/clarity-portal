@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 import BackArrow from '../components/BackArrow';
 
@@ -60,6 +61,7 @@ export default function DecisionHistory() {
         .delete()
         .eq('id', decisionId);
       setDecisions(decisions.filter(d => d.id !== decisionId));
+      clearProgress();
     } catch (error) {
       console.error('Error deleting decision:', error);
       alert('Failed to delete decision');

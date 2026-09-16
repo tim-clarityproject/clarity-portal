@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { clearProgress } from '../lib/saveProgress';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
@@ -116,6 +117,7 @@ export default function GrowStep4WillDo() {
           }]);
       }
 
+      clearProgress();
       navigate('/decision-history', { state: { isGuest } });
     } catch (error) {
       console.error('Error saving decision:', error);

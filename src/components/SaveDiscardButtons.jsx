@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react';
 import { useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { saveProgress, clearProgress } from '../lib/saveProgress';
+import { saveProgress, clearProgress, AUTO_SAVE_KEY } from '../lib/saveProgress';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -13,9 +13,6 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
   const handleSaveAsDraft = async () => {
     const pageIdentifier = location.pathname.replace('/', '');
-
-    // Save to localStorage
-    saveProgress(pageIdentifier, formData, location.state);
 
     // If authenticated, save to Supabase with draft flag
     if (user && toolType) {
@@ -30,9 +27,17 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
             status: 'draft',
             draft: true
           }]);
+        // Clear localStorage after successful save
+        clearProgress();
       } catch (error) {
         console.error('Error saving draft to server:', error);
+        // Keep localStorage in case user wants to retry
+        saveProgress(pageIdentifier, formData, location.state);
+        return;
       }
+    } else {
+      // Save to localStorage if not authenticated
+      saveProgress(pageIdentifier, formData, location.state);
     }
 
     // Navigate to decision history
