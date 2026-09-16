@@ -9,6 +9,8 @@ export default function EditPersonalDetails() {
   const { user } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [role, setRole] = useState('');
+  const [organisation, setOrganisation] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -23,7 +25,7 @@ export default function EditPersonalDetails() {
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('first_name, last_name')
+          .select('first_name, last_name, role, organisation')
           .eq('id', user.id)
           .single();
 
@@ -35,6 +37,8 @@ export default function EditPersonalDetails() {
           console.log('Profile loaded:', profile);
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
+          setRole(profile.role || '');
+          setOrganisation(profile.organisation || '');
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -59,6 +63,8 @@ export default function EditPersonalDetails() {
         .update({
           first_name: firstName,
           last_name: lastName,
+          role: role || null,
+          organisation: organisation || null,
         })
         .eq('id', user.id);
 
@@ -73,13 +79,15 @@ export default function EditPersonalDetails() {
       // Refresh profile data from Supabase to show updated info
       const { data: freshProfile } = await supabase
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name, last_name, role, organisation')
         .eq('id', user.id)
         .single();
 
       if (freshProfile) {
         setFirstName(freshProfile.first_name || '');
         setLastName(freshProfile.last_name || '');
+        setRole(freshProfile.role || '');
+        setOrganisation(freshProfile.organisation || '');
       }
 
       // Redirect back to My Account after a short delay
@@ -201,6 +209,54 @@ export default function EditPersonalDetails() {
               <p style={{ fontSize: '12px', color: '#999', marginTop: '6px', margin: 0 }}>
                 Email cannot be changed
               </p>
+            </div>
+
+            {/* Role */}
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#333', fontWeight: '600' }}>
+                Role <span style={{ color: '#999', fontSize: '12px' }}>(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="e.g., CEO, Project Manager, Designer"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '2px solid #e5e5e5',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#F08571'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+              />
+            </div>
+
+            {/* Organisation */}
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#333', fontWeight: '600' }}>
+                Organisation <span style={{ color: '#999', fontSize: '12px' }}>(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={organisation}
+                onChange={(e) => setOrganisation(e.target.value)}
+                placeholder="Your company or organisation name"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '2px solid #e5e5e5',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#F08571'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+              />
             </div>
 
             {/* Success/Error Message */}
