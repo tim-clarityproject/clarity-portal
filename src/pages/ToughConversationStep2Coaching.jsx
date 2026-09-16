@@ -179,6 +179,7 @@ export default function ToughConversationStep2Coaching() {
   const handleBack = useCallback(() => {
     navigate('/tough-conversation-step-1', {
       state: {
+        problemTitle: location.state?.problemTitle,
         isGuest,
         decisionId,
         observation,
@@ -188,7 +189,7 @@ export default function ToughConversationStep2Coaching() {
         customQuestion,
       },
     });
-  }, [observation, impact, need, decisionId, isGuest, navigate, selectedQuestions, customQuestion]);
+  }, [observation, impact, need, decisionId, isGuest, navigate, selectedQuestions, customQuestion, location.state?.problemTitle]);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
