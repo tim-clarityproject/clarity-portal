@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import BackArrow from '../components/BackArrow';
@@ -19,6 +20,13 @@ export default function GrowStep4WillDo() {
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState('');
+
+  useLoadDecision(updateFormData);
+
+  useEffect(() => {
+    if (location.state?.will_do) setWillDo(location.state.will_do);
+    if (location.state?.options) setOptions(location.state.options);
+  }, [location.state?.will_do, location.state?.options]);
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.options) {

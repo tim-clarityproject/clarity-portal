@@ -1,6 +1,7 @@
 import { useState, useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import OptionsTimer from '../components/OptionsTimer';
 import HomeHeader from '../components/HomeHeader';
@@ -14,6 +15,12 @@ export default function GrowStep3Options() {
   const isGuest = location.state?.isGuest || false;
   const problemTitle = location.state?.problemTitle;
   const decisionId = location.state?.decisionId;
+
+  useLoadDecision(updateFormData);
+
+  useEffect(() => {
+    if (location.state?.options) setOptions(location.state.options);
+  }, [location.state?.options]);
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.constraints) {
