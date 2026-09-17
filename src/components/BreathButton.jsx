@@ -18,7 +18,7 @@ export default function BreathButton() {
           backgroundColor: '#F08571',
           border: 'none',
           color: 'white',
-          fontSize: '11px',
+          fontSize: '8px',
           fontWeight: 'bold',
           cursor: 'pointer',
           boxShadow: '0 4px 12px rgba(240, 133, 113, 0.3)',

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
+import BreathingSettingsModal from '../components/BreathingSettingsModal';
 
 export default function MyAccount() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function MyAccount() {
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showBreathingSettings, setShowBreathingSettings] = useState(false);
   const isGuest = false;
 
   const handleDeleteAccount = async () => {
@@ -127,6 +129,56 @@ export default function MyAccount() {
           </button>
         </div>
 
+        {/* Advanced Settings Section */}
+        <div id="breathing-settings" style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #e5e5e5' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '24px' }}>
+            Advanced Settings
+          </h2>
+
+          <div style={{
+            padding: '24px',
+            backgroundColor: '#fafafa',
+            borderRadius: '12px',
+            border: '1px solid #e5e5e5',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <div>
+              <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px', margin: 0 }}>
+                Breathing Settings
+              </h3>
+              <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                Customize your breathing cycle duration
+              </p>
+            </div>
+            <button
+              onClick={() => setShowBreathingSettings(true)}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: 'transparent',
+                border: '2px solid #F08571',
+                borderRadius: '8px',
+                color: '#F08571',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontSize: '14px',
+                transition: 'all 0.2s',
+                flexShrink: 0,
+                marginLeft: '16px',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+              }}
+            >
+              Edit
+            </button>
+          </div>
+        </div>
+
         {/* Delete Account Section */}
         <div style={{ marginTop: '48px', textAlign: 'center' }}>
           <button
@@ -148,6 +200,8 @@ export default function MyAccount() {
             {isDeleting ? 'Deleting account...' : 'Delete account'}
           </button>
         </div>
+
+        <BreathingSettingsModal isOpen={showBreathingSettings} onClose={() => setShowBreathingSettings(false)} />
       </div>
     </div>
   );

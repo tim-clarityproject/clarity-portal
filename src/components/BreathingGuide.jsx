@@ -8,28 +8,51 @@ export default function BreathingGuide({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
 
+    // Load custom settings from localStorage
+    let inhaleDuration = 4000;
+    let holdDuration = 0;
+    let exhaleDuration = 6000;
+
+    const saved = localStorage.getItem('breathingSettings');
+    if (saved) {
+      try {
+        const settings = JSON.parse(saved);
+        inhaleDuration = (settings.inhale || 4) * 1000;
+        holdDuration = (settings.hold || 0) * 1000;
+        exhaleDuration = (settings.exhale || 6) * 1000;
+      } catch (e) {
+        console.error('Error loading breathing settings:', e);
+      }
+    }
+
     let animationFrame;
     let startTime = Date.now();
-    const inhaleDuration = 4000; // 4 seconds
-    const exhaleDuration = 6000; // 6 seconds
-    const cycleDuration = inhaleDuration + exhaleDuration;
+    const cycleDuration = inhaleDuration + holdDuration + exhaleDuration;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const cycleElapsed = elapsed % cycleDuration;
 
       if (cycleElapsed < inhaleDuration) {
-        // Inhale phase: scale from 1 to 1.5, count 1-4
+        // Inhale phase: scale from 1 to 1.5
         setPhase('inhale');
         const progress = cycleElapsed / inhaleDuration;
         setScale(1 + progress * 0.5);
-        setSeconds(Math.floor(cycleElapsed / 1000) + 1); // 1-4, 1 second per number
+        const inhaleSeconds = Math.floor(cycleElapsed / 1000) + 1;
+        setSeconds(Math.min(inhaleSeconds, Math.floor(inhaleDuration / 1000)));
+      } else if (cycleElapsed < inhaleDuration + holdDuration) {
+        // Hold phase: maintain 1.5 scale
+        setPhase('hold');
+        setScale(1.5);
+        setSeconds('—');
       } else {
-        // Exhale phase: scale from 1.5 to 1, count 1-6
+        // Exhale phase: scale from 1.5 to 1
         setPhase('exhale');
-        const progress = (cycleElapsed - inhaleDuration) / exhaleDuration;
+        const exhaleElapsed = cycleElapsed - inhaleDuration - holdDuration;
+        const progress = exhaleElapsed / exhaleDuration;
         setScale(1.5 - progress * 0.5);
-        setSeconds(Math.floor((cycleElapsed - inhaleDuration) / 1000) + 1); // 1-6, 1 second per number
+        const exhaleSeconds = Math.floor(exhaleElapsed / 1000) + 1;
+        setSeconds(Math.min(exhaleSeconds, Math.floor(exhaleDuration / 1000)));
       }
 
       animationFrame = requestAnimationFrame(animate);
@@ -110,7 +133,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
             minWidth: '300px',
           }}
         >
-          {phase === 'inhale' ? 'Breathe in through your nose' : 'Breathe out through your mouth'}
+          {phase === 'inhale' ? 'Breathe in through your nose' : phase === 'hold' ? 'Hold your breath' : 'Breathe out through your mouth'}
         </div>
 
         {/* Done button */}
@@ -136,6 +159,29 @@ export default function BreathingGuide({ isOpen, onClose }) {
           }}
         >
           FINISH
+        </button>
+
+        {/* Settings link */}
+        <button
+          onClick={() => {
+            onClose();
+            window.location.href = '/my-account#breathing-settings';
+          }}
+          style={{
+            marginTop: '12px',
+            padding: '0',
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'rgba(255, 255, 255, 0.6)',
+            fontSize: '12px',
+            cursor: 'pointer',
+            transition: 'color 0.2s',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={(e) => e.target.style.color = 'rgba(255, 255, 255, 1)'}
+          onMouseLeave={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.6)'}
+        >
+          Edit breathing settings
         </button>
       </div>
     </div>
