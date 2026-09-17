@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
+import NamingModal from '../components/NamingModal';
 import HomeHeader from '../components/HomeHeader';
 
 export default function MyJournal() {
@@ -23,6 +24,7 @@ export default function MyJournal() {
   const [q2, setQ2] = useState('');
   const [q3, setQ3] = useState('');
   const [q4, setQ4] = useState('');
+  const [showNamingModal, setShowNamingModal] = useState(false);
 
   const afterActionQuestions = [
     { id: 'q1', label: 'What was supposed to happen?', value: q1, setter: setQ1 },
@@ -96,12 +98,16 @@ export default function MyJournal() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveClick = () => {
     if (!user || isGuest) {
       alert('Please log in to save reviews');
       return;
     }
+    setShowNamingModal(true);
+  };
 
+  const handleSaveConfirmed = async (reviewName) => {
+    setShowNamingModal(false);
     setIsSaving(true);
     try {
       const entryContent = reviewType === 'progress'
@@ -126,7 +132,7 @@ export default function MyJournal() {
         // Update existing entry
         const { error: updateError } = await supabase
           .from('journal_entries')
-          .update({ content: entryContent, updated_at: new Date().toISOString() })
+          .update({ content: entryContent, title: reviewName, updated_at: new Date().toISOString() })
           .eq('id', existing[0].id);
 
         if (updateError) {
@@ -141,6 +147,7 @@ export default function MyJournal() {
             user_id: user.id,
             entry_date: selectedDate,
             content: entryContent,
+            title: reviewName,
             review_type: reviewType,
             created_at: new Date().toISOString(),
           }]);
@@ -240,7 +247,7 @@ export default function MyJournal() {
 
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             disabled={isSaving || isGuest}
             style={{
               flex: 1,
@@ -324,6 +331,13 @@ export default function MyJournal() {
             My Reviews
           </button>
         </div>
+
+        <NamingModal
+          isOpen={showNamingModal}
+          itemType="review"
+          onConfirm={handleSaveConfirmed}
+          onCancel={() => setShowNamingModal(false)}
+        />
       </div>
     </div>
   );
