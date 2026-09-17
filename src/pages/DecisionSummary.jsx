@@ -124,22 +124,10 @@ export default function DecisionSummary() {
         {/* GROW Specific Sections */}
         {toolType === 'grow' && (
           <>
-            <SectionBlock
-              title="Goal"
-              content={formData.goal || decision.title}
-            />
-            <SectionBlock
-              title="Reality"
-              content={formData.constraints}
-            />
-            <SectionBlock
-              title="Options"
-              content={formData.opportunities}
-            />
             {formData.options && formData.options.length > 0 && (
               <div style={{ marginBottom: '32px' }}>
                 <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Options Considered
+                  Options
                 </h2>
                 <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
                   {formData.options.map((option, idx) => (
@@ -150,6 +138,10 @@ export default function DecisionSummary() {
                 </div>
               </div>
             )}
+            <SectionBlock
+              title="What You Said You'd Do"
+              content={formData.will_do}
+            />
           </>
         )}
 
