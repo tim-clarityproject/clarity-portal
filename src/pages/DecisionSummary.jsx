@@ -510,7 +510,7 @@ export default function DecisionSummary() {
                           <div>
                             <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Strategic Importance</div>
                             <div style={{ fontWeight: '600', color: '#000', fontSize: '18px' }}>
-                              {project.importance}
+                              {project.importance}/{formData.factors.length * 3}
                             </div>
                           </div>
                         </div>
