@@ -177,66 +177,15 @@ export default function MyReviews() {
         {isLoading ? (
           <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
         ) : entries.filter(e => filterType === 'all' || e.review_type === filterType).length === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: '48px' }}>
-            <p style={{ color: '#999', fontSize: '14px', marginBottom: '32px' }}>No reviews yet</p>
-            <div style={{ marginBottom: '24px' }}>
-              <p style={{ fontSize: '12px', color: '#666', fontWeight: '500', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Create a new review
-              </p>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: '#F08571',
-                    border: 'none',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#e07560';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#F08571';
-                  }}
-                >
-                  After Action Review
-                </button>
-                <button
-                  onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: '#F08571',
-                    border: 'none',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#e07560';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#F08571';
-                  }}
-                >
-                  Progress Review
-                </button>
-              </div>
-            </div>
+          <div style={{ textAlign: 'center', paddingTop: '48px', paddingBottom: '120px' }}>
+            <p style={{ color: '#999', fontSize: '14px' }}>No reviews yet</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {entries.filter(e => filterType === 'all' || e.review_type === filterType).map((entry) => (
               <button
                 key={entry.id}
-                onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } })}
+                onClick={() => navigate('/review-summary', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } })}
                 style={{
                   padding: '16px',
                   backgroundColor: '#f9f9f9',
@@ -317,6 +266,69 @@ export default function MyReviews() {
             ))}
           </div>
         )}
+
+        {/* Fixed bottom bar for creating new reviews */}
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#fafafa',
+          borderTop: '1px solid #e5e5e5',
+          padding: '16px 32px',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '12px',
+        }}>
+          <button
+            onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: 'transparent',
+              border: '2px solid #e5e5e5',
+              color: '#333',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              borderRadius: '6px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#F08571';
+              e.currentTarget.style.backgroundColor = '#FEE5DE';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            + After Action Review
+          </button>
+          <button
+            onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: 'transparent',
+              border: '2px solid #e5e5e5',
+              color: '#333',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              borderRadius: '6px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#F08571';
+              e.currentTarget.style.backgroundColor = '#FEE5DE';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            + Progress Review
+          </button>
+        </div>
       </div>
     </div>
   );
