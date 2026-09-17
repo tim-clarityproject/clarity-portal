@@ -25,6 +25,7 @@ export default function MyJournal() {
   const [q3, setQ3] = useState('');
   const [q4, setQ4] = useState('');
   const [showNamingModal, setShowNamingModal] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState('');
 
   const afterActionQuestions = [
     { id: 'q1', label: 'What was supposed to happen?', value: q1, setter: setQ1 },
@@ -70,6 +71,7 @@ export default function MyJournal() {
         .eq('review_type', reviewType);
 
       if (data && data.length > 0) {
+        setCurrentTitle(data[0].title || '');
         try {
           const parsed = JSON.parse(data[0].content);
           setQ1(parsed.q1 || '');
@@ -83,6 +85,7 @@ export default function MyJournal() {
           setQ4('');
         }
       } else {
+        setCurrentTitle('');
         setQ1('');
         setQ2('');
         setQ3('');
@@ -98,12 +101,18 @@ export default function MyJournal() {
     }
   };
 
+  const needsNaming = !currentTitle;
+
   const handleSaveClick = () => {
     if (!user || isGuest) {
       alert('Please log in to save reviews');
       return;
     }
-    setShowNamingModal(true);
+    if (needsNaming) {
+      setShowNamingModal(true);
+    } else {
+      handleSaveConfirmed(currentTitle);
+    }
   };
 
   const handleSaveConfirmed = async (reviewName) => {
@@ -158,6 +167,7 @@ export default function MyJournal() {
         }
       }
 
+      setCurrentTitle(reviewName);
       setSaved(true);
       setTimeout(() => {
         navigate('/review-summary', { state: { isGuest, selectedDate, reviewType } });
@@ -304,9 +314,13 @@ export default function MyJournal() {
               if (hasContent) {
                 const choice = window.confirm(`Save this ${pageTitle} first?\n\nOK = Save\nCancel = Discard and view reviews`);
                 if (choice) {
-                  handleSave().then(() => {
-                    navigate('/my-reviews', { state: { isGuest } });
-                  });
+                  if (needsNaming) {
+                    setShowNamingModal(true);
+                  } else {
+                    handleSaveConfirmed(currentTitle).then(() => {
+                      navigate('/my-reviews', { state: { isGuest } });
+                    });
+                  }
                 } else {
                   navigate('/my-reviews', { state: { isGuest } });
                 }
