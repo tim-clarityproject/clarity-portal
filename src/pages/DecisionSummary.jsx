@@ -518,8 +518,8 @@ export default function DecisionSummary() {
           </>
         )}
 
-        {/* What you said you'd do - not shown for Tough Conversation */}
-        {toolType !== 'tough-conversation' && (
+        {/* What you said you'd do - not shown for Tough Conversation or Strategic Alignment */}
+        {toolType !== 'tough-conversation' && toolType !== 'strategic-alignment' && (
           <SectionBlock
             title={toolType === 'grow' ? 'What you said you\'d do' : 'Action You Said You\'d Take'}
             content={formData.will_do || formData.plan}
