@@ -264,6 +264,9 @@ export default function MyReviews() {
                       <span style={{ fontSize: '12px', color: '#999' }}>
                         {formatTime(entry.created_at)}
                       </span>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#fff', backgroundColor: '#F08571', padding: '2px 8px', borderRadius: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {entry.review_type === 'after-action' ? 'After Action' : 'Progress'}
+                      </span>
                     </div>
                     <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
                       {getEntryPreview(entry.content)}
