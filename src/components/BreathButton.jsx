@@ -18,7 +18,7 @@ export default function BreathButton() {
           backgroundColor: '#F08571',
           border: 'none',
           color: 'white',
-          fontSize: '20px',
+          fontSize: '11px',
           fontWeight: 'bold',
           cursor: 'pointer',
           boxShadow: '0 4px 12px rgba(240, 133, 113, 0.3)',
@@ -28,6 +28,7 @@ export default function BreathButton() {
           justifyContent: 'center',
           zIndex: 999,
           padding: 0,
+          lineHeight: '1',
         }}
         onMouseEnter={(e) => {
           e.target.style.backgroundColor = '#e07560';
@@ -39,7 +40,7 @@ export default function BreathButton() {
         }}
         title="Take a breath"
       >
-        💨
+        BREATHE
       </button>
 
       <BreathingGuide isOpen={showBreathing} onClose={() => setShowBreathing(false)} />
