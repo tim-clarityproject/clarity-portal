@@ -83,7 +83,7 @@ export default function Welcome() {
     const timeGreeting = getTimeGreeting();
     const namePart = displayName ? `, ${displayName}.` : '.';
     const fullGreeting = timeGreeting + namePart;
-    const question = 'What are we making a decision about?';
+    const question = 'What are you thinking about?';
 
     let greetingIndex = 0;
     let questionIndex = 0;
