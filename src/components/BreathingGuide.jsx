@@ -23,13 +23,13 @@ export default function BreathingGuide({ isOpen, onClose }) {
         setPhase('inhale');
         const progress = cycleElapsed / inhaleDuration;
         setScale(1 + progress * 0.5);
-        setSeconds(Math.round((cycleElapsed / 1000)) + 1); // 1-4
+        setSeconds(Math.floor(cycleElapsed / 1000) + 1); // 1-4, 1 second per number
       } else {
         // Exhale phase: scale from 1.5 to 1, count 1-6
         setPhase('exhale');
         const progress = (cycleElapsed - inhaleDuration) / exhaleDuration;
         setScale(1.5 - progress * 0.5);
-        setSeconds(Math.round(progress * 5) + 1); // 1-6
+        setSeconds(Math.floor((cycleElapsed - inhaleDuration) / 1000) + 1); // 1-6, 1 second per number
       }
 
       animationFrame = requestAnimationFrame(animate);
