@@ -168,20 +168,6 @@ export default function DecisionHistory() {
                           Draft
                         </span>
                       )}
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          color: '#fff',
-                          backgroundColor: '#F08571',
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                        }}
-                      >
-                        {decision.tool_type === 'grow' ? 'GROW' : decision.tool_type === 'inversion' ? 'Inversion' : decision.tool_type === 'strategic-alignment' ? 'Strategic' : 'Tough Conversation'}
-                      </span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
