@@ -27,7 +27,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
 
     let animationFrame;
     let startTime = Date.now();
-    const cycleDuration = inhaleDuration + holdDuration + exhaleDuration;
+    const cycleDuration = inhaleDuration + holdDuration + exhaleDuration + holdDuration;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
@@ -41,13 +41,13 @@ export default function BreathingGuide({ isOpen, onClose }) {
         const inhaleSeconds = Math.floor(cycleElapsed / 1000) + 1;
         setSeconds(Math.min(inhaleSeconds, Math.floor(inhaleDuration / 1000)));
       } else if (cycleElapsed < inhaleDuration + holdDuration) {
-        // Hold phase: maintain 1.5 scale, count up
+        // Hold phase (after inhale): maintain 1.5 scale, count up
         setPhase('hold');
         setScale(1.5);
         const holdElapsed = cycleElapsed - inhaleDuration;
         const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
         setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
-      } else {
+      } else if (cycleElapsed < inhaleDuration + holdDuration + exhaleDuration) {
         // Exhale phase: scale from 1.5 to 1
         setPhase('exhale');
         const exhaleElapsed = cycleElapsed - inhaleDuration - holdDuration;
@@ -55,6 +55,13 @@ export default function BreathingGuide({ isOpen, onClose }) {
         setScale(1.5 - progress * 0.5);
         const exhaleSeconds = Math.floor(exhaleElapsed / 1000) + 1;
         setSeconds(Math.min(exhaleSeconds, Math.floor(exhaleDuration / 1000)));
+      } else {
+        // Hold phase (after exhale): maintain 1 scale, count up
+        setPhase('hold');
+        setScale(1);
+        const holdElapsed = cycleElapsed - inhaleDuration - holdDuration - exhaleDuration;
+        const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
+        setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
       }
 
       animationFrame = requestAnimationFrame(animate);
