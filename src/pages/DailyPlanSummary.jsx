@@ -87,7 +87,7 @@ export default function DailyPlanSummary() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }}>
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
             {formatDate(plan.created_at)}
@@ -134,50 +134,45 @@ export default function DailyPlanSummary() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
-            style={{
-              flex: 1,
-              padding: '14px 24px',
-              backgroundColor: '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-            }}
-            onMouseEnter={(e) => (e.target.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => (e.target.style.backgroundColor = '#F08571')}
-          >
-            Create Another Plan
-          </button>
-          <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
-            style={{
-              flex: 1,
-              padding: '14px 24px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              color: '#333',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            View All Plans
-          </button>
-        </div>
+      </div>
+
+      {/* Fixed bottom bar for making new decisions */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fafafa',
+        borderTop: '1px solid #e5e5e5',
+        padding: '16px 32px',
+        display: 'flex',
+        justifyContent: 'center',
+        zIndex: 10,
+      }}>
+        <button
+          onClick={() => navigate('/decision-tools', { state: { isGuest } })}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'transparent',
+            border: '2px solid #e5e5e5',
+            color: '#333',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '6px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#F08571';
+            e.currentTarget.style.backgroundColor = '#FEE5DE';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#e5e5e5';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          + Make another decision
+        </button>
       </div>
     </div>
   );
