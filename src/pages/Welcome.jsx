@@ -10,6 +10,7 @@ const ALL_PROBLEMS = [
   { id: 'decision', title: 'A key decision', tools: ['grow'], status: null },
   { id: 'strategic', title: 'Where my team should focus', tools: ['strategic-alignment'], status: null },
   { id: 'tough-conversation', title: 'A tough conversation', tools: ['tough-conversation'], status: null },
+  { id: 'plan-day', title: 'Plan my day', tools: ['plan-day'], status: null },
   { id: 'new-hire', title: 'Making a new hire', tools: ['new-hire'], status: 'coming-soon' },
   { id: 'onboarding', title: 'Onboarding a new member of staff', tools: ['onboarding'], status: 'coming-soon' },
   { id: 'energy', title: 'What to focus my energy on', tools: ['energy-allocation'], status: 'coming-soon' },
@@ -136,6 +137,8 @@ export default function Welcome() {
       navigate('/goal-setting', { state: { isGuest, ...location.state, problemTitle: problem.title } });
     } else if (problem.tools[0] === 'tough-conversation') {
       navigate('/tough-conversation-step-1', { state: { isGuest, ...location.state, problemTitle: problem.title } });
+    } else if (problem.tools[0] === 'plan-day') {
+      navigate('/plan-my-day', { state: { isGuest, ...location.state, problemTitle: problem.title } });
     }
   };
 
