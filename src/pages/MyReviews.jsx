@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { formatDateWithOrdinal } from '../lib/dateFormatter';
 import HomeHeader from '../components/HomeHeader';
 
 export default function MyReviews() {
@@ -206,16 +207,13 @@ export default function MyReviews() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', width: '100%' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '8px' }}>
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {formatDate(entry.entry_date)}
+                        {entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review'}
                       </p>
-                      <span style={{ fontSize: '12px', color: '#999' }}>
-                        {formatTime(entry.created_at)}
-                      </span>
-                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#fff', backgroundColor: '#F08571', padding: '2px 8px', borderRadius: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {entry.review_type === 'after-action' ? 'After Action' : 'Progress'}
-                      </span>
+                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap' }}>
+                        {formatDateWithOrdinal(entry.entry_date)} {formatTime(entry.created_at)}
+                      </p>
                     </div>
                     <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
                       {getEntryPreview(entry.content)}

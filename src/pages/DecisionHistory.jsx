@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
+import { formatDateWithOrdinal } from '../lib/dateFormatter';
 import HomeHeader from '../components/HomeHeader';
 import BackArrow from '../components/BackArrow';
 
@@ -200,7 +201,7 @@ export default function DecisionHistory() {
                       </span>
                     </div>
                     <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
-                      {formatDate(decision.created_at)}
+                      {formatDateWithOrdinal(decision.created_at)}
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', marginLeft: '12px', alignItems: 'center' }}>

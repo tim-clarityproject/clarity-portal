@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { formatDateWithOrdinal } from '../lib/dateFormatter';
 import HomeHeader from '../components/HomeHeader';
 
 export default function ReviewSummary() {
@@ -14,10 +15,6 @@ export default function ReviewSummary() {
   const reviewType = location.state?.reviewType || 'after-action';
   const selectedDate = location.state?.selectedDate;
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  };
 
   useEffect(() => {
     const loadReview = async () => {
@@ -137,7 +134,7 @@ export default function ReviewSummary() {
 
         {/* Date */}
         <p style={{ fontSize: '14px', color: '#999', marginBottom: '48px' }}>
-          {formatDate(review.entry_date)}
+          {formatDateWithOrdinal(review.entry_date)}
         </p>
 
         {/* After Action Review Sections */}
