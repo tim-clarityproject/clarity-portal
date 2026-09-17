@@ -107,7 +107,7 @@ export default function ToughConversationStep2Coaching() {
       if (decisionId) {
         const { error } = await supabase
           .from('decisions')
-          .update({ form_data: data, draft: true })
+          .update({ form_data: data, draft: true, status: 'draft' })
           .eq('id', decisionId)
           .eq('user_id', user.id);
         if (error) throw error;
@@ -121,6 +121,7 @@ export default function ToughConversationStep2Coaching() {
             title,
             form_data: data,
             draft: true,
+            status: 'draft',
           });
         if (error) throw error;
       }
@@ -151,7 +152,7 @@ export default function ToughConversationStep2Coaching() {
       if (decisionId) {
         const { error } = await supabase
           .from('decisions')
-          .update({ form_data: data, draft: false })
+          .update({ form_data: data, draft: false, status: 'completed' })
           .eq('id', decisionId)
           .eq('user_id', user.id);
         if (error) throw error;
@@ -165,6 +166,7 @@ export default function ToughConversationStep2Coaching() {
             title,
             form_data: data,
             draft: false,
+            status: 'completed',
           });
         if (error) throw error;
       }
