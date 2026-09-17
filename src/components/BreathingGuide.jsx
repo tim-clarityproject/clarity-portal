@@ -7,7 +7,6 @@ export default function BreathingGuide({ isOpen, onClose }) {
   const [phase, setPhase] = useState('inhale');
   const [scale, setScale] = useState(1);
   const [seconds, setSeconds] = useState(0);
-  const [breathCount, setBreathCount] = useState(0);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -16,7 +15,6 @@ export default function BreathingGuide({ isOpen, onClose }) {
       let inhaleDuration = 4000;
       let holdDuration = 0;
       let exhaleDuration = 6000;
-      let numBreaths = 5;
 
       // Try to load from Supabase if user is logged in
       if (user) {
@@ -32,8 +30,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
             inhaleDuration = (settings.inhale || 4) * 1000;
             holdDuration = (settings.hold || 0) * 1000;
             exhaleDuration = (settings.exhale || 6) * 1000;
-            numBreaths = settings.numBreaths || 5;
-            startAnimation(inhaleDuration, holdDuration, exhaleDuration, numBreaths);
+            startAnimation(inhaleDuration, holdDuration, exhaleDuration);
             return;
           }
         } catch (e) {
@@ -49,40 +46,22 @@ export default function BreathingGuide({ isOpen, onClose }) {
           inhaleDuration = (settings.inhale || 4) * 1000;
           holdDuration = (settings.hold || 0) * 1000;
           exhaleDuration = (settings.exhale || 6) * 1000;
-          numBreaths = settings.numBreaths || 5;
         } catch (e) {
           console.error('Error loading breathing settings:', e);
         }
       }
 
-      startAnimation(inhaleDuration, holdDuration, exhaleDuration, numBreaths);
+      startAnimation(inhaleDuration, holdDuration, exhaleDuration);
     };
 
-    const startAnimation = (inhaleDuration, holdDuration, exhaleDuration, maxBreaths) => {
-      setBreathCount(0);
+    const startAnimation = (inhaleDuration, holdDuration, exhaleDuration) => {
       let animationFrame;
       let startTime = Date.now();
       const cycleDuration = inhaleDuration + holdDuration + exhaleDuration + holdDuration;
-      let lastCycleCount = 0;
 
       const animate = () => {
         const elapsed = Date.now() - startTime;
-        const totalCycles = Math.floor(elapsed / cycleDuration);
         const cycleElapsed = elapsed % cycleDuration;
-
-        // Check if we've completed a full cycle (count breaths)
-        if (totalCycles > lastCycleCount) {
-          lastCycleCount = totalCycles;
-          const newBreathCount = totalCycles;
-          setBreathCount(newBreathCount);
-
-          // Auto-close when we've reached the desired number of breaths
-          if (newBreathCount >= maxBreaths) {
-            cancelAnimationFrame(animationFrame);
-            onClose();
-            return;
-          }
-        }
 
         if (cycleElapsed < inhaleDuration) {
           // Inhale phase: scale from 1 to 1.5

@@ -7,7 +7,6 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
   const [inhale, setInhale] = useState(4);
   const [hold, setHold] = useState(0);
   const [exhale, setExhale] = useState(6);
-  const [numBreaths, setNumBreaths] = useState(5);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -27,7 +26,6 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
           setInhale(settings.inhale || 4);
           setHold(settings.hold || 0);
           setExhale(settings.exhale || 6);
-          setNumBreaths(settings.numBreaths || 5);
           return;
         }
       } catch (e) {
@@ -42,7 +40,6 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
           setInhale(settings.inhale || 4);
           setHold(settings.hold || 0);
           setExhale(settings.exhale || 6);
-          setNumBreaths(settings.numBreaths || 5);
         } catch (e) {
           console.error('Error loading breathing settings from localStorage:', e);
         }
@@ -56,7 +53,7 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
     if (!user) return;
 
     setIsSaving(true);
-    const settings = { inhale, hold, exhale, numBreaths };
+    const settings = { inhale, hold, exhale };
 
     try {
       // Save to Supabase
@@ -183,7 +180,7 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
         </div>
 
         {/* Exhale */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '32px' }}>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
             Exhale Duration: {exhale} second{exhale !== 1 ? 's' : ''}
           </label>
@@ -210,37 +207,6 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
           />
           <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
             1-10 seconds
-          </div>
-        </div>
-
-        {/* Number of Breaths */}
-        <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-            Number of Breaths: {numBreaths}
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="20"
-            value={numBreaths}
-            onChange={(e) => setNumBreaths(parseInt(e.target.value))}
-            style={{
-              width: '100%',
-              height: '6px',
-              borderRadius: '3px',
-              backgroundColor: '#e5e5e5',
-              outline: 'none',
-              cursor: 'pointer',
-              accentColor: '#F08571',
-              WebkitAppearance: 'slider-horizontal',
-              appearance: 'slider-horizontal',
-              boxSizing: 'border-box',
-              padding: 0,
-              border: 'none',
-            }}
-          />
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            1-20 breaths
           </div>
         </div>
 
