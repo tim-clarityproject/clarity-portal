@@ -195,7 +195,10 @@ export default function DecisionHistory() {
               return (
               <button
                 key={decision.id}
-                onClick={() => navigate('/decision-summary', { state: { isGuest, decisionId: decision.id, ...decision } })}
+                onClick={() => {
+                  const route = decision.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/decision-summary';
+                  navigate(route, { state: { isGuest, decisionId: decision.id, ...decision } });
+                }}
                 style={{
                   padding: '16px',
                   backgroundColor: '#f9f9f9',
