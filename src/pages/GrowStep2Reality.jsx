@@ -1,6 +1,7 @@
 import { useState, useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
@@ -12,6 +13,13 @@ export default function GrowStep2Reality() {
   const [constraints, setConstraints] = useState(location.state?.constraints || '');
   const [opportunities, setOpportunities] = useState(location.state?.opportunities || '');
   const isGuest = location.state?.isGuest || false;
+
+  useLoadDecision(updateFormData);
+
+  useEffect(() => {
+    if (location.state?.constraints) setConstraints(location.state.constraints);
+    if (location.state?.opportunities) setOpportunities(location.state.opportunities);
+  }, [location.state?.constraints, location.state?.opportunities]);
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.goal) {
