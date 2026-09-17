@@ -136,6 +136,9 @@ export default function DecisionHistory() {
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  minHeight: '70px',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#f0f0f0';
@@ -146,7 +149,7 @@ export default function DecisionHistory() {
                   e.currentTarget.style.borderColor = '#e5e5e5';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
