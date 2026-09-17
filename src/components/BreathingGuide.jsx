@@ -8,23 +8,32 @@ export default function BreathingGuide({ isOpen, onClose }) {
     if (!isOpen) return;
 
     let animationFrame;
+    let timeoutHandle;
     let startTime = Date.now();
     const inhaleDuration = 4000; // 4 seconds
     const exhaleDuration = 6000; // 6 seconds
     const cycleDuration = inhaleDuration + exhaleDuration;
 
     const animate = () => {
-      const elapsed = (Date.now() - startTime) % cycleDuration;
+      const elapsed = Date.now() - startTime;
 
-      if (elapsed < inhaleDuration) {
+      // Auto-close after one complete cycle
+      if (elapsed >= cycleDuration) {
+        onClose();
+        return;
+      }
+
+      const cycleElapsed = elapsed % cycleDuration;
+
+      if (cycleElapsed < inhaleDuration) {
         // Inhale phase: scale from 1 to 1.5
         setPhase('inhale');
-        const progress = elapsed / inhaleDuration;
+        const progress = cycleElapsed / inhaleDuration;
         setScale(1 + progress * 0.5);
       } else {
         // Exhale phase: scale from 1.5 to 1
         setPhase('exhale');
-        const progress = (elapsed - inhaleDuration) / exhaleDuration;
+        const progress = (cycleElapsed - inhaleDuration) / exhaleDuration;
         setScale(1.5 - progress * 0.5);
       }
 
@@ -34,7 +43,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
     animationFrame = requestAnimationFrame(animate);
 
     return () => cancelAnimationFrame(animationFrame);
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -80,30 +89,6 @@ export default function BreathingGuide({ isOpen, onClose }) {
       >
         {phase === 'inhale' ? 'Breathe in through your nose' : 'Breathe out through your mouth'}
       </div>
-
-      <button
-        onClick={onClose}
-        style={{
-          marginTop: '24px',
-          padding: '12px 24px',
-          backgroundColor: 'white',
-          border: 'none',
-          borderRadius: '6px',
-          color: '#333',
-          fontSize: '14px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.backgroundColor = '#f0f0f0';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.backgroundColor = 'white';
-        }}
-      >
-        Done
-      </button>
     </div>
   );
 }
