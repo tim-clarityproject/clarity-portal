@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useContext } from 'react';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
+import NamingModal from '../components/NamingModal';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
@@ -16,6 +17,7 @@ export default function ProjectScatter() {
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hoveredQuadrant, setHoveredQuadrant] = useState(null);
+  const [showNamingModal, setShowNamingModal] = useState(false);
 
   useLoadDecision(updateFormData);
 
@@ -26,11 +28,17 @@ export default function ProjectScatter() {
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
 
-  const handleSaveToLog = async () => {
+  const handleSaveToLogClick = () => {
     if (isGuest || !user) {
       alert('Please log in to save decisions');
       return;
     }
+    setShowNamingModal(true);
+  };
+
+  const handleSaveToLogConfirmed = async (decisionName) => {
+    setShowNamingModal(false);
+    if (isGuest || !user) return;
 
     setIsSaving(true);
     try {
@@ -45,7 +53,6 @@ export default function ProjectScatter() {
       };
 
       let savedDecisionId = location.state?.decisionId;
-      const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
       if (savedDecisionId) {
         // Update existing draft
@@ -53,6 +60,7 @@ export default function ProjectScatter() {
           .from('decisions')
           .update({
             form_data: formDataComplete,
+            title: decisionName,
             draft: false,
             status: 'completed'
           })
@@ -66,7 +74,7 @@ export default function ProjectScatter() {
           .insert([{
             user_id: user.id,
             tool_type: 'strategic-alignment',
-            title,
+            title: decisionName,
             form_data: formDataComplete,
             draft: false,
             status: 'completed'
@@ -173,11 +181,44 @@ export default function ProjectScatter() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '40px 32px' }}>
-        <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', lineHeight: '1.4' }}>
-            Are you allocating your resources (time, capital, energy, staff) appropriately?
-          </h1>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+          <button
+            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: 'transparent',
+              border: '2px solid #e5e5e5',
+              borderRadius: '6px',
+              color: '#333',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#F08571';
+              e.target.style.backgroundColor = '#FEE5DE';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.backgroundColor = 'transparent';
+            }}
+          >
+            My Decisions
+          </button>
+        </div>
+        <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Where my team should focus
+        </p>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>
+          Are you allocating your resources appropriately?
+        </h1>
+
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          </div>
         </div>
 
         {/* Gartner Magic Quadrant */}
@@ -418,10 +459,17 @@ export default function ProjectScatter() {
             formData={{ matrix, progress, factors }}
             pageType="decision"
             toolType="team-focus"
-            onNext={handleSaveToLog}
+            onNext={handleSaveToLogClick}
             canNext={true}
             onBack={() => navigate('/project-progress', { state: { ...location.state, isGuest } })}
             nextLabel="Finish"
+          />
+
+          <NamingModal
+            isOpen={showNamingModal}
+            itemType="decision"
+            onConfirm={handleSaveToLogConfirmed}
+            onCancel={() => setShowNamingModal(false)}
           />
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center' }}>

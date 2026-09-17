@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
+import NamingModal from '../components/NamingModal';
 import HomeHeader from '../components/HomeHeader';
 
 export default function GrowStep4WillDo() {
@@ -67,6 +68,7 @@ export default function GrowStep4WillDo() {
   }, [location.state?.will_do, location.state?.options, updateFormData]);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [showNamingModal, setShowNamingModal] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
   const handleDragStart = (e, item, index) => {
@@ -93,7 +95,7 @@ export default function GrowStep4WillDo() {
     setDragOverIndex(null);
   };
 
-  const handleSave = async () => {
+  const handleSaveClick = () => {
     if (!willDo.trim()) return;
 
     if (isGuest) {
@@ -101,6 +103,11 @@ export default function GrowStep4WillDo() {
       return;
     }
 
+    setShowNamingModal(true);
+  };
+
+  const handleSaveConfirmed = async (decisionName) => {
+    setShowNamingModal(false);
     setIsSaving(true);
     try {
       const formDataComplete = {
@@ -118,19 +125,19 @@ export default function GrowStep4WillDo() {
           .from('decisions')
           .update({
             form_data: formDataComplete,
+            title: decisionName,
             status: 'completed',
             draft: false
           })
           .eq('id', decisionId);
         if (error) throw error;
       } else {
-        const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         const { data, error } = await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
             tool_type: 'grow',
-            title,
+            title: decisionName,
             form_data: formDataComplete,
             status: 'completed',
             draft: false
@@ -338,10 +345,17 @@ export default function GrowStep4WillDo() {
           formData={{ willDo, options }}
           pageType="decision"
           toolType="grow"
-          onNext={handleSave}
+          onNext={handleSaveClick}
           canNext={willDo.trim() && !isSaving && !isGuest}
           onBack={() => navigate('/grow-step-3b-prioritize', { state: { ...location.state, availableOptions: location.state?.availableOptions, prioritizedOptions: options, isGuest, decisionId: location.state?.decisionId } })}
           nextLabel={isSaving ? 'Saving...' : 'Finish'}
+        />
+
+        <NamingModal
+          isOpen={showNamingModal}
+          itemType="decision"
+          onConfirm={handleSaveConfirmed}
+          onCancel={() => setShowNamingModal(false)}
         />
       </div>
     </div>

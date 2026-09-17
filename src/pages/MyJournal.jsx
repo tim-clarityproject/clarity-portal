@@ -183,6 +183,12 @@ export default function MyJournal() {
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>{pageTitle}</h1>
 
         <div style={{ marginBottom: '32px' }}>
+          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '32px' }}>
           <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', fontSize: '13px', color: '#666', marginBottom: '8px', fontWeight: '500' }}>
               Select date:

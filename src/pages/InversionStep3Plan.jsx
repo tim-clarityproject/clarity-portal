@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
+import NamingModal from '../components/NamingModal';
 import HomeHeader from '../components/HomeHeader';
 
 export default function InversionStep3Plan() {
@@ -17,6 +18,7 @@ export default function InversionStep3Plan() {
   const [goal, setGoal] = useState(location.state?.goal || '');
   const [plan, setPlan] = useState(() => location.state?.plan || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [showNamingModal, setShowNamingModal] = useState(false);
   const isGuest = location.state?.isGuest || false;
   const fuckups = location.state?.fuckups || [];
 
@@ -43,7 +45,7 @@ export default function InversionStep3Plan() {
     }
   }, [location.state?.goal, location.state?.plan, updateFormData]);
 
-  const handleSave = async () => {
+  const handleSaveClick = () => {
     if (!plan.trim() || !goal.trim()) return;
 
     if (isGuest) {
@@ -51,6 +53,11 @@ export default function InversionStep3Plan() {
       return;
     }
 
+    setShowNamingModal(true);
+  };
+
+  const handleSaveConfirmed = async (decisionName) => {
+    setShowNamingModal(false);
     setIsSaving(true);
     try {
       const formDataComplete = {
@@ -66,19 +73,19 @@ export default function InversionStep3Plan() {
           .from('decisions')
           .update({
             form_data: formDataComplete,
+            title: decisionName,
             status: 'completed',
             draft: false
           })
           .eq('id', decisionId);
         if (error) throw error;
       } else {
-        const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         const { data, error } = await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
             tool_type: 'inversion',
-            title,
+            title: decisionName,
             form_data: formDataComplete,
             status: 'completed',
             draft: false
@@ -223,10 +230,17 @@ export default function InversionStep3Plan() {
           formData={{ plan }}
           pageType="decision"
           toolType="inversion"
-          onNext={handleSave}
+          onNext={handleSaveClick}
           canNext={plan.trim() && goal.trim() && !isSaving && !isGuest}
           onBack={() => navigate('/inversion-step-2', { state: { ...formData, isGuest, decisionId: location.state?.decisionId } })}
           nextLabel={isSaving ? 'Saving...' : 'Finish'}
+        />
+
+        <NamingModal
+          isOpen={showNamingModal}
+          itemType="decision"
+          onConfirm={handleSaveConfirmed}
+          onCancel={() => setShowNamingModal(false)}
         />
       </div>
     </div>

@@ -107,7 +107,7 @@ export default function ProjectMatrix() {
             How much does each project/line of effort contribute to your Critical Success Factors?
           </h1>
           <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '80%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+            <div style={{ height: '100%', width: '50%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 

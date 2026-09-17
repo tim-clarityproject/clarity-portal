@@ -6,6 +6,7 @@ import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
+import NamingModal from '../components/NamingModal';
 import { Edit2, Copy, Check } from 'lucide-react';
 
 const COACHING_QUESTIONS = [
@@ -39,6 +40,7 @@ export default function ToughConversationStep2Coaching() {
   const [editValue, setEditValue] = useState('');
   const [customQuestion, setCustomQuestion] = useState(isFreshStart ? '' : (location.state?.customQuestion || ''));
   const [copied, setCopied] = useState(false);
+  const [showNamingModal, setShowNamingModal] = useState(false);
 
   // Clear localStorage on fresh start
   useEffect(() => {
@@ -137,11 +139,17 @@ export default function ToughConversationStep2Coaching() {
     }
   }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId]);
 
-  const handleComplete = useCallback(async () => {
+  const handleCompleteClick = useCallback(() => {
     if (!user || isGuest) {
       alert('Please log in to save decisions');
       return;
     }
+    setShowNamingModal(true);
+  }, [user, isGuest]);
+
+  const handleCompleteConfirmed = useCallback(async (decisionName) => {
+    setShowNamingModal(false);
+    if (!user || isGuest) return;
 
     try {
       const data = {
@@ -159,18 +167,17 @@ export default function ToughConversationStep2Coaching() {
       if (savedDecisionId) {
         const { error } = await supabase
           .from('decisions')
-          .update({ form_data: data, draft: false, status: 'completed' })
+          .update({ form_data: data, title: decisionName, draft: false, status: 'completed' })
           .eq('id', savedDecisionId)
           .eq('user_id', user.id);
         if (error) throw error;
       } else {
-        const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         const { data: insertedData, error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
             tool_type: 'tough-conversation',
-            title,
+            title: decisionName,
             form_data: data,
             draft: false,
             status: 'completed',
@@ -187,7 +194,7 @@ export default function ToughConversationStep2Coaching() {
       console.error('Error saving:', error);
       alert(`Failed to save: ${error.message || error}`);
     }
-  }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate, location.state]);
+  }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate]);
 
   const handleBack = useCallback(() => {
     navigate('/tough-conversation-step-1', {
@@ -483,10 +490,17 @@ export default function ToughConversationStep2Coaching() {
 
         <SaveDiscardButtons
           onBack={handleBack}
-          onNext={handleComplete}
+          onNext={handleCompleteClick}
           onSaveAsDraft={handleSaveAsDraft}
           nextLabel="Finish"
           isGuest={isGuest}
+        />
+
+        <NamingModal
+          isOpen={showNamingModal}
+          itemType="decision"
+          onConfirm={handleCompleteConfirmed}
+          onCancel={() => setShowNamingModal(false)}
         />
       </div>
     </div>
