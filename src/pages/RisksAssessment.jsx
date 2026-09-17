@@ -147,7 +147,6 @@ export default function RisksAssessment() {
               fontSize: '14px',
               transition: 'all 0.2s',
               marginBottom: '32px',
-              alignSelf: 'center',
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = '#F08571';
