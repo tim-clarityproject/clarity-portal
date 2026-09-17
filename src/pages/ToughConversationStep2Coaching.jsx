@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
+import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
@@ -168,6 +169,7 @@ export default function ToughConversationStep2Coaching() {
         }
       }
       setCurrentTitle(decisionName);
+      clearProgress();
       console.log('Save successful, navigating to decision-summary');
       navigate('/decision-summary', { state: { isGuest, decisionId: savedDecisionId } });
     } catch (error) {
@@ -210,6 +212,7 @@ export default function ToughConversationStep2Coaching() {
         if (error) throw error;
       }
       setCurrentTitle(decisionName);
+      clearProgress();
       alert('Saved as draft');
     } catch (error) {
       console.error('Error saving draft:', error);
