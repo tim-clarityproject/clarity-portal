@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PlanMyDayStep1() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
   const [success, setSuccess] = useState('');
   const [showUp, setShowUp] = useState('');
@@ -14,30 +18,55 @@ export default function PlanMyDayStep1() {
   const [saved, setSaved] = useState(false);
 
   const handleSave = async () => {
+    if (!user && !isGuest) {
+      alert('Please log in to save');
+      return;
+    }
+
+    if (isGuest) {
+      alert('Please log in to save decisions');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const planData = {
+      const formData = {
         success,
         showUp,
         notDo,
-        createdAt: new Date().toISOString(),
       };
 
-      // Save to localStorage temporarily until Supabase is set up
-      localStorage.setItem('lastDailyPlan', JSON.stringify(planData));
+      const title = `Daily Plan - ${new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}`;
+
+      const { data, error } = await supabase
+        .from('decisions')
+        .insert([{
+          user_id: user.id,
+          tool_type: 'daily_plan',
+          title,
+          form_data: formData,
+          status: 'completed',
+          draft: false,
+        }])
+        .select();
+
+      if (error) throw error;
 
       setSaved(true);
+      const decisionId = data?.[0]?.id;
+
+      clearProgress();
       setTimeout(() => {
         navigate('/daily-plan-summary', {
           state: {
-            plan: planData,
+            decisionId,
             isGuest
           }
         });
       }, 1500);
     } catch (error) {
       console.error('Error saving plan:', error);
-      alert('Failed to save plan');
+      alert(`Failed to save plan: ${error.message}`);
     } finally {
       setIsSaving(false);
     }

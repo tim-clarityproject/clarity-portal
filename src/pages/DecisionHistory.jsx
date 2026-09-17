@@ -187,7 +187,7 @@ export default function DecisionHistory() {
             {decisions
               .filter((decision) => {
                 if (filter === 'daily') {
-                  return decision.decision_type === 'daily_plan';
+                  return decision.tool_type === 'daily_plan';
                 }
                 return true;
               })

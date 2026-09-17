@@ -1,16 +1,58 @@
+import { useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
 export default function DailyPlanSummary() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
-  const plan = location.state?.plan;
+  const decisionId = location.state?.decisionId;
+  const [plan, setPlan] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (decisionId && user) {
+      loadPlan();
+    }
+  }, [decisionId, user]);
+
+  const loadPlan = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('decisions')
+        .select('*')
+        .eq('id', decisionId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        setPlan(data);
+      }
+    } catch (error) {
+      console.error('Error loading plan:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatDate = (isoString) => {
     const date = new Date(isoString);
     return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
+
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+        <HomeHeader isGuest={isGuest} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
+          <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!plan) {
     return (
@@ -19,7 +61,7 @@ export default function DailyPlanSummary() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Plan not found</p>
           <button
-            onClick={() => navigate('/plan-my-day')}
+            onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
             style={{
               marginTop: '16px',
               padding: '12px 24px',
@@ -39,6 +81,8 @@ export default function DailyPlanSummary() {
     );
   }
 
+  const formData = plan.form_data || {};
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
@@ -49,7 +93,7 @@ export default function DailyPlanSummary() {
             Daily Plan Summary
           </h1>
           <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
-            {formatDate(plan.createdAt)}
+            {formatDate(plan.created_at)}
           </p>
         </div>
 
@@ -59,7 +103,7 @@ export default function DailyPlanSummary() {
               What would make today a success?
             </h2>
             <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-              {plan.success}
+              {formData.success}
             </p>
           </div>
 
@@ -68,7 +112,7 @@ export default function DailyPlanSummary() {
               How do you want to show up?
             </h2>
             <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-              {plan.showUp}
+              {formData.showUp}
             </p>
           </div>
 
@@ -77,14 +121,14 @@ export default function DailyPlanSummary() {
               What don't you want to do?
             </h2>
             <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-              {plan.notDo}
+              {formData.notDo}
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
-            onClick={() => navigate('/plan-my-day')}
+            onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
             style={{
               flex: 1,
               padding: '14px 24px',
@@ -102,7 +146,7 @@ export default function DailyPlanSummary() {
             Create Another Plan
           </button>
           <button
-            onClick={() => navigate('/decision-history')}
+            onClick={() => navigate('/decision-history', { state: { isGuest } })}
             style={{
               flex: 1,
               padding: '14px 24px',
