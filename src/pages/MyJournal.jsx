@@ -97,21 +97,34 @@ export default function MyJournal() {
         ? JSON.stringify({ q1, q2, q3, reviewType })
         : JSON.stringify({ q1, q2, q3, q4, reviewType });
 
-      const { data: existing } = await supabase
+      // Check for existing entry without using .single() to avoid errors
+      const { data: existing, error: selectError } = await supabase
         .from('journal_entries')
         .select('id')
         .eq('user_id', user.id)
         .eq('entry_date', selectedDate)
         .eq('review_type', reviewType)
-        .single();
+        .limit(1);
 
-      if (existing) {
-        await supabase
+      if (selectError) {
+        console.error('Error checking existing entry:', selectError);
+        throw selectError;
+      }
+
+      if (existing && existing.length > 0) {
+        // Update existing entry
+        const { error: updateError } = await supabase
           .from('journal_entries')
           .update({ content: entryContent, updated_at: new Date().toISOString() })
-          .eq('id', existing.id);
+          .eq('id', existing[0].id);
+
+        if (updateError) {
+          console.error('Error updating entry:', updateError);
+          throw updateError;
+        }
       } else {
-        await supabase
+        // Insert new entry
+        const { error: insertError } = await supabase
           .from('journal_entries')
           .insert([{
             user_id: user.id,
@@ -120,6 +133,11 @@ export default function MyJournal() {
             review_type: reviewType,
             created_at: new Date().toISOString(),
           }]);
+
+        if (insertError) {
+          console.error('Error inserting entry:', insertError);
+          throw insertError;
+        }
       }
 
       setSaved(true);
@@ -128,7 +146,7 @@ export default function MyJournal() {
       }, 1000);
     } catch (error) {
       console.error('Error saving review:', error);
-      alert('Failed to save review');
+      alert(`Failed to save review: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
