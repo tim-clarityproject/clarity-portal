@@ -103,6 +103,32 @@ export default function ReviewSummary() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @page {
+          margin: 0.4in 0.5in;
+          padding: 0;
+          @bottom-right { content: ''; }
+          @bottom-left { content: ''; }
+          @top-right { content: ''; }
+          @top-left { content: ''; }
+        }
+        @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          body { margin: 0; padding: 0; }
+          html { margin: 0; padding: 0; }
+          button { display: none !important; }
+          [style*="flex-direction: column"] > div:first-child { display: none !important; }
+          div[style*="padding: 64px 32px"] { padding: 16px 24px !important; }
+          h1 { margin-top: 4px !important; margin-bottom: 12px !important; page-break-after: avoid; }
+          h2 { page-break-after: avoid; margin-top: 8px !important; margin-bottom: 6px !important; }
+          div[style*="marginBottom: '32px'"] { margin-bottom: 12px !important; }
+          div[style*="marginBottom: '48px'"] { margin-bottom: 12px !important; }
+        }
+      `}</style>
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
