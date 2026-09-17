@@ -22,6 +22,7 @@ import Results from './pages/Results';
 import MyJournal from './pages/MyJournal';
 import JournalLog from './pages/JournalLog';
 import MyReviews from './pages/MyReviews';
+import ReviewSummary from './pages/ReviewSummary';
 import DecisionTools from './pages/DecisionTools';
 import DecisionHistory from './pages/DecisionHistory';
 import DecisionSummary from './pages/DecisionSummary';
@@ -123,6 +124,7 @@ function AppContent() {
       <Route path="/my-journal" element={<MyJournal />} />
       <Route path="/journal-log" element={<JournalLog />} />
       <Route path="/my-reviews" element={<MyReviews />} />
+      <Route path="/review-summary" element={<ReviewSummary />} />
       <Route path="/decision-tools" element={<DecisionTools />} />
       <Route path="/decision-history" element={<DecisionHistory />} />
       <Route path="/decision-summary" element={<DecisionSummary />} />
