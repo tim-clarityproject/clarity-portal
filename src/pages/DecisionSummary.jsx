@@ -121,23 +121,19 @@ export default function DecisionSummary() {
           {decision.title || 'Untitled Decision'}
         </h1>
 
-        {/* Your Goal - not shown for Tough Conversation */}
-        {toolType !== 'tough-conversation' && (
-          <SectionBlock
-            title="Your Goal"
-            content={formData.goal || decision.title}
-          />
-        )}
-
         {/* GROW Specific Sections */}
         {toolType === 'grow' && (
           <>
             <SectionBlock
-              title="Constraints"
+              title="Goal"
+              content={formData.goal || decision.title}
+            />
+            <SectionBlock
+              title="Reality"
               content={formData.constraints}
             />
             <SectionBlock
-              title="Opportunities"
+              title="Options"
               content={formData.opportunities}
             />
             {formData.options && formData.options.length > 0 && (
@@ -155,6 +151,14 @@ export default function DecisionSummary() {
               </div>
             )}
           </>
+        )}
+
+        {/* Your Goal - shown for non-GROW, non-Tough Conversation types */}
+        {toolType !== 'tough-conversation' && toolType !== 'grow' && (
+          <SectionBlock
+            title="Your Goal"
+            content={formData.goal || decision.title}
+          />
         )}
 
         {/* Inversion Specific Sections */}
@@ -331,10 +335,10 @@ export default function DecisionSummary() {
           </>
         )}
 
-        {/* Action You Said You'd Take - not shown for Tough Conversation */}
+        {/* What you said you'd do - not shown for Tough Conversation */}
         {toolType !== 'tough-conversation' && (
           <SectionBlock
-            title="Action You Said You'd Take"
+            title={toolType === 'grow' ? 'What you said you\'d do' : 'Action You Said You\'d Take'}
             content={formData.will_do || formData.plan}
           />
         )}
