@@ -95,12 +95,19 @@ export default function DecisionSummary() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <style>{`
+        @page {
+          margin: 0.4in 0.5in;
+          padding: 0;
+        }
         @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
           body {
             margin: 0;
             padding: 0;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
           }
           html {
             margin: 0;
@@ -111,6 +118,33 @@ export default function DecisionSummary() {
           }
           [style*="flex-direction: column"] > div:first-child {
             display: none !important;
+          }
+          div[style*="padding: 64px 32px"] {
+            padding: 16px 24px !important;
+          }
+          h1 {
+            margin-top: 8px !important;
+            margin-bottom: 16px !important;
+            page-break-after: avoid;
+          }
+          h2 {
+            page-break-after: avoid;
+            margin-top: 12px !important;
+            margin-bottom: 8px !important;
+          }
+          div[style*="marginBottom: '32px'"] {
+            margin-bottom: 16px !important;
+            page-break-inside: avoid;
+          }
+          div[style*="marginBottom: '48px'"] {
+            margin-bottom: 16px !important;
+          }
+          svg {
+            page-break-inside: avoid;
+            max-width: 100%;
+          }
+          div[style*="display: grid"] {
+            page-break-inside: avoid;
           }
         }
       `}</style>
