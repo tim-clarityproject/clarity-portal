@@ -44,7 +44,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
         // Hold phase: maintain 1.5 scale
         setPhase('hold');
         setScale(1.5);
-        setSeconds('—');
+        setSeconds(0);
       } else {
         // Exhale phase: scale from 1.5 to 1
         setPhase('exhale');
@@ -118,7 +118,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
               textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
             }}
           >
-            {Math.round(seconds)}
+            {phase === 'hold' ? '—' : Math.round(seconds)}
           </div>
         </div>
 
