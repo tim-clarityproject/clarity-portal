@@ -135,7 +135,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
             e.target.style.backgroundColor = 'white';
           }}
         >
-          BREATHE
+          FINISH
         </button>
       </div>
     </div>
