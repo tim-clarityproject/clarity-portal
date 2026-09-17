@@ -10,6 +10,8 @@ export default function DecisionSummary() {
   const { user } = useContext(AuthContext);
   const [decision, setDecision] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedProjectIdx, setSelectedProjectIdx] = useState(null);
+  const [hoveredQuadrant, setHoveredQuadrant] = useState(null);
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -277,6 +279,191 @@ export default function DecisionSummary() {
                 </div>
               </div>
             )}
+          </>
+        )}
+
+        {/* Strategic Alignment Scatter Plot Visualization */}
+        {toolType === 'strategic-alignment' && formData.factors && formData.factors.length > 0 && formData.projects && formData.projects.length > 0 && (
+          <>
+            {/* Gartner Magic Quadrant */}
+            <div style={{ marginTop: '64px', marginBottom: '48px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#333', marginBottom: '32px', textAlign: 'center' }}>
+                Are you allocating your resources appropriately?
+              </h2>
+
+              <svg width={850} height={600} style={{ backgroundColor: 'white', display: 'block', margin: '0 auto', marginBottom: '32px' }} onClick={() => setSelectedProjectIdx(null)}>
+                {/* Quadrant setup calculations */}
+                {(() => {
+                  const svgWidth = 850, svgHeight = 600;
+                  const topPadding = 60, bottomPadding = 80, leftPadding = 90, rightPadding = 130;
+                  const plotWidth = svgWidth - leftPadding - rightPadding;
+                  const plotHeight = svgHeight - topPadding - bottomPadding;
+                  const midX = leftPadding + plotWidth / 2;
+                  const midY = topPadding + plotHeight / 2;
+                  const maxImportance = formData.factors.length * 3;
+                  const importanceThreshold = maxImportance / 2;
+                  const progressThreshold = 3;
+                  const scaleX = (progressValue) => leftPadding + ((progressValue - 1) / 4) * plotWidth;
+                  const scaleY = (importanceValue) => svgHeight - bottomPadding - (importanceValue / (maxImportance + 2)) * plotHeight;
+
+                  const projectData = formData.projects.map((project, projectIdx) => {
+                    const projectProgress = formData.progress ? (formData.progress[projectIdx] || 0) : 0;
+                    const importance = formData.factors.reduce((sum, _, factorIdx) => sum + (formData.matrix[`${projectIdx}-${factorIdx}`] || 0), 0);
+                    return {
+                      name: project,
+                      progress: projectProgress + 1,
+                      importance: importance,
+                    };
+                  });
+
+                  return (
+                    <g>
+                      {/* Quadrant backgrounds */}
+                      <rect x={leftPadding} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="#F08571" opacity={hoveredQuadrant === 'topLeft' ? '0.15' : '0.08'} />
+                      <rect x={midX} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="#5ECCC0" opacity={hoveredQuadrant === 'topRight' ? '0.2' : '0.12'} />
+                      <rect x={leftPadding} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="#e5e5e5" opacity={hoveredQuadrant === 'bottomLeft' ? '0.15' : '0.08'} />
+                      <rect x={midX} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="#F08571" opacity={hoveredQuadrant === 'bottomRight' ? '0.12' : '0.05'} />
+
+                      {/* Axis lines */}
+                      <line x1={leftPadding} y1={midY} x2={svgWidth - rightPadding} y2={midY} stroke="#333" strokeWidth="2" />
+                      <line x1={midX} y1={topPadding} x2={midX} y2={svgHeight - bottomPadding} stroke="#333" strokeWidth="2" />
+
+                      {/* X-axis scale */}
+                      {[1, 2, 3, 4, 5].map((tick) => (
+                        <g key={`x-${tick}`}>
+                          <line x1={scaleX(tick)} y1={midY} x2={scaleX(tick)} y2={midY + 6} stroke="#333" strokeWidth="1" />
+                          <text x={scaleX(tick)} y={midY + 22} textAnchor="middle" fontSize="12" fill="#333" fontWeight="500">{tick}</text>
+                        </g>
+                      ))}
+
+                      {/* Y-axis scale */}
+                      {[1, 2, 3, 4, 5].map((tick) => {
+                        const val = Math.round((tick / 5) * (maxImportance + 2));
+                        return val <= maxImportance ? (
+                          <g key={`y-${tick}`}>
+                            <line x1={leftPadding - 6} y1={scaleY(val)} x2={leftPadding} y2={scaleY(val)} stroke="#333" strokeWidth="1" />
+                            <text x={leftPadding - 12} y={scaleY(val) + 4} textAnchor="end" fontSize="12" fill="#333" fontWeight="500">{val}</text>
+                          </g>
+                        ) : null;
+                      })}
+
+                      {/* Axis labels */}
+                      <text x={svgWidth / 2} y={svgHeight - 20} textAnchor="middle" fontSize="12" fill="#666" fontWeight="500">Project Progress →</text>
+                      <text x={20} y={svgHeight / 2} textAnchor="middle" fontSize="12" fill="#666" fontWeight="500" transform={`rotate(-90 20 ${svgHeight / 2})`}>Strategic Importance →</text>
+
+                      {/* Project dots */}
+                      {projectData.map((project, idx) => {
+                        const x = scaleX(project.progress);
+                        const y = scaleY(project.importance);
+                        const isSelected = selectedProjectIdx === idx;
+                        return (
+                          <g key={idx} onClick={() => setSelectedProjectIdx(isSelected ? null : idx)}>
+                            <circle cx={x} cy={y} r={isSelected ? 8 : 6} fill="#F08571" opacity={isSelected ? 1 : 0.7} style={{ cursor: 'pointer', transition: 'all 0.2s' }} />
+                            <text x={x} y={y + 16} textAnchor="middle" fontSize={isSelected ? '12' : '11'} fill={isSelected ? '#F08571' : '#333'} fontWeight={isSelected ? '700' : '500'}>{project.name}</text>
+                          </g>
+                        );
+                      })}
+                    </g>
+                  );
+                })()}
+              </svg>
+
+              {/* Quadrant explanation panels */}
+              <div style={{ marginBottom: '48px', padding: '24px', backgroundColor: '#f9f9f9', borderRadius: '12px', border: '1px solid #e5e5e5' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textAlign: 'center' }}>
+                  What does each quadrant mean?
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                  <div style={{ padding: '12px', backgroundColor: 'rgba(240, 133, 113, 0.1)', borderRadius: '8px', borderLeft: '3px solid #F08571' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
+                    <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>High importance, low progress</div>
+                  </div>
+                  <div style={{ padding: '12px', backgroundColor: 'rgba(94, 204, 192, 0.1)', borderRadius: '8px', borderLeft: '3px solid #5ECCC0' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
+                    <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>These projects are doing great.</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>High importance, high progress</div>
+                  </div>
+                  <div style={{ padding: '12px', backgroundColor: 'rgba(229, 229, 229, 0.3)', borderRadius: '8px', borderLeft: '3px solid #999' }} onMouseEnter={() => setHoveredQuadrant('bottomLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
+                    <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>Low importance, low progress</div>
+                  </div>
+                  <div style={{ padding: '12px', backgroundColor: 'rgba(240, 133, 113, 0.05)', borderRadius: '8px', borderLeft: '3px solid #F08571' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
+                    <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>Low importance, high progress</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Project panels */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                {(() => {
+                  const svgWidth = 850, svgHeight = 600;
+                  const topPadding = 60, bottomPadding = 80, leftPadding = 90, rightPadding = 130;
+                  const plotWidth = svgWidth - leftPadding - rightPadding;
+                  const plotHeight = svgHeight - topPadding - bottomPadding;
+                  const midX = leftPadding + plotWidth / 2;
+                  const midY = topPadding + plotHeight / 2;
+                  const maxImportance = formData.factors.length * 3;
+
+                  const projectData = formData.projects.map((project, projectIdx) => {
+                    const projectProgress = formData.progress ? (formData.progress[projectIdx] || 0) : 0;
+                    const importance = formData.factors.reduce((sum, _, factorIdx) => sum + (formData.matrix[`${projectIdx}-${factorIdx}`] || 0), 0);
+                    return {
+                      name: project,
+                      progress: projectProgress,
+                      importance: importance,
+                    };
+                  });
+
+                  return projectData.map((project, idx) => {
+                    const isSelected = selectedProjectIdx === idx;
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedProjectIdx(isSelected ? null : idx)}
+                        style={{
+                          padding: '16px',
+                          backgroundColor: isSelected ? '#FEE5DE' : '#f9f9f9',
+                          borderRadius: '8px',
+                          borderLeft: '4px solid #F08571',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          boxShadow: isSelected ? '0 4px 12px rgba(240, 133, 113, 0.15)' : 'none',
+                          transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                        }}
+                      >
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: isSelected ? '#F08571' : '#333', marginBottom: '12px' }}>
+                          {project.name}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '13px' }}>
+                          <div>
+                            <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Project Progress</div>
+                            <div style={{ fontWeight: '600', color: '#F08571', fontSize: '18px' }}>
+                              {project.progress}/5
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Strategic Importance</div>
+                            <div style={{ fontWeight: '600', color: '#000', fontSize: '18px' }}>
+                              {project.importance}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '12px', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              height: '100%',
+                              backgroundColor: '#F08571',
+                              width: `${(project.progress / 5) * 100}%`,
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
           </>
         )}
 
