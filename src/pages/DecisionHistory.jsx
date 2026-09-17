@@ -78,34 +78,8 @@ export default function DecisionHistory() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>My Decisions</h1>
-          <button
-            onClick={() => navigate('/decision-tools', { state: { isGuest } })}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              color: '#333',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            Decision Tools
-          </button>
-        </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '48px' }}>My Decisions</h1>
 
         {isLoading ? (
           <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
@@ -230,6 +204,45 @@ export default function DecisionHistory() {
 
           </div>
         )}
+      </div>
+
+      {/* Fixed bottom bar for making new decisions - always visible */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fafafa',
+        borderTop: '1px solid #e5e5e5',
+        padding: '16px 32px',
+        display: 'flex',
+        justifyContent: 'center',
+        zIndex: 10,
+      }}>
+        <button
+          onClick={() => navigate('/decision-tools', { state: { isGuest } })}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'transparent',
+            border: '2px solid #e5e5e5',
+            color: '#333',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '6px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#F08571';
+            e.currentTarget.style.backgroundColor = '#FEE5DE';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#e5e5e5';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          + Make another decision
+        </button>
       </div>
     </div>
   );
