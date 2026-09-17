@@ -12,12 +12,27 @@ export default function ProjectProgress() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const projects = location.state?.projects || loadAutoSave()?.projects || [];
+  const projects = location.state?.projects || [];
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
 
   const [progress, setProgress] = useState(() => location.state?.progress || getFieldValue('progress') || {});
   const [showSaveModal, setShowSaveModal] = useState(false);
+
+  useEffect(() => {
+    // Sync progress from location.state when it exists (e.g., coming back from next page or resuming draft)
+    if (location.state?.progress && Object.keys(location.state.progress).length > 0) {
+      setProgress(location.state.progress);
+      updateFormData('progress', location.state.progress);
+    } else if (!location.state?.decisionId) {
+      // Fresh decision: clear progress and localStorage
+      setProgress({});
+      updateFormData('progress', {});
+      localStorage.removeItem('clarity_form_data');
+      localStorage.removeItem('strategic-alignment-autosave');
+      localStorage.removeItem('strategic-alignment-progress');
+    }
+  }, [location.state?.matrix]);
 
   // Auto-save form data when progress changes
   useEffect(() => {

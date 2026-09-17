@@ -22,12 +22,19 @@ export default function ProjectMatrix() {
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.matrix) {
+    // Sync matrix from location.state when it exists (e.g., coming back from next page or resuming draft)
+    if (location.state?.matrix && Object.keys(location.state.matrix).length > 0) {
+      setMatrix(location.state.matrix);
+      updateFormData('matrix', location.state.matrix);
+    } else if (!location.state?.decisionId) {
+      // Fresh decision: clear matrix and localStorage
       setMatrix({});
       updateFormData('matrix', {});
       localStorage.removeItem('clarity_form_data');
+      localStorage.removeItem('strategic-alignment-autosave');
+      localStorage.removeItem('strategic-alignment-progress');
     }
-  }, []);
+  }, [location.state?.projects]);
 
   // Auto-save form data when matrix changes
   useEffect(() => {

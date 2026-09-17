@@ -20,12 +20,19 @@ export default function CriticalSuccessFactors() {
   const risks = location.state?.risks || [];
 
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.factors) {
+    // Sync factors from location.state when it exists (e.g., coming back from next page or resuming draft)
+    if (location.state?.factors && location.state.factors.length > 0) {
+      setFactors(location.state.factors);
+      updateFormData('factors', location.state.factors);
+    } else if (!location.state?.decisionId) {
+      // Fresh decision: clear factors and localStorage
       setFactors(['', '']);
       updateFormData('factors', ['', '']);
       localStorage.removeItem('clarity_form_data');
+      localStorage.removeItem('strategic-alignment-autosave');
+      localStorage.removeItem('strategic-alignment-progress');
     }
-  }, []);
+  }, [location.state?.risks]);
 
   const handleFactorChange = (index, value) => {
     const newFactors = [...factors];

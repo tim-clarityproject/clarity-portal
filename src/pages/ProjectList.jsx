@@ -22,12 +22,19 @@ export default function ProjectList() {
   const goal = location.state?.goal || '';
 
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.projects) {
+    // Sync projects from location.state when it exists (e.g., coming back from next page or resuming draft)
+    if (location.state?.projects && location.state.projects.length > 0) {
+      setProjects(location.state.projects);
+      updateFormData('projects', location.state.projects);
+    } else if (!location.state?.decisionId) {
+      // Fresh decision: clear projects and localStorage
       setProjects(['', '']);
       updateFormData('projects', ['', '']);
       localStorage.removeItem('clarity_form_data');
+      localStorage.removeItem('strategic-alignment-autosave');
+      localStorage.removeItem('strategic-alignment-progress');
     }
-  }, []);
+  }, [location.state?.factors]);
 
   // Auto-save form data when projects change
   useEffect(() => {

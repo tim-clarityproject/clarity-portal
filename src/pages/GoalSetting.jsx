@@ -15,18 +15,20 @@ export default function GoalSetting() {
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.goal) {
+    // Sync goal from location.state when it exists (e.g., coming back from next page or resuming draft)
+    if (location.state?.goal) {
+      setGoal(location.state.goal);
+      updateFormData('goal', location.state.goal);
+    } else if (!location.state?.decisionId) {
+      // Fresh decision: clear goal and localStorage
       setGoal('');
       updateFormData('goal', '');
       localStorage.removeItem('clarity_form_data');
+      // Clear strategic-alignment auto-save keys
+      localStorage.removeItem('strategic-alignment-autosave');
+      localStorage.removeItem('strategic-alignment-progress');
     }
-  }, []);
-
-  useEffect(() => {
-    if (location.state?.goal) {
-      setGoal(location.state.goal);
-    }
-  }, [location.state?.goal]);
+  }, [location.state?.problemTitle]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

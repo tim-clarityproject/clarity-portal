@@ -17,12 +17,19 @@ export default function RisksAssessment() {
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.risks) {
+    // Sync risks from location.state when it exists (e.g., coming back from next page or resuming draft)
+    if (location.state?.risks && location.state.risks.length > 0) {
+      setRisks(location.state.risks);
+      updateFormData('risks', location.state.risks);
+    } else if (!location.state?.decisionId) {
+      // Fresh decision: clear risks and localStorage
       setRisks(['', '', '']);
       updateFormData('risks', ['', '', '']);
       localStorage.removeItem('clarity_form_data');
+      localStorage.removeItem('strategic-alignment-autosave');
+      localStorage.removeItem('strategic-alignment-progress');
     }
-  }, []);
+  }, [location.state?.goal]);
 
   const handleRiskChange = (index, value) => {
     const newRisks = [...risks];
