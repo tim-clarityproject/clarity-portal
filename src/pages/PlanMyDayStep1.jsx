@@ -13,12 +13,18 @@ export default function PlanMyDayStep1() {
   const { user } = useContext(AuthContext);
   const { formData, setFormData, clearForm } = useContext(FormContext);
 
-  const [success, setSuccess] = useState(formData.daySuccess || '');
-  const [showUp, setShowUp] = useState(formData.dayShowUp || '');
-  const [notDo, setNotDo] = useState(formData.dayNotDo || '');
+  const [success, setSuccess] = useState('');
+  const [showUp, setShowUp] = useState('');
+  const [notDo, setNotDo] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const isGuest = location.state?.isGuest || false;
+
+  useEffect(() => {
+    if (formData?.daySuccess) setSuccess(formData.daySuccess);
+    if (formData?.dayShowUp) setShowUp(formData.dayShowUp);
+    if (formData?.dayNotDo) setNotDo(formData.dayNotDo);
+  }, []);
 
   useEffect(() => {
     setFormData({
