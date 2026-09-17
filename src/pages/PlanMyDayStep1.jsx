@@ -1,13 +1,12 @@
-import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PlanMyDayStep1() {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const location = useLocation();
+  const isGuest = location.state?.isGuest || false;
   const [success, setSuccess] = useState('');
   const [showUp, setShowUp] = useState('');
   const [notDo, setNotDo] = useState('');
@@ -15,32 +14,26 @@ export default function PlanMyDayStep1() {
   const [saved, setSaved] = useState(false);
 
   const handleSave = async () => {
-    if (!user) {
-      alert('Please log in to save');
-      return;
-    }
-
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('decisions')
-        .insert([{
-          user_id: user.id,
-          decision_type: 'daily_plan',
-          title: `Daily Plan - ${new Date().toLocaleDateString()}`,
-          content: JSON.stringify({
-            success,
-            showUp,
-            notDo,
-          }),
-          created_at: new Date().toISOString(),
-        }]);
+      const planData = {
+        success,
+        showUp,
+        notDo,
+        createdAt: new Date().toISOString(),
+      };
 
-      if (error) throw error;
+      // Save to localStorage temporarily until Supabase is set up
+      localStorage.setItem('lastDailyPlan', JSON.stringify(planData));
 
       setSaved(true);
       setTimeout(() => {
-        navigate('/decision-history');
+        navigate('/daily-plan-summary', {
+          state: {
+            plan: planData,
+            isGuest
+          }
+        });
       }, 1500);
     } catch (error) {
       console.error('Error saving plan:', error);
@@ -55,13 +48,13 @@ export default function PlanMyDayStep1() {
       setSuccess('');
       setShowUp('');
       setNotDo('');
-      navigate('/decision-history');
+      navigate('/decision-history', { state: { isGuest } });
     }
   };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
         <div style={{ marginBottom: '48px' }}>
