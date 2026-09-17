@@ -25,11 +25,11 @@ export default function BreathingGuide({ isOpen, onClose }) {
         setScale(1 + progress * 0.5);
         setSeconds(Math.round((cycleElapsed / 1000)) + 1); // 1-4
       } else {
-        // Exhale phase: scale from 1.5 to 1, count 6-1
+        // Exhale phase: scale from 1.5 to 1, count 1-6
         setPhase('exhale');
         const progress = (cycleElapsed - inhaleDuration) / exhaleDuration;
         setScale(1.5 - progress * 0.5);
-        setSeconds(Math.round(6 - progress * 5)); // 6-1
+        setSeconds(Math.round(progress * 5) + 1); // 1-6
       }
 
       animationFrame = requestAnimationFrame(animate);
