@@ -178,22 +178,58 @@ export default function MyReviews() {
           <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
         ) : entries.filter(e => filterType === 'all' || e.review_type === filterType).length === 0 ? (
           <div style={{ textAlign: 'center', paddingTop: '32px' }}>
-            <p style={{ color: '#999', fontSize: '14px', marginBottom: '16px' }}>No reviews yet</p>
-            <button
-              onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: filterType === 'all' ? 'after-action' : filterType } })}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#F08571',
-                color: 'white',
-                fontWeight: '600',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
-              Create First Review
-            </button>
+            <p style={{ color: '#999', fontSize: '14px', marginBottom: '24px' }}>No reviews yet</p>
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#F08571',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s',
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.textDecoration = 'underline';
+                  e.currentTarget.style.color = '#e07560';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.textDecoration = 'none';
+                  e.currentTarget.style.color = '#F08571';
+                }}
+              >
+                After Action Review
+              </button>
+              <span style={{ color: '#e5e5e5' }}>•</span>
+              <button
+                onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#F08571',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s',
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.textDecoration = 'underline';
+                  e.currentTarget.style.color = '#e07560';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.textDecoration = 'none';
+                  e.currentTarget.style.color = '#F08571';
+                }}
+              >
+                Progress Review
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
