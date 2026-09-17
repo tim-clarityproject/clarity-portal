@@ -223,31 +223,54 @@ export default function DecisionHistory() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
-                      </p>
-                      {(decision.draft || decision.status === 'draft') && (
+                    {decision.tool_type === 'daily_plan' ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <p style={{ fontSize: '14px', color: '#333', margin: 0 }}>
+                          {formatDateWithOrdinal(decision.created_at.split('T')[0])}
+                        </p>
                         <span
                           style={{
-                            fontSize: '11px',
+                            fontSize: '12px',
                             fontWeight: '600',
-                            color: '#fff',
-                            backgroundColor: '#999',
-                            padding: '2px 8px',
+                            color: 'white',
+                            backgroundColor: '#F08571',
+                            padding: '4px 12px',
                             borderRadius: '4px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
                           }}
                         >
-                          Draft
+                          Daily Plan
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                          {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
+                        </p>
+                        {(decision.draft || decision.status === 'draft') && (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              color: '#fff',
+                              backgroundColor: '#999',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                            }}
+                          >
+                            Draft
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                     <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                      {formatDateWithOrdinal(decision.created_at.split('T')[0])} {formatTime(decision.created_at)}
+                      {decision.tool_type === 'daily_plan'
+                        ? formatTime(decision.created_at)
+                        : `${formatDateWithOrdinal(decision.created_at.split('T')[0])} ${formatTime(decision.created_at)}`
+                      }
                     </p>
                     <button
                       onClick={(e) => handleEdit(decision, e)}
