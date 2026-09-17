@@ -194,43 +194,14 @@ export default function DecisionHistory() {
                           letterSpacing: '0.5px',
                         }}
                       >
-                        {decision.tool_type === 'grow' ? 'GROW' : decision.tool_type === 'inversion' ? 'Inversion' : decision.tool_type === 'strategic-alignment' ? 'Strategic' : 'Decision'}
+                        {decision.tool_type === 'grow' ? 'GROW' : decision.tool_type === 'inversion' ? 'Inversion' : decision.tool_type === 'strategic-alignment' ? 'Strategic' : 'Tough Conversation'}
                       </span>
                     </div>
-                    <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
-                      Preview text here
-                    </p>
                   </div>
-                  <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap' }}>
-                    {formatDateWithOrdinal(decision.created_at.split('T')[0])} {formatTime(decision.created_at)}
-                  </p>
-                  <div style={{ display: 'flex', gap: '8px', marginLeft: '12px', alignItems: 'center' }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/my-journal', { state: { isGuest, reviewType: 'after-action', decisionContext: decision.title || 'Untitled Decision' } });
-                      }}
-                      title="Review decision"
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: 'transparent',
-                        color: '#F08571',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                    >
-                      After-Action Review
-                    </button>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap' }}>
+                      {formatDateWithOrdinal(decision.created_at.split('T')[0])} {formatTime(decision.created_at)}
+                    </p>
                     <button
                       onClick={(e) => handleDelete(decision.id, e)}
                       title="Delete decision"
