@@ -121,11 +121,13 @@ export default function DecisionSummary() {
           {decision.title || 'Untitled Decision'}
         </h1>
 
-        {/* Your Goal */}
-        <SectionBlock
-          title="Your Goal"
-          content={formData.goal || decision.title}
-        />
+        {/* Your Goal - not shown for Tough Conversation */}
+        {toolType !== 'tough-conversation' && (
+          <SectionBlock
+            title="Your Goal"
+            content={formData.goal || decision.title}
+          />
+        )}
 
         {/* GROW Specific Sections */}
         {toolType === 'grow' && (
@@ -181,7 +183,7 @@ export default function DecisionSummary() {
             {(formData.observation || formData.impact || formData.need) && (
               <div style={{ marginBottom: '32px' }}>
                 <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Your Feedback
+                  Your Feedback Script
                 </h2>
                 <div style={{
                   backgroundColor: '#f9f9f9',
@@ -226,11 +228,13 @@ export default function DecisionSummary() {
           </>
         )}
 
-        {/* Action You Said You'd Take */}
-        <SectionBlock
-          title="Action You Said You'd Take"
-          content={formData.will_do || formData.plan}
-        />
+        {/* Action You Said You'd Take - not shown for Tough Conversation */}
+        {toolType !== 'tough-conversation' && (
+          <SectionBlock
+            title="Action You Said You'd Take"
+            content={formData.will_do || formData.plan}
+          />
+        )}
 
         {/* Meta Info */}
         <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid #e5e5e5', fontSize: '12px', color: '#999' }}>
