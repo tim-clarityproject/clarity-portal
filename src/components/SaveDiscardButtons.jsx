@@ -5,11 +5,11 @@ import { saveProgress, clearProgress, AUTO_SAVE_KEY } from '../lib/saveProgress'
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, nextLabel = 'Continue' }) {
+export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, onSaveAsDraft = null, isGuest: propIsGuest = null, nextLabel = 'Continue' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
+  const isGuest = propIsGuest !== null ? propIsGuest : location.state?.isGuest || false;
 
   const handleSaveAsDraft = async () => {
     const pageIdentifier = location.pathname.replace('/', '');
@@ -117,7 +117,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
       <button
         type="button"
-        onClick={handleSaveAsDraft}
+        onClick={onSaveAsDraft || handleSaveAsDraft}
         style={{
           padding: '12px 24px',
           backgroundColor: 'transparent',
