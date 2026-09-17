@@ -178,39 +178,50 @@ export default function DecisionSummary() {
         {/* Tough Conversation Specific Sections */}
         {toolType === 'tough-conversation' && (
           <>
-            <SectionBlock
-              title="Observation"
-              content={formData.observation}
-            />
-            <SectionBlock
-              title="Impact"
-              content={formData.impact}
-            />
-            <SectionBlock
-              title="What I Need"
-              content={formData.need}
-            />
-            {formData.selectedQuestions && formData.selectedQuestions.length > 0 && (
+            {(formData.observation || formData.impact || formData.need) && (
               <div style={{ marginBottom: '32px' }}>
                 <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Coaching Questions
+                  Your Feedback
                 </h2>
-                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
-                  {['What\'s already working that we can build upon?', 'What part of this is within your control?', 'What would others notice first if things improved?', 'What\'s one behaviour you\'d keep, start, or stop?', 'When have you handled this well before?', 'What\'s the simplest next step you could take?', 'What strengths could you use here?', 'What support would help you the most?'].map((q, idx) => (
-                    formData.selectedQuestions.includes(idx) && (
-                      <div key={idx} style={{ marginBottom: idx < formData.selectedQuestions.length - 1 ? '12px' : 0, color: '#555', fontSize: '14px' }}>
-                        • {q}
-                      </div>
-                    )
-                  ))}
+                <div style={{
+                  backgroundColor: '#f9f9f9',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: '#555',
+                  whiteSpace: 'pre-wrap',
+                  wordWrap: 'break-word'
+                }}>
+                  I've noticed {formData.observation}. The impact of that is {formData.impact}. So, what I need from you is {formData.need}.
                 </div>
               </div>
             )}
-            {formData.customQuestion && (
-              <SectionBlock
-                title="Custom Question"
-                content={formData.customQuestion}
-              />
+
+            {((formData.selectedQuestions && formData.selectedQuestions.length > 0) || formData.customQuestion) && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Your Coaching Questions
+                </h2>
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
+                  {formData.selectedQuestions && formData.selectedQuestions.length > 0 && (
+                    <>
+                      {['What\'s already working that we can build upon?', 'What part of this is within your control?', 'What would others notice first if things improved?', 'What\'s one behaviour you\'d keep, start, or stop?', 'When have you handled this well before?', 'What\'s the simplest next step you could take?', 'What strengths could you use here?', 'What support would help you the most?'].map((q, idx) => (
+                        formData.selectedQuestions.includes(idx) && (
+                          <div key={idx} style={{ marginBottom: '12px', color: '#555', fontSize: '14px' }}>
+                            • {q}
+                          </div>
+                        )
+                      ))}
+                    </>
+                  )}
+                  {formData.customQuestion && (
+                    <div style={{ color: '#555', fontSize: '14px', marginTop: formData.selectedQuestions && formData.selectedQuestions.length > 0 ? '12px' : 0, paddingTop: formData.selectedQuestions && formData.selectedQuestions.length > 0 ? '12px' : 0, borderTop: formData.selectedQuestions && formData.selectedQuestions.length > 0 ? '1px solid #e5e5e5' : 'none' }}>
+                      • {formData.customQuestion}
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </>
         )}
