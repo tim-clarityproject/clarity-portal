@@ -264,69 +264,70 @@ export default function MyReviews() {
             ))}
           </div>
         )}
+      </div>
 
-        {/* Fixed bottom bar for creating new reviews */}
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: '#fafafa',
-          borderTop: '1px solid #e5e5e5',
-          padding: '16px 32px',
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '12px',
-        }}>
-          <button
-            onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              color: '#333',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '600',
-              borderRadius: '6px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            + After Action Review
-          </button>
-          <button
-            onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              color: '#333',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '600',
-              borderRadius: '6px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            + Progress Review
-          </button>
-        </div>
+      {/* Fixed bottom bar for creating new reviews - always visible */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fafafa',
+        borderTop: '1px solid #e5e5e5',
+        padding: '16px 32px',
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '12px',
+        zIndex: 10,
+      }}>
+        <button
+          onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'transparent',
+            border: '2px solid #e5e5e5',
+            color: '#333',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '6px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#F08571';
+            e.currentTarget.style.backgroundColor = '#FEE5DE';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#e5e5e5';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          + After Action Review
+        </button>
+        <button
+          onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'transparent',
+            border: '2px solid #e5e5e5',
+            color: '#333',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '6px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#F08571';
+            e.currentTarget.style.backgroundColor = '#FEE5DE';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#e5e5e5';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          + Progress Review
+        </button>
       </div>
     </div>
   );
