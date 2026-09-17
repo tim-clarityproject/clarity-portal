@@ -18,6 +18,7 @@ export default function ProjectScatter() {
   const [isSaving, setIsSaving] = useState(false);
   const [hoveredQuadrant, setHoveredQuadrant] = useState(null);
   const [showNamingModal, setShowNamingModal] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
 
   useLoadDecision(updateFormData);
 
@@ -28,12 +29,18 @@ export default function ProjectScatter() {
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
 
+  const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
+
   const handleSaveToLogClick = () => {
     if (isGuest || !user) {
       alert('Please log in to save decisions');
       return;
     }
-    setShowNamingModal(true);
+    if (needsNaming) {
+      setShowNamingModal(true);
+    } else {
+      handleSaveToLogConfirmed(currentTitle);
+    }
   };
 
   const handleSaveToLogConfirmed = async (decisionName) => {
@@ -86,6 +93,7 @@ export default function ProjectScatter() {
         }
       }
 
+      setCurrentTitle(decisionName);
       navigate('/decision-summary', { state: { isGuest, decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
