@@ -135,28 +135,29 @@ export default function DecisionSummary() {
             padding: 16px 24px !important;
           }
           h1 {
-            margin-top: 8px !important;
-            margin-bottom: 16px !important;
+            margin-top: 4px !important;
+            margin-bottom: 12px !important;
             page-break-after: avoid;
           }
           h2 {
             page-break-after: avoid;
-            margin-top: 12px !important;
-            margin-bottom: 8px !important;
+            margin-top: 8px !important;
+            margin-bottom: 6px !important;
           }
           div[style*="marginBottom: '32px'"] {
-            margin-bottom: 16px !important;
-            page-break-inside: avoid;
+            margin-bottom: 12px !important;
           }
           div[style*="marginBottom: '48px'"] {
-            margin-bottom: 16px !important;
+            margin-bottom: 12px !important;
           }
           svg {
-            page-break-inside: avoid;
             max-width: 100%;
+            page-break-inside: auto;
+            margin-top: 0 !important;
+            margin-bottom: 12px !important;
           }
           div[style*="display: grid"] {
-            page-break-inside: avoid;
+            page-break-inside: auto;
           }
         }
       `}</style>
