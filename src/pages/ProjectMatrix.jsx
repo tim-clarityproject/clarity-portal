@@ -18,8 +18,16 @@ export default function ProjectMatrix() {
   const isGuest = location.state?.isGuest || false;
 
   const [projects, setProjects] = useState(location.state?.projects || loadAutoSave()?.projects || ['', '']);
-  const [matrix, setMatrix] = useState(() => location.state?.matrix || getFieldValue('matrix') || loadAutoSave()?.matrix || {});
+  const [matrix, setMatrix] = useState(() => location.state?.matrix || loadAutoSave()?.matrix || {});
   const [showSaveModal, setShowSaveModal] = useState(false);
+
+  useEffect(() => {
+    if (!location.state?.decisionId && !location.state?.matrix) {
+      setMatrix({});
+      updateFormData('matrix', {});
+      localStorage.removeItem('clarity_form_data');
+    }
+  }, []);
 
   // Auto-save form data when matrix changes
   useEffect(() => {

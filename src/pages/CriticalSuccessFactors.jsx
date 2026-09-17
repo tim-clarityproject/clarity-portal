@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
@@ -12,12 +12,20 @@ export default function CriticalSuccessFactors() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [factors, setFactors] = useState(() => location.state?.factors || getFieldValue('factors') || ['', '']);
+  const [factors, setFactors] = useState(() => location.state?.factors || ['', '']);
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
-  const risks = location.state?.risks || getFieldValue('risks') || [];
+  const risks = location.state?.risks || [];
+
+  useEffect(() => {
+    if (!location.state?.decisionId && !location.state?.factors) {
+      setFactors(['', '']);
+      updateFormData('factors', ['', '']);
+      localStorage.removeItem('clarity_form_data');
+    }
+  }, []);
 
   const handleFactorChange = (index, value) => {
     const newFactors = [...factors];

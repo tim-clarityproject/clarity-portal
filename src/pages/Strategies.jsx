@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
@@ -10,11 +10,19 @@ export default function Strategies() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [strategies, setStrategies] = useState(() => location.state?.strategies || getFieldValue('strategies') || []);
+  const [strategies, setStrategies] = useState(() => location.state?.strategies || []);
 
-  const risks = location.state?.risks || getFieldValue('risks') || [];
+  const risks = location.state?.risks || [];
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
+
+  useEffect(() => {
+    if (!location.state?.decisionId && !location.state?.strategies) {
+      setStrategies([]);
+      updateFormData('strategies', []);
+      localStorage.removeItem('clarity_form_data');
+    }
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();

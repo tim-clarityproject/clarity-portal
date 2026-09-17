@@ -17,9 +17,17 @@ export default function ProjectList() {
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
 
-  const [projects, setProjects] = useState(() => location.state?.projects || getFieldValue('projects') || ['', '']);
+  const [projects, setProjects] = useState(() => location.state?.projects || ['', '']);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const goal = location.state?.goal || loadAutoSave()?.goal || '';
+
+  useEffect(() => {
+    if (!location.state?.decisionId && !location.state?.projects) {
+      setProjects(['', '']);
+      updateFormData('projects', ['', '']);
+      localStorage.removeItem('clarity_form_data');
+    }
+  }, []);
 
   // Auto-save form data when projects change
   useEffect(() => {

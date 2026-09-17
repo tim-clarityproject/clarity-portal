@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
@@ -11,10 +11,18 @@ export default function RisksAssessment() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [risks, setRisks] = useState(() => location.state?.risks || getFieldValue('risks') || ['', '', '']);
+  const [risks, setRisks] = useState(() => location.state?.risks || ['', '', '']);
 
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
+
+  useEffect(() => {
+    if (!location.state?.decisionId && !location.state?.risks) {
+      setRisks(['', '', '']);
+      updateFormData('risks', ['', '', '']);
+      localStorage.removeItem('clarity_form_data');
+    }
+  }, []);
 
   const handleRiskChange = (index, value) => {
     const newRisks = [...risks];

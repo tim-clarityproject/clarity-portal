@@ -8,11 +8,19 @@ export default function GoalSetting() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [goal, setGoal] = useState(() => location.state?.goal || getFieldValue('goal') || '');
+  const [goal, setGoal] = useState(() => location.state?.goal || '');
 
   const problemTitle = location.state?.problemTitle || '';
   const path = location.state?.path || (problemTitle?.includes('team') ? 'team' : 'personal');
   const isGuest = location.state?.isGuest || false;
+
+  useEffect(() => {
+    if (!location.state?.decisionId && !location.state?.goal) {
+      setGoal('');
+      updateFormData('goal', '');
+      localStorage.removeItem('clarity_form_data');
+    }
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
