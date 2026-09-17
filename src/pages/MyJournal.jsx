@@ -40,6 +40,16 @@ export default function MyJournal() {
   const questions = reviewType === 'progress' ? progressQuestions : afterActionQuestions;
   const pageTitle = reviewType === 'progress' ? 'Progress Review' : 'After Action Review';
 
+  // Clear form when review type changes
+  useEffect(() => {
+    if (!isEditMode) {
+      setQ1('');
+      setQ2('');
+      setQ3('');
+      setQ4('');
+    }
+  }, [reviewType, isEditMode]);
+
   useEffect(() => {
     if (user && !isGuest && isEditMode) {
       loadEntry(selectedDate);
