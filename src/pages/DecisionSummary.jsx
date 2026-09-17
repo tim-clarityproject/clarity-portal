@@ -98,6 +98,18 @@ export default function DecisionSummary() {
         @page {
           margin: 0.4in 0.5in;
           padding: 0;
+          @bottom-right {
+            content: '';
+          }
+          @bottom-left {
+            content: '';
+          }
+          @top-right {
+            content: '';
+          }
+          @top-left {
+            content: '';
+          }
         }
         @media print {
           * {
