@@ -41,10 +41,12 @@ export default function BreathingGuide({ isOpen, onClose }) {
         const inhaleSeconds = Math.floor(cycleElapsed / 1000) + 1;
         setSeconds(Math.min(inhaleSeconds, Math.floor(inhaleDuration / 1000)));
       } else if (cycleElapsed < inhaleDuration + holdDuration) {
-        // Hold phase: maintain 1.5 scale
+        // Hold phase: maintain 1.5 scale, count up
         setPhase('hold');
         setScale(1.5);
-        setSeconds(0);
+        const holdElapsed = cycleElapsed - inhaleDuration;
+        const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
+        setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
       } else {
         // Exhale phase: scale from 1.5 to 1
         setPhase('exhale');
@@ -118,7 +120,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
               textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
             }}
           >
-            {phase === 'hold' ? '—' : (typeof seconds === 'number' ? Math.round(seconds) : '—')}
+            {typeof seconds === 'number' ? Math.round(seconds) : '—'}
           </div>
         </div>
 
