@@ -1,76 +1,110 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function BreathingGuide({ isOpen, onClose }) {
-  const [phase, setPhase] = useState('inhale'); // 'inhale' or 'exhale'
+  const { user } = useContext(AuthContext);
+  const [phase, setPhase] = useState('inhale');
   const [scale, setScale] = useState(1);
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    // Load custom settings from localStorage
-    let inhaleDuration = 4000;
-    let holdDuration = 0;
-    let exhaleDuration = 6000;
+    const loadSettings = async () => {
+      let inhaleDuration = 4000;
+      let holdDuration = 0;
+      let exhaleDuration = 6000;
 
-    const saved = localStorage.getItem('breathingSettings');
-    if (saved) {
-      try {
-        const settings = JSON.parse(saved);
-        inhaleDuration = (settings.inhale || 4) * 1000;
-        holdDuration = (settings.hold || 0) * 1000;
-        exhaleDuration = (settings.exhale || 6) * 1000;
-      } catch (e) {
-        console.error('Error loading breathing settings:', e);
-      }
-    }
+      // Try to load from Supabase if user is logged in
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('breathing_settings')
+            .eq('id', user.id)
+            .single();
 
-    let animationFrame;
-    let startTime = Date.now();
-    const cycleDuration = inhaleDuration + holdDuration + exhaleDuration + holdDuration;
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const cycleElapsed = elapsed % cycleDuration;
-
-      if (cycleElapsed < inhaleDuration) {
-        // Inhale phase: scale from 1 to 1.5
-        setPhase('inhale');
-        const progress = cycleElapsed / inhaleDuration;
-        setScale(1 + progress * 0.5);
-        const inhaleSeconds = Math.floor(cycleElapsed / 1000) + 1;
-        setSeconds(Math.min(inhaleSeconds, Math.floor(inhaleDuration / 1000)));
-      } else if (cycleElapsed < inhaleDuration + holdDuration) {
-        // Hold phase (after inhale): maintain 1.5 scale, count up
-        setPhase('hold');
-        setScale(1.5);
-        const holdElapsed = cycleElapsed - inhaleDuration;
-        const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
-        setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
-      } else if (cycleElapsed < inhaleDuration + holdDuration + exhaleDuration) {
-        // Exhale phase: scale from 1.5 to 1
-        setPhase('exhale');
-        const exhaleElapsed = cycleElapsed - inhaleDuration - holdDuration;
-        const progress = exhaleElapsed / exhaleDuration;
-        setScale(1.5 - progress * 0.5);
-        const exhaleSeconds = Math.floor(exhaleElapsed / 1000) + 1;
-        setSeconds(Math.min(exhaleSeconds, Math.floor(exhaleDuration / 1000)));
-      } else {
-        // Hold phase (after exhale): maintain 1 scale, count up
-        setPhase('hold');
-        setScale(1);
-        const holdElapsed = cycleElapsed - inhaleDuration - holdDuration - exhaleDuration;
-        const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
-        setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
+          if (data?.breathing_settings) {
+            const settings = data.breathing_settings;
+            inhaleDuration = (settings.inhale || 4) * 1000;
+            holdDuration = (settings.hold || 0) * 1000;
+            exhaleDuration = (settings.exhale || 6) * 1000;
+            startAnimation(inhaleDuration, holdDuration, exhaleDuration);
+            return;
+          }
+        } catch (e) {
+          console.error('Error loading breathing settings from Supabase:', e);
+        }
       }
 
-      animationFrame = requestAnimationFrame(animate);
+      // Fall back to localStorage
+      const saved = localStorage.getItem('breathingSettings');
+      if (saved) {
+        try {
+          const settings = JSON.parse(saved);
+          inhaleDuration = (settings.inhale || 4) * 1000;
+          holdDuration = (settings.hold || 0) * 1000;
+          exhaleDuration = (settings.exhale || 6) * 1000;
+        } catch (e) {
+          console.error('Error loading breathing settings:', e);
+        }
+      }
+
+      startAnimation(inhaleDuration, holdDuration, exhaleDuration);
     };
 
-    animationFrame = requestAnimationFrame(animate);
+    const startAnimation = (inhaleDuration, holdDuration, exhaleDuration) => {
 
-    return () => cancelAnimationFrame(animationFrame);
-  }, [isOpen]);
+      let animationFrame;
+      let startTime = Date.now();
+      const cycleDuration = inhaleDuration + holdDuration + exhaleDuration + holdDuration;
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const cycleElapsed = elapsed % cycleDuration;
+
+        if (cycleElapsed < inhaleDuration) {
+          // Inhale phase: scale from 1 to 1.5
+          setPhase('inhale');
+          const progress = cycleElapsed / inhaleDuration;
+          setScale(1 + progress * 0.5);
+          const inhaleSeconds = Math.floor(cycleElapsed / 1000) + 1;
+          setSeconds(Math.min(inhaleSeconds, Math.floor(inhaleDuration / 1000)));
+        } else if (cycleElapsed < inhaleDuration + holdDuration) {
+          // Hold phase (after inhale): maintain 1.5 scale, count up
+          setPhase('hold');
+          setScale(1.5);
+          const holdElapsed = cycleElapsed - inhaleDuration;
+          const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
+          setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
+        } else if (cycleElapsed < inhaleDuration + holdDuration + exhaleDuration) {
+          // Exhale phase: scale from 1.5 to 1
+          setPhase('exhale');
+          const exhaleElapsed = cycleElapsed - inhaleDuration - holdDuration;
+          const progress = exhaleElapsed / exhaleDuration;
+          setScale(1.5 - progress * 0.5);
+          const exhaleSeconds = Math.floor(exhaleElapsed / 1000) + 1;
+          setSeconds(Math.min(exhaleSeconds, Math.floor(exhaleDuration / 1000)));
+        } else {
+          // Hold phase (after exhale): maintain 1 scale, count up
+          setPhase('hold');
+          setScale(1);
+          const holdElapsed = cycleElapsed - inhaleDuration - holdDuration - exhaleDuration;
+          const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
+          setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
+        }
+
+        animationFrame = requestAnimationFrame(animate);
+      };
+
+      animationFrame = requestAnimationFrame(animate);
+
+      return () => cancelAnimationFrame(animationFrame);
+    };
+
+    loadSettings();
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 

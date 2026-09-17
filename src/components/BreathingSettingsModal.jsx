@@ -1,29 +1,83 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function BreathingSettingsModal({ isOpen, onClose }) {
+  const { user } = useContext(AuthContext);
   const [inhale, setInhale] = useState(4);
   const [hold, setHold] = useState(0);
   const [exhale, setExhale] = useState(6);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Load settings from localStorage
-    const saved = localStorage.getItem('breathingSettings');
-    if (saved) {
-      try {
-        const settings = JSON.parse(saved);
-        setInhale(settings.inhale || 4);
-        setHold(settings.hold || 0);
-        setExhale(settings.exhale || 6);
-      } catch (e) {
-        console.error('Error loading breathing settings:', e);
-      }
-    }
-  }, [isOpen]);
+    if (!isOpen || !user) return;
 
-  const handleSave = () => {
+    const loadSettings = async () => {
+      // Try to load from Supabase first
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('breathing_settings')
+          .eq('id', user.id)
+          .single();
+
+        if (data?.breathing_settings) {
+          const settings = data.breathing_settings;
+          setInhale(settings.inhale || 4);
+          setHold(settings.hold || 0);
+          setExhale(settings.exhale || 6);
+          return;
+        }
+      } catch (e) {
+        console.error('Error loading breathing settings from Supabase:', e);
+      }
+
+      // Fall back to localStorage
+      const saved = localStorage.getItem('breathingSettings');
+      if (saved) {
+        try {
+          const settings = JSON.parse(saved);
+          setInhale(settings.inhale || 4);
+          setHold(settings.hold || 0);
+          setExhale(settings.exhale || 6);
+        } catch (e) {
+          console.error('Error loading breathing settings from localStorage:', e);
+        }
+      }
+    };
+
+    loadSettings();
+  }, [isOpen, user]);
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
     const settings = { inhale, hold, exhale };
-    localStorage.setItem('breathingSettings', JSON.stringify(settings));
-    onClose();
+
+    try {
+      // Save to Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({ breathing_settings: settings })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error saving breathing settings to Supabase:', error);
+        // Still save to localStorage as fallback
+        localStorage.setItem('breathingSettings', JSON.stringify(settings));
+      } else {
+        // Also update localStorage
+        localStorage.setItem('breathingSettings', JSON.stringify(settings));
+      }
+    } catch (e) {
+      console.error('Error saving breathing settings:', e);
+      // Fall back to localStorage
+      localStorage.setItem('breathingSettings', JSON.stringify(settings));
+    } finally {
+      setIsSaving(false);
+      onClose();
+    }
   };
 
   if (!isOpen) return null;
@@ -145,6 +199,7 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
             onClick={handleSave}
+            disabled={isSaving}
             style={{
               flex: 1,
               padding: '12px 24px',
@@ -153,14 +208,15 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
               border: 'none',
               borderRadius: '8px',
               fontWeight: '600',
-              cursor: 'pointer',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
               fontSize: '14px',
               transition: 'all 0.2s',
+              opacity: isSaving ? 0.7 : 1,
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+            onMouseEnter={(e) => !isSaving && (e.target.style.backgroundColor = '#e07560')}
+            onMouseLeave={(e) => !isSaving && (e.target.style.backgroundColor = '#F08571')}
           >
-            Save
+            {isSaving ? 'Saving...' : 'Save'}
           </button>
           <button
             onClick={onClose}
