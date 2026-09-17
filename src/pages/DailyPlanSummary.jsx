@@ -88,13 +88,26 @@ export default function DailyPlanSummary() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        <div style={{ marginBottom: '48px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
-            Daily Plan Summary
-          </h1>
-          <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
-            {formatDate(plan.created_at)}
-          </p>
+        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <p style={{ fontSize: '13px', color: '#999', margin: 0, marginBottom: '8px' }}>
+              {formatDate(plan.created_at)}
+            </p>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
+              Daily Plan Summary
+            </h1>
+          </div>
+          <div style={{
+            backgroundColor: '#FEE5DE',
+            color: '#F08571',
+            padding: '6px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '600',
+            whiteSpace: 'nowrap',
+          }}>
+            Daily Plan
+          </div>
         </div>
 
         <div style={{ marginBottom: '48px', display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
