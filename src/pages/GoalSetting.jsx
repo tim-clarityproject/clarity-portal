@@ -88,7 +88,7 @@ export default function GoalSetting() {
         <SaveDiscardButtons
           formData={{ goal }}
           pageType="decision"
-          toolType={path === 'team' ? 'team-focus' : 'grow'}
+          toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={goal.trim().length > 0}
         />

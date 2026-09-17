@@ -164,7 +164,7 @@ export default function RisksAssessment() {
         <SaveDiscardButtons
           formData={{ risks }}
           pageType="decision"
-          toolType={path === 'team' ? 'team-focus' : 'grow'}
+          toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={canSubmit}
           onBack={() => navigate('/goal-setting', { state: { ...location.state, path, isGuest } })}

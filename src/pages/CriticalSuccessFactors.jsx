@@ -179,7 +179,7 @@ export default function CriticalSuccessFactors() {
         <SaveDiscardButtons
           formData={{ factors }}
           pageType="decision"
-          toolType="goal-setting"
+          toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={canSubmit}
           onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state, isGuest } })}

@@ -109,7 +109,7 @@ export default function ProjectProgress() {
         <SaveDiscardButtons
           formData={{ progress }}
           pageType="decision"
-          toolType="team-focus"
+          toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={true}
           onBack={() => navigate('/project-matrix', { state: { ...formData, ...location.state, isGuest } })}

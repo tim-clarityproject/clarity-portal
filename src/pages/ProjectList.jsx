@@ -228,7 +228,7 @@ export default function ProjectList() {
         <SaveDiscardButtons
           formData={{ projects }}
           pageType="decision"
-          toolType="team-focus"
+          toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={canSubmit}
           onBack={() => navigate('/critical-success-factors', { state: { ...formData, ...location.state, isGuest } })}

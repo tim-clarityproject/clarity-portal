@@ -184,7 +184,7 @@ export default function ProjectMatrix() {
         <SaveDiscardButtons
           formData={{ matrix }}
           pageType="decision"
-          toolType="team-focus"
+          toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={canSubmit}
           onBack={() => navigate('/project-list', { state: { ...formData, ...location.state, isGuest } })}

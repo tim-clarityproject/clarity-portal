@@ -169,7 +169,7 @@ export default function Strategies() {
         <SaveDiscardButtons
           formData={{ strategies }}
           pageType="decision"
-          toolType="goal-setting"
+          toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={true}
           onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state, isGuest } })}
