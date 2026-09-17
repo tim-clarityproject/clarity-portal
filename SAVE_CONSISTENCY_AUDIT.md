@@ -8,30 +8,39 @@
 
 ## The Rule: Complete Save Pattern
 
-Every decision MUST set **BOTH** fields when completing/finalizing:
+Every decision MUST set **THREE** fields when saving (applies to draft and completion):
 
 ```javascript
+// For COMPLETION:
 await supabase
   .from('decisions')
   .update({
     form_data: formDataComplete,
+    title: location.state?.problemTitle || dateTitle,  // ✓ Required: use problemTitle if available
     draft: false,           // ✓ Required
-    status: 'completed'     // ✓ Required (currently missing in Tough Convo)
+    status: 'completed'     // ✓ Required
   })
   .eq('id', decisionId);
 
-// OR on insert:
+// For DRAFT:
 await supabase
   .from('decisions')
   .insert({
     user_id: user.id,
-    tool_type: 'tough-conversation',
-    title,
-    form_data: formDataComplete,
-    draft: false,           // ✓ Required
-    status: 'completed'     // ✓ Required (currently missing in Tough Convo)
+    tool_type: toolType,
+    title: location.state?.problemTitle || dateTitle,  // ✓ Required: use problemTitle if available
+    form_data: formData,
+    draft: true,            // ✓ Required
+    status: 'draft'         // ✓ Required
   });
 ```
+
+### Title Priority
+1. **First choice:** `location.state?.problemTitle` (set by Welcome when user clicks decision type)
+2. **Fallback:** Date string (if problemTitle not available)
+3. **Never:** Don't use a generic title like "Untitled Decision"
+
+**Why:** Users need to see "A key decision", "A tough conversation", etc. in My Decisions list, not just dates.
 
 ## Current Status by Workflow
 

@@ -18,12 +18,13 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
     if (user && toolType) {
       try {
         const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        const title = location.state?.problemTitle || dateTitle;
         await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
             tool_type: toolType,
-            title: dateTitle,
+            title,
             form_data: formData,
             status: 'draft',
             draft: true
