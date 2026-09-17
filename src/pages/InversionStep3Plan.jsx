@@ -19,6 +19,7 @@ export default function InversionStep3Plan() {
   const [plan, setPlan] = useState(() => location.state?.plan || '');
   const [isSaving, setIsSaving] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
   const isGuest = location.state?.isGuest || false;
   const fuckups = location.state?.fuckups || [];
 
@@ -45,6 +46,8 @@ export default function InversionStep3Plan() {
     }
   }, [location.state?.goal, location.state?.plan, updateFormData]);
 
+  const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
+
   const handleSaveClick = () => {
     if (!plan.trim() || !goal.trim()) return;
 
@@ -53,7 +56,11 @@ export default function InversionStep3Plan() {
       return;
     }
 
-    setShowNamingModal(true);
+    if (needsNaming) {
+      setShowNamingModal(true);
+    } else {
+      handleSaveConfirmed(currentTitle);
+    }
   };
 
   const handleSaveConfirmed = async (decisionName) => {
@@ -97,6 +104,7 @@ export default function InversionStep3Plan() {
         }
       }
 
+      setCurrentTitle(decisionName);
       clearProgress();
       navigate('/decision-summary', { state: { isGuest, decisionId } });
     } catch (error) {
