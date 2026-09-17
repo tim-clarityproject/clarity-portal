@@ -94,6 +94,26 @@ export default function DecisionSummary() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          html {
+            margin: 0;
+            padding: 0;
+          }
+          button {
+            display: none !important;
+          }
+          [style*="flex-direction: column"] > div:first-child {
+            display: none !important;
+          }
+        }
+      `}</style>
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
@@ -534,6 +554,28 @@ export default function DecisionSummary() {
           <p style={{ margin: 0 }}>
             Created: <span style={{ fontWeight: '600', color: '#333' }}>{new Date(decision.created_at).toLocaleDateString()}</span>
           </p>
+        </div>
+
+        {/* Share as PDF Button */}
+        <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={() => window.print()}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#F08571',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+          >
+            Share as PDF
+          </button>
         </div>
       </div>
     </div>
