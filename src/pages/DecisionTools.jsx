@@ -3,10 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import HomeHeader from '../components/HomeHeader';
 
 const ALL_PROBLEMS = [
+  { id: 'plan-day', title: 'Plan my day', description: 'Set yourself up for success with intention and clarity', tools: ['plan-day'], status: null },
   { id: 'decision', title: 'A key decision', description: 'Use the GROW model to get clear on the way forward', tools: ['grow'], status: null },
   { id: 'strategic', title: 'Where my team should focus', description: 'Assess how your current projects align with your team\'s objective', tools: ['strategic-alignment'], status: null },
   { id: 'tough-conversation', title: 'A tough conversation', description: 'Create a script for giving feedback', tools: ['tough-conversation'], status: null },
-  { id: 'plan-day', title: 'Plan my day', description: 'Set yourself up for success with intention and clarity', tools: ['plan-day'], status: null },
   { id: 'new-hire', title: 'Making a new hire', description: 'Plan and prepare for bringing on new team members', tools: ['new-hire'], status: 'coming-soon' },
   { id: 'onboarding', title: 'Onboarding a new member of staff', description: 'Guide and support new team members in their first weeks', tools: ['onboarding'], status: 'coming-soon' },
   { id: 'energy', title: 'What to focus my energy on', description: 'Allocate your priorities wisely', tools: ['energy-allocation'], status: 'coming-soon' },

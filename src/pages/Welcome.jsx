@@ -7,10 +7,10 @@ import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 
 const ALL_PROBLEMS = [
+  { id: 'plan-day', title: 'Plan my day', tools: ['plan-day'], status: null },
   { id: 'decision', title: 'A key decision', tools: ['grow'], status: null },
   { id: 'strategic', title: 'Where my team should focus', tools: ['strategic-alignment'], status: null },
   { id: 'tough-conversation', title: 'A tough conversation', tools: ['tough-conversation'], status: null },
-  { id: 'plan-day', title: 'Plan my day', tools: ['plan-day'], status: null },
   { id: 'new-hire', title: 'Making a new hire', tools: ['new-hire'], status: 'coming-soon' },
   { id: 'onboarding', title: 'Onboarding a new member of staff', tools: ['onboarding'], status: 'coming-soon' },
   { id: 'energy', title: 'What to focus my energy on', tools: ['energy-allocation'], status: 'coming-soon' },
