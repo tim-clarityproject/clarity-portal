@@ -118,7 +118,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
               textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
             }}
           >
-            {phase === 'hold' ? '—' : Math.round(seconds)}
+            {phase === 'hold' ? '—' : (typeof seconds === 'number' ? Math.round(seconds) : '—')}
           </div>
         </div>
 
