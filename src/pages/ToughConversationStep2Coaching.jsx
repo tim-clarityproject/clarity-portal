@@ -493,6 +493,7 @@ export default function ToughConversationStep2Coaching() {
           onNext={handleCompleteClick}
           onSaveAsDraft={handleSaveAsDraft}
           nextLabel="Finish"
+          canNext={true}
           isGuest={isGuest}
         />
 
