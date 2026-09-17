@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
-import { clearProgress } from '../lib/saveProgress';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
 
@@ -62,7 +61,6 @@ export default function PlanMyDayStep1() {
         throw error;
       }
 
-      clearProgress();
       setSaved(true);
       setTimeout(() => {
         clearForm();
