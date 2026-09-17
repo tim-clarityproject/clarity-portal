@@ -5,7 +5,7 @@ import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
-import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
+import { autoSaveFormData } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -19,7 +19,7 @@ export default function ProjectList() {
 
   const [projects, setProjects] = useState(() => location.state?.projects || ['', '']);
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const goal = location.state?.goal || loadAutoSave()?.goal || '';
+  const goal = location.state?.goal || '';
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.projects) {
@@ -66,7 +66,7 @@ export default function ProjectList() {
     if (filledProjects.length >= 1) {
       updateFormData('projects', filledProjects);
       navigate('/project-matrix', {
-        state: { ...location.state, ...formData, goal, factors, projects: filledProjects, path, isGuest }
+        state: { ...location.state, projects: filledProjects, path, isGuest }
       });
     }
   };

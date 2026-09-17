@@ -22,6 +22,12 @@ export default function GoalSetting() {
     }
   }, []);
 
+  useEffect(() => {
+    if (location.state?.goal) {
+      setGoal(location.state.goal);
+    }
+  }, [location.state?.goal]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (goal.trim()) {

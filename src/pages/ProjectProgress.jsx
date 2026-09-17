@@ -4,7 +4,7 @@ import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
-import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
+import { autoSaveFormData } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -16,7 +16,7 @@ export default function ProjectProgress() {
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
 
-  const [progress, setProgress] = useState(() => location.state?.progress || getFieldValue('progress') || loadAutoSave()?.progress || {});
+  const [progress, setProgress] = useState(() => location.state?.progress || getFieldValue('progress') || {});
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   // Auto-save form data when progress changes
@@ -40,7 +40,7 @@ export default function ProjectProgress() {
   const handleSubmit = (e) => {
     e.preventDefault();
     updateFormData('progress', progress);
-    navigate('/project-scatter', { state: { ...location.state, ...formData, progress, isGuest } });
+    navigate('/project-scatter', { state: { ...location.state, progress, isGuest } });
   };
 
   return (
@@ -112,7 +112,7 @@ export default function ProjectProgress() {
           toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={true}
-          onBack={() => navigate('/project-matrix', { state: { ...formData, ...location.state, isGuest } })}
+          onBack={() => navigate('/project-matrix', { state: { ...location.state, isGuest } })}
         />
       </div>
 

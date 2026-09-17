@@ -5,7 +5,7 @@ import { FormContext } from '../context/FormContext';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
-import { autoSaveFormData, loadAutoSave } from '../lib/saveProgress';
+import { autoSaveFormData } from '../lib/saveProgress';
 
 import HomeHeader from '../components/HomeHeader';
 
@@ -17,8 +17,8 @@ export default function ProjectMatrix() {
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
 
-  const [projects, setProjects] = useState(location.state?.projects || loadAutoSave()?.projects || ['', '']);
-  const [matrix, setMatrix] = useState(() => location.state?.matrix || loadAutoSave()?.matrix || {});
+  const [projects, setProjects] = useState(location.state?.projects || ['', '']);
+  const [matrix, setMatrix] = useState(() => location.state?.matrix || {});
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function ProjectMatrix() {
       updateFormData('projects', filledProjects);
       updateFormData('matrix', matrix);
       navigate('/project-progress', {
-        state: { ...location.state, ...formData, goal: location.state?.goal, factors, projects: filledProjects, matrix, path, isGuest }
+        state: { ...location.state, projects: filledProjects, matrix, path, isGuest }
       });
     }
   };
@@ -187,7 +187,7 @@ export default function ProjectMatrix() {
           toolType="strategic-alignment"
           onNext={handleSubmit}
           canNext={canSubmit}
-          onBack={() => navigate('/project-list', { state: { ...formData, ...location.state, isGuest } })}
+          onBack={() => navigate('/project-list', { state: { ...location.state, isGuest } })}
         />
       </div>
 

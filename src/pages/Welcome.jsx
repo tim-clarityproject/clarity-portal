@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
+import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 
 const ALL_PROBLEMS = [
@@ -125,8 +126,9 @@ export default function Welcome() {
   const handleProblemSelect = (problem) => {
     if (problem.status === 'coming-soon') return;
 
-    // Clear FormContext when starting a fresh decision
+    // Clear FormContext and localStorage when starting a fresh decision
     clearFormData();
+    clearProgress();
 
     if (problem.tools[0] === 'grow') {
       navigate('/grow-step-1', { state: { isGuest, ...location.state, problemTitle: problem.title } });

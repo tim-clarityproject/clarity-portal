@@ -49,7 +49,7 @@ export default function RisksAssessment() {
     if (filledRisks.length >= 1) {
       updateFormData('risks', filledRisks);
       const nextPage = path === 'team' ? '/critical-success-factors' : '/strategies';
-      navigate(nextPage, { state: { ...location.state, path, ...formData, risks: filledRisks, isGuest } });
+      navigate(nextPage, { state: { ...location.state, risks: filledRisks, path, isGuest } });
     }
   };
 
