@@ -102,7 +102,15 @@ export default function GrowStep1Goal() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
+          <div>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>Define your goal clearly</h1>
+            {location.state?.problemTitle && (
+              <p style={{ fontSize: '14px', color: '#999', margin: '8px 0 0 0' }}>
+                {location.state.problemTitle}
+              </p>
+            )}
+          </div>
           <button
             onClick={() => navigate('/decision-history', { state: { isGuest } })}
             style={{
@@ -115,6 +123,7 @@ export default function GrowStep1Goal() {
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
+              flexShrink: 0,
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = '#F08571';
@@ -128,12 +137,6 @@ export default function GrowStep1Goal() {
             My Decisions
           </button>
         </div>
-        {location.state?.problemTitle && (
-          <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {location.state.problemTitle}
-          </p>
-        )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>Define your goal clearly</h1>
 
         <div style={{ marginBottom: '32px' }}>
           <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '24px', overflow: 'hidden' }}>
