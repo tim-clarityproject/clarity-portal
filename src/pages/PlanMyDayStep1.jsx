@@ -1,12 +1,53 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PlanMyDayStep1() {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [success, setSuccess] = useState('');
   const [showUp, setShowUp] = useState('');
   const [notDo, setNotDo] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    if (!user) {
+      alert('Please log in to save');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('decisions')
+        .insert([{
+          user_id: user.id,
+          decision_type: 'daily_plan',
+          title: `Daily Plan - ${new Date().toLocaleDateString()}`,
+          content: JSON.stringify({
+            success,
+            showUp,
+            notDo,
+          }),
+          created_at: new Date().toISOString(),
+        }]);
+
+      if (error) throw error;
+
+      setSaved(true);
+      setTimeout(() => {
+        navigate('/decision-history');
+      }, 1500);
+    } catch (error) {
+      console.error('Error saving plan:', error);
+      alert('Failed to save plan');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
@@ -87,9 +128,16 @@ export default function PlanMyDayStep1() {
           </div>
         </div>
 
+        {saved && (
+          <div style={{ textAlign: 'center', color: '#5ECCC0', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>
+            ✓ Daily plan saved
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
-            onClick={() => navigate('/welcome')}
+            onClick={handleSave}
+            disabled={isSaving}
             style={{
               flex: 1,
               padding: '14px 24px',
@@ -98,14 +146,15 @@ export default function PlanMyDayStep1() {
               fontWeight: 'bold',
               border: 'none',
               borderRadius: '8px',
-              cursor: 'pointer',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
               fontSize: '14px',
+              opacity: isSaving ? 0.7 : 1,
             }}
           >
-            Save Plan
+            {isSaving ? 'Saving...' : 'Save Plan'}
           </button>
           <button
-            onClick={() => navigate('/welcome')}
+            onClick={() => navigate('/decision-history')}
             style={{
               flex: 1,
               padding: '14px 24px',

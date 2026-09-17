@@ -14,6 +14,7 @@ export default function DecisionHistory() {
   const { user } = useContext(AuthContext);
   const [decisions, setDecisions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState('all'); // 'all' or 'daily'
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -91,7 +92,67 @@ export default function DecisionHistory() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '48px' }}>My Decisions</h1>
+        <div style={{ marginBottom: '48px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '16px' }}>My Decisions</h1>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setFilter('all')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: filter === 'all' ? '#F08571' : 'transparent',
+                border: `2px solid ${filter === 'all' ? '#F08571' : '#e5e5e5'}`,
+                borderRadius: '6px',
+                color: filter === 'all' ? 'white' : '#333',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (filter !== 'all') {
+                  e.target.style.borderColor = '#F08571';
+                  e.target.style.backgroundColor = '#FEE5DE';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (filter !== 'all') {
+                  e.target.style.borderColor = '#e5e5e5';
+                  e.target.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              All Decisions
+            </button>
+            <button
+              onClick={() => setFilter('daily')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: filter === 'daily' ? '#F08571' : 'transparent',
+                border: `2px solid ${filter === 'daily' ? '#F08571' : '#e5e5e5'}`,
+                borderRadius: '6px',
+                color: filter === 'daily' ? 'white' : '#333',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (filter !== 'daily') {
+                  e.target.style.borderColor = '#F08571';
+                  e.target.style.backgroundColor = '#FEE5DE';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (filter !== 'daily') {
+                  e.target.style.borderColor = '#e5e5e5';
+                  e.target.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              Daily Plans
+            </button>
+          </div>
+        </div>
 
         {isLoading ? (
           <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
@@ -123,7 +184,14 @@ export default function DecisionHistory() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {decisions.map((decision) => {
+            {decisions
+              .filter((decision) => {
+                if (filter === 'daily') {
+                  return decision.decision_type === 'daily_plan';
+                }
+                return true;
+              })
+              .map((decision) => {
               return (
               <button
                 key={decision.id}
