@@ -160,9 +160,9 @@ export default function DecisionHistory() {
                   e.currentTarget.style.borderColor = '#e5e5e5';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', width: '100%' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
                         {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
                       </p>
@@ -196,14 +196,14 @@ export default function DecisionHistory() {
                       >
                         {decision.tool_type === 'grow' ? 'GROW' : decision.tool_type === 'inversion' ? 'Inversion' : decision.tool_type === 'strategic-alignment' ? 'Strategic' : 'Decision'}
                       </span>
-                      <span style={{ fontSize: '12px', color: '#999' }}>
-                        {formatTime(decision.created_at)}
-                      </span>
                     </div>
-                    <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
-                      {formatDateWithOrdinal(decision.created_at)}
+                    <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                      Preview text here
                     </p>
                   </div>
+                  <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap' }}>
+                    {formatDateWithOrdinal(decision.created_at.split('T')[0])} {formatTime(decision.created_at)}
+                  </p>
                   <div style={{ display: 'flex', gap: '8px', marginLeft: '12px', alignItems: 'center' }}>
                     <button
                       onClick={(e) => {

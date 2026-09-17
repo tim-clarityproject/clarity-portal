@@ -90,11 +90,12 @@ export default function ToughConversationStep1Feedback() {
         if (error) throw error;
       }
       alert('Saved as draft');
+      navigate('/decision-history', { state: { isGuest } });
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Failed to save draft');
     }
-  }, [user, isGuest, observation, impact, need, decisionId]);
+  }, [user, isGuest, observation, impact, need, decisionId, navigate]);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
