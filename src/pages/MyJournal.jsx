@@ -54,7 +54,7 @@ export default function MyJournal() {
     if (user && !isGuest && isEditMode) {
       loadEntry(selectedDate);
     }
-  }, [selectedDate, user, isGuest, isEditMode]);
+  }, [selectedDate, user, isGuest, isEditMode, reviewType]);
 
   const loadEntry = async (date) => {
     if (!user) return;
@@ -64,7 +64,8 @@ export default function MyJournal() {
         .from('journal_entries')
         .select('*')
         .eq('user_id', user.id)
-        .eq('entry_date', date);
+        .eq('entry_date', date)
+        .eq('review_type', reviewType);
 
       if (data && data.length > 0) {
         try {
