@@ -139,24 +139,23 @@ export default function RisksAssessment() {
             style={{
               padding: '12px 24px',
               backgroundColor: 'transparent',
-              color: '#5ECCC0',
-              border: '2px dashed #5ECCC0',
+              border: '2px solid #e5e5e5',
               borderRadius: '8px',
-              cursor: 'pointer',
+              color: '#333',
               fontWeight: '600',
-              marginBottom: '32px',
-              maxWidth: '512px',
-              margin: '0 auto 32px',
-              width: '100%',
+              cursor: 'pointer',
+              fontSize: '14px',
               transition: 'all 0.2s',
+              marginBottom: '32px',
+              alignSelf: 'flex-start',
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#F0FFFE';
-              e.target.style.borderStyle = 'solid';
+              e.target.style.borderColor = '#F08571';
+              e.target.style.backgroundColor = '#FEE5DE';
             }}
             onMouseLeave={(e) => {
+              e.target.style.borderColor = '#e5e5e5';
               e.target.style.backgroundColor = 'transparent';
-              e.target.style.borderStyle = 'dashed';
             }}
           >
             + Add another
