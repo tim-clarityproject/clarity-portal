@@ -5,6 +5,7 @@ import { FormProvider } from './context/FormContext';
 import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
 import WhatsAppWidget from './components/WhatsAppWidget';
+import BreathButton from './components/BreathButton';
 import Login from './pages/Login';
 import Welcome from './pages/Welcome';
 import CreateAccount from './pages/CreateAccount';
@@ -153,6 +154,7 @@ export default function App() {
       <FormProvider>
         <BrowserRouter>
           <AppContent />
+          <BreathButton />
           <WhatsAppWidget />
         </BrowserRouter>
       </FormProvider>
