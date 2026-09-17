@@ -69,6 +69,7 @@ export default function GrowStep4WillDo() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
   const isGuest = location.state?.isGuest || false;
 
   const handleDragStart = (e, item, index) => {
@@ -95,6 +96,8 @@ export default function GrowStep4WillDo() {
     setDragOverIndex(null);
   };
 
+  const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
+
   const handleSaveClick = () => {
     if (!willDo.trim()) return;
 
@@ -103,7 +106,11 @@ export default function GrowStep4WillDo() {
       return;
     }
 
-    setShowNamingModal(true);
+    if (needsNaming) {
+      setShowNamingModal(true);
+    } else {
+      handleSaveConfirmed(currentTitle);
+    }
   };
 
   const handleSaveConfirmed = async (decisionName) => {
@@ -149,6 +156,7 @@ export default function GrowStep4WillDo() {
         }
       }
 
+      setCurrentTitle(decisionName);
       clearProgress();
       navigate('/decision-summary', { state: { isGuest, decisionId } });
     } catch (error) {
