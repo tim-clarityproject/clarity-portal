@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -46,6 +47,15 @@ export default function PlanMyDayStep1() {
       alert('Failed to save plan');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Discard this plan?')) {
+      setSuccess('');
+      setShowUp('');
+      setNotDo('');
+      navigate('/decision-history');
     }
   };
 
@@ -134,7 +144,28 @@ export default function PlanMyDayStep1() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button
+            onClick={handleDelete}
+            title="Delete plan"
+            style={{
+              padding: '8px',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            <Trash2 size={18} />
+          </button>
+
           <button
             onClick={handleSave}
             disabled={isSaving}
@@ -150,24 +181,10 @@ export default function PlanMyDayStep1() {
               fontSize: '14px',
               opacity: isSaving ? 0.7 : 1,
             }}
+            onMouseEnter={(e) => !isSaving && (e.target.style.backgroundColor = '#e07560')}
+            onMouseLeave={(e) => !isSaving && (e.target.style.backgroundColor = '#F08571')}
           >
             {isSaving ? 'Saving...' : 'Save Plan'}
-          </button>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              flex: 1,
-              padding: '14px 24px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              color: '#333',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-            }}
-          >
-            Back
           </button>
         </div>
       </div>
