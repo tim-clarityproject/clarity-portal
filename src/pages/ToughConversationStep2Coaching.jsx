@@ -149,16 +149,18 @@ export default function ToughConversationStep2Coaching() {
 
       console.log('Saving tough conversation:', { decisionId, data });
 
-      if (decisionId) {
+      let savedDecisionId = decisionId;
+
+      if (savedDecisionId) {
         const { error } = await supabase
           .from('decisions')
           .update({ form_data: data, draft: false, status: 'completed' })
-          .eq('id', decisionId)
+          .eq('id', savedDecisionId)
           .eq('user_id', user.id);
         if (error) throw error;
       } else {
         const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        const { error } = await supabase
+        const { data: insertedData, error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
@@ -167,11 +169,15 @@ export default function ToughConversationStep2Coaching() {
             form_data: data,
             draft: false,
             status: 'completed',
-          });
+          })
+          .select();
         if (error) throw error;
+        if (insertedData && insertedData.length > 0) {
+          savedDecisionId = insertedData[0].id;
+        }
       }
-      console.log('Save successful, navigating to decision-history');
-      navigate('/decision-history', { state: { isGuest } });
+      console.log('Save successful, navigating to decision-summary');
+      navigate('/decision-summary', { state: { isGuest, decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving:', error);
       alert(`Failed to save: ${error.message || error}`);

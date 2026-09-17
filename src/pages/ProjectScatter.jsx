@@ -39,10 +39,10 @@ export default function ProjectScatter() {
         progress: progress || {}
       };
 
-      const decisionId = location.state?.decisionId;
+      let savedDecisionId = location.state?.decisionId;
       const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
-      if (decisionId) {
+      if (savedDecisionId) {
         // Update existing draft
         const { error } = await supabase
           .from('decisions')
@@ -51,12 +51,12 @@ export default function ProjectScatter() {
             draft: false,
             status: 'completed'
           })
-          .eq('id', decisionId)
+          .eq('id', savedDecisionId)
           .eq('user_id', user.id);
         if (error) throw error;
       } else {
         // Insert new decision
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
@@ -65,11 +65,15 @@ export default function ProjectScatter() {
             form_data: formDataComplete,
             draft: false,
             status: 'completed'
-          }]);
+          }])
+          .select();
         if (error) throw error;
+        if (data && data.length > 0) {
+          savedDecisionId = data[0].id;
+        }
       }
 
-      navigate('/decision-history', { state: { isGuest } });
+      navigate('/decision-summary', { state: { isGuest, decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
       alert(`Failed to save: ${error.message}`);

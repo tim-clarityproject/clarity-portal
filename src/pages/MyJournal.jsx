@@ -152,7 +152,7 @@ export default function MyJournal() {
 
       setSaved(true);
       setTimeout(() => {
-        navigate('/my-reviews', { state: { isGuest } });
+        navigate('/review-summary', { state: { isGuest, selectedDate, reviewType } });
       }, 1000);
     } catch (error) {
       console.error('Error saving review:', error);

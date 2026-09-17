@@ -56,7 +56,9 @@ export default function InversionStep3Plan() {
         plan,
       };
 
-      if (location.state?.decisionId) {
+      let decisionId = location.state?.decisionId;
+
+      if (decisionId) {
         const { error } = await supabase
           .from('decisions')
           .update({
@@ -64,11 +66,11 @@ export default function InversionStep3Plan() {
             status: 'completed',
             draft: false
           })
-          .eq('id', location.state.decisionId);
+          .eq('id', decisionId);
         if (error) throw error;
       } else {
         const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .insert([{
             user_id: user.id,
@@ -77,12 +79,16 @@ export default function InversionStep3Plan() {
             form_data: formDataComplete,
             status: 'completed',
             draft: false
-          }]);
+          }])
+          .select();
         if (error) throw error;
+        if (data && data.length > 0) {
+          decisionId = data[0].id;
+        }
       }
 
       clearProgress();
-      navigate('/decision-history', { state: { isGuest } });
+      navigate('/decision-summary', { state: { isGuest, decisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
