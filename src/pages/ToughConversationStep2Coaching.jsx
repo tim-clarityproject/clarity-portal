@@ -41,6 +41,7 @@ export default function ToughConversationStep2Coaching() {
   const [customQuestion, setCustomQuestion] = useState(isFreshStart ? '' : (location.state?.customQuestion || ''));
   const [copied, setCopied] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
 
   // Clear localStorage on fresh start
   useEffect(() => {
@@ -99,53 +100,31 @@ export default function ToughConversationStep2Coaching() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSaveAsDraft = useCallback(async () => {
-    if (!user || isGuest) return;
-
-    try {
-      const data = {
-        observation,
-        impact,
-        need,
-        selectedQuestions,
-        customQuestion,
-      };
-
-      if (decisionId) {
-        const { error } = await supabase
-          .from('decisions')
-          .update({ form_data: data, draft: true, status: 'draft' })
-          .eq('id', decisionId)
-          .eq('user_id', user.id);
-        if (error) throw error;
-      } else {
-        const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        const { error } = await supabase
-          .from('decisions')
-          .insert({
-            user_id: user.id,
-            tool_type: 'tough-conversation',
-            title,
-            form_data: data,
-            draft: true,
-            status: 'draft',
-          });
-        if (error) throw error;
-      }
-      alert('Saved as draft');
-    } catch (error) {
-      console.error('Error saving draft:', error);
-      alert('Failed to save draft');
-    }
-  }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId]);
+  const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
 
   const handleCompleteClick = useCallback(() => {
     if (!user || isGuest) {
       alert('Please log in to save decisions');
       return;
     }
-    setShowNamingModal(true);
-  }, [user, isGuest]);
+    if (needsNaming) {
+      setShowNamingModal(true);
+    } else {
+      handleCompleteConfirmed(currentTitle);
+    }
+  }, [user, isGuest, needsNaming, currentTitle]);
+
+  const handleSaveAsDraftClick = useCallback(() => {
+    if (!user || isGuest) {
+      alert('Please log in to save decisions');
+      return;
+    }
+    if (needsNaming) {
+      setShowNamingModal(true);
+    } else {
+      handleSaveAsDraftConfirmed(currentTitle);
+    }
+  }, [user, isGuest, needsNaming, currentTitle]);
 
   const handleCompleteConfirmed = useCallback(async (decisionName) => {
     setShowNamingModal(false);
@@ -188,6 +167,7 @@ export default function ToughConversationStep2Coaching() {
           savedDecisionId = insertedData[0].id;
         }
       }
+      setCurrentTitle(decisionName);
       console.log('Save successful, navigating to decision-summary');
       navigate('/decision-summary', { state: { isGuest, decisionId: savedDecisionId } });
     } catch (error) {
@@ -195,6 +175,47 @@ export default function ToughConversationStep2Coaching() {
       alert(`Failed to save: ${error.message || error}`);
     }
   }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate]);
+
+  const handleSaveAsDraftConfirmed = useCallback(async (decisionName) => {
+    setShowNamingModal(false);
+    if (!user || isGuest) return;
+
+    try {
+      const data = {
+        observation,
+        impact,
+        need,
+        selectedQuestions,
+        customQuestion,
+      };
+
+      if (decisionId) {
+        const { error } = await supabase
+          .from('decisions')
+          .update({ form_data: data, title: decisionName, draft: true, status: 'draft' })
+          .eq('id', decisionId)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('decisions')
+          .insert({
+            user_id: user.id,
+            tool_type: 'tough-conversation',
+            title: decisionName,
+            form_data: data,
+            draft: true,
+            status: 'draft',
+          });
+        if (error) throw error;
+      }
+      setCurrentTitle(decisionName);
+      alert('Saved as draft');
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert(`Failed to save draft: ${error.message || error}`);
+    }
+  }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId]);
 
   const handleBack = useCallback(() => {
     navigate('/tough-conversation-step-1', {
@@ -491,7 +512,7 @@ export default function ToughConversationStep2Coaching() {
         <SaveDiscardButtons
           onBack={handleBack}
           onNext={handleCompleteClick}
-          onSaveAsDraft={handleSaveAsDraft}
+          onSaveAsDraft={handleSaveAsDraftClick}
           nextLabel="Finish"
           canNext={true}
           isGuest={isGuest}
