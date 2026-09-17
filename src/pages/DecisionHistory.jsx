@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
@@ -50,6 +50,18 @@ export default function DecisionHistory() {
     if (!timeStr) return '';
     const date = new Date(timeStr);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleEdit = (decision, e) => {
+    e.stopPropagation();
+    const editPageMap = {
+      grow: '/grow-step-1',
+      inversion: '/inversion-step-1',
+      'tough-conversation': '/tough-conversation-step-1',
+      'strategic-alignment': '/goal-setting',
+    };
+    const editPage = editPageMap[decision.tool_type] || '/decision-tools';
+    navigate(editPage, { state: { isGuest, decisionId: decision.id, ...decision.form_data } });
   };
 
   const handleDelete = async (decisionId, e) => {
@@ -176,6 +188,26 @@ export default function DecisionHistory() {
                     <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap' }}>
                       {formatDateWithOrdinal(decision.created_at.split('T')[0])} {formatTime(decision.created_at)}
                     </p>
+                    <button
+                      onClick={(e) => handleEdit(decision, e)}
+                      title="Edit decision"
+                      style={{
+                        padding: '8px',
+                        backgroundColor: 'transparent',
+                        color: '#F08571',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                      <Edit size={18} />
+                    </button>
                     <button
                       onClick={(e) => handleDelete(decision.id, e)}
                       title="Delete decision"
