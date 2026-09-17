@@ -184,8 +184,8 @@ export default function DecisionHistory() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
+                    <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
                       {formatDateWithOrdinal(decision.created_at.split('T')[0])} {formatTime(decision.created_at)}
                     </p>
                     <button
@@ -202,6 +202,8 @@ export default function DecisionHistory() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        height: '34px',
+                        width: '34px',
                       }}
                       onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
                       onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
@@ -222,6 +224,8 @@ export default function DecisionHistory() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        height: '34px',
+                        width: '34px',
                       }}
                       onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
                       onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
