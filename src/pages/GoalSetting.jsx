@@ -25,7 +25,7 @@ export default function GoalSetting() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (goal.trim()) {
-      navigate('/risks-assessment', { state: { ...location.state, path, isGuest } });
+      navigate('/risks-assessment', { state: { ...location.state, goal, path, isGuest } });
     }
   };
 

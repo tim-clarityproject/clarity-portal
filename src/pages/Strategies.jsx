@@ -27,7 +27,7 @@ export default function Strategies() {
   const handleSubmit = (e) => {
     e.preventDefault();
     updateFormData('strategies', strategies);
-    navigate('/dashboard', { state: { ...formData, strategies, ...location.state, isGuest } });
+    navigate('/project-list', { state: { ...location.state, ...formData, strategies, path, isGuest } });
   };
 
   const handleStrategyChange = (index, value) => {
