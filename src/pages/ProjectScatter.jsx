@@ -29,24 +29,50 @@ export default function ProjectScatter() {
 
     setIsSaving(true);
     try {
-      await supabase
-        .from('decisions')
-        .insert([{
-          user_id: user.id,
-          tool_type: 'strategic-alignment',
-          goal: `Portfolio Matrix: ${projects.join(', ')}`,
-          details: {
-            projects,
-            matrix,
-            progress,
-            factors
-          }
-        }]);
+      const formDataComplete = {
+        goal: location.state?.goal || '',
+        risks: location.state?.risks || [],
+        strategies: location.state?.strategies || [],
+        factors: factors || [],
+        projects: projects || [],
+        matrix: matrix || {},
+        progress: progress || {}
+      };
+
+      const decisionId = location.state?.decisionId;
+      const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+
+      if (decisionId) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('decisions')
+          .update({
+            form_data: formDataComplete,
+            draft: false,
+            status: 'completed'
+          })
+          .eq('id', decisionId)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        // Insert new decision
+        const { error } = await supabase
+          .from('decisions')
+          .insert([{
+            user_id: user.id,
+            tool_type: 'strategic-alignment',
+            title,
+            form_data: formDataComplete,
+            draft: false,
+            status: 'completed'
+          }]);
+        if (error) throw error;
+      }
 
       navigate('/decision-history', { state: { isGuest } });
     } catch (error) {
       console.error('Error saving decision:', error);
-      alert('Failed to save to decision log');
+      alert(`Failed to save: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
