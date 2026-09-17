@@ -146,10 +146,6 @@ export default function DecisionSummary() {
                 </div>
               </div>
             )}
-            <SectionBlock
-              title="What You Said You'd Do"
-              content={formData.will_do}
-            />
           </>
         )}
 
