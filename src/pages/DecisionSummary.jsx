@@ -112,7 +112,7 @@ export default function DecisionSummary() {
             ← Back to Decisions
           </button>
           <span style={{ fontSize: '11px', fontWeight: '600', color: '#fff', backgroundColor: '#F08571', padding: '4px 12px', borderRadius: '4px', textTransform: 'uppercase' }}>
-            {toolType === 'grow' ? 'GROW' : toolType === 'inversion' ? 'Inversion' : 'Decision'}
+            {toolType === 'grow' ? 'GROW' : toolType === 'inversion' ? 'Inversion' : toolType === 'strategic-alignment' ? 'Strategic Alignment' : toolType === 'tough-conversation' ? 'Tough Conversation' : 'Decision'}
           </span>
         </div>
 
@@ -171,6 +171,109 @@ export default function DecisionSummary() {
                       <span style={{ fontWeight: '600' }}>{idx + 1}.</span> {fuckup}
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Strategic Alignment Specific Sections */}
+        {toolType === 'strategic-alignment' && (
+          <>
+            {formData.risks && formData.risks.length > 0 && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  How You Would Fail
+                </h2>
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
+                  {formData.risks.map((risk, idx) => (
+                    <div key={idx} style={{ marginBottom: idx < formData.risks.length - 1 ? '12px' : 0, color: '#555', fontSize: '14px' }}>
+                      <span style={{ fontWeight: '600' }}>{idx + 1}.</span> {risk}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {formData.factors && formData.factors.length > 0 && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Critical Success Factors
+                </h2>
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
+                  {formData.factors.map((factor, idx) => (
+                    <div key={idx} style={{ marginBottom: idx < formData.factors.length - 1 ? '12px' : 0, color: '#555', fontSize: '14px' }}>
+                      <span style={{ fontWeight: '600' }}>{String.fromCharCode(65 + idx)}.</span> {factor}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {formData.projects && formData.projects.length > 0 && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Projects / Lines of Effort
+                </h2>
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
+                  {formData.projects.map((project, idx) => (
+                    <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '12px' : 0, color: '#555', fontSize: '14px' }}>
+                      <span style={{ fontWeight: '600' }}>{String.fromCharCode(65 + idx)}.</span> {project}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {formData.matrix && Object.keys(formData.matrix).length > 0 && formData.factors && formData.factors.length > 0 && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Strategic Importance Scores
+                </h2>
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px', fontSize: '13px' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', paddingBottom: '12px', borderBottom: '2px solid #333', fontWeight: '600' }}>Project</th>
+                        <th style={{ textAlign: 'center', paddingBottom: '12px', borderBottom: '2px solid #333', fontWeight: '600' }}>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {formData.projects && formData.projects.map((project, projectIdx) => {
+                        const score = formData.factors.reduce((sum, _, factorIdx) => sum + (formData.matrix[`${projectIdx}-${factorIdx}`] || 0), 0);
+                        return (
+                          <tr key={projectIdx}>
+                            <td style={{ paddingTop: '8px', paddingBottom: '8px', color: '#555' }}>{String.fromCharCode(65 + projectIdx)}. {project}</td>
+                            <td style={{ textAlign: 'center', paddingTop: '8px', paddingBottom: '8px', color: '#F08571', fontWeight: '600' }}>{score}/{formData.factors.length * 3}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {formData.progress && Object.keys(formData.progress).length > 0 && (
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Progress Status
+                </h2>
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px' }}>
+                  {formData.projects && formData.projects.map((project, idx) => {
+                    const progress = formData.progress[idx] || 0;
+                    const progressLabels = ['Not Started', 'Planning', 'In Progress', 'Near Complete', 'Completed'];
+                    return (
+                      <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '16px' : 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#555', marginBottom: '6px' }}>
+                          {String.fromCharCode(65 + idx)}. {project}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#999' }}>
+                          {progressLabels[progress] || 'Not Set'} ({progress}/5)
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
