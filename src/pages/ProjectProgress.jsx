@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
@@ -15,6 +16,8 @@ export default function ProjectProgress() {
   const projects = location.state?.projects || [];
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
+
+  useLoadDecision(updateFormData);
 
   const [progress, setProgress] = useState(() => location.state?.progress || getFieldValue('progress') || {});
   const [showSaveModal, setShowSaveModal] = useState(false);

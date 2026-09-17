@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
 
@@ -9,6 +10,8 @@ export default function GoalSetting() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [goal, setGoal] = useState(() => location.state?.goal || '');
+
+  useLoadDecision(updateFormData);
 
   const problemTitle = location.state?.problemTitle || '';
   const path = location.state?.path || (problemTitle?.includes('team') ? 'team' : 'personal');

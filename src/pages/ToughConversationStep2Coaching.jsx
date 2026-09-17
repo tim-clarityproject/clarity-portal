@@ -1,6 +1,8 @@
 import { useState, useCallback, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
@@ -21,8 +23,11 @@ export default function ToughConversationStep2Coaching() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const { updateFormData } = useContext(FormContext);
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
+
+  useLoadDecision(updateFormData);
 
   const isFreshStart = !location.state?.decisionId && !location.state?.observation;
 

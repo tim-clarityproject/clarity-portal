@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
@@ -16,6 +17,8 @@ export default function ProjectMatrix() {
   const factors = location.state?.factors || [];
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;
+
+  useLoadDecision(updateFormData);
 
   const [projects, setProjects] = useState(location.state?.projects || ['', '']);
   const [matrix, setMatrix] = useState(() => location.state?.matrix || {});

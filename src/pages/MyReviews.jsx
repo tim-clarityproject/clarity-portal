@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateWithOrdinal } from '../lib/dateFormatter';
@@ -205,9 +205,9 @@ export default function MyReviews() {
                   e.currentTarget.style.borderColor = '#e5e5e5';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', height: '34px' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
                         {entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review'}
                       </p>
@@ -215,28 +215,29 @@ export default function MyReviews() {
                         {formatDateWithOrdinal(entry.entry_date)} {formatTime(entry.created_at)}
                       </p>
                     </div>
-                    <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
-                      {getEntryPreview(entry.content)}
-                    </p>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginLeft: '12px', alignItems: 'center' }}>
                     <button
                       onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } })}
+                      title="Edit review"
                       style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#F08571',
-                        color: 'white',
+                        padding: '8px',
+                        backgroundColor: 'transparent',
+                        color: '#F08571',
                         border: 'none',
                         borderRadius: '4px',
                         cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '600',
                         transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '34px',
+                        width: '34px',
                       }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                     >
-                      Edit
+                      <Edit size={18} />
                     </button>
                     <button
                       onClick={(e) => handleDelete(entry.id, e)}
@@ -252,6 +253,8 @@ export default function MyReviews() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        height: '34px',
+                        width: '34px',
                       }}
                       onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
                       onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}

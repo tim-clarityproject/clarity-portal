@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
@@ -11,6 +12,8 @@ export default function InversionStep2Fuckups() {
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [fuckups, setFuckups] = useState(() => location.state?.fuckups || ['', '']);
   const isGuest = location.state?.isGuest || false;
+
+  useLoadDecision(updateFormData);
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.goal) {

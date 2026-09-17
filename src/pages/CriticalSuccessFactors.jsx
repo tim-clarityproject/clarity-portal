@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import SaveProgressModal from '../components/SaveProgressModal';
@@ -14,6 +15,8 @@ export default function CriticalSuccessFactors() {
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [factors, setFactors] = useState(() => location.state?.factors || ['', '']);
   const [showSaveModal, setShowSaveModal] = useState(false);
+
+  useLoadDecision(updateFormData);
 
   const path = location.state?.path || 'team';
   const isGuest = location.state?.isGuest || false;

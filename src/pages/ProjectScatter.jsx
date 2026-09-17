@@ -3,6 +3,8 @@ import { useState, useContext } from 'react';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { AuthContext } from '../context/AuthContext';
+import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
@@ -10,9 +12,12 @@ export default function ProjectScatter() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const { updateFormData } = useContext(FormContext);
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hoveredQuadrant, setHoveredQuadrant] = useState(null);
+
+  useLoadDecision(updateFormData);
 
   const projects = location.state?.projects || [];
   const matrix = location.state?.matrix || {};

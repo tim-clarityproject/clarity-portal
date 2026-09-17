@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
+import { useLoadDecision } from '../hooks/useLoadDecision';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
@@ -12,6 +13,8 @@ export default function RisksAssessment() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [risks, setRisks] = useState(() => location.state?.risks || ['', '', '']);
+
+  useLoadDecision(updateFormData);
 
   const path = location.state?.path || 'personal';
   const isGuest = location.state?.isGuest || false;
