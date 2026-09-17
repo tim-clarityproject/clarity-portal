@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { clearProgress } from '../lib/saveProgress';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import HomeHeader from '../components/HomeHeader';
@@ -168,6 +169,7 @@ export default function MyJournal() {
       }
 
       setCurrentTitle(reviewName);
+      clearProgress();
       setSaved(true);
       setTimeout(() => {
         navigate('/review-summary', { state: { isGuest, selectedDate, reviewType } });
