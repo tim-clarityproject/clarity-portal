@@ -60,6 +60,7 @@ export default function DecisionHistory() {
       inversion: '/inversion-step-1',
       'tough-conversation': '/tough-conversation-step-1',
       'strategic-alignment': '/goal-setting',
+      'daily_plan': '/plan-my-day',
     };
     const editPage = editPageMap[decision.tool_type] || '/decision-tools';
     navigate(editPage, { state: { isGuest, decisionId: decision.id, ...decision.form_data } });

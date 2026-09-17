@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
@@ -11,9 +11,10 @@ export default function PlanMyDayStep1() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
-  const [success, setSuccess] = useState('');
-  const [showUp, setShowUp] = useState('');
-  const [notDo, setNotDo] = useState('');
+  const decisionId = location.state?.decisionId;
+  const [success, setSuccess] = useState(() => location.state?.success || '');
+  const [showUp, setShowUp] = useState(() => location.state?.showUp || '');
+  const [notDo, setNotDo] = useState(() => location.state?.notDo || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -38,28 +39,46 @@ export default function PlanMyDayStep1() {
 
       const title = `Daily Plan - ${new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}`;
 
-      const { data, error } = await supabase
-        .from('decisions')
-        .insert([{
-          user_id: user.id,
-          tool_type: 'daily_plan',
-          title,
-          form_data: formData,
-          status: 'completed',
-          draft: false,
-        }])
-        .select();
+      let resultDecisionId = decisionId;
 
-      if (error) throw error;
+      if (decisionId) {
+        // Update existing decision
+        const { error } = await supabase
+          .from('decisions')
+          .update({
+            form_data: formData,
+            title,
+            status: 'completed',
+            draft: false,
+          })
+          .eq('id', decisionId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Create new decision
+        const { data, error } = await supabase
+          .from('decisions')
+          .insert([{
+            user_id: user.id,
+            tool_type: 'daily_plan',
+            title,
+            form_data: formData,
+            status: 'completed',
+            draft: false,
+          }])
+          .select();
+
+        if (error) throw error;
+        resultDecisionId = data?.[0]?.id;
+      }
 
       setSaved(true);
-      const decisionId = data?.[0]?.id;
-
       clearProgress();
       setTimeout(() => {
         navigate('/daily-plan-summary', {
           state: {
-            decisionId,
+            decisionId: resultDecisionId,
             isGuest
           }
         });
