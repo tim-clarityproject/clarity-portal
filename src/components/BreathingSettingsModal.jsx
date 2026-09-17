@@ -139,6 +139,11 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
               outline: 'none',
               cursor: 'pointer',
               accentColor: '#F08571',
+              WebkitAppearance: 'slider-horizontal',
+              appearance: 'slider-horizontal',
+              boxSizing: 'border-box',
+              padding: 0,
+              border: 'none',
             }}
           />
           <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
@@ -165,6 +170,11 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
               outline: 'none',
               cursor: 'pointer',
               accentColor: '#F08571',
+              WebkitAppearance: 'slider-horizontal',
+              appearance: 'slider-horizontal',
+              boxSizing: 'border-box',
+              padding: 0,
+              border: 'none',
             }}
           />
           <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
@@ -191,6 +201,11 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
               outline: 'none',
               cursor: 'pointer',
               accentColor: '#F08571',
+              WebkitAppearance: 'slider-horizontal',
+              appearance: 'slider-horizontal',
+              boxSizing: 'border-box',
+              padding: 0,
+              border: 'none',
             }}
           />
           <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
@@ -217,6 +232,11 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
               outline: 'none',
               cursor: 'pointer',
               accentColor: '#F08571',
+              WebkitAppearance: 'slider-horizontal',
+              appearance: 'slider-horizontal',
+              boxSizing: 'border-box',
+              padding: 0,
+              border: 'none',
             }}
           />
           <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>

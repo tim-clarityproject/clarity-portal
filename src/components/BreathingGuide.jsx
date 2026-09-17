@@ -196,7 +196,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
             minWidth: '300px',
           }}
         >
-          {phase === 'inhale' ? 'Breathe in through your nose' : phase === 'hold' ? 'Hold your breath' : 'Breathe out through your mouth'}
+          {phase === 'inhale' ? 'Breathe in through your nose' : phase === 'hold' ? 'Hold' : 'Breathe out through your mouth'}
         </div>
 
         {/* Done button */}
