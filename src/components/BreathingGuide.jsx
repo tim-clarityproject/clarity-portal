@@ -221,7 +221,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
             e.target.style.backgroundColor = 'white';
           }}
         >
-          FINISH
+          Finish
         </button>
 
         {/* Settings link */}
