@@ -10,6 +10,9 @@ These are production-ready and tested:
 - [x] **Inversion Thinking** — Identify risks and plan mitigation
 - [x] **Where My Team Should Focus** — Strategic alignment with critical success factors
 
+### Workflows in Development
+- [ ] **Risk Mitigation Model** — Full workflow (list risks → identify mitigations → prioritize)
+
 ### Core Features (LIVE)
 - [x] User authentication (email/password)
 - [x] Decision saving & persistence
@@ -32,6 +35,7 @@ These are production-ready and tested:
 ### High Priority (Must Have)
 - [ ] Fix Strategic Alignment not saving (blocker)
 - [ ] Fix Tough Conversation draft badge issue
+- [ ] **Risk Mitigation Model** — Full decision workflow (identify risks → mitigation strategies)
 - [ ] Add "Plan My Day" light tool (5-minute decision about priorities)
 - [ ] Add "Not to Do List" (quick filter of low-value activities)
 - [ ] User feedback form on decisions (know what's resonating)
