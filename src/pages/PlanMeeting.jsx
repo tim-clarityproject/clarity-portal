@@ -32,9 +32,9 @@ export default function PlanMeeting() {
   const [actionItems, setActionItems] = useState('');
 
   const availableSections = [
-    { id: 'pre-reads', label: 'Pre-reads & Materials', icon: '📎' },
-    { id: 'success', label: 'Success Criteria', icon: '✓' },
-    { id: 'actions', label: 'Action Items', icon: '→' },
+    { id: 'pre-reads', label: 'Pre-reads & Materials' },
+    { id: 'success', label: 'Success Criteria' },
+    { id: 'actions', label: 'Action Items' },
   ];
 
   const addSection = (sectionId) => {
@@ -392,21 +392,24 @@ export default function PlanMeeting() {
         {sections.includes('pre-reads') && (
           <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{...labelStyle, marginBottom: 0}}>📎 Pre-reads & materials</label>
+              <label style={{...labelStyle, marginBottom: 0}}>Pre-reads & materials</label>
               <button
                 onClick={() => removeSection('pre-reads')}
+                title="Remove this section"
                 style={{
-                  padding: '4px 6px',
+                  padding: '4px 8px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: '#ddd',
+                  color: '#999',
                   cursor: 'pointer',
                   transition: 'color 0.2s',
+                  fontSize: '12px',
+                  fontWeight: '500',
                 }}
                 onMouseEnter={(e) => e.target.style.color = '#F08571'}
-                onMouseLeave={(e) => e.target.style.color = '#ddd'}
+                onMouseLeave={(e) => e.target.style.color = '#999'}
               >
-                <X size={14} />
+                Remove
               </button>
             </div>
             <textarea
@@ -422,21 +425,24 @@ export default function PlanMeeting() {
         {sections.includes('success') && (
           <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{...labelStyle, marginBottom: 0}}>✓ Success criteria</label>
+              <label style={{...labelStyle, marginBottom: 0}}>Success criteria</label>
               <button
                 onClick={() => removeSection('success')}
+                title="Remove this section"
                 style={{
-                  padding: '4px 6px',
+                  padding: '4px 8px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: '#ddd',
+                  color: '#999',
                   cursor: 'pointer',
                   transition: 'color 0.2s',
+                  fontSize: '12px',
+                  fontWeight: '500',
                 }}
                 onMouseEnter={(e) => e.target.style.color = '#F08571'}
-                onMouseLeave={(e) => e.target.style.color = '#ddd'}
+                onMouseLeave={(e) => e.target.style.color = '#999'}
               >
-                <X size={14} />
+                Remove
               </button>
             </div>
             <textarea
@@ -547,21 +553,24 @@ export default function PlanMeeting() {
         {sections.includes('actions') && (
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{...labelStyle, marginBottom: 0}}>→ Action items & follow-ups</label>
+              <label style={{...labelStyle, marginBottom: 0}}>Action items & follow-ups</label>
               <button
                 onClick={() => removeSection('actions')}
+                title="Remove this section"
                 style={{
-                  padding: '4px 6px',
+                  padding: '4px 8px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  color: '#ddd',
+                  color: '#999',
                   cursor: 'pointer',
                   transition: 'color 0.2s',
+                  fontSize: '12px',
+                  fontWeight: '500',
                 }}
                 onMouseEnter={(e) => e.target.style.color = '#F08571'}
-                onMouseLeave={(e) => e.target.style.color = '#ddd'}
+                onMouseLeave={(e) => e.target.style.color = '#999'}
               >
-                <X size={14} />
+                Remove
               </button>
             </div>
             <textarea
