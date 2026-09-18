@@ -349,7 +349,7 @@ export default function PlanMeeting() {
               </button>
             </div>
             <textarea
-              placeholder="What's the background or purpose for this meeting?"
+              placeholder="What's the background behind this meeting?"
               value={meetingContext}
               onChange={(e) => setMeetingContext(e.target.value)}
               style={{...inputStyle, minHeight: '60px'}}
