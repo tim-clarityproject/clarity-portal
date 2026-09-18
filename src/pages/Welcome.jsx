@@ -13,10 +13,9 @@ const ALL_PROBLEMS = [
   { id: 'plan-meeting', title: 'Plan a meeting', tools: ['plan-meeting'], status: null, category: 'Plan' },
 
   // Decide
-  { id: 'grow', title: 'Grow option', tools: ['grow'], status: null, category: 'Decide' },
-  { id: 'inversion', title: 'Inversion', tools: ['inversion'], status: null, category: 'Decide' },
-  { id: 'tough-conversation', title: 'Tough conversation', tools: ['tough-conversation'], status: null, category: 'Decide' },
-  { id: 'strategic', title: 'Strategic alignment', tools: ['strategic-alignment'], status: null, category: 'Decide' },
+  { id: 'grow', title: 'A key decision', tools: ['grow'], status: null, category: 'Decide' },
+  { id: 'tough-conversation', title: 'A tough conversation', tools: ['tough-conversation'], status: null, category: 'Decide' },
+  { id: 'strategic', title: 'Where my team should focus', tools: ['strategic-alignment'], status: null, category: 'Decide' },
 
   // Review
   { id: 'after-action', title: 'After-action review', tools: ['after-action'], status: null, category: 'Review' },
