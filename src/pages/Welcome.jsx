@@ -10,7 +10,7 @@ import BreathingGuide from '../components/BreathingGuide';
 const ALL_PROBLEMS = [
   // Plan
   { id: 'plan-day', title: 'I want to make the most of today', tools: ['plan-day'], status: null, category: 'Plan' },
-  { id: 'plan-meeting', title: 'I want to have a high quality meeting', tools: ['plan-meeting'], status: null, category: 'Plan' },
+  { id: 'plan-meeting', title: 'I want to hold a high quality meeting', tools: ['plan-meeting'], status: null, category: 'Plan' },
 
   // Decide
   { id: 'grow', title: 'I\'m navigating a tricky decision', tools: ['grow'], status: null, category: 'Decide' },
