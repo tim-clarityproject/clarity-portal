@@ -147,6 +147,7 @@ export default function DailyPlanSummary() {
         padding: '16px 32px',
         display: 'flex',
         justifyContent: 'center',
+        gap: '12px',
         zIndex: 10,
       }}>
         <button
@@ -172,7 +173,30 @@ export default function DailyPlanSummary() {
           }}
         >
           + Make another decision
-
+        </button>
+        <button
+          onClick={() => navigate('/decision-history', { state: { isGuest } })}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'transparent',
+            border: '2px solid #e5e5e5',
+            color: '#333',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '6px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#F08571';
+            e.currentTarget.style.backgroundColor = '#FEE5DE';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#e5e5e5';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          View all decisions
         </button>
       </div>
     </div>
