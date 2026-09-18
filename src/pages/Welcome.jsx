@@ -18,8 +18,8 @@ const ALL_PROBLEMS = [
   { id: 'strategic', title: 'I need to provide my team direction', tools: ['strategic-alignment'], status: null, category: 'Decide' },
 
   // Review
-  { id: 'after-action', title: 'After-action review', tools: ['after-action'], status: null, category: 'Review' },
-  { id: 'progress', title: 'Progress review', tools: ['progress'], status: null, category: 'Review' },
+  { id: 'after-action', title: 'I need to review a situation', tools: ['after-action'], status: null, category: 'Review' },
+  { id: 'progress', title: 'I want to review my progress', tools: ['progress'], status: null, category: 'Review' },
 ];
 
 export default function Welcome() {
