@@ -188,8 +188,8 @@ export default function PlanMeeting() {
         </div>
 
         {/* Date, Time, Chair */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-          <div>
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+          <div style={{ maxWidth: '150px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
               Date
             </label>
@@ -199,17 +199,17 @@ export default function PlanMeeting() {
               onChange={(e) => setDate(e.target.value)}
               style={{
                 width: '100%',
-                padding: '12px 16px',
+                padding: '12px 12px',
                 border: '1px solid #e5e5e5',
                 borderRadius: '8px',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontFamily: 'inherit',
                 boxSizing: 'border-box',
               }}
             />
           </div>
 
-          <div>
+          <div style={{ maxWidth: '120px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
               Time
             </label>
@@ -219,10 +219,10 @@ export default function PlanMeeting() {
               onChange={(e) => setTime(e.target.value)}
               style={{
                 width: '100%',
-                padding: '12px 16px',
+                padding: '12px 12px',
                 border: '1px solid #e5e5e5',
                 borderRadius: '8px',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontFamily: 'inherit',
                 boxSizing: 'border-box',
               }}
@@ -231,7 +231,7 @@ export default function PlanMeeting() {
         </div>
 
         {/* Chair */}
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '32px', maxWidth: '300px' }}>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
             Chair
           </label>
@@ -242,7 +242,7 @@ export default function PlanMeeting() {
             onChange={(e) => setChair(e.target.value)}
             style={{
               width: '100%',
-              padding: '12px 16px',
+              padding: '12px 12px',
               border: '1px solid #e5e5e5',
               borderRadius: '8px',
               fontSize: '14px',
