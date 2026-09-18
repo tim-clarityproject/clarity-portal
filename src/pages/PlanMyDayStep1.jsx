@@ -13,7 +13,6 @@ export default function PlanMyDayStep1() {
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
   const [topPriority, setTopPriority] = useState(() => location.state?.topPriority || '');
-  const [success, setSuccess] = useState(() => location.state?.success || '');
   const [showUp, setShowUp] = useState(() => location.state?.showUp || '');
   const [notDo, setNotDo] = useState(() => location.state?.notDo || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -34,7 +33,6 @@ export default function PlanMyDayStep1() {
     try {
       const formData = {
         topPriority,
-        success,
         showUp,
         notDo,
       };
@@ -96,7 +94,6 @@ export default function PlanMyDayStep1() {
   const handleDelete = () => {
     if (window.confirm('Discard this plan?')) {
       setTopPriority('');
-      setSuccess('');
       setShowUp('');
       setNotDo('');
       navigate('/decision-history', { state: { isGuest } });
@@ -136,18 +133,6 @@ export default function PlanMyDayStep1() {
               value={topPriority}
               onChange={(e) => setTopPriority(e.target.value)}
               placeholder="What's the one thing that matters most..."
-              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
-            />
-          </div>
-
-          <div style={sectionStyle}>
-            <label style={labelStyle}>
-              What would make today a success for you?
-            </label>
-            <textarea
-              value={success}
-              onChange={(e) => setSuccess(e.target.value)}
-              placeholder="Describe what a successful day looks like..."
               style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
