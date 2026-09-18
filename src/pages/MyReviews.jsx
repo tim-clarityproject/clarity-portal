@@ -28,7 +28,7 @@ export default function MyReviews() {
         .from('journal_entries')
         .select('*')
         .eq('user_id', user.id)
-        .order('entry_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (data) {
         setEntries(data);
