@@ -23,7 +23,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
       return;
     }
 
-    const fullText = `Good morning, ${firstName}. Let's take a breath`;
+    const fullText = `Good morning, ${firstName}. Let's take a breath.`;
     let charIndex = 0;
 
     // Type out text
