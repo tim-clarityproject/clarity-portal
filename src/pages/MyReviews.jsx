@@ -208,18 +208,29 @@ export default function MyReviews() {
                   e.currentTarget.style.borderColor = '#e5e5e5';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review'}
-                      </p>
-                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap' }}>
-                        {formatDateWithOrdinal(entry.entry_date)} {formatTime(entry.created_at)}
-                      </p>
-                    </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                      {entry.title || (entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review')}
+                    </p>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: 'white',
+                        backgroundColor: '#F08571',
+                        padding: '4px 12px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review'}
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', marginLeft: '12px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
+                    <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
+                      {formatDateWithOrdinal(entry.entry_date)} {formatTime(entry.created_at)}
+                    </p>
                     <button
                       onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } })}
                       title="Edit review"

@@ -47,10 +47,31 @@ export default function DecisionHistory() {
     return date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
   };
 
+  const formatDailyPlanDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    const ordinal = (n) => {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+    return `${weekday} ${ordinal(day)} ${month}, ${year}`;
+  };
+
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     const date = new Date(timeStr);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatTagName = (toolType) => {
+    return toolType
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const handleEdit = (decision, e) => {
@@ -223,9 +244,15 @@ export default function DecisionHistory() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
-                    </p>
+                    {decision.tool_type === 'daily_plan' ? (
+                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                        {formatDailyPlanDate(decision.created_at)}
+                      </p>
+                    ) : (
+                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                        {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
+                      </p>
+                    )}
                     <span
                       style={{
                         fontSize: '12px',
@@ -237,7 +264,7 @@ export default function DecisionHistory() {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {decision.tool_type === 'daily_plan' ? 'Daily Plan' : decision.review_type === 'progress' ? 'Progress Review' : decision.review_type === 'after-action' ? 'After Action Review' : decision.tool_type.charAt(0).toUpperCase() + decision.tool_type.slice(1).replace('-', ' ')}
+                      {decision.tool_type === 'daily_plan' ? 'Daily Plan' : formatTagName(decision.tool_type)}
                     </span>
                     {(decision.draft || decision.status === 'draft') && (
                       <span
