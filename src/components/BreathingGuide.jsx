@@ -203,11 +203,11 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         {/* Text above circle */}
         <div
           style={{
-            fontSize: '18px',
+            fontSize: '28px',
             fontWeight: '600',
             color: 'white',
             textAlign: 'center',
-            minHeight: '24px',
+            minHeight: '32px',
             minWidth: '300px',
           }}
         >
