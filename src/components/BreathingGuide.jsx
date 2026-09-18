@@ -199,7 +199,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         </div>
       )}
 
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px', opacity: isShowingGreeting ? 0 : 1, transition: 'opacity 0.5s ease-in' }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '60px', opacity: isShowingGreeting ? 0 : 1, transition: 'opacity 0.5s ease-in' }}>
         {/* Text above circle */}
         <div
           style={{
@@ -256,7 +256,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         <button
           onClick={onClose}
           style={{
-            marginTop: '24px',
+            marginTop: '12px',
             padding: '12px 24px',
             backgroundColor: 'white',
             border: 'none',
