@@ -131,14 +131,15 @@ export default function MyJournal() {
         ? JSON.stringify({ q1, q2, q3, reviewType })
         : JSON.stringify({ q1, q2, q3, q4, reviewType });
 
-      const entryId = location.state?.entryId;
+      const existingEntryId = location.state?.entryId;
+      let savedEntryId = existingEntryId;
 
-      if (entryId && isEditMode) {
+      if (existingEntryId && isEditMode) {
         // Update existing entry if editing
         const { error: updateError } = await supabase
           .from('journal_entries')
           .update({ content: entryContent, title: reviewName, updated_at: new Date().toISOString() })
-          .eq('id', entryId);
+          .eq('id', existingEntryId);
 
         if (updateError) {
           console.error('Error updating entry:', updateError);
@@ -146,7 +147,7 @@ export default function MyJournal() {
         }
       } else {
         // Always insert new entry (allow multiple reviews per day)
-        const { error: insertError } = await supabase
+        const { data: insertedData, error: insertError } = await supabase
           .from('journal_entries')
           .insert([{
             user_id: user.id,
@@ -155,19 +156,26 @@ export default function MyJournal() {
             title: reviewName,
             review_type: reviewType,
             created_at: new Date().toISOString(),
-          }]);
+          }])
+          .select();
 
         if (insertError) {
           console.error('Error inserting entry:', insertError);
           throw insertError;
         }
+
+        if (!insertedData || insertedData.length === 0) {
+          throw new Error('Failed to retrieve saved review ID');
+        }
+
+        savedEntryId = insertedData[0].id;
       }
 
       setCurrentTitle(reviewName);
       clearProgress();
       setSaved(true);
       setTimeout(() => {
-        navigate('/review-summary', { state: { isGuest, selectedDate, reviewType, entryId: location.state?.entryId } });
+        navigate('/review-summary', { state: { isGuest, selectedDate, reviewType, entryId: savedEntryId } });
       }, 1000);
     } catch (error) {
       console.error('Error saving review:', error);
