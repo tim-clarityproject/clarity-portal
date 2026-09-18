@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Trash2, Save, ChevronDown, X } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
@@ -30,6 +30,7 @@ export default function PlanMeeting() {
   const [preReads, setPreReads] = useState('');
   const [success, setSuccess] = useState('');
   const [actionItems, setActionItems] = useState('');
+  const dropdownRef = useRef(null);
 
   const availableSections = [
     { id: 'pre-reads', label: 'Pre-reads & Materials' },
@@ -47,6 +48,17 @@ export default function PlanMeeting() {
   const removeSection = (sectionId) => {
     setSections(sections.filter(s => s !== sectionId));
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (decisionId && user && !isGuest) {
@@ -201,7 +213,7 @@ export default function PlanMeeting() {
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, pageBreakAfter: 'avoid' }} className="page-title">
             Plan a Meeting
           </h1>
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               style={{
