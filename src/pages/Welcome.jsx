@@ -29,9 +29,9 @@ export default function Welcome() {
   const { user } = useContext(AuthContext);
   const { clearFormData } = useContext(FormContext);
   const [firstName, setFirstName] = useState('');
-  const [selectedProblem, setSelectedProblem] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [displayedGreeting, setDisplayedGreeting] = useState('');
+  const [displayedQuestion, setDisplayedQuestion] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
   const [showGreetingText, setShowGreetingText] = useState(false);
@@ -90,20 +90,29 @@ export default function Welcome() {
   useEffect(() => {
     setShowDropdown(false);
     setDisplayedGreeting('');
+    setDisplayedQuestion('');
 
     const timeGreeting = getTimeGreeting();
     const namePart = displayName ? `, ${displayName}.` : '.';
     const fullGreeting = timeGreeting + namePart;
+    const question = 'What are we working on?';
 
     let greetingIndex = 0;
+    let questionIndex = 0;
+    let isGreetingDone = false;
 
     const typeInterval = setInterval(() => {
-      if (greetingIndex < fullGreeting.length) {
+      if (!isGreetingDone && greetingIndex < fullGreeting.length) {
         setDisplayedGreeting(fullGreeting.substring(0, greetingIndex + 1));
         greetingIndex++;
+      } else if (!isGreetingDone) {
+        isGreetingDone = true;
+      } else if (questionIndex < question.length) {
+        setDisplayedQuestion(question.substring(0, questionIndex + 1));
+        questionIndex++;
       } else {
         clearInterval(typeInterval);
-        // Show dropdown after greeting types out
+        // Show dropdown after all text types out
         setTimeout(() => setShowDropdown(true), 200);
       }
     }, 40);
@@ -113,7 +122,6 @@ export default function Welcome() {
 
   const displayName = firstName || null;
   const problems = ALL_PROBLEMS;
-  const selected = selectedProblem ? problems.find(p => p.id === selectedProblem) : null;
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -165,6 +173,10 @@ export default function Welcome() {
               {displayedGreeting}
               {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Good Morning, ${displayName}.` : 'Good Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h1>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#333', margin: 0, minHeight: '30px' }}>
+              {displayedQuestion}
+              {displayedQuestion.length > 0 && displayedQuestion.length < 'What are we working on?'.length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
+            </h2>
           </div>
 
           <style>{`
@@ -175,8 +187,6 @@ export default function Welcome() {
           `}</style>
 
           <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '20px', textAlign: 'center' }}>What are we working on?</h2>
-
             {/* Problem selector dropdown */}
             <div>
               <div
@@ -196,7 +206,7 @@ export default function Welcome() {
                     borderRadius: '8px',
                     fontSize: '15px',
                     fontWeight: '600',
-                    color: selected ? '#333' : '#999',
+                    color: '#999',
                     textAlign: 'left',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
@@ -211,7 +221,7 @@ export default function Welcome() {
                     e.currentTarget.style.borderColor = isOpen ? '#F08571' : '#e5e5e5';
                   }}
                 >
-                  <span>{selected?.title || 'Choose a challenge...'}</span>
+                  <span>Choose an option...</span>
                   <span style={{ fontSize: '12px', opacity: 0.5 }}>▼</span>
                 </button>
 
@@ -246,13 +256,13 @@ export default function Welcome() {
                           )}
                           <button
                             onClick={() => {
-                              setSelectedProblem(problem.id);
                               setIsOpen(false);
+                              handleProblemSelect(problem);
                             }}
                             style={{
                               width: '100%',
                               padding: '14px 16px',
-                              backgroundColor: selectedProblem === problem.id ? '#FEE5DE' : 'white',
+                              backgroundColor: 'white',
                               border: 'none',
                               borderBottom: '1px solid #f0f0f0',
                               textAlign: 'left',
@@ -270,7 +280,7 @@ export default function Welcome() {
                               }
                             }}
                             onMouseLeave={(e) => {
-                              if (selectedProblem !== problem.id && problem.status !== 'coming-soon') {
+                              if (problem.status !== 'coming-soon') {
                                 e.currentTarget.style.backgroundColor = 'white';
                               }
                             }}
@@ -289,43 +299,6 @@ export default function Welcome() {
                   </div>
                 )}
               </div>
-
-              {selected && selected.status !== 'coming-soon' && (
-                <button
-                  onClick={() => handleProblemSelect(selected)}
-                  style={{
-                    width: '100%',
-                    marginTop: '16px',
-                    padding: '14px 24px',
-                    backgroundColor: '#F08571',
-                    color: 'white',
-                    fontWeight: '600',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-                >
-                  Get started
-                </button>
-              )}
-
-              {selected?.status === 'coming-soon' && (
-                <div style={{
-                  marginTop: '16px',
-                  padding: '12px 16px',
-                  backgroundColor: '#f5f5f5',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  fontSize: '13px',
-                  color: '#999',
-                }}>
-                  Coming soon
-                </div>
-              )}
             </div>
           </div>
 
