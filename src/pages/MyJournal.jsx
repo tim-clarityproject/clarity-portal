@@ -220,37 +220,35 @@ export default function MyJournal() {
           />
         </div>
 
-        <div style={{...sectionStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '20px', paddingLeft: '24px'}}>
-          {questions.map((q) => (
-            <div key={q.id}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' }}>
-                {q.label}
-              </label>
-              <textarea
-                value={q.value}
-                onChange={(e) => q.setter(e.target.value)}
-                disabled={isLoading}
-                placeholder={`Answer: ${q.label.toLowerCase()}`}
-                style={{
-                  width: '100%',
-                  minHeight: '100px',
-                  padding: '10px 12px',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                  outline: 'none',
-                  resize: 'vertical',
-                  opacity: isLoading ? 0.6 : 1,
-                  cursor: isLoading ? 'not-allowed' : 'text',
-                }}
-                onFocus={(e) => !isLoading && (e.target.style.borderColor = '#F08571')}
-                onBlur={(e) => !isLoading && (e.target.style.borderColor = '#e5e5e5')}
-              />
-            </div>
-          ))}
-        </div>
+        {questions.map((q) => (
+          <div key={q.id} style={sectionStyle}>
+            <label style={labelStyle}>
+              {q.label}
+            </label>
+            <textarea
+              value={q.value}
+              onChange={(e) => q.setter(e.target.value)}
+              disabled={isLoading}
+              placeholder={`Answer: ${q.label.toLowerCase()}`}
+              style={{
+                width: '100%',
+                minHeight: '100px',
+                padding: '10px 12px',
+                border: '1px solid #e5e5e5',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontFamily: 'inherit',
+                boxSizing: 'border-box',
+                outline: 'none',
+                resize: 'vertical',
+                opacity: isLoading ? 0.6 : 1,
+                cursor: isLoading ? 'not-allowed' : 'text',
+              }}
+              onFocus={(e) => !isLoading && (e.target.style.borderColor = '#F08571')}
+              onBlur={(e) => !isLoading && (e.target.style.borderColor = '#e5e5e5')}
+            />
+          </div>
+        ))}
 
       </div>
 
