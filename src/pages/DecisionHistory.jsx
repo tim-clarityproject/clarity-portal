@@ -61,6 +61,21 @@ export default function DecisionHistory() {
     return `${weekday} ${ordinal(day)} ${month}, ${year}`;
   };
 
+  const formatDailyPlanDateAndTime = (dateStr) => {
+    const date = new Date(dateStr);
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const ordinal = (n) => {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+    return `${weekday} ${ordinal(day)} ${month}, ${year} - ${time}`;
+  };
+
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     const date = new Date(timeStr);
@@ -256,7 +271,7 @@ export default function DecisionHistory() {
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {decision.tool_type === 'daily_plan' ? (
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {formatDailyPlanDate(decision.created_at)}
+                        {formatDailyPlanDateAndTime(decision.created_at)}
                       </p>
                     ) : (
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
@@ -295,7 +310,7 @@ export default function DecisionHistory() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                     <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                      {decision.tool_type === 'daily_plan' ? formatTime(decision.created_at) : formatDateAndTime(decision.created_at)}
+                      {decision.tool_type === 'daily_plan' ? '' : formatDateAndTime(decision.created_at)}
                     </p>
                     <button
                       onClick={(e) => handleEdit(decision, e)}
