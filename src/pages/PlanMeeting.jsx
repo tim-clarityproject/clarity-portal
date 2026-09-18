@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Trash2, Save } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronDown, X } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -25,6 +25,28 @@ export default function PlanMeeting() {
   const [nextItemId, setNextItemId] = useState(2);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [sections, setSections] = useState(['agenda']);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [preReads, setPreReads] = useState('');
+  const [success, setSuccess] = useState('');
+  const [actionItems, setActionItems] = useState('');
+
+  const availableSections = [
+    { id: 'pre-reads', label: 'Pre-reads & Materials', icon: '📎' },
+    { id: 'success', label: 'Success Criteria', icon: '✓' },
+    { id: 'actions', label: 'Action Items', icon: '→' },
+  ];
+
+  const addSection = (sectionId) => {
+    if (!sections.includes(sectionId)) {
+      setSections([...sections, sectionId]);
+    }
+    setDropdownOpen(false);
+  };
+
+  const removeSection = (sectionId) => {
+    setSections(sections.filter(s => s !== sectionId));
+  };
 
   useEffect(() => {
     if (decisionId && user && !isGuest) {
@@ -48,6 +70,10 @@ export default function PlanMeeting() {
         setDate(formData.date || '');
         setTime(formData.time || '');
         setChair(formData.chair || '');
+        setPreReads(formData.preReads || '');
+        setSuccess(formData.success || '');
+        setActionItems(formData.actionItems || '');
+        if (formData.sections) setSections(formData.sections);
         if (formData.objectives && formData.objectives.length > 0) {
           setObjectives(formData.objectives);
           const maxId = Math.max(...formData.objectives.map(obj => obj.id || 0));
@@ -116,6 +142,10 @@ export default function PlanMeeting() {
         chair,
         objectives,
         flowItems,
+        sections,
+        preReads,
+        success,
+        actionItems,
       };
 
       if (decisionId) {
@@ -167,9 +197,88 @@ export default function PlanMeeting() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
         <BackArrow />
 
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 28px 0', pageBreakAfter: 'avoid' }} className="page-title">
-          Plan a Meeting
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, pageBreakAfter: 'avoid' }} className="page-title">
+            Plan a Meeting
+          </h1>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                backgroundColor: 'transparent',
+                border: '1px solid #e5e5e5',
+                borderRadius: '6px',
+                color: '#333',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#F08571';
+                e.currentTarget.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e5e5e5';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <Plus size={14} />
+              Add sections
+              <ChevronDown size={14} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+            </button>
+            {dropdownOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                backgroundColor: 'white',
+                border: '1px solid #e5e5e5',
+                borderRadius: '6px',
+                marginTop: '4px',
+                minWidth: '200px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                zIndex: 100,
+              }}>
+                {availableSections.map(section => (
+                  <button
+                    key={section.id}
+                    onClick={() => addSection(section.id)}
+                    disabled={sections.includes(section.id)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      backgroundColor: sections.includes(section.id) ? '#FEE5DE' : 'white',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: sections.includes(section.id) ? 'not-allowed' : 'pointer',
+                      fontSize: '13px',
+                      color: sections.includes(section.id) ? '#999' : '#333',
+                      borderBottom: '1px solid #f0f0f0',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!sections.includes(section.id)) {
+                        e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!sections.includes(section.id)) {
+                        e.currentTarget.style.backgroundColor = 'white';
+                      }
+                    }}
+                  >
+                    {section.icon} {section.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         <style>{`
           @media print {
@@ -279,6 +388,66 @@ export default function PlanMeeting() {
           </button>
         </div>
 
+        {/* Pre-reads Section */}
+        {sections.includes('pre-reads') && (
+          <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <label style={{...labelStyle, marginBottom: 0}}>📎 Pre-reads & materials</label>
+              <button
+                onClick={() => removeSection('pre-reads')}
+                style={{
+                  padding: '4px 6px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#ddd',
+                  cursor: 'pointer',
+                  transition: 'color 0.2s',
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#F08571'}
+                onMouseLeave={(e) => e.target.style.color = '#ddd'}
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <textarea
+              placeholder="What should attendees review or prepare?"
+              value={preReads}
+              onChange={(e) => setPreReads(e.target.value)}
+              style={{...inputStyle, minHeight: '60px'}}
+            />
+          </div>
+        )}
+
+        {/* Success Criteria Section */}
+        {sections.includes('success') && (
+          <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <label style={{...labelStyle, marginBottom: 0}}>✓ Success criteria</label>
+              <button
+                onClick={() => removeSection('success')}
+                style={{
+                  padding: '4px 6px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#ddd',
+                  cursor: 'pointer',
+                  transition: 'color 0.2s',
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#F08571'}
+                onMouseLeave={(e) => e.target.style.color = '#ddd'}
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <textarea
+              placeholder="How will we know this meeting was successful?"
+              value={success}
+              onChange={(e) => setSuccess(e.target.value)}
+              style={{...inputStyle, minHeight: '60px'}}
+            />
+          </div>
+        )}
+
         {/* Meeting Agenda Table */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -373,6 +542,36 @@ export default function PlanMeeting() {
             Add agenda item
           </button>
         </div>
+
+        {/* Action Items Section */}
+        {sections.includes('actions') && (
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <label style={{...labelStyle, marginBottom: 0}}>→ Action items & follow-ups</label>
+              <button
+                onClick={() => removeSection('actions')}
+                style={{
+                  padding: '4px 6px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#ddd',
+                  cursor: 'pointer',
+                  transition: 'color 0.2s',
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#F08571'}
+                onMouseLeave={(e) => e.target.style.color = '#ddd'}
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <textarea
+              placeholder="What needs to happen after this meeting? Who owns what?"
+              value={actionItems}
+              onChange={(e) => setActionItems(e.target.value)}
+              style={{...inputStyle, minHeight: '80px'}}
+            />
+          </div>
+        )}
       </div>
 
       {/* Fixed bottom bar for saving */}
