@@ -110,7 +110,7 @@ export default function CreateAccount() {
       `}</style>
       <HomeHeader isGuest={true} />
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }} className="page-container">
         <div style={{ width: '100%', maxWidth: '400px' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
             <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '16px' }}>

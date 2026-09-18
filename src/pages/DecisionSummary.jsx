@@ -170,7 +170,7 @@ export default function DecisionSummary() {
       `}</style>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container"display: 'flex'
         {/* Back Button */}
         <button
           onClick={() => navigate('/decision-history', { state: { isGuest } })}

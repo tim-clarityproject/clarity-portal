@@ -86,9 +86,9 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'row' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'row' }} className="mobile-responsive-row">
       {/* Left Column - Welcome */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px', backgroundColor: '#fafafa', borderRight: '1px solid #e5e5e5' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px', backgroundColor: '#fafafa', borderRight: '1px solid #e5e5e5' }} className="mobile-responsive-column">
         <div style={{ width: '100%', maxWidth: '400px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', marginBottom: '32px' }}>
             Welcome to The Clarity Portal
@@ -133,7 +133,7 @@ export default function Login() {
       </div>
 
       {/* Right Column - Login Form */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }} className="mobile-responsive-column">
         <div style={{ width: '100%', maxWidth: '400px' }}>
           {/* Login/Signup Form */}
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>

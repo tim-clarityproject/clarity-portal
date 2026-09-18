@@ -1,0 +1,244 @@
+/* Mobile Responsive Styles - Only affects screens <= 768px width */
+
+/* ====== Layout Classes ====== */
+
+/* Flex row layout - stack on mobile */
+@media (max-width: 768px) {
+  .mobile-responsive-row {
+    flex-direction: column !important;
+  }
+
+  /* Flex column with responsive padding */
+  .mobile-responsive-column {
+    padding: 40px 16px !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e5e5e5 !important;
+  }
+
+  /* Main page container */
+  .page-container {
+    padding: 16px !important;
+  }
+
+  /* ====== Data Attributes ====== */
+
+  /* Main container padding adjustments */
+  [data-mobile-container] {
+    padding: 16px 16px !important;
+  }
+
+  /* Flex containers with padding */
+  [data-flex-container] {
+    padding: 16px 16px !important;
+  }
+
+  /* ====== Typography ====== */
+
+  /* Reduce h1 font size on mobile */
+  h1 {
+    font-size: 28px !important;
+    margin: 16px 0 !important;
+  }
+
+  /* Reduce h2 font size on mobile */
+  h2 {
+    font-size: 18px !important;
+    margin: 12px 0 8px !important;
+  }
+
+  /* Reduce h3 font size on mobile */
+  h3 {
+    font-size: 16px !important;
+    margin: 8px 0 4px !important;
+  }
+
+  /* Adjust paragraph line height */
+  p {
+    line-height: 1.5;
+  }
+
+  /* ====== Form Elements ====== */
+
+  /* Ensure buttons meet minimum touch target size (44px) */
+  button {
+    min-height: 44px;
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+  }
+
+  /* Dropdown and select elements */
+  select, input {
+    min-height: 44px;
+    padding: 12px 16px !important;
+  }
+
+  /* Input fields */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Ensure form labels are readable */
+  label {
+    font-size: 14px;
+  }
+
+  /* Fix two-column form inputs on mobile - stack them */
+  div[style*="flex: 1"] {
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  /* Make form groups full width */
+  form > div {
+    width: 100% !important;
+  }
+
+  /* ====== Modal/Dialog ====== */
+
+  /* Modal/dialog adjustments */
+  [data-modal] {
+    padding: 16px !important;
+    width: 90vw !important;
+    max-width: 500px !important;
+  }
+
+  /* ====== Spacing & Layout ====== */
+
+  /* Reduce margin on mobile for compact layout */
+  [data-compact-spacing] {
+    gap: 8px !important;
+    margin: 8px 0 !important;
+  }
+
+  /* Flex wrap on mobile for button groups */
+  [data-flex-wrap] {
+    flex-wrap: wrap;
+  }
+
+  /* Responsive grid - stack on mobile */
+  [data-grid] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* ====== Tables ====== */
+
+  /* Table responsiveness */
+  table {
+    font-size: 13px;
+  }
+
+  /* ====== Cards/Boxes ====== */
+
+  /* Card/box containers */
+  [data-card] {
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* ====== MaxWidth Containers ====== */
+
+  /* Reduce maxWidth for better mobile viewing */
+  [data-max-width-1000] {
+    max-width: 100% !important;
+    padding: 0 16px !important;
+  }
+
+  [data-max-width-800] {
+    max-width: 100% !important;
+    padding: 0 16px !important;
+  }
+
+  [data-max-width-600] {
+    max-width: 100% !important;
+    padding: 0 16px !important;
+  }
+
+  /* Make dropdowns full width on mobile */
+  [data-dropdown] {
+    width: 100%;
+  }
+
+  /* ====== Scrolling ====== */
+
+  /* Make containers scroll on mobile for horizontal overflow */
+  [data-scroll-x] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ====== Sections ====== */
+
+  /* Adjust margins between sections */
+  [data-section-margin] {
+    margin-bottom: 20px !important;
+  }
+
+  /* Ensure proper spacing in lists */
+  [data-list-item] {
+    padding: 12px 16px !important;
+  }
+
+  /* Fix for positioning elements on mobile */
+  [data-position-fix] {
+    position: relative !important;
+    width: 100% !important;
+  }
+
+  /* ====== Additional Mobile Responsive Patterns ====== */
+
+  /* Make absolutely positioned dropdowns work better on mobile */
+  div[style*="position: 'absolute'"],
+  div[style*="position: absolute"] {
+    position: relative !important;
+    width: 100% !important;
+    left: auto !important;
+    right: auto !important;
+  }
+
+  /* Ensure overflow doesn't cause horizontal scroll */
+  * {
+    max-width: 100%;
+  }
+
+  /* Make containers overflow-x: auto instead of breaking */
+  div[style*="display: 'flex'"],
+  div[style*="display: flex"] {
+    overflow-x: auto;
+  }
+
+  /* Readable text sizes */
+  body {
+    font-size: 16px !important;
+  }
+
+  /* Ensure proper text wrapping */
+  span, p, div {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Fix for inputs becoming too narrow */
+  input, select, textarea {
+    max-width: 100%;
+  }
+
+  /* Remove horizontal padding from small screens to maximize space */
+  .page-container {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Make modals fit screen */
+  div[style*="position: 'fixed'"],
+  div[style*="position: fixed"] {
+    width: 90vw !important;
+    left: 5vw !important;
+    right: 5vw !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+}

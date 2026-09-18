@@ -77,7 +77,7 @@ export default function RisksAssessment() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container"display: 'flex'
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
           {location.state?.problemTitle && (
             <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
