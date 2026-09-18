@@ -128,7 +128,7 @@ export default function DailyPlanSummary() {
             fontWeight: '600',
             whiteSpace: 'nowrap',
           }}>
-            Daily Plan
+            Daily Intentions
           </span>
         </div>
 

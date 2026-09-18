@@ -122,7 +122,7 @@ export default function MyPlans() {
                 }
               }}
             >
-              My Daily Plans
+              My Daily Intentions
             </button>
             <button
               onClick={() => setFilter('meetings')}
