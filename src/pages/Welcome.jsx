@@ -187,6 +187,224 @@ export default function Welcome() {
           `}</style>
 
           <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
+            {/* Tools section */}
+            <div style={{ marginBottom: '48px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '24px', textAlign: 'center' }}>What are we working on?</h2>
+
+              {/* Plan Tools */}
+              <div style={{ marginBottom: '32px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', textAlign: 'center' }}>Plan</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#333',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.borderColor = '#F08571';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.borderColor = '#e5e5e5';
+                    }}
+                  >
+                    Plan my day
+                  </button>
+                  <button
+                    onClick={() => navigate('/plan-meeting', { state: { isGuest } })}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#333',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.borderColor = '#F08571';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.borderColor = '#e5e5e5';
+                    }}
+                  >
+                    Plan a meeting
+                  </button>
+                </div>
+              </div>
+
+              {/* Decide Tools */}
+              <div style={{ marginBottom: '32px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', textAlign: 'center' }}>Decide</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    onClick={() => navigate('/grow-step-1', { state: { isGuest } })}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#333',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.borderColor = '#F08571';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.borderColor = '#e5e5e5';
+                    }}
+                  >
+                    Grow option
+                  </button>
+                  <button
+                    onClick={() => navigate('/inversion-step-1', { state: { isGuest } })}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#333',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.borderColor = '#F08571';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.borderColor = '#e5e5e5';
+                    }}
+                  >
+                    Inversion
+                  </button>
+                  <button
+                    onClick={() => navigate('/tough-conversation-step-1', { state: { isGuest } })}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#333',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.borderColor = '#F08571';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.borderColor = '#e5e5e5';
+                    }}
+                  >
+                    Tough conversation
+                  </button>
+                  <button
+                    onClick={() => navigate('/goal-setting', { state: { isGuest } })}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#333',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.borderColor = '#F08571';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.borderColor = '#e5e5e5';
+                    }}
+                  >
+                    Strategic alignment
+                  </button>
+                </div>
+              </div>
+
+              {/* Review Tools */}
+              <div>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', textAlign: 'center' }}>Review</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#333',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.borderColor = '#F08571';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.borderColor = '#e5e5e5';
+                    }}
+                  >
+                    After-action review
+                  </button>
+                  <button
+                    onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#333',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.borderColor = '#F08571';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
+                      e.currentTarget.style.borderColor = '#e5e5e5';
+                    }}
+                  >
+                    Progress review
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Problem selector dropdown */}
             <div>
               <div
