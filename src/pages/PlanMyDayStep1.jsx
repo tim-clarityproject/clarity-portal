@@ -139,7 +139,7 @@ export default function PlanMyDayStep1() {
 
           <div style={sectionStyle}>
             <label style={labelStyle}>
-              What's in your control today?
+              What's under your control today?
             </label>
             <textarea
               value={showUp}

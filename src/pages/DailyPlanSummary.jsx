@@ -144,7 +144,7 @@ export default function DailyPlanSummary() {
 
           <div>
             <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '12px' }}>
-              What's in your control today?
+              What's under your control today?
             </h2>
             <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
               {formData.showUp}
