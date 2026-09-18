@@ -28,9 +28,11 @@ export default function PlanMeeting() {
   const [sections, setSections] = useState(['agenda']);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [preReads, setPreReads] = useState('');
+  const [meetingContext, setMeetingContext] = useState('');
   const dropdownRef = useRef(null);
 
   const availableSections = [
+    { id: 'context', label: 'Meeting Context' },
     { id: 'pre-reads', label: 'Attendee Preparation' },
   ];
 
@@ -78,6 +80,7 @@ export default function PlanMeeting() {
         setDate(formData.date || '');
         setTime(formData.time || '');
         setChair(formData.chair || '');
+        setMeetingContext(formData.meetingContext || '');
         setPreReads(formData.preReads || '');
         if (formData.sections) setSections(formData.sections);
         if (formData.objectives && formData.objectives.length > 0) {
@@ -149,6 +152,7 @@ export default function PlanMeeting() {
         objectives,
         flowItems,
         sections,
+        meetingContext,
         preReads,
       };
 
@@ -391,6 +395,39 @@ export default function PlanMeeting() {
             Add objective
           </button>
         </div>
+
+        {/* Meeting Context Section */}
+        {sections.includes('context') && (
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <label style={{...labelStyle, marginBottom: 0}}>Meeting context</label>
+              <button
+                onClick={() => removeSection('context')}
+                title="Remove this section"
+                style={{
+                  padding: '4px 8px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: '#999',
+                  cursor: 'pointer',
+                  transition: 'color 0.2s',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#F08571'}
+                onMouseLeave={(e) => e.target.style.color = '#999'}
+              >
+                Remove
+              </button>
+            </div>
+            <textarea
+              placeholder="What's the background or purpose for this meeting?"
+              value={meetingContext}
+              onChange={(e) => setMeetingContext(e.target.value)}
+              style={{...inputStyle, minHeight: '60px'}}
+            />
+          </div>
+        )}
 
         {/* Attendee Preparation Section */}
         {sections.includes('pre-reads') && (
