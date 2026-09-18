@@ -229,7 +229,7 @@ export default function PlanMeeting() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
-            Plan a Meeting
+            Meeting Planner
           </h1>
           <div style={{ position: 'relative' }} ref={dropdownRef}>
             <button
