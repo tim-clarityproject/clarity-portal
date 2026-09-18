@@ -199,7 +199,21 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         </div>
       )}
 
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '80px', opacity: isShowingGreeting ? 0 : 1, transition: 'opacity 0.5s ease-in' }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px', opacity: isShowingGreeting ? 0 : 1, transition: 'opacity 0.5s ease-in' }}>
+        {/* Text above circle */}
+        <div
+          style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'white',
+            textAlign: 'center',
+            minHeight: '24px',
+            minWidth: '300px',
+          }}
+        >
+          {phase === 'inhale' ? 'Breathe in through your nose' : phase === 'hold' ? 'Hold' : 'Breathe out through your mouth'}
+        </div>
+
         {/* Circle with timer inside */}
         <div
           style={{
@@ -236,20 +250,6 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
           >
             {typeof seconds === 'number' ? Math.round(seconds) : '—'}
           </div>
-        </div>
-
-        {/* Text below circle */}
-        <div
-          style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: 'white',
-            textAlign: 'center',
-            minHeight: '24px',
-            minWidth: '300px',
-          }}
-        >
-          {phase === 'inhale' ? 'Breathe in through your nose' : phase === 'hold' ? 'Hold' : 'Breathe out through your mouth'}
         </div>
 
         {/* Done button */}
