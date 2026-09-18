@@ -12,6 +12,9 @@ const ALL_PROBLEMS = [
   { id: 'plan-day', title: 'I want to make the most of today', tools: ['plan-day'], status: null, category: 'Plan' },
   { id: 'plan-meeting', title: 'I want to hold a high quality meeting', tools: ['plan-meeting'], status: null, category: 'Plan' },
 
+  // Ground
+  { id: 'if-then', title: 'I want to prepare for anxiety', tools: ['if-then-planning'], status: null, category: 'Ground' },
+
   // Decide
   { id: 'grow', title: 'I\'m navigating a tricky decision', tools: ['grow'], status: null, category: 'Decide' },
   { id: 'tough-conversation', title: 'I need to give tough feedback', tools: ['tough-conversation'], status: null, category: 'Decide' },
@@ -146,6 +149,7 @@ export default function Welcome() {
       'tough-conversation': '/tough-conversation-step-1',
       'plan-day': '/plan-my-day',
       'plan-meeting': '/plan-meeting',
+      'if-then-planning': '/if-then-planning',
       'after-action': '/my-journal',
       'progress': '/my-journal',
     };
