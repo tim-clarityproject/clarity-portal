@@ -16,16 +16,9 @@ export default function HomeHeader({ isGuest = false }) {
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Show breathing guide on mount or after 2 hours
+  // Show breathing guide on mount (TODO: restore 2-hour timer after testing)
   useEffect(() => {
-    const lastBreathingTime = localStorage.getItem('lastBreathingGuideTime');
-    const now = Date.now();
-    const twoHours = 2 * 60 * 60 * 1000;
-
-    if (!lastBreathingTime || now - parseInt(lastBreathingTime) > twoHours) {
-      setShowBreathingGuide(true);
-      localStorage.setItem('lastBreathingGuideTime', now.toString());
-    }
+    setShowBreathingGuide(true);
   }, []);
 
   const handleCloseBreathingGuide = () => {
