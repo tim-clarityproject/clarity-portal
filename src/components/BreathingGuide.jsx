@@ -150,7 +150,7 @@ export default function BreathingGuide({ isOpen, onClose, enableGreeting = false
     };
 
     loadSettings();
-  }, [isOpen, user]);
+  }, [isOpen, showGreeting, user]);
 
   if (!isOpen) return null;
 
