@@ -232,7 +232,7 @@ export default function MyReviews() {
                       {formatDateWithOrdinal(entry.entry_date)} {formatTime(entry.created_at)}
                     </p>
                     <button
-                      onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } })}
+                      onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type, entryId: entry.id } })}
                       title="Edit review"
                       style={{
                         padding: '8px',

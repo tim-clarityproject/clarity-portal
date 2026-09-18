@@ -64,12 +64,19 @@ export default function MyJournal() {
     if (!user) return;
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const entryId = location.state?.entryId;
+      let query = supabase
         .from('journal_entries')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('entry_date', date)
-        .eq('review_type', reviewType);
+        .eq('user_id', user.id);
+
+      if (entryId) {
+        query = query.eq('id', entryId);
+      } else {
+        query = query.eq('entry_date', date).eq('review_type', reviewType);
+      }
+
+      const { data, error } = await query;
 
       if (data && data.length > 0) {
         setCurrentTitle(data[0].title || '');
@@ -124,33 +131,21 @@ export default function MyJournal() {
         ? JSON.stringify({ q1, q2, q3, reviewType })
         : JSON.stringify({ q1, q2, q3, q4, reviewType });
 
-      // Check for existing entry without using .single() to avoid errors
-      const { data: existing, error: selectError } = await supabase
-        .from('journal_entries')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('entry_date', selectedDate)
-        .eq('review_type', reviewType)
-        .limit(1);
+      const entryId = location.state?.entryId;
 
-      if (selectError) {
-        console.error('Error checking existing entry:', selectError);
-        throw selectError;
-      }
-
-      if (existing && existing.length > 0) {
-        // Update existing entry
+      if (entryId && isEditMode) {
+        // Update existing entry if editing
         const { error: updateError } = await supabase
           .from('journal_entries')
           .update({ content: entryContent, title: reviewName, updated_at: new Date().toISOString() })
-          .eq('id', existing[0].id);
+          .eq('id', entryId);
 
         if (updateError) {
           console.error('Error updating entry:', updateError);
           throw updateError;
         }
       } else {
-        // Insert new entry
+        // Always insert new entry (allow multiple reviews per day)
         const { error: insertError } = await supabase
           .from('journal_entries')
           .insert([{
