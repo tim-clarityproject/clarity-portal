@@ -135,6 +135,15 @@ export default function DailyPlanSummary() {
         <div style={{ marginBottom: '48px', display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
           <div>
             <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '12px' }}>
+              Top Priority
+            </h2>
+            <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+              {formData.topPriority}
+            </p>
+          </div>
+
+          <div>
+            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '12px' }}>
               What would make today a success?
             </h2>
             <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>

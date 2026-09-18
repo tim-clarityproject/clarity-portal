@@ -12,6 +12,7 @@ export default function PlanMyDayStep1() {
   const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
+  const [topPriority, setTopPriority] = useState(() => location.state?.topPriority || '');
   const [success, setSuccess] = useState(() => location.state?.success || '');
   const [showUp, setShowUp] = useState(() => location.state?.showUp || '');
   const [notDo, setNotDo] = useState(() => location.state?.notDo || '');
@@ -32,6 +33,7 @@ export default function PlanMyDayStep1() {
     setIsSaving(true);
     try {
       const formData = {
+        topPriority,
         success,
         showUp,
         notDo,
@@ -93,6 +95,7 @@ export default function PlanMyDayStep1() {
 
   const handleDelete = () => {
     if (window.confirm('Discard this plan?')) {
+      setTopPriority('');
       setSuccess('');
       setShowUp('');
       setNotDo('');
@@ -115,6 +118,27 @@ export default function PlanMyDayStep1() {
         </div>
 
         <div style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+              What's your top priority today?
+            </label>
+            <textarea
+              value={topPriority}
+              onChange={(e) => setTopPriority(e.target.value)}
+              placeholder="What's the one thing that matters most..."
+              style={{
+                width: '100%',
+                minHeight: '120px',
+                padding: '12px',
+                border: '2px solid #e5e5e5',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
           <div>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
               What would make today a success for you?
