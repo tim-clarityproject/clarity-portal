@@ -12,6 +12,7 @@ export default function HomeHeader({ isGuest = false }) {
   const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
+  const [showGreetingText, setShowGreetingText] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
@@ -24,6 +25,7 @@ export default function HomeHeader({ isGuest = false }) {
 
     if (!lastBreathingTime || now - parseInt(lastBreathingTime) > twoHours) {
       setShowBreathingGuide(true);
+      setShowGreetingText(true);
       localStorage.setItem('lastBreathingGuideTime', now.toString());
     }
   }, []);
@@ -434,7 +436,7 @@ export default function HomeHeader({ isGuest = false }) {
         </a>
       </div>
 
-      <BreathingGuide isOpen={showBreathingGuide} onClose={handleCloseBreathingGuide} />
+      <BreathingGuide isOpen={showBreathingGuide} onClose={handleCloseBreathingGuide} showGreeting={showGreetingText} />
     </div>
   );
 }

@@ -2,14 +2,48 @@ import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function BreathingGuide({ isOpen, onClose }) {
+export default function BreathingGuide({ isOpen, onClose, showGreeting = false }) {
   const { user } = useContext(AuthContext);
   const [phase, setPhase] = useState('inhale');
   const [scale, setScale] = useState(1);
   const [seconds, setSeconds] = useState(0);
+  const [greetingPhase, setGreetingPhase] = useState('typing');
+  const [displayedText, setDisplayedText] = useState('');
+
+  // Greeting animation phase
+  useEffect(() => {
+    if (!isOpen || !showGreeting) {
+      setGreetingPhase('typing');
+      setDisplayedText('');
+      return;
+    }
+
+    const firstName = user?.user_metadata?.first_name || 'there';
+    const fullText = `Good morning, ${firstName}, let's take a breath`;
+    let charIndex = 0;
+
+    // Type out text
+    const typingInterval = setInterval(() => {
+      if (charIndex <= fullText.length) {
+        setDisplayedText(fullText.substring(0, charIndex));
+        charIndex++;
+      } else {
+        clearInterval(typingInterval);
+        // After typing, wait 1.5 seconds then transition to breathing
+        setTimeout(() => {
+          setGreetingPhase('transitioning');
+          setTimeout(() => {
+            setGreetingPhase('done');
+          }, 1000);
+        }, 1500);
+      }
+    }, 50);
+
+    return () => clearInterval(typingInterval);
+  }, [isOpen, showGreeting, user]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || (showGreeting && greetingPhase !== 'done')) return;
 
     const loadSettings = async () => {
       let inhaleDuration = 4000;
@@ -107,6 +141,10 @@ export default function BreathingGuide({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const isShowingGreeting = showGreeting && greetingPhase !== 'done';
+  const greetingOpacity = greetingPhase === 'transitioning' ? 0 : 1;
+  const greetingTransform = greetingPhase === 'transitioning' ? 'translateY(-100px)' : 'translateY(0)';
+
   return (
     <div
       style={{
@@ -115,7 +153,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#000000',
+        backgroundColor: '#2c3e50',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -125,7 +163,37 @@ export default function BreathingGuide({ isOpen, onClose }) {
       }}
       onClick={onClose}
     >
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '80px' }}>
+      {isShowingGreeting && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: `translate(-50%, -50%) ${greetingTransform}`,
+            textAlign: 'center',
+            fontSize: '28px',
+            fontWeight: '600',
+            color: 'white',
+            maxWidth: '85%',
+            opacity: greetingOpacity,
+            transition: 'all 1s ease-out',
+            minHeight: '60px',
+          }}
+        >
+          {displayedText}
+          {displayedText.length < `Good morning, ${user?.user_metadata?.first_name || 'there'}, let's take a breath`.length && greetingPhase === 'typing' && (
+            <span style={{ animation: 'blink 1s infinite', marginLeft: '4px' }}>|</span>
+          )}
+          <style>{`
+            @keyframes blink {
+              0%, 49% { opacity: 1; }
+              50%, 100% { opacity: 0; }
+            }
+          `}</style>
+        </div>
+      )}
+
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '80px', opacity: isShowingGreeting ? 0 : 1, transition: 'opacity 0.5s ease-in' }}>
         {/* Circle with timer inside */}
         <div
           style={{
