@@ -1,10 +1,9 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Trash2, Save, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
-import BackArrow from '../components/BackArrow';
 
 export default function PlanMeeting() {
   const navigate = useNavigate();
@@ -198,6 +197,21 @@ export default function PlanMeeting() {
     navigate('/my-plans', { state: { isGuest } });
   };
 
+  const handleDelete = () => {
+    if (window.confirm('Discard this meeting plan?')) {
+      setTitle('');
+      setDate('');
+      setTime('');
+      setChair('');
+      setObjectives([{ id: 1, text: '' }]);
+      setFlowItems([{ id: 1, item: '', aim: '', lead: '', length: '' }]);
+      setMeetingContext('');
+      setPreReads('');
+      setSections(['agenda']);
+      navigate('/decision-tools', { state: { isGuest } });
+    }
+  };
+
   const totalLength = flowItems.reduce((sum, item) => {
     const length = parseInt(item.length) || 0;
     return sum + length;
@@ -213,8 +227,6 @@ export default function PlanMeeting() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
-        <BackArrow />
-
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
             Plan a Meeting
@@ -595,12 +607,29 @@ export default function PlanMeeting() {
         zIndex: 10,
       }}>
         <button
+          onClick={handleDelete}
+          title="Delete plan"
+          style={{
+            padding: '8px 12px',
+            backgroundColor: 'transparent',
+            color: '#F08571',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <Trash2 size={18} />
+        </button>
+
+        <button
           onClick={handleSave}
           disabled={isSaving}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
             padding: '10px 20px',
             backgroundColor: '#F08571',
             color: 'white',
@@ -619,32 +648,7 @@ export default function PlanMeeting() {
             if (!isSaving) e.currentTarget.style.backgroundColor = '#F08571';
           }}
         >
-          <Save size={16} />
-          {isSaved ? 'Saved' : 'Save'}
-        </button>
-        <button
-          onClick={handleNavigateToPlans}
-          style={{
-            padding: '10px 16px',
-            backgroundColor: 'transparent',
-            border: '1px solid #e5e5e5',
-            color: '#333',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: '500',
-            borderRadius: '6px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#FEE5DE';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#e5e5e5';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          View all plans
+          {isSaved ? 'Finished' : 'Finish'}
         </button>
       </div>
     </div>
