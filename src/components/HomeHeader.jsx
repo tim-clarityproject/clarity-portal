@@ -403,8 +403,6 @@ export default function HomeHeader({ isGuest = false }) {
           alignItems: 'center',
           gap: '4px',
           cursor: 'pointer',
-          position: 'relative',
-          zIndex: 2001,
         }}
       >
         <span>Created by</span>
