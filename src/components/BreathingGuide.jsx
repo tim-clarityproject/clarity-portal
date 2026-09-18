@@ -23,6 +23,8 @@ export default function BreathingGuide({ isOpen, onClose, enableGreeting = false
     const firstName = user?.user_metadata?.first_name || 'there';
     const fullText = `Good morning, ${firstName}, let's take a breath`;
     let charIndex = 0;
+    let animationFrameId;
+    let timeoutId;
 
     const typingInterval = setInterval(() => {
       if (charIndex <= fullText.length) {
@@ -30,7 +32,7 @@ export default function BreathingGuide({ isOpen, onClose, enableGreeting = false
         charIndex++;
       } else {
         clearInterval(typingInterval);
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           const animationStart = Date.now();
           const animationDuration = 1000;
 
@@ -41,7 +43,7 @@ export default function BreathingGuide({ isOpen, onClose, enableGreeting = false
             setGreetingOffset(-progress * 100);
 
             if (progress < 1) {
-              requestAnimationFrame(animateOut);
+              animationFrameId = requestAnimationFrame(animateOut);
             } else {
               setShowGreeting(false);
             }
@@ -52,7 +54,11 @@ export default function BreathingGuide({ isOpen, onClose, enableGreeting = false
       }
     }, 50);
 
-    return () => clearInterval(typingInterval);
+    return () => {
+      clearInterval(typingInterval);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
   }, [isOpen, enableGreeting, user]);
 
   useEffect(() => {
@@ -150,7 +156,7 @@ export default function BreathingGuide({ isOpen, onClose, enableGreeting = false
     };
 
     loadSettings();
-  }, [isOpen, showGreeting, user]);
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 

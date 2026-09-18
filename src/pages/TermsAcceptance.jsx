@@ -73,7 +73,7 @@ export default function ReviewAcceptTerms() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader />
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px' }} className="page-container"display: 'flex'
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px' }} className="page-container">
         <div style={{ width: '100%', maxWidth: '700px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '12px' }}>
             Review & Accept Terms
