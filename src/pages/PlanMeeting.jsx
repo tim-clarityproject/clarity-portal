@@ -157,6 +157,9 @@ export default function PlanMeeting() {
     return sum + length;
   }, 0);
 
+  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
+  const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
@@ -164,7 +167,7 @@ export default function PlanMeeting() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
         <BackArrow />
 
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 32px 0', pageBreakAfter: 'avoid' }} className="page-title">
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 28px 0', pageBreakAfter: 'avoid' }} className="page-title">
           Plan a Meeting
         </h1>
 
@@ -177,102 +180,40 @@ export default function PlanMeeting() {
         `}</style>
 
         {/* Meeting Title Section */}
-        <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-            Meeting Title
-          </label>
+        <div style={{ marginBottom: '24px' }}>
+          <label style={labelStyle}>Meeting title</label>
           <input
             type="text"
             placeholder="e.g., Q3 Planning Session"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: '1px solid #e5e5e5',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
-              fontFamily: 'inherit',
-              boxSizing: 'border-box',
-            }}
+            style={{...inputStyle, maxWidth: '500px'}}
           />
         </div>
 
         {/* Date, Time, Chair */}
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', alignItems: 'flex-end' }}>
           <div style={{ maxWidth: '150px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-              Date
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 12px',
-                border: '1px solid #e5e5e5',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-              }}
-            />
+            <label style={labelStyle}>Date</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
           </div>
-
           <div style={{ maxWidth: '120px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-              Time
-            </label>
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 12px',
-                border: '1px solid #e5e5e5',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-              }}
-            />
+            <label style={labelStyle}>Time</label>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inputStyle} />
           </div>
-        </div>
-
-        {/* Chair */}
-        <div style={{ marginBottom: '32px', maxWidth: '300px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-            Chair
-          </label>
-          <input
-            type="text"
-            placeholder="Who is chairing?"
-            value={chair}
-            onChange={(e) => setChair(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 12px',
-              border: '1px solid #e5e5e5',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontFamily: 'inherit',
-              boxSizing: 'border-box',
-            }}
-          />
+          <div style={{ maxWidth: '200px', flex: 1 }}>
+            <label style={labelStyle}>Chair</label>
+            <input type="text" placeholder="Who is chairing?" value={chair} onChange={(e) => setChair(e.target.value)} style={inputStyle} />
+          </div>
         </div>
 
         {/* Objectives */}
-        <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '12px' }}>
-            Objectives (in priority order)
-          </label>
+        <div style={{ marginBottom: '28px' }}>
+          <label style={{...labelStyle, marginBottom: '10px'}}>Objectives (in priority order)</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
             {objectives.map((obj, index) => (
-              <div key={obj.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: '#999', minWidth: '20px' }}>
+              <div key={obj.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: '#999', minWidth: '24px' }}>
                   {index + 1}.
                 </span>
                 <input
@@ -280,26 +221,20 @@ export default function PlanMeeting() {
                   placeholder="What do you want to achieve?"
                   value={obj.text}
                   onChange={(e) => handleObjectiveChange(obj.id, e.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: '10px 12px',
-                    border: '1px solid #e5e5e5',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box',
-                  }}
+                  style={{...inputStyle, flex: 1}}
                 />
                 <button
                   onClick={() => handleRemoveObjective(obj.id)}
                   disabled={objectives.length === 1}
                   style={{
-                    padding: '4px 8px',
+                    padding: '6px 8px',
                     backgroundColor: 'transparent',
                     border: 'none',
                     color: objectives.length === 1 ? '#ddd' : '#F08571',
                     cursor: objectives.length === 1 ? 'not-allowed' : 'pointer',
                     transition: 'color 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                   onMouseEnter={(e) => {
                     if (objectives.length > 1) e.target.style.color = '#e07560';
@@ -308,7 +243,7 @@ export default function PlanMeeting() {
                     if (objectives.length > 1) e.target.style.color = '#F08571';
                   }}
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={16} />
                 </button>
               </div>
             ))}
@@ -318,15 +253,15 @@ export default function PlanMeeting() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               padding: '8px 12px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '1px solid #e5e5e5',
               borderRadius: '6px',
               color: '#333',
               cursor: 'pointer',
               fontSize: '13px',
-              fontWeight: '600',
+              fontWeight: '500',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
@@ -338,114 +273,59 @@ export default function PlanMeeting() {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <Plus size={16} />
+            <Plus size={14} />
             Add objective
           </button>
         </div>
 
         {/* Meeting Agenda Table */}
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0 }}>Meeting Agenda</h2>
+            <label style={{...labelStyle, marginBottom: 0}}>Meeting agenda</label>
             {totalLength > 0 && (
-              <span style={{ fontSize: '12px', color: '#999' }}>Total: {totalLength} minutes</span>
+              <span style={{ fontSize: '12px', color: '#999' }}>Total: {totalLength} min</span>
             )}
           </div>
 
           <div style={{ overflowX: 'auto', marginBottom: '12px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e5e5e5' }}>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aim</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Lead</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px', width: '80px' }}>Length (min)</th>
-                  <th style={{ padding: '10px 12px', width: '40px' }}></th>
+                <tr style={{ borderBottom: '1px solid #e5e5e5' }}>
+                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#999' }}>Item</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#999' }}>Aim</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#999' }}>Lead</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#999', width: '70px' }}>Length</th>
+                  <th style={{ padding: '8px 10px', width: '32px' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {flowItems.map((item) => (
                   <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '10px 12px' }}>
-                      <input
-                        type="text"
-                        placeholder="e.g., Welcome"
-                        value={item.item}
-                        onChange={(e) => handleItemChange(item.id, 'item', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 10px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
+                    <td style={{ padding: '8px 10px' }}>
+                      <input type="text" placeholder="e.g., Welcome" value={item.item} onChange={(e) => handleItemChange(item.id, 'item', e.target.value)} style={inputStyle} />
                     </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <input
-                        type="text"
-                        placeholder="Goal or outcome"
-                        value={item.aim}
-                        onChange={(e) => handleItemChange(item.id, 'aim', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 10px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
+                    <td style={{ padding: '8px 10px' }}>
+                      <input type="text" placeholder="Goal or outcome" value={item.aim} onChange={(e) => handleItemChange(item.id, 'aim', e.target.value)} style={inputStyle} />
                     </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <input
-                        type="text"
-                        placeholder="Person/Role"
-                        value={item.lead}
-                        onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 10px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
+                    <td style={{ padding: '8px 10px' }}>
+                      <input type="text" placeholder="Person/Role" value={item.lead} onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)} style={inputStyle} />
                     </td>
-                    <td style={{ padding: '10px 12px' }}>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        value={item.length}
-                        onChange={(e) => handleItemChange(item.id, 'length', e.target.value)}
-                        min="0"
-                        style={{
-                          width: '100%',
-                          padding: '8px 10px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          fontSize: '13px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
+                    <td style={{ padding: '8px 10px' }}>
+                      <input type="number" placeholder="0" value={item.length} onChange={(e) => handleItemChange(item.id, 'length', e.target.value)} min="0" style={inputStyle} />
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                    <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                       <button
                         onClick={() => handleRemoveItem(item.id)}
                         disabled={flowItems.length === 1}
                         style={{
-                          padding: '4px 8px',
+                          padding: '4px 6px',
                           backgroundColor: 'transparent',
                           border: 'none',
                           color: flowItems.length === 1 ? '#ddd' : '#F08571',
                           cursor: flowItems.length === 1 ? 'not-allowed' : 'pointer',
                           transition: 'color 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
                         }}
                         onMouseEnter={(e) => {
                           if (flowItems.length > 1) e.target.style.color = '#e07560';
@@ -454,7 +334,7 @@ export default function PlanMeeting() {
                           if (flowItems.length > 1) e.target.style.color = '#F08571';
                         }}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </button>
                     </td>
                   </tr>
@@ -468,15 +348,15 @@ export default function PlanMeeting() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               padding: '8px 12px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '1px solid #e5e5e5',
               borderRadius: '6px',
               color: '#333',
               cursor: 'pointer',
               fontSize: '13px',
-              fontWeight: '600',
+              fontWeight: '500',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
@@ -488,7 +368,7 @@ export default function PlanMeeting() {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <Plus size={16} />
+            <Plus size={14} />
             Add agenda item
           </button>
         </div>
@@ -543,11 +423,11 @@ export default function PlanMeeting() {
           style={{
             padding: '10px 16px',
             backgroundColor: 'transparent',
-            border: '2px solid #e5e5e5',
+            border: '1px solid #e5e5e5',
             color: '#333',
             cursor: 'pointer',
             fontSize: '13px',
-            fontWeight: '600',
+            fontWeight: '500',
             borderRadius: '6px',
             transition: 'all 0.2s',
           }}
