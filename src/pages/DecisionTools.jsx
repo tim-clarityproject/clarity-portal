@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import HomeHeader from '../components/HomeHeader';
 
 const ALL_PROBLEMS = [
@@ -82,8 +83,8 @@ export default function DecisionTools() {
               disabled={problem.status === 'coming-soon'}
               style={{
                 padding: '24px',
-                backgroundColor: problem.status === 'coming-soon' ? '#f5f5f5' : '#FEE5DE',
-                border: problem.status === 'coming-soon' ? '2px solid #e5e5e5' : '2px solid #F08571',
+                backgroundColor: problem.status === 'coming-soon' ? '#f9f9f9' : 'white',
+                border: problem.status === 'coming-soon' ? '2px solid #e5e5e5' : '2px solid #e5e5e5',
                 borderRadius: '12px',
                 color: problem.status === 'coming-soon' ? '#999' : '#333',
                 fontWeight: '600',
@@ -98,14 +99,14 @@ export default function DecisionTools() {
               }}
               onMouseEnter={(e) => {
                 if (problem.status !== 'coming-soon') {
-                  e.currentTarget.style.backgroundColor = '#F08571';
-                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.borderColor = '#F08571';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(240, 133, 113, 0.1)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (problem.status !== 'coming-soon') {
-                  e.currentTarget.style.backgroundColor = '#FEE5DE';
-                  e.currentTarget.style.color = '#333';
+                  e.currentTarget.style.borderColor = '#e5e5e5';
+                  e.currentTarget.style.boxShadow = 'none';
                 }
               }}
             >
@@ -115,8 +116,8 @@ export default function DecisionTools() {
                 <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>{problem.description}</div>
               </div>
               {problem.status === 'coming-soon' && (
-                <div style={{ marginTop: '8px', fontSize: '11px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Coming soon
+                <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-start' }}>
+                  <Lock size={16} color="#999" />
                 </div>
               )}
             </button>
