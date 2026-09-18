@@ -190,11 +190,15 @@ export default function MyJournal() {
     return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
+  const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };
+  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
+  const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>{pageTitle}</h1>
 
         <div style={{ marginBottom: '32px' }}>
@@ -203,35 +207,23 @@ export default function MyJournal() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '13px', color: '#666', marginBottom: '8px', fontWeight: '500' }}>
-              Select date:
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              style={{
-                padding: '10px 12px',
-                border: '2px solid #e5e5e5',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-              }}
-            />
-          </div>
-
-          <p style={{ fontSize: '13px', color: '#999', marginBottom: '24px' }}>
-            {formatDate(selectedDate)}
-          </p>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>
+            Select date:
+          </label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            style={inputStyle}
+          />
         </div>
 
-        <div style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{...sectionStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '20px', paddingLeft: '24px'}}>
           {questions.map((q) => (
             <div key={q.id}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' }}>
                 {q.label}
               </label>
               <textarea
@@ -241,12 +233,12 @@ export default function MyJournal() {
                 placeholder={`Answer: ${q.label.toLowerCase()}`}
                 style={{
                   width: '100%',
-                  minHeight: '120px',
-                  padding: '12px',
-                  border: '2px solid #e5e5e5',
+                  minHeight: '100px',
+                  padding: '10px 12px',
+                  border: '1px solid #e5e5e5',
                   borderRadius: '6px',
                   fontSize: '13px',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  fontFamily: 'inherit',
                   boxSizing: 'border-box',
                   outline: 'none',
                   resize: 'vertical',
@@ -260,13 +252,29 @@ export default function MyJournal() {
           ))}
         </div>
 
+      </div>
+
+      {/* Fixed bottom bar */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fafafa',
+        borderTop: '1px solid #e5e5e5',
+        padding: '12px 32px',
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '12px',
+        zIndex: 10,
+      }}>
         {saved && (
-          <div style={{ textAlign: 'center', color: '#5ECCC0', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>
+          <div style={{ textAlign: 'center', color: '#5ECCC0', fontSize: '14px', fontWeight: '600', position: 'absolute', left: '32px' }}>
             ✓ {pageTitle} saved
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button
             onClick={handleSaveClick}
             disabled={isSaving || isGuest}
@@ -356,14 +364,14 @@ export default function MyJournal() {
             My Reviews
           </button>
         </div>
-
-        <NamingModal
-          isOpen={showNamingModal}
-          itemType="review"
-          onConfirm={handleSaveConfirmed}
-          onCancel={() => setShowNamingModal(false)}
-        />
       </div>
+
+      <NamingModal
+        isOpen={showNamingModal}
+        itemType="review"
+        onConfirm={handleSaveConfirmed}
+        onCancel={() => setShowNamingModal(false)}
+      />
     </div>
   );
 }
