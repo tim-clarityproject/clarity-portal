@@ -106,30 +106,30 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
           setPhase('inhale');
           const progress = cycleElapsed / inhaleDuration;
           setScale(1 + progress * 0.5);
-          const inhaleSeconds = Math.floor(cycleElapsed / 1000) + 1;
-          setSeconds(Math.min(inhaleSeconds, Math.floor(inhaleDuration / 1000)));
+          const remainingSeconds = Math.ceil((inhaleDuration - cycleElapsed) / 1000);
+          setSeconds(Math.max(remainingSeconds, 0));
         } else if (cycleElapsed < inhaleDuration + holdDuration) {
-          // Hold phase (after inhale): maintain 1.5 scale, count up
+          // Hold phase (after inhale): maintain 1.5 scale, count down
           setPhase('hold');
           setScale(1.5);
           const holdElapsed = cycleElapsed - inhaleDuration;
-          const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
-          setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
+          const remainingSeconds = Math.ceil((holdDuration - holdElapsed) / 1000);
+          setSeconds(Math.max(remainingSeconds, 0));
         } else if (cycleElapsed < inhaleDuration + holdDuration + exhaleDuration) {
           // Exhale phase: scale from 1.5 to 1
           setPhase('exhale');
           const exhaleElapsed = cycleElapsed - inhaleDuration - holdDuration;
           const progress = exhaleElapsed / exhaleDuration;
           setScale(1.5 - progress * 0.5);
-          const exhaleSeconds = Math.floor(exhaleElapsed / 1000) + 1;
-          setSeconds(Math.min(exhaleSeconds, Math.floor(exhaleDuration / 1000)));
+          const remainingSeconds = Math.ceil((exhaleDuration - exhaleElapsed) / 1000);
+          setSeconds(Math.max(remainingSeconds, 0));
         } else {
-          // Hold phase (after exhale): maintain 1 scale, count up
+          // Hold phase (after exhale): maintain 1 scale, count down
           setPhase('hold');
           setScale(1);
           const holdElapsed = cycleElapsed - inhaleDuration - holdDuration - exhaleDuration;
-          const holdSeconds = Math.floor(holdElapsed / 1000) + 1;
-          setSeconds(Math.min(holdSeconds, Math.floor(holdDuration / 1000)));
+          const remainingSeconds = Math.ceil((holdDuration - holdElapsed) / 1000);
+          setSeconds(Math.max(remainingSeconds, 0));
         }
 
         animationFrame = requestAnimationFrame(animate);
