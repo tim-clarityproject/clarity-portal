@@ -1,29 +1,34 @@
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
+
 export default function BackArrow() {
+  const navigate = useNavigate();
+
   return (
-    <div
+    <button
+      onClick={() => navigate(-1)}
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '40px',
-        height: '40px',
-        backgroundColor: '#f5f5f5',
-        borderRadius: '8px',
+        padding: '8px 12px',
+        backgroundColor: 'transparent',
+        border: 'none',
+        color: '#F08571',
+        cursor: 'pointer',
+        borderRadius: '6px',
         transition: 'all 0.2s',
+        marginBottom: '24px',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#FEE5DE';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
       }}
     >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="15 18 6 12 15 6"></polyline>
-      </svg>
-    </div>
+      <ChevronLeft size={20} />
+      <span style={{ fontSize: '13px', fontWeight: '600', marginLeft: '4px' }}>Back</span>
+    </button>
   );
 }
