@@ -263,6 +263,7 @@ export default function PlanMeeting() {
               fontSize: '13px',
               fontWeight: '500',
               transition: 'all 0.2s',
+              marginLeft: '34px',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = '#F08571';
