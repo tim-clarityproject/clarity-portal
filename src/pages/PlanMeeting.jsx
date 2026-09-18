@@ -33,7 +33,7 @@ export default function PlanMeeting() {
   const dropdownRef = useRef(null);
 
   const availableSections = [
-    { id: 'pre-reads', label: 'Attendee Preparation (Pre-reading, Thinking)' },
+    { id: 'pre-reads', label: 'Attendee Preparation' },
     { id: 'success', label: 'Success Criteria' },
     { id: 'actions', label: 'Action Items' },
   ];
