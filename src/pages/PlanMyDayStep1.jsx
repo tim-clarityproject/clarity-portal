@@ -139,12 +139,12 @@ export default function PlanMyDayStep1() {
 
           <div style={sectionStyle}>
             <label style={labelStyle}>
-              How do you want to show up today?
+              What's in your control today?
             </label>
             <textarea
               value={showUp}
               onChange={(e) => setShowUp(e.target.value)}
-              placeholder="What qualities or mindset do you want to embody..."
+              placeholder="What can you actually influence or control..."
               style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
