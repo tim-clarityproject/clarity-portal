@@ -2,67 +2,14 @@ import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function BreathingGuide({ isOpen, onClose, enableGreeting = false }) {
+export default function BreathingGuide({ isOpen, onClose }) {
   const { user } = useContext(AuthContext);
   const [phase, setPhase] = useState('inhale');
   const [scale, setScale] = useState(1);
   const [seconds, setSeconds] = useState(0);
-  const [showGreeting, setShowGreeting] = useState(enableGreeting);
-  const [displayedText, setDisplayedText] = useState('');
-  const [greetingOffset, setGreetingOffset] = useState(0);
 
   useEffect(() => {
-    if (!isOpen || !enableGreeting) {
-      setShowGreeting(false);
-      setDisplayedText('');
-      setGreetingOffset(0);
-      return;
-    }
-
-    setShowGreeting(true);
-    const firstName = user?.user_metadata?.first_name || 'there';
-    const fullText = `Good morning, ${firstName}, let's take a breath`;
-    let charIndex = 0;
-    let animationFrameId;
-    let timeoutId;
-
-    const typingInterval = setInterval(() => {
-      if (charIndex <= fullText.length) {
-        setDisplayedText(fullText.slice(0, charIndex));
-        charIndex++;
-      } else {
-        clearInterval(typingInterval);
-        timeoutId = setTimeout(() => {
-          const animationStart = Date.now();
-          const animationDuration = 1000;
-
-          const animateOut = () => {
-            const elapsed = Date.now() - animationStart;
-            const progress = Math.min(elapsed / animationDuration, 1);
-
-            setGreetingOffset(-progress * 100);
-
-            if (progress < 1) {
-              animationFrameId = requestAnimationFrame(animateOut);
-            } else {
-              setShowGreeting(false);
-            }
-          };
-
-          animateOut();
-        }, 1500);
-      }
-    }, 50);
-
-    return () => {
-      clearInterval(typingInterval);
-      if (timeoutId) clearTimeout(timeoutId);
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    };
-  }, [isOpen, enableGreeting, user]);
-
-  useEffect(() => {
-    if (!isOpen || showGreeting) return;
+    if (!isOpen) return;
 
     const loadSettings = async () => {
       let inhaleDuration = 4000;
@@ -168,7 +115,7 @@ export default function BreathingGuide({ isOpen, onClose, enableGreeting = false
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#2c3e50',
+        backgroundColor: '#000000',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -178,36 +125,7 @@ export default function BreathingGuide({ isOpen, onClose, enableGreeting = false
       }}
       onClick={onClose}
     >
-      {showGreeting && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: `translate(-50%, calc(-50% + ${greetingOffset}px))`,
-            textAlign: 'center',
-            fontSize: '28px',
-            fontWeight: '600',
-            color: 'white',
-            maxWidth: '80%',
-            transition: 'none',
-            opacity: 1 - Math.abs(greetingOffset) / 100,
-          }}
-        >
-          {displayedText}
-          {displayedText.length < `Good morning, ${user?.user_metadata?.first_name || 'there'}, let's take a breath`.length && (
-            <span style={{ animation: 'blink 1s infinite' }}>|</span>
-          )}
-          <style>{`
-            @keyframes blink {
-              0%, 49% { opacity: 1; }
-              50%, 100% { opacity: 0; }
-            }
-          `}</style>
-        </div>
-      )}
-
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '80px', opacity: showGreeting ? 0 : 1, transition: 'opacity 0.3s ease' }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '80px' }}>
         {/* Circle with timer inside */}
         <div
           style={{

@@ -16,9 +16,16 @@ export default function HomeHeader({ isGuest = false }) {
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Show breathing guide on mount (TODO: restore 2-hour timer after testing)
+  // Show breathing guide on mount or after 2 hours
   useEffect(() => {
-    setShowBreathingGuide(true);
+    const lastBreathingTime = localStorage.getItem('lastBreathingGuideTime');
+    const now = Date.now();
+    const twoHours = 2 * 60 * 60 * 1000;
+
+    if (!lastBreathingTime || now - parseInt(lastBreathingTime) > twoHours) {
+      setShowBreathingGuide(true);
+      localStorage.setItem('lastBreathingGuideTime', now.toString());
+    }
   }, []);
 
   const handleCloseBreathingGuide = () => {
@@ -427,7 +434,7 @@ export default function HomeHeader({ isGuest = false }) {
         </a>
       </div>
 
-      <BreathingGuide isOpen={showBreathingGuide} onClose={handleCloseBreathingGuide} enableGreeting={true} />
+      <BreathingGuide isOpen={showBreathingGuide} onClose={handleCloseBreathingGuide} />
     </div>
   );
 }
