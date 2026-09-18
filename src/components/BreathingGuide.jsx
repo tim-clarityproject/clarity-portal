@@ -18,7 +18,12 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false }
       return;
     }
 
-    const firstName = user?.user_metadata?.first_name || 'there';
+    // Wait for user to be loaded with metadata
+    if (!user || !user.user_metadata) {
+      return;
+    }
+
+    const firstName = user.user_metadata.first_name || 'there';
     const fullText = `Good morning, ${firstName}, let's take a breath`;
     let charIndex = 0;
 
