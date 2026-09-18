@@ -103,11 +103,21 @@ export default function PlanMyDayStep1() {
     }
   };
 
+  const sectionStyle = {
+    marginBottom: '28px',
+    backgroundColor: 'white',
+    padding: '20px',
+    borderRadius: '8px',
+    borderLeft: '3px solid #F08571'
+  };
+  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
+  const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
             Plan My Day
@@ -117,141 +127,120 @@ export default function PlanMyDayStep1() {
           </p>
         </div>
 
-        <div style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+        <div style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: '1fr', gap: '0' }}>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
               What's your top priority today?
             </label>
             <textarea
               value={topPriority}
               onChange={(e) => setTopPriority(e.target.value)}
               placeholder="What's the one thing that matters most..."
-              style={{
-                width: '100%',
-                minHeight: '120px',
-                padding: '12px',
-                border: '2px solid #e5e5e5',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                boxSizing: 'border-box',
-              }}
+              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
               What would make today a success for you?
             </label>
             <textarea
               value={success}
               onChange={(e) => setSuccess(e.target.value)}
               placeholder="Describe what a successful day looks like..."
-              style={{
-                width: '100%',
-                minHeight: '120px',
-                padding: '12px',
-                border: '2px solid #e5e5e5',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                boxSizing: 'border-box',
-              }}
+              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
               How do you want to show up today?
             </label>
             <textarea
               value={showUp}
               onChange={(e) => setShowUp(e.target.value)}
               placeholder="What qualities or mindset do you want to embody..."
-              style={{
-                width: '100%',
-                minHeight: '120px',
-                padding: '12px',
-                border: '2px solid #e5e5e5',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                boxSizing: 'border-box',
-              }}
+              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
               What do you not want to do today?
             </label>
             <textarea
               value={notDo}
               onChange={(e) => setNotDo(e.target.value)}
               placeholder="What should you avoid or not focus on..."
-              style={{
-                width: '100%',
-                minHeight: '120px',
-                padding: '12px',
-                border: '2px solid #e5e5e5',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                boxSizing: 'border-box',
-              }}
+              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
         </div>
 
+      </div>
+
+      {/* Fixed bottom bar */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fafafa',
+        borderTop: '1px solid #e5e5e5',
+        padding: '12px 32px',
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '12px',
+        zIndex: 10,
+      }}>
         {saved && (
-          <div style={{ textAlign: 'center', color: '#5ECCC0', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>
+          <div style={{ textAlign: 'center', color: '#5ECCC0', fontSize: '14px', fontWeight: '600', position: 'absolute', left: '32px' }}>
             ✓ Daily plan saved
           </div>
         )}
+        <button
+          onClick={handleDelete}
+          title="Delete plan"
+          style={{
+            padding: '8px 12px',
+            backgroundColor: 'transparent',
+            color: '#F08571',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <Trash2 size={18} />
+        </button>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
-            onClick={handleDelete}
-            title="Delete plan"
-            style={{
-              padding: '8px',
-              backgroundColor: 'transparent',
-              color: '#F08571',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            <Trash2 size={18} />
-          </button>
-
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            style={{
-              flex: 1,
-              padding: '14px 24px',
-              backgroundColor: '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              opacity: isSaving ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => !isSaving && (e.target.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => !isSaving && (e.target.style.backgroundColor = '#F08571')}
-          >
-            {isSaving ? 'Saving...' : 'Save Plan'}
-          </button>
-        </div>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#F08571',
+            color: 'white',
+            fontWeight: '600',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: isSaving ? 'not-allowed' : 'pointer',
+            fontSize: '13px',
+            opacity: isSaving ? 0.7 : 1,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#e07560')}
+          onMouseLeave={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#F08571')}
+        >
+          {isSaving ? 'Saving...' : 'Save Plan'}
+        </button>
+      </div>
+    </div>
       </div>
     </div>
   );
