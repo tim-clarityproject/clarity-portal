@@ -241,7 +241,5 @@ export default function PlanMyDayStep1() {
         </button>
       </div>
     </div>
-      </div>
-    </div>
   );
 }
