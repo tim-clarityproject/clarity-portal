@@ -173,13 +173,14 @@ export default function IfThenPlanning() {
         </div>
 
         <div style={sectionStyle}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '16px', marginBottom: '20px', alignItems: 'center' }}>
             <div>
-              <label style={labelStyle}>If this happens...</label>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '0' }}>When this happens</div>
             </div>
             <div>
-              <label style={labelStyle}>Then I will...</label>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '0' }}>My response will be</div>
             </div>
+            <div></div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
@@ -187,14 +188,14 @@ export default function IfThenPlanning() {
               <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '16px', alignItems: 'flex-start' }}>
                 <input
                   type="text"
-                  placeholder="e.g., I feel anxious..."
+                  placeholder="e.g., I start to feel overwhelmed"
                   value={item.ifCondition}
                   onChange={(e) => handleItemChange(item.id, 'ifCondition', e.target.value)}
                   style={inputStyle}
                 />
                 <input
                   type="text"
-                  placeholder="e.g., I will take 5 deep breaths..."
+                  placeholder="e.g., take 5 deep breaths and step outside"
                   value={item.thenAction}
                   onChange={(e) => handleItemChange(item.id, 'thenAction', e.target.value)}
                   style={inputStyle}
