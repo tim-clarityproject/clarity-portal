@@ -33,7 +33,7 @@ export default function PlanMeeting() {
   const dropdownRef = useRef(null);
 
   const availableSections = [
-    { id: 'pre-reads', label: 'Pre-reads & Materials' },
+    { id: 'pre-reads', label: 'Attendee Preparation (Pre-reading, Thinking)' },
     { id: 'success', label: 'Success Criteria' },
     { id: 'actions', label: 'Action Items' },
   ];
@@ -400,11 +400,11 @@ export default function PlanMeeting() {
           </button>
         </div>
 
-        {/* Pre-reads Section */}
+        {/* Attendee Preparation Section */}
         {sections.includes('pre-reads') && (
           <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{...labelStyle, marginBottom: 0}}>Pre-reads & materials</label>
+              <label style={{...labelStyle, marginBottom: 0}}>Attendee preparation</label>
               <button
                 onClick={() => removeSection('pre-reads')}
                 title="Remove this section"
@@ -425,7 +425,7 @@ export default function PlanMeeting() {
               </button>
             </div>
             <textarea
-              placeholder="What should attendees review or prepare?"
+              placeholder="What should attendees read, research, or think about beforehand?"
               value={preReads}
               onChange={(e) => setPreReads(e.target.value)}
               style={{...inputStyle, minHeight: '60px'}}
