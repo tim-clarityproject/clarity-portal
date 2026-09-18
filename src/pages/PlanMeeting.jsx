@@ -328,7 +328,7 @@ export default function PlanMeeting() {
         {sections.includes('context') && (
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{...labelStyle, marginBottom: 0}}>Meeting context</label>
+              <label style={{...labelStyle, marginBottom: 0}}>Meeting Context</label>
               <button
                 onClick={() => removeSection('context')}
                 title="Remove this section"
@@ -359,7 +359,7 @@ export default function PlanMeeting() {
 
         {/* Objectives */}
         <div style={{ marginBottom: '28px' }}>
-          <label style={{...labelStyle, marginBottom: '10px'}}>Objectives (in priority order)</label>
+          <label style={{...labelStyle, marginBottom: '10px'}}>Objectives (In Priority Order)</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
             {objectives.map((obj, index) => (
               <div key={obj.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -433,7 +433,7 @@ export default function PlanMeeting() {
         {sections.includes('pre-reads') && (
           <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{...labelStyle, marginBottom: 0}}>Attendee preparation</label>
+              <label style={{...labelStyle, marginBottom: 0}}>Attendee Preparation</label>
               <button
                 onClick={() => removeSection('pre-reads')}
                 title="Remove this section"
@@ -465,7 +465,7 @@ export default function PlanMeeting() {
         {/* Meeting Agenda Table */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <label style={{...labelStyle, marginBottom: 0}}>Meeting agenda</label>
+            <label style={{...labelStyle, marginBottom: 0}}>Meeting Agenda</label>
             {totalLength > 0 && (
               <span style={{ fontSize: '12px', color: '#999' }}>Total: {totalLength} min</span>
             )}
