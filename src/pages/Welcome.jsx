@@ -8,23 +8,19 @@ import HomeHeader from '../components/HomeHeader';
 import BreathingGuide from '../components/BreathingGuide';
 
 const ALL_PROBLEMS = [
-  { id: 'plan-day', title: 'Plan my day', tools: ['plan-day'], status: null },
-  { id: 'decision', title: 'A key decision', tools: ['grow'], status: null },
-  { id: 'strategic', title: 'Where my team should focus', tools: ['strategic-alignment'], status: null },
-  { id: 'tough-conversation', title: 'A tough conversation', tools: ['tough-conversation'], status: null },
-  { id: 'new-hire', title: 'Making a new hire', tools: ['new-hire'], status: 'coming-soon' },
-  { id: 'onboarding', title: 'Onboarding a new member of staff', tools: ['onboarding'], status: 'coming-soon' },
-  { id: 'energy', title: 'What to focus my energy on', tools: ['energy-allocation'], status: 'coming-soon' },
-  { id: 'goals', title: 'What goals to set', tools: ['goal-setting'], status: 'coming-soon' },
-  { id: 'improve', title: 'Getting better at what I do', tools: ['idp'], status: 'coming-soon' },
-  { id: 'alignment', title: 'Creating alignment in my team', tools: ['alignment'], status: 'coming-soon' },
-  { id: 'habits', title: 'Improving my habits', tools: ['habits'], status: 'coming-soon' },
-  { id: 'rut', title: 'Getting out of a rut', tools: ['rut'], status: 'coming-soon' },
-  { id: 'purpose', title: 'Feeling more purposeful', tools: ['purpose'], status: 'coming-soon' },
-  { id: 'gratitude', title: 'Cultivating gratitude', tools: ['gratitude'], status: 'coming-soon' },
-  { id: 'performance', title: 'Looking after my wellbeing', tools: ['performance-audit'], status: 'coming-soon' },
-  { id: 'team-goals', title: 'Setting team goals and OKRs', tools: ['team-goals'], status: 'coming-soon' },
-  { id: 'team-performance', title: 'Team health & performance', tools: ['team-performance'], status: 'coming-soon' },
+  // Plan
+  { id: 'plan-day', title: 'Plan my day', tools: ['plan-day'], status: null, category: 'Plan' },
+  { id: 'plan-meeting', title: 'Plan a meeting', tools: ['plan-meeting'], status: null, category: 'Plan' },
+
+  // Decide
+  { id: 'grow', title: 'Grow option', tools: ['grow'], status: null, category: 'Decide' },
+  { id: 'inversion', title: 'Inversion', tools: ['inversion'], status: null, category: 'Decide' },
+  { id: 'tough-conversation', title: 'Tough conversation', tools: ['tough-conversation'], status: null, category: 'Decide' },
+  { id: 'strategic', title: 'Strategic alignment', tools: ['strategic-alignment'], status: null, category: 'Decide' },
+
+  // Review
+  { id: 'after-action', title: 'After-action review', tools: ['after-action'], status: null, category: 'Review' },
+  { id: 'progress', title: 'Progress review', tools: ['progress'], status: null, category: 'Review' },
 ];
 
 export default function Welcome() {
@@ -36,9 +32,7 @@ export default function Welcome() {
   const [selectedProblem, setSelectedProblem] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [displayedGreeting, setDisplayedGreeting] = useState('');
-  const [displayedQuestion, setDisplayedQuestion] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showPastDecisions, setShowPastDecisions] = useState(false);
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
   const [showGreetingText, setShowGreetingText] = useState(false);
   const isGuest = location.state?.isGuest || false;
@@ -95,34 +89,22 @@ export default function Welcome() {
 
   useEffect(() => {
     setShowDropdown(false);
-    setShowPastDecisions(false);
     setDisplayedGreeting('');
-    setDisplayedQuestion('');
 
     const timeGreeting = getTimeGreeting();
     const namePart = displayName ? `, ${displayName}.` : '.';
     const fullGreeting = timeGreeting + namePart;
-    const question = 'What are you thinking about?';
 
     let greetingIndex = 0;
-    let questionIndex = 0;
-    let isGreetingDone = false;
 
     const typeInterval = setInterval(() => {
-      if (!isGreetingDone && greetingIndex < fullGreeting.length) {
+      if (greetingIndex < fullGreeting.length) {
         setDisplayedGreeting(fullGreeting.substring(0, greetingIndex + 1));
         greetingIndex++;
-      } else if (!isGreetingDone) {
-        isGreetingDone = true;
-      } else if (questionIndex < question.length) {
-        setDisplayedQuestion(question.substring(0, questionIndex + 1));
-        questionIndex++;
       } else {
         clearInterval(typeInterval);
-        // Show dropdown after typing completes
+        // Show dropdown after greeting types out
         setTimeout(() => setShowDropdown(true), 200);
-        // Show past decisions button after dropdown appears
-        setTimeout(() => setShowPastDecisions(true), 600);
       }
     }, 40);
 
@@ -149,14 +131,24 @@ export default function Welcome() {
     clearFormData();
     clearProgress();
 
-    if (problem.tools[0] === 'grow') {
-      navigate('/grow-step-1', { state: { isGuest, ...location.state, problemTitle: problem.title } });
-    } else if (problem.tools[0] === 'strategic-alignment') {
-      navigate('/goal-setting', { state: { isGuest, ...location.state, problemTitle: problem.title } });
-    } else if (problem.tools[0] === 'tough-conversation') {
-      navigate('/tough-conversation-step-1', { state: { isGuest, ...location.state, problemTitle: problem.title } });
-    } else if (problem.tools[0] === 'plan-day') {
-      navigate('/plan-my-day', { state: { isGuest, ...location.state, problemTitle: problem.title } });
+    const tool = problem.tools[0];
+    const routeMap = {
+      'grow': '/grow-step-1',
+      'inversion': '/inversion-step-1',
+      'strategic-alignment': '/goal-setting',
+      'tough-conversation': '/tough-conversation-step-1',
+      'plan-day': '/plan-my-day',
+      'plan-meeting': '/plan-meeting',
+      'after-action': '/my-journal',
+      'progress': '/my-journal',
+    };
+
+    const route = routeMap[tool];
+    if (route) {
+      const state = { isGuest, ...location.state, problemTitle: problem.title };
+      if (tool === 'after-action') state.reviewType = 'after-action';
+      if (tool === 'progress') state.reviewType = 'progress';
+      navigate(route, { state });
     }
   };
 
@@ -173,10 +165,6 @@ export default function Welcome() {
               {displayedGreeting}
               {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Good Morning, ${displayName}.` : 'Good Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h1>
-            <p style={{ fontSize: '20px', color: '#666', margin: 0, minHeight: '30px' }}>
-              {displayedQuestion}
-              {displayedQuestion.length > 0 && displayedQuestion.length < 'What are we making a decision about?'.length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
-            </p>
           </div>
 
           <style>{`
@@ -187,223 +175,7 @@ export default function Welcome() {
           `}</style>
 
           <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
-            {/* Tools section */}
-            <div style={{ marginBottom: '48px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '24px', textAlign: 'center' }}>What are we working on?</h2>
-
-              {/* Plan Tools */}
-              <div style={{ marginBottom: '32px' }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', textAlign: 'center' }}>Plan</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <button
-                    onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#333',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      e.currentTarget.style.borderColor = '#F08571';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
-                    }}
-                  >
-                    Plan my day
-                  </button>
-                  <button
-                    onClick={() => navigate('/plan-meeting', { state: { isGuest } })}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#333',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      e.currentTarget.style.borderColor = '#F08571';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
-                    }}
-                  >
-                    Plan a meeting
-                  </button>
-                </div>
-              </div>
-
-              {/* Decide Tools */}
-              <div style={{ marginBottom: '32px' }}>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', textAlign: 'center' }}>Decide</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <button
-                    onClick={() => navigate('/grow-step-1', { state: { isGuest } })}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#333',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      e.currentTarget.style.borderColor = '#F08571';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
-                    }}
-                  >
-                    Grow option
-                  </button>
-                  <button
-                    onClick={() => navigate('/inversion-step-1', { state: { isGuest } })}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#333',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      e.currentTarget.style.borderColor = '#F08571';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
-                    }}
-                  >
-                    Inversion
-                  </button>
-                  <button
-                    onClick={() => navigate('/tough-conversation-step-1', { state: { isGuest } })}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#333',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      e.currentTarget.style.borderColor = '#F08571';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
-                    }}
-                  >
-                    Tough conversation
-                  </button>
-                  <button
-                    onClick={() => navigate('/goal-setting', { state: { isGuest } })}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#333',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      e.currentTarget.style.borderColor = '#F08571';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
-                    }}
-                  >
-                    Strategic alignment
-                  </button>
-                </div>
-              </div>
-
-              {/* Review Tools */}
-              <div>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', textAlign: 'center' }}>Review</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <button
-                    onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#333',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      e.currentTarget.style.borderColor = '#F08571';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
-                    }}
-                  >
-                    After-action review
-                  </button>
-                  <button
-                    onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#333',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
-                      e.currentTarget.style.borderColor = '#F08571';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
-                    }}
-                  >
-                    Progress review
-                  </button>
-                </div>
-              </div>
-            </div>
+            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '20px', textAlign: 'center' }}>What are we working on?</h2>
 
             {/* Problem selector dropdown */}
             <div>
@@ -460,48 +232,60 @@ export default function Welcome() {
                       boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                     }}
                   >
-                    {problems.map((problem) => (
-                      <button
-                        key={problem.id}
-                        onClick={() => {
-                          setSelectedProblem(problem.id);
-                          setIsOpen(false);
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '14px 16px',
-                          backgroundColor: selectedProblem === problem.id ? '#FEE5DE' : 'white',
-                          border: 'none',
-                          borderBottom: '1px solid #f0f0f0',
-                          textAlign: 'left',
-                          cursor: problem.status === 'coming-soon' ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.2s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          color: problem.status === 'coming-soon' ? '#ccc' : '#333',
-                          fontSize: '14px',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (problem.status !== 'coming-soon') {
-                            e.currentTarget.style.backgroundColor = '#FEE5DE';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (selectedProblem !== problem.id && problem.status !== 'coming-soon') {
-                            e.currentTarget.style.backgroundColor = 'white';
-                          }
-                        }}
-                        disabled={problem.status === 'coming-soon'}
-                      >
-                        <span>{problem.title}</span>
-                        {problem.status === 'coming-soon' && (
-                          <span style={{ fontSize: '10px', color: '#ccc', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
-                            Coming soon
-                          </span>
-                        )}
-                      </button>
-                    ))}
+                    {(() => {
+                      let lastCategory = null;
+                      return problems.map((problem, index) => (
+                        <div key={problem.id}>
+                          {problem.category && problem.category !== lastCategory && (
+                            <>
+                              {index > 0 && <div style={{ height: '1px', backgroundColor: '#f0f0f0' }} />}
+                              <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', backgroundColor: '#fafafa' }}>
+                                {(lastCategory = problem.category)}
+                              </div>
+                            </>
+                          )}
+                          <button
+                            onClick={() => {
+                              setSelectedProblem(problem.id);
+                              setIsOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '14px 16px',
+                              backgroundColor: selectedProblem === problem.id ? '#FEE5DE' : 'white',
+                              border: 'none',
+                              borderBottom: '1px solid #f0f0f0',
+                              textAlign: 'left',
+                              cursor: problem.status === 'coming-soon' ? 'not-allowed' : 'pointer',
+                              transition: 'all 0.2s',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              color: problem.status === 'coming-soon' ? '#ccc' : '#333',
+                              fontSize: '14px',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (problem.status !== 'coming-soon') {
+                                e.currentTarget.style.backgroundColor = '#FEE5DE';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedProblem !== problem.id && problem.status !== 'coming-soon') {
+                                e.currentTarget.style.backgroundColor = 'white';
+                              }
+                            }}
+                            disabled={problem.status === 'coming-soon'}
+                          >
+                            <span>{problem.title}</span>
+                            {problem.status === 'coming-soon' && (
+                              <span style={{ fontSize: '10px', color: '#ccc', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
+                                Coming soon
+                              </span>
+                            )}
+                          </button>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 )}
               </div>
@@ -545,69 +329,6 @@ export default function Welcome() {
             </div>
           </div>
 
-          <div
-            style={{
-              marginTop: '80px',
-              textAlign: 'center',
-              opacity: showPastDecisions ? 1 : 0,
-              transition: 'opacity 0.5s ease-in-out',
-              fontSize: '13px',
-              color: '#999',
-            }}
-          >
-            <p style={{ margin: '0 0 12px 0' }}>Or</p>
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: '#F08571',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s',
-                  textDecoration: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.textDecoration = 'underline';
-                  e.currentTarget.style.color = '#e07560';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.textDecoration = 'none';
-                  e.currentTarget.style.color = '#F08571';
-                }}
-              >
-                After Action Review
-              </button>
-              <span style={{ color: '#e5e5e5' }}>•</span>
-              <button
-                onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: '#F08571',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s',
-                  textDecoration: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.textDecoration = 'underline';
-                  e.currentTarget.style.color = '#e07560';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.textDecoration = 'none';
-                  e.currentTarget.style.color = '#F08571';
-                }}
-              >
-                Progress Review
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
