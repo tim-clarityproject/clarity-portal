@@ -43,11 +43,18 @@ export default function Welcome() {
   const [showGreetingText, setShowGreetingText] = useState(false);
   const isGuest = location.state?.isGuest || false;
 
-  // Show breathing guide greeting on Welcome page load
+  // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
-    if (!isGuest) {
+    if (isGuest) return;
+
+    const lastBreathingTime = localStorage.getItem('lastBreathingGuideTime');
+    const now = Date.now();
+    const twoHours = 2 * 60 * 60 * 1000;
+
+    if (!lastBreathingTime || now - parseInt(lastBreathingTime) > twoHours) {
       setShowBreathingGuide(true);
       setShowGreetingText(true);
+      localStorage.setItem('lastBreathingGuideTime', now.toString());
     }
   }, [isGuest]);
 
