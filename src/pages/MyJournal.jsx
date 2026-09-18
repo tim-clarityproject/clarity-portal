@@ -293,7 +293,7 @@ export default function MyJournal() {
             onMouseEnter={(e) => !isGuest && !isSaving && (e.target.style.backgroundColor = '#e07560')}
             onMouseLeave={(e) => !isGuest && !isSaving && (e.target.style.backgroundColor = '#F08571')}
           >
-            {isSaving ? 'Saving...' : `Save ${pageTitle}`}
+            {isSaving ? 'Finishing...' : 'Finish'}
           </button>
 
           <button
