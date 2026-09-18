@@ -171,18 +171,20 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false }
             left: '50%',
             transform: `translate(-50%, -50%) ${greetingTransform}`,
             textAlign: 'center',
-            fontSize: '28px',
+            fontSize: '56px',
             fontWeight: '600',
             color: 'white',
-            maxWidth: '85%',
+            maxWidth: '90%',
             opacity: greetingOpacity,
             transition: 'all 1s ease-out',
-            minHeight: '60px',
+            minHeight: '80px',
+            lineHeight: '1.3',
+            letterSpacing: '-0.5px',
           }}
         >
           {displayedText}
           {displayedText.length < `Good morning, ${user?.user_metadata?.first_name || 'there'}, let's take a breath`.length && greetingPhase === 'typing' && (
-            <span style={{ animation: 'blink 1s infinite', marginLeft: '4px' }}>|</span>
+            <span style={{ animation: 'blink 1s infinite', marginLeft: '8px' }}>|</span>
           )}
           <style>{`
             @keyframes blink {
