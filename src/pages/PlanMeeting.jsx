@@ -164,6 +164,18 @@ export default function PlanMeeting() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
         <BackArrow />
 
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 32px 0', pageBreakAfter: 'avoid' }} className="page-title">
+          Plan a Meeting
+        </h1>
+
+        <style>{`
+          @media print {
+            .page-title {
+              display: none;
+            }
+          }
+        `}</style>
+
         {/* Meeting Title Section */}
         <div style={{ marginBottom: '32px' }}>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
