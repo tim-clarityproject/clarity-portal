@@ -19,10 +19,10 @@ export default function MeetingSummary() {
   const [emailInput, setEmailInput] = useState('');
 
   useEffect(() => {
-    if (decisionId && user && !isGuest) {
+    if (decisionId && user) {
       loadMeeting();
     }
-  }, [decisionId, user, isGuest]);
+  }, [decisionId, user]);
 
   const loadMeeting = async () => {
     if (!user) return;

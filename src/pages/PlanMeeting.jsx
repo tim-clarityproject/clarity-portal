@@ -140,7 +140,7 @@ export default function PlanMeeting() {
   };
 
   const handleSave = async () => {
-    if (!user || isGuest) return;
+    if (!user) return;
 
     setIsSaving(true);
     try {
