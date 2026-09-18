@@ -274,27 +274,6 @@ export default function MyJournal() {
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button
-            onClick={handleSaveClick}
-            disabled={isSaving || isGuest}
-            style={{
-              flex: 1,
-              padding: '14px 24px',
-              backgroundColor: isGuest ? '#ccc' : '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: isGuest ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => !isGuest && !isSaving && (e.target.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => !isGuest && !isSaving && (e.target.style.backgroundColor = '#F08571')}
-          >
-            {isSaving ? 'Finishing...' : 'Finish'}
-          </button>
-
-          <button
             onClick={() => {
               if (window.confirm(`Delete this ${pageTitle}? It will be lost forever.`)) {
                 navigate('/my-reviews', { state: { isGuest } });
@@ -302,7 +281,7 @@ export default function MyJournal() {
             }}
             title={`Delete ${pageTitle}`}
             style={{
-              padding: '8px',
+              padding: '8px 12px',
               backgroundColor: 'transparent',
               color: '#F08571',
               border: 'none',
@@ -313,8 +292,8 @@ export default function MyJournal() {
               alignItems: 'center',
               justifyContent: 'center',
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             <Trash2 size={18} />
           </button>
@@ -323,43 +302,59 @@ export default function MyJournal() {
             onClick={() => {
               const hasContent = q1.trim() || q2.trim() || q3.trim() || q4.trim();
               if (hasContent) {
-                const choice = window.confirm(`Save this ${pageTitle} first?\n\nOK = Save\nCancel = Discard and view reviews`);
-                if (choice) {
-                  if (needsNaming) {
-                    setShowNamingModal(true);
-                  } else {
-                    handleSaveConfirmed(currentTitle).then(() => {
-                      navigate('/my-reviews', { state: { isGuest } });
-                    });
-                  }
+                if (needsNaming) {
+                  setShowNamingModal(true);
                 } else {
-                  navigate('/my-reviews', { state: { isGuest } });
+                  handleSaveConfirmed(currentTitle);
                 }
-              } else {
-                navigate('/my-reviews', { state: { isGuest } });
               }
             }}
             style={{
-              padding: '14px 24px',
+              padding: '10px 16px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
+              border: '1px solid #e5e5e5',
+              borderRadius: '6px',
               color: '#333',
-              fontWeight: '600',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '13px',
+              fontWeight: '500',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
+              e.currentTarget.style.borderColor = '#F08571';
+              e.currentTarget.style.backgroundColor = '#FEE5DE';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            My Reviews
+            Save as Draft
+          </button>
+
+          <button
+            onClick={handleSaveClick}
+            disabled={isSaving || isGuest}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#F08571',
+              color: 'white',
+              fontWeight: '600',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
+              fontSize: '13px',
+              transition: 'all 0.2s',
+              opacity: isSaving ? 0.7 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (!isSaving && !isGuest) e.currentTarget.style.backgroundColor = '#e07560';
+            }}
+            onMouseLeave={(e) => {
+              if (!isSaving && !isGuest) e.currentTarget.style.backgroundColor = '#F08571';
+            }}
+          >
+            {isSaving ? 'Finishing...' : 'Finish'}
           </button>
         </div>
       </div>
