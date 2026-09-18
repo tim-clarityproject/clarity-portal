@@ -72,6 +72,13 @@ export default function DecisionSummary() {
   const formData = decision.form_data || {};
   const toolType = decision.tool_type;
 
+  const formatTagName = (type) => {
+    return type
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const SectionBlock = ({ title, content }) => (
     <div style={{ marginBottom: '32px' }}>
       <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -164,31 +171,32 @@ export default function DecisionSummary() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        {/* Header */}
-        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#F08571',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              padding: 0,
-            }}
-          >
-            ← Back to Decisions
-          </button>
-          <span style={{ fontSize: '11px', fontWeight: '600', color: '#fff', backgroundColor: '#F08571', padding: '4px 12px', borderRadius: '4px', textTransform: 'uppercase' }}>
-            {toolType === 'grow' ? 'GROW' : toolType === 'inversion' ? 'Inversion' : toolType === 'strategic-alignment' ? 'Strategic Alignment' : toolType === 'tough-conversation' ? 'Tough Conversation' : 'Decision'}
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/decision-history', { state: { isGuest } })}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: '#F08571',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            padding: 0,
+            marginBottom: '24px',
+          }}
+        >
+          ← Back to Decisions
+        </button>
+
+        {/* Title and Tag */}
+        <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
+            {decision.title || 'Untitled Decision'}
+          </h1>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+            {formatTagName(toolType)}
           </span>
         </div>
-
-        {/* Title */}
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '32px' }}>
-          {decision.title || 'Untitled Decision'}
-        </h1>
 
         {/* GROW Specific Sections */}
         {toolType === 'grow' && (

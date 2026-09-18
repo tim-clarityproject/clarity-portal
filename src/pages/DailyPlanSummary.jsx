@@ -38,9 +38,18 @@ export default function DailyPlanSummary() {
     }
   };
 
-  const formatDate = (isoString) => {
+  const formatDailyPlanDate = (isoString) => {
     const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    const ordinal = (n) => {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+    return `${weekday} ${ordinal(day)} ${month}, ${year}`;
   };
 
   if (isLoading) {
@@ -88,11 +97,11 @@ export default function DailyPlanSummary() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }}>
-        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
-            {formatDate(plan.created_at)}
+        <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
+            {formatDailyPlanDate(plan.created_at)}
           </h1>
-          <div style={{
+          <span style={{
             backgroundColor: '#F08571',
             color: 'white',
             padding: '6px 12px',
@@ -102,7 +111,7 @@ export default function DailyPlanSummary() {
             whiteSpace: 'nowrap',
           }}>
             Daily Plan
-          </div>
+          </span>
         </div>
 
         <div style={{ marginBottom: '48px', display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>

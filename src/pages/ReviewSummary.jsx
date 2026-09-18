@@ -144,31 +144,32 @@ export default function ReviewSummary() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }}>
-        {/* Header */}
-        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button
-            onClick={() => navigate('/my-reviews', { state: { isGuest } })}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#F08571',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              padding: 0,
-            }}
-          >
-            ← Back to Reviews
-          </button>
-          <span style={{ fontSize: '11px', fontWeight: '600', color: '#fff', backgroundColor: '#F08571', padding: '4px 12px', borderRadius: '4px', textTransform: 'uppercase' }}>
-            {isAfterAction ? 'After Action' : 'Progress'}
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/my-reviews', { state: { isGuest } })}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: '#F08571',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            padding: 0,
+            marginBottom: '24px',
+          }}
+        >
+          ← Back to Reviews
+        </button>
+
+        {/* Title and Tag */}
+        <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
+            {review.title || pageTitle}
+          </h1>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+            {isAfterAction ? 'After-Action Review' : 'Progress Review'}
           </span>
         </div>
-
-        {/* Title */}
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
-          {pageTitle}
-        </h1>
 
         {/* Date */}
         <p style={{ fontSize: '14px', color: '#999', marginBottom: '48px' }}>
