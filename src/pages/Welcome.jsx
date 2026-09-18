@@ -13,7 +13,7 @@ const ALL_PROBLEMS = [
   { id: 'plan-meeting', title: 'I want to hold a high quality meeting', tools: ['plan-meeting'], status: null, category: 'Plan' },
 
   // Ground
-  { id: 'if-then', title: 'I want to prepare for anxiety', tools: ['if-then-planning'], status: null, category: 'Ground' },
+  { id: 'if-then', title: 'I\'m feeling anxious about an uncertain situation', tools: ['if-then-planning'], status: null, category: 'Ground' },
 
   // Decide
   { id: 'grow', title: 'I\'m navigating a tricky decision', tools: ['grow'], status: null, category: 'Decide' },

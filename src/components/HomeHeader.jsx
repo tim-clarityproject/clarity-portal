@@ -11,6 +11,7 @@ export default function HomeHeader({ isGuest = false }) {
   const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
+  const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
@@ -29,6 +30,7 @@ export default function HomeHeader({ isGuest = false }) {
         setMenuOpen(false);
         setDecisionsSubmenuOpen(false);
         setJournalSubmenuOpen(false);
+        setGroundSubmenuOpen(false);
       }
     };
 
@@ -130,6 +132,7 @@ export default function HomeHeader({ isGuest = false }) {
               if (!planSubmenuOpen) {
                 setDecisionsSubmenuOpen(false);
                 setJournalSubmenuOpen(false);
+                setGroundSubmenuOpen(false);
               }
             }}
             style={{
@@ -231,10 +234,71 @@ export default function HomeHeader({ isGuest = false }) {
           <button
             onClick={(e) => {
               e.stopPropagation();
+              setGroundSubmenuOpen(!groundSubmenuOpen);
+              if (!groundSubmenuOpen) {
+                setDecisionsSubmenuOpen(false);
+                setJournalSubmenuOpen(false);
+                setPlanSubmenuOpen(false);
+              }
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#333',
+              textAlign: 'left',
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'backgroundColor 0.2s',
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            Ground
+            <ChevronDown size={16} style={{ transform: groundSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+          </button>
+
+          {groundSubmenuOpen && (
+            <>
+              <button
+                onClick={() => {
+                  navigate('/if-then-planning', { state: location.state });
+                  setMenuOpen(false);
+                  setGroundSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                If-Then Planning
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
               setDecisionsSubmenuOpen(!decisionsSubmenuOpen);
               if (!decisionsSubmenuOpen) {
                 setJournalSubmenuOpen(false);
                 setPlanSubmenuOpen(false);
+                setGroundSubmenuOpen(false);
               }
             }}
             style={{
