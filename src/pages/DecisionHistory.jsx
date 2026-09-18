@@ -74,6 +74,14 @@ export default function DecisionHistory() {
       .join(' ');
   };
 
+  const formatDateAndTime = (timeStr) => {
+    if (!timeStr) return '';
+    const date = new Date(timeStr);
+    const dateStr = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    const timeStr_ = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return `${dateStr} ${timeStr_}`;
+  };
+
   const handleEdit = (decision, e) => {
     e.stopPropagation();
     const editPageMap = {
@@ -285,7 +293,7 @@ export default function DecisionHistory() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                     <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                      {formatTime(decision.created_at)}
+                      {decision.tool_type === 'daily_plan' ? formatTime(decision.created_at) : formatDateAndTime(decision.created_at)}
                     </p>
                     <button
                       onClick={(e) => handleEdit(decision, e)}
