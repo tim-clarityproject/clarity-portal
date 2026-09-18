@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function BreathingGuide({ isOpen, onClose, showGreeting = false }) {
+export default function BreathingGuide({ isOpen, onClose, showGreeting = false, firstName = 'there' }) {
   const { user } = useContext(AuthContext);
   const [phase, setPhase] = useState('inhale');
   const [scale, setScale] = useState(1);
@@ -18,12 +18,11 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false }
       return;
     }
 
-    // Wait for user to be loaded with metadata
-    if (!user || !user.user_metadata) {
+    // Wait for firstName to be available
+    if (!firstName || firstName === 'there') {
       return;
     }
 
-    const firstName = user.user_metadata.first_name || 'there';
     const fullText = `Good morning, ${firstName}, let's take a breath`;
     let charIndex = 0;
 
@@ -45,7 +44,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false }
     }, 50);
 
     return () => clearInterval(typingInterval);
-  }, [isOpen, showGreeting, user]);
+  }, [isOpen, showGreeting, firstName]);
 
   useEffect(() => {
     if (!isOpen || (showGreeting && greetingPhase !== 'done')) return;
@@ -188,7 +187,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false }
           }}
         >
           {displayedText}
-          {displayedText.length < `Good morning, ${user?.user_metadata?.first_name || 'there'}, let's take a breath`.length && greetingPhase === 'typing' && (
+          {displayedText.length < `Good morning, ${firstName}, let's take a breath`.length && greetingPhase === 'typing' && (
             <span style={{ animation: 'blink 1s infinite', marginLeft: '8px' }}>|</span>
           )}
           <style>{`
