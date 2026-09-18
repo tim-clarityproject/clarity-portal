@@ -14,6 +14,7 @@ export default function ReviewSummary() {
   const isGuest = location.state?.isGuest || false;
   const reviewType = location.state?.reviewType || 'after-action';
   const selectedDate = location.state?.selectedDate;
+  const entryId = location.state?.entryId;
 
 
   useEffect(() => {
@@ -24,13 +25,22 @@ export default function ReviewSummary() {
       }
 
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('journal_entries')
           .select('*')
-          .eq('user_id', user.id)
-          .eq('entry_date', selectedDate)
-          .eq('review_type', reviewType)
-          .single();
+          .eq('user_id', user.id);
+
+        if (entryId) {
+          query = query.eq('id', entryId);
+        } else {
+          query = query
+            .eq('entry_date', selectedDate)
+            .eq('review_type', reviewType)
+            .order('created_at', { ascending: false })
+            .limit(1);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
           console.error('Error fetching review:', error);
@@ -38,7 +48,9 @@ export default function ReviewSummary() {
           return;
         }
 
-        setReview(data);
+        if (data && data.length > 0) {
+          setReview(data[0]);
+        }
       } catch (err) {
         console.error('Error loading review:', err);
       } finally {
@@ -47,7 +59,7 @@ export default function ReviewSummary() {
     };
 
     loadReview();
-  }, [selectedDate, reviewType, user?.id]);
+  }, [selectedDate, reviewType, user?.id, entryId]);
 
   if (isLoading) {
     return (
