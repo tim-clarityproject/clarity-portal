@@ -222,7 +222,7 @@ export default function PlanMyDayStep1() {
           onMouseEnter={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#e07560')}
           onMouseLeave={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#F08571')}
         >
-          {isSaving ? 'Saving...' : 'Save Plan'}
+          {isSaving ? 'Finishing...' : 'Finish'}
         </button>
       </div>
     </div>
