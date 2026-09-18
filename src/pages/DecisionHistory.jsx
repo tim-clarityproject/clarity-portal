@@ -14,7 +14,7 @@ export default function DecisionHistory() {
   const { user } = useContext(AuthContext);
   const [decisions, setDecisions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // 'all' or 'daily'
+  const [filter, setFilter] = useState('decisions'); // 'decisions' or 'daily-plans'
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -126,60 +126,60 @@ export default function DecisionHistory() {
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '16px' }}>My Decisions</h1>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
-              onClick={() => setFilter('all')}
+              onClick={() => setFilter('decisions')}
               style={{
                 padding: '8px 16px',
-                backgroundColor: filter === 'all' ? '#F08571' : 'transparent',
-                border: `2px solid ${filter === 'all' ? '#F08571' : '#e5e5e5'}`,
+                backgroundColor: filter === 'decisions' ? '#F08571' : 'transparent',
+                border: `2px solid ${filter === 'decisions' ? '#F08571' : '#e5e5e5'}`,
                 borderRadius: '6px',
-                color: filter === 'all' ? 'white' : '#333',
+                color: filter === 'decisions' ? 'white' : '#333',
                 fontSize: '13px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
               onMouseEnter={(e) => {
-                if (filter !== 'all') {
+                if (filter !== 'decisions') {
                   e.target.style.borderColor = '#F08571';
                   e.target.style.backgroundColor = '#FEE5DE';
                 }
               }}
               onMouseLeave={(e) => {
-                if (filter !== 'all') {
+                if (filter !== 'decisions') {
                   e.target.style.borderColor = '#e5e5e5';
                   e.target.style.backgroundColor = 'transparent';
                 }
               }}
             >
-              All Decisions
+              My Decisions
             </button>
             <button
-              onClick={() => setFilter('daily')}
+              onClick={() => setFilter('daily-plans')}
               style={{
                 padding: '8px 16px',
-                backgroundColor: filter === 'daily' ? '#F08571' : 'transparent',
-                border: `2px solid ${filter === 'daily' ? '#F08571' : '#e5e5e5'}`,
+                backgroundColor: filter === 'daily-plans' ? '#F08571' : 'transparent',
+                border: `2px solid ${filter === 'daily-plans' ? '#F08571' : '#e5e5e5'}`,
                 borderRadius: '6px',
-                color: filter === 'daily' ? 'white' : '#333',
+                color: filter === 'daily-plans' ? 'white' : '#333',
                 fontSize: '13px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
               onMouseEnter={(e) => {
-                if (filter !== 'daily') {
+                if (filter !== 'daily-plans') {
                   e.target.style.borderColor = '#F08571';
                   e.target.style.backgroundColor = '#FEE5DE';
                 }
               }}
               onMouseLeave={(e) => {
-                if (filter !== 'daily') {
+                if (filter !== 'daily-plans') {
                   e.target.style.borderColor = '#e5e5e5';
                   e.target.style.backgroundColor = 'transparent';
                 }
               }}
             >
-              Daily Plans
+              My Daily Plans
             </button>
           </div>
         </div>
@@ -216,8 +216,10 @@ export default function DecisionHistory() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {decisions
               .filter((decision) => {
-                if (filter === 'daily') {
+                if (filter === 'daily-plans') {
                   return decision.tool_type === 'daily_plan';
+                } else if (filter === 'decisions') {
+                  return decision.tool_type !== 'daily_plan';
                 }
                 return true;
               })
