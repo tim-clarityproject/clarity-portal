@@ -594,36 +594,34 @@ export default function PlanMeeting() {
         gap: '12px',
         zIndex: 10,
       }}>
-        {!isGuest && (
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              backgroundColor: '#F08571',
-              color: 'white',
-              fontWeight: '600',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              fontSize: '13px',
-              transition: 'all 0.2s',
-              opacity: isSaving ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (!isSaving) e.currentTarget.style.backgroundColor = '#e07560';
-            }}
-            onMouseLeave={(e) => {
-              if (!isSaving) e.currentTarget.style.backgroundColor = '#F08571';
-            }}
-          >
-            <Save size={16} />
-            {isSaved ? 'Saved' : 'Save'}
-          </button>
-        )}
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 20px',
+            backgroundColor: '#F08571',
+            color: 'white',
+            fontWeight: '600',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: isSaving ? 'not-allowed' : 'pointer',
+            fontSize: '13px',
+            transition: 'all 0.2s',
+            opacity: isSaving ? 0.7 : 1,
+          }}
+          onMouseEnter={(e) => {
+            if (!isSaving) e.currentTarget.style.backgroundColor = '#e07560';
+          }}
+          onMouseLeave={(e) => {
+            if (!isSaving) e.currentTarget.style.backgroundColor = '#F08571';
+          }}
+        >
+          <Save size={16} />
+          {isSaved ? 'Saved' : 'Save'}
+        </button>
         <button
           onClick={handleNavigateToPlans}
           style={{
