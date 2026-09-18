@@ -177,7 +177,7 @@ export default function HomeHeader({ isGuest = false }) {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                Plan My Day
+                Daily Intentions
               </button>
               <button
                 onClick={() => {
