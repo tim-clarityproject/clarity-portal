@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Trash2, Save, ChevronDown, X } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -205,16 +205,18 @@ export default function PlanMeeting() {
 
   const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
   const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
+  const sectionStyle = { marginBottom: '28px', paddingBottom: '0', borderLeft: '3px solid #F08571' };
+  const sectionInnerStyle = { paddingLeft: '24px' };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
         <BackArrow />
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, pageBreakAfter: 'avoid' }} className="page-title">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
             Plan a Meeting
           </h1>
           <div style={{ position: 'relative' }} ref={dropdownRef}>
@@ -288,7 +290,7 @@ export default function PlanMeeting() {
                       }
                     }}
                   >
-                    {section.icon} {section.label}
+                    {section.label}
                   </button>
                 ))}
               </div>
@@ -296,278 +298,285 @@ export default function PlanMeeting() {
           </div>
         </div>
 
-        <style>{`
-          @media print {
-            .page-title {
-              display: none;
-            }
-          }
-        `}</style>
-
         {/* Meeting Title Section */}
-        <div style={{ marginBottom: '24px' }}>
-          <label style={labelStyle}>Meeting title</label>
-          <input
-            type="text"
-            placeholder="e.g., Q3 Planning Session"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            style={{...inputStyle, maxWidth: '500px'}}
-          />
+        <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+          <div style={sectionInnerStyle}>
+            <label style={labelStyle}>Meeting Title</label>
+            <input
+              type="text"
+              placeholder="e.g., Q3 Planning Session"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={{...inputStyle, maxWidth: '500px'}}
+            />
+          </div>
         </div>
 
-        {/* Date, Time, Chair */}
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', alignItems: 'flex-end' }}>
-          <div style={{ maxWidth: '150px' }}>
-            <label style={labelStyle}>Date</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
-          </div>
-          <div style={{ maxWidth: '120px' }}>
-            <label style={labelStyle}>Time</label>
-            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inputStyle} />
-          </div>
-          <div style={{ maxWidth: '200px', flex: 1 }}>
-            <label style={labelStyle}>Chair</label>
-            <input type="text" placeholder="Who is chairing?" value={chair} onChange={(e) => setChair(e.target.value)} style={inputStyle} />
+        {/* Meeting Details Card */}
+        <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+          <div style={sectionInnerStyle}>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-end' }}>
+              <div style={{ maxWidth: '150px' }}>
+                <label style={labelStyle}>Date</label>
+                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
+              </div>
+              <div style={{ maxWidth: '120px' }}>
+                <label style={labelStyle}>Time</label>
+                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inputStyle} />
+              </div>
+              <div style={{ maxWidth: '200px', flex: 1 }}>
+                <label style={labelStyle}>Chair</label>
+                <input type="text" placeholder="Who is chairing?" value={chair} onChange={(e) => setChair(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Meeting Context Section */}
         {sections.includes('context') && (
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{...labelStyle, marginBottom: 0}}>Meeting Context</label>
-              <button
-                onClick={() => removeSection('context')}
-                title="Remove this section"
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: '#999',
-                  cursor: 'pointer',
-                  transition: 'color 0.2s',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#F08571'}
-                onMouseLeave={(e) => e.target.style.color = '#999'}
-              >
-                Remove
-              </button>
+          <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <div style={sectionInnerStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <label style={{...labelStyle, marginBottom: 0}}>Meeting Context</label>
+                <button
+                  onClick={() => removeSection('context')}
+                  title="Remove this section"
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: '#999',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                  }}
+                  onMouseEnter={(e) => e.target.style.color = '#F08571'}
+                  onMouseLeave={(e) => e.target.style.color = '#999'}
+                >
+                  Remove
+                </button>
+              </div>
+              <textarea
+                placeholder="What's the background behind this meeting?"
+                value={meetingContext}
+                onChange={(e) => setMeetingContext(e.target.value)}
+                style={{...inputStyle, minHeight: '60px'}}
+              />
             </div>
-            <textarea
-              placeholder="What's the background behind this meeting?"
-              value={meetingContext}
-              onChange={(e) => setMeetingContext(e.target.value)}
-              style={{...inputStyle, minHeight: '60px'}}
-            />
+          </div>
+        )}
+
+        {/* Attendee Preparation Section */}
+        {sections.includes('pre-reads') && (
+          <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <div style={sectionInnerStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <label style={{...labelStyle, marginBottom: 0}}>Attendee Preparation</label>
+                <button
+                  onClick={() => removeSection('pre-reads')}
+                  title="Remove this section"
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: '#999',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                  }}
+                  onMouseEnter={(e) => e.target.style.color = '#F08571'}
+                  onMouseLeave={(e) => e.target.style.color = '#999'}
+                >
+                  Remove
+                </button>
+              </div>
+              <textarea
+                placeholder="What should attendees read, research, or think about beforehand?"
+                value={preReads}
+                onChange={(e) => setPreReads(e.target.value)}
+                style={{...inputStyle, minHeight: '60px'}}
+              />
+            </div>
           </div>
         )}
 
         {/* Objectives */}
-        <div style={{ marginBottom: '28px' }}>
-          <label style={{...labelStyle, marginBottom: '10px'}}>Objectives (In Priority Order)</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-            {objectives.map((obj, index) => (
-              <div key={obj.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '500', color: '#999', minWidth: '24px' }}>
-                  {index + 1}.
-                </span>
-                <input
-                  type="text"
-                  placeholder="What do you want to achieve?"
-                  value={obj.text}
-                  onChange={(e) => handleObjectiveChange(obj.id, e.target.value)}
-                  style={{...inputStyle, flex: 1}}
-                />
-                <button
-                  onClick={() => handleRemoveObjective(obj.id)}
-                  disabled={objectives.length === 1}
-                  style={{
-                    padding: '6px 8px',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    color: objectives.length === 1 ? '#ddd' : '#F08571',
-                    cursor: objectives.length === 1 ? 'not-allowed' : 'pointer',
-                    transition: 'color 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (objectives.length > 1) e.target.style.color = '#e07560';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (objectives.length > 1) e.target.style.color = '#F08571';
-                  }}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={handleAddObjective}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 12px',
-              backgroundColor: 'transparent',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              color: '#333',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'all 0.2s',
-              marginLeft: '34px',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <Plus size={14} />
-            Add objective
-          </button>
-        </div>
-
-        {/* Attendee Preparation Section */}
-        {sections.includes('pre-reads') && (
-          <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #f0f0f0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <label style={{...labelStyle, marginBottom: 0}}>Attendee Preparation</label>
-              <button
-                onClick={() => removeSection('pre-reads')}
-                title="Remove this section"
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: '#999',
-                  cursor: 'pointer',
-                  transition: 'color 0.2s',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#F08571'}
-                onMouseLeave={(e) => e.target.style.color = '#999'}
-              >
-                Remove
-              </button>
+        <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+          <div style={sectionInnerStyle}>
+            <label style={{...labelStyle, marginBottom: '10px'}}>Objectives (In Priority Order)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+              {objectives.map((obj, index) => (
+                <div key={obj.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '500', color: '#999', minWidth: '24px' }}>
+                    {index + 1}.
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="What do you want to achieve?"
+                    value={obj.text}
+                    onChange={(e) => handleObjectiveChange(obj.id, e.target.value)}
+                    style={{...inputStyle, flex: 1}}
+                  />
+                  <button
+                    onClick={() => handleRemoveObjective(obj.id)}
+                    disabled={objectives.length === 1}
+                    style={{
+                      padding: '6px 8px',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: objectives.length === 1 ? '#ddd' : '#F08571',
+                      cursor: objectives.length === 1 ? 'not-allowed' : 'pointer',
+                      transition: 'color 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (objectives.length > 1) e.target.style.color = '#e07560';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (objectives.length > 1) e.target.style.color = '#F08571';
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
             </div>
-            <textarea
-              placeholder="What should attendees read, research, or think about beforehand?"
-              value={preReads}
-              onChange={(e) => setPreReads(e.target.value)}
-              style={{...inputStyle, minHeight: '60px'}}
-            />
+            <button
+              onClick={handleAddObjective}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                backgroundColor: 'transparent',
+                border: '1px solid #e5e5e5',
+                borderRadius: '6px',
+                color: '#333',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+                marginLeft: '34px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#F08571';
+                e.currentTarget.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e5e5e5';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <Plus size={14} />
+              Add objective
+            </button>
           </div>
-        )}
-
-        {/* Meeting Agenda Table */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <label style={{...labelStyle, marginBottom: 0}}>Meeting Agenda</label>
-            {totalLength > 0 && (
-              <span style={{ fontSize: '12px', color: '#999' }}>Total: {totalLength} min</span>
-            )}
-          </div>
-
-          <div style={{ overflowX: 'auto', marginBottom: '12px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #e5e5e5' }}>
-                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#999' }}>Item</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#999' }}>Aim</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#999' }}>Lead</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#999', width: '70px' }}>Length</th>
-                  <th style={{ padding: '8px 10px', width: '32px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {flowItems.map((item) => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '8px 10px' }}>
-                      <input type="text" placeholder="e.g., Welcome" value={item.item} onChange={(e) => handleItemChange(item.id, 'item', e.target.value)} style={inputStyle} />
-                    </td>
-                    <td style={{ padding: '8px 10px' }}>
-                      <input type="text" placeholder="Goal or outcome" value={item.aim} onChange={(e) => handleItemChange(item.id, 'aim', e.target.value)} style={inputStyle} />
-                    </td>
-                    <td style={{ padding: '8px 10px' }}>
-                      <input type="text" placeholder="Person/Role" value={item.lead} onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)} style={inputStyle} />
-                    </td>
-                    <td style={{ padding: '8px 10px' }}>
-                      <input type="number" placeholder="0" value={item.length} onChange={(e) => handleItemChange(item.id, 'length', e.target.value)} min="0" style={inputStyle} />
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'center' }}>
-                      <button
-                        onClick={() => handleRemoveItem(item.id)}
-                        disabled={flowItems.length === 1}
-                        style={{
-                          padding: '4px 6px',
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          color: flowItems.length === 1 ? '#ddd' : '#F08571',
-                          cursor: flowItems.length === 1 ? 'not-allowed' : 'pointer',
-                          transition: 'color 0.2s',
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (flowItems.length > 1) e.target.style.color = '#e07560';
-                        }}
-                        onMouseLeave={(e) => {
-                          if (flowItems.length > 1) e.target.style.color = '#F08571';
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <button
-            onClick={handleAddItem}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 12px',
-              backgroundColor: 'transparent',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              color: '#333',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <Plus size={14} />
-            Add agenda item
-          </button>
         </div>
 
+        {/* Meeting Agenda */}
+        <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
+          <div style={sectionInnerStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <label style={{...labelStyle, marginBottom: 0}}>Meeting Agenda</label>
+              {totalLength > 0 && (
+                <span style={{ fontSize: '12px', color: '#999', backgroundColor: '#f0f0f0', padding: '4px 12px', borderRadius: '4px' }}>
+                  Total: {totalLength} min
+                </span>
+              )}
+            </div>
+
+            <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f9f9f9', borderBottom: '2px solid #e5e5e5' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666' }}>Item</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666' }}>Aim</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666' }}>Lead</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', width: '70px' }}>Length</th>
+                    <th style={{ padding: '12px', width: '32px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flowItems.map((item, idx) => (
+                    <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa', borderBottom: '1px solid #e5e5e5' }}>
+                      <td style={{ padding: '12px' }}>
+                        <input type="text" placeholder="e.g., Welcome" value={item.item} onChange={(e) => handleItemChange(item.id, 'item', e.target.value)} style={inputStyle} />
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <input type="text" placeholder="Goal or outcome" value={item.aim} onChange={(e) => handleItemChange(item.id, 'aim', e.target.value)} style={inputStyle} />
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <input type="text" placeholder="Person/Role" value={item.lead} onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)} style={inputStyle} />
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <input type="number" placeholder="0" value={item.length} onChange={(e) => handleItemChange(item.id, 'length', e.target.value)} min="0" style={inputStyle} />
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => handleRemoveItem(item.id)}
+                          disabled={flowItems.length === 1}
+                          style={{
+                            padding: '4px 6px',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: flowItems.length === 1 ? '#ddd' : '#F08571',
+                            cursor: flowItems.length === 1 ? 'not-allowed' : 'pointer',
+                            transition: 'color 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (flowItems.length > 1) e.target.style.color = '#e07560';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (flowItems.length > 1) e.target.style.color = '#F08571';
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              onClick={handleAddItem}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                backgroundColor: 'transparent',
+                border: '1px solid #e5e5e5',
+                borderRadius: '6px',
+                color: '#333',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#F08571';
+                e.currentTarget.style.backgroundColor = '#FEE5DE';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e5e5e5';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <Plus size={14} />
+              Add agenda item
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Fixed bottom bar for saving */}
+      {/* Fixed bottom bar */}
       <div style={{
         position: 'fixed',
         bottom: 0,
