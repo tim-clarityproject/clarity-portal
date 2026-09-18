@@ -13,10 +13,12 @@ export default function PlanMeeting() {
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
-  const [chair, setChair] = useState('');
+  const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [objectives, setObjectives] = useState('');
+  const [chair, setChair] = useState('');
+  const [objectives, setObjectives] = useState([{ id: 1, text: '' }]);
+  const [nextObjectiveId, setNextObjectiveId] = useState(2);
   const [flowItems, setFlowItems] = useState([
     { id: 1, item: '', aim: '', lead: '', length: '' },
   ]);
@@ -42,10 +44,15 @@ export default function PlanMeeting() {
 
       if (data && data.form_data) {
         const formData = data.form_data;
-        setChair(formData.chair || '');
+        setTitle(formData.title || '');
         setDate(formData.date || '');
         setTime(formData.time || '');
-        setObjectives(formData.objectives || '');
+        setChair(formData.chair || '');
+        if (formData.objectives && formData.objectives.length > 0) {
+          setObjectives(formData.objectives);
+          const maxId = Math.max(...formData.objectives.map(obj => obj.id || 0));
+          setNextObjectiveId(maxId + 1);
+        }
         if (formData.flowItems && formData.flowItems.length > 0) {
           setFlowItems(formData.flowItems);
           const maxId = Math.max(...formData.flowItems.map(item => item.id || 0));
@@ -55,6 +62,26 @@ export default function PlanMeeting() {
     } catch (error) {
       console.error('Error loading meeting:', error);
     }
+  };
+
+  const handleAddObjective = () => {
+    setObjectives([
+      ...objectives,
+      { id: nextObjectiveId, text: '' },
+    ]);
+    setNextObjectiveId(nextObjectiveId + 1);
+  };
+
+  const handleRemoveObjective = (id) => {
+    if (objectives.length > 1) {
+      setObjectives(objectives.filter(obj => obj.id !== id));
+    }
+  };
+
+  const handleObjectiveChange = (id, text) => {
+    setObjectives(objectives.map(obj =>
+      obj.id === id ? { ...obj, text } : obj
+    ));
   };
 
   const handleAddItem = () => {
@@ -83,15 +110,15 @@ export default function PlanMeeting() {
     setIsSaving(true);
     try {
       const formData = {
-        chair,
+        title,
         date,
         time,
+        chair,
         objectives,
         flowItems,
       };
 
       if (decisionId) {
-        // Update existing
         await supabase
           .from('decisions')
           .update({
@@ -101,13 +128,12 @@ export default function PlanMeeting() {
           .eq('id', decisionId)
           .eq('user_id', user.id);
       } else {
-        // Create new
         await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
             tool_type: 'plan_meeting',
-            title: `Meeting on ${date}`,
+            title: title || `Meeting on ${date}`,
             form_data: formData,
           });
       }
@@ -138,19 +164,39 @@ export default function PlanMeeting() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
         <BackArrow />
 
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '24px 0 32px 0' }}>Plan a Meeting</h1>
+        {/* Meeting Title Section */}
+        <div style={{ marginBottom: '32px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+            Meeting Title
+          </label>
+          <input
+            type="text"
+            placeholder="e.g., Q3 Planning Session"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: '1px solid #e5e5e5',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              fontFamily: 'inherit',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
 
-        {/* Meeting Details */}
-        <div style={{ marginBottom: '40px' }}>
-          <div style={{ marginBottom: '24px' }}>
+        {/* Date, Time, Chair */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+          <div>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-              Chair
+              Date
             </label>
             <input
-              type="text"
-              placeholder="Who is chairing?"
-              value={chair}
-              onChange={(e) => setChair(e.target.value)}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -163,56 +209,14 @@ export default function PlanMeeting() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-                Date
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-                Time
-              </label>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          </div>
-
           <div>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-              Objectives
+              Time
             </label>
-            <textarea
-              placeholder="What are the key objectives for this meeting?"
-              value={objectives}
-              onChange={(e) => setObjectives(e.target.value)}
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -220,140 +224,90 @@ export default function PlanMeeting() {
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontFamily: 'inherit',
-                minHeight: '100px',
                 boxSizing: 'border-box',
               }}
             />
           </div>
         </div>
 
-        {/* Meeting Flow Table */}
+        {/* Chair */}
         <div style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0 }}>Meeting Flow</h2>
-            {totalLength > 0 && (
-              <span style={{ fontSize: '12px', color: '#999' }}>Total: {totalLength} minutes</span>
-            )}
-          </div>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+            Chair
+          </label>
+          <input
+            type="text"
+            placeholder="Who is chairing?"
+            value={chair}
+            onChange={(e) => setChair(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: '1px solid #e5e5e5',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontFamily: 'inherit',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
 
-          <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e5e5e5' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aim</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Lead</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px', width: '80px' }}>Length (min)</th>
-                  <th style={{ padding: '12px', width: '40px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {flowItems.map((item, index) => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '12px' }}>
-                      <input
-                        type="text"
-                        placeholder="e.g., Welcome"
-                        value={item.item}
-                        onChange={(e) => handleItemChange(item.id, 'item', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          fontSize: '14px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      <input
-                        type="text"
-                        placeholder="Goal or outcome"
-                        value={item.aim}
-                        onChange={(e) => handleItemChange(item.id, 'aim', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          fontSize: '14px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      <input
-                        type="text"
-                        placeholder="Person/Role"
-                        value={item.lead}
-                        onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          fontSize: '14px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        value={item.length}
-                        onChange={(e) => handleItemChange(item.id, 'length', e.target.value)}
-                        min="0"
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          fontSize: '14px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <button
-                        onClick={() => handleRemoveItem(item.id)}
-                        disabled={flowItems.length === 1}
-                        style={{
-                          padding: '4px 8px',
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          color: flowItems.length === 1 ? '#ddd' : '#F08571',
-                          cursor: flowItems.length === 1 ? 'not-allowed' : 'pointer',
-                          transition: 'color 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (flowItems.length > 1) e.target.style.color = '#e07560';
-                        }}
-                        onMouseLeave={(e) => {
-                          if (flowItems.length > 1) e.target.style.color = '#F08571';
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Objectives */}
+        <div style={{ marginBottom: '32px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '12px' }}>
+            Objectives (in priority order)
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+            {objectives.map((obj, index) => (
+              <div key={obj.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: '#999', minWidth: '20px' }}>
+                  {index + 1}.
+                </span>
+                <input
+                  type="text"
+                  placeholder="What do you want to achieve?"
+                  value={obj.text}
+                  onChange={(e) => handleObjectiveChange(obj.id, e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    border: '1px solid #e5e5e5',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <button
+                  onClick={() => handleRemoveObjective(obj.id)}
+                  disabled={objectives.length === 1}
+                  style={{
+                    padding: '4px 8px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: objectives.length === 1 ? '#ddd' : '#F08571',
+                    cursor: objectives.length === 1 ? 'not-allowed' : 'pointer',
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (objectives.length > 1) e.target.style.color = '#e07560';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (objectives.length > 1) e.target.style.color = '#F08571';
+                  }}
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
           </div>
-
           <button
-            onClick={handleAddItem}
+            onClick={handleAddObjective}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '10px 16px',
+              padding: '8px 12px',
               backgroundColor: 'transparent',
               border: '2px solid #e5e5e5',
               borderRadius: '6px',
@@ -372,7 +326,157 @@ export default function PlanMeeting() {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <Plus size={18} />
+            <Plus size={16} />
+            Add objective
+          </button>
+        </div>
+
+        {/* Meeting Agenda Table */}
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0 }}>Meeting Agenda</h2>
+            {totalLength > 0 && (
+              <span style={{ fontSize: '12px', color: '#999' }}>Total: {totalLength} minutes</span>
+            )}
+          </div>
+
+          <div style={{ overflowX: 'auto', marginBottom: '12px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #e5e5e5' }}>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aim</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Lead</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px', width: '80px' }}>Length (min)</th>
+                  <th style={{ padding: '10px 12px', width: '40px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {flowItems.map((item) => (
+                  <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <td style={{ padding: '10px 12px' }}>
+                      <input
+                        type="text"
+                        placeholder="e.g., Welcome"
+                        value={item.item}
+                        onChange={(e) => handleItemChange(item.id, 'item', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          border: '1px solid #e5e5e5',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          fontFamily: 'inherit',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <input
+                        type="text"
+                        placeholder="Goal or outcome"
+                        value={item.aim}
+                        onChange={(e) => handleItemChange(item.id, 'aim', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          border: '1px solid #e5e5e5',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          fontFamily: 'inherit',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <input
+                        type="text"
+                        placeholder="Person/Role"
+                        value={item.lead}
+                        onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          border: '1px solid #e5e5e5',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          fontFamily: 'inherit',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={item.length}
+                        onChange={(e) => handleItemChange(item.id, 'length', e.target.value)}
+                        min="0"
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          border: '1px solid #e5e5e5',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          fontFamily: 'inherit',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                      <button
+                        onClick={() => handleRemoveItem(item.id)}
+                        disabled={flowItems.length === 1}
+                        style={{
+                          padding: '4px 8px',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          color: flowItems.length === 1 ? '#ddd' : '#F08571',
+                          cursor: flowItems.length === 1 ? 'not-allowed' : 'pointer',
+                          transition: 'color 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (flowItems.length > 1) e.target.style.color = '#e07560';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (flowItems.length > 1) e.target.style.color = '#F08571';
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <button
+            onClick={handleAddItem}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              backgroundColor: 'transparent',
+              border: '2px solid #e5e5e5',
+              borderRadius: '6px',
+              color: '#333',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#F08571';
+              e.currentTarget.style.backgroundColor = '#FEE5DE';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <Plus size={16} />
             Add agenda item
           </button>
         </div>
@@ -386,7 +490,7 @@ export default function PlanMeeting() {
         right: 0,
         backgroundColor: '#fafafa',
         borderTop: '1px solid #e5e5e5',
-        padding: '16px 32px',
+        padding: '12px 32px',
         display: 'flex',
         justifyContent: 'center',
         gap: '12px',
@@ -400,7 +504,7 @@ export default function PlanMeeting() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '10px 24px',
+              padding: '10px 20px',
               backgroundColor: '#F08571',
               color: 'white',
               fontWeight: '600',
@@ -425,7 +529,7 @@ export default function PlanMeeting() {
         <button
           onClick={handleNavigateToPlans}
           style={{
-            padding: '10px 20px',
+            padding: '10px 16px',
             backgroundColor: 'transparent',
             border: '2px solid #e5e5e5',
             color: '#333',
