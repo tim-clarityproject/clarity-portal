@@ -50,12 +50,7 @@ export default function DecisionHistory() {
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     const date = new Date(timeStr);
-    // Get local time components
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   const handleEdit = (decision, e) => {
@@ -227,55 +222,43 @@ export default function DecisionHistory() {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
-                  <div style={{ flex: 1 }}>
-                    {decision.tool_type === 'daily_plan' ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <p style={{ fontSize: '14px', color: '#333', margin: 0 }}>
-                          {formatDateWithOrdinal(decision.created_at.split('T')[0])}
-                        </p>
-                        <span
-                          style={{
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            color: 'white',
-                            backgroundColor: '#F08571',
-                            padding: '4px 12px',
-                            borderRadius: '4px',
-                          }}
-                        >
-                          Daily Plan
-                        </span>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                          {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
-                        </p>
-                        {(decision.draft || decision.status === 'draft') && (
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              color: '#fff',
-                              backgroundColor: '#999',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px',
-                            }}
-                          >
-                            Draft
-                          </span>
-                        )}
-                      </div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                      {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
+                    </p>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: 'white',
+                        backgroundColor: '#F08571',
+                        padding: '4px 12px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {decision.tool_type === 'daily_plan' ? 'Daily Plan' : decision.review_type === 'progress' ? 'Progress Review' : decision.review_type === 'after-action' ? 'After Action Review' : decision.tool_type.charAt(0).toUpperCase() + decision.tool_type.slice(1).replace('-', ' ')}
+                    </span>
+                    {(decision.draft || decision.status === 'draft') && (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: '#fff',
+                          backgroundColor: '#999',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                        }}
+                      >
+                        Draft
+                      </span>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                     <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                      {decision.tool_type === 'daily_plan'
-                        ? formatTime(decision.created_at)
-                        : `${formatDateWithOrdinal(decision.created_at.split('T')[0])} ${formatTime(decision.created_at)}`
-                      }
+                      {formatTime(decision.created_at)}
                     </p>
                     <button
                       onClick={(e) => handleEdit(decision, e)}
