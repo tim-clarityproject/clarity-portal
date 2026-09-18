@@ -143,7 +143,7 @@ export default function MyReviews() {
               }
             }}
           >
-            After Action Reviews
+            After-Action Reviews
           </button>
           <button
             onClick={() => setFilterType('progress')}
@@ -319,7 +319,7 @@ export default function MyReviews() {
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
-          + After Action Review
+          + After-Action Review
         </button>
         <button
           onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}

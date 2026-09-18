@@ -365,7 +365,7 @@ export default function HomeHeader({ isGuest = false }) {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                After Action Review
+                After-Action Review
               </button>
               <button
                 onClick={() => {

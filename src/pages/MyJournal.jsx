@@ -42,7 +42,7 @@ export default function MyJournal() {
   ];
 
   const questions = reviewType === 'progress' ? progressQuestions : afterActionQuestions;
-  const pageTitle = reviewType === 'progress' ? 'Progress Review' : 'After Action Review';
+  const pageTitle = reviewType === 'progress' ? 'Progress Review' : 'After-Action Review';
 
   // Clear form when review type changes
   useEffect(() => {

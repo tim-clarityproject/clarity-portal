@@ -111,7 +111,7 @@ export default function ReviewSummary() {
   );
 
   const isAfterAction = reviewType === 'after-action';
-  const pageTitle = isAfterAction ? 'After Action Review' : 'Progress Review';
+  const pageTitle = isAfterAction ? 'After-Action Review' : 'Progress Review';
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
@@ -176,7 +176,7 @@ export default function ReviewSummary() {
           {formatDateWithOrdinal(review.entry_date)}
         </p>
 
-        {/* After Action Review Sections */}
+        {/* After-Action Review Sections */}
         {isAfterAction && (
           <>
             <SectionBlock
