@@ -298,24 +298,32 @@ export default function PlanMeeting() {
           </div>
         </div>
 
-        {/* Meeting Title Section */}
+        {/* Meeting Title & Chair Section */}
         <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
           <div style={sectionInnerStyle}>
-            <label style={labelStyle}>Meeting Title</label>
-            <input
-              type="text"
-              placeholder="e.g., Q3 Planning Session"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              style={{...inputStyle, maxWidth: '500px'}}
-            />
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, maxWidth: '500px' }}>
+                <label style={labelStyle}>Meeting Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Q3 Planning Session"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ maxWidth: '200px' }}>
+                <label style={labelStyle}>Chair</label>
+                <input type="text" placeholder="Who is chairing?" value={chair} onChange={(e) => setChair(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Meeting Details Card */}
+        {/* Date & Time Card */}
         <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
           <div style={sectionInnerStyle}>
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
               <div style={{ maxWidth: '150px' }}>
                 <label style={labelStyle}>Date</label>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
@@ -323,10 +331,6 @@ export default function PlanMeeting() {
               <div style={{ maxWidth: '120px' }}>
                 <label style={labelStyle}>Time</label>
                 <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inputStyle} />
-              </div>
-              <div style={{ maxWidth: '200px', flex: 1 }}>
-                <label style={labelStyle}>Chair</label>
-                <input type="text" placeholder="Who is chairing?" value={chair} onChange={(e) => setChair(e.target.value)} style={inputStyle} />
               </div>
             </div>
           </div>
