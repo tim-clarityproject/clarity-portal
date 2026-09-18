@@ -50,7 +50,7 @@ export default function DecisionHistory() {
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     const date = new Date(timeStr);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
   const handleEdit = (decision, e) => {
