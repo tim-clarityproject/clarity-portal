@@ -434,7 +434,7 @@ export default function HomeHeader({ isGuest = false }) {
         </a>
       </div>
 
-      <BreathingGuide isOpen={showBreathingGuide} onClose={handleCloseBreathingGuide} />
+      <BreathingGuide isOpen={showBreathingGuide} onClose={handleCloseBreathingGuide} enableGreeting={true} />
     </div>
   );
 }

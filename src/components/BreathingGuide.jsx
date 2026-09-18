@@ -2,23 +2,24 @@ import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function BreathingGuide({ isOpen, onClose }) {
+export default function BreathingGuide({ isOpen, onClose, enableGreeting = false }) {
   const { user } = useContext(AuthContext);
   const [phase, setPhase] = useState('inhale');
   const [scale, setScale] = useState(1);
   const [seconds, setSeconds] = useState(0);
-  const [showGreeting, setShowGreeting] = useState(true);
+  const [showGreeting, setShowGreeting] = useState(enableGreeting);
   const [displayedText, setDisplayedText] = useState('');
   const [greetingOffset, setGreetingOffset] = useState(0);
 
   useEffect(() => {
-    if (!isOpen) {
-      setShowGreeting(true);
+    if (!isOpen || !enableGreeting) {
+      setShowGreeting(false);
       setDisplayedText('');
       setGreetingOffset(0);
       return;
     }
 
+    setShowGreeting(true);
     const firstName = user?.user_metadata?.first_name || 'there';
     const fullText = `Good morning, ${firstName}, let's take a breath`;
     let charIndex = 0;
@@ -52,7 +53,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
     }, 50);
 
     return () => clearInterval(typingInterval);
-  }, [isOpen, user]);
+  }, [isOpen, enableGreeting, user]);
 
   useEffect(() => {
     if (!isOpen || showGreeting) return;
