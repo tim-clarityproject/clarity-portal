@@ -172,7 +172,7 @@ export default function Welcome() {
               {displayedGreeting}
               {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Good Morning, ${displayName}.` : 'Good Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h1>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#333', margin: 0, minHeight: '30px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '400', color: '#333', margin: 0, minHeight: '30px' }}>
               {displayedQuestion}
               {displayedQuestion.length > 0 && displayedQuestion.length < 'What are we working on?'.length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h2>
