@@ -5,6 +5,7 @@ import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
+import BreathingGuide from '../components/BreathingGuide';
 
 const ALL_PROBLEMS = [
   { id: 'plan-day', title: 'Plan my day', tools: ['plan-day'], status: null },
@@ -38,7 +39,17 @@ export default function Welcome() {
   const [displayedQuestion, setDisplayedQuestion] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPastDecisions, setShowPastDecisions] = useState(false);
+  const [showBreathingGuide, setShowBreathingGuide] = useState(false);
+  const [showGreetingText, setShowGreetingText] = useState(false);
   const isGuest = location.state?.isGuest || false;
+
+  // Show breathing guide greeting on Welcome page load
+  useEffect(() => {
+    if (!isGuest) {
+      setShowBreathingGuide(true);
+      setShowGreetingText(true);
+    }
+  }, [isGuest]);
 
   useEffect(() => {
     if (!user || isGuest) return;
@@ -145,6 +156,7 @@ export default function Welcome() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
+      <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px' }} className="page-container">

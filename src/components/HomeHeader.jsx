@@ -2,7 +2,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import BreathingGuide from './BreathingGuide';
 
 export default function HomeHeader({ isGuest = false }) {
   const navigate = useNavigate();
@@ -11,21 +10,10 @@ export default function HomeHeader({ isGuest = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
-  const [showBreathingGuide, setShowBreathingGuide] = useState(false);
-  const [showGreetingText, setShowGreetingText] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Show breathing guide on mount (TODO: restore 2-hour timer after testing)
-  useEffect(() => {
-    setShowBreathingGuide(true);
-    setShowGreetingText(true);
-  }, []);
-
-  const handleCloseBreathingGuide = () => {
-    setShowBreathingGuide(false);
-  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -429,7 +417,6 @@ export default function HomeHeader({ isGuest = false }) {
         </a>
       </div>
 
-      <BreathingGuide isOpen={showBreathingGuide} onClose={handleCloseBreathingGuide} showGreeting={showGreetingText} />
     </div>
   );
 }
