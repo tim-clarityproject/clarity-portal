@@ -193,6 +193,52 @@ export default function PlanMeeting() {
     }
   };
 
+  const handleSaveDraft = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
+    try {
+      const formData = {
+        title,
+        date,
+        time,
+        chair,
+        objectives,
+        flowItems,
+        sections,
+        meetingContext,
+        preReads,
+      };
+
+      if (decisionId) {
+        await supabase
+          .from('decisions')
+          .update({
+            form_data: formData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', decisionId)
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('decisions')
+          .insert({
+            user_id: user.id,
+            tool_type: 'plan_meeting',
+            title: title || `Meeting on ${date}`,
+            form_data: formData,
+          });
+      }
+
+      setIsSaved(true);
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert('Failed to save draft');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleNavigateToPlans = () => {
     navigate('/my-plans', { state: { isGuest } });
   };
@@ -624,6 +670,37 @@ export default function PlanMeeting() {
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
           <Trash2 size={18} />
+        </button>
+
+        <button
+          onClick={handleSaveDraft}
+          disabled={isSaving}
+          style={{
+            padding: '10px 16px',
+            backgroundColor: 'transparent',
+            border: '1px solid #e5e5e5',
+            borderRadius: '6px',
+            color: '#333',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '500',
+            transition: 'all 0.2s',
+            opacity: isSaving ? 0.7 : 1,
+          }}
+          onMouseEnter={(e) => {
+            if (!isSaving) {
+              e.currentTarget.style.borderColor = '#F08571';
+              e.currentTarget.style.backgroundColor = '#FEE5DE';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isSaving) {
+              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
+          Save as Draft
         </button>
 
         <button
