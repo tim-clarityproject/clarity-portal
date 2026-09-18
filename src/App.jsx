@@ -31,6 +31,7 @@ import PlanMyDayStep1 from './pages/PlanMyDayStep1';
 import DailyPlanSummary from './pages/DailyPlanSummary';
 import MyPlans from './pages/MyPlans';
 import PlanMeeting from './pages/PlanMeeting';
+import MeetingSummary from './pages/MeetingSummary';
 import GrowStep1Goal from './pages/GrowStep1Goal';
 import GrowStep2Reality from './pages/GrowStep2Reality';
 import GrowStep3Options from './pages/GrowStep3Options';
@@ -136,6 +137,7 @@ function AppContent() {
       <Route path="/plan-my-day" element={<PlanMyDayStep1 />} />
       <Route path="/daily-plan-summary" element={<DailyPlanSummary />} />
       <Route path="/plan-meeting" element={<PlanMeeting />} />
+      <Route path="/meeting-summary" element={<MeetingSummary />} />
       <Route path="/my-plans" element={<MyPlans />} />
       <Route path="/grow-step-1" element={<GrowStep1Goal />} />
       <Route path="/grow-step-2" element={<GrowStep2Reality />} />

@@ -156,6 +156,7 @@ export default function PlanMeeting() {
         preReads,
       };
 
+      let savedId = decisionId;
       if (decisionId) {
         await supabase
           .from('decisions')
@@ -166,18 +167,25 @@ export default function PlanMeeting() {
           .eq('id', decisionId)
           .eq('user_id', user.id);
       } else {
-        await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
             tool_type: 'plan_meeting',
             title: title || `Meeting on ${date}`,
             form_data: formData,
-          });
+          })
+          .select();
+
+        if (data && data.length > 0) {
+          savedId = data[0].id;
+        }
       }
 
       setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 2000);
+      setTimeout(() => {
+        navigate('/meeting-summary', { state: { isGuest, decisionId: savedId } });
+      }, 500);
     } catch (error) {
       console.error('Error saving meeting:', error);
       alert('Failed to save meeting');
