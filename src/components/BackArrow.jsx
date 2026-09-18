@@ -21,10 +21,10 @@ export default function BackArrow() {
         marginBottom: '24px',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = '#FEE5DE';
+        e.currentTarget.style.opacity = '0.7';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
+        e.currentTarget.style.opacity = '1';
       }}
     >
       <ChevronLeft size={20} />
