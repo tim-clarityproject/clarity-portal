@@ -1,8 +1,8 @@
--- Create decisions table for GROW, Inversion, and Tough Conversation decisions
+-- Create decisions table for GROW, Inversion, Tough Conversation, Strategic Alignment, and If-Then Planning decisions
 CREATE TABLE IF NOT EXISTS decisions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  tool_type TEXT NOT NULL CHECK (tool_type IN ('grow', 'inversion', 'tough-conversation', 'strategic-alignment')),
+  tool_type TEXT NOT NULL CHECK (tool_type IN ('grow', 'inversion', 'tough-conversation', 'strategic-alignment', 'if_then_planning', 'daily_plan', 'plan_meeting')),
   title TEXT,
   form_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   draft BOOLEAN DEFAULT false,
