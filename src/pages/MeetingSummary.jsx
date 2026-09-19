@@ -1,10 +1,9 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Download, X } from 'lucide-react';
+import { Download, X, ChevronLeft } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
-import BackArrow from '../components/BackArrow';
 
 export default function MeetingSummary() {
   const navigate = useNavigate();
@@ -103,7 +102,29 @@ export default function MeetingSummary() {
       <HomeHeader isGuest={isGuest} className="no-print" />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
-        <BackArrow />
+        <button
+          onClick={() => navigate('/my-plans', { state: { isGuest } })}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '4px 8px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: '#F08571',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '600',
+            marginBottom: '16px',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#e07560'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#F08571'}
+          className="no-print"
+        >
+          <ChevronLeft size={18} />
+          Back to Plans
+        </button>
 
         {/* Meeting Title - Only on Screen */}
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 24px 0' }} className="no-print">
