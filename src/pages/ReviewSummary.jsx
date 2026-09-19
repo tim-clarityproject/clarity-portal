@@ -192,7 +192,7 @@ export default function ReviewSummary() {
               content={parsedContent.q3}
             />
             <SectionBlock
-              title="What can we learn from this?"
+              title="What can I learn from this?"
               content={parsedContent.q4}
             />
           </>

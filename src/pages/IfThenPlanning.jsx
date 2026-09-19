@@ -224,6 +224,19 @@ export default function IfThenPlanning() {
           </p>
         </div>
 
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+        </div>
+
+        <div style={{ marginBottom: '32px', padding: '20px', backgroundColor: '#FEE5DE', borderRadius: '8px', border: '1px solid #F08571' }}>
+          <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '8px' }}>
+            Which situation are you concerned about?
+          </p>
+          <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.5' }}>
+            Think of an uncertain situation where you'd like to be better prepared. What happens in this situation, and how would you like to respond?
+          </p>
+        </div>
+
         <div style={sectionStyle}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '16px', marginBottom: '20px', alignItems: 'center' }}>
             <div>

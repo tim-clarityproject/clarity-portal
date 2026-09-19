@@ -140,6 +140,10 @@ export default function PlanMyDayStep1() {
           </p>
         </div>
 
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+        </div>
+
         <div style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: '1fr', gap: '0' }}>
           <div style={sectionStyle}>
             <label style={labelStyle}>

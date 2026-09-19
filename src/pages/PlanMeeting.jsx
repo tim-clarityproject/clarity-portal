@@ -284,11 +284,12 @@ export default function PlanMeeting() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
-            Meeting Planner
-          </h1>
-          <div style={{ position: 'relative' }} ref={dropdownRef}>
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
+              Meeting Planner
+            </h1>
+            <div style={{ position: 'relative' }} ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               style={{
@@ -364,7 +365,15 @@ export default function PlanMeeting() {
                 ))}
               </div>
             )}
+            </div>
           </div>
+          <p style={{ fontSize: '14px', color: '#999', margin: 0, lineHeight: '1.4' }}>
+            Create a structured plan with objectives and agenda
+          </p>
+        </div>
+
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
         </div>
 
         {/* Meeting Title & Chair Section */}
