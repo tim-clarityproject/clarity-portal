@@ -8,6 +8,7 @@ const ALL_PROBLEMS = [
   { id: 'strategic', title: 'I need to provide my team direction', description: 'Assess how your current projects align with your team\'s objective', tools: ['strategic-alignment'], status: null },
   { id: 'tough-conversation', title: 'I need to give tough feedback', description: 'Create a script for giving feedback', tools: ['tough-conversation'], status: null },
   { id: 'stop-doing', title: 'I\'ve got too many things to do', description: 'Reclaim hours by stopping or delegating time-sink activities', tools: ['stop-doing-audit'], status: null },
+  { id: 'if-then', title: 'I\'m feeling anxious about an uncertain situation', description: 'Prepare for uncertain situations with contingency plans', tools: ['if-then-planning'], status: null },
   { id: 'new-hire', title: 'Making a new hire', description: 'Plan and prepare for bringing on new team members', tools: ['new-hire'], status: 'coming-soon' },
   { id: 'onboarding', title: 'Onboarding a new member of staff', description: 'Guide and support new team members in their first weeks', tools: ['onboarding'], status: 'coming-soon' },
   { id: 'energy', title: 'What to focus my energy on', description: 'Allocate your priorities wisely', tools: ['energy-allocation'], status: 'coming-soon' },
@@ -33,14 +34,17 @@ export default function DecisionTools() {
   const handleProblemSelect = (problem) => {
     if (problem.status === 'coming-soon') return;
 
-    if (problem.tools[0] === 'grow') {
-      navigate('/grow-step-1', { state: { isGuest, ...location.state, problemTitle: problem.title } });
-    } else if (problem.tools[0] === 'strategic-alignment') {
-      navigate('/goal-setting', { state: { isGuest, ...location.state, problemTitle: problem.title } });
-    } else if (problem.tools[0] === 'tough-conversation') {
-      navigate('/tough-conversation-step-1', { state: { isGuest, ...location.state, problemTitle: problem.title } });
-    } else if (problem.tools[0] === 'stop-doing-audit') {
-      navigate('/stop-doing-audit', { state: { isGuest, ...location.state, problemTitle: problem.title } });
+    const routeMap = {
+      'grow': '/grow-step-1',
+      'strategic-alignment': '/goal-setting',
+      'tough-conversation': '/tough-conversation-step-1',
+      'stop-doing-audit': '/stop-doing-audit',
+      'if-then-planning': '/if-then-planning',
+    };
+
+    const route = routeMap[problem.tools[0]];
+    if (route) {
+      navigate(route, { state: { isGuest, ...location.state, problemTitle: problem.title } });
     }
   };
 

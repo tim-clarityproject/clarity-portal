@@ -104,6 +104,7 @@ export default function DecisionHistory() {
       'tough-conversation': '/tough-conversation-step-1',
       'strategic-alignment': '/goal-setting',
       'daily_plan': '/plan-my-day',
+      'if_then_planning': '/if-then-planning',
     };
     const editPage = editPageMap[decision.tool_type] || '/decision-tools';
     navigate(editPage, { state: { isGuest, decisionId: decision.id, ...decision.form_data } });
