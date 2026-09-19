@@ -111,7 +111,9 @@ export default function ReviewSummary() {
   );
 
   const isAfterAction = reviewType === 'after-action';
-  const pageTitle = isAfterAction ? 'After-Action Review' : 'Progress Review';
+  const isProgressReview = reviewType === 'progress';
+  const isWeeklyMomentum = reviewType === 'weekly-momentum';
+  const pageTitle = isAfterAction ? 'After-Action Review' : isProgressReview ? 'Progress Review' : 'Weekly Momentum Review';
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
@@ -167,7 +169,7 @@ export default function ReviewSummary() {
             {review.title || pageTitle}
           </h1>
           <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-            {isAfterAction ? 'After-Action Review' : 'Progress Review'}
+            {isAfterAction ? 'After-Action Review' : isProgressReview ? 'Progress Review' : 'Weekly Momentum Review'}
           </span>
         </div>
 
@@ -199,7 +201,7 @@ export default function ReviewSummary() {
         )}
 
         {/* Progress Review Sections */}
-        {!isAfterAction && (
+        {isProgressReview && (
           <>
             <SectionBlock
               title="What's been going well?"
@@ -213,6 +215,61 @@ export default function ReviewSummary() {
               title="What next steps will expand your performance potential?"
               content={parsedContent.q3}
             />
+          </>
+        )}
+
+        {/* Weekly Momentum Review Sections */}
+        {isWeeklyMomentum && (
+          <>
+            <SectionBlock
+              title="What moved forward this week?"
+              content={parsedContent.q1}
+            />
+            <SectionBlock
+              title="What did you do better this week?"
+              content={parsedContent.q2}
+            />
+            <SectionBlock
+              title="What's one priority for next week?"
+              content={parsedContent.q3}
+            />
+
+            {/* Ratings Section */}
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Weekly Ratings
+              </h2>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Intentionality</span>
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.intentionality || '—'}/5</span>
+                </div>
+                <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(parsedContent.intentionality || 0) * 20}%`, backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Communication</span>
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.communication || '—'}/5</span>
+                </div>
+                <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(parsedContent.communication || 0) * 20}%`, backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Progress</span>
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.progress || '—'}/5</span>
+                </div>
+                <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(parsedContent.progress || 0) * 20}%`, backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+            </div>
           </>
         )}
 
