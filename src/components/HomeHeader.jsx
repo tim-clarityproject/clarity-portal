@@ -100,7 +100,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           alignItems: 'center',
           justifyContent: 'space-between',
           position: 'relative',
-          gap: '32px',
         }}
       >
       {/* Hamburger Menu */}
@@ -118,6 +117,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           gap: '4px',
           transition: 'color 0.2s',
           flexShrink: 0,
+          zIndex: 100,
         }}
         onMouseEnter={(e) => e.target.style.color = '#e07560'}
         onMouseLeave={(e) => e.target.style.color = '#F08571'}
@@ -127,9 +127,15 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         <div style={{ width: '24px', height: '2px', backgroundColor: 'currentColor' }} />
       </button>
 
-      {/* Center Goal Display */}
+      {/* Center Goal Display - Absolutely Positioned for True Centering */}
       {personalGoal && (
-        <div style={{ flex: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', px: '16px' }}>
+        <div style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+        }}>
           <div style={{
             background: 'linear-gradient(135deg, rgba(240, 133, 113, 0.05) 0%, rgba(240, 133, 113, 0.02) 100%)',
             padding: '12px 24px',
@@ -137,6 +143,10 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             border: '1px solid rgba(240, 133, 113, 0.1)',
             boxShadow: '0 2px 8px rgba(240, 133, 113, 0.08)',
             backdropFilter: 'blur(4px)',
+            whiteSpace: 'nowrap',
+            maxWidth: '60vw',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}>
             <span style={{
               fontSize: '16px',
