@@ -82,10 +82,13 @@ export default function DecisionHistory() {
   };
 
   const formatTagName = (toolType) => {
-    return toolType
+    const words = toolType
       .split(/[-_]/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1));
+
+    // Use hyphen for underscored names, space for hyphenated names
+    const separator = toolType.includes('_') ? '-' : ' ';
+    return words.join(separator);
   };
 
   const formatDateAndTime = (timeStr) => {
