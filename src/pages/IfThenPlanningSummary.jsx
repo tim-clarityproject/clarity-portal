@@ -1,6 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Mail, X } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -14,8 +13,6 @@ export default function IfThenPlanningSummary() {
 
   const [planning, setPlanning] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [emailInput, setEmailInput] = useState('');
 
   useEffect(() => {
     if (decisionId && user) {
@@ -66,14 +63,6 @@ export default function IfThenPlanningSummary() {
 
   const handleDownloadPDF = () => {
     window.print();
-  };
-
-  const handleSendEmail = () => {
-    if (!emailInput.trim()) {
-      alert('Please enter at least one email address');
-      return;
-    }
-    alert('Email feature coming soon');
   };
 
   if (isLoading) {
@@ -258,153 +247,7 @@ export default function IfThenPlanningSummary() {
         >
           Edit
         </button>
-        <button
-          onClick={() => setShareModalOpen(true)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            backgroundColor: '#F08571',
-            color: 'white',
-            fontWeight: '600',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '13px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e07560'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F08571'}
-        >
-          Share
-        </button>
       </div>
-
-      {/* Share Modal */}
-      {shareModalOpen && (
-        <>
-          <div
-            onClick={() => setShareModalOpen(false)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
-              zIndex: 99,
-            }}
-          />
-          <div style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-            padding: '32px',
-            maxWidth: '400px',
-            width: '90%',
-            zIndex: 100,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>Share Planning</h2>
-              <button
-                onClick={() => setShareModalOpen(false)}
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#999',
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#333'}
-                onMouseLeave={(e) => e.target.style.color = '#999'}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Download Option */}
-            <button
-              onClick={() => {
-                handleDownloadPDF();
-                setShareModalOpen(false);
-              }}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px',
-                backgroundColor: '#f9f9f9',
-                border: '1px solid #e5e5e5',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                marginBottom: '12px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
-                e.currentTarget.style.borderColor = '#F08571';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9f9f9';
-                e.currentTarget.style.borderColor = '#e5e5e5';
-              }}
-            >
-              <div style={{ color: '#F08571', flexShrink: 0 }}>📄</div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontSize: '13px', fontWeight: '600', color: '#333', margin: 0 }}>Download PDF</p>
-                <p style={{ fontSize: '12px', color: '#999', margin: '4px 0 0 0' }}>Save to your computer</p>
-              </div>
-            </button>
-
-            {/* Email Option */}
-            <div style={{ paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
-              <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</p>
-              <input
-                type="email"
-                placeholder="Enter email addresses (comma separated)"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                  marginBottom: '12px',
-                }}
-              />
-              <button
-                onClick={handleSendEmail}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  backgroundColor: '#F08571',
-                  color: 'white',
-                  fontWeight: '600',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-              >
-                Send PDF
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

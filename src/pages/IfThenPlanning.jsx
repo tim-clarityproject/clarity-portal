@@ -67,7 +67,13 @@ export default function IfThenPlanning() {
   };
 
   const handleSave = () => {
-    setShowNamingModal(true);
+    if (decisionId) {
+      // If editing existing decision, save with existing title (no rename)
+      handleNameConfirm(location.state?.title || 'If-Then Planning');
+    } else {
+      // If new decision, show naming modal
+      setShowNamingModal(true);
+    }
   };
 
   const handleNameConfirm = async (decidionName) => {
