@@ -100,7 +100,7 @@ export default function IfThenPlanning() {
       setIsSaved(true);
       clearProgress();
       setTimeout(() => {
-        navigate('/my-plans', { state: { isGuest } });
+        navigate('/if-then-planning-summary', { state: { isGuest, decisionId: savedId } });
       }, 500);
     } catch (error) {
       console.error('Error saving planning:', error);
