@@ -179,7 +179,9 @@ export default function DecisionHistory() {
               <button
                 key={decision.id}
                 onClick={() => {
-                  const route = decision.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/decision-summary';
+                  let route = '/decision-summary';
+                  if (decision.tool_type === 'daily_plan') route = '/daily-plan-summary';
+                  if (decision.tool_type === 'if_then_planning') route = '/if-then-planning-summary';
                   navigate(route, { state: { isGuest, decisionId: decision.id, ...decision } });
                 }}
                 style={{
