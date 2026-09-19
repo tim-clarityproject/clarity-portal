@@ -138,12 +138,11 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           maxWidth: 'calc(100vw - 200px)',
         }}>
           <div style={{
-            background: 'linear-gradient(135deg, rgba(240, 133, 113, 0.05) 0%, rgba(240, 133, 113, 0.02) 100%)',
+            background: 'white',
             padding: '12px 24px',
             borderRadius: '8px',
-            border: '1px solid rgba(240, 133, 113, 0.1)',
-            boxShadow: '0 2px 8px rgba(240, 133, 113, 0.08)',
-            backdropFilter: 'blur(4px)',
+            border: '1px solid #e5e5e5',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
           }}>
