@@ -20,16 +20,22 @@ export default function IfThenPlanningSummary() {
 
   useEffect(() => {
     if (decisionId && user) {
+      console.log('[IfThenPlanningSummary] loadPlanning: fetching decisionId =', decisionId, 'user =', user.id);
       loadPlanning();
+    } else {
+      console.log('[IfThenPlanningSummary] Missing decisionId or user:', { decisionId, userId: user?.id });
+      setIsLoading(false);
     }
   }, [decisionId, user]);
 
   const loadPlanning = async () => {
     if (!user) {
+      console.warn('[IfThenPlanningSummary] loadPlanning: no user');
       setIsLoading(false);
       return;
     }
     try {
+      console.log('[IfThenPlanningSummary] loadPlanning: querying for decisionId =', decisionId);
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
@@ -37,12 +43,19 @@ export default function IfThenPlanningSummary() {
         .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[IfThenPlanningSummary] Query error:', error);
+        throw error;
+      }
+
       if (data) {
+        console.log('[IfThenPlanningSummary] Planning loaded successfully:', data.id);
         setPlanning(data);
+      } else {
+        console.warn('[IfThenPlanningSummary] No data returned for decisionId', decisionId);
       }
     } catch (error) {
-      console.error('Error loading planning:', error);
+      console.error('[IfThenPlanningSummary] Error loading planning:', error.message);
     } finally {
       setIsLoading(false);
     }
