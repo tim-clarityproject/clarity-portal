@@ -112,55 +112,58 @@ export default function MeetingSummary() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
         <BackArrow />
 
-        {/* Meeting Title */}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 32px 0' }} className="no-print">
+        {/* Meeting Title - Only on Screen */}
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 24px 0' }} className="no-print">
           {data.title || 'Meeting Plan'}
         </h1>
 
-        {/* Meeting Details Card */}
-        <div style={{ backgroundColor: '#fafafa', padding: '24px', borderRadius: '8px', marginBottom: '32px', border: '1px solid #f0f0f0' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-            <div>
-              <p style={{ fontSize: '12px', fontWeight: '500', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</p>
-              <p style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0 }}>{formatDate(data.date)}</p>
-            </div>
-            <div>
-              <p style={{ fontSize: '12px', fontWeight: '500', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time</p>
-              <p style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0 }}>{formatTime(data.time)}</p>
-            </div>
+        {/* Title for Print */}
+        <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: 'black', margin: '0 0 16px 0', display: 'none' }} className="print-only">
+          {data.title || 'Meeting Plan'}
+        </h1>
+
+        {/* Meeting Details - Compact Grid */}
+        <div style={{ backgroundColor: '#fafafa', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #f0f0f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+          <div>
+            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</p>
+            <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{formatDate(data.date)}</p>
           </div>
           <div>
-            <p style={{ fontSize: '12px', fontWeight: '500', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chair</p>
-            <p style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0 }}>{data.chair || '—'}</p>
+            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time</p>
+            <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{formatTime(data.time)}</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chair</p>
+            <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{data.chair || '—'}</p>
           </div>
         </div>
 
         {/* Meeting Context */}
         {data.meetingContext && (
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 12px 0' }}>Meeting Context</h2>
-            <p style={{ fontSize: '14px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>{data.meetingContext}</p>
+          <div style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Context</h2>
+            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{data.meetingContext}</p>
           </div>
         )}
 
         {/* Attendee Preparation */}
         {data.preReads && (
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 12px 0' }}>Attendee Preparation</h2>
-            <p style={{ fontSize: '14px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>{data.preReads}</p>
+          <div style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Preparation</h2>
+            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{data.preReads}</p>
           </div>
         )}
 
         {/* Objectives */}
         {data.objectives && data.objectives.length > 0 && (
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 12px 0' }}>Objectives</h2>
-            <ol style={{ fontSize: '14px', color: '#666', margin: '0', paddingLeft: '24px', lineHeight: '1.8' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Objectives</h2>
+            <ol style={{ fontSize: '13px', color: '#666', margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
               {data.objectives.map((obj) => (
-                <li key={obj.id} style={{ marginBottom: '6px' }}>{obj.text}</li>
+                <li key={obj.id} style={{ marginBottom: '4px' }}>{obj.text}</li>
               ))}
             </ol>
           </div>
@@ -168,43 +171,73 @@ export default function MeetingSummary() {
 
         {/* Meeting Agenda */}
         {data.flowItems && data.flowItems.length > 0 && (
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 12px 0' }}>Meeting Agenda</h2>
+          <div style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Meeting Agenda</h2>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #e5e5e5' }}>
-                    <th style={{ padding: '10px', textAlign: 'left', fontWeight: '600', color: '#999', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Item</th>
-                    <th style={{ padding: '10px', textAlign: 'left', fontWeight: '600', color: '#999', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aim</th>
-                    <th style={{ padding: '10px', textAlign: 'left', fontWeight: '600', color: '#999', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Lead</th>
-                    <th style={{ padding: '10px', textAlign: 'left', fontWeight: '600', color: '#999', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', width: '70px' }}>Length</th>
+                  <tr style={{ borderBottom: '2px solid #e5e5e5', backgroundColor: '#fafafa' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Item</th>
+                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Aim</th>
+                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Lead</th>
+                    <th style={{ padding: '8px', textAlign: 'center', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px', width: '50px' }}>Min</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.flowItems.map((item) => (
                     <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: '10px', color: '#333' }}>{item.item}</td>
-                      <td style={{ padding: '10px', color: '#666' }}>{item.aim}</td>
-                      <td style={{ padding: '10px', color: '#666' }}>{item.lead}</td>
-                      <td style={{ padding: '10px', color: '#666' }}>{item.length}</td>
+                      <td style={{ padding: '8px', color: '#333', fontWeight: '500' }}>{item.item}</td>
+                      <td style={{ padding: '8px', color: '#666', fontSize: '12px' }}>{item.aim}</td>
+                      <td style={{ padding: '8px', color: '#666', fontSize: '12px' }}>{item.lead}</td>
+                      <td style={{ padding: '8px', textAlign: 'center', color: '#666', fontSize: '12px', fontWeight: '600' }}>{item.length}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p style={{ fontSize: '12px', color: '#999', marginTop: '12px', marginBottom: 0 }}>
+            <p style={{ fontSize: '11px', color: '#999', marginTop: '6px', marginBottom: 0, fontWeight: '600' }}>
               Total: {data.flowItems.reduce((sum, item) => sum + (parseInt(item.length) || 0), 0)} minutes
             </p>
           </div>
         )}
 
         <style>{`
+          @page {
+            margin: 0.4in 0.5in;
+            padding: 0;
+          }
+
           @media print {
             .no-print {
-              display: none;
+              display: none !important;
+            }
+            .print-only {
+              display: block !important;
             }
             .page-container {
-              padding: 0;
+              padding: 0 !important;
+            }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            body, html {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            h1 {
+              margin-top: 0 !important;
+              margin-bottom: 8px !important;
+              page-break-after: avoid;
+            }
+            h2 {
+              page-break-after: avoid;
+              margin-top: 4px !important;
+              margin-bottom: 4px !important;
+            }
+            div {
+              page-break-inside: avoid;
             }
           }
         `}</style>
