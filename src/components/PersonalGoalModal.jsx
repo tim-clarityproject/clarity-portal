@@ -106,12 +106,10 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
           onBlur={(e) => e.target.style.borderColor = isOverLimit ? '#F08571' : '#e5e5e5'}
         />
 
-        {/* Character and Word Counter */}
+        {/* Character Counter */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
           <div style={{ fontSize: '12px', color: isOverLimit ? '#F08571' : '#999' }}>
-            <span>{charCount}/{MAX_GOAL_LENGTH} characters</span>
-            <span style={{ margin: '0 8px' }}>•</span>
-            <span>{wordCount}/{MAX_GOAL_WORDS} words</span>
+            {charCount}/{MAX_GOAL_LENGTH} characters
           </div>
           {isOverLimit && (
             <span style={{ fontSize: '12px', color: '#F08571', fontWeight: '600' }}>
