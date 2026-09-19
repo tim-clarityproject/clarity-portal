@@ -174,10 +174,10 @@ export default function MyAccount() {
             }}>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#F08571', marginBottom: '8px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Personal Goal
+                  Personal Mission
                 </h3>
                 <p style={{ fontSize: '15px', color: '#333', margin: 0, fontWeight: '500', lineHeight: '1.6', marginBottom: '8px' }}>
-                  {personalGoal || 'No goal set yet'}
+                  {personalGoal || 'No mission set yet'}
                 </p>
                 <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
                   Max 20 words / 120 characters

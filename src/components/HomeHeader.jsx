@@ -155,7 +155,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               lineHeight: '1.5',
               letterSpacing: '0.3px',
             }}>
-              Your Goal: <span style={{ fontWeight: '700', opacity: 0.95 }}>{personalGoal}</span>
+              Your Mission: <span style={{ fontWeight: '700', opacity: 0.95 }}>{personalGoal}</span>
             </span>
           </div>
         </div>
