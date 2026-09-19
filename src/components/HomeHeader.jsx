@@ -102,88 +102,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         flexDirection: 'column',
       }}
     >
-      {/* Personal Goal Banner */}
-      {personalGoal && showGoal && (
-        <div
-          style={{
-            backgroundColor: '#FEE5DE',
-            padding: '12px 32px',
-            borderBottom: '1px solid #F08571',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '16px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: '#F08571', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              My Purpose
-            </span>
-            <span style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
-              {personalGoal}
-            </span>
-          </div>
-          <button
-            onClick={handleToggleGoalVisibility}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#F08571',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '4px',
-              transition: 'opacity 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-            title="Hide goal"
-          >
-            <EyeOff size={18} />
-          </button>
-        </div>
-      )}
-
-      {/* Goal Hidden Indicator */}
-      {personalGoal && !showGoal && (
-        <div
-          style={{
-            backgroundColor: '#f9f9f9',
-            padding: '8px 32px',
-            borderBottom: '1px solid #e5e5e5',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <button
-            onClick={handleToggleGoalVisibility}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#999',
-              cursor: 'pointer',
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              transition: 'all 0.2s',
-              padding: '4px 8px',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#F08571';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#999';
-            }}
-            title="Show goal"
-          >
-            <Eye size={14} />
-            <span>Show purpose</span>
-          </button>
-        </div>
-      )}
 
       <div
         ref={headerRef}
@@ -223,10 +141,29 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
 
       {/* Center Goal Display */}
       {personalGoal && showGoal && (
-        <div style={{ flex: 1, textAlign: 'center', minHeight: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ flex: 1, textAlign: 'center', minHeight: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
           <span style={{ fontSize: '18px', fontWeight: '600', color: '#F08571', lineHeight: '1.4' }}>
             {personalGoal}
           </span>
+          <button
+            onClick={handleToggleGoalVisibility}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: '#ccc',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#999'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#ccc'}
+            title="Hide goal"
+          >
+            <EyeOff size={16} />
+          </button>
         </div>
       )}
 
