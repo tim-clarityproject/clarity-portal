@@ -135,6 +135,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           top: '50%',
           transform: 'translate(-50%, -50%)',
           pointerEvents: 'none',
+          maxWidth: 'calc(100vw - 200px)',
         }}>
           <div style={{
             background: 'linear-gradient(135deg, rgba(240, 133, 113, 0.05) 0%, rgba(240, 133, 113, 0.02) 100%)',
@@ -143,10 +144,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             border: '1px solid rgba(240, 133, 113, 0.1)',
             boxShadow: '0 2px 8px rgba(240, 133, 113, 0.08)',
             backdropFilter: 'blur(4px)',
-            whiteSpace: 'nowrap',
-            maxWidth: '60vw',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
           }}>
             <span style={{
               fontSize: '16px',
@@ -154,6 +153,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               color: '#F08571',
               lineHeight: '1.5',
               letterSpacing: '0.3px',
+              display: 'block',
+              textAlign: 'center',
             }}>
               Your Mission: <span style={{ fontWeight: '700', opacity: 0.95 }}>{personalGoal}</span>
             </span>

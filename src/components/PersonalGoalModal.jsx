@@ -2,17 +2,15 @@ import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const MAX_GOAL_LENGTH = 120;
-const MAX_GOAL_WORDS = 20;
+const MAX_GOAL_LENGTH = 50;
 
 export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoalSaved }) {
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(currentGoal);
   const [isSaving, setIsSaving] = useState(false);
 
-  const wordCount = goal.trim().split(/\s+/).filter(word => word.length > 0).length;
   const charCount = goal.length;
-  const isOverLimit = charCount > MAX_GOAL_LENGTH || wordCount > MAX_GOAL_WORDS;
+  const isOverLimit = charCount > MAX_GOAL_LENGTH;
 
   useEffect(() => {
     setGoal(currentGoal);
