@@ -19,53 +19,59 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
 
+  // Fetch mission from Supabase for pages without prop
   useEffect(() => {
     // Always use propGoal if it's provided (even if empty string)
     if (propGoal !== undefined) {
+      console.log('[HomeHeader] Using prop goal:', propGoal);
       setPersonalGoal(propGoal);
       return;
     }
 
-    // Fetch from Supabase if no prop provided and user exists
-    if (user && !user.isAnonymous) {
-      const fetchGoal = async () => {
-        try {
-          console.log('[HomeHeader] Fetching mission for user:', user.id);
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('personal_goal, show_mission_in_header')
-            .eq('id', user.id)
-            .single();
-
-          if (error) {
-            console.error('[HomeHeader] Error fetching mission:', error);
-            return;
-          }
-
-          if (data?.personal_goal) {
-            console.log('[HomeHeader] Mission loaded:', data.personal_goal);
-            setPersonalGoal(data.personal_goal);
-
-            // Check visibility from Supabase, fallback to localStorage
-            if (data.show_mission_in_header !== null && data.show_mission_in_header !== undefined) {
-              console.log('[HomeHeader] Visibility from Supabase:', data.show_mission_in_header);
-              setShowMissionInHeader(data.show_mission_in_header);
-            } else {
-              const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
-              if (savedVisibility !== null) {
-                console.log('[HomeHeader] Visibility from localStorage:', savedVisibility);
-                setShowMissionInHeader(JSON.parse(savedVisibility));
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[HomeHeader] Unexpected error:', error);
-        }
-      };
-
-      fetchGoal();
+    // Fetch from Supabase if no prop provided
+    if (!user) {
+      console.log('[HomeHeader] No user, skipping fetch');
+      return;
     }
-  }, [user, propGoal]);
+
+    console.log('[HomeHeader] Fetching mission from Supabase for user:', user.id);
+
+    const fetchMission = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('personal_goal, show_mission_in_header')
+          .eq('id', user.id)
+          .single();
+
+        console.log('[HomeHeader] Fetch result:', { data, error });
+
+        if (error) {
+          console.error('[HomeHeader] Supabase error:', error.message);
+          return;
+        }
+
+        if (data?.personal_goal) {
+          console.log('[HomeHeader] Setting mission:', data.personal_goal);
+          setPersonalGoal(data.personal_goal);
+        } else {
+          console.log('[HomeHeader] No mission data returned');
+          setPersonalGoal('');
+        }
+
+        // Set visibility
+        const showInHeader = data?.show_mission_in_header;
+        console.log('[HomeHeader] Setting visibility:', showInHeader);
+        if (showInHeader !== null && showInHeader !== undefined) {
+          setShowMissionInHeader(showInHeader);
+        }
+      } catch (error) {
+        console.error('[HomeHeader] Fetch failed:', error);
+      }
+    };
+
+    fetchMission();
+  }, [user?.id, propGoal]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
