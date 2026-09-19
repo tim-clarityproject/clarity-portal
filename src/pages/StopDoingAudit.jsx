@@ -88,6 +88,7 @@ export default function StopDoingAudit() {
     setIsSaving(true);
     try {
       const formData = { items, firstAction, timeUse };
+      let savedId = decisionId;
 
       if (decisionId) {
         await supabase
@@ -99,20 +100,25 @@ export default function StopDoingAudit() {
           .eq('id', decisionId)
           .eq('user_id', user.id);
       } else {
-        await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
             tool_type: 'stop_doing_audit',
             title: 'Stop Doing Audit',
             form_data: formData,
-          });
+          })
+          .select();
+
+        if (data && data.length > 0) {
+          savedId = data[0].id;
+        }
       }
 
       setIsSaved(true);
       clearProgress();
       setTimeout(() => {
-        navigate('/my-plans', { state: { isGuest } });
+        navigate('/stop-doing-audit-summary', { state: { isGuest, decisionId: savedId } });
       }, 500);
     } catch (error) {
       console.error('Error saving audit:', error);
