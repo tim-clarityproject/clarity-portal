@@ -33,6 +33,8 @@ import MyPlans from './pages/MyPlans';
 import PlanMeeting from './pages/PlanMeeting';
 import MeetingSummary from './pages/MeetingSummary';
 import IfThenPlanning from './pages/IfThenPlanning';
+import BreathingPage from './pages/BreathingPage';
+import StopDoingAudit from './pages/StopDoingAudit';
 import GrowStep1Goal from './pages/GrowStep1Goal';
 import GrowStep2Reality from './pages/GrowStep2Reality';
 import GrowStep3Options from './pages/GrowStep3Options';
@@ -140,6 +142,8 @@ function AppContent() {
       <Route path="/plan-meeting" element={<PlanMeeting />} />
       <Route path="/meeting-summary" element={<MeetingSummary />} />
       <Route path="/if-then-planning" element={<IfThenPlanning />} />
+      <Route path="/breathe" element={<BreathingPage />} />
+      <Route path="/stop-doing-audit" element={<StopDoingAudit />} />
       <Route path="/my-plans" element={<MyPlans />} />
       <Route path="/grow-step-1" element={<GrowStep1Goal />} />
       <Route path="/grow-step-2" element={<GrowStep2Reality />} />

@@ -14,11 +14,13 @@ const ALL_PROBLEMS = [
 
   // Ground
   { id: 'if-then', title: 'I\'m feeling anxious about an uncertain situation', tools: ['if-then-planning'], status: null, category: 'Ground' },
+  { id: 'breathe', title: 'I need to take a moment to breathe', tools: ['breathe'], status: null, category: 'Ground' },
 
   // Decide
   { id: 'grow', title: 'I\'m navigating a tricky decision', tools: ['grow'], status: null, category: 'Decide' },
   { id: 'tough-conversation', title: 'I need to give tough feedback', tools: ['tough-conversation'], status: null, category: 'Decide' },
   { id: 'strategic', title: 'I need to provide my team direction', tools: ['strategic-alignment'], status: null, category: 'Decide' },
+  { id: 'stop-doing', title: 'I\'ve got too many things to do', tools: ['stop-doing-audit'], status: null, category: 'Decide' },
 
   // Review
   { id: 'after-action', title: 'I need to review a situation', tools: ['after-action'], status: null, category: 'Review' },
@@ -150,6 +152,8 @@ export default function Welcome() {
       'plan-day': '/plan-my-day',
       'plan-meeting': '/plan-meeting',
       'if-then-planning': '/if-then-planning',
+      'breathe': '/breathe',
+      'stop-doing-audit': '/stop-doing-audit',
       'after-action': '/my-journal',
       'progress': '/my-journal',
     };

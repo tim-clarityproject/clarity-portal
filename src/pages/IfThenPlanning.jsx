@@ -168,7 +168,7 @@ export default function IfThenPlanning() {
             If-Then Planning
           </h1>
           <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
-            Prepare for anxiety with contingency plans
+            Prepare for uncertain situations with contingency plans
           </p>
         </div>
 
