@@ -132,12 +132,9 @@ export default function PlanMyDayStep1() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
             Daily Intentions
           </h1>
-          <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
-            Set yourself up for success
-          </p>
         </div>
 
         <div style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: '1fr', gap: '0' }}>
