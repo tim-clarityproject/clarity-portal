@@ -65,17 +65,17 @@ export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, def
             fontSize: '14px',
             fontFamily: 'system-ui, -apple-system, sans-serif',
             boxSizing: 'border-box',
-            marginBottom: '24px',
+            marginBottom: '32px',
             outline: 'none',
           }}
           onFocus={(e) => (e.target.style.borderColor = '#F08571')}
           onBlur={(e) => (e.target.style.borderColor = '#e5e5e5')}
         />
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
           <button
             onClick={onCancel}
             style={{
-              padding: '10px 20px',
+              padding: '12px 24px',
               backgroundColor: 'transparent',
               border: '2px solid #e5e5e5',
               borderRadius: '6px',
@@ -84,6 +84,8 @@ export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, def
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
+              minWidth: '100px',
+              textAlign: 'center',
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = '#F08571';
@@ -100,7 +102,7 @@ export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, def
             onClick={handleConfirm}
             disabled={!name.trim()}
             style={{
-              padding: '10px 20px',
+              padding: '12px 24px',
               backgroundColor: name.trim() ? '#F08571' : '#ccc',
               border: 'none',
               borderRadius: '6px',
@@ -109,6 +111,8 @@ export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, def
               fontWeight: '600',
               cursor: name.trim() ? 'pointer' : 'not-allowed',
               transition: 'all 0.2s',
+              minWidth: '120px',
+              textAlign: 'center',
             }}
             onMouseEnter={(e) => {
               if (name.trim()) {
