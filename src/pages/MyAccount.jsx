@@ -105,227 +105,241 @@ export default function MyAccount() {
           My Account
         </h1>
 
-        {/* Profile Card */}
-        <div style={{
-          marginBottom: '48px',
-          padding: '24px',
-          backgroundColor: '#fafafa',
-          borderRadius: '12px',
-          border: '1px solid #e5e5e5',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '8px', margin: 0 }}>
-              {firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Profile'}
-            </h2>
-            <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
-              {user?.email}
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/edit-profile')}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: 'transparent',
-              border: '2px solid #F08571',
-              borderRadius: '8px',
-              color: '#F08571',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#FEE5DE';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            Edit Profile
-          </button>
-        </div>
-
-        {/* Personal Goal Section */}
-        <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #e5e5e5' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '24px' }}>
-            Your Purpose
-          </h2>
-
+        {/* Settings Container */}
+        <div style={{ backgroundColor: 'white' }}>
+          {/* Profile Section */}
           <div style={{
-            padding: '28px',
-            background: 'linear-gradient(135deg, rgba(240, 133, 113, 0.04) 0%, rgba(255, 255, 255, 0.4) 100%)',
-            borderRadius: '12px',
-            border: '1px solid rgba(240, 133, 113, 0.12)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-            boxShadow: '0 2px 12px rgba(240, 133, 113, 0.06)',
+            paddingBottom: '24px',
+            marginBottom: '32px',
+            borderBottom: '1px solid #e5e5e5',
           }}>
-            {/* Goal Display */}
+            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Profile
+            </h2>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 0',
+            }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
+                  {firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Your Name'}
+                </p>
+                <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
+                  {user?.email}
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/edit-profile')}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: 'transparent',
+                  border: '2px solid #F08571',
+                  borderRadius: '6px',
+                  color: '#F08571',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                  marginLeft: '16px',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+
+          {/* Purpose Section */}
+          <div style={{
+            paddingBottom: '24px',
+            marginBottom: '32px',
+            borderBottom: '1px solid #e5e5e5',
+          }}>
+            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Your Purpose
+            </h2>
+
+            {/* Personal Mission Setting */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
               padding: '16px 0',
-              gap: '16px',
+              borderBottom: '1px solid #f0f0f0',
+              marginBottom: '16px',
             }}>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#F08571', marginBottom: '8px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ flex: 1, maxWidth: '60%' }}>
+                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
                   Personal Mission
-                </h3>
-                <p style={{ fontSize: '15px', color: '#333', margin: 0, fontWeight: '500', lineHeight: '1.6', marginBottom: '8px' }}>
+                </p>
+                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
                   {personalGoal || 'No mission set yet'}
                 </p>
-                <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
+                <p style={{ fontSize: '12px', color: '#bbb', margin: '6px 0 0 0' }}>
                   Max 50 characters
                 </p>
               </div>
               <button
                 onClick={() => setShowGoalModal(true)}
                 style={{
-                  padding: '12px 24px',
+                  padding: '10px 20px',
                   backgroundColor: 'transparent',
                   border: '2px solid #F08571',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   color: '#F08571',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   transition: 'all 0.2s',
                   flexShrink: 0,
                   marginLeft: '16px',
                 }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#FEE5DE';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Edit
               </button>
             </div>
 
-            {/* Visibility Toggle */}
+            {/* Show in Header Setting */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              paddingTop: '20px',
-              borderTop: '1px solid rgba(240, 133, 113, 0.15)',
+              padding: '16px 0',
             }}>
-              <div>
-                <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#F08571', marginBottom: '6px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
                   Show in Header
-                </h3>
-                <p style={{ fontSize: '13px', color: '#777', margin: 0, lineHeight: '1.5' }}>
-                  Display your goal in the page heading
+                </p>
+                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
+                  Display your mission in the page heading
                 </p>
               </div>
               <button
                 onClick={handleToggleGoalVisibility}
                 style={{
-                  padding: '12px 24px',
+                  padding: '10px 20px',
                   backgroundColor: 'transparent',
                   border: '2px solid #F08571',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   color: '#F08571',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   transition: 'all 0.2s',
                   flexShrink: 0,
                   marginLeft: '16px',
-                  minWidth: '80px',
+                  minWidth: '76px',
                   textAlign: 'center',
                   opacity: showGoalInHeader ? 1 : 0.6,
                 }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#FEE5DE';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 {showGoalInHeader ? 'Visible' : 'Hidden'}
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Advanced Settings Section */}
-        <div id="breathing-settings" style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #e5e5e5' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '24px' }}>
-            Advanced Settings
-          </h2>
-
-          <div style={{
-            padding: '24px',
-            backgroundColor: '#fafafa',
-            borderRadius: '12px',
-            border: '1px solid #e5e5e5',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+          {/* Advanced Settings Section */}
+          <div id="breathing-settings" style={{
+            paddingBottom: '24px',
+            marginBottom: '32px',
+            borderBottom: '1px solid #e5e5e5',
           }}>
-            <div>
-              <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px', margin: 0 }}>
-                Breathing Settings
-              </h3>
-              <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
-                Customize your breathing cycle duration
-              </p>
-            </div>
-            <button
-              onClick={() => setShowBreathingSettings(true)}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'transparent',
-                border: '2px solid #F08571',
-                borderRadius: '8px',
-                color: '#F08571',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-                flexShrink: 0,
-                marginLeft: '16px',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#FEE5DE';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              Edit
-            </button>
-          </div>
-        </div>
+            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Advanced
+            </h2>
 
-        {/* Delete Account Section */}
-        <div style={{ marginTop: '48px', textAlign: 'center' }}>
-          <button
-            onClick={handleDeleteAccount}
-            disabled={isDeleting}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#c0574c',
-              cursor: isDeleting ? 'not-allowed' : 'pointer',
-              fontSize: '12px',
-              textDecoration: 'none',
-              transition: 'opacity 0.2s',
-              opacity: isDeleting ? 0.5 : 1,
-            }}
-            onMouseEnter={(e) => !isDeleting && (e.target.style.textDecoration = 'underline')}
-            onMouseLeave={(e) => !isDeleting && (e.target.style.textDecoration = 'none')}
-          >
-            {isDeleting ? 'Deleting account...' : 'Delete account'}
-          </button>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 0',
+            }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
+                  Breathing Settings
+                </p>
+                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
+                  Customize your breathing cycle duration
+                </p>
+              </div>
+              <button
+                onClick={() => setShowBreathingSettings(true)}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: 'transparent',
+                  border: '2px solid #F08571',
+                  borderRadius: '6px',
+                  color: '#F08571',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                  marginLeft: '16px',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div style={{
+            paddingTop: '24px',
+            borderTop: '2px solid #fee5de',
+          }}>
+            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#c0574c', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Danger Zone
+            </h2>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 0',
+            }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '14px', fontWeight: '600', color: '#c0574c', margin: 0, marginBottom: '4px' }}>
+                  Delete Account
+                </p>
+                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
+                  Permanently delete your account and all data
+                </p>
+              </div>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: 'transparent',
+                  border: '2px solid #c0574c',
+                  borderRadius: '6px',
+                  color: '#c0574c',
+                  fontWeight: '600',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                  marginLeft: '16px',
+                  opacity: isDeleting ? 0.5 : 1,
+                }}
+                onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = 'rgba(192, 87, 76, 0.1)')}
+                onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
 
         <BreathingSettingsModal isOpen={showBreathingSettings} onClose={() => setShowBreathingSettings(false)} />
