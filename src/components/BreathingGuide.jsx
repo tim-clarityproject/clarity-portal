@@ -23,7 +23,20 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
       return;
     }
 
-    const fullText = `Good morning, ${firstName}. Let's take a breath.`;
+    const getTimeGreeting = () => {
+      const now = new Date();
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const userTime = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+      const hour = userTime.getHours();
+
+      if (hour < 12) return 'Good morning';
+      if (hour < 17) return 'Good afternoon';
+      if (hour < 22) return 'Good evening';
+      return 'Good night';
+    };
+
+    const timeGreeting = getTimeGreeting();
+    const fullText = `${timeGreeting}, ${firstName}. Let's take a breath.`;
     let charIndex = 0;
 
     // Type out text
@@ -187,7 +200,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
           }}
         >
           {displayedText}
-          {displayedText.length < `Good morning, ${firstName}, let's take a breath`.length && greetingPhase === 'typing' && (
+          {displayedText.length < `Good morning, ${firstName}. Let's take a breath.`.length && greetingPhase === 'typing' && (
             <span style={{ animation: 'blink 1s infinite', marginLeft: '8px' }}>|</span>
           )}
           <style>{`

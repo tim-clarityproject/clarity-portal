@@ -1,14 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
 export default function BreathingPage() {
   const location = useLocation();
+  const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
   const [breathingType, setBreathingType] = useState('sigh');
   const [isBreathing, setIsBreathing] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [setupComplete, setSetupComplete] = useState({ sigh: false, vagal: false, box: false });
+  const sessionStartTimeRef = useRef(null);
+  const isBreathingRef = useRef(false);
+
+  const saveBreathingSession = async () => {
+    if (!user || isGuest || !sessionStartTimeRef.current) return;
+
+    try {
+      const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+
+      await supabase.from('breathing_sessions').insert({
+        user_id: user.id,
+        breathing_mode: breathingType,
+        duration,
+        date: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error saving breathing session:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (isBreathing) {
+      sessionStartTimeRef.current = Date.now();
+      isBreathingRef.current = true;
+    } else if (isBreathingRef.current) {
+      isBreathingRef.current = false;
+      saveBreathingSession();
+      setElapsedSeconds(0);
+    }
+  }, [isBreathing]);
 
   useEffect(() => {
     if (!isBreathing) return;
@@ -29,6 +62,10 @@ export default function BreathingPage() {
         <div style={{ position: 'absolute', bottom: '56px', display: 'flex', border: '2px solid #d0d0d0', borderRadius: '8px', overflow: 'hidden' }}>
           <button
             onClick={() => {
+              if (isBreathing) {
+                saveBreathingSession();
+                setIsBreathing(false);
+              }
               setSetupComplete(prev => ({...prev, vagal: false}));
               setBreathingType('vagal');
             }}
@@ -58,6 +95,10 @@ export default function BreathingPage() {
           </button>
           <button
             onClick={() => {
+              if (isBreathing) {
+                saveBreathingSession();
+                setIsBreathing(false);
+              }
               setSetupComplete(prev => ({...prev, box: false}));
               setBreathingType('box');
             }}
@@ -87,6 +128,10 @@ export default function BreathingPage() {
           </button>
           <button
             onClick={() => {
+              if (isBreathing) {
+                saveBreathingSession();
+                setIsBreathing(false);
+              }
               setSetupComplete(prev => ({...prev, sigh: false}));
               setBreathingType('sigh');
             }}
