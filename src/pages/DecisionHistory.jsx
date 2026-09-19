@@ -82,6 +82,9 @@ export default function DecisionHistory() {
   };
 
   const formatTagName = (toolType) => {
+    // Special case for if-then-planning
+    if (toolType === 'if_then_planning') return 'If-Then Plan';
+
     const words = toolType
       .split(/[-_]/)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1));
