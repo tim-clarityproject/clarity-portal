@@ -51,16 +51,45 @@ export default function GoalSetting() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '48px' }}>
-          {location.state?.problemTitle && (
-            <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {location.state.problemTitle}
-            </p>
-          )}
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>
-            {path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}
-          </h1>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+        <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
+              {path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}
+            </h1>
+            {location.state?.problemTitle && (
+              <p style={{ fontSize: '14px', color: '#999', fontWeight: '400', margin: 0, marginBottom: '24px' }}>
+                {location.state.problemTitle}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/my-decisions', { state: { isGuest } })}
+            style={{
+              padding: '10px 16px',
+              backgroundColor: 'transparent',
+              border: '1px solid #e5e5e5',
+              color: '#333',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              borderRadius: '6px',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+              marginTop: '4px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#F08571';
+              e.currentTarget.style.backgroundColor = '#FEE5DE';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            My Decisions
+          </button>
+        </div>
           <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
             <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
           </div>
