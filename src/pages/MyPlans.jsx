@@ -256,6 +256,18 @@ export default function MyPlans() {
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
+                      {plan.tool_type === 'plan_meeting' && plan.form_data && (
+                        <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
+                          {plan.form_data.date && plan.form_data.time
+                            ? `${new Date(plan.form_data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} ${new Date(`2000-01-01T${plan.form_data.time}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+                            : plan.form_data.date
+                              ? new Date(plan.form_data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                              : ''
+                          }
+                        </p>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <button
                         onClick={(e) => handleEdit(plan, e)}
                         title="Edit plan"
