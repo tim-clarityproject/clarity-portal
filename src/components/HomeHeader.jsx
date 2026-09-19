@@ -22,7 +22,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
   // On Welcome page, delay mission display until greeting is shown
   useEffect(() => {
     if (delayMission) {
-      const timer = setTimeout(() => setDisplayMission(true), 2000);
+      const timer = setTimeout(() => setDisplayMission(true), 3500);
       return () => clearTimeout(timer);
     } else {
       setDisplayMission(true);
@@ -113,35 +113,48 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
 
       {/* Center Mission Display - Absolutely Positioned for True Centering */}
       {contextMission && contextShowInHeader && displayMission && (
-        <div style={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          pointerEvents: 'none',
-          maxWidth: 'calc(100vw - 200px)',
-        }}>
+        <>
+          <style>{`
+            @keyframes fadeInMission {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+          `}</style>
           <div style={{
-            background: 'white',
-            padding: '12px 24px',
-            borderRadius: '8px',
-            border: '1px solid #e5e5e5',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-            wordBreak: 'break-word',
-            overflowWrap: 'break-word',
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            maxWidth: 'calc(100vw - 200px)',
+            animation: 'fadeInMission 0.8s ease-in-out',
           }}>
-            <span style={{
-              fontSize: '16px',
-              fontWeight: '600',
-              lineHeight: '1.5',
-              letterSpacing: '0.3px',
-              display: 'block',
-              textAlign: 'center',
+            <div style={{
+              background: 'white',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: '1px solid #e5e5e5',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
             }}>
-              <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{contextMission}</span>
-            </span>
+              <span style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                lineHeight: '1.5',
+                letterSpacing: '0.3px',
+                display: 'block',
+                textAlign: 'center',
+              }}>
+                <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{contextMission}</span>
+              </span>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Menu Dropdown */}
