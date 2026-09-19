@@ -1,21 +1,50 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect, useContext } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function HomeHeader({ isGuest = false }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
+  const [personalGoal, setPersonalGoal] = useState('');
+  const [showGoal, setShowGoal] = useState(true);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
 
+
+  useEffect(() => {
+    if (user && !isGuest) {
+      const fetchGoal = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('personal_goal')
+            .eq('id', user.id)
+            .single();
+
+          if (data?.personal_goal) {
+            setPersonalGoal(data.personal_goal);
+            const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
+            if (savedVisibility !== null) {
+              setShowGoal(JSON.parse(savedVisibility));
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching goal:', error);
+        }
+      };
+
+      fetchGoal();
+    }
+  }, [user, isGuest]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -54,18 +83,115 @@ export default function HomeHeader({ isGuest = false }) {
     setMenuOpen(false);
   };
 
+  const handleToggleGoalVisibility = () => {
+    const newVisibility = !showGoal;
+    setShowGoal(newVisibility);
+    if (user) {
+      localStorage.setItem(`goal-visibility-${user.id}`, JSON.stringify(newVisibility));
+    }
+  };
+
   return (
     <div
-      ref={headerRef}
       style={{
-        padding: '0px 32px',
-        borderBottom: '1px solid #f0f0f0',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'relative',
+        flexDirection: 'column',
       }}
     >
+      {/* Personal Goal Banner */}
+      {personalGoal && showGoal && (
+        <div
+          style={{
+            backgroundColor: '#FEE5DE',
+            padding: '12px 32px',
+            borderBottom: '1px solid #F08571',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#F08571', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              My Purpose
+            </span>
+            <span style={{ fontSize: '14px', color: '#333', fontWeight: '500' }}>
+              {personalGoal}
+            </span>
+          </div>
+          <button
+            onClick={handleToggleGoalVisibility}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: '#F08571',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            title="Hide goal"
+          >
+            <EyeOff size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Goal Hidden Indicator */}
+      {personalGoal && !showGoal && (
+        <div
+          style={{
+            backgroundColor: '#f9f9f9',
+            padding: '8px 32px',
+            borderBottom: '1px solid #e5e5e5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <button
+            onClick={handleToggleGoalVisibility}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: '#999',
+              cursor: 'pointer',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'all 0.2s',
+              padding: '4px 8px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#F08571';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#999';
+            }}
+            title="Show goal"
+          >
+            <Eye size={14} />
+            <span>Show purpose</span>
+          </button>
+        </div>
+      )}
+
+      <div
+        ref={headerRef}
+        style={{
+          padding: '0px 32px',
+          borderBottom: '1px solid #f0f0f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
+        }}
+      >
       {/* Hamburger Menu */}
       <button
         ref={hamburgerRef}
@@ -611,7 +737,7 @@ export default function HomeHeader({ isGuest = false }) {
           />
         </a>
       </div>
-
+    </div>
     </div>
   );
 }

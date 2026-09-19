@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 import BreathingGuide from '../components/BreathingGuide';
+import GoalSetupModal from '../components/GoalSetupModal';
 
 const ALL_PROBLEMS = [
   // Plan
@@ -39,7 +40,36 @@ export default function Welcome() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
   const [showGreetingText, setShowGreetingText] = useState(false);
+  const [showGoalSetup, setShowGoalSetup] = useState(false);
   const isGuest = location.state?.isGuest || false;
+
+  // Show goal setup modal for new users
+  useEffect(() => {
+    if (isGuest || !user) return;
+
+    const goalSetupShown = localStorage.getItem(`goal-setup-shown-${user.id}`);
+    if (!goalSetupShown) {
+      // Check if user has already set a goal
+      const checkGoal = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('personal_goal')
+            .eq('id', user.id)
+            .single();
+
+          if (!data?.personal_goal) {
+            setShowGoalSetup(true);
+          }
+          localStorage.setItem(`goal-setup-shown-${user.id}`, 'true');
+        } catch (error) {
+          console.error('Error checking goal:', error);
+        }
+      };
+
+      checkGoal();
+    }
+  }, [user, isGuest]);
 
   // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
@@ -170,6 +200,7 @@ export default function Welcome() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
+      <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}

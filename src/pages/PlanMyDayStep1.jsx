@@ -19,6 +19,10 @@ export default function PlanMyDayStep1() {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    console.log('[PlanMyDayStep1] mounted/updated. location.state:', location.state, '-> decisionId:', decisionId, 'isEditMode:', isEditMode);
+  }, [location.state, decisionId, isEditMode]);
+
   const handleSave = async () => {
     if (!user && !isGuest) {
       alert('Please log in to save');
@@ -42,9 +46,11 @@ export default function PlanMyDayStep1() {
 
       let resultDecisionId = decisionId;
 
+      console.log('[PlanMyDayStep1] handleSave: decisionId =', decisionId, 'isEditMode =', isEditMode, '-> branch:', (isEditMode && decisionId) ? 'UPDATE' : 'INSERT');
+
       if (isEditMode && decisionId) {
         // Update existing decision (edit mode)
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .update({
             form_data: formData,
@@ -54,9 +60,15 @@ export default function PlanMyDayStep1() {
             updated_at: new Date().toISOString(),
           })
           .eq('id', decisionId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .select();
+
+        console.log('[PlanMyDayStep1] UPDATE result: rows affected =', data?.length, 'error =', error);
 
         if (error) throw error;
+        if (!data || data.length === 0) {
+          console.warn('[PlanMyDayStep1] UPDATE matched 0 rows for decisionId', decisionId, '- check that this id exists and belongs to user', user.id);
+        }
       } else {
         // Create new decision
         const { data, error } = await supabase
@@ -70,6 +82,8 @@ export default function PlanMyDayStep1() {
             draft: false,
           }])
           .select();
+
+        console.log('[PlanMyDayStep1] INSERT result: new id =', data?.[0]?.id, 'error =', error);
 
         if (error) throw error;
         resultDecisionId = data?.[0]?.id;

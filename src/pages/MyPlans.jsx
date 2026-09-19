@@ -66,7 +66,9 @@ export default function MyPlans() {
       plan_meeting: '/plan-meeting',
     };
     const editPage = editPageMap[plan.tool_type] || '/plan-my-day';
-    navigate(editPage, { state: { isGuest, decisionId: plan.id, ...plan.form_data } });
+    const navState = { isGuest, decisionId: plan.id, ...plan.form_data };
+    console.log('[MyPlans] handleEdit -> navigating to', editPage, 'with state:', navState);
+    navigate(editPage, { state: navState });
   };
 
   const handleDelete = async (planId, e) => {
@@ -198,11 +200,20 @@ export default function MyPlans() {
                 return true;
               })
               .map((plan) => (
-                <button
+                <div
                   key={plan.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     const route = plan.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/meeting-summary';
                     navigate(route, { state: { isGuest, decisionId: plan.id, ...plan } });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      const route = plan.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/meeting-summary';
+                      navigate(route, { state: { isGuest, decisionId: plan.id, ...plan } });
+                    }
                   }}
                   style={{
                     padding: '16px',
@@ -291,7 +302,7 @@ export default function MyPlans() {
                       </button>
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
           </div>
         )}

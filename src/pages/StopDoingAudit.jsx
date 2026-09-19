@@ -92,14 +92,22 @@ export default function StopDoingAudit() {
       let savedId = decisionId;
 
       if (isEditMode && decisionId) {
-        await supabase
+        console.log('[StopDoingAudit] handleSave: decisionId =', decisionId, '-> branch: UPDATE');
+        const { data, error } = await supabase
           .from('decisions')
           .update({
             form_data: formData,
             updated_at: new Date().toISOString(),
           })
           .eq('id', decisionId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .select();
+
+        console.log('[StopDoingAudit] UPDATE result: rows affected =', data?.length, 'error =', error);
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          console.warn('[StopDoingAudit] UPDATE matched 0 rows for decisionId', decisionId);
+        }
       } else {
         const { data, error } = await supabase
           .from('decisions')
