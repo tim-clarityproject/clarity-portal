@@ -82,8 +82,9 @@ export default function DecisionHistory() {
   };
 
   const formatTagName = (toolType) => {
-    // Special case for if-then-planning
+    // Special cases
     if (toolType === 'if_then_planning') return 'If-Then Plan';
+    if (toolType === 'grow') return 'GROW';
 
     const words = toolType
       .split(/[-_]/)

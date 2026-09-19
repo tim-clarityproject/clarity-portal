@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Download, Mail, X } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -16,7 +16,6 @@ export default function MeetingSummary() {
   const [meeting, setMeeting] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [emailInput, setEmailInput] = useState('');
 
   useEffect(() => {
     if (decisionId && user) {
@@ -63,15 +62,6 @@ export default function MeetingSummary() {
 
   const handleDownloadPDF = () => {
     window.print();
-  };
-
-  const handleSendEmail = () => {
-    if (!emailInput.trim()) {
-      alert('Please enter at least one email address');
-      return;
-    }
-    // TODO: Integrate with email service
-    alert('Email feature coming soon');
   };
 
   if (isLoading) {
@@ -203,7 +193,7 @@ export default function MeetingSummary() {
 
         <style>{`
           @page {
-            margin: 0.4in 0.5in;
+            margin: 0.3in 0.4in;
             padding: 0;
           }
 
@@ -216,6 +206,7 @@ export default function MeetingSummary() {
             }
             .page-container {
               padding: 0 !important;
+              max-width: 100% !important;
             }
             * {
               -webkit-print-color-adjust: exact !important;
@@ -228,16 +219,28 @@ export default function MeetingSummary() {
             }
             h1 {
               margin-top: 0 !important;
-              margin-bottom: 8px !important;
+              margin-bottom: 6px !important;
               page-break-after: avoid;
+              font-size: 18px !important;
             }
             h2 {
               page-break-after: avoid;
-              margin-top: 4px !important;
-              margin-bottom: 4px !important;
+              margin-top: 2px !important;
+              margin-bottom: 3px !important;
+              font-size: 12px !important;
+            }
+            p {
+              margin: 0 !important;
+              font-size: 12px !important;
             }
             div {
               page-break-inside: avoid;
+            }
+            table {
+              font-size: 11px !important;
+            }
+            td, th {
+              padding: 4px 6px !important;
             }
           }
         `}</style>
@@ -284,9 +287,6 @@ export default function MeetingSummary() {
         <button
           onClick={() => setShareModalOpen(true)}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
             padding: '10px 20px',
             backgroundColor: '#F08571',
             color: 'white',
@@ -300,7 +300,6 @@ export default function MeetingSummary() {
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e07560'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F08571'}
         >
-          <Mail size={16} />
           Share
         </button>
       </div>
@@ -387,45 +386,6 @@ export default function MeetingSummary() {
               </div>
             </button>
 
-            {/* Email Option */}
-            <div style={{ paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
-              <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email to Attendees</p>
-              <input
-                type="email"
-                placeholder="Enter email addresses (comma separated)"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                  marginBottom: '12px',
-                }}
-              />
-              <button
-                onClick={handleSendEmail}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  backgroundColor: '#F08571',
-                  color: 'white',
-                  fontWeight: '600',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-              >
-                Send PDF
-              </button>
-            </div>
           </div>
         </>
       )}
