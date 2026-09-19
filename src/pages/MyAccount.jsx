@@ -12,6 +12,7 @@ export default function MyAccount() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [personalGoal, setPersonalGoal] = useState('');
+  const [showGoalInHeader, setShowGoalInHeader] = useState(true);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBreathingSettings, setShowBreathingSettings] = useState(false);
@@ -70,6 +71,12 @@ export default function MyAccount() {
           setLastName(profile.last_name || '');
           setPersonalGoal(profile.personal_goal || '');
         }
+
+        // Load goal visibility from localStorage
+        const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
+        if (savedVisibility !== null) {
+          setShowGoalInHeader(JSON.parse(savedVisibility));
+        }
       } catch (error) {
         console.error('Error fetching user data:', error);
       } finally {
@@ -80,10 +87,18 @@ export default function MyAccount() {
     fetchUserData();
   }, [user]);
 
+  const handleToggleGoalVisibility = () => {
+    const newVisibility = !showGoalInHeader;
+    setShowGoalInHeader(newVisibility);
+    if (user) {
+      localStorage.setItem(`goal-visibility-${user.id}`, JSON.stringify(newVisibility));
+    }
+  };
+
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} personalGoal={personalGoal} />
+      <HomeHeader isGuest={isGuest} personalGoal={showGoalInHeader ? personalGoal : ''} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '32px' }}>
@@ -145,41 +160,90 @@ export default function MyAccount() {
             borderRadius: '12px',
             border: '1px solid #e5e5e5',
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            flexDirection: 'column',
+            gap: '24px',
           }}>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px', margin: 0 }}>
-                Personal Goal
-              </h3>
-              <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
-                {personalGoal || 'No goal set yet'}
-              </p>
+            {/* Goal Display */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px', margin: 0 }}>
+                  Personal Goal
+                </h3>
+                <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                  {personalGoal || 'No goal set yet'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowGoalModal(true)}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: 'transparent',
+                  border: '2px solid #F08571',
+                  borderRadius: '8px',
+                  color: '#F08571',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                  marginLeft: '16px',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#FEE5DE';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                }}
+              >
+                Edit
+              </button>
             </div>
-            <button
-              onClick={() => setShowGoalModal(true)}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'transparent',
-                border: '2px solid #F08571',
-                borderRadius: '8px',
-                color: '#F08571',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-                flexShrink: 0,
-                marginLeft: '16px',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#FEE5DE';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              Edit
-            </button>
+
+            {/* Visibility Toggle */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingTop: '16px',
+              borderTop: '1px solid #e5e5e5',
+            }}>
+              <div>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px', margin: 0 }}>
+                  Show in Header
+                </h3>
+                <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                  Display your goal in the page heading
+                </p>
+              </div>
+              <button
+                onClick={handleToggleGoalVisibility}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: showGoalInHeader ? '#F08571' : '#e5e5e5',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: 'white',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                  marginLeft: '16px',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.opacity = '0.8';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.opacity = '1';
+                }}
+              >
+                {showGoalInHeader ? 'Visible' : 'Hidden'}
+              </button>
+            </div>
           </div>
         </div>
 

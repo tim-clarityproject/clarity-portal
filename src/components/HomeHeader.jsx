@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect, useContext } from 'react';
-import { ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -14,7 +14,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
   const [personalGoal, setPersonalGoal] = useState(propGoal);
-  const [showGoal, setShowGoal] = useState(true);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
@@ -36,10 +35,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
 
           if (data?.personal_goal) {
             setPersonalGoal(data.personal_goal);
-            const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
-            if (savedVisibility !== null) {
-              setShowGoal(JSON.parse(savedVisibility));
-            }
           }
         } catch (error) {
           console.error('Error fetching goal:', error);
@@ -87,13 +82,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
     setMenuOpen(false);
   };
 
-  const handleToggleGoalVisibility = () => {
-    const newVisibility = !showGoal;
-    setShowGoal(newVisibility);
-    if (user) {
-      localStorage.setItem(`goal-visibility-${user.id}`, JSON.stringify(newVisibility));
-    }
-  };
 
   return (
     <div
@@ -140,30 +128,11 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       </button>
 
       {/* Center Goal Display */}
-      {personalGoal && showGoal && (
-        <div style={{ flex: 1, textAlign: 'center', minHeight: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+      {personalGoal && (
+        <div style={{ flex: 1, textAlign: 'center', minHeight: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ fontSize: '18px', fontWeight: '600', color: '#F08571', lineHeight: '1.4' }}>
-            {personalGoal}
+            Your Goal: {personalGoal}
           </span>
-          <button
-            onClick={handleToggleGoalVisibility}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#ccc',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '4px',
-              transition: 'color 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#999'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#ccc'}
-            title="Hide goal"
-          >
-            <EyeOff size={16} />
-          </button>
         </div>
       )}
 
