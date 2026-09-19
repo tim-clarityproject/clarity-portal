@@ -129,10 +129,25 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
 
       {/* Center Goal Display */}
       {personalGoal && (
-        <div style={{ flex: 1, textAlign: 'center', minHeight: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '18px', fontWeight: '600', color: '#F08571', lineHeight: '1.4' }}>
-            Your Goal: {personalGoal}
-          </span>
+        <div style={{ flex: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', px: '16px' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(240, 133, 113, 0.05) 0%, rgba(240, 133, 113, 0.02) 100%)',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            border: '1px solid rgba(240, 133, 113, 0.1)',
+            boxShadow: '0 2px 8px rgba(240, 133, 113, 0.08)',
+            backdropFilter: 'blur(4px)',
+          }}>
+            <span style={{
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#F08571',
+              lineHeight: '1.5',
+              letterSpacing: '0.3px',
+            }}>
+              Your Goal: <span style={{ fontWeight: '700', opacity: 0.95 }}>{personalGoal}</span>
+            </span>
+          </div>
         </div>
       )}
 

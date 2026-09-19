@@ -155,25 +155,27 @@ export default function MyAccount() {
           </h2>
 
           <div style={{
-            padding: '24px',
-            backgroundColor: '#fafafa',
+            padding: '28px',
+            background: 'linear-gradient(135deg, rgba(240, 133, 113, 0.04) 0%, rgba(255, 255, 255, 0.4) 100%)',
             borderRadius: '12px',
-            border: '1px solid #e5e5e5',
+            border: '1px solid rgba(240, 133, 113, 0.12)',
             display: 'flex',
             flexDirection: 'column',
             gap: '24px',
+            boxShadow: '0 2px 12px rgba(240, 133, 113, 0.06)',
           }}>
             {/* Goal Display */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              padding: '16px 0',
             }}>
               <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px', margin: 0 }}>
+                <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#F08571', marginBottom: '8px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Personal Goal
                 </h3>
-                <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                <p style={{ fontSize: '15px', color: '#333', margin: 0, fontWeight: '500', lineHeight: '1.6' }}>
                   {personalGoal || 'No goal set yet'}
                 </p>
               </div>
@@ -208,37 +210,44 @@ export default function MyAccount() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              paddingTop: '16px',
-              borderTop: '1px solid #e5e5e5',
+              paddingTop: '20px',
+              borderTop: '1px solid rgba(240, 133, 113, 0.15)',
             }}>
               <div>
-                <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px', margin: 0 }}>
+                <h3 style={{ fontSize: '13px', fontWeight: '700', color: '#F08571', marginBottom: '6px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Show in Header
                 </h3>
-                <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                <p style={{ fontSize: '13px', color: '#777', margin: 0, lineHeight: '1.5' }}>
                   Display your goal in the page heading
                 </p>
               </div>
               <button
                 onClick={handleToggleGoalVisibility}
                 style={{
-                  padding: '8px 16px',
-                  backgroundColor: showGoalInHeader ? '#F08571' : '#e5e5e5',
+                  padding: '10px 20px',
+                  backgroundColor: showGoalInHeader ? '#F08571' : '#e8e8e8',
                   border: 'none',
-                  borderRadius: '6px',
-                  color: 'white',
+                  borderRadius: '8px',
+                  color: showGoalInHeader ? 'white' : '#666',
                   fontWeight: '600',
                   cursor: 'pointer',
                   fontSize: '13px',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   flexShrink: 0,
                   marginLeft: '16px',
+                  boxShadow: showGoalInHeader ? '0 4px 12px rgba(240, 133, 113, 0.3)' : 'none',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.opacity = '0.8';
+                  e.target.style.transform = 'translateY(-2px)';
+                  if (showGoalInHeader) {
+                    e.target.style.boxShadow = '0 6px 16px rgba(240, 133, 113, 0.4)';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.opacity = '1';
+                  e.target.style.transform = 'translateY(0)';
+                  if (showGoalInHeader) {
+                    e.target.style.boxShadow = '0 4px 12px rgba(240, 133, 113, 0.3)';
+                  }
                 }}
               >
                 {showGoalInHeader ? 'Visible' : 'Hidden'}
