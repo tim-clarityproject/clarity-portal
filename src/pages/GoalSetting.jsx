@@ -90,9 +90,8 @@ export default function GoalSetting() {
             My Decisions
           </button>
         </div>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
-            <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
-          </div>
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
+          <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
