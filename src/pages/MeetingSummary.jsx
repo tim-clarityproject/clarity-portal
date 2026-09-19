@@ -123,7 +123,7 @@ export default function MeetingSummary() {
           className="no-print"
         >
           <ChevronLeft size={18} />
-          Back to Plans
+          Back to Meeting Plans
         </button>
 
         {/* Meeting Title - Only on Screen */}
