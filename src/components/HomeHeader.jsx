@@ -123,8 +123,13 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
                 opacity: 1;
               }
             }
+            @media (max-width: 900px) {
+              .mission-container {
+                display: none !important;
+              }
+            }
           `}</style>
-          <div style={{
+          <div className="mission-container" style={{
             position: 'absolute',
             left: '50%',
             top: '50%',

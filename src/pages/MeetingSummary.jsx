@@ -100,7 +100,7 @@ export default function MeetingSummary() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader isGuest={isGuest} className="no-print" />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
         <BackArrow />
@@ -216,6 +216,9 @@ export default function MeetingSummary() {
             body, html {
               margin: 0 !important;
               padding: 0 !important;
+            }
+            body::before, body::after {
+              display: none !important;
             }
             h1 {
               margin-top: 0 !important;

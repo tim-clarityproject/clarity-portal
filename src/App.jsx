@@ -176,8 +176,10 @@ export default function App() {
         <FormProvider>
           <BrowserRouter>
             <AppContent />
-            <BreathButton />
-            <WhatsAppWidget />
+            <div className="no-print">
+              <BreathButton />
+              <WhatsAppWidget />
+            </div>
           </BrowserRouter>
         </FormProvider>
       </MissionProvider>
