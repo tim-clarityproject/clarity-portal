@@ -166,7 +166,10 @@ export default function MyPlans() {
           <div style={{ textAlign: 'center', paddingTop: '32px' }}>
             <p style={{ color: '#999', fontSize: '14px', marginBottom: '16px' }}>No plans yet</p>
             <button
-              onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
+              onClick={() => {
+                const route = filter === 'meetings' ? '/plan-meeting' : '/plan-my-day';
+                navigate(route, { state: { isGuest } });
+              }}
               style={{
                 padding: '12px 24px',
                 backgroundColor: '#F08571',
@@ -322,7 +325,10 @@ export default function MyPlans() {
         zIndex: 10,
       }}>
         <button
-          onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
+          onClick={() => {
+            const route = filter === 'meetings' ? '/plan-meeting' : '/plan-my-day';
+            navigate(route, { state: { isGuest } });
+          }}
           style={{
             padding: '10px 20px',
             backgroundColor: 'transparent',

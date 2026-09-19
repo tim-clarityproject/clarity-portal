@@ -11,6 +11,7 @@ export default function ToughConversationStep1Feedback() {
   const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
+  const isEditMode = Boolean(decisionId);
 
   // Only use location.state data, never initialize from localStorage on fresh start
   const isFreshStart = !location.state?.decisionId && !location.state?.observation;
@@ -68,13 +69,19 @@ export default function ToughConversationStep1Feedback() {
         need,
       };
 
-      if (decisionId) {
-        const { error } = await supabase
+      if (isEditMode && decisionId) {
+        console.log('[ToughConversation] handleSave: decisionId =', decisionId, '-> branch: UPDATE');
+        const { data: updateData, error } = await supabase
           .from('decisions')
-          .update({ form_data: data, draft: true, status: 'draft' })
+          .update({ form_data: data, draft: true, status: 'draft', updated_at: new Date().toISOString() })
           .eq('id', decisionId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .select();
+        console.log('[ToughConversation] UPDATE result: rows affected =', updateData?.length, 'error =', error);
         if (error) throw error;
+        if (!updateData || updateData.length === 0) {
+          console.warn('[ToughConversation] UPDATE matched 0 rows for decisionId', decisionId);
+        }
       } else {
         const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         const { error } = await supabase
