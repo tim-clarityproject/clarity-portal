@@ -25,8 +25,13 @@ export default function MeetingSummary() {
   }, [decisionId, user]);
 
   const loadMeeting = async () => {
-    if (!user) return;
+    if (!user) {
+      console.warn('[MeetingSummary] loadMeeting: no user');
+      setIsLoading(false);
+      return;
+    }
     try {
+      console.log('[MeetingSummary] loadMeeting: fetching decisionId =', decisionId, 'user =', user.id);
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
@@ -34,11 +39,19 @@ export default function MeetingSummary() {
         .eq('user_id', user.id)
         .single();
 
+      if (error) {
+        console.error('[MeetingSummary] Query error:', error);
+        throw error;
+      }
+
       if (data) {
+        console.log('[MeetingSummary] Meeting loaded successfully:', data.id);
         setMeeting(data);
+      } else {
+        console.warn('[MeetingSummary] No data returned for decisionId', decisionId);
       }
     } catch (error) {
-      console.error('Error loading meeting:', error);
+      console.error('[MeetingSummary] Error loading meeting:', error.message);
     } finally {
       setIsLoading(false);
     }

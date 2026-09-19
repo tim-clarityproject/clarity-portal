@@ -21,6 +21,7 @@ export default function DailyPlanSummary() {
 
   const loadPlan = async () => {
     try {
+      console.log('[DailyPlanSummary] loadPlan: fetching decisionId =', decisionId, 'user =', user.id);
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
@@ -28,11 +29,19 @@ export default function DailyPlanSummary() {
         .eq('user_id', user.id)
         .single();
 
+      if (error) {
+        console.error('[DailyPlanSummary] Query error:', error);
+        throw error;
+      }
+
       if (data) {
+        console.log('[DailyPlanSummary] Plan loaded successfully:', data.id);
         setPlan(data);
+      } else {
+        console.warn('[DailyPlanSummary] No data returned for decisionId', decisionId);
       }
     } catch (error) {
-      console.error('Error loading plan:', error);
+      console.error('[DailyPlanSummary] Error loading plan:', error.message);
     } finally {
       setIsLoading(false);
     }
