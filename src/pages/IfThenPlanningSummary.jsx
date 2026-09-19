@@ -124,31 +124,32 @@ export default function IfThenPlanningSummary() {
           Contingency plans for uncertain situations
         </p>
 
-        {/* Scenarios Table */}
+        {/* Scenarios */}
         {items && items.length > 0 && (
-          <div style={{ marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Scenarios</h2>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #e5e5e5', backgroundColor: '#fafafa' }}>
-                    <th style={{ padding: '10px', textAlign: 'left', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>When This Happens</th>
-                    <th style={{ padding: '10px', textAlign: 'left', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>My Response Will Be</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, index) => (
-                    <tr key={index} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: '10px', color: '#333', fontWeight: '500' }}>{item.ifCondition}</td>
-                      <td style={{ padding: '10px', color: '#666' }}>{item.thenAction}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div style={{ marginBottom: '0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {items.map((item, index) => (
+                <div key={index} style={{
+                  backgroundColor: '#f9f9f9',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '24px',
+                  alignItems: 'start',
+                }}>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>When This Happens</p>
+                    <p style={{ fontSize: '13px', color: '#333', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>{item.ifCondition}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>My Response Will Be</p>
+                    <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.5' }}>{item.thenAction}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <p style={{ fontSize: '11px', color: '#999', marginTop: '8px', marginBottom: 0, fontWeight: '600' }}>
-              Total scenarios: {items.length}
-            </p>
           </div>
         )}
 
