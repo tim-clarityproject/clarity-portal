@@ -180,7 +180,7 @@ export default function MyAccount() {
                   {personalGoal || 'No mission set yet'}
                 </p>
                 <p style={{ fontSize: '12px', color: '#bbb', margin: '6px 0 0 0' }}>
-                  Max 50 characters
+                  {personalGoal.length}/50 characters
                 </p>
               </div>
               <button
