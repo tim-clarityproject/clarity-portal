@@ -2,10 +2,17 @@ import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
+const MAX_GOAL_LENGTH = 120;
+const MAX_GOAL_WORDS = 20;
+
 export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoalSaved }) {
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(currentGoal);
   const [isSaving, setIsSaving] = useState(false);
+
+  const wordCount = goal.trim().split(/\s+/).filter(word => word.length > 0).length;
+  const charCount = goal.length;
+  const isOverLimit = charCount > MAX_GOAL_LENGTH || wordCount > MAX_GOAL_WORDS;
 
   useEffect(() => {
     setGoal(currentGoal);
@@ -79,12 +86,13 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
 
         <textarea
           value={goal}
-          onChange={(e) => setGoal(e.target.value)}
+          onChange={(e) => setGoal(e.target.value.slice(0, MAX_GOAL_LENGTH))}
           placeholder="e.g., Be a world-leading high-performance coach"
+          maxLength={MAX_GOAL_LENGTH}
           style={{
             width: '100%',
             padding: '12px 16px',
-            border: '2px solid #e5e5e5',
+            border: '2px solid ' + (isOverLimit ? '#F08571' : '#e5e5e5'),
             borderRadius: '8px',
             fontSize: '14px',
             fontFamily: 'inherit',
@@ -93,9 +101,23 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
             boxSizing: 'border-box',
             transition: 'border-color 0.2s',
           }}
-          onFocus={(e) => e.target.style.borderColor = '#F08571'}
-          onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+          onFocus={(e) => !isOverLimit && (e.target.style.borderColor = '#F08571')}
+          onBlur={(e) => e.target.style.borderColor = isOverLimit ? '#F08571' : '#e5e5e5'}
         />
+
+        {/* Character and Word Counter */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+          <div style={{ fontSize: '12px', color: isOverLimit ? '#F08571' : '#999' }}>
+            <span>{charCount}/{MAX_GOAL_LENGTH} characters</span>
+            <span style={{ margin: '0 8px' }}>•</span>
+            <span>{wordCount}/{MAX_GOAL_WORDS} words</span>
+          </div>
+          {isOverLimit && (
+            <span style={{ fontSize: '12px', color: '#F08571', fontWeight: '600' }}>
+              Limit exceeded
+            </span>
+          )}
+        </div>
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
           <button
@@ -124,28 +146,29 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
           </button>
           <button
             onClick={handleSave}
-            disabled={!goal.trim() || isSaving}
+            disabled={!goal.trim() || isSaving || isOverLimit}
             style={{
               padding: '10px 20px',
-              backgroundColor: goal.trim() ? '#F08571' : '#d9d9d9',
+              backgroundColor: (goal.trim() && !isOverLimit) ? '#F08571' : '#d9d9d9',
               border: 'none',
               borderRadius: '6px',
               fontSize: '14px',
               fontWeight: '600',
               color: 'white',
-              cursor: goal.trim() ? 'pointer' : 'not-allowed',
+              cursor: (goal.trim() && !isOverLimit) ? 'pointer' : 'not-allowed',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              if (goal.trim()) {
+              if (goal.trim() && !isOverLimit) {
                 e.currentTarget.style.backgroundColor = '#e07560';
               }
             }}
             onMouseLeave={(e) => {
-              if (goal.trim()) {
+              if (goal.trim() && !isOverLimit) {
                 e.currentTarget.style.backgroundColor = '#F08571';
               }
             }}
+            title={isOverLimit ? 'Goal exceeds character or word limit' : ''}
           >
             {isSaving ? 'Saving...' : 'Save'}
           </button>
