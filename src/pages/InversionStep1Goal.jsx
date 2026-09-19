@@ -126,7 +126,10 @@ export default function InversionStep1Goal() {
             {location.state.problemTitle}
           </p>
         )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>What's your goal?</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>What's your goal?</h1>
+        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
+          Define what you want to achieve
+        </p>
 
         <div style={{ marginBottom: '32px' }}>
           <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '24px', overflow: 'hidden' }}>

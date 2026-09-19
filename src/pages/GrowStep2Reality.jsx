@@ -96,7 +96,10 @@ export default function GrowStep2Reality() {
             {location.state.problemTitle}
           </p>
         )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>What's the current situation?</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>What's the current situation?</h1>
+        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
+          Assess your constraints and opportunities
+        </p>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '50%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />

@@ -203,9 +203,12 @@ export default function GrowStep3bPrioritize() {
             {location.state.problemTitle}
           </p>
         )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
           Prioritize your options
         </h1>
+        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
+          Rank your best choices in order of fit
+        </p>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '75%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
