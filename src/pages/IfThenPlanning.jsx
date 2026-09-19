@@ -213,7 +213,7 @@ export default function IfThenPlanning() {
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
             If-Then Planning
           </h1>
-          <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
+          <p style={{ fontSize: '14px', color: '#999', margin: 0, lineHeight: '1.4' }}>
             Prepare for uncertain situations with contingency plans
           </p>
         </div>
