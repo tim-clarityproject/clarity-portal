@@ -25,6 +25,9 @@ export default function MyJournal() {
   const [q2, setQ2] = useState('');
   const [q3, setQ3] = useState('');
   const [q4, setQ4] = useState('');
+  const [intentionality, setIntentionality] = useState(3);
+  const [communication, setCommunication] = useState(3);
+  const [progress, setProgress] = useState(3);
   const [showNamingModal, setShowNamingModal] = useState(false);
   const [currentTitle, setCurrentTitle] = useState('');
 
@@ -41,8 +44,24 @@ export default function MyJournal() {
     { id: 'q3', label: 'What next steps will expand your performance potential?', value: q3, setter: setQ3 },
   ];
 
-  const questions = reviewType === 'progress' ? progressQuestions : afterActionQuestions;
-  const pageTitle = reviewType === 'progress' ? 'Progress Review' : 'After-Action Review';
+  const weeklyMomentumQuestions = [
+    { id: 'q1', label: 'What moved forward this week?', value: q1, setter: setQ1 },
+    { id: 'q2', label: 'What did you do better this week?', value: q2, setter: setQ2 },
+    { id: 'q3', label: "What's one priority for next week?", value: q3, setter: setQ3 },
+  ];
+
+  let questions = [];
+  let pageTitle = '';
+  if (reviewType === 'progress') {
+    questions = progressQuestions;
+    pageTitle = 'Progress Review';
+  } else if (reviewType === 'weekly-momentum') {
+    questions = weeklyMomentumQuestions;
+    pageTitle = 'Weekly Momentum Review';
+  } else {
+    questions = afterActionQuestions;
+    pageTitle = 'After-Action Review';
+  }
 
   // Clear form when review type changes
   useEffect(() => {
@@ -51,6 +70,9 @@ export default function MyJournal() {
       setQ2('');
       setQ3('');
       setQ4('');
+      setIntentionality(3);
+      setCommunication(3);
+      setProgress(3);
     }
   }, [reviewType, isEditMode]);
 
@@ -86,11 +108,17 @@ export default function MyJournal() {
           setQ2(parsed.q2 || '');
           setQ3(parsed.q3 || '');
           setQ4(parsed.q4 || '');
+          if (parsed.intentionality) setIntentionality(parsed.intentionality);
+          if (parsed.communication) setCommunication(parsed.communication);
+          if (parsed.progress) setProgress(parsed.progress);
         } catch (e) {
           setQ1('');
           setQ2('');
           setQ3('');
           setQ4('');
+          setIntentionality(3);
+          setCommunication(3);
+          setProgress(3);
         }
       } else {
         setCurrentTitle('');
@@ -127,9 +155,14 @@ export default function MyJournal() {
     setShowNamingModal(false);
     setIsSaving(true);
     try {
-      const entryContent = reviewType === 'progress'
-        ? JSON.stringify({ q1, q2, q3, reviewType })
-        : JSON.stringify({ q1, q2, q3, q4, reviewType });
+      let entryContent;
+      if (reviewType === 'progress') {
+        entryContent = JSON.stringify({ q1, q2, q3, reviewType });
+      } else if (reviewType === 'weekly-momentum') {
+        entryContent = JSON.stringify({ q1, q2, q3, intentionality, communication, progress, reviewType });
+      } else {
+        entryContent = JSON.stringify({ q1, q2, q3, q4, reviewType });
+      }
 
       const existingEntryId = location.state?.entryId;
       let savedEntryId = existingEntryId;
@@ -249,6 +282,65 @@ export default function MyJournal() {
             />
           </div>
         ))}
+
+        {reviewType === 'weekly-momentum' && (
+          <div style={sectionStyle}>
+            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '20px' }}>
+              Rate your week (1-5)
+            </h2>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={labelStyle}>Intentionality</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={intentionality}
+                  onChange={(e) => setIntentionality(parseInt(e.target.value))}
+                  style={{ flex: 1, cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
+                  {intentionality}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={labelStyle}>Communication</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={communication}
+                  onChange={(e) => setCommunication(parseInt(e.target.value))}
+                  style={{ flex: 1, cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
+                  {communication}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Progress</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={progress}
+                  onChange={(e) => setProgress(parseInt(e.target.value))}
+                  style={{ flex: 1, cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
+                  {progress}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
