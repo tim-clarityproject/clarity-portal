@@ -24,6 +24,7 @@ const ALL_PROBLEMS = [
   { id: 'stop-doing', title: 'I\'ve got too many things to do', tools: ['stop-doing-audit'], status: null, category: 'Decide' },
 
   // Review
+  { id: 'weekly-momentum', title: 'I want to review my week', tools: ['weekly-momentum'], status: null, category: 'Review' },
   { id: 'after-action', title: 'I need to review a situation', tools: ['after-action'], status: null, category: 'Review' },
   { id: 'progress', title: 'I want to review my progress', tools: ['progress'], status: null, category: 'Review' },
 ];
@@ -186,6 +187,7 @@ export default function Welcome() {
       'stop-doing-audit': '/stop-doing-audit',
       'after-action': '/my-journal',
       'progress': '/my-journal',
+      'weekly-momentum': '/my-journal',
     };
 
     const route = routeMap[tool];
@@ -193,6 +195,7 @@ export default function Welcome() {
       const state = { isGuest, ...location.state, problemTitle: problem.title };
       if (tool === 'after-action') state.reviewType = 'after-action';
       if (tool === 'progress') state.reviewType = 'progress';
+      if (tool === 'weekly-momentum') state.reviewType = 'weekly-momentum';
       navigate(route, { state });
     }
   };

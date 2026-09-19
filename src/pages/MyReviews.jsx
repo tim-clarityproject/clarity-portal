@@ -12,7 +12,7 @@ export default function MyReviews() {
   const { user } = useContext(AuthContext);
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filterType, setFilterType] = useState('all');
+  const [filterType, setFilterType] = useState('weekly-momentum');
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -89,6 +89,34 @@ export default function MyReviews() {
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>My Reviews</h1>
 
         <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+          <button
+            onClick={() => setFilterType('weekly-momentum')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: filterType === 'weekly-momentum' ? '#F08571' : 'transparent',
+              color: filterType === 'weekly-momentum' ? 'white' : '#333',
+              border: `2px solid ${filterType === 'weekly-momentum' ? '#F08571' : '#e5e5e5'}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (filterType !== 'weekly-momentum') {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (filterType !== 'weekly-momentum') {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            Weekly Momentum
+          </button>
           <button
             onClick={() => setFilterType('all')}
             style={{
@@ -211,7 +239,7 @@ export default function MyReviews() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {entry.title || (entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review')}
+                      {entry.title || (entry.review_type === 'after-action' ? 'After-Action Review' : entry.review_type === 'progress' ? 'Progress Review' : 'Weekly Momentum Review')}
                     </p>
                     <span
                       style={{
