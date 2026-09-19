@@ -62,7 +62,7 @@ export default function MyAccount() {
         // Fetch profile data
         const { data: profile } = await supabase
           .from('profiles')
-          .select('first_name, last_name, personal_goal')
+          .select('first_name, last_name, personal_goal, show_mission_in_header')
           .eq('id', user.id)
           .single();
 
@@ -70,12 +70,16 @@ export default function MyAccount() {
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
           setPersonalGoal(profile.personal_goal || '');
-        }
 
-        // Load goal visibility from localStorage
-        const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
-        if (savedVisibility !== null) {
-          setShowGoalInHeader(JSON.parse(savedVisibility));
+          // Load visibility from Supabase, fallback to localStorage
+          if (profile.show_mission_in_header !== null && profile.show_mission_in_header !== undefined) {
+            setShowGoalInHeader(profile.show_mission_in_header);
+          } else {
+            const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
+            if (savedVisibility !== null) {
+              setShowGoalInHeader(JSON.parse(savedVisibility));
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -87,11 +91,23 @@ export default function MyAccount() {
     fetchUserData();
   }, [user]);
 
-  const handleToggleGoalVisibility = () => {
+  const handleToggleGoalVisibility = async () => {
     const newVisibility = !showGoalInHeader;
     setShowGoalInHeader(newVisibility);
+
     if (user) {
-      localStorage.setItem(`goal-visibility-${user.id}`, JSON.stringify(newVisibility));
+      try {
+        // Save to Supabase
+        await supabase
+          .from('profiles')
+          .update({ show_mission_in_header: newVisibility })
+          .eq('id', user.id);
+
+        // Also save to localStorage for instant effect
+        localStorage.setItem(`goal-visibility-${user.id}`, JSON.stringify(newVisibility));
+      } catch (error) {
+        console.error('Error updating visibility preference:', error);
+      }
     }
   };
 

@@ -14,6 +14,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
   const [personalGoal, setPersonalGoal] = useState(propGoal);
+  const [showMissionInHeader, setShowMissionInHeader] = useState(true);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
@@ -29,12 +30,22 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         try {
           const { data } = await supabase
             .from('profiles')
-            .select('personal_goal')
+            .select('personal_goal, show_mission_in_header')
             .eq('id', user.id)
             .single();
 
           if (data?.personal_goal) {
             setPersonalGoal(data.personal_goal);
+
+            // Check visibility from Supabase, fallback to localStorage
+            if (data.show_mission_in_header !== null && data.show_mission_in_header !== undefined) {
+              setShowMissionInHeader(data.show_mission_in_header);
+            } else {
+              const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
+              if (savedVisibility !== null) {
+                setShowMissionInHeader(JSON.parse(savedVisibility));
+              }
+            }
           }
         } catch (error) {
           console.error('Error fetching goal:', error);
@@ -128,7 +139,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       </button>
 
       {/* Center Goal Display - Absolutely Positioned for True Centering */}
-      {personalGoal && (
+      {personalGoal && showMissionInHeader && (
         <div style={{
           position: 'absolute',
           left: '50%',
