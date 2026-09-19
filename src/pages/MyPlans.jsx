@@ -42,12 +42,15 @@ export default function MyPlans() {
   };
 
   const formatDailyPlanDateAndTime = (dateStr) => {
-    const date = new Date(dateStr);
-    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-    const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const utcDate = new Date(dateStr);
+    const userTime = new Date(utcDate.toLocaleString('en-US', { timeZone: userTimezone }));
+
+    const weekday = userTime.toLocaleDateString('en-US', { weekday: 'long' });
+    const day = userTime.getDate();
+    const month = userTime.toLocaleDateString('en-US', { month: 'short' });
+    const year = userTime.getFullYear();
+    const time = userTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const ordinal = (n) => {
       const s = ['th', 'st', 'nd', 'rd'];
       const v = n % 100;
