@@ -12,7 +12,7 @@ export default function MyPlans() {
   const { user } = useContext(AuthContext);
   const [plans, setPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState('daily-plans'); // 'daily-plans' or 'meetings'
+  const [filter, setFilter] = useState('daily-plans'); // 'daily-plans', 'meetings', or 'if-then'
   const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function MyPlans() {
         .from('decisions')
         .select('*')
         .eq('user_id', user.id)
-        .in('tool_type', ['daily_plan', 'plan_meeting'])
+        .in('tool_type', ['daily_plan', 'plan_meeting', 'if_then_planning'])
         .order('created_at', { ascending: false });
 
       if (data) {
@@ -64,6 +64,7 @@ export default function MyPlans() {
     const editPageMap = {
       daily_plan: '/plan-my-day',
       plan_meeting: '/plan-meeting',
+      if_then_planning: '/if-then-planning',
     };
     const editPage = editPageMap[plan.tool_type] || '/plan-my-day';
     const navState = { isGuest, decisionId: plan.id, ...plan.form_data };
@@ -157,6 +158,34 @@ export default function MyPlans() {
             >
               My Meetings
             </button>
+            <button
+              onClick={() => setFilter('if-then')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: filter === 'if-then' ? '#F08571' : 'transparent',
+                border: `2px solid ${filter === 'if-then' ? '#F08571' : '#e5e5e5'}`,
+                borderRadius: '6px',
+                color: filter === 'if-then' ? 'white' : '#333',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (filter !== 'if-then') {
+                  e.target.style.borderColor = '#F08571';
+                  e.target.style.backgroundColor = '#FEE5DE';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (filter !== 'if-then') {
+                  e.target.style.borderColor = '#e5e5e5';
+                  e.target.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              If-Then Planning
+            </button>
           </div>
         </div>
 
@@ -199,6 +228,8 @@ export default function MyPlans() {
                   return plan.tool_type === 'plan_meeting';
                 } else if (filter === 'daily-plans') {
                   return plan.tool_type === 'daily_plan';
+                } else if (filter === 'if-then') {
+                  return plan.tool_type === 'if_then_planning';
                 }
                 return true;
               })
@@ -208,13 +239,23 @@ export default function MyPlans() {
                   role="button"
                   tabIndex={0}
                   onClick={() => {
-                    const route = plan.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/meeting-summary';
+                    const routeMap = {
+                      daily_plan: '/daily-plan-summary',
+                      plan_meeting: '/meeting-summary',
+                      if_then_planning: '/if-then-planning-summary',
+                    };
+                    const route = routeMap[plan.tool_type] || '/daily-plan-summary';
                     navigate(route, { state: { isGuest, decisionId: plan.id, ...plan } });
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      const route = plan.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/meeting-summary';
+                      const routeMap = {
+                        daily_plan: '/daily-plan-summary',
+                        plan_meeting: '/meeting-summary',
+                        if_then_planning: '/if-then-planning-summary',
+                      };
+                      const route = routeMap[plan.tool_type] || '/daily-plan-summary';
                       navigate(route, { state: { isGuest, decisionId: plan.id, ...plan } });
                     }
                   }}
@@ -242,7 +283,7 @@ export default function MyPlans() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {plan.tool_type === 'daily_plan' ? formatDailyPlanDateAndTime(plan.created_at) : plan.title || 'Meeting'}
+                        {plan.tool_type === 'daily_plan' ? formatDailyPlanDateAndTime(plan.created_at) : plan.tool_type === 'if_then_planning' ? 'If-Then Planning' : plan.title || 'Meeting'}
                       </p>
                       <span
                         style={{
@@ -255,7 +296,7 @@ export default function MyPlans() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {plan.tool_type === 'daily_plan' ? 'Daily Plan' : 'Meeting'}
+                        {plan.tool_type === 'daily_plan' ? 'Daily Plan' : plan.tool_type === 'if_then_planning' ? 'If-Then' : 'Meeting'}
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
