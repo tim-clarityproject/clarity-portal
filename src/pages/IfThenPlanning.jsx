@@ -73,6 +73,7 @@ export default function IfThenPlanning() {
 
       let savedId = decisionId;
       if (decisionId) {
+        console.log('[IfThenPlanning] Updating existing planning with decisionId:', decisionId);
         const { data, error } = await supabase
           .from('decisions')
           .update({
@@ -87,10 +88,16 @@ export default function IfThenPlanning() {
           console.error('[IfThenPlanning] Update error:', error);
           throw error;
         }
-        if (data && data.length > 0) {
-          savedId = data[0].id;
+
+        if (!data || data.length === 0) {
+          console.error('[IfThenPlanning] SILENT FAILURE: UPDATE returned 0 rows for decisionId:', decisionId);
+          throw new Error('Failed to update planning - no rows affected');
         }
+
+        console.log('[IfThenPlanning] Update successful, got data:', data);
+        savedId = data[0].id;
       } else {
+        console.log('[IfThenPlanning] Creating new planning');
         const { data, error } = await supabase
           .from('decisions')
           .insert({
@@ -101,9 +108,18 @@ export default function IfThenPlanning() {
           })
           .select();
 
-        if (data && data.length > 0) {
-          savedId = data[0].id;
+        if (error) {
+          console.error('[IfThenPlanning] Insert error:', error);
+          throw error;
         }
+
+        if (!data || data.length === 0) {
+          console.error('[IfThenPlanning] SILENT FAILURE: INSERT returned 0 rows');
+          throw new Error('Failed to create planning - no rows returned');
+        }
+
+        console.log('[IfThenPlanning] Insert successful, got data:', data);
+        savedId = data[0].id;
       }
 
       setIsSaved(true);
