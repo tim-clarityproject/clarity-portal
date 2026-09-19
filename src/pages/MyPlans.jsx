@@ -152,7 +152,7 @@ export default function MyPlans() {
                 }
               }}
             >
-              My Meetings
+              My Meeting Plans
             </button>
           </div>
         </div>
