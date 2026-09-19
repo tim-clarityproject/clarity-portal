@@ -184,12 +184,13 @@ export default function HomeHeader({ isGuest = false }) {
       <div
         ref={headerRef}
         style={{
-          padding: '0px 32px',
+          padding: '16px 32px',
           borderBottom: '1px solid #f0f0f0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           position: 'relative',
+          gap: '32px',
         }}
       >
       {/* Hamburger Menu */}
@@ -206,6 +207,7 @@ export default function HomeHeader({ isGuest = false }) {
           flexDirection: 'column',
           gap: '4px',
           transition: 'color 0.2s',
+          flexShrink: 0,
         }}
         onMouseEnter={(e) => e.target.style.color = '#e07560'}
         onMouseLeave={(e) => e.target.style.color = '#F08571'}
@@ -214,6 +216,15 @@ export default function HomeHeader({ isGuest = false }) {
         <div style={{ width: '24px', height: '2px', backgroundColor: 'currentColor' }} />
         <div style={{ width: '24px', height: '2px', backgroundColor: 'currentColor' }} />
       </button>
+
+      {/* Center Goal Display */}
+      {personalGoal && showGoal && (
+        <div style={{ flex: 1, textAlign: 'center', minHeight: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '18px', fontWeight: '600', color: '#F08571', lineHeight: '1.4' }}>
+            {personalGoal}
+          </span>
+        </div>
+      )}
 
       {/* Menu Dropdown */}
       {menuOpen && (
@@ -707,6 +718,7 @@ export default function HomeHeader({ isGuest = false }) {
           alignItems: 'center',
           gap: '4px',
           cursor: 'pointer',
+          flexShrink: 0,
         }}
       >
         <span>Created by</span>
