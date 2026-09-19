@@ -20,11 +20,13 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
   const menuRef = useRef(null);
 
   useEffect(() => {
-    if (propGoal) {
+    // Always use propGoal if it's provided (even if empty string)
+    if (propGoal !== undefined) {
       setPersonalGoal(propGoal);
       return;
     }
 
+    // Only fetch from Supabase if no prop provided
     if (user && !isGuest) {
       const fetchGoal = async () => {
         try {
