@@ -13,6 +13,7 @@ export default function IfThenPlanning() {
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
+  const [title, setTitle] = useState('');
   const [items, setItems] = useState([{ id: 1, ifCondition: '', thenAction: '' }]);
   const [nextId, setNextId] = useState(2);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,12 +35,17 @@ export default function IfThenPlanning() {
         .eq('user_id', user.id)
         .single();
 
-      if (data && data.form_data) {
-        const formData = data.form_data;
-        if (formData.items && formData.items.length > 0) {
-          setItems(formData.items);
-          const maxId = Math.max(...formData.items.map(item => item.id || 0));
-          setNextId(maxId + 1);
+      if (data) {
+        if (data.title) {
+          setTitle(data.title);
+        }
+        if (data.form_data) {
+          const formData = data.form_data;
+          if (formData.items && formData.items.length > 0) {
+            setItems(formData.items);
+            const maxId = Math.max(...formData.items.map(item => item.id || 0));
+            setNextId(maxId + 1);
+          }
         }
       }
     } catch (error) {
@@ -77,6 +83,7 @@ export default function IfThenPlanning() {
         const { data, error } = await supabase
           .from('decisions')
           .update({
+            title: title || 'If-Then Planning',
             form_data: formData,
             updated_at: new Date().toISOString(),
           })
@@ -103,7 +110,7 @@ export default function IfThenPlanning() {
           .insert({
             user_id: user.id,
             tool_type: 'if_then_planning',
-            title: 'If-Then Planning',
+            title: title || 'If-Then Planning',
             form_data: formData,
             status: 'completed',
           })
@@ -147,6 +154,7 @@ export default function IfThenPlanning() {
         const { data, error } = await supabase
           .from('decisions')
           .update({
+            title: title || 'If-Then Planning',
             form_data: formData,
             updated_at: new Date().toISOString(),
           })
@@ -164,7 +172,7 @@ export default function IfThenPlanning() {
           .insert({
             user_id: user.id,
             tool_type: 'if_then_planning',
-            title: 'If-Then Planning',
+            title: title || 'If-Then Planning',
             form_data: formData,
           })
           .select();
@@ -208,6 +216,17 @@ export default function IfThenPlanning() {
           <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
             Prepare for uncertain situations with contingency plans
           </p>
+        </div>
+
+        <div style={{ marginBottom: '28px', backgroundColor: 'white', padding: '20px', borderRadius: '8px', borderLeft: '3px solid #F08571' }}>
+          <label style={labelStyle}>Planning Title</label>
+          <input
+            type="text"
+            placeholder="e.g., Handling project delays, Managing difficult conversations"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={inputStyle}
+          />
         </div>
 
         <div style={sectionStyle}>
