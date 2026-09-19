@@ -12,6 +12,7 @@ export default function PlanMyDayStep1() {
   const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
+  const isEditMode = Boolean(decisionId);
   const [topPriority, setTopPriority] = useState(() => location.state?.topPriority || '');
   const [showUp, setShowUp] = useState(() => location.state?.showUp || '');
   const [notDo, setNotDo] = useState(() => location.state?.notDo || '');
@@ -41,8 +42,8 @@ export default function PlanMyDayStep1() {
 
       let resultDecisionId = decisionId;
 
-      if (decisionId) {
-        // Update existing decision
+      if (isEditMode && decisionId) {
+        // Update existing decision (edit mode)
         const { error } = await supabase
           .from('decisions')
           .update({
@@ -50,6 +51,7 @@ export default function PlanMyDayStep1() {
             title,
             status: 'completed',
             draft: false,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', decisionId)
           .eq('user_id', user.id);

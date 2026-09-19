@@ -29,6 +29,7 @@ export default function PlanMeeting() {
   const [preReads, setPreReads] = useState('');
   const [meetingContext, setMeetingContext] = useState('');
   const dropdownRef = useRef(null);
+  const isEditMode = Boolean(decisionId);
 
   const availableSections = [
     { id: 'context', label: 'Meeting Context' },
@@ -156,7 +157,7 @@ export default function PlanMeeting() {
       };
 
       let savedId = decisionId;
-      if (decisionId) {
+      if (isEditMode && decisionId) {
         await supabase
           .from('decisions')
           .update({

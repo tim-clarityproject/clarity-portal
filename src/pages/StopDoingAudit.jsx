@@ -19,6 +19,7 @@ export default function StopDoingAudit() {
   const [timeUse, setTimeUse] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const isEditMode = Boolean(decisionId);
 
   useEffect(() => {
     if (decisionId && user && !isGuest) {
@@ -90,7 +91,7 @@ export default function StopDoingAudit() {
       const formData = { items, firstAction, timeUse };
       let savedId = decisionId;
 
-      if (decisionId) {
+      if (isEditMode && decisionId) {
         await supabase
           .from('decisions')
           .update({
