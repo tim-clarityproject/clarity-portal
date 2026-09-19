@@ -16,16 +16,28 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
 
     setIsSaving(true);
     try {
-      await supabase
+      console.log('[PersonalGoalModal] handleSave: user =', user.id, 'goal =', goal.trim());
+      const { data, error } = await supabase
         .from('profiles')
         .update({ personal_goal: goal.trim() })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
 
+      console.log('[PersonalGoalModal] UPDATE result: data =', data, 'error =', error);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        console.warn('[PersonalGoalModal] UPDATE matched 0 rows for user', user.id);
+        alert('Failed to save goal - no rows updated');
+        setIsSaving(false);
+        return;
+      }
+
+      console.log('[PersonalGoalModal] Goal saved successfully');
       onGoalSaved(goal.trim());
       onClose();
     } catch (error) {
-      console.error('Error saving goal:', error);
-      alert('Failed to save goal');
+      console.error('[PersonalGoalModal] Error saving goal:', error);
+      alert('Failed to save goal: ' + (error.message || 'Unknown error'));
     } finally {
       setIsSaving(false);
     }

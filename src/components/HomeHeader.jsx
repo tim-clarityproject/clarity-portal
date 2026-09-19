@@ -4,7 +4,7 @@ import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function HomeHeader({ isGuest = false }) {
+export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
@@ -13,14 +13,18 @@ export default function HomeHeader({ isGuest = false }) {
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
-  const [personalGoal, setPersonalGoal] = useState('');
+  const [personalGoal, setPersonalGoal] = useState(propGoal);
   const [showGoal, setShowGoal] = useState(true);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
 
-
   useEffect(() => {
+    if (propGoal) {
+      setPersonalGoal(propGoal);
+      return;
+    }
+
     if (user && !isGuest) {
       const fetchGoal = async () => {
         try {
@@ -44,7 +48,7 @@ export default function HomeHeader({ isGuest = false }) {
 
       fetchGoal();
     }
-  }, [user, isGuest]);
+  }, [user, isGuest, propGoal]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
