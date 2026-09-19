@@ -4,7 +4,6 @@ import { Mail, X } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
-import BackArrow from '../components/BackArrow';
 
 export default function IfThenPlanningSummary() {
   const navigate = useNavigate();
@@ -102,27 +101,46 @@ export default function IfThenPlanningSummary() {
   const data = planning.form_data || {};
   const items = data.items || [];
 
+  const formatTagName = (toolType) => {
+    const words = toolType
+      .split(/[-_]/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1));
+    const separator = toolType.includes('_') ? '-' : ' ';
+    return words.join(separator);
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
-        <BackArrow />
+        {/* Back to Decisions Button */}
+        <button
+          onClick={() => navigate('/decision-history', { state: { isGuest } })}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: '#F08571',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            padding: 0,
+            marginBottom: '24px',
+          }}
+          className="no-print"
+        >
+          ← Back to Decisions
+        </button>
 
-        {/* Title - Only on Screen */}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 24px 0' }} className="no-print">
-          If-Then Planning
-        </h1>
-
-        {/* Title for Print */}
-        <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: 'black', margin: '0 0 16px 0', display: 'none' }} className="print-only">
-          If-Then Planning
-        </h1>
-
-        {/* Subtitle */}
-        <p style={{ fontSize: '13px', color: '#999', margin: '0 0 20px 0', fontWeight: '500' }}>
-          Contingency plans for uncertain situations
-        </p>
+        {/* Title and Tag */}
+        <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
+            {planning.title || 'If-Then Planning'}
+          </h1>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }} className="no-print">
+            {formatTagName(planning.tool_type)}
+          </span>
+        </div>
 
         {/* Scenarios */}
         {items && items.length > 0 && (
