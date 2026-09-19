@@ -162,13 +162,12 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             <span style={{
               fontSize: '16px',
               fontWeight: '600',
-              color: '#F08571',
               lineHeight: '1.5',
               letterSpacing: '0.3px',
               display: 'block',
               textAlign: 'center',
             }}>
-              Your Mission: <span style={{ fontWeight: '700', opacity: 0.95 }}>{propGoal !== undefined ? propGoal : personalGoal}</span>
+              <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{propGoal !== undefined ? propGoal : personalGoal}</span>
             </span>
           </div>
         </div>
