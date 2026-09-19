@@ -27,7 +27,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
     }
 
     // Only fetch from Supabase if no prop provided
-    if (user && !isGuest) {
+    if (user) {
       const fetchGoal = async () => {
         try {
           const { data } = await supabase
