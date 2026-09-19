@@ -83,7 +83,7 @@ export default function DecisionHistory() {
 
   const formatTagName = (toolType) => {
     return toolType
-      .split('-')
+      .split(/[-_]/)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };

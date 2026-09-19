@@ -105,6 +105,7 @@ export default function IfThenPlanning() {
             tool_type: 'if_then_planning',
             title: 'If-Then Planning',
             form_data: formData,
+            status: 'completed',
           })
           .select();
 
