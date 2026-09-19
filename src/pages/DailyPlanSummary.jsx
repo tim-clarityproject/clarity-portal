@@ -99,7 +99,7 @@ export default function DailyPlanSummary() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         {/* Back Button */}
         <button
-          onClick={() => navigate('/decision-history', { state: { isGuest } })}
+          onClick={() => navigate('/my-plans', { state: { isGuest } })}
           style={{
             backgroundColor: 'transparent',
             border: 'none',
@@ -111,7 +111,7 @@ export default function DailyPlanSummary() {
             marginBottom: '24px',
           }}
         >
-          ← Back to Decisions
+          ← Back to Daily Plans
         </button>
 
         {/* Title and Tag */}
