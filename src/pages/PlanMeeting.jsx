@@ -182,6 +182,8 @@ export default function PlanMeeting() {
             tool_type: 'plan_meeting',
             title: title || `Meeting on ${date}`,
             form_data: formData,
+            status: 'completed',
+            draft: false,
           })
           .select();
 

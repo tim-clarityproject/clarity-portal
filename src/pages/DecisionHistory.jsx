@@ -177,7 +177,7 @@ export default function DecisionHistory() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {decisions
-              .filter((decision) => decision.tool_type !== 'daily_plan')
+              .filter((decision) => decision.tool_type !== 'daily_plan' && decision.tool_type !== 'plan_meeting')
               .map((decision) => {
               return (
               <button
