@@ -1,6 +1,7 @@
 import { useContext, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { MissionProvider } from './context/MissionContext';
 import { FormProvider } from './context/FormContext';
 import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
@@ -169,13 +170,15 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <FormProvider>
-        <BrowserRouter>
-          <AppContent />
-          <BreathButton />
-          <WhatsAppWidget />
-        </BrowserRouter>
-      </FormProvider>
+      <MissionProvider>
+        <FormProvider>
+          <BrowserRouter>
+            <AppContent />
+            <BreathButton />
+            <WhatsAppWidget />
+          </BrowserRouter>
+        </FormProvider>
+      </MissionProvider>
     </AuthProvider>
   );
 }

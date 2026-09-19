@@ -199,7 +199,7 @@ export default function Welcome() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader isGuest={isGuest} delayMission={true} />
       <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
