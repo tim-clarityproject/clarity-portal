@@ -26,37 +26,46 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       return;
     }
 
-    // Only fetch from Supabase if no prop provided
-    if (user) {
+    // Fetch from Supabase if no prop provided and user exists
+    if (user && !user.isAnonymous) {
       const fetchGoal = async () => {
         try {
-          const { data } = await supabase
+          console.log('[HomeHeader] Fetching mission for user:', user.id);
+          const { data, error } = await supabase
             .from('profiles')
             .select('personal_goal, show_mission_in_header')
             .eq('id', user.id)
             .single();
 
+          if (error) {
+            console.error('[HomeHeader] Error fetching mission:', error);
+            return;
+          }
+
           if (data?.personal_goal) {
+            console.log('[HomeHeader] Mission loaded:', data.personal_goal);
             setPersonalGoal(data.personal_goal);
 
             // Check visibility from Supabase, fallback to localStorage
             if (data.show_mission_in_header !== null && data.show_mission_in_header !== undefined) {
+              console.log('[HomeHeader] Visibility from Supabase:', data.show_mission_in_header);
               setShowMissionInHeader(data.show_mission_in_header);
             } else {
               const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
               if (savedVisibility !== null) {
+                console.log('[HomeHeader] Visibility from localStorage:', savedVisibility);
                 setShowMissionInHeader(JSON.parse(savedVisibility));
               }
             }
           }
         } catch (error) {
-          console.error('Error fetching goal:', error);
+          console.error('[HomeHeader] Unexpected error:', error);
         }
       };
 
       fetchGoal();
     }
-  }, [user, isGuest, propGoal]);
+  }, [user, propGoal]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
