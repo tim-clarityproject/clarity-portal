@@ -1,77 +1,25 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useRef, useEffect, useContext } from 'react';
+import { useState, useRef, useContext } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
+import { useMission } from '../hooks/useMission';
 
 export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
+  const { mission: hookMission, showInHeader } = useMission();
   const [menuOpen, setMenuOpen] = useState(false);
   const [decisionsSubmenuOpen, setDecisionsSubmenuOpen] = useState(false);
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
-  const [personalGoal, setPersonalGoal] = useState(propGoal);
-  const [showMissionInHeader, setShowMissionInHeader] = useState(true);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Fetch mission from Supabase for pages without prop
-  useEffect(() => {
-    // Always use propGoal if it's provided (even if empty string)
-    if (propGoal !== undefined) {
-      console.log('[HomeHeader] Using prop goal:', propGoal);
-      setPersonalGoal(propGoal);
-      return;
-    }
-
-    // Fetch from Supabase if no prop provided
-    if (!user) {
-      console.log('[HomeHeader] No user, skipping fetch');
-      return;
-    }
-
-    console.log('[HomeHeader] Fetching mission from Supabase for user:', user.id);
-
-    const fetchMission = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('personal_goal, show_mission_in_header')
-          .eq('id', user.id)
-          .single();
-
-        console.log('[HomeHeader] Fetch result:', { data, error });
-
-        if (error) {
-          console.error('[HomeHeader] Supabase error:', error.message);
-          return;
-        }
-
-        if (data?.personal_goal) {
-          console.log('[HomeHeader] Setting mission:', data.personal_goal);
-          setPersonalGoal(data.personal_goal);
-        } else {
-          console.log('[HomeHeader] No mission data returned');
-          setPersonalGoal('');
-        }
-
-        // Set visibility
-        const showInHeader = data?.show_mission_in_header;
-        console.log('[HomeHeader] Setting visibility:', showInHeader);
-        if (showInHeader !== null && showInHeader !== undefined) {
-          setShowMissionInHeader(showInHeader);
-        }
-      } catch (error) {
-        console.error('[HomeHeader] Fetch failed:', error);
-      }
-    };
-
-    fetchMission();
-  }, [user?.id, propGoal]);
+  // Use propGoal if provided (from parent like MyAccount), otherwise use hook mission
+  const displayMission = propGoal !== undefined ? propGoal : hookMission;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -156,7 +104,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       </button>
 
       {/* Center Goal Display - Absolutely Positioned for True Centering */}
-      {(propGoal !== undefined ? propGoal : personalGoal) && showMissionInHeader && (
+      {displayMission && showInHeader && (
         <div style={{
           position: 'absolute',
           left: '50%',
@@ -182,7 +130,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               display: 'block',
               textAlign: 'center',
             }}>
-              <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{propGoal !== undefined ? propGoal : personalGoal}</span>
+              <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{displayMission}</span>
             </span>
           </div>
         </div>
