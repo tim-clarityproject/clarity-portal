@@ -73,14 +73,23 @@ export default function IfThenPlanning() {
 
       let savedId = decisionId;
       if (decisionId) {
-        await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .update({
             form_data: formData,
             updated_at: new Date().toISOString(),
           })
           .eq('id', decisionId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .select();
+
+        if (error) {
+          console.error('[IfThenPlanning] Update error:', error);
+          throw error;
+        }
+        if (data && data.length > 0) {
+          savedId = data[0].id;
+        }
       } else {
         const { data, error } = await supabase
           .from('decisions')
@@ -118,23 +127,35 @@ export default function IfThenPlanning() {
       const formData = { items };
 
       if (decisionId) {
-        await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .update({
             form_data: formData,
             updated_at: new Date().toISOString(),
           })
           .eq('id', decisionId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .select();
+
+        if (error) {
+          console.error('[IfThenPlanning] Draft update error:', error);
+          throw error;
+        }
       } else {
-        await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
             tool_type: 'if_then_planning',
             title: 'If-Then Planning',
             form_data: formData,
-          });
+          })
+          .select();
+
+        if (error) {
+          console.error('[IfThenPlanning] Draft insert error:', error);
+          throw error;
+        }
       }
 
       setIsSaved(true);
