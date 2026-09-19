@@ -153,17 +153,17 @@ export default function MyAccount() {
             </div>
           </div>
 
-          {/* Purpose Section */}
+          {/* Mission Section */}
           <div style={{
             paddingBottom: '24px',
             marginBottom: '32px',
             borderBottom: '1px solid #e5e5e5',
           }}>
             <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Your Purpose
+              Your Mission
             </h2>
 
-            {/* Personal Mission Setting */}
+            {/* Mission Statement Setting */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -174,7 +174,7 @@ export default function MyAccount() {
             }}>
               <div style={{ flex: 1, maxWidth: '60%' }}>
                 <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  Personal Mission
+                  Mission Statement
                 </p>
                 <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
                   {personalGoal || 'No mission set yet'}
