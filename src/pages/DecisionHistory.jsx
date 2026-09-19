@@ -113,7 +113,7 @@ export default function DecisionHistory() {
       'if_then_planning': '/if-then-planning',
     };
     const editPage = editPageMap[decision.tool_type] || '/decision-tools';
-    navigate(editPage, { state: { isGuest, decisionId: decision.id, ...decision.form_data } });
+    navigate(editPage, { state: { isGuest, decisionId: decision.id, ...decision } });
   };
 
   const handleDelete = async (decisionId, e) => {
