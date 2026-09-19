@@ -141,7 +141,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       </button>
 
       {/* Center Goal Display - Absolutely Positioned for True Centering */}
-      {personalGoal && showMissionInHeader && (
+      {(propGoal !== undefined ? propGoal : personalGoal) && showMissionInHeader && (
         <div style={{
           position: 'absolute',
           left: '50%',
@@ -168,7 +168,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               display: 'block',
               textAlign: 'center',
             }}>
-              Your Mission: <span style={{ fontWeight: '700', opacity: 0.95 }}>{personalGoal}</span>
+              Your Mission: <span style={{ fontWeight: '700', opacity: 0.95 }}>{propGoal !== undefined ? propGoal : personalGoal}</span>
             </span>
           </div>
         </div>
