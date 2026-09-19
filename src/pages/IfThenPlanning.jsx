@@ -396,7 +396,7 @@ export default function IfThenPlanning() {
 
       <NamingModal
         isOpen={showNamingModal}
-        itemType="planning"
+        itemType="decision"
         onConfirm={handleNameConfirm}
         onCancel={() => setShowNamingModal(false)}
         defaultName=""

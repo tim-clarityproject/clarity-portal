@@ -47,7 +47,7 @@ export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, def
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '16px', margin: 0 }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '24px' }}>
           Give your {itemType} a name
         </h2>
         <input
