@@ -52,7 +52,7 @@ export default function GoalSetting() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '48px', textAlign: 'center' }}>
+        <div style={{ marginBottom: '48px' }}>
           {location.state?.problemTitle && (
             <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {location.state.problemTitle}
@@ -61,7 +61,7 @@ export default function GoalSetting() {
           <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>
             {path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}
           </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
             <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function GoalSetting() {
               borderRadius: '8px',
               fontSize: '16px',
               height: '100px',
-              textAlign: 'center',
+              textAlign: 'left',
               fontFamily: 'inherit',
               resize: 'none',
               outline: 'none',
