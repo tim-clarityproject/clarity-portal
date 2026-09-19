@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
+import NamingModal from '../components/NamingModal';
 
 export default function IfThenPlanning() {
   const navigate = useNavigate();
@@ -13,11 +14,11 @@ export default function IfThenPlanning() {
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
-  const [title, setTitle] = useState('');
   const [items, setItems] = useState([{ id: 1, ifCondition: '', thenAction: '' }]);
   const [nextId, setNextId] = useState(2);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showNamingModal, setShowNamingModal] = useState(false);
 
   useEffect(() => {
     if (decisionId && user && !isGuest) {
@@ -35,17 +36,12 @@ export default function IfThenPlanning() {
         .eq('user_id', user.id)
         .single();
 
-      if (data) {
-        if (data.title) {
-          setTitle(data.title);
-        }
-        if (data.form_data) {
-          const formData = data.form_data;
-          if (formData.items && formData.items.length > 0) {
-            setItems(formData.items);
-            const maxId = Math.max(...formData.items.map(item => item.id || 0));
-            setNextId(maxId + 1);
-          }
+      if (data && data.form_data) {
+        const formData = data.form_data;
+        if (formData.items && formData.items.length > 0) {
+          setItems(formData.items);
+          const maxId = Math.max(...formData.items.map(item => item.id || 0));
+          setNextId(maxId + 1);
         }
       }
     } catch (error) {
@@ -70,7 +66,11 @@ export default function IfThenPlanning() {
     ));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
+    setShowNamingModal(true);
+  };
+
+  const handleNameConfirm = async (decidionName) => {
     if (!user) return;
 
     setIsSaving(true);
@@ -83,7 +83,7 @@ export default function IfThenPlanning() {
         const { data, error } = await supabase
           .from('decisions')
           .update({
-            title: title || 'If-Then Planning',
+            title: decidionName,
             form_data: formData,
             updated_at: new Date().toISOString(),
           })
@@ -110,7 +110,7 @@ export default function IfThenPlanning() {
           .insert({
             user_id: user.id,
             tool_type: 'if_then_planning',
-            title: title || 'If-Then Planning',
+            title: decidionName,
             form_data: formData,
             status: 'completed',
           })
@@ -140,6 +140,7 @@ export default function IfThenPlanning() {
       alert('Failed to save planning');
     } finally {
       setIsSaving(false);
+      setShowNamingModal(false);
     }
   };
 
@@ -154,7 +155,6 @@ export default function IfThenPlanning() {
         const { data, error } = await supabase
           .from('decisions')
           .update({
-            title: title || 'If-Then Planning',
             form_data: formData,
             updated_at: new Date().toISOString(),
           })
@@ -172,7 +172,7 @@ export default function IfThenPlanning() {
           .insert({
             user_id: user.id,
             tool_type: 'if_then_planning',
-            title: title || 'If-Then Planning',
+            title: 'If-Then Planning (Draft)',
             form_data: formData,
           })
           .select();
@@ -216,17 +216,6 @@ export default function IfThenPlanning() {
           <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
             Prepare for uncertain situations with contingency plans
           </p>
-        </div>
-
-        <div style={{ marginBottom: '28px', backgroundColor: 'white', padding: '20px', borderRadius: '8px', borderLeft: '3px solid #F08571' }}>
-          <label style={labelStyle}>Planning Title</label>
-          <input
-            type="text"
-            placeholder="e.g., Handling project delays, Managing difficult conversations"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            style={inputStyle}
-          />
         </div>
 
         <div style={sectionStyle}>
@@ -404,6 +393,14 @@ export default function IfThenPlanning() {
           {isSaved ? 'Finished' : 'Finish'}
         </button>
       </div>
+
+      <NamingModal
+        isOpen={showNamingModal}
+        itemType="planning"
+        onConfirm={handleNameConfirm}
+        onCancel={() => setShowNamingModal(false)}
+        defaultName=""
+      />
     </div>
   );
 }
