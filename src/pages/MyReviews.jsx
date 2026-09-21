@@ -118,6 +118,34 @@ export default function MyReviews() {
             All Reviews
           </button>
           <button
+            onClick={() => setFilterType('weekly-momentum')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: filterType === 'weekly-momentum' ? '#F08571' : 'transparent',
+              color: filterType === 'weekly-momentum' ? 'white' : '#333',
+              border: `2px solid ${filterType === 'weekly-momentum' ? '#F08571' : '#e5e5e5'}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (filterType !== 'weekly-momentum') {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#FEE5DE';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (filterType !== 'weekly-momentum') {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            Weekly Momentum Review
+          </button>
+          <button
             onClick={() => setFilterType('after-action')}
             style={{
               padding: '8px 16px',
@@ -172,34 +200,6 @@ export default function MyReviews() {
             }}
           >
             Progress Reviews
-          </button>
-          <button
-            onClick={() => setFilterType('weekly-momentum')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: filterType === 'weekly-momentum' ? '#F08571' : 'transparent',
-              color: filterType === 'weekly-momentum' ? 'white' : '#333',
-              border: `2px solid ${filterType === 'weekly-momentum' ? '#F08571' : '#e5e5e5'}`,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '600',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (filterType !== 'weekly-momentum') {
-                e.target.style.borderColor = '#F08571';
-                e.target.style.backgroundColor = '#FEE5DE';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (filterType !== 'weekly-momentum') {
-                e.target.style.borderColor = '#e5e5e5';
-                e.target.style.backgroundColor = 'transparent';
-              }
-            }}
-          >
-            Weekly Momentum Review
           </button>
         </div>
 
