@@ -121,7 +121,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
   };
 
   const handleNext = async () => {
-    if (!onNext) return;
+    if (!onNext || isSaving) return;
 
     // Auto-save to Supabase before proceeding
     if (user && toolType) {

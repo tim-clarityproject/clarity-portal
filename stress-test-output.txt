@@ -1,0 +1,593 @@
+
+> clarity-portal@0.0.0 stress-test
+> node stress-test.js
+
+
+╔════════════════════════════════════════════════════════════╗
+║        🚀 CLARITY PORTAL COMPREHENSIVE STRESS TEST          ║
+║                   50-Run Bug Hunt                           ║
+╚════════════════════════════════════════════════════════════╝
+
+🎯 Target: https://portal.theclarityproject.co.uk
+📊 Test Runs: 50
+📸 Screenshots: ./stress-test-failures
+
+═══ BASELINE TESTS ═══
+
+📝 Test: Signup Flow
+   ✓ Signup submitted
+   ✅ Passed
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Build a world-class product that solves ..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+🔄 Test: Inversion Workflow
+   ✓ Decision entered: "Focus on B2B or B2C market..."
+   ✅ Passed
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+💾 Test: Data Persistence (Refresh)
+   ✓ Data entered: "Test data persistence with random value 0.3984953156425365"
+   ✓ Page refreshed
+  ❌ Data Persistence (Refresh): Data not persisted: expected "Test data persistence with random value 0.3984953156425365", got ""
+     Screenshot: 2026-09-21T21-44-52-130Z-Data-Persistence-(Refresh).png
+
+📝 Test: Textarea Auto-expand
+   ✓ Textarea expanded from 296px to 397px
+   ✅ Passed
+
+🎨 Test: Button Hover States
+   ⚠ Button hover state did not change (may be normal for some buttons)
+
+📱 Test: Mobile Responsiveness
+   ✓ No horizontal scrolling on mobile (375px)
+   ✅ Passed
+
+🔤 Test: Special Characters Input
+   ✓ Special characters preserved
+   ✅ Passed
+
+═══ STRESS TESTING (50 RANDOM WORKFLOWS) ═══
+
+[1/50]   Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[2/50]   Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Build an AI-powered feature..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[3/50]   Random workflow test...
+
+🔄 Test: Inversion Workflow
+   ✓ Decision entered: "Use Supabase or Firebase for database..."
+   ✅ Passed
+
+[4/50]   Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Build a world-class product that solves ..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[5/50]   Random workflow test...
+
+🌱 Test: Grow Workflow
+  ❌ Grow Workflow: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    15 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+     Screenshot: 2026-09-21T21-45-08-307Z-Grow-Workflow.png
+
+[6/50]   Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Build a world-class product that solves ..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[7/50]   Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[8/50]   Random workflow test...
+
+🔄 Test: Inversion Workflow
+  ❌ Inversion Workflow: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    15 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+
+     Screenshot: 2026-09-21T21-45-20-082Z-Inversion-Workflow.png
+
+[9/50]   Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[10/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[11/50]  Random workflow test...
+
+🔄 Test: Inversion Workflow
+   ✓ Decision entered: "Use Supabase or Firebase for database..."
+   ✅ Passed
+
+[12/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[13/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[14/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[15/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Improve team productivity by 50% this qu..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[16/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[17/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[18/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Launch in 3 new markets and hit $1M ARR..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[19/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[20/50]  Random workflow test...
+
+🔄 Test: Inversion Workflow
+   ✓ Decision entered: "Use Supabase or Firebase for database..."
+   ✅ Passed
+
+[21/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[22/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[23/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[24/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[25/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[26/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[27/50]  Random workflow test...
+
+🔄 Test: Inversion Workflow
+   ✓ Decision entered: "Choose between Stripe and Paddle for pay..."
+   ✅ Passed
+
+[28/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[29/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Build a world-class product that solves ..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[30/50]  Random workflow test...
+
+🔄 Test: Inversion Workflow
+  ❌ Inversion Workflow: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    15 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+     Screenshot: 2026-09-21T21-45-51-195Z-Inversion-Workflow.png
+
+[31/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[32/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Improve team productivity by 50% this qu..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[33/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Improve team productivity by 50% this qu..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[34/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[35/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Reduce operational costs by 40%..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[36/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[37/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[38/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+  ❌ Grow Workflow: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    16 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+     Screenshot: 2026-09-21T21-46-08-399Z-Grow-Workflow.png
+
+[39/50]  Random workflow test...
+
+🔄 Test: Inversion Workflow
+   ✓ Decision entered: "Price at $29/mo or $99/mo..."
+   ✅ Passed
+
+[40/50]  Random workflow test...
+
+🔄 Test: Inversion Workflow
+  ❌ Inversion Workflow: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    16 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+     Screenshot: 2026-09-21T21-46-19-327Z-Inversion-Workflow.png
+
+[41/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[42/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Build an AI-powered feature..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[43/50]  Random workflow test...
+
+🔄 Test: Inversion Workflow
+   ✓ Decision entered: "Price at $29/mo or $99/mo..."
+   ✅ Passed
+
+[44/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[45/50]  Random workflow test...
+
+🔄 Test: Inversion Workflow
+   ✓ Decision entered: "Price at $29/mo or $99/mo..."
+   ✅ Passed
+
+[46/50]  Random workflow test...
+
+🌱 Test: Grow Workflow
+   ✓ Goal entered: "Launch in 3 new markets and hit $1M ARR..."
+   ✓ Navigated to next step
+   ✅ Passed
+
+[47/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+[48/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[49/50]  Random workflow test...
+
+📅 Test: Plan My Day Workflow
+   ✓ Daily goal entered
+   ✅ Passed
+
+[50/50]  Random workflow test...
+
+🤝 Test: Meeting Planner Workflow
+   ✓ Meeting title entered
+   ✅ Passed
+
+╔════════════════════════════════════════════════════════════╗
+║                    📊 TEST REPORT                          ║
+╚════════════════════════════════════════════════════════════╝
+
+✅ Passed: 54/60
+❌ Failed: 6/60
+📈 Pass Rate: 90.0%
+
+🐛 BUGS FOUND (6):
+═══════════════════════════════════════════════════════════
+
+1. Data Persistence (Refresh)
+   Error: Data not persisted: expected "Test data persistence with random value 0.3984953156425365", got ""
+   URL: https://portal.theclarityproject.co.uk/grow-step-1
+   Screenshot: 2026-09-21T21-44-52-130Z-Data-Persistence-(Refresh).png
+   Time: 2026-09-21T21:44:52.156Z
+
+2. Grow Workflow
+   Error: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    15 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+   URL: https://portal.theclarityproject.co.uk/grow-step-1
+   Screenshot: 2026-09-21T21-45-08-307Z-Grow-Workflow.png
+   Time: 2026-09-21T21:45:08.337Z
+
+3. Inversion Workflow
+   Error: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    15 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+
+   URL: https://portal.theclarityproject.co.uk/inversion-step-1
+   Screenshot: 2026-09-21T21-45-20-082Z-Inversion-Workflow.png
+   Time: 2026-09-21T21:45:20.106Z
+
+4. Inversion Workflow
+   Error: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    15 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+   URL: https://portal.theclarityproject.co.uk/inversion-step-1
+   Screenshot: 2026-09-21T21-45-51-195Z-Inversion-Workflow.png
+   Time: 2026-09-21T21:45:51.230Z
+
+5. Grow Workflow
+   Error: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    16 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+   URL: https://portal.theclarityproject.co.uk/grow-step-1
+   Screenshot: 2026-09-21T21-46-08-399Z-Grow-Workflow.png
+   Time: 2026-09-21T21:46:08.429Z
+
+6. Inversion Workflow
+   Error: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("Continue"), button:has-text("Next")').first()[22m
+[2m    - locator resolved to <button disabled type="button">Continue</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    16 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+   URL: https://portal.theclarityproject.co.uk/inversion-step-1
+   Screenshot: 2026-09-21T21-46-19-327Z-Inversion-Workflow.png
+   Time: 2026-09-21T21:46:19.354Z
+
+📄 Full report saved to: ./stress-test-report.json
+📸 Screenshots saved to: ./stress-test-failures
+

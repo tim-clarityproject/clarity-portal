@@ -18,11 +18,27 @@ export default function InversionStep1Goal() {
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.goal) {
+      // Try to recover from localStorage first
+      try {
+        const saved = localStorage.getItem('clarity_form_data');
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.goal) {
+            setGoal(data.goal);
+            updateFormData('goal', data.goal);
+            return;
+          }
+        }
+      } catch (e) {
+        // localStorage corrupted, clear it
+        localStorage.removeItem('clarity_form_data');
+      }
+
+      // If no localStorage data, clear everything
       setGoal('');
       updateFormData('goal', '');
       updateFormData('fuckups', []);
       updateFormData('plan', '');
-      localStorage.removeItem('clarity_form_data');
     }
   }, []);
 

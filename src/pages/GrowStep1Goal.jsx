@@ -19,16 +19,32 @@ export default function GrowStep1Goal() {
   const refGoal = useRef(null);
   useAutoExpandTextarea(refGoal, goal);
 
-  // Clear form and localStorage on fresh start
+  // Clear form and localStorage on fresh start, or recover from localStorage
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.goal) {
+      // Try to recover from localStorage first
+      try {
+        const saved = localStorage.getItem('clarity_form_data');
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.goal) {
+            setGoal(data.goal);
+            updateFormData('goal', data.goal);
+            return;
+          }
+        }
+      } catch (e) {
+        // localStorage corrupted, clear it
+        localStorage.removeItem('clarity_form_data');
+      }
+
+      // If no localStorage data, clear everything
       setGoal('');
       updateFormData('goal', '');
       updateFormData('constraints', '');
       updateFormData('opportunities', '');
       updateFormData('options', []);
       updateFormData('willDo', '');
-      localStorage.removeItem('clarity_form_data');
     }
   }, []);
 

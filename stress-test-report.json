@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-09-21T21:46:32.324Z",
+  "summary": {
+    "totalTests": 60,
+    "passed": 54,
+    "failed": 6,
+    "passRate": "90.0%",
+    "url": "https://portal.theclarityproject.co.uk"
+  },
+  "bugs": [
+    {
+      "timestamp": "2026-09-21T21:44:52.156Z",
+      "testName": "Data Persistence (Refresh)",
+      "error": "Data not persisted: expected \"Test data persistence with random value 0.3984953156425365\", got \"\"",
+      "url": "https://portal.theclarityproject.co.uk/grow-step-1",
+      "screenshot": "2026-09-21T21-44-52-130Z-Data-Persistence-(Refresh).png"
+    },
+    {
+      "timestamp": "2026-09-21T21:45:08.337Z",
+      "testName": "Grow Workflow",
+      "error": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"Continue\"), button:has-text(\"Next\")').first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"button\">Continue</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    15 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "url": "https://portal.theclarityproject.co.uk/grow-step-1",
+      "screenshot": "2026-09-21T21-45-08-307Z-Grow-Workflow.png"
+    },
+    {
+      "timestamp": "2026-09-21T21:45:20.106Z",
+      "testName": "Inversion Workflow",
+      "error": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"Continue\"), button:has-text(\"Next\")').first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"button\">Continue</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    15 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n",
+      "url": "https://portal.theclarityproject.co.uk/inversion-step-1",
+      "screenshot": "2026-09-21T21-45-20-082Z-Inversion-Workflow.png"
+    },
+    {
+      "timestamp": "2026-09-21T21:45:51.230Z",
+      "testName": "Inversion Workflow",
+      "error": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"Continue\"), button:has-text(\"Next\")').first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"button\">Continue</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    15 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "url": "https://portal.theclarityproject.co.uk/inversion-step-1",
+      "screenshot": "2026-09-21T21-45-51-195Z-Inversion-Workflow.png"
+    },
+    {
+      "timestamp": "2026-09-21T21:46:08.429Z",
+      "testName": "Grow Workflow",
+      "error": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"Continue\"), button:has-text(\"Next\")').first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"button\">Continue</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    16 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "url": "https://portal.theclarityproject.co.uk/grow-step-1",
+      "screenshot": "2026-09-21T21-46-08-399Z-Grow-Workflow.png"
+    },
+    {
+      "timestamp": "2026-09-21T21:46:19.354Z",
+      "testName": "Inversion Workflow",
+      "error": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"Continue\"), button:has-text(\"Next\")').first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"button\">Continue</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    16 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "url": "https://portal.theclarityproject.co.uk/inversion-step-1",
+      "screenshot": "2026-09-21T21-46-19-327Z-Inversion-Workflow.png"
+    }
+  ]
+}
