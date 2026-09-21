@@ -308,8 +308,6 @@ export default function MyJournal() {
                 boxSizing: 'border-box',
                 outline: 'none',
                 resize: 'none',
-                overflow: 'hidden',
-                overflow: 'hidden',
                 opacity: isLoading ? 0.6 : 1,
                 cursor: isLoading ? 'not-allowed' : 'text',
               }}

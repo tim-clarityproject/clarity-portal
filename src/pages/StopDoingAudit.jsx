@@ -185,8 +185,7 @@ export default function StopDoingAudit() {
   const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '16px 20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };
   const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
   const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
-  const textareaStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box', minHeight: '80px', resize: 'none' };
-                overflow: 'hidden',
+  const textareaStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box', minHeight: '80px', resize: 'none', overflow: 'hidden' };
 
   const totalTime = getTotalTime();
 

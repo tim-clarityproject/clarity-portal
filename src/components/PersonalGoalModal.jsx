@@ -96,7 +96,6 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
             fontSize: '14px',
             fontFamily: 'inherit',
             resize: 'none',
-                overflow: 'hidden',
             minHeight: '80px',
             boxSizing: 'border-box',
             transition: 'border-color 0.2s',

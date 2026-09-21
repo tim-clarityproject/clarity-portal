@@ -116,7 +116,6 @@ export default function GoalSetting() {
               textAlign: 'left',
               fontFamily: 'inherit',
               resize: 'none',
-                overflow: 'hidden',
               outline: 'none',
               marginBottom: '48px',
             }}
