@@ -252,7 +252,7 @@ export default function MyPlans() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {plan.tool_type === 'daily_plan' ? 'Daily Plan' : 'Meeting'}
+                        {plan.tool_type === 'daily_plan' ? 'Daily Plan' : 'Meeting Plan'}
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
