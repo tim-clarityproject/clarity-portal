@@ -1,15 +1,21 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
+
+const MAX_GOAL_LENGTH = 50;
 
 export default function OnboardingMission() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const { updateMission } = useContext(MissionContext);
   const [greeting, setGreeting] = useState('');
-  const [showQuestion, setShowQuestion] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [showInput, setShowInput] = useState(false);
   const [mission, setMission] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [firstName, setFirstName] = useState('');
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -27,23 +33,70 @@ export default function OnboardingMission() {
       return;
     }
 
-    const greetingText = getTimeGreeting();
-    let greetingIndex = 0;
+    // Fetch first name
+    const fetchFirstName = async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('first_name')
+          .eq('id', user.id)
+          .single();
+        if (data?.first_name) {
+          setFirstName(data.first_name);
+        }
+      } catch (error) {
+        console.error('Error fetching name:', error);
+      }
+    };
+
+    fetchFirstName();
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (!firstName) return;
+
+    // Animate greeting
+    const timeGreeting = getTimeGreeting();
+    let charIndex = 0;
 
     const greetingInterval = setInterval(() => {
-      if (greetingIndex < greetingText.length) {
-        setGreeting(greetingText.substring(0, greetingIndex + 1));
-        greetingIndex++;
+      if (charIndex <= timeGreeting.length) {
+        setGreeting(timeGreeting.substring(0, charIndex));
+        charIndex++;
       } else {
         clearInterval(greetingInterval);
+        // After greeting finishes, fade it out and show question
         setTimeout(() => {
-          setShowQuestion(true);
-        }, 800);
+          setGreeting('');
+          // Now animate the question
+          animateQuestion();
+        }, 1200);
       }
-    }, 80);
+    }, 50);
+
+    const animateQuestion = () => {
+      const questionText = 'What\'s your big mission?';
+      let qIndex = 0;
+
+      const questionInterval = setInterval(() => {
+        if (qIndex <= questionText.length) {
+          setQuestion(questionText.substring(0, qIndex));
+          qIndex++;
+        } else {
+          clearInterval(questionInterval);
+          // Show input after question finishes
+          setTimeout(() => {
+            setShowInput(true);
+          }, 300);
+        }
+      }, 50);
+    };
 
     return () => clearInterval(greetingInterval);
-  }, [user, navigate]);
+  }, [firstName]);
+
+  const charCount = mission.length;
+  const isOverLimit = charCount > MAX_GOAL_LENGTH;
 
   const handleSaveMission = async () => {
     if (!mission.trim()) {
@@ -68,7 +121,7 @@ export default function OnboardingMission() {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && mission.trim()) {
+    if (e.key === 'Enter' && mission.trim() && !isOverLimit) {
       handleSaveMission();
     }
   };
@@ -82,107 +135,154 @@ export default function OnboardingMission() {
       justifyContent: 'center',
       padding: '32px',
     }}>
+      <style>{`
+        @keyframes blink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
+
       <div style={{
-        maxWidth: '500px',
+        maxWidth: '600px',
         width: '100%',
-        textAlign: 'center',
       }}>
-        <h1 style={{
-          fontSize: '48px',
-          fontWeight: 'bold',
-          color: 'black',
-          margin: 0,
-          minHeight: '72px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '48px',
-        }}>
-          {greeting}
-          <span style={{
-            animation: greeting && !showQuestion ? 'blink 1s infinite' : 'none',
-            marginLeft: '4px',
+        {/* Welcome Greeting - Types in and disappears */}
+        {greeting && (
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '80px',
+            minHeight: '80px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
-            |
-          </span>
-        </h1>
-
-        {showQuestion && (
-          <div style={{ animation: 'fadeIn 0.6s ease-in' }}>
-            <p style={{
-              fontSize: '24px',
-              fontWeight: '600',
-              color: '#333',
-              marginBottom: '32px',
+            <h1 style={{
+              fontSize: '56px',
+              fontWeight: 'bold',
+              color: 'black',
               margin: 0,
-              marginBottom: '32px',
+              lineHeight: '1.2',
             }}>
-              What's your big mission?
-            </p>
-
-            <textarea
-              value={mission}
-              onChange={(e) => setMission(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type here"
-              style={{
-                width: '100%',
-                minHeight: '120px',
-                padding: '16px',
-                border: '2px solid #e5e5e5',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-                outline: 'none',
-                marginBottom: '24px',
-                resize: 'none',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#F08571'}
-              onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-              autoFocus
-            />
-
-            <button
-              onClick={handleSaveMission}
-              disabled={!mission.trim() || isSaving}
-              style={{
-                padding: '14px 32px',
-                backgroundColor: !mission.trim() || isSaving ? '#ccc' : '#F08571',
-                color: 'white',
-                fontWeight: '600',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: !mission.trim() || isSaving ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (mission.trim() && !isSaving) {
-                  e.target.style.backgroundColor = '#e07560';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (mission.trim() && !isSaving) {
-                  e.target.style.backgroundColor = '#F08571';
-                }
-              }}
-            >
-              {isSaving ? 'Saving...' : 'Continue'}
-            </button>
+              Welcome, {firstName || 'there'}
+              <span style={{
+                animation: 'blink 1s infinite',
+                marginLeft: '8px',
+              }}>
+                |
+              </span>
+            </h1>
           </div>
         )}
 
-        <style>{`
-          @keyframes blink {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: 0; }
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-        `}</style>
+        {/* Question - Types in after greeting disappears */}
+        {!greeting && (
+          <div style={{
+            animation: 'fadeIn 0.6s ease-in',
+            textAlign: 'center',
+          }}>
+            <h2 style={{
+              fontSize: '48px',
+              fontWeight: 'bold',
+              color: 'black',
+              margin: '0 0 48px 0',
+              lineHeight: '1.3',
+              minHeight: '100px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              {question}
+              {question.length < "What's your big mission?".length && (
+                <span style={{
+                  animation: 'blink 1s infinite',
+                  marginLeft: '8px',
+                }}>
+                  |
+                </span>
+              )}
+            </h2>
+
+            {/* Input Section - Shows after question types in */}
+            {showInput && (
+              <div style={{ animation: 'fadeIn 0.6s ease-in' }}>
+                <textarea
+                  value={mission}
+                  onChange={(e) => {
+                    const newValue = e.target.value.slice(0, MAX_GOAL_LENGTH);
+                    setMission(newValue);
+                    updateMission(newValue);
+                  }}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type here"
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '16px',
+                    border: '2px solid ' + (isOverLimit ? '#F08571' : '#e5e5e5'),
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    marginBottom: '12px',
+                    resize: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => !isOverLimit && (e.target.style.borderColor = '#F08571')}
+                  onBlur={(e) => e.target.style.borderColor = isOverLimit ? '#F08571' : '#e5e5e5'}
+                  autoFocus
+                />
+
+                {/* Character Counter */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '32px',
+                  fontSize: '12px',
+                  color: isOverLimit ? '#F08571' : '#999',
+                }}>
+                  <span>{charCount}/{MAX_GOAL_LENGTH} characters</span>
+                  {isOverLimit && (
+                    <span style={{ fontWeight: '600' }}>Limit exceeded</span>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleSaveMission}
+                  disabled={!mission.trim() || isSaving || isOverLimit}
+                  style={{
+                    padding: '12px 32px',
+                    backgroundColor: !mission.trim() || isSaving || isOverLimit ? '#ccc' : '#F08571',
+                    color: 'white',
+                    fontWeight: '600',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: !mission.trim() || isSaving || isOverLimit ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (mission.trim() && !isSaving && !isOverLimit) {
+                      e.target.style.backgroundColor = '#e07560';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (mission.trim() && !isSaving && !isOverLimit) {
+                      e.target.style.backgroundColor = '#F08571';
+                    }
+                  }}
+                >
+                  {isSaving ? 'Saving...' : 'Get Started'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
