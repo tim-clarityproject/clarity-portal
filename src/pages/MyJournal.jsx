@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
+import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import HomeHeader from '../components/HomeHeader';
@@ -31,6 +32,11 @@ export default function MyJournal() {
   const [progress, setProgress] = useState(3);
   const [showNamingModal, setShowNamingModal] = useState(false);
   const [currentTitle, setCurrentTitle] = useState('');
+
+  const refQ1 = useAutoExpandTextarea(q1);
+  const refQ2 = useAutoExpandTextarea(q2);
+  const refQ3 = useAutoExpandTextarea(q3);
+  const refQ4 = useAutoExpandTextarea(q4);
 
   const afterActionQuestions = [
     { id: 'q1', label: 'What did I intend to happen?', value: q1, setter: setQ1 },
@@ -278,12 +284,15 @@ export default function MyJournal() {
           </div>
         )}
 
-        {questions.map((q) => (
+        {questions.map((q) => {
+          const textareaRef = q.id === 'q1' ? refQ1 : q.id === 'q2' ? refQ2 : q.id === 'q3' ? refQ3 : refQ4;
+          return (
           <div key={q.id} style={sectionStyle}>
             <label style={labelStyle}>
               {q.label}
             </label>
             <textarea
+              ref={textareaRef}
               value={q.value}
               onChange={(e) => q.setter(e.target.value)}
               disabled={isLoading}
@@ -298,7 +307,9 @@ export default function MyJournal() {
                 fontFamily: 'inherit',
                 boxSizing: 'border-box',
                 outline: 'none',
-                resize: 'vertical',
+                resize: 'none',
+                overflow: 'hidden',
+                overflow: 'hidden',
                 opacity: isLoading ? 0.6 : 1,
                 cursor: isLoading ? 'not-allowed' : 'text',
               }}
@@ -306,7 +317,8 @@ export default function MyJournal() {
               onBlur={(e) => !isLoading && (e.target.style.borderColor = '#e5e5e5')}
             />
           </div>
-        ))}
+          );
+        })}
 
         {reviewType === 'weekly-momentum' && (
           <div style={sectionStyle}>

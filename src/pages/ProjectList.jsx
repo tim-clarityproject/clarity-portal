@@ -212,6 +212,7 @@ export default function ProjectList() {
                       fontSize: '14px',
                       fontFamily: 'inherit',
                       resize: 'none',
+                overflow: 'hidden',
                       outline: 'none',
                       minHeight: '80px',
                     }}

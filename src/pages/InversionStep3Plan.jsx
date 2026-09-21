@@ -179,7 +179,8 @@ export default function InversionStep3Plan() {
               fontFamily: 'system-ui, -apple-system, sans-serif',
               boxSizing: 'border-box',
               outline: 'none',
-              resize: 'vertical',
+              resize: 'none',
+                overflow: 'hidden',
               marginBottom: '24px',
             }}
             onFocus={(e) => e.target.style.borderColor = '#F08571'}
@@ -230,7 +231,8 @@ export default function InversionStep3Plan() {
               fontFamily: 'system-ui, -apple-system, sans-serif',
               boxSizing: 'border-box',
               outline: 'none',
-              resize: 'vertical',
+              resize: 'none',
+                overflow: 'hidden',
             }}
             onFocus={(e) => e.target.style.borderColor = '#F08571'}
             onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}

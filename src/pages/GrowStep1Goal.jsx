@@ -162,7 +162,8 @@ export default function GrowStep1Goal() {
               fontFamily: 'system-ui, -apple-system, sans-serif',
               boxSizing: 'border-box',
               outline: 'none',
-              resize: 'vertical',
+              resize: 'none',
+                overflow: 'hidden',
             }}
             onFocus={(e) => e.target.style.borderColor = '#F08571'}
             onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
