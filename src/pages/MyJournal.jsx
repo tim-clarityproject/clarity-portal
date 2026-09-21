@@ -25,6 +25,7 @@ export default function MyJournal() {
   const [q2, setQ2] = useState('');
   const [q3, setQ3] = useState('');
   const [q4, setQ4] = useState('');
+  const [reviewTitle, setReviewTitle] = useState('');
   const [intentionality, setIntentionality] = useState(3);
   const [communication, setCommunication] = useState(3);
   const [progress, setProgress] = useState(3);
@@ -70,6 +71,7 @@ export default function MyJournal() {
       setQ2('');
       setQ3('');
       setQ4('');
+      setReviewTitle('');
       setIntentionality(3);
       setCommunication(3);
       setProgress(3);
@@ -102,6 +104,7 @@ export default function MyJournal() {
 
       if (data && data.length > 0) {
         setCurrentTitle(data[0].title || '');
+        setReviewTitle(data[0].title || '');
         try {
           const parsed = JSON.parse(data[0].content);
           setQ1(parsed.q1 || '');
@@ -122,6 +125,7 @@ export default function MyJournal() {
         }
       } else {
         setCurrentTitle('');
+        setReviewTitle('');
         setQ1('');
         setQ2('');
         setQ3('');
@@ -137,14 +141,20 @@ export default function MyJournal() {
     }
   };
 
-  const needsNaming = !currentTitle;
+  const needsNaming = reviewType !== 'after-action' && !currentTitle;
 
   const handleSaveClick = () => {
     if (!user || isGuest) {
       alert('Please log in to save reviews');
       return;
     }
-    if (needsNaming) {
+    if (reviewType === 'after-action') {
+      if (!reviewTitle.trim()) {
+        alert('Please enter what you are reviewing');
+        return;
+      }
+      handleSaveConfirmed(reviewTitle);
+    } else if (needsNaming) {
       setShowNamingModal(true);
     } else {
       handleSaveConfirmed(currentTitle);
@@ -252,6 +262,21 @@ export default function MyJournal() {
             style={inputStyle}
           />
         </div>
+
+        {reviewType === 'after-action' && (
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
+              What are you reviewing?
+            </label>
+            <input
+              type="text"
+              value={reviewTitle}
+              onChange={(e) => setReviewTitle(e.target.value)}
+              placeholder="Brief title for this review..."
+              style={inputStyle}
+            />
+          </div>
+        )}
 
         {questions.map((q) => (
           <div key={q.id} style={sectionStyle}>
@@ -394,7 +419,13 @@ export default function MyJournal() {
             onClick={() => {
               const hasContent = q1.trim() || q2.trim() || q3.trim() || q4.trim();
               if (hasContent) {
-                if (needsNaming) {
+                if (reviewType === 'after-action') {
+                  if (reviewTitle.trim()) {
+                    handleSaveConfirmed(reviewTitle);
+                  } else {
+                    alert('Please enter what you are reviewing');
+                  }
+                } else if (needsNaming) {
                   setShowNamingModal(true);
                 } else {
                   handleSaveConfirmed(currentTitle);
