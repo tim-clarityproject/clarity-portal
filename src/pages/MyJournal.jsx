@@ -272,7 +272,7 @@ export default function MyJournal() {
               type="text"
               value={reviewTitle}
               onChange={(e) => setReviewTitle(e.target.value)}
-              placeholder="Brief title for this review..."
+              placeholder="Type here"
               style={inputStyle}
             />
           </div>
@@ -287,7 +287,7 @@ export default function MyJournal() {
               value={q.value}
               onChange={(e) => q.setter(e.target.value)}
               disabled={isLoading}
-              placeholder={`Answer: ${q.label.toLowerCase()}`}
+              placeholder="Type here"
               style={{
                 width: '100%',
                 minHeight: '100px',

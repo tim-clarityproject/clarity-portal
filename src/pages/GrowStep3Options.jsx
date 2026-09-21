@@ -128,7 +128,7 @@ export default function GrowStep3Options() {
                 type="text"
                 value={option}
                 onChange={(e) => handleOptionChange(index, e.target.value)}
-                placeholder={`Option ${index + 1}`}
+                placeholder="Type here"
                 style={{
                   flex: 1,
                   padding: '12px 16px',

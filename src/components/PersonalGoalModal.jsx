@@ -85,7 +85,7 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
         <textarea
           value={goal}
           onChange={(e) => setGoal(e.target.value.slice(0, MAX_GOAL_LENGTH))}
-          placeholder="e.g., Be a world-leading high-performance coach"
+          placeholder="Type here"
           maxLength={MAX_GOAL_LENGTH}
           autoFocus
           style={{

@@ -151,7 +151,7 @@ export default function GrowStep1Goal() {
           <textarea
             value={goal}
             onChange={handleChange}
-            placeholder="What is the goal you want to achieve?"
+            placeholder="Type here"
             style={{
               width: '100%',
               minHeight: '300px',

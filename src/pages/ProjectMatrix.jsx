@@ -153,7 +153,7 @@ export default function ProjectMatrix() {
                 <tr key={projectIndex}>
                   <td style={{ padding: '12px 16px', borderBottom: '1px solid #e5e5e5', position: 'relative' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
-                      <input type="text" value={project} onChange={(e) => handleProjectChange(projectIndex, e.target.value)} placeholder="Project name..." style={{ width: '100%', padding: '12px 28px', border: '2px solid #e5e5e5', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} onFocus={(e) => e.target.style.borderColor = '#F08571'} onBlur={(e) => e.target.style.borderColor = '#e5e5e5'} />
+                      <input type="text" value={project} onChange={(e) => handleProjectChange(projectIndex, e.target.value)} placeholder="Type here" style={{ width: '100%', padding: '12px 28px', border: '2px solid #e5e5e5', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} onFocus={(e) => e.target.style.borderColor = '#F08571'} onBlur={(e) => e.target.style.borderColor = '#e5e5e5'} />
                       {projectIndex >= 1 && (
                         <button type="button" onClick={() => handleRemoveProject(projectIndex)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', padding: '4px', backgroundColor: 'transparent', color: '#999', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#F08571'} onMouseLeave={(e) => e.target.style.color = '#999'}>
                           <Trash2 size={18} />

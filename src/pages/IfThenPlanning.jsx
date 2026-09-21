@@ -253,14 +253,14 @@ export default function IfThenPlanning() {
               <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '16px', alignItems: 'flex-start' }}>
                 <input
                   type="text"
-                  placeholder="e.g., I start to feel overwhelmed"
+                  placeholder="Type here"
                   value={item.ifCondition}
                   onChange={(e) => handleItemChange(item.id, 'ifCondition', e.target.value)}
                   style={inputStyle}
                 />
                 <input
                   type="text"
-                  placeholder="e.g., take 5 deep breaths and step outside"
+                  placeholder="Type here"
                   value={item.thenAction}
                   onChange={(e) => handleItemChange(item.id, 'thenAction', e.target.value)}
                   style={inputStyle}

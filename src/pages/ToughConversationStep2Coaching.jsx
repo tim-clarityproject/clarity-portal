@@ -322,7 +322,7 @@ export default function ToughConversationStep2Coaching() {
                 autoFocus
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                placeholder="Edit..."
+                placeholder="Type here"
                 style={{
                   width: '100%',
                   minHeight: '80px',
@@ -487,7 +487,7 @@ export default function ToughConversationStep2Coaching() {
           <textarea
             value={customQuestion}
             onChange={(e) => setCustomQuestion(e.target.value)}
-            placeholder="Alternative question"
+            placeholder="Type here"
             style={{
               width: '100%',
               minHeight: '80px',

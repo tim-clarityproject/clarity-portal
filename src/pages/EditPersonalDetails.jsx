@@ -146,7 +146,7 @@ export default function EditPersonalDetails() {
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Tim"
+                placeholder="Type here"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -170,7 +170,7 @@ export default function EditPersonalDetails() {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                placeholder="Dutton"
+                placeholder="Type here"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -220,7 +220,7 @@ export default function EditPersonalDetails() {
                 type="text"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                placeholder="e.g., CEO, Project Manager, Designer"
+                placeholder="Type here"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -244,7 +244,7 @@ export default function EditPersonalDetails() {
                 type="text"
                 value={organisation}
                 onChange={(e) => setOrganisation(e.target.value)}
-                placeholder="Your company or organisation name"
+                placeholder="Type here"
                 style={{
                   width: '100%',
                   padding: '12px 16px',

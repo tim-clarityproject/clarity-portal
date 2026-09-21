@@ -203,7 +203,7 @@ export default function ProjectList() {
                   <textarea
                     value={project}
                     onChange={(e) => handleProjectChange(index, e.target.value)}
-                    placeholder="Type here..."
+                    placeholder="Type here"
                     style={{
                       flex: 1,
                       padding: '12px 16px',

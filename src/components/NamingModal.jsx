@@ -55,7 +55,7 @@ export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, def
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={`Name your ${itemType}...`}
+          placeholder="Type here"
           autoFocus
           style={{
             width: '100%',

@@ -67,7 +67,7 @@ export default function GoalSetupModal({ isOpen, onClose }) {
         <textarea
           value={goal}
           onChange={(e) => setGoal(e.target.value)}
-          placeholder="e.g., Be a world-leading high-performance coach"
+          placeholder="Type here"
           style={{
             width: '100%',
             padding: '12px 16px',

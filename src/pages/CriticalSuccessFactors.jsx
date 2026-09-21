@@ -165,7 +165,7 @@ export default function CriticalSuccessFactors() {
                   <textarea
                     value={factors[index] || ''}
                     onChange={(e) => handleFactorChange(index, e.target.value)}
-                    placeholder="Type here..."
+                    placeholder="Type here"
                     style={{
                       flex: 1,
                       padding: '12px 16px',

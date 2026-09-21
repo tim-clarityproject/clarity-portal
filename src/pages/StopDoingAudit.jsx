@@ -219,7 +219,7 @@ export default function StopDoingAudit() {
                 </span>
                 <input
                   type="text"
-                  placeholder="e.g., Weekly status emails, recurring meeting, administrative task..."
+                  placeholder="Type here"
                   value={item.activity}
                   onChange={(e) => handleItemChange(item.id, 'activity', e.target.value)}
                   style={{ ...inputStyle, flex: 1 }}
@@ -227,7 +227,7 @@ export default function StopDoingAudit() {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <input
                     type="number"
-                    placeholder="0"
+                    placeholder="Type here"
                     min="0"
                     value={item.timePerWeek}
                     onChange={(e) => handleItemChange(item.id, 'timePerWeek', e.target.value)}
@@ -389,7 +389,7 @@ export default function StopDoingAudit() {
           </h2>
           <label style={labelStyle}>How will you use the hours you reclaim?</label>
           <textarea
-            placeholder="e.g., focus on strategic projects, deep work, learning, exercise, family time..."
+            placeholder="Type here"
             value={timeUse}
             onChange={(e) => setTimeUse(e.target.value)}
             style={{ ...textareaStyle, marginBottom: 0 }}

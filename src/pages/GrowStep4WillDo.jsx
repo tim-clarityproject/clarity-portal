@@ -332,7 +332,7 @@ export default function GrowStep4WillDo() {
             <textarea
               value={willDo}
               onChange={(e) => setWillDo(e.target.value)}
-              placeholder="What are you committing to do?"
+              placeholder="Type here"
               style={{
                 width: '100%',
                 height: '100%',

@@ -384,7 +384,7 @@ export default function PlanMeeting() {
                 <label style={labelStyle}>Meeting Title</label>
                 <input
                   type="text"
-                  placeholder="e.g., Q3 Planning Session"
+                  placeholder="Type here"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   style={inputStyle}
@@ -392,7 +392,7 @@ export default function PlanMeeting() {
               </div>
               <div style={{ maxWidth: '200px' }}>
                 <label style={labelStyle}>Chair</label>
-                <input type="text" placeholder="Who is chairing?" value={chair} onChange={(e) => setChair(e.target.value)} style={inputStyle} />
+                <input type="text" placeholder="Type here" value={chair} onChange={(e) => setChair(e.target.value)} style={inputStyle} />
               </div>
             </div>
           </div>
@@ -440,7 +440,7 @@ export default function PlanMeeting() {
                 </button>
               </div>
               <textarea
-                placeholder="What's the background behind this meeting?"
+                placeholder="Type here"
                 value={meetingContext}
                 onChange={(e) => setMeetingContext(e.target.value)}
                 style={{...inputStyle, minHeight: '60px'}}
@@ -475,7 +475,7 @@ export default function PlanMeeting() {
                 </button>
               </div>
               <textarea
-                placeholder="What should attendees read, research, or think about beforehand?"
+                placeholder="Type here"
                 value={preReads}
                 onChange={(e) => setPreReads(e.target.value)}
                 style={{...inputStyle, minHeight: '60px'}}
@@ -496,7 +496,7 @@ export default function PlanMeeting() {
                   </span>
                   <input
                     type="text"
-                    placeholder="What do you want to achieve?"
+                    placeholder="Type here"
                     value={obj.text}
                     onChange={(e) => handleObjectiveChange(obj.id, e.target.value)}
                     style={{...inputStyle, flex: 1}}
@@ -585,16 +585,16 @@ export default function PlanMeeting() {
                   {flowItems.map((item, idx) => (
                     <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa', borderBottom: '1px solid #e5e5e5' }}>
                       <td style={{ padding: '12px' }}>
-                        <input type="text" placeholder="e.g., Welcome" value={item.item} onChange={(e) => handleItemChange(item.id, 'item', e.target.value)} style={inputStyle} />
+                        <input type="text" placeholder="Type here" value={item.item} onChange={(e) => handleItemChange(item.id, 'item', e.target.value)} style={inputStyle} />
                       </td>
                       <td style={{ padding: '12px' }}>
-                        <input type="text" placeholder="Goal or outcome" value={item.aim} onChange={(e) => handleItemChange(item.id, 'aim', e.target.value)} style={inputStyle} />
+                        <input type="text" placeholder="Type here" value={item.aim} onChange={(e) => handleItemChange(item.id, 'aim', e.target.value)} style={inputStyle} />
                       </td>
                       <td style={{ padding: '12px' }}>
-                        <input type="text" placeholder="Person/Role" value={item.lead} onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)} style={inputStyle} />
+                        <input type="text" placeholder="Type here" value={item.lead} onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)} style={inputStyle} />
                       </td>
                       <td style={{ padding: '12px' }}>
-                        <input type="number" placeholder="0" value={item.length} onChange={(e) => handleItemChange(item.id, 'length', e.target.value)} min="0" style={inputStyle} />
+                        <input type="number" placeholder="Type here" value={item.length} onChange={(e) => handleItemChange(item.id, 'length', e.target.value)} min="0" style={inputStyle} />
                       </td>
                       <td style={{ padding: '12px', textAlign: 'center' }}>
                         <button

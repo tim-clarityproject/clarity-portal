@@ -145,7 +145,7 @@ export default function Strategies() {
                   <textarea
                     value={strategies[index] || ''}
                     onChange={(e) => handleStrategyChange(index, e.target.value)}
-                    placeholder="Type here..."
+                    placeholder="Type here"
                     style={{
                       flex: 1,
                       padding: '12px 16px',

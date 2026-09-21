@@ -120,7 +120,7 @@ export default function InversionStep2Fuckups() {
                 type="text"
                 value={fuckup}
                 onChange={(e) => handleFuckupChange(index, e.target.value)}
-                placeholder={`What could go wrong ${index + 1}`}
+                placeholder="Type here"
                 style={{
                   flex: 1,
                   padding: '12px 16px',

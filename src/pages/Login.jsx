@@ -214,7 +214,7 @@ export default function Login() {
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="John"
+                    placeholder="Type here"
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -236,7 +236,7 @@ export default function Login() {
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Doe"
+                    placeholder="Type here"
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -261,7 +261,7 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder="Type here"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -284,7 +284,7 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Type here"
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -308,7 +308,7 @@ export default function Login() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Type here"
                   style={{
                     width: '100%',
                     padding: '12px 16px',

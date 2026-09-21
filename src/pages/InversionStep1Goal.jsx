@@ -139,7 +139,7 @@ export default function InversionStep1Goal() {
           <textarea
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            placeholder="What do you want to achieve?"
+            placeholder="Type here"
             style={{
               width: '100%',
               minHeight: '300px',

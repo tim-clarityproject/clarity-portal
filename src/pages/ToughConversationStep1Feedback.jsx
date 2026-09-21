@@ -155,7 +155,7 @@ export default function ToughConversationStep1Feedback() {
             <textarea
               value={observation}
               onChange={(e) => setObservation(e.target.value)}
-              placeholder="Enter your observation..."
+              placeholder="Type here"
               style={{
                 width: '100%',
                 minHeight: '120px',
@@ -179,7 +179,7 @@ export default function ToughConversationStep1Feedback() {
             <textarea
               value={impact}
               onChange={(e) => setImpact(e.target.value)}
-              placeholder="Describe the impact..."
+              placeholder="Type here"
               style={{
                 width: '100%',
                 minHeight: '120px',
@@ -203,7 +203,7 @@ export default function ToughConversationStep1Feedback() {
             <textarea
               value={need}
               onChange={(e) => setNeed(e.target.value)}
-              placeholder="Describe what you need..."
+              placeholder="Type here"
               style={{
                 width: '100%',
                 minHeight: '120px',

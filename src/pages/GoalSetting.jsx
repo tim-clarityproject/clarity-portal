@@ -106,7 +106,7 @@ export default function GoalSetting() {
                 }
               }
             }}
-            placeholder="Type here..."
+            placeholder="Type here"
             style={{
               padding: '16px',
               border: '2px solid #e5e5e5',

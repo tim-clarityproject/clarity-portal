@@ -112,7 +112,7 @@ export default function GrowStep2Reality() {
           <textarea
             value={constraints}
             onChange={handleConstraintsChange}
-            placeholder="What limitations or obstacles exist?"
+            placeholder="Type here"
             style={{
               width: '100%',
               minHeight: '150px',
@@ -136,7 +136,7 @@ export default function GrowStep2Reality() {
           <textarea
             value={opportunities}
             onChange={handleOpportunitiesChange}
-            placeholder="What advantages or resources are available?"
+            placeholder="Type here"
             style={{
               width: '100%',
               minHeight: '150px',

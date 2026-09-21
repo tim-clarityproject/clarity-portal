@@ -219,7 +219,7 @@ export default function InversionStep3Plan() {
           <textarea
             value={plan}
             onChange={(e) => setPlan(e.target.value)}
-            placeholder="What will you do to address these potential problems?"
+            placeholder="Type here"
             style={{
               width: '100%',
               minHeight: '300px',

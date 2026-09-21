@@ -152,7 +152,7 @@ export default function PlanMyDayStep1() {
             <textarea
               value={topPriority}
               onChange={(e) => setTopPriority(e.target.value)}
-              placeholder="What's the one thing that matters most..."
+              placeholder="Type here"
               style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
@@ -164,7 +164,7 @@ export default function PlanMyDayStep1() {
             <textarea
               value={showUp}
               onChange={(e) => setShowUp(e.target.value)}
-              placeholder="What can you actually influence or control..."
+              placeholder="Type here"
               style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
@@ -176,7 +176,7 @@ export default function PlanMyDayStep1() {
             <textarea
               value={notDo}
               onChange={(e) => setNotDo(e.target.value)}
-              placeholder="What should you avoid or not focus on..."
+              placeholder="Type here"
               style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
             />
           </div>
