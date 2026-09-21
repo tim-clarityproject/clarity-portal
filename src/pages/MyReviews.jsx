@@ -143,7 +143,7 @@ export default function MyReviews() {
               }
             }}
           >
-            Weekly Momentum Review
+            Weekly Momentum Reviews
           </button>
           <button
             onClick={() => setFilterType('after-action')}
@@ -325,6 +325,30 @@ export default function MyReviews() {
         gap: '12px',
         zIndex: 10,
       }}>
+        <button
+          onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'weekly-momentum' } })}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: 'transparent',
+            border: '2px solid #e5e5e5',
+            color: '#333',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '6px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#F08571';
+            e.currentTarget.style.backgroundColor = '#FEE5DE';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#e5e5e5';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          + Weekly Momentum Review
+        </button>
         <button
           onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
           style={{
