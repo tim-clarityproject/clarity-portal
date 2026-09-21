@@ -186,9 +186,9 @@ export default function MeetingSummary() {
         {data.objectives && data.objectives.length > 0 && (
           <div style={{ marginBottom: '16px' }}>
             <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Objectives</h2>
-            <ol style={{ fontSize: '13px', color: '#666', margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
-              {data.objectives.map((obj) => (
-                <li key={obj.id} style={{ marginBottom: '4px' }}>{obj.text}</li>
+            <ol style={{ fontSize: '13px', color: '#666', margin: '0', paddingLeft: '24px', lineHeight: '1.6', listStyle: 'decimal' }}>
+              {data.objectives.map((obj, index) => (
+                <li key={obj.id} style={{ marginBottom: '4px', marginLeft: '4px' }}>{obj.text}</li>
               ))}
             </ol>
           </div>
