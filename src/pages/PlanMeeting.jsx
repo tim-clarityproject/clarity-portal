@@ -451,7 +451,7 @@ export default function PlanMeeting() {
                     onChange={(e) => setDate(e.target.value)}
                     style={{
                       ...inputStyle,
-                      padding: '12px 14px 12px 40px',
+                      padding: '12px 40px 12px 14px',
                       border: '2px solid #e5e5e5',
                       fontSize: '15px',
                       fontWeight: '500',
@@ -468,7 +468,7 @@ export default function PlanMeeting() {
                       e.target.style.boxShadow = 'none';
                     }}
                   />
-                  <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
+                  <Calendar size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
                 </div>
               </div>
               <div style={{ maxWidth: '150px' }}>
@@ -480,7 +480,7 @@ export default function PlanMeeting() {
                     onChange={(e) => setTime(e.target.value)}
                     style={{
                       ...inputStyle,
-                      padding: '12px 14px 12px 40px',
+                      padding: '12px 40px 12px 14px',
                       border: '2px solid #e5e5e5',
                       fontSize: '15px',
                       fontWeight: '500',
@@ -497,14 +497,14 @@ export default function PlanMeeting() {
                       e.target.style.boxShadow = 'none';
                     }}
                   />
-                  <Clock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
+                  <Clock size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
                 </div>
               </div>
               <div style={{ maxWidth: '150px' }}>
                 <label style={labelStyle}>End Time</label>
                 <div
                   style={{
-                    padding: '12px 14px 12px 40px',
+                    padding: '12px 14px',
                     border: '2px solid #e5e5e5',
                     fontSize: '15px',
                     fontWeight: '500',
@@ -514,12 +514,13 @@ export default function PlanMeeting() {
                     backgroundColor: '#fafafa',
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     position: 'relative',
                     minHeight: '42px',
                   }}
                 >
-                  <Clock size={18} style={{ position: 'absolute', left: '12px', color: '#999' }} />
-                  <span style={{ marginLeft: 'auto', marginRight: 'auto' }}>{endTime || '—'}</span>
+                  <Clock size={18} style={{ position: 'absolute', right: '12px', color: '#999' }} />
+                  <span>{endTime || '—'}</span>
                 </div>
               </div>
             </div>
