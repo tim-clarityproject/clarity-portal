@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
+import { summaryStyles } from '../styles/summaryStyles';
 
 export default function DecisionSummary() {
   const navigate = useNavigate();
@@ -80,17 +81,17 @@ export default function DecisionSummary() {
   };
 
   const SectionBlock = ({ title, content }) => (
-    <div style={{ marginBottom: '32px' }}>
-      <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+    <div style={{ ...summaryStyles.section }}>
+      <h2 style={summaryStyles.sectionHeading}>
         {title}
       </h2>
       <div style={{
         backgroundColor: '#f9f9f9',
         padding: '16px',
         borderRadius: '8px',
-        fontSize: '14px',
+        fontSize: '13px',
         lineHeight: '1.6',
-        color: '#555',
+        color: '#666',
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word'
       }}>

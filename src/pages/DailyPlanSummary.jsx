@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
+import { summaryStyles } from '../styles/summaryStyles';
 
 export default function DailyPlanSummary() {
   const navigate = useNavigate();
@@ -107,25 +108,21 @@ export default function DailyPlanSummary() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         {/* Back Button */}
-        <button
-          onClick={() => navigate('/my-plans', { state: { isGuest } })}
-          style={{
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#F08571',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            padding: 0,
-            marginBottom: '24px',
-          }}
-        >
-          ← Back to Daily Plans
-        </button>
+        <div style={summaryStyles.backButtonContainer}>
+          <button
+            onClick={() => navigate('/my-plans', { state: { isGuest } })}
+            style={{
+              ...summaryStyles.backButton,
+              marginBottom: 0,
+            }}
+          >
+            ← Back to Daily Plans
+          </button>
+        </div>
 
         {/* Title and Tag */}
-        <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
+        <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <h1 style={{ ...summaryStyles.mainTitle, flex: 1 }}>
             {formatDailyPlanDate(plan.created_at)}
           </h1>
           <span style={{
@@ -141,30 +138,30 @@ export default function DailyPlanSummary() {
           </span>
         </div>
 
-        <div style={{ marginBottom: '48px', display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
-          <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+          <div style={summaryStyles.section}>
+            <h2 style={summaryStyles.sectionHeading}>
               Top Priority
             </h2>
-            <p style={{ fontSize: '14px', color: '#666', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+            <p style={summaryStyles.contentText}>
               {formData.topPriority || '—'}
             </p>
           </div>
 
-          <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '12px' }}>
+          <div style={summaryStyles.section}>
+            <h2 style={summaryStyles.sectionHeading}>
               What's within your control today?
             </h2>
-            <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+            <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
               {formData.showUp}
             </p>
           </div>
 
-          <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '12px' }}>
+          <div style={summaryStyles.section}>
+            <h2 style={summaryStyles.sectionHeading}>
               What don't you want to do?
             </h2>
-            <p style={{ fontSize: '14px', color: '#333', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+            <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
               {formData.notDo}
             </p>
           </div>

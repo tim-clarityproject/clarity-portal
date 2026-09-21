@@ -91,17 +91,17 @@ export default function ReviewSummary() {
   }
 
   const SectionBlock = ({ title, content }) => (
-    <div style={{ marginBottom: '32px' }}>
-      <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+    <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+      <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
         {title}
       </h2>
       <div style={{
         backgroundColor: '#f9f9f9',
         padding: '16px',
         borderRadius: '8px',
-        fontSize: '14px',
+        fontSize: '13px',
         lineHeight: '1.6',
-        color: '#555',
+        color: '#666',
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word'
       }}>

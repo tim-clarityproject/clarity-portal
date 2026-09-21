@@ -115,8 +115,8 @@ export default function StopDoingAuditSummary() {
         </h1>
 
         {/* Activities Section */}
-        <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+          <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Time-Sink Activities ({getTotalTime().toFixed(1)} hours/week)
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
