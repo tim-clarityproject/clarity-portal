@@ -323,6 +323,26 @@ export default function PlanMeeting() {
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
+      <style>{`
+        @media (max-width: 768px) {
+          .page-container {
+            padding: 32px 16px !important;
+            paddingBottom: 120px !important;
+          }
+          .form-row {
+            flex-direction: column !important;
+            gap: 0 !important;
+          }
+          .form-row > div {
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+          .fixed-bottom-bar {
+            padding: 12px 16px !important;
+            gap: 8px !important;
+          }
+        }
+      `}</style>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
         <div style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -786,7 +806,7 @@ export default function PlanMeeting() {
       </div>
 
       {/* Fixed bottom bar */}
-      <div style={{
+      <div className="fixed-bottom-bar" style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
