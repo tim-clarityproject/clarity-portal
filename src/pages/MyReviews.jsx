@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { formatDateWithOrdinal } from '../lib/dateFormatter';
 import HomeHeader from '../components/HomeHeader';
 
 export default function MyReviews() {
@@ -40,15 +39,10 @@ export default function MyReviews() {
     }
   };
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-  };
-
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '';
-    const date = new Date(timeStr);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const formatDateTime = (dateTimeStr) => {
+    const date = new Date(dateTimeStr);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) + ' ' +
+           date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   const handleDelete = async (entryId, e) => {
@@ -257,7 +251,7 @@ export default function MyReviews() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                     <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                      {formatDateWithOrdinal(entry.entry_date)} {formatTime(entry.created_at)}
+                      {formatDateTime(entry.created_at)}
                     </p>
                     <button
                       onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type, entryId: entry.id } })}
