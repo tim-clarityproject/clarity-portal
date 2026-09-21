@@ -111,6 +111,9 @@ export default function OnboardingMission() {
         .update({ personal_goal: mission.trim() })
         .eq('id', user.id);
 
+      // Update mission in context after successful save
+      updateMission(mission.trim());
+
       setTimeout(() => {
         navigate('/welcome');
       }, 500);
@@ -211,11 +214,7 @@ export default function OnboardingMission() {
               <div style={{ animation: 'fadeIn 0.6s ease-in' }}>
                 <textarea
                   value={mission}
-                  onChange={(e) => {
-                    const newValue = e.target.value.slice(0, MAX_GOAL_LENGTH);
-                    setMission(newValue);
-                    updateMission(newValue);
-                  }}
+                  onChange={(e) => setMission(e.target.value.slice(0, MAX_GOAL_LENGTH))}
                   onKeyPress={handleKeyPress}
                   placeholder="Type here"
                   style={{
