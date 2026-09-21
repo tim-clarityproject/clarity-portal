@@ -126,7 +126,7 @@ export default function MeetingSummary() {
         </h1>
 
         {/* Title for Print */}
-        <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: 'black', margin: '0 0 16px 0', display: 'none' }} className="print-only">
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'black', margin: '0 0 24px 0' }} className="print-only">
           {data.title || 'Meeting Plan'}
         </h1>
 
@@ -208,7 +208,8 @@ export default function MeetingSummary() {
 
         <style>{`
           @page {
-            margin: 0.3in 0.4in;
+            size: A4 landscape;
+            margin: 0.5in;
             padding: 0;
           }
 
@@ -222,6 +223,10 @@ export default function MeetingSummary() {
             .page-container {
               padding: 0 !important;
               max-width: 100% !important;
+              margin: 0 !important;
+            }
+            .mission-container {
+              display: none !important;
             }
             * {
               -webkit-print-color-adjust: exact !important;
@@ -231,34 +236,71 @@ export default function MeetingSummary() {
             body, html {
               margin: 0 !important;
               padding: 0 !important;
+              background: white !important;
             }
             body::before, body::after {
               display: none !important;
             }
             h1 {
-              margin-top: 0 !important;
-              margin-bottom: 6px !important;
+              margin: 0 0 24px 0 !important;
               page-break-after: avoid;
-              font-size: 18px !important;
+              font-size: 24px !important;
+              font-weight: bold !important;
+              color: #000 !important;
             }
             h2 {
               page-break-after: avoid;
-              margin-top: 2px !important;
-              margin-bottom: 3px !important;
-              font-size: 12px !important;
+              margin: 20px 0 12px 0 !important;
+              font-size: 14px !important;
+              font-weight: 600 !important;
+              color: #333 !important;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              border-bottom: 2px solid #F08571;
+              padding-bottom: 8px;
             }
             p {
               margin: 0 !important;
               font-size: 12px !important;
+              color: #333 !important;
             }
             div {
               page-break-inside: avoid;
             }
             table {
-              font-size: 11px !important;
+              width: 100% !important;
+              border-collapse: collapse !important;
+              font-size: 12px !important;
+              margin: 12px 0 !important;
+              border: 1px solid #ddd !important;
             }
             td, th {
-              padding: 4px 6px !important;
+              padding: 8px 10px !important;
+              border: 1px solid #ddd !important;
+              text-align: left !important;
+            }
+            th {
+              background-color: #f5f5f5 !important;
+              font-weight: 600 !important;
+              color: #333 !important;
+            }
+            tr:nth-child(even) {
+              background-color: #fafafa !important;
+            }
+            /* Hide header background */
+            div[style*="backgroundColor: '#fafafa'"] {
+              background-color: white !important;
+              border: 1px solid #ddd !important;
+            }
+            /* Meeting details grid */
+            div[style*="gridTemplateColumns"] {
+              display: grid !important;
+              grid-template-columns: 1fr 1fr 1fr !important;
+              gap: 16px !important;
+              margin-bottom: 24px !important;
+              padding: 16px !important;
+              border: 1px solid #ddd !important;
+              background: white !important;
             }
           }
         `}</style>
@@ -336,6 +378,7 @@ export default function MeetingSummary() {
               backgroundColor: 'rgba(0, 0, 0, 0.2)',
               zIndex: 99,
             }}
+            className="no-print"
           />
           <div style={{
             position: 'fixed',
@@ -349,7 +392,8 @@ export default function MeetingSummary() {
             maxWidth: '400px',
             width: '90%',
             zIndex: 100,
-          }}>
+          }}
+          className="no-print">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>Share Meeting</h2>
               <button
