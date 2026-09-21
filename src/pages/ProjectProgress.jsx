@@ -65,11 +65,11 @@ export default function ProjectProgress() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, marginTop: '100px', display: 'flex', flexDirection: 'column', maxWidth: '1024px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', lineHeight: '1.4', marginBottom: '24px' }}>
             What is the progress status of each project?

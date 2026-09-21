@@ -150,7 +150,7 @@ export default function ProjectScatter() {
   const scaleY = (importanceValue) => svgHeight - bottomPadding - (importanceValue / (maxImportance + 2)) * plotHeight;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @page {
           margin: 0.3in 0.5in;
@@ -189,7 +189,7 @@ export default function ProjectScatter() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
             onClick={() => navigate('/decision-history', { state: { isGuest } })}

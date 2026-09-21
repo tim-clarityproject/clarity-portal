@@ -72,11 +72,11 @@ export default function CriticalSuccessFactors() {
   const canSubmit = filledCount >= 1;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, marginTop: '100px', display: 'flex', flexDirection: 'column', maxWidth: '1024px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
           {location.state?.problemTitle && (
             <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -123,7 +123,7 @@ export default function CriticalSuccessFactors() {
                   </span>
                   <div
                     style={{
-                      flex: 1, marginTop: '100px',
+                      flex: 1,
                       padding: '12px 16px',
                       backgroundColor: '#f5f5f5',
                       border: '1px solid #e5e5e5',
@@ -170,7 +170,7 @@ export default function CriticalSuccessFactors() {
                     onChange={(e) => handleFactorChange(index, e.target.value)}
                     placeholder="Type here"
                     style={{
-                      flex: 1, marginTop: '100px',
+                      flex: 1,
                       padding: '12px 16px',
                       border: '2px solid #e5e5e5',
                       borderRadius: '8px',

@@ -4,8 +4,8 @@ export default function DataStorageNotice() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', padding: '40px 20px' }} className="page-container">
-      <div style={{ maxWidth: '800px', marginTop: '100px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', padding: '40px 20px' }} className="page-container">
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <button
           onClick={() => navigate('/create-account')}
           style={{

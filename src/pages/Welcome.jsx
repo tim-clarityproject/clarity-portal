@@ -203,13 +203,13 @@ export default function Welcome() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} delayMission={true} />
       <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px', marginTop: '100px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px' }} className="page-container">
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
             <h1 style={{ fontSize: '44px', fontWeight: 'bold', color: 'black', marginBottom: '8px', minHeight: '60px' }}>

@@ -63,9 +63,9 @@ export default function DailyPlanSummary() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader isGuest={isGuest} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '100px', textAlign: 'center' }} className="page-container">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }} className="page-container">
           <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
         </div>
       </div>
@@ -74,9 +74,9 @@ export default function DailyPlanSummary() {
 
   if (!plan) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader isGuest={isGuest} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '100px', textAlign: 'center' }} className="page-container">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }} className="page-container">
           <p style={{ color: '#999', fontSize: '14px' }}>Plan not found</p>
           <button
             onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
@@ -102,10 +102,10 @@ export default function DailyPlanSummary() {
   const formData = plan.form_data || {};
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '100px', paddingBottom: '120px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         {/* Back Button */}
         <button
           onClick={() => navigate('/my-plans', { state: { isGuest } })}
