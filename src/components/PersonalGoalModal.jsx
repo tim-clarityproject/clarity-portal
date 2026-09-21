@@ -1,11 +1,13 @@
 import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
 
 const MAX_GOAL_LENGTH = 50;
 
 export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoalSaved }) {
   const { user } = useContext(AuthContext);
+  const { updateMission } = useContext(MissionContext);
   const [goal, setGoal] = useState(currentGoal);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -21,27 +23,10 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
 
     setIsSaving(true);
     try {
-      console.log('[PersonalGoalModal] handleSave: user =', user.id, 'goal =', goal.trim());
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ personal_goal: goal.trim() })
-        .eq('id', user.id)
-        .select();
-
-      console.log('[PersonalGoalModal] UPDATE result: data =', data, 'error =', error);
-      if (error) throw error;
-      if (!data || data.length === 0) {
-        console.warn('[PersonalGoalModal] UPDATE matched 0 rows for user', user.id);
-        alert('Failed to save goal - no rows updated');
-        setIsSaving(false);
-        return;
-      }
-
-      console.log('[PersonalGoalModal] Goal saved successfully');
+      await updateMission(goal.trim());
       onGoalSaved(goal.trim());
       onClose();
     } catch (error) {
-      console.error('[PersonalGoalModal] Error saving goal:', error);
       alert('Failed to save goal: ' + (error.message || 'Unknown error'));
     } finally {
       setIsSaving(false);

@@ -29,19 +29,14 @@ export default function EditPersonalDetails() {
           .eq('id', user.id)
           .single();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
-        }
-
         if (profile) {
-          console.log('Profile loaded:', profile);
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
           setRole(profile.role || '');
           setOrganisation(profile.organisation || '');
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        // Silently handle profile fetch errors
       } finally {
         setIsLoading(false);
       }
@@ -57,7 +52,6 @@ export default function EditPersonalDetails() {
     setMessage('');
 
     try {
-      console.log('Saving profile for user:', user.id);
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -69,14 +63,11 @@ export default function EditPersonalDetails() {
         .eq('id', user.id);
 
       if (error) {
-        console.error('Supabase update error:', error);
         throw error;
       }
 
-      console.log('Profile saved successfully');
       setMessage('✓ Profile saved successfully!');
 
-      // Refresh profile data from Supabase to show updated info
       const { data: freshProfile } = await supabase
         .from('profiles')
         .select('first_name, last_name, role, organisation')
@@ -90,13 +81,11 @@ export default function EditPersonalDetails() {
         setOrganisation(freshProfile.organisation || '');
       }
 
-      // Redirect back to My Account after a short delay
       setTimeout(() => {
         navigate('/my-account');
       }, 1500);
     } catch (error) {
-      console.error('Error saving profile:', error);
-      setMessage(`Error: ${error.message || 'Could not save profile. Check console for details.'}`);
+      setMessage(`Error: ${error.message || 'Could not save profile.'}`);
     } finally {
       setIsSaving(false);
     }

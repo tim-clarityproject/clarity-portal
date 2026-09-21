@@ -26,26 +26,23 @@ export default function MyAccount() {
 
     setIsDeleting(true);
     try {
-      // Delete profile and related data (cascade will handle other tables)
       const { error } = await supabase
         .from('profiles')
         .delete()
         .eq('id', user.id);
 
       if (error) {
-        console.error('Delete error:', error);
         alert('Failed to delete account: ' + error.message);
         setIsDeleting(false);
         return;
       }
 
-      // Sign out the user
       await logout();
+      sessionStorage.clear();
+      localStorage.clear();
 
-      // Redirect to login
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
-      console.error('Error deleting account:', error);
       alert('Failed to delete account. Please try again.');
       setIsDeleting(false);
     }
@@ -59,7 +56,6 @@ export default function MyAccount() {
       }
 
       try {
-        // Fetch profile data
         const { data: profile } = await supabase
           .from('profiles')
           .select('first_name, last_name, personal_goal, show_mission_in_header')
@@ -71,7 +67,6 @@ export default function MyAccount() {
           setLastName(profile.last_name || '');
           setPersonalGoal(profile.personal_goal || '');
 
-          // Load visibility from Supabase, fallback to localStorage
           if (profile.show_mission_in_header !== null && profile.show_mission_in_header !== undefined) {
             setShowGoalInHeader(profile.show_mission_in_header);
           } else {
@@ -90,6 +85,32 @@ export default function MyAccount() {
 
     fetchUserData();
   }, [user]);
+
+  // Re-fetch goal when modal closes (to show updated value immediately)
+  useEffect(() => {
+    if (!showGoalModal && user) {
+      const refetchGoal = async () => {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('personal_goal, show_mission_in_header')
+            .eq('id', user.id)
+            .single();
+
+          if (profile) {
+            setPersonalGoal(profile.personal_goal || '');
+            if (profile.show_mission_in_header !== null && profile.show_mission_in_header !== undefined) {
+              setShowGoalInHeader(profile.show_mission_in_header);
+            }
+          }
+        } catch (error) {
+          console.error('Error refetching goal:', error);
+        }
+      };
+
+      refetchGoal();
+    }
+  }, [showGoalModal, user]);
 
   const handleToggleGoalVisibility = async () => {
     const newVisibility = !showGoalInHeader;

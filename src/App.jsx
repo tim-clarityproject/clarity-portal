@@ -55,6 +55,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
 import TermsAcceptance from './pages/TermsAcceptance';
+import OnboardingMission from './pages/OnboardingMission';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -97,9 +98,23 @@ function AppContent() {
           return;
         }
 
-        // Only redirect to welcome if terms are accepted
+        // Check if user has set their mission
         if (termsAccepted && location.hash.includes('access_token')) {
-          navigate('/welcome', { replace: true });
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('personal_goal')
+              .eq('id', user.id)
+              .single();
+
+            if (!profile?.personal_goal) {
+              navigate('/onboarding-mission', { replace: true });
+            } else {
+              navigate('/welcome', { replace: true });
+            }
+          } catch (err) {
+            navigate('/welcome', { replace: true });
+          }
         }
       } catch (error) {
         console.error('Error in redirects:', error);
@@ -122,6 +137,7 @@ function AppContent() {
       <Route path="/" element={<Login />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/welcome" element={<Welcome />} />
+      <Route path="/onboarding-mission" element={<OnboardingMission />} />
       <Route path="/create-account" element={<CreateAccount />} />
       <Route path="/about" element={<About />} />
       <Route path="/my-account" element={<MyAccount />} />

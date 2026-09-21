@@ -24,19 +24,17 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
     }
 
     const getTimeGreeting = () => {
-      const now = new Date();
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const userTime = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
-      const hour = userTime.getHours();
-
-      if (hour < 12) return 'Good morning';
-      if (hour < 17) return 'Good afternoon';
-      if (hour < 22) return 'Good evening';
-      return 'Good night';
+      const hour = new Date().getHours();
+      if (hour >= 22 || hour < 4) return "You're a night owl";
+      if (hour >= 4 && hour < 7) return 'Rise and shine';
+      if (hour >= 7 && hour < 12) return 'Morning';
+      if (hour >= 12 && hour < 17) return 'Afternoon';
+      if (hour >= 17 && hour < 22) return 'Evening';
+      return "You're a night owl";
     };
 
     const timeGreeting = getTimeGreeting();
-    const fullText = `${timeGreeting}, ${firstName}. Let's take a breath.`;
+    const fullText = `${timeGreeting}, ${firstName}. Let's breathe.`;
     let charIndex = 0;
 
     // Type out text
