@@ -288,7 +288,7 @@ export default function PlanMeeting() {
     <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', marginTop: '56px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '80px' }} className="page-container">
         <div style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
             <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
@@ -406,14 +406,58 @@ export default function PlanMeeting() {
         {/* Date & Time Card */}
         <div style={{ ...sectionStyle, backgroundColor: 'white', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
           <div style={sectionInnerStyle}>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-              <div style={{ maxWidth: '150px' }}>
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-end' }}>
+              <div style={{ maxWidth: '180px' }}>
                 <label style={labelStyle}>Date</label>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    padding: '12px 14px',
+                    border: '2px solid #e5e5e5',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    color: date ? '#333' : '#999',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#F08571';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#e5e5e5';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
               </div>
-              <div style={{ maxWidth: '120px' }}>
+              <div style={{ maxWidth: '150px' }}>
                 <label style={labelStyle}>Time</label>
-                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inputStyle} />
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    padding: '12px 14px',
+                    border: '2px solid #e5e5e5',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    color: time ? '#333' : '#999',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#F08571';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#e5e5e5';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
               </div>
             </div>
           </div>

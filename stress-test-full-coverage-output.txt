@@ -1,0 +1,394 @@
+
+> clarity-portal@0.0.0 stress-test:full-coverage
+> node stress-test-full-coverage.js
+
+
+╔═══════════════════════════════════════════════════════════════╗
+║    🚀 CLARITY PORTAL - FULL COVERAGE STRESS TEST                ║
+║       Every Page × 3 Iterations = 75 Total Tests             ║
+╚═══════════════════════════════════════════════════════════════╝
+
+🎯 Target: https://portal.theclarityproject.co.uk
+📊 Total Pages: 25
+🔁 Iterations per Page: 3
+📸 Failures: ./stress-test-full-coverage-failures
+
+
+═══════════════════════════════════════════════════════════════
+ITERATION 1/3
+═══════════════════════════════════════════════════════════════
+  📄 Grow Step 1: Goal [Run 1]
+     ✓ Textarea fillable
+     ✓ Continue button enabled
+     ✅ Pass (185ms load)
+  📄 Grow Step 2: Constraints [Run 1]
+     ✓ Textarea fillable
+     ✓ Continue button enabled
+     ✅ Pass (129ms load)
+  📄 Grow Step 3: Options [Run 1]
+     ✓ Input fillable
+     ✓ Continue button enabled
+     ✅ Pass (153ms load)
+  📄 Grow Step 3b: Prioritize [Run 1]
+     ⚠️ Console errors: Failed to load resource: the server responded with a status of 429 ()
+     ✓ Continue button disabled (expected)
+     ✅ Pass (133ms load)
+  📄 Grow Step 4: Will Do [Run 1]
+     ⚠️ Console errors: Failed to load resource: the server responded with a status of 429 ()
+     ✅ Pass (130ms load)
+  📄 Inversion Step 1: Goal [Run 1]
+     ✓ Textarea fillable
+     ✓ Continue button enabled
+     ✅ Pass (127ms load)
+  📄 Inversion Step 2: Fuckups [Run 1]
+     ✓ Input fillable
+     ⚠️ Console errors: Failed to load resource: the server responded with a status of 429 ()
+     ✓ Continue button enabled
+     ✅ Pass (153ms load)
+  📄 Inversion Step 3: Plan [Run 1]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Failed to load resource: the server responded with a status of 429 ()
+     ✅ Pass (131ms load)
+  📄 Goal Setting [Run 1]
+     ✓ Textarea fillable
+     ✓ Continue button enabled
+     ✅ Pass (132ms load)
+  📄 Risks Assessment [Run 1]
+     ✓ Input fillable
+     ⚠️ Console errors: Failed to load resource: the server responded with a status of 429 ()
+     ✓ Continue button enabled
+     ✅ Pass (128ms load)
+  📄 Critical Success Factors [Run 1]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button disabled (expected)
+     ✅ Pass (149ms load)
+  📄 Strategies [Run 1]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (147ms load)
+  📄 Project List [Run 1]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (137ms load)
+  📄 Project Matrix [Run 1]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (139ms load)
+  📄 Project Progress [Run 1]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (125ms load)
+  📄 Plan My Day [Run 1]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (139ms load)
+  📄 Plan Meeting [Run 1]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (136ms load)
+  📄 Tough Conversation Step 1 [Run 1]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (152ms load)
+  📄 If-Then Planning [Run 1]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (130ms load)
+  📄 Stop-Doing Audit [Run 1]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (153ms load)
+  📄 My Journal/Reviews [Run 1]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (139ms load)
+  📄 Decision History [Run 1]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (125ms load)
+  📄 Decision Tools Hub [Run 1]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (134ms load)
+  📄 Home/Welcome [Run 1]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (250ms load)
+  📄 Breathing Tool [Run 1]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (139ms load)
+
+═══════════════════════════════════════════════════════════════
+ITERATION 2/3
+═══════════════════════════════════════════════════════════════
+  📄 Grow Step 1: Goal [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (135ms load)
+  📄 Grow Step 2: Constraints [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (150ms load)
+  📄 Grow Step 3: Options [Run 2]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (214ms load)
+  📄 Grow Step 3b: Prioritize [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button disabled (expected)
+     ✅ Pass (131ms load)
+  📄 Grow Step 4: Will Do [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (130ms load)
+  📄 Inversion Step 1: Goal [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (159ms load)
+  📄 Inversion Step 2: Fuckups [Run 2]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (139ms load)
+  📄 Inversion Step 3: Plan [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (131ms load)
+  📄 Goal Setting [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (179ms load)
+  📄 Risks Assessment [Run 2]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (147ms load)
+  📄 Critical Success Factors [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button disabled (expected)
+     ✅ Pass (136ms load)
+  📄 Strategies [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (159ms load)
+  📄 Project List [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (146ms load)
+  📄 Project Matrix [Run 2]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (145ms load)
+  📄 Project Progress [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (131ms load)
+  📄 Plan My Day [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (145ms load)
+  📄 Plan Meeting [Run 2]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (132ms load)
+  📄 Tough Conversation Step 1 [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (133ms load)
+  📄 If-Then Planning [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (180ms load)
+  📄 Stop-Doing Audit [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (151ms load)
+  📄 My Journal/Reviews [Run 2]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (204ms load)
+  📄 Decision History [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (130ms load)
+  📄 Decision Tools Hub [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (135ms load)
+  📄 Home/Welcome [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (130ms load)
+  📄 Breathing Tool [Run 2]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (148ms load)
+
+═══════════════════════════════════════════════════════════════
+ITERATION 3/3
+═══════════════════════════════════════════════════════════════
+  📄 Grow Step 1: Goal [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (147ms load)
+  📄 Grow Step 2: Constraints [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (134ms load)
+  📄 Grow Step 3: Options [Run 3]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (141ms load)
+  📄 Grow Step 3b: Prioritize [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button disabled (expected)
+     ✅ Pass (134ms load)
+  📄 Grow Step 4: Will Do [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (130ms load)
+  📄 Inversion Step 1: Goal [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (135ms load)
+  📄 Inversion Step 2: Fuckups [Run 3]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (132ms load)
+  📄 Inversion Step 3: Plan [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (127ms load)
+  📄 Goal Setting [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (132ms load)
+  📄 Risks Assessment [Run 3]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (131ms load)
+  📄 Critical Success Factors [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button disabled (expected)
+     ✅ Pass (156ms load)
+  📄 Strategies [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (124ms load)
+  📄 Project List [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (142ms load)
+  📄 Project Matrix [Run 3]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (143ms load)
+  📄 Project Progress [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (128ms load)
+  📄 Plan My Day [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (123ms load)
+  📄 Plan Meeting [Run 3]
+     ✓ Input fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (141ms load)
+  📄 Tough Conversation Step 1 [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (150ms load)
+  📄 If-Then Planning [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (130ms load)
+  📄 Stop-Doing Audit [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (144ms load)
+  📄 My Journal/Reviews [Run 3]
+     ✓ Textarea fillable
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (131ms load)
+  📄 Decision History [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (167ms load)
+  📄 Decision Tools Hub [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (132ms load)
+  📄 Home/Welcome [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✓ Continue button enabled
+     ✅ Pass (139ms load)
+  📄 Breathing Tool [Run 3]
+     ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
+     ✅ Pass (132ms load)
+
+╔═══════════════════════════════════════════════════════════════╗
+║                  📊 FULL COVERAGE REPORT                      ║
+╚═══════════════════════════════════════════════════════════════╝
+
+✅ Passed: 75/75
+❌ Failed: 0/75
+📈 Pass Rate: 100.0%
+
+📋 Results by Section:
+─────────────────────────────────────────────────────────────
+Grow                 ████████████████████ 100% (15/15)
+Inversion            ████████████████████ 100% (9/9)
+Strategic Alignment  ████████████████████ 100% (21/21)
+Planning             ████████████████████ 100% (6/6)
+Tools                ████████████████████ 100% (12/12)
+Journal              ████████████████████ 100% (3/3)
+History              ████████████████████ 100% (3/3)
+Hub                  ████████████████████ 100% (3/3)
+Navigation           ████████████████████ 100% (3/3)
+
+📄 Individual Page Results:
+─────────────────────────────────────────────────────────────
+✅ Grow Step 1: Goal                   3/3 passed
+✅ Grow Step 2: Constraints            3/3 passed
+✅ Grow Step 3: Options                3/3 passed
+✅ Grow Step 3b: Prioritize            3/3 passed
+✅ Grow Step 4: Will Do                3/3 passed
+✅ Inversion Step 1: Goal              3/3 passed
+✅ Inversion Step 2: Fuckups           3/3 passed
+✅ Inversion Step 3: Plan              3/3 passed
+✅ Goal Setting                        3/3 passed
+✅ Risks Assessment                    3/3 passed
+✅ Critical Success Factors            3/3 passed
+✅ Strategies                          3/3 passed
+✅ Project List                        3/3 passed
+✅ Project Matrix                      3/3 passed
+✅ Project Progress                    3/3 passed
+✅ Plan My Day                         3/3 passed
+✅ Plan Meeting                        3/3 passed
+✅ Tough Conversation Step 1           3/3 passed
+✅ If-Then Planning                    3/3 passed
+✅ Stop-Doing Audit                    3/3 passed
+✅ My Journal/Reviews                  3/3 passed
+✅ Decision History                    3/3 passed
+✅ Decision Tools Hub                  3/3 passed
+✅ Home/Welcome                        3/3 passed
+✅ Breathing Tool                      3/3 passed
+
+✨ No failures! All pages working perfectly.
+
+📄 Full report: ./stress-test-full-coverage-report.json
+📸 Screenshots: ./stress-test-full-coverage-failures
+

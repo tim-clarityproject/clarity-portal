@@ -1,0 +1,20 @@
+
+> clarity-portal@0.0.0 stress-test:comprehensive
+> node stress-test-comprehensive.js
+
+
+╔═══════════════════════════════════════════════════════════════╗
+║     🚀 CLARITY PORTAL COMPREHENSIVE STRESS TEST v2.0            ║
+║              100-Run Deep Quality Audit                         ║
+╚═══════════════════════════════════════════════════════════════╝
+
+🎯 Target: https://portal.theclarityproject.co.uk
+📊 Test Runs: 100
+📸 Screenshots: ./stress-test-comprehensive-failures
+
+═══ COMPREHENSIVE BASELINE TESTS ═══
+browser.newPage: Target page, context or browser has been closed
+    at testRapidInput (/Users/timdutton/Library/CloudStorage/OneDrive-Personal/Client Portal/clarity-portal/stress-test-comprehensive.js:201:30)
+    at runComprehensiveStressing (/Users/timdutton/Library/CloudStorage/OneDrive-Personal/Client Portal/clarity-portal/stress-test-comprehensive.js:548:9) {
+  log: []
+}

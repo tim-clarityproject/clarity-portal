@@ -116,7 +116,7 @@ export default function MyAccount() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} personalGoal={showGoalInHeader ? personalGoal : ''} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, marginTop: '56px', display: 'flex', flexDirection: 'column', maxWidth: '900px', marginTop: '56px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '32px' }}>
           My Account
         </h1>
@@ -188,7 +188,7 @@ export default function MyAccount() {
               borderBottom: '1px solid #f0f0f0',
               marginBottom: '16px',
             }}>
-              <div style={{ flex: 1, maxWidth: '60%' }}>
+              <div style={{ flex: 1, marginTop: '56px', maxWidth: '60%' }}>
                 <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
                   Mission Statement
                 </p>

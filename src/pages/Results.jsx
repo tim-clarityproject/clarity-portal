@@ -62,7 +62,7 @@ export default function Results() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, marginTop: '56px', display: 'flex', flexDirection: 'column', maxWidth: '1200px', marginTop: '56px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black' }}>
             Your Strategy Ratings
@@ -70,7 +70,7 @@ export default function Results() {
         </div>
 
         {/* Radar Chart */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '48px' }}>
+        <div style={{ flex: 1, marginTop: '56px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '48px' }}>
           <ResponsiveContainer width="100%" height={380}>
             <RadarChart data={data} margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
               <PolarGrid stroke="#e5e5e5" strokeDasharray="3 3" />

@@ -1,0 +1,160 @@
+{
+  "timestamp": "2026-09-21T21:52:41.884Z",
+  "summary": {
+    "totalTests": 75,
+    "passed": 75,
+    "failed": 0,
+    "passRate": "100.0%",
+    "totalPages": 25,
+    "iterationsPerPage": 3,
+    "url": "https://portal.theclarityproject.co.uk"
+  },
+  "pageResults": {
+    "Grow Step 1: Goal": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Grow Step 2: Constraints": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Grow Step 3: Options": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Grow Step 3b: Prioritize": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Grow Step 4: Will Do": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Inversion Step 1: Goal": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Inversion Step 2: Fuckups": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Inversion Step 3: Plan": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Goal Setting": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Risks Assessment": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Critical Success Factors": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Strategies": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Project List": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Project Matrix": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Project Progress": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Plan My Day": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Plan Meeting": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Tough Conversation Step 1": {
+      "passed": 3,
+      "failed": 0
+    },
+    "If-Then Planning": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Stop-Doing Audit": {
+      "passed": 3,
+      "failed": 0
+    },
+    "My Journal/Reviews": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Decision History": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Decision Tools Hub": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Home/Welcome": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Breathing Tool": {
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "sections": {
+    "Grow": [
+      "Grow Step 1: Goal",
+      "Grow Step 2: Constraints",
+      "Grow Step 3: Options",
+      "Grow Step 3b: Prioritize",
+      "Grow Step 4: Will Do"
+    ],
+    "Inversion": [
+      "Inversion Step 1: Goal",
+      "Inversion Step 2: Fuckups",
+      "Inversion Step 3: Plan"
+    ],
+    "Strategic Alignment": [
+      "Goal Setting",
+      "Risks Assessment",
+      "Critical Success Factors",
+      "Strategies",
+      "Project List",
+      "Project Matrix",
+      "Project Progress"
+    ],
+    "Planning": [
+      "Plan My Day",
+      "Plan Meeting"
+    ],
+    "Tools": [
+      "Tough Conversation Step 1",
+      "If-Then Planning",
+      "Stop-Doing Audit",
+      "Breathing Tool"
+    ],
+    "Journal": [
+      "My Journal/Reviews"
+    ],
+    "History": [
+      "Decision History"
+    ],
+    "Hub": [
+      "Decision Tools Hub"
+    ],
+    "Navigation": [
+      "Home/Welcome"
+    ]
+  },
+  "bugs": []
+}

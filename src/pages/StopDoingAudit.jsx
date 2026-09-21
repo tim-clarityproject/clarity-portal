@@ -198,7 +198,7 @@ export default function StopDoingAudit() {
     <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
+      <div style={{ flex: 1, marginTop: '56px', display: 'flex', flexDirection: 'column', maxWidth: '900px', marginTop: '56px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
             Stop Doing Audit
@@ -369,7 +369,7 @@ export default function StopDoingAudit() {
             <select
               value={firstAction}
               onChange={(e) => setFirstAction(e.target.value)}
-              style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
+              style={{ ...inputStyle, flex: 1, marginTop: '56px', marginBottom: 0 }}
             >
               <option value="">Choose an activity...</option>
               {items.map((item) => (

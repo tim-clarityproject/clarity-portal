@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "stress-test": "node stress-test.js"
+    "stress-test": "node stress-test.js",
+    "stress-test:comprehensive": "node stress-test-comprehensive.js",
+    "stress-test:full-coverage": "node stress-test-full-coverage.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",
