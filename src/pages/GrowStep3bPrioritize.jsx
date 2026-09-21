@@ -148,8 +148,9 @@ export default function GrowStep3bPrioritize() {
     return prioritizedOptions;
   };
 
-  const handleNext = () => {
+  const handleNext = (newDecisionId) => {
     updateFormData('options', prioritizedOptions);
+    const finalDecisionId = newDecisionId || location.state?.decisionId;
     navigate('/grow-step-4', {
       state: {
         problemTitle: location.state?.problemTitle,
@@ -160,7 +161,7 @@ export default function GrowStep3bPrioritize() {
         availableOptions: availableOptions,
         prioritizedOptions: prioritizedOptions,
         isGuest,
-        decisionId: location.state?.decisionId,
+        decisionId: finalDecisionId,
       },
     });
   };
@@ -198,17 +199,9 @@ export default function GrowStep3bPrioritize() {
             My Decisions
           </button>
         </div>
-        {location.state?.problemTitle && (
-          <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {location.state.problemTitle}
-          </p>
-        )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>
           Prioritize your options
         </h1>
-        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
-          Rank your best choices in order of fit
-        </p>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '75%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />

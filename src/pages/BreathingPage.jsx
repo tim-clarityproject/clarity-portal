@@ -15,6 +15,38 @@ export default function BreathingPage() {
   const sessionStartTimeRef = useRef(null);
   const isBreathingRef = useRef(false);
 
+  useEffect(() => {
+    // Override dark mode for this page
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById('root');
+
+    // Store original styles
+    const originalHtmlBg = html.style.backgroundColor;
+    const originalBodyBg = body.style.backgroundColor;
+    const originalRootBg = root?.style.backgroundColor;
+
+    // Force light backgrounds
+    html.style.backgroundColor = 'white';
+    body.style.backgroundColor = 'white';
+    if (root) root.style.backgroundColor = 'white';
+
+    // Also override the CSS variable at the root level
+    html.style.setProperty('--bg', '#fff', 'important');
+    html.style.setProperty('--text', '#6b6375', 'important');
+    html.style.setProperty('--text-h', '#08060d', 'important');
+
+    return () => {
+      // Restore original styles
+      html.style.backgroundColor = originalHtmlBg;
+      body.style.backgroundColor = originalBodyBg;
+      if (root) root.style.backgroundColor = originalRootBg;
+      html.style.removeProperty('--bg');
+      html.style.removeProperty('--text');
+      html.style.removeProperty('--text-h');
+    };
+  }, []);
+
   const saveBreathingSession = async () => {
     if (!user || isGuest || !sessionStartTimeRef.current) return;
 
@@ -54,10 +86,72 @@ export default function BreathingPage() {
   }, [isBreathing]);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #faf7f6 0%, #f5f0ef 50%, #faf7f6 100%)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px', paddingTop: '100px', position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px', paddingTop: '64px', position: 'relative' }}>
+        {/* Title and instructions at top */}
+        <div style={{ width: '100%', maxWidth: '800px', marginBottom: '48px', textAlign: 'left' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>
+            {breathingType === 'vagal' ? 'Vagal Breathing' : breathingType === 'box' ? 'Box Breathing' : 'Physiological Sigh'}
+          </h1>
+          <div style={{ fontSize: '14px', color: '#666', lineHeight: '1.8', marginBottom: '12px', backgroundColor: '#fafafa', padding: '20px', borderRadius: '8px', borderLeft: '3px solid #F08571' }}>
+            {breathingType === 'vagal' && (
+              <div>
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 1: Inhale</p>
+                  <p style={{ margin: 0, marginBottom: '12px', marginLeft: '12px' }}>Inhale slowly through your nose for four seconds, allowing your lungs to fill completely.</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 2: Exhale</p>
+                  <p style={{ margin: 0, marginLeft: '12px' }}>Exhale slowly through your mouth for six seconds, releasing all the air gradually.</p>
+                </div>
+              </div>
+            )}
+            {breathingType === 'box' && (
+              <div>
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 1: Inhale</p>
+                  <p style={{ margin: 0, marginBottom: '12px', marginLeft: '12px' }}>Inhale slowly through your nose for four seconds.</p>
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 2: Hold</p>
+                  <p style={{ margin: 0, marginBottom: '12px', marginLeft: '12px' }}>Hold your breath for four seconds.</p>
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 3: Exhale</p>
+                  <p style={{ margin: 0, marginBottom: '12px', marginLeft: '12px' }}>Exhale slowly through your mouth for four seconds.</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 4: Hold</p>
+                  <p style={{ margin: 0, marginLeft: '12px' }}>Hold your breath for four seconds.</p>
+                </div>
+              </div>
+            )}
+            {breathingType === 'sigh' && (
+              <div>
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 1: First Inhale</p>
+                  <p style={{ margin: 0, marginBottom: '12px', marginLeft: '12px' }}>Take a deep, natural breath in through your nose until your lungs feel full.</p>
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 2: Second Inhale</p>
+                  <p style={{ margin: 0, marginBottom: '12px', marginLeft: '12px' }}>Without exhaling, take a quick second "top-up" inhalation (a sharp sniff) through your nose to maximally inflate your lungs.</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, marginBottom: '8px', fontWeight: '500', color: '#333' }}>Step 3: Exhale</p>
+                  <p style={{ margin: 0, marginLeft: '12px' }}>Release a long, slow exhale through your mouth until your lungs are completely empty.</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <p style={{ fontSize: '13px', color: '#999', textAlign: 'center', margin: '16px 0 0 0' }}>
+            {breathingType === 'vagal' && 'Repeat for as many cycles as you like.'}
+            {breathingType === 'box' && 'Repeat for as many cycles as you like.'}
+            {breathingType === 'sigh' && 'Repeat 1-3 times for immediate stress relief.'}
+          </p>
+        </div>
+
         {/* Breathing Type Selector - positioned at bottom */}
         <div style={{ position: 'absolute', bottom: '56px', display: 'flex', border: '2px solid #d0d0d0', borderRadius: '8px', overflow: 'hidden' }}>
           <button
@@ -161,7 +255,7 @@ export default function BreathingPage() {
         </div>
 
         {/* Content Container - Full immersive experience */}
-        <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+        <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, marginTop: '-20px' }}>
           {/* Vagal Breathing */}
           {breathingType === 'vagal' && (
             <VagalBreathing isBreathing={isBreathing} onInstructionsDismissed={() => setSetupComplete(prev => ({...prev, vagal: true}))} />
@@ -343,31 +437,7 @@ function BoxBreathing({ isActive, onInstructionsDismissed }) {
   return (
     <>
       {showInstructions ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', paddingBottom: '120px', flex: 1, justifyContent: 'center', gap: '24px' }}>
-          <div style={{ maxWidth: '500px', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
-              Box Breathing
-            </h2>
-            <div style={{ fontSize: '16px', color: '#666', lineHeight: '1.8', marginBottom: '24px' }}>
-              <div style={{ textAlign: 'left', display: 'inline-block' }}>
-                <p style={{ marginBottom: '12px' }}>
-                  <strong>Step 1:</strong> Inhale slowly through your nose for four seconds.
-                </p>
-                <p style={{ marginBottom: '12px' }}>
-                  <strong>Step 2:</strong> Hold your breath for four seconds.
-                </p>
-                <p style={{ marginBottom: '12px' }}>
-                  <strong>Step 3:</strong> Exhale slowly through your mouth for four seconds.
-                </p>
-                <p style={{ marginBottom: '12px' }}>
-                  <strong>Step 4:</strong> Hold your breath for four seconds.
-                </p>
-              </div>
-            </div>
-            <p style={{ fontSize: '14px', color: '#999', marginBottom: '24px' }}>
-              Repeat for as many cycles as you like.
-            </p>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', paddingBottom: '120px', flex: 1, justifyContent: 'center' }}>
           <button
             onClick={() => {
               setShowInstructions(false);
@@ -561,25 +631,7 @@ function VagalBreathing({ isBreathing, onInstructionsDismissed }) {
   return (
     <>
       {showInstructions ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', paddingBottom: '120px', flex: 1, justifyContent: 'center', gap: '24px' }}>
-          <div style={{ maxWidth: '500px', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
-              Vagal Breathing
-            </h2>
-            <div style={{ fontSize: '16px', color: '#666', lineHeight: '1.8', marginBottom: '24px' }}>
-              <div style={{ textAlign: 'left', display: 'inline-block' }}>
-                <p style={{ marginBottom: '12px' }}>
-                  Inhale slowly through your nose for four seconds.
-                </p>
-                <p>
-                  Then exhale slowly through your mouth for 6 seconds.
-                </p>
-              </div>
-            </div>
-            <p style={{ fontSize: '14px', color: '#999', marginBottom: '24px' }}>
-              Repeat for as many cycles as you like.
-            </p>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', paddingBottom: '120px', flex: 1, justifyContent: 'center' }}>
           <button
             onClick={() => {
               setShowInstructions(false);
@@ -748,28 +800,7 @@ function PhysiologicalSigh({ isActive, onInstructionsDismissed }) {
   return (
     <>
       {showInstructions ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', paddingBottom: '120px', flex: 1, justifyContent: 'center', gap: '24px' }}>
-          <div style={{ maxWidth: '500px', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
-              Physiological Sigh
-            </h2>
-            <div style={{ fontSize: '16px', color: '#666', lineHeight: '1.8', marginBottom: '24px' }}>
-              <div style={{ textAlign: 'left', display: 'inline-block' }}>
-                <p style={{ marginBottom: '12px' }}>
-                  <strong>First Inhale:</strong> Take a deep, natural breath in through your nose until your lungs feel full.
-                </p>
-                <p style={{ marginBottom: '12px' }}>
-                  <strong>Second Inhale:</strong> Without exhaling, take a quick second "top-up" inhalation (a sharp sniff) through your nose to maximally inflate your lungs and re-expand any tiny collapsed air sacs.
-                </p>
-                <p>
-                  <strong>Exhale:</strong> Release a long, slow exhale through your mouth until your lungs are completely empty.
-                </p>
-              </div>
-            </div>
-            <p style={{ fontSize: '14px', color: '#999', marginBottom: '24px' }}>
-              Repeat 1-3 times for immediate stress relief.
-            </p>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', paddingBottom: '120px', flex: 1, justifyContent: 'center' }}>
           <button
             onClick={() => {
               setShowInstructions(false);

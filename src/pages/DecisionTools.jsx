@@ -5,7 +5,7 @@ import HomeHeader from '../components/HomeHeader';
 
 const ALL_PROBLEMS = [
   { id: 'decision', title: 'I\'m navigating a tricky decision', description: 'Use the GROW model to get clear on the way forward', tools: ['grow'], status: null },
-  { id: 'strategic', title: 'I need to provide my team direction', description: 'Assess how your current projects align with your team\'s objective', tools: ['strategic-alignment'], status: null },
+  { id: 'strategic', title: 'I need to provide my team direction', description: 'Assess how your current projects align with your team\'s objective', tools: ['strategic-alignment'], status: 'coming-soon' },
   { id: 'tough-conversation', title: 'I need to give tough feedback', description: 'Create a script for giving feedback', tools: ['tough-conversation'], status: null },
   { id: 'stop-doing', title: 'I\'ve got too many things to do', description: 'Reclaim hours by stopping or delegating time-sink activities', tools: ['stop-doing-audit'], status: null },
   { id: 'if-then', title: 'I\'m feeling anxious about an uncertain situation', description: 'Prepare for uncertain situations with contingency plans', tools: ['if-then-planning'], status: null },
@@ -29,7 +29,11 @@ export default function DecisionTools() {
   const location = useLocation();
   const isGuest = location.state?.isGuest || false;
 
-  const problems = ALL_PROBLEMS;
+  const problems = [...ALL_PROBLEMS].sort((a, b) => {
+    if (a.status === 'coming-soon' && b.status !== 'coming-soon') return 1;
+    if (a.status !== 'coming-soon' && b.status === 'coming-soon') return -1;
+    return 0;
+  });
 
   const handleProblemSelect = (problem) => {
     if (problem.status === 'coming-soon') return;
@@ -52,7 +56,7 @@ export default function DecisionTools() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>All Decision Tools</h1>
           <button

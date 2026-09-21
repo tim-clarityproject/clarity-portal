@@ -160,10 +160,10 @@ export default function Welcome() {
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    if (hour < 22) return 'Good Evening';
-    return 'Good Morning';
+    if (hour < 12) return 'Morning';
+    if (hour < 17) return 'Afternoon';
+    if (hour < 22) return 'Evening';
+    return 'Morning';
   };
 
 
@@ -207,12 +207,12 @@ export default function Welcome() {
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px', marginTop: '56px' }} className="page-container">
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
             <h1 style={{ fontSize: '44px', fontWeight: 'bold', color: 'black', marginBottom: '8px', minHeight: '60px' }}>
               {displayedGreeting}
-              {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Good Morning, ${displayName}.` : 'Good Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
+              {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Morning, ${displayName}.` : 'Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h1>
             <h2 style={{ fontSize: '20px', fontWeight: '400', color: '#333', margin: 0, minHeight: '30px' }}>
               {displayedQuestion}

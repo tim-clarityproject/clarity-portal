@@ -1,15 +1,18 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
+import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
 export default function GoalSetting() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [goal, setGoal] = useState(() => location.state?.goal || '');
+  const refGoal = useRef(null);
+  useAutoExpandTextarea(refGoal, goal);
 
   useLoadDecision(updateFormData);
 
@@ -33,10 +36,14 @@ export default function GoalSetting() {
     }
   }, [location.state?.problemTitle]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (e, newDecisionId) => {
+    // Handle both form submission and SaveDiscardButtons call
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     if (goal.trim()) {
-      navigate('/risks-assessment', { state: { ...location.state, goal, path, isGuest } });
+      const finalDecisionId = newDecisionId || location.state?.decisionId;
+      navigate('/risks-assessment', { state: { ...location.state, goal, path, isGuest, decisionId: finalDecisionId } });
     }
   };
 
@@ -51,7 +58,7 @@ export default function GoalSetting() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
@@ -96,6 +103,7 @@ export default function GoalSetting() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <textarea
+            ref={refGoal}
             value={goal}
             onChange={handleChange}
             onKeyDown={(e) => {
@@ -112,10 +120,11 @@ export default function GoalSetting() {
               border: '2px solid #e5e5e5',
               borderRadius: '8px',
               fontSize: '16px',
-              height: '100px',
+              minHeight: '100px',
               textAlign: 'left',
               fontFamily: 'inherit',
               resize: 'none',
+              overflow: 'hidden',
               outline: 'none',
               marginBottom: '48px',
             }}
@@ -128,7 +137,7 @@ export default function GoalSetting() {
           formData={{ goal }}
           pageType="decision"
           toolType="strategic-alignment"
-          onNext={handleSubmit}
+          onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={goal.trim().length > 0}
         />
       </div>

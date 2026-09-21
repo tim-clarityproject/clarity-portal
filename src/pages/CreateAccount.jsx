@@ -122,7 +122,7 @@ export default function CreateAccount() {
           </div>
 
           {error && (
-            <div style={{ marginBottom: '16px', padding: '12px 16px', backgroundColor: '#FEE5DE', borderRadius: '8px', color: '#C0574C', fontSize: '14px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '16px', padding: '12px 16px', backgroundColor: '#f9f9f9', borderRadius: '8px', color: '#C0574C', fontSize: '14px', textAlign: 'center' }}>
               {error}
             </div>
           )}

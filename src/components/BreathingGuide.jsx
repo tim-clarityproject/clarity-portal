@@ -170,11 +170,11 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#2c3e50',
+        backgroundColor: 'white',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 2000,
+        zIndex: 1999,
         flexDirection: 'column',
         gap: '24px',
       }}
@@ -190,7 +190,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
             textAlign: 'center',
             fontSize: '56px',
             fontWeight: '600',
-            color: 'white',
+            color: '#333',
             maxWidth: '90%',
             opacity: greetingOpacity,
             transition: 'all 1s ease-out',
@@ -218,7 +218,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
           style={{
             fontSize: '28px',
             fontWeight: '600',
-            color: 'white',
+            color: '#333',
             textAlign: 'center',
             minHeight: '32px',
             minWidth: '300px',
@@ -269,10 +269,11 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         <button
           onClick={onClose}
           style={{
-            marginTop: '12px',
+            marginTop: '32px',
+            marginBottom: '2px',
             padding: '12px 24px',
             backgroundColor: 'white',
-            border: 'none',
+            border: '2px solid #e5e5e5',
             borderRadius: '6px',
             color: '#333',
             fontSize: '14px',
@@ -281,10 +282,12 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
             transition: 'all 0.2s',
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#f0f0f0';
+            e.target.style.backgroundColor = '#f9f9f9';
+            e.target.style.borderColor = '#F08571';
           }}
           onMouseLeave={(e) => {
             e.target.style.backgroundColor = 'white';
+            e.target.style.borderColor = '#e5e5e5';
           }}
         >
           Finish
@@ -297,18 +300,18 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
             window.location.href = '/my-account#breathing-settings';
           }}
           style={{
-            marginTop: '12px',
+            marginTop: '0',
             padding: '0',
             backgroundColor: 'transparent',
             border: 'none',
-            color: 'rgba(255, 255, 255, 0.6)',
+            color: '#999',
             fontSize: '12px',
             cursor: 'pointer',
             transition: 'color 0.2s',
             textDecoration: 'none',
           }}
-          onMouseEnter={(e) => e.target.style.color = 'rgba(255, 255, 255, 1)'}
-          onMouseLeave={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.6)'}
+          onMouseEnter={(e) => e.target.style.color = '#666'}
+          onMouseLeave={(e) => e.target.style.color = '#999'}
         >
           Edit breathing settings
         </button>

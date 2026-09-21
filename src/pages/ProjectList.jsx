@@ -70,13 +70,16 @@ export default function ProjectList() {
     updateFormData('projects', newProjects);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (e, newDecisionId) => {
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     const filledProjects = projects.filter(p => p.trim());
     if (filledProjects.length >= 1) {
       updateFormData('projects', filledProjects);
+      const finalDecisionId = newDecisionId || location.state?.decisionId;
       navigate('/project-matrix', {
-        state: { ...location.state, projects: filledProjects, path, isGuest }
+        state: { ...location.state, projects: filledProjects, path, isGuest, decisionId: finalDecisionId }
       });
     }
   };
@@ -271,7 +274,7 @@ export default function ProjectList() {
           formData={{ projects }}
           pageType="decision"
           toolType="strategic-alignment"
-          onNext={handleSubmit}
+          onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={canSubmit}
           onBack={() => navigate('/critical-success-factors', { state: { ...formData, ...location.state, isGuest } })}
         />

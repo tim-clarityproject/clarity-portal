@@ -103,7 +103,7 @@ export default function IfThenPlanningSummary() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px', paddingBottom: '100px' }} className="page-container print-container">
         {/* Back to Decisions Button */}
         <button
           onClick={() => navigate('/decision-history', { state: { isGuest } })}
@@ -148,11 +148,11 @@ export default function IfThenPlanningSummary() {
                   alignItems: 'start',
                 }}>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>When This Happens</p>
+                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>If This Happens</p>
                     <p style={{ fontSize: '13px', color: '#333', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>{item.ifCondition}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>My Response Will Be</p>
+                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Then My Response Will Be</p>
                     <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.5' }}>{item.thenAction}</p>
                   </div>
                 </div>

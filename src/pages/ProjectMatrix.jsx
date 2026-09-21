@@ -82,14 +82,17 @@ export default function ProjectMatrix() {
     updateFormData('matrix', newMatrix);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (e, newDecisionId) => {
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     const filledProjects = projects.filter(p => p.trim());
     if (filledProjects.length >= 1) {
       updateFormData('projects', filledProjects);
       updateFormData('matrix', matrix);
+      const finalDecisionId = newDecisionId || location.state?.decisionId;
       navigate('/project-progress', {
-        state: { ...location.state, projects: filledProjects, matrix, path, isGuest }
+        state: { ...location.state, projects: filledProjects, matrix, path, isGuest, decisionId: finalDecisionId }
       });
     }
   };
@@ -195,7 +198,7 @@ export default function ProjectMatrix() {
           formData={{ matrix }}
           pageType="decision"
           toolType="strategic-alignment"
-          onNext={handleSubmit}
+          onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={canSubmit}
           onBack={() => navigate('/project-list', { state: { ...location.state, isGuest } })}
         />

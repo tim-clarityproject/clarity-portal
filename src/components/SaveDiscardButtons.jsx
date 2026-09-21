@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { saveProgress, clearProgress, AUTO_SAVE_KEY } from '../lib/saveProgress';
 import { AuthContext } from '../context/AuthContext';
@@ -10,6 +10,60 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const isGuest = propIsGuest !== null ? propIsGuest : location.state?.isGuest || false;
+  const [isSaving, setIsSaving] = useState(false);
+
+  const saveToSupabase = async () => {
+    if (!user || !toolType) return null;
+
+    try {
+      setIsSaving(true);
+      const decisionId = location.state?.decisionId;
+      const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+      const title = location.state?.problemTitle || location.state?.title || dateTitle;
+
+      if (decisionId) {
+        // Update existing decision
+        const { data, error } = await supabase
+          .from('decisions')
+          .update({
+            form_data: formData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', decisionId)
+          .eq('user_id', user.id)
+          .select();
+
+        if (error) {
+          console.error('Error updating decision:', error);
+          return null;
+        }
+        return decisionId;
+      } else {
+        // Insert new decision
+        const { data, error } = await supabase
+          .from('decisions')
+          .insert([{
+            user_id: user.id,
+            tool_type: toolType,
+            title,
+            form_data: formData,
+            status: 'in_progress'
+          }])
+          .select();
+
+        if (error) {
+          console.error('Error inserting decision:', error);
+          return null;
+        }
+        return data?.[0]?.id;
+      }
+    } catch (error) {
+      console.error('Error saving to Supabase:', error);
+      return null;
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSaveAsDraft = async () => {
     const pageIdentifier = location.pathname.replace('/', '');
@@ -17,24 +71,43 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
     // If authenticated, save to Supabase with draft flag
     if (user && toolType) {
       try {
+        setIsSaving(true);
+        const decisionId = location.state?.decisionId;
         const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        const title = location.state?.problemTitle || dateTitle;
-        await supabase
-          .from('decisions')
-          .insert([{
-            user_id: user.id,
-            tool_type: toolType,
-            title,
-            form_data: formData,
-            status: 'draft',
-            draft: true
-          }]);
+        const title = location.state?.problemTitle || location.state?.title || dateTitle;
+
+        if (decisionId) {
+          // Update existing decision with draft status
+          await supabase
+            .from('decisions')
+            .update({
+              form_data: formData,
+              status: 'draft',
+              draft: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', decisionId)
+            .eq('user_id', user.id);
+        } else {
+          // Insert new decision with draft status
+          await supabase
+            .from('decisions')
+            .insert([{
+              user_id: user.id,
+              tool_type: toolType,
+              title,
+              form_data: formData,
+              status: 'draft',
+              draft: true
+            }]);
+        }
         // Clear localStorage after successful save
         clearProgress();
       } catch (error) {
         console.error('Error saving draft to server:', error);
         // Keep localStorage in case user wants to retry
         saveProgress(pageIdentifier, formData, location.state);
+        setIsSaving(false);
         return;
       }
     } else {
@@ -42,8 +115,28 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
       saveProgress(pageIdentifier, formData, location.state);
     }
 
+    setIsSaving(false);
     // Navigate to decision history
     navigate('/decision-history', { state: { isGuest } });
+  };
+
+  const handleNext = async () => {
+    if (!onNext) return;
+
+    // Auto-save to Supabase before proceeding
+    if (user && toolType) {
+      const newDecisionId = await saveToSupabase();
+      if (newDecisionId) {
+        // Pass the decisionId to the next step so it updates the same record
+        onNext(newDecisionId);
+      } else {
+        // If save failed, still proceed but user won't have persistent data
+        onNext(location.state?.decisionId);
+      }
+    } else {
+      // Guests proceed without saving
+      onNext(location.state?.decisionId);
+    }
   };
 
   const handleDiscard = () => {
@@ -148,23 +241,23 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
       {onNext && (
         <button
           type="button"
-          onClick={onNext}
-          disabled={!canNext}
+          onClick={handleNext}
+          disabled={!canNext || isSaving}
           style={{
             padding: '12px 24px',
-            backgroundColor: !canNext ? '#ccc' : '#F08571',
+            backgroundColor: !canNext || isSaving ? '#ccc' : '#F08571',
             color: 'white',
             fontWeight: 'bold',
             border: 'none',
             borderRadius: '8px',
-            cursor: !canNext ? 'not-allowed' : 'pointer',
+            cursor: !canNext || isSaving ? 'not-allowed' : 'pointer',
             fontSize: '14px',
             transition: 'all 0.2s',
           }}
-          onMouseEnter={(e) => !canNext || (e.target.style.backgroundColor = '#e07560')}
-          onMouseLeave={(e) => !canNext || (e.target.style.backgroundColor = '#F08571')}
+          onMouseEnter={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = '#e07560')}
+          onMouseLeave={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = '#F08571')}
         >
-          {nextLabel}
+          {isSaving ? 'Saving...' : nextLabel}
         </button>
       )}
     </div>

@@ -49,10 +49,11 @@ export default function GrowStep3Options() {
     updateFormData('options', newOptions);
   };
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback((newDecisionId) => {
     const filledOptions = options.filter(option => option.trim());
     if (filledOptions.length >= 1) {
       updateFormData('options', filledOptions);
+      const finalDecisionId = newDecisionId || decisionId;
       navigate('/grow-step-3b-prioritize', {
         state: {
           problemTitle,
@@ -62,7 +63,7 @@ export default function GrowStep3Options() {
           options: filledOptions,
           timerSeconds,
           isGuest,
-          decisionId,
+          decisionId: finalDecisionId,
         }
       });
     }
@@ -102,15 +103,7 @@ export default function GrowStep3Options() {
             My Decisions
           </button>
         </div>
-        {location.state?.problemTitle && (
-          <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {location.state.problemTitle}
-          </p>
-        )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>What options do you have?</h1>
-        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
-          Generate multiple possible actions
-        </p>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>What options do you have?</h1>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '75%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />

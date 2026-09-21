@@ -245,9 +245,49 @@ export default function MyJournal() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        input[type="range"] {
+          appearance: none;
+          -webkit-appearance: none;
+          width: 100%;
+          height: 6px;
+          border-radius: 3px;
+          background: linear-gradient(to right, #F08571 0%, #F08571 var(--value), #e5e5e5 var(--value), #e5e5e5 100%);
+          outline: none;
+          cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          appearance: none;
+          -webkit-appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #F08571;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #F08571;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        input[type="range"]::-moz-range-track {
+          background: transparent;
+          border: none;
+        }
+        input[type="range"]::-moz-range-progress {
+          background: #F08571;
+          height: 6px;
+          border-radius: 3px;
+        }
+      `}</style>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px', paddingBottom: '120px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>{pageTitle}</h1>
 
         <div style={{ marginBottom: '32px' }}>
@@ -268,6 +308,89 @@ export default function MyJournal() {
             style={inputStyle}
           />
         </div>
+
+        {reviewType === 'weekly-momentum' && (
+          <div style={sectionStyle}>
+            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '20px' }}>
+              Rate your week (1-5)
+            </h2>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={labelStyle}>Intentionality</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={intentionality}
+                  onChange={(e) => {
+                    setIntentionality(parseInt(e.target.value));
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  onInput={(e) => {
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  style={{ flex: 1, cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
+                  {intentionality}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={labelStyle}>Communication</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={communication}
+                  onChange={(e) => {
+                    setCommunication(parseInt(e.target.value));
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  onInput={(e) => {
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  style={{ flex: 1, cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
+                  {communication}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Progress</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={progress}
+                  onChange={(e) => {
+                    setProgress(parseInt(e.target.value));
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  onInput={(e) => {
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  style={{ flex: 1, cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
+                  {progress}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {reviewType === 'after-action' && (
           <div style={sectionStyle}>
@@ -332,7 +455,15 @@ export default function MyJournal() {
                   min="1"
                   max="5"
                   value={intentionality}
-                  onChange={(e) => setIntentionality(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    setIntentionality(parseInt(e.target.value));
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  onInput={(e) => {
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
                   style={{ flex: 1, cursor: 'pointer' }}
                 />
                 <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
@@ -349,7 +480,15 @@ export default function MyJournal() {
                   min="1"
                   max="5"
                   value={communication}
-                  onChange={(e) => setCommunication(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    setCommunication(parseInt(e.target.value));
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  onInput={(e) => {
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
                   style={{ flex: 1, cursor: 'pointer' }}
                 />
                 <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
@@ -366,7 +505,15 @@ export default function MyJournal() {
                   min="1"
                   max="5"
                   value={progress}
-                  onChange={(e) => setProgress(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    setProgress(parseInt(e.target.value));
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
+                  onInput={(e) => {
+                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                  }}
                   style={{ flex: 1, cursor: 'pointer' }}
                 />
                 <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>

@@ -76,15 +76,16 @@ export default function InversionStep1Goal() {
     }
   }, [location.state?.goal, updateFormData]);
 
-  const handleNext = () => {
+  const handleNext = (newDecisionId) => {
     if (goal.trim()) {
       updateFormData('goal', goal);
+      const finalDecisionId = newDecisionId || location.state?.decisionId;
       navigate('/inversion-step-2', {
         state: {
           ...formData,
           goal,
           isGuest,
-          decisionId: location.state?.decisionId
+          decisionId: finalDecisionId
         }
       });
     }
@@ -121,15 +122,7 @@ export default function InversionStep1Goal() {
             My Decisions
           </button>
         </div>
-        {location.state?.problemTitle && (
-          <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {location.state.problemTitle}
-          </p>
-        )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>What's your goal?</h1>
-        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
-          Define what you want to achieve
-        </p>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>What's your goal?</h1>
 
         <div style={{ marginBottom: '32px' }}>
           <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '24px', overflow: 'hidden' }}>

@@ -48,12 +48,17 @@ export default function InversionStep3Plan() {
 
   const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
 
-  const handleSaveClick = () => {
+  const handleSaveClick = (newDecisionId) => {
     if (!plan.trim() || !goal.trim()) return;
 
     if (isGuest) {
       alert('Please log in to save decisions');
       return;
+    }
+
+    // Store the newDecisionId if provided (from SaveDiscardButtons auto-save)
+    if (newDecisionId) {
+      location.state.decisionId = newDecisionId;
     }
 
     if (needsNaming) {
@@ -147,15 +152,7 @@ export default function InversionStep3Plan() {
             My Decisions
           </button>
         </div>
-        {location.state?.problemTitle && (
-          <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {location.state.problemTitle}
-          </p>
-        )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>So what will you do?</h1>
-        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
-          Build your prevention and mitigation plan
-        </p>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>So what will you do?</h1>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />

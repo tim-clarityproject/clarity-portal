@@ -108,7 +108,7 @@ export default function ToughConversationStep1Feedback() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
           <div>
             <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>Have a tough conversation</h1>
@@ -218,7 +218,7 @@ export default function ToughConversationStep1Feedback() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '100px', padding: '24px', backgroundColor: '#FEE5DE', borderRadius: '8px', border: '1px solid #F08571' }}>
+        <div style={{ marginBottom: '100px', padding: '24px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px solid #F08571' }}>
           <p style={{ fontSize: '12px', fontWeight: '600', color: '#F08571', marginBottom: '16px', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Your conversation script
           </p>

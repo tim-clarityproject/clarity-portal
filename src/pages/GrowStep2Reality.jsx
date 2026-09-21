@@ -1,10 +1,11 @@
-import { useState, useContext, useCallback, useEffect } from 'react';
+import { useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
+import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
 export default function GrowStep2Reality() {
   const navigate = useNavigate();
@@ -13,6 +14,10 @@ export default function GrowStep2Reality() {
   const [constraints, setConstraints] = useState(location.state?.constraints || '');
   const [opportunities, setOpportunities] = useState(location.state?.opportunities || '');
   const isGuest = location.state?.isGuest || false;
+  const refConstraints = useRef(null);
+  const refOpportunities = useRef(null);
+  useAutoExpandTextarea(refConstraints, constraints);
+  useAutoExpandTextarea(refOpportunities, opportunities);
 
   useLoadDecision(updateFormData);
 
@@ -31,10 +36,11 @@ export default function GrowStep2Reality() {
     }
   }, []);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback((newDecisionId) => {
     if (constraints.trim() || opportunities.trim()) {
       updateFormData('constraints', constraints);
       updateFormData('opportunities', opportunities);
+      const finalDecisionId = newDecisionId || location.state?.decisionId;
       navigate('/grow-step-3', {
         state: {
           problemTitle: location.state?.problemTitle,
@@ -42,7 +48,7 @@ export default function GrowStep2Reality() {
           constraints,
           opportunities,
           isGuest,
-          decisionId: location.state?.decisionId
+          decisionId: finalDecisionId
         }
       });
     }
@@ -64,7 +70,7 @@ export default function GrowStep2Reality() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
             onClick={() => navigate('/decision-history', { state: { isGuest } })}
@@ -91,15 +97,7 @@ export default function GrowStep2Reality() {
             My Decisions
           </button>
         </div>
-        {location.state?.problemTitle && (
-          <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {location.state.problemTitle}
-          </p>
-        )}
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>What's the current situation?</h1>
-        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
-          Assess your constraints and opportunities
-        </p>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '50%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
@@ -110,6 +108,7 @@ export default function GrowStep2Reality() {
             What are your constraints?
           </label>
           <textarea
+            ref={refConstraints}
             value={constraints}
             onChange={handleConstraintsChange}
             placeholder="Type here"
@@ -124,6 +123,7 @@ export default function GrowStep2Reality() {
               boxSizing: 'border-box',
               outline: 'none',
               resize: 'none',
+              overflow: 'hidden',
               marginBottom: '24px',
             }}
             onFocus={(e) => e.target.style.borderColor = '#F08571'}
@@ -134,6 +134,7 @@ export default function GrowStep2Reality() {
             What opportunities do you have?
           </label>
           <textarea
+            ref={refOpportunities}
             value={opportunities}
             onChange={handleOpportunitiesChange}
             placeholder="Type here"
@@ -148,6 +149,7 @@ export default function GrowStep2Reality() {
               boxSizing: 'border-box',
               outline: 'none',
               resize: 'none',
+              overflow: 'hidden',
             }}
             onFocus={(e) => e.target.style.borderColor = '#F08571'}
             onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}

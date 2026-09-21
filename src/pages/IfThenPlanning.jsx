@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 import NamingModal from '../components/NamingModal';
+import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
 export default function IfThenPlanning() {
   const navigate = useNavigate();
@@ -14,11 +15,14 @@ export default function IfThenPlanning() {
   const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
+  const [situation, setSituation] = useState('');
   const [items, setItems] = useState([{ id: 1, ifCondition: '', thenAction: '' }]);
   const [nextId, setNextId] = useState(2);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
+  const refSituation = useRef(null);
+  useAutoExpandTextarea(refSituation, situation);
 
   useEffect(() => {
     if (decisionId && user && !isGuest) {
@@ -38,6 +42,7 @@ export default function IfThenPlanning() {
 
       if (data && data.form_data) {
         const formData = data.form_data;
+        if (formData.situation) setSituation(formData.situation);
         if (formData.items && formData.items.length > 0) {
           setItems(formData.items);
           const maxId = Math.max(...formData.items.map(item => item.id || 0));
@@ -81,7 +86,7 @@ export default function IfThenPlanning() {
 
     setIsSaving(true);
     try {
-      const formData = { items };
+      const formData = { situation, items };
 
       let savedId = decisionId;
       if (decisionId) {
@@ -155,7 +160,7 @@ export default function IfThenPlanning() {
 
     setIsSaving(true);
     try {
-      const formData = { items };
+      const formData = { situation, items };
 
       if (decisionId) {
         const { data, error } = await supabase
@@ -200,6 +205,7 @@ export default function IfThenPlanning() {
 
   const handleDelete = () => {
     if (window.confirm('Discard this planning?')) {
+      setSituation('');
       setItems([{ id: 1, ifCondition: '', thenAction: '' }]);
       setNextId(2);
       navigate('/decision-tools', { state: { isGuest } });
@@ -214,36 +220,50 @@ export default function IfThenPlanning() {
     <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <div style={{ marginBottom: '48px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
-            If-Then Planning
-          </h1>
-          <p style={{ fontSize: '14px', color: '#999', margin: 0, lineHeight: '1.4' }}>
-            Prepare for uncertain situations with contingency plans
-          </p>
-        </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px', paddingBottom: '120px' }} className="page-container">
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
+          If-Then Planning
+        </h1>
+        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
+          Anxiety can come from unclear demands. Let's define them.
+        </p>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
         </div>
 
-        <div style={{ marginBottom: '32px', padding: '20px', backgroundColor: '#FEE5DE', borderRadius: '8px', border: '1px solid #F08571' }}>
-          <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '8px' }}>
-            Which situation are you concerned about?
-          </p>
-          <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.5' }}>
-            Think of an uncertain situation where you'd like to be better prepared. What happens in this situation, and how would you like to respond?
-          </p>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Which situation are you concerned about?</label>
+          <textarea
+            ref={refSituation}
+            value={situation}
+            onChange={(e) => setSituation(e.target.value)}
+            placeholder="Type here"
+            style={{
+              width: '100%',
+              minHeight: '80px',
+              padding: '10px 12px',
+              border: '1px solid #e5e5e5',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontFamily: 'inherit',
+              boxSizing: 'border-box',
+              outline: 'none',
+              resize: 'none',
+              overflow: 'hidden',
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#F08571'}
+            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+          />
         </div>
 
         <div style={sectionStyle}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '16px', marginBottom: '20px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '16px', marginBottom: '16px', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '0' }}>When this happens</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '0' }}>If this happens</div>
             </div>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '0' }}>My response will be</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '0' }}>Then my response will be</div>
             </div>
             <div></div>
           </div>

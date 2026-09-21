@@ -1,10 +1,11 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
+import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
 export default function StopDoingAudit() {
   const navigate = useNavigate();
@@ -20,6 +21,10 @@ export default function StopDoingAudit() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const isEditMode = Boolean(decisionId);
+  const refFirstAction = useRef(null);
+  const refTimeUse = useRef(null);
+  useAutoExpandTextarea(refFirstAction, firstAction);
+  useAutoExpandTextarea(refTimeUse, timeUse);
 
   useEffect(() => {
     if (decisionId && user && !isGuest) {
@@ -389,6 +394,7 @@ export default function StopDoingAudit() {
           </h2>
           <label style={labelStyle}>How will you use the hours you reclaim?</label>
           <textarea
+            ref={refTimeUse}
             placeholder="Type here"
             value={timeUse}
             onChange={(e) => setTimeUse(e.target.value)}

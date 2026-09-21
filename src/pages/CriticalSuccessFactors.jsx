@@ -56,12 +56,15 @@ export default function CriticalSuccessFactors() {
     updateFormData('factors', newFactors);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (e, newDecisionId) => {
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     const filledFactors = factors.filter(factor => factor.trim());
     if (filledFactors.length >= 1) {
       updateFormData('factors', filledFactors);
-      navigate('/project-list', { state: { ...location.state, factors: filledFactors, path, isGuest } });
+      const finalDecisionId = newDecisionId || location.state?.decisionId;
+      navigate('/project-list', { state: { ...location.state, factors: filledFactors, path, isGuest, decisionId: finalDecisionId } });
     }
   };
 
@@ -190,7 +193,7 @@ export default function CriticalSuccessFactors() {
           formData={{ factors }}
           pageType="decision"
           toolType="strategic-alignment"
-          onNext={handleSubmit}
+          onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={canSubmit}
           onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state, isGuest } })}
         />

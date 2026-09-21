@@ -24,10 +24,13 @@ export default function Strategies() {
     }
   }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (e, newDecisionId) => {
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     updateFormData('strategies', strategies);
-    navigate('/project-list', { state: { ...location.state, ...formData, strategies, path, isGuest } });
+    const finalDecisionId = newDecisionId || location.state?.decisionId;
+    navigate('/project-list', { state: { ...location.state, ...formData, strategies, path, isGuest, decisionId: finalDecisionId } });
   };
 
   const handleStrategyChange = (index, value) => {
@@ -170,7 +173,7 @@ export default function Strategies() {
           formData={{ strategies }}
           pageType="decision"
           toolType="strategic-alignment"
-          onNext={handleSubmit}
+          onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={true}
           onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state, isGuest } })}
         />

@@ -49,17 +49,18 @@ export default function InversionStep2Fuckups() {
     updateFormData('fuckups', newFuckups);
   };
 
-  const handleNext = () => {
+  const handleNext = (newDecisionId) => {
     const filledFuckups = fuckups.filter(f => f.trim());
     if (filledFuckups.length >= 1) {
       updateFormData('fuckups', filledFuckups);
+      const finalDecisionId = newDecisionId || location.state?.decisionId;
       navigate('/inversion-step-3', {
         state: {
           ...location.state,
           ...formData,
           fuckups: filledFuckups,
           isGuest,
-          decisionId: location.state?.decisionId
+          decisionId: finalDecisionId
         }
       });
     }
@@ -99,15 +100,7 @@ export default function InversionStep2Fuckups() {
             My Decisions
           </button>
         </div>
-        {location.state?.problemTitle && (
-          <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {location.state.problemTitle}
-          </p>
-        )}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>List all the ways you could fuck this up</h1>
-        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
-          Identify potential failures and mistakes
-        </p>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>List all the ways you could fuck this up</h1>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '66.67%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />

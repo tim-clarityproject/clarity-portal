@@ -1,10 +1,11 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
+import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
 export default function PlanMyDayStep1() {
   const navigate = useNavigate();
@@ -18,6 +19,12 @@ export default function PlanMyDayStep1() {
   const [notDo, setNotDo] = useState(() => location.state?.notDo || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const refTopPriority = useRef(null);
+  const refShowUp = useRef(null);
+  const refNotDo = useRef(null);
+  useAutoExpandTextarea(refTopPriority, topPriority);
+  useAutoExpandTextarea(refShowUp, showUp);
+  useAutoExpandTextarea(refNotDo, notDo);
 
   useEffect(() => {
     console.log('[PlanMyDayStep1] mounted/updated. location.state:', location.state, '-> decisionId:', decisionId, 'isEditMode:', isEditMode);
@@ -130,13 +137,13 @@ export default function PlanMyDayStep1() {
     <div style={{ minHeight: '100vh', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px', marginTop: '56px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
             Daily Intentions
           </h1>
           <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
-            Set yourself up for success
+            Make sure your day aligns with your mission.
           </p>
         </div>
 
@@ -150,22 +157,24 @@ export default function PlanMyDayStep1() {
               What's your top priority today?
             </label>
             <textarea
+              ref={refTopPriority}
               value={topPriority}
               onChange={(e) => setTopPriority(e.target.value)}
               placeholder="Type here"
-              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
+              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'none', overflow: 'hidden'}}
             />
           </div>
 
           <div style={sectionStyle}>
             <label style={labelStyle}>
-              What's under your control today?
+              What's within your control today?
             </label>
             <textarea
+              ref={refShowUp}
               value={showUp}
               onChange={(e) => setShowUp(e.target.value)}
               placeholder="Type here"
-              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
+              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'none', overflow: 'hidden'}}
             />
           </div>
 
@@ -174,10 +183,11 @@ export default function PlanMyDayStep1() {
               What do you not want to do today?
             </label>
             <textarea
+              ref={refNotDo}
               value={notDo}
               onChange={(e) => setNotDo(e.target.value)}
               placeholder="Type here"
-              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit'}}
+              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'none', overflow: 'hidden'}}
             />
           </div>
         </div>

@@ -107,7 +107,7 @@ export default function StopDoingAuditSummary() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px', paddingBottom: '100px' }} className="page-container print-container">
         <BackArrow />
 
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 32px 0' }} className="no-print">
@@ -167,7 +167,7 @@ export default function StopDoingAuditSummary() {
             <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Taking Action First
             </h2>
-            <div style={{ backgroundColor: '#FEE5DE', padding: '16px', borderRadius: '8px', border: '1px solid #F08571' }}>
+            <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', border: '1px solid #F08571' }}>
               <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 8px 0' }}>
                 {selectedActivity.activity}
               </p>

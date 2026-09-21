@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useCallback } from 'react';
+import { useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
+import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
 export default function GrowStep1Goal() {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ export default function GrowStep1Goal() {
   const [goal, setGoal] = useState(location.state?.goal || '');
   const [isLoading, setIsLoading] = useState(false);
   const isGuest = location.state?.isGuest || false;
+  const refGoal = useRef(null);
+  useAutoExpandTextarea(refGoal, goal);
 
   // Clear form and localStorage on fresh start
   useEffect(() => {
@@ -77,15 +80,16 @@ export default function GrowStep1Goal() {
   const problemTitle = location.state?.problemTitle;
   const decisionId = location.state?.decisionId;
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback((newDecisionId) => {
     if (goal.trim()) {
       updateFormData('goal', goal);
+      const finalDecisionId = newDecisionId || decisionId;
       navigate('/grow-step-2', {
         state: {
           problemTitle,
           goal,
           isGuest,
-          decisionId,
+          decisionId: finalDecisionId,
         }
       });
     }
@@ -101,18 +105,10 @@ export default function GrowStep1Goal() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
           <div>
             <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>Define your goal clearly</h1>
-            <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '16px' }}>
-              Clarify what you want to achieve
-            </p>
-            {location.state?.problemTitle && (
-              <p style={{ fontSize: '13px', color: '#999', margin: 0, fontWeight: '500', fontStyle: 'italic' }}>
-                {location.state.problemTitle}
-              </p>
-            )}
           </div>
           <button
             onClick={() => navigate('/decision-history', { state: { isGuest } })}
@@ -149,6 +145,7 @@ export default function GrowStep1Goal() {
           {isLoading && <p style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>Loading decision...</p>}
 
           <textarea
+            ref={refGoal}
             value={goal}
             onChange={handleChange}
             placeholder="Type here"
@@ -163,6 +160,7 @@ export default function GrowStep1Goal() {
               boxSizing: 'border-box',
               outline: 'none',
               resize: 'none',
+              overflow: 'hidden',
             }}
             onFocus={(e) => e.target.style.borderColor = '#F08571'}
             onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}

@@ -53,13 +53,16 @@ export default function RisksAssessment() {
     updateFormData('risks', newRisks);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (e, newDecisionId) => {
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     const filledRisks = risks.filter(risk => risk.trim());
     if (filledRisks.length >= 1) {
       updateFormData('risks', filledRisks);
+      const finalDecisionId = newDecisionId || location.state?.decisionId;
       const nextPage = path === 'team' ? '/critical-success-factors' : '/strategies';
-      navigate(nextPage, { state: { ...location.state, risks: filledRisks, path, isGuest } });
+      navigate(nextPage, { state: { ...location.state, risks: filledRisks, path, isGuest, decisionId: finalDecisionId } });
     }
   };
 
@@ -175,7 +178,7 @@ export default function RisksAssessment() {
           formData={{ risks }}
           pageType="decision"
           toolType="strategic-alignment"
-          onNext={handleSubmit}
+          onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={canSubmit}
           onBack={() => navigate('/goal-setting', { state: { ...location.state, path, isGuest } })}
         />

@@ -55,10 +55,13 @@ export default function ProjectProgress() {
     updateFormData('progress', newProgress);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (e, newDecisionId) => {
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
     updateFormData('progress', progress);
-    navigate('/project-scatter', { state: { ...location.state, progress, isGuest } });
+    const finalDecisionId = newDecisionId || location.state?.decisionId;
+    navigate('/project-scatter', { state: { ...location.state, progress, isGuest, decisionId: finalDecisionId } });
   };
 
   return (
@@ -128,7 +131,7 @@ export default function ProjectProgress() {
           formData={{ progress }}
           pageType="decision"
           toolType="strategic-alignment"
-          onNext={handleSubmit}
+          onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={true}
           onBack={() => navigate('/project-matrix', { state: { ...location.state, isGuest } })}
         />

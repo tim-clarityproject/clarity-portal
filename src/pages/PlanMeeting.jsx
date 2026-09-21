@@ -4,6 +4,7 @@ import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
+import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
 export default function PlanMeeting() {
   const navigate = useNavigate();
@@ -30,6 +31,10 @@ export default function PlanMeeting() {
   const [meetingContext, setMeetingContext] = useState('');
   const dropdownRef = useRef(null);
   const isEditMode = Boolean(decisionId);
+  const refContext = useRef(null);
+  const refPreReads = useRef(null);
+  useAutoExpandTextarea(refContext, meetingContext);
+  useAutoExpandTextarea(refPreReads, preReads);
 
   const availableSections = [
     { id: 'context', label: 'Meeting Context' },
@@ -368,7 +373,7 @@ export default function PlanMeeting() {
             </div>
           </div>
           <p style={{ fontSize: '14px', color: '#999', margin: 0, lineHeight: '1.4' }}>
-            Create a structured plan with objectives and agenda
+            Bad meetings kill team morale. Let's get it right.
           </p>
         </div>
 
@@ -440,10 +445,11 @@ export default function PlanMeeting() {
                 </button>
               </div>
               <textarea
+                ref={refContext}
                 placeholder="Type here"
                 value={meetingContext}
                 onChange={(e) => setMeetingContext(e.target.value)}
-                style={{...inputStyle, minHeight: '60px'}}
+                style={{...inputStyle, minHeight: '60px', overflow: 'hidden'}}
               />
             </div>
           </div>
@@ -475,10 +481,11 @@ export default function PlanMeeting() {
                 </button>
               </div>
               <textarea
+                ref={refPreReads}
                 placeholder="Type here"
                 value={preReads}
                 onChange={(e) => setPreReads(e.target.value)}
-                style={{...inputStyle, minHeight: '60px'}}
+                style={{...inputStyle, minHeight: '60px', overflow: 'hidden'}}
               />
             </div>
           </div>

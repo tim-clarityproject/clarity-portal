@@ -10,6 +10,7 @@ import BreathButton from './components/BreathButton';
 import Login from './pages/Login';
 import Welcome from './pages/Welcome';
 import CreateAccount from './pages/CreateAccount';
+import About from './pages/About';
 import MyAccount from './pages/MyAccount';
 import GoalSetting from './pages/GoalSetting';
 import RisksAssessment from './pages/RisksAssessment';
@@ -122,6 +123,7 @@ function AppContent() {
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/create-account" element={<CreateAccount />} />
+      <Route path="/about" element={<About />} />
       <Route path="/my-account" element={<MyAccount />} />
       <Route path="/goal-setting" element={<GoalSetting />} />
       <Route path="/risks-assessment" element={<RisksAssessment />} />

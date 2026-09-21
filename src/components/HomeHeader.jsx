@@ -83,7 +83,12 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          position: 'relative',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 2000,
+          backgroundColor: 'white',
         }}
       >
       {/* Hamburger Menu */}
@@ -212,7 +217,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               width: '100%',
               padding: '12px 16px',
               border: 'none',
-              backgroundColor: 'transparent',
+              borderLeft: '3px solid #F08571',
+              backgroundColor: '#fafafa',
               color: '#333',
               textAlign: 'left',
               fontSize: '14px',
@@ -223,8 +229,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#fafafa'}
           >
             Plan
             <ChevronDown size={16} style={{ transform: planSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
@@ -318,7 +324,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               width: '100%',
               padding: '12px 16px',
               border: 'none',
-              backgroundColor: 'transparent',
+              borderLeft: '3px solid #F08571',
+              backgroundColor: '#fafafa',
               color: '#333',
               textAlign: 'left',
               fontSize: '14px',
@@ -329,8 +336,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#fafafa'}
           >
             Ground
             <ChevronDown size={16} style={{ transform: groundSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
@@ -401,7 +408,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               width: '100%',
               padding: '12px 16px',
               border: 'none',
-              backgroundColor: 'transparent',
+              borderLeft: '3px solid #F08571',
+              backgroundColor: '#fafafa',
               color: '#333',
               textAlign: 'left',
               fontSize: '14px',
@@ -412,8 +420,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#fafafa'}
           >
             Decide
             <ChevronDown size={16} style={{ transform: decisionsSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
@@ -483,7 +491,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               width: '100%',
               padding: '12px 16px',
               border: 'none',
-              backgroundColor: 'transparent',
+              borderLeft: '3px solid #F08571',
+              backgroundColor: '#fafafa',
               color: '#333',
               textAlign: 'left',
               fontSize: '14px',
@@ -495,8 +504,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               justifyContent: 'space-between',
               gap: '24px',
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#fafafa'}
           >
             Review
             <ChevronDown size={16} style={{ transform: journalSubmenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }} />
@@ -504,6 +513,29 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
 
           {journalSubmenuOpen && (
             <>
+              <button
+                onClick={() => {
+                  navigate('/my-journal', { state: { ...location.state, reviewType: 'weekly-momentum' } });
+                  setMenuOpen(false);
+                  setJournalSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Weekly Momentum Review
+              </button>
               <button
                 onClick={() => {
                   navigate('/my-journal', { state: { ...location.state, reviewType: 'after-action' } });
@@ -573,31 +605,31 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               >
                 My Reviews
               </button>
-              <button
-                onClick={() => {
-                  navigate('/my-journal', { state: { ...location.state, reviewType: 'weekly-momentum' } });
-                  setMenuOpen(false);
-                  setJournalSubmenuOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px 12px 32px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: '#666',
-                  textAlign: 'left',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'backgroundColor 0.2s',
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Weekly Momentum Review
-              </button>
             </>
           )}
+
+          <button
+            onClick={() => {
+              navigate('/about', { state: location.state });
+              setMenuOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#333',
+              textAlign: 'left',
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'backgroundColor 0.2s',
+              borderBottom: '1px solid #f0f0f0',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            About
+          </button>
 
           {isGuest && (
             <button
