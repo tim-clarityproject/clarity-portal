@@ -228,6 +228,12 @@ export default function MeetingSummary() {
             .mission-container {
               display: none !important;
             }
+            button {
+              display: none !important;
+            }
+            svg {
+              display: none !important;
+            }
             * {
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
@@ -242,11 +248,14 @@ export default function MeetingSummary() {
               display: none !important;
             }
             h1 {
-              margin: 0 0 24px 0 !important;
+              margin: 0 0 20px 0 !important;
+              padding: 0 !important;
               page-break-after: avoid;
-              font-size: 24px !important;
+              font-size: 28px !important;
               font-weight: bold !important;
               color: #000 !important;
+              border-bottom: 2px solid #F08571;
+              padding-bottom: 12px;
             }
             h2 {
               page-break-after: avoid;
