@@ -447,6 +447,7 @@ export default function PlanMeeting() {
                 <div style={{ position: 'relative' }}>
                   <input
                     type="date"
+                    title=""
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     style={{
@@ -458,14 +459,23 @@ export default function PlanMeeting() {
                       color: date ? '#333' : '#999',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
+                      backgroundColor: '#fff',
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = '#F08571';
                       e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
+                      e.target.style.backgroundColor = '#fff';
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = '#e5e5e5';
                       e.target.style.boxShadow = 'none';
+                      e.target.style.backgroundColor = '#fff';
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#f5f5f5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#fff';
                     }}
                   />
                   <Calendar size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
@@ -476,6 +486,7 @@ export default function PlanMeeting() {
                 <div style={{ position: 'relative' }}>
                   <input
                     type="time"
+                    title=""
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
                     style={{
@@ -487,14 +498,23 @@ export default function PlanMeeting() {
                       color: time ? '#333' : '#999',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
+                      backgroundColor: '#fff',
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = '#F08571';
                       e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
+                      e.target.style.backgroundColor = '#fff';
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = '#e5e5e5';
                       e.target.style.boxShadow = 'none';
+                      e.target.style.backgroundColor = '#fff';
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#f5f5f5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#fff';
                     }}
                   />
                   <Clock size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
