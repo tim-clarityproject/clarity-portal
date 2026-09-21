@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 
-export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '', delayMission = false }) {
+export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '', delayMission = false, className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
@@ -69,6 +69,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
 
   return (
     <div
+      className={className}
       style={{
         display: 'flex',
         flexDirection: 'column',
