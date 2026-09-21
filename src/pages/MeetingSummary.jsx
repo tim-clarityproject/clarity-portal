@@ -213,11 +213,22 @@ export default function MeetingSummary() {
 
           @page {
             size: A4 landscape;
-            margin: 0.5in;
+            margin: 0;
             padding: 0;
+            /* Hide browser headers and footers */
+            @top-left { content: none; }
+            @top-center { content: none; }
+            @top-right { content: none; }
+            @bottom-left { content: none; }
+            @bottom-center { content: none; }
+            @bottom-right { content: none; }
           }
 
           @media print {
+            * {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
             .no-print {
               display: none !important;
             }
@@ -225,7 +236,7 @@ export default function MeetingSummary() {
               display: block !important;
             }
             .page-container {
-              padding: 0 !important;
+              padding: 0.5in !important;
               max-width: 100% !important;
               margin: 0 !important;
             }
@@ -236,6 +247,10 @@ export default function MeetingSummary() {
               display: none !important;
             }
             svg {
+              display: none !important;
+            }
+            /* Hide any timestamp or date elements */
+            time, [data-timestamp], [class*="time"], [class*="date"] {
               display: none !important;
             }
             * {
