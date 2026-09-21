@@ -22,6 +22,16 @@ export default function MeetingSummary() {
     }
   }, [decisionId, user]);
 
+  useEffect(() => {
+    if (meeting && meeting.form_data) {
+      const formData = meeting.form_data;
+      const title = formData.title || 'Meeting Summary';
+      const date = formData.date ? new Date(formData.date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+      const documentTitle = date ? `${title} - ${date}` : title;
+      document.title = documentTitle;
+    }
+  }, [meeting]);
+
   const loadMeeting = async () => {
     if (!user) {
       setIsLoading(false);
