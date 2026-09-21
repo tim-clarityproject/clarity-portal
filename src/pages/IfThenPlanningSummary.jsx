@@ -95,6 +95,15 @@ export default function IfThenPlanningSummary() {
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
+      <style>{`
+        @media (max-width: 768px) {
+          .page-container {
+            padding: 32px 16px !important;
+            paddingBottom: 100px !important;
+          }
+        }
+      `}</style>
+
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
         {/* Back to Decisions Button */}
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>

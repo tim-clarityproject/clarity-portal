@@ -106,6 +106,15 @@ export default function DailyPlanSummary() {
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
+      <style>{`
+        @media (max-width: 768px) {
+          .page-container {
+            padding: 32px 16px !important;
+            paddingBottom: 120px !important;
+          }
+        }
+      `}</style>
+
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         {/* Back Button */}
         <div style={summaryStyles.backButtonContainer}>

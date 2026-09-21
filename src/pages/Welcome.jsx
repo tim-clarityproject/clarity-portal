@@ -208,11 +208,23 @@ export default function Welcome() {
       <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
+      <style>{`
+        @media (max-width: 768px) {
+          .page-container {
+            padding: 32px 16px !important;
+          }
+          .welcome-h1 {
+            fontSize: 28px !important;
+            minHeight: 40px !important;
+          }
+        }
+      `}</style>
+
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px' }} className="page-container">
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '44px', fontWeight: 'bold', color: 'black', marginBottom: '8px', minHeight: '60px' }}>
+            <h1 className="welcome-h1" style={{ fontSize: '44px', fontWeight: 'bold', color: 'black', marginBottom: '8px', minHeight: '60px' }}>
               {displayedGreeting}
               {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Morning, ${displayName}.` : 'Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h1>

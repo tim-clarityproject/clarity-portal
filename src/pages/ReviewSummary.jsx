@@ -143,6 +143,13 @@ export default function ReviewSummary() {
           div[style*="marginBottom: '48px'"] { margin-bottom: 12px !important; }
         }
       `}</style>
+      <style>{`
+        @media (max-width: 768px) {
+          .page-container {
+            padding: 32px 16px !important;
+          }
+        }
+      `}</style>
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
