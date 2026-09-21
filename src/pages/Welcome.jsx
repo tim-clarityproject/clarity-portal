@@ -160,9 +160,8 @@ export default function Welcome() {
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
-    if (hour < 22) return 'Evening';
+    if (hour >= 22 || hour < 3) return "You're a night owl";
+    if (hour >= 17 && hour < 22) return 'Evening';
     return 'Morning';
   };
 
