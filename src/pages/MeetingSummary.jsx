@@ -230,9 +230,11 @@ export default function MeetingSummary() {
                 </tbody>
               </table>
             </div>
-            <p style={{ fontSize: '11px', color: '#999', marginTop: '6px', marginBottom: 0, fontWeight: '600' }}>
-              Total: {data.flowItems.reduce((sum, item) => sum + (parseInt(item.length) || 0), 0)} minutes
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+              <p style={{ fontSize: '12px', color: '#333', marginBottom: 0, fontWeight: '700' }}>
+                Total: {data.flowItems.reduce((sum, item) => sum + (parseInt(item.length) || 0), 0)} minutes
+              </p>
+            </div>
           </div>
         )}
 
