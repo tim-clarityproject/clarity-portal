@@ -207,6 +207,10 @@ export default function MeetingSummary() {
         )}
 
         <style>{`
+          .print-only {
+            display: none !important;
+          }
+
           @page {
             size: A4 landscape;
             margin: 0.5in;
