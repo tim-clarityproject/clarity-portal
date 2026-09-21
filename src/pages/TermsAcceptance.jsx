@@ -42,7 +42,7 @@ export default function ReviewAcceptTerms() {
         style={{
           width: '100%',
           padding: '16px',
-          backgroundColor: expandedSection === title ? '#FEE5DE' : '#fafafa',
+          backgroundColor: expandedSection === title ? '#f9f9f9' : '#fafafa',
           border: 'none',
           cursor: 'pointer',
           display: 'flex',
@@ -53,8 +53,8 @@ export default function ReviewAcceptTerms() {
           color: '#333',
           transition: 'all 0.2s',
         }}
-        onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
-        onMouseLeave={(e) => e.target.style.backgroundColor = expandedSection === title ? '#FEE5DE' : '#fafafa'}
+        onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+        onMouseLeave={(e) => e.target.style.backgroundColor = expandedSection === title ? '#f9f9f9' : '#fafafa'}
       >
         {title}
         <span style={{ fontSize: '18px', transition: 'transform 0.2s', transform: expandedSection === title ? 'rotate(180deg)' : 'rotate(0deg)' }}>

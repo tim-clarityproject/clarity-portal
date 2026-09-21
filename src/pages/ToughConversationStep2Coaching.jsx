@@ -260,7 +260,7 @@ export default function ToughConversationStep2Coaching() {
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.backgroundColor = '#f9f9f9';
             }}
             onMouseLeave={(e) => {
               e.target.style.borderColor = '#e5e5e5';
@@ -455,7 +455,7 @@ export default function ToughConversationStep2Coaching() {
                 padding: '12px',
                 borderRadius: '6px',
                 transition: 'all 0.2s',
-                backgroundColor: selectedQuestions.includes(index) ? '#FEE5DE' : 'transparent',
+                backgroundColor: selectedQuestions.includes(index) ? '#f9f9f9' : 'transparent',
               }}
               onMouseEnter={(e) => {
                 if (!selectedQuestions.includes(index)) {

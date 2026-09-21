@@ -329,7 +329,7 @@ export default function IfThenPlanning() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#FEE5DE';
+              e.currentTarget.style.backgroundColor = '#f9f9f9';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = '#e5e5e5';
@@ -394,7 +394,7 @@ export default function IfThenPlanning() {
           onMouseEnter={(e) => {
             if (!isSaving) {
               e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#FEE5DE';
+              e.currentTarget.style.backgroundColor = '#f9f9f9';
             }
           }}
           onMouseLeave={(e) => {

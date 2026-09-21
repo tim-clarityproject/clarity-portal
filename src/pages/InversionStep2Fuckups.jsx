@@ -90,7 +90,7 @@ export default function InversionStep2Fuckups() {
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.backgroundColor = '#f9f9f9';
             }}
             onMouseLeave={(e) => {
               e.target.style.borderColor = '#e5e5e5';
@@ -173,7 +173,7 @@ export default function InversionStep2Fuckups() {
           }}
           onMouseEnter={(e) => {
             e.target.style.borderColor = '#F08571';
-            e.target.style.backgroundColor = '#FEE5DE';
+            e.target.style.backgroundColor = '#f9f9f9';
           }}
           onMouseLeave={(e) => {
             e.target.style.borderColor = '#e5e5e5';

@@ -497,7 +497,7 @@ export default function DecisionSummary() {
                         onClick={() => setSelectedProjectIdx(isSelected ? null : idx)}
                         style={{
                           padding: '16px',
-                          backgroundColor: isSelected ? '#FEE5DE' : '#f9f9f9',
+                          backgroundColor: isSelected ? '#f9f9f9' : '#f9f9f9',
                           borderRadius: '8px',
                           borderLeft: '4px solid #F08571',
                           cursor: 'pointer',

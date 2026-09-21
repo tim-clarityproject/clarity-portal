@@ -165,7 +165,7 @@ export default function CreateAccount() {
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.borderColor = '#F08571';
-                    e.target.style.backgroundColor = '#FEE5DE';
+                    e.target.style.backgroundColor = '#f9f9f9';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.borderColor = '#e5e5e5';
@@ -193,7 +193,7 @@ export default function CreateAccount() {
                   style={{
                     width: '100%',
                     padding: '12px 24px',
-                    backgroundColor: showEmailForm ? '#FEE5DE' : '#fff',
+                    backgroundColor: showEmailForm ? '#f9f9f9' : '#fff',
                     border: '2px solid #e5e5e5',
                     borderRadius: '8px',
                     color: '#333',
@@ -204,7 +204,7 @@ export default function CreateAccount() {
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.borderColor = '#F08571';
-                    if (!showEmailForm) e.target.style.backgroundColor = '#FEE5DE';
+                    if (!showEmailForm) e.target.style.backgroundColor = '#f9f9f9';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.borderColor = '#e5e5e5';
@@ -472,7 +472,7 @@ export default function CreateAccount() {
                       style={{
                         width: '100%',
                         padding: '14px',
-                        backgroundColor: expandedSection === title ? '#FEE5DE' : '#fafafa',
+                        backgroundColor: expandedSection === title ? '#f9f9f9' : '#fafafa',
                         border: 'none',
                         cursor: 'pointer',
                         display: 'flex',
@@ -483,8 +483,8 @@ export default function CreateAccount() {
                         color: '#333',
                         transition: 'all 0.2s',
                       }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = expandedSection === title ? '#FEE5DE' : '#fafafa'}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = expandedSection === title ? '#f9f9f9' : '#fafafa'}
                     >
                       {title}
                       <span style={{ fontSize: '14px', transition: 'transform 0.2s', transform: expandedSection === title ? 'rotate(180deg)' : 'rotate(0deg)' }}>

@@ -117,7 +117,7 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
             onClick={handleToggle}
             style={{
               padding: '6px 12px',
-              backgroundColor: isRunning ? '#FEE5DE' : '#F08571',
+              backgroundColor: isRunning ? '#f9f9f9' : '#F08571',
               color: isRunning ? '#F08571' : 'white',
               border: 'none',
               borderRadius: '6px',

@@ -161,7 +161,7 @@ export default function MyAccount() {
                   flexShrink: 0,
                   marginLeft: '16px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Edit
@@ -214,7 +214,7 @@ export default function MyAccount() {
                   flexShrink: 0,
                   marginLeft: '16px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Edit
@@ -254,7 +254,7 @@ export default function MyAccount() {
                   textAlign: 'center',
                   opacity: showGoalInHeader ? 1 : 0.6,
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 {showGoalInHeader ? 'Visible' : 'Hidden'}
@@ -301,7 +301,7 @@ export default function MyAccount() {
                   flexShrink: 0,
                   marginLeft: '16px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Edit

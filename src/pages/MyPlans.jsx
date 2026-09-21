@@ -114,7 +114,7 @@ export default function MyPlans() {
               onMouseEnter={(e) => {
                 if (filter !== 'daily-plans') {
                   e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#FEE5DE';
+                  e.target.style.backgroundColor = '#f9f9f9';
                 }
               }}
               onMouseLeave={(e) => {
@@ -142,7 +142,7 @@ export default function MyPlans() {
               onMouseEnter={(e) => {
                 if (filter !== 'meetings') {
                   e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#FEE5DE';
+                  e.target.style.backgroundColor = '#f9f9f9';
                 }
               }}
               onMouseLeave={(e) => {
@@ -351,7 +351,7 @@ export default function MyPlans() {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#FEE5DE';
+            e.currentTarget.style.backgroundColor = '#f9f9f9';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = '#e5e5e5';

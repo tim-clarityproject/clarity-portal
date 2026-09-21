@@ -691,7 +691,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
                 cursor: 'pointer',
                 transition: 'backgroundColor 0.2s',
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#FEE5DE'}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
               onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
             >
               Log Out

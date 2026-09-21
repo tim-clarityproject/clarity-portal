@@ -317,7 +317,7 @@ export default function Welcome() {
                             }}
                             onMouseEnter={(e) => {
                               if (problem.status !== 'coming-soon') {
-                                e.currentTarget.style.backgroundColor = '#FEE5DE';
+                                e.currentTarget.style.backgroundColor = '#f9f9f9';
                               }
                             }}
                             onMouseLeave={(e) => {

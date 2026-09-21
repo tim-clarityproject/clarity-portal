@@ -48,7 +48,7 @@ export default function OAuthButtons() {
           onMouseEnter={(e) => {
             if (!isLoading) {
               e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.backgroundColor = '#f9f9f9';
             }
           }}
           onMouseLeave={(e) => {
@@ -80,7 +80,7 @@ export default function OAuthButtons() {
           onMouseEnter={(e) => {
             if (!isLoading) {
               e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.backgroundColor = '#f9f9f9';
             }
           }}
           onMouseLeave={(e) => {

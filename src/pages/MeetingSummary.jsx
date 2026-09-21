@@ -299,7 +299,7 @@ export default function MeetingSummary() {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#FEE5DE';
+            e.currentTarget.style.backgroundColor = '#f9f9f9';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = '#e5e5e5';

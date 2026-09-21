@@ -105,7 +105,7 @@ export default function MyReviews() {
             onMouseEnter={(e) => {
               if (filterType !== 'all') {
                 e.target.style.borderColor = '#F08571';
-                e.target.style.backgroundColor = '#FEE5DE';
+                e.target.style.backgroundColor = '#f9f9f9';
               }
             }}
             onMouseLeave={(e) => {
@@ -133,7 +133,7 @@ export default function MyReviews() {
             onMouseEnter={(e) => {
               if (filterType !== 'weekly-momentum') {
                 e.target.style.borderColor = '#F08571';
-                e.target.style.backgroundColor = '#FEE5DE';
+                e.target.style.backgroundColor = '#f9f9f9';
               }
             }}
             onMouseLeave={(e) => {
@@ -161,7 +161,7 @@ export default function MyReviews() {
             onMouseEnter={(e) => {
               if (filterType !== 'after-action') {
                 e.target.style.borderColor = '#F08571';
-                e.target.style.backgroundColor = '#FEE5DE';
+                e.target.style.backgroundColor = '#f9f9f9';
               }
             }}
             onMouseLeave={(e) => {
@@ -189,7 +189,7 @@ export default function MyReviews() {
             onMouseEnter={(e) => {
               if (filterType !== 'progress') {
                 e.target.style.borderColor = '#F08571';
-                e.target.style.backgroundColor = '#FEE5DE';
+                e.target.style.backgroundColor = '#f9f9f9';
               }
             }}
             onMouseLeave={(e) => {
@@ -340,7 +340,7 @@ export default function MyReviews() {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#FEE5DE';
+            e.currentTarget.style.backgroundColor = '#f9f9f9';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = '#e5e5e5';
@@ -364,7 +364,7 @@ export default function MyReviews() {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#FEE5DE';
+            e.currentTarget.style.backgroundColor = '#f9f9f9';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = '#e5e5e5';
@@ -388,7 +388,7 @@ export default function MyReviews() {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#FEE5DE';
+            e.currentTarget.style.backgroundColor = '#f9f9f9';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = '#e5e5e5';

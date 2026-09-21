@@ -313,7 +313,7 @@ export default function PlanMeeting() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#F08571';
-                e.currentTarget.style.backgroundColor = '#FEE5DE';
+                e.currentTarget.style.backgroundColor = '#f9f9f9';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#e5e5e5';
@@ -345,7 +345,7 @@ export default function PlanMeeting() {
                     style={{
                       width: '100%',
                       padding: '10px 14px',
-                      backgroundColor: sections.includes(section.id) ? '#FEE5DE' : 'white',
+                      backgroundColor: sections.includes(section.id) ? '#f9f9f9' : 'white',
                       border: 'none',
                       textAlign: 'left',
                       cursor: sections.includes(section.id) ? 'not-allowed' : 'pointer',
@@ -552,7 +552,7 @@ export default function PlanMeeting() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#F08571';
-                e.currentTarget.style.backgroundColor = '#FEE5DE';
+                e.currentTarget.style.backgroundColor = '#f9f9f9';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#e5e5e5';
@@ -651,7 +651,7 @@ export default function PlanMeeting() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#F08571';
-                e.currentTarget.style.backgroundColor = '#FEE5DE';
+                e.currentTarget.style.backgroundColor = '#f9f9f9';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#e5e5e5';
@@ -717,7 +717,7 @@ export default function PlanMeeting() {
           onMouseEnter={(e) => {
             if (!isSaving) {
               e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#FEE5DE';
+              e.currentTarget.style.backgroundColor = '#f9f9f9';
             }
           }}
           onMouseLeave={(e) => {

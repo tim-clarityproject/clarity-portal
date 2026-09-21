@@ -189,7 +189,7 @@ export default function GrowStep3bPrioritize() {
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.backgroundColor = '#f9f9f9';
             }}
             onMouseLeave={(e) => {
               e.target.style.borderColor = '#e5e5e5';
@@ -259,7 +259,7 @@ export default function GrowStep3bPrioritize() {
                   }}
                   onMouseEnter={(e) => {
                     if (!draggedItem && !(editingIndex === index && editingSource === 'available')) {
-                      e.currentTarget.style.backgroundColor = '#FEE5DE';
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
                       e.currentTarget.style.borderColor = '#F08571';
                     }
                   }}
@@ -370,7 +370,7 @@ export default function GrowStep3bPrioritize() {
                   alignSelf: 'flex-start',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#FEE5DE';
+                  e.target.style.backgroundColor = '#f9f9f9';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.backgroundColor = 'transparent';

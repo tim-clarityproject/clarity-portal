@@ -202,7 +202,7 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
               onMouseEnter={(e) => {
                 if (hold !== 0) {
                   e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#FEE5DE';
+                  e.target.style.backgroundColor = '#f9f9f9';
                 }
               }}
               onMouseLeave={(e) => {
@@ -231,7 +231,7 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
               onMouseEnter={(e) => {
                 if (hold === 0) {
                   e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#FEE5DE';
+                  e.target.style.backgroundColor = '#f9f9f9';
                 }
               }}
               onMouseLeave={(e) => {
@@ -316,7 +316,7 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#FEE5DE';
+              e.target.style.backgroundColor = '#f9f9f9';
             }}
             onMouseLeave={(e) => {
               e.target.style.borderColor = '#e5e5e5';
