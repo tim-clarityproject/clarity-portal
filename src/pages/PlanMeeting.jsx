@@ -297,6 +297,23 @@ export default function PlanMeeting() {
     return sum + length;
   }, 0);
 
+  const calculateEndTime = () => {
+    if (!time) return '';
+    try {
+      const [hours, minutes] = time.split(':').map(Number);
+      const startDate = new Date();
+      startDate.setHours(hours, minutes, 0);
+      const endDate = new Date(startDate.getTime() + totalLength * 60000);
+      const endHours = String(endDate.getHours()).padStart(2, '0');
+      const endMinutes = String(endDate.getMinutes()).padStart(2, '0');
+      return `${endHours}:${endMinutes}`;
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const endTime = calculateEndTime();
+
   const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
   const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
   const sectionStyle = { marginBottom: '28px', paddingBottom: '0', borderLeft: '3px solid #F08571' };
@@ -476,6 +493,27 @@ export default function PlanMeeting() {
                     e.target.style.boxShadow = 'none';
                   }}
                 />
+              </div>
+              <div style={{ maxWidth: '150px' }}>
+                <label style={labelStyle}>End Time</label>
+                <div
+                  style={{
+                    padding: '12px 14px',
+                    border: '2px solid #e5e5e5',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    color: endTime ? '#333' : '#999',
+                    cursor: 'default',
+                    borderRadius: '6px',
+                    backgroundColor: '#fafafa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '42px',
+                  }}
+                >
+                  {endTime || '—'}
+                </div>
               </div>
             </div>
           </div>
