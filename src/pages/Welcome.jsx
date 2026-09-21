@@ -81,8 +81,9 @@ export default function Welcome() {
     const twoHours = 2 * 60 * 60 * 1000;
 
     if (!lastBreathingTime || now - parseInt(lastBreathingTime) > twoHours) {
-      setShowBreathingGuide(true);
-      setShowGreetingText(true);
+      // Breathing exercise dormant - disabled for now
+      // setShowBreathingGuide(true);
+      // setShowGreetingText(true);
       localStorage.setItem('lastBreathingGuideTime', now.toString());
     }
   }, [isGuest]);
