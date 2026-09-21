@@ -131,14 +131,34 @@ export default function MeetingSummary() {
         </h1>
 
         {/* Meeting Details - Compact Grid */}
-        <div style={{ backgroundColor: '#fafafa', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #f0f0f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+        <div style={{ backgroundColor: '#fafafa', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #f0f0f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
           <div>
             <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</p>
             <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{formatDate(data.date)}</p>
           </div>
           <div>
-            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time</p>
+            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Start Time</p>
             <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{formatTime(data.time)}</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>End Time</p>
+            <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+              {(() => {
+                if (!data.time || !data.flowItems || data.flowItems.length === 0) return '—';
+                try {
+                  const totalMinutes = data.flowItems.reduce((sum, item) => sum + (parseInt(item.length) || 0), 0);
+                  const [hours, minutes] = data.time.split(':').map(Number);
+                  const startDate = new Date();
+                  startDate.setHours(hours, minutes, 0);
+                  const endDate = new Date(startDate.getTime() + totalMinutes * 60000);
+                  const endHours = String(endDate.getHours()).padStart(2, '0');
+                  const endMinutes = String(endDate.getMinutes()).padStart(2, '0');
+                  return `${endHours}:${endMinutes}`;
+                } catch (e) {
+                  return '—';
+                }
+              })()}
+            </p>
           </div>
           <div>
             <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chair</p>

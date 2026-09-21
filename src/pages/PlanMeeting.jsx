@@ -469,7 +469,7 @@ export default function PlanMeeting() {
                 />
               </div>
               <div style={{ maxWidth: '150px' }}>
-                <label style={labelStyle}>Time</label>
+                <label style={labelStyle}>Start Time</label>
                 <input
                   type="time"
                   value={time}
