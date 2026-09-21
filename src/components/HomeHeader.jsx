@@ -573,6 +573,29 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               >
                 My Reviews
               </button>
+              <button
+                onClick={() => {
+                  navigate('/my-journal', { state: { ...location.state, reviewType: 'weekly-momentum' } });
+                  setMenuOpen(false);
+                  setJournalSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Weekly Momentum Review
+              </button>
             </>
           )}
 
