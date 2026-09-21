@@ -700,10 +700,10 @@ export default function PlanMeeting() {
                       <td style={{ padding: '12px' }}>
                         <input type="text" placeholder="Type here" value={item.lead} onChange={(e) => handleItemChange(item.id, 'lead', e.target.value)} style={inputStyle} />
                       </td>
-                      <td style={{ padding: '12px' }}>
-                        <input type="number" placeholder="Type here" value={item.length} onChange={(e) => handleItemChange(item.id, 'length', e.target.value)} min="0" style={inputStyle} />
+                      <td style={{ padding: '12px', width: '70px' }}>
+                        <input type="number" placeholder="Type here" value={item.length} onChange={(e) => handleItemChange(item.id, 'length', e.target.value)} min="0" style={{...inputStyle, width: '100%', boxSizing: 'border-box', textAlign: 'center'}} />
                       </td>
-                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <td style={{ padding: '12px', textAlign: 'center', width: '44px' }}>
                         <button
                           onClick={() => handleRemoveItem(item.id)}
                           disabled={flowItems.length === 1}
