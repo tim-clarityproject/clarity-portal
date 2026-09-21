@@ -103,7 +103,7 @@ export default function IfThenPlanningSummary() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px', paddingBottom: '100px' }} className="page-container print-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '100px', paddingBottom: '100px' }} className="page-container print-container">
         {/* Back to Decisions Button */}
         <button
           onClick={() => navigate('/decision-history', { state: { isGuest } })}

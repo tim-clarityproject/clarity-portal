@@ -106,7 +106,7 @@ export default function EditPersonalDetails() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '600px', marginTop: '56px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '600px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <button
           onClick={() => navigate(-1)}
           style={{

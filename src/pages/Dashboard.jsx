@@ -26,7 +26,7 @@ export default function Dashboard() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, marginTop: '56px', display: 'flex', flexDirection: 'column', maxWidth: '1200px', marginTop: '56px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, marginTop: '100px', display: 'flex', flexDirection: 'column', maxWidth: '1200px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black' }}>
             How would you currently rate this?
@@ -84,7 +84,7 @@ export default function Dashboard() {
 
                 return (
                   <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '80px' }}>
-                    <div style={{ flex: 1, marginTop: '56px', paddingTop: '8px' }}>
+                    <div style={{ flex: 1, marginTop: '100px', paddingTop: '8px' }}>
                       {/* Number labels */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', position: 'relative' }}>
                         {[1, 2, 3, 4, 5].map((num) => (

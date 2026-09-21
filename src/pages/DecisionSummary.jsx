@@ -170,7 +170,7 @@ export default function DecisionSummary() {
       `}</style>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', marginTop: '56px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '56px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px', marginTop: '100px' }} className="page-container">
         {/* Back Button */}
         <button
           onClick={() => navigate('/decision-history', { state: { isGuest } })}
@@ -366,7 +366,7 @@ export default function DecisionSummary() {
                 Are you allocating your resources appropriately?
               </h2>
 
-              <svg width={850} height={600} style={{ backgroundColor: 'white', display: 'block', marginTop: '56px', margin: '0 auto', marginBottom: '32px' }} onClick={() => setSelectedProjectIdx(null)}>
+              <svg width={850} height={600} style={{ backgroundColor: 'white', display: 'block', marginTop: '100px', margin: '0 auto', marginBottom: '32px' }} onClick={() => setSelectedProjectIdx(null)}>
                 {/* Quadrant setup calculations */}
                 {(() => {
                   const svgWidth = 850, svgHeight = 600;

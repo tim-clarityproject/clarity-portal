@@ -80,7 +80,7 @@ export default function RisksAssessment() {
       <HomeHeader isGuest={isGuest} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, marginTop: '56px', display: 'flex', flexDirection: 'column', maxWidth: '1024px', marginTop: '56px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
+      <div style={{ flex: 1, marginTop: '100px', display: 'flex', flexDirection: 'column', maxWidth: '1024px', marginTop: '100px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
           {location.state?.problemTitle && (
             <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -96,7 +96,7 @@ export default function RisksAssessment() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', flex: 1, marginTop: '56px', maxWidth: '512px', margin: '0 auto 24px', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', flex: 1, marginTop: '100px', maxWidth: '512px', margin: '0 auto 24px', width: '100%' }}>
             {risks.map((risk, index) => (
               <div key={index} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px', height: '48px' }}>
                 <span
@@ -115,7 +115,7 @@ export default function RisksAssessment() {
                   onChange={(e) => handleRiskChange(index, e.target.value)}
                   placeholder="Type here"
                   style={{
-                    flex: 1, marginTop: '56px',
+                    flex: 1, marginTop: '100px',
                     padding: '12px 16px',
                     border: '2px solid #e5e5e5',
                     borderRadius: '8px',
