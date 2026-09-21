@@ -128,7 +128,7 @@ export default function StopDoingAuditSummary() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '12px 16px',
-                  backgroundColor: '#fafafa',
+                  backgroundColor: '#f9f9f9',
                   borderRadius: '6px',
                   border: '1px solid #f0f0f0'
                 }}
@@ -163,11 +163,11 @@ export default function StopDoingAuditSummary() {
 
         {/* Priority Action */}
         {selectedActivity && (
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Taking Action First
             </h2>
-            <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', border: '1px solid #F08571' }}>
+            <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
               <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 8px 0' }}>
                 {selectedActivity.activity}
               </p>
@@ -195,18 +195,18 @@ export default function StopDoingAuditSummary() {
 
         {/* Time Use Reflection */}
         {data.timeUse && (
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               What You'll Do With the Time Instead
             </h2>
-            <p style={{ fontSize: '14px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
+            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
               {data.timeUse}
             </p>
           </div>
         )}
 
         {/* Bottom Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap', paddingTop: '32px', borderTop: '1px solid #f0f0f0', justifyContent: 'space-between', className: 'no-print' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap', paddingTop: '32px', borderTop: '1px solid #f0f0f0', justifyContent: 'space-between' }} className="no-print">
           <button
             onClick={handleEdit}
             style={{

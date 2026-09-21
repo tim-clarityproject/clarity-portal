@@ -147,25 +147,29 @@ export default function ReviewSummary() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         {/* Back Button */}
-        <button
-          onClick={() => navigate('/my-reviews', { state: { isGuest } })}
-          style={{
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#F08571',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            padding: 0,
-            marginBottom: '24px',
-          }}
-        >
-          ← Back to Reviews
-        </button>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <button
+            onClick={() => navigate('/my-reviews', { state: { isGuest } })}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: '#F08571',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              padding: '4px 8px',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#e07560'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#F08571'}
+          >
+            ← Back to Reviews
+          </button>
+        </div>
 
         {/* Title and Tag */}
-        <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#000', margin: '0 0 24px 0', flex: 1 }}>
             {review.title || pageTitle}
           </h1>
           <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
@@ -174,7 +178,7 @@ export default function ReviewSummary() {
         </div>
 
         {/* Date */}
-        <p style={{ fontSize: '14px', color: '#999', marginBottom: '48px' }}>
+        <p style={{ fontSize: '13px', color: '#666', marginBottom: '16px' }}>
           {formatDateWithOrdinal(review.entry_date)}
         </p>
 
@@ -235,14 +239,14 @@ export default function ReviewSummary() {
             />
 
             {/* Ratings Section */}
-            <div style={{ marginBottom: '32px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+              <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Weekly Ratings
               </h2>
 
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Intentionality</span>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Intentionality</span>
                   <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.intentionality || '—'}/5</span>
                 </div>
                 <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
@@ -250,9 +254,9 @@ export default function ReviewSummary() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Communication</span>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Communication</span>
                   <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.communication || '—'}/5</span>
                 </div>
                 <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
@@ -262,7 +266,7 @@ export default function ReviewSummary() {
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Progress</span>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Progress</span>
                   <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.progress || '—'}/5</span>
                 </div>
                 <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
@@ -274,7 +278,7 @@ export default function ReviewSummary() {
         )}
 
         {/* Action Button */}
-        <div style={{ marginTop: '48px', display: 'flex', gap: '12px' }}>
+        <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
           <button
             onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: review.entry_date, reviewType } })}
             style={{

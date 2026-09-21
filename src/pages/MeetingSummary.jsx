@@ -132,17 +132,17 @@ export default function MeetingSummary() {
         </div>
 
         {/* Meeting Title - Only on Screen */}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 24px 0' }} className="no-print">
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#000', margin: '0 0 24px 0' }} className="no-print">
           {data.title || 'Meeting Plan'}
         </h1>
 
         {/* Title for Print */}
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'black', margin: '0 0 24px 0' }} className="print-only">
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#000', margin: '0 0 24px 0' }} className="print-only">
           {data.title || 'Meeting Plan'}
         </h1>
 
         {/* Meeting Details - Compact Grid */}
-        <div style={{ backgroundColor: '#fafafa', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #f0f0f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+        <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #f0f0f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
           <div>
             <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</p>
             <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{formatDate(data.date)}</p>
@@ -179,7 +179,7 @@ export default function MeetingSummary() {
 
         {/* Meeting Context */}
         {data.meetingContext && (
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
             <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Context</h2>
             <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{data.meetingContext}</p>
           </div>
@@ -187,7 +187,7 @@ export default function MeetingSummary() {
 
         {/* Attendee Preparation */}
         {data.preReads && (
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
             <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Preparation</h2>
             <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{data.preReads}</p>
           </div>
@@ -195,7 +195,7 @@ export default function MeetingSummary() {
 
         {/* Objectives */}
         {data.objectives && data.objectives.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
             <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Objectives</h2>
             <ol style={{ fontSize: '13px', color: '#666', margin: '0', paddingLeft: '24px', lineHeight: '1.6', listStyle: 'decimal' }}>
               {data.objectives.map((obj, index) => (
@@ -207,7 +207,7 @@ export default function MeetingSummary() {
 
         {/* Meeting Agenda */}
         {data.flowItems && data.flowItems.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
             <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Meeting Agenda</h2>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>

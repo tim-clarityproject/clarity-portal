@@ -16,22 +16,18 @@ export default function IfThenPlanningSummary() {
 
   useEffect(() => {
     if (decisionId && user) {
-      console.log('[IfThenPlanningSummary] loadPlanning: fetching decisionId =', decisionId, 'user =', user.id);
       loadPlanning();
     } else {
-      console.log('[IfThenPlanningSummary] Missing decisionId or user:', { decisionId, userId: user?.id });
       setIsLoading(false);
     }
   }, [decisionId, user]);
 
   const loadPlanning = async () => {
     if (!user) {
-      console.warn('[IfThenPlanningSummary] loadPlanning: no user');
       setIsLoading(false);
       return;
     }
     try {
-      console.log('[IfThenPlanningSummary] loadPlanning: querying for decisionId =', decisionId);
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
@@ -40,18 +36,14 @@ export default function IfThenPlanningSummary() {
         .single();
 
       if (error) {
-        console.error('[IfThenPlanningSummary] Query error:', error);
         throw error;
       }
 
       if (data) {
-        console.log('[IfThenPlanningSummary] Planning loaded successfully:', data.id);
         setPlanning(data);
-      } else {
-        console.warn('[IfThenPlanningSummary] No data returned for decisionId', decisionId);
       }
     } catch (error) {
-      console.error('[IfThenPlanningSummary] Error loading planning:', error.message);
+      // Silently handle load errors
     } finally {
       setIsLoading(false);
     }
@@ -105,26 +97,33 @@ export default function IfThenPlanningSummary() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
         {/* Back to Decisions Button */}
-        <button
-          onClick={() => navigate('/decision-history', { state: { isGuest } })}
-          style={{
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#F08571',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            padding: 0,
-            marginBottom: '24px',
-          }}
-          className="no-print"
-        >
-          ← Back to Decisions
-        </button>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <button
+            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: '#F08571',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              padding: '4px 8px',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#e07560'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#F08571'}
+            className="no-print"
+          >
+            ← Back to Decisions
+          </button>
+        </div>
 
         {/* Title and Tag */}
-        <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#000', margin: 0, flex: 1 }}>
             {planning.title || 'If-Then Planning'}
           </h1>
           <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }} className="no-print">
@@ -134,7 +133,8 @@ export default function IfThenPlanningSummary() {
 
         {/* Scenarios */}
         {items && items.length > 0 && (
-          <div style={{ marginBottom: '0' }}>
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>If-Then Scenarios</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {items.map((item, index) => (
                 <div key={index} style={{
@@ -149,7 +149,7 @@ export default function IfThenPlanningSummary() {
                 }}>
                   <div>
                     <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>If This Happens</p>
-                    <p style={{ fontSize: '13px', color: '#333', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>{item.ifCondition}</p>
+                    <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.5' }}>{item.ifCondition}</p>
                   </div>
                   <div>
                     <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Then My Response Will Be</p>
@@ -162,8 +162,8 @@ export default function IfThenPlanningSummary() {
         )}
 
         {!items || items.length === 0 && (
-          <div style={{ padding: '20px', backgroundColor: '#fafafa', borderRadius: '8px', color: '#999' }}>
-            <p style={{ fontSize: '13px', margin: 0 }}>No scenarios planned yet</p>
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+            <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.5' }}>No scenarios planned yet</p>
           </div>
         )}
 
