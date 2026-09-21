@@ -182,7 +182,7 @@ export default function ReviewSummary() {
         {isAfterAction && (
           <>
             <SectionBlock
-              title="What was supposed to happen?"
+              title="What did I intend to happen?"
               content={parsedContent.q1}
             />
             <SectionBlock

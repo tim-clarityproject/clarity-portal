@@ -33,7 +33,7 @@ export default function MyJournal() {
   const [currentTitle, setCurrentTitle] = useState('');
 
   const afterActionQuestions = [
-    { id: 'q1', label: 'What was supposed to happen?', value: q1, setter: setQ1 },
+    { id: 'q1', label: 'What did I intend to happen?', value: q1, setter: setQ1 },
     { id: 'q2', label: 'What actually happened?', value: q2, setter: setQ2 },
     { id: 'q3', label: 'Why was there a difference?', value: q3, setter: setQ3 },
     { id: 'q4', label: 'What can I learn from this?', value: q4, setter: setQ4 },
