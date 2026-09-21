@@ -229,8 +229,12 @@ export default function MeetingSummary() {
               margin: 0 !important;
               padding: 0 !important;
             }
-            .no-print {
+            /* Hide ALL non-content elements */
+            header, nav, .no-print, [class*="no-print"] {
               display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              width: 0 !important;
             }
             .print-only {
               display: block !important;
