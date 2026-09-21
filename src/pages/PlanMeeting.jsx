@@ -52,6 +52,24 @@ export default function PlanMeeting() {
     setSections(sections.filter(s => s !== sectionId));
   };
 
+  // Clear form on fresh start (no decisionId)
+  useEffect(() => {
+    if (!decisionId) {
+      setTitle('');
+      setDate('');
+      setTime('');
+      setChair('');
+      setObjectives([{ id: 1, text: '' }]);
+      setNextObjectiveId(2);
+      setFlowItems([{ id: 1, item: '', aim: '', lead: '', length: '' }]);
+      setNextItemId(2);
+      setMeetingContext('');
+      setPreReads('');
+      setSections(['agenda']);
+      localStorage.removeItem('plan_meeting_draft');
+    }
+  }, [decisionId]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
