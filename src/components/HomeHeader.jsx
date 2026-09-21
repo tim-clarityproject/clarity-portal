@@ -75,9 +75,28 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         flexDirection: 'column',
       }}
     >
+      <style>{`
+        @media (max-width: 768px) {
+          .header-container {
+            padding: 12px 16px !important;
+          }
+          .hamburger-button {
+            padding: 12px !important;
+          }
+          .menu-dropdown {
+            width: calc(100vw - 32px) !important;
+            max-width: none !important;
+            left: 16px !important;
+          }
+          .mission-container-mobile {
+            display: none !important;
+          }
+        }
+      `}</style>
 
       <div
         ref={headerRef}
+        className="header-container"
         style={{
           padding: '16px 32px',
           borderBottom: '1px solid #f0f0f0',
@@ -95,6 +114,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       {/* Hamburger Menu */}
       <button
         ref={hamburgerRef}
+        className="hamburger-button"
         onClick={() => setMenuOpen(!menuOpen)}
         style={{
           backgroundColor: 'transparent',
@@ -108,6 +128,10 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           transition: 'color 0.2s',
           flexShrink: 0,
           zIndex: 100,
+          minWidth: '44px',
+          minHeight: '44px',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
         onMouseEnter={(e) => e.target.style.color = '#e07560'}
         onMouseLeave={(e) => e.target.style.color = '#F08571'}
@@ -172,6 +196,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       {menuOpen && (
         <div
           ref={menuRef}
+          className="menu-dropdown"
           style={{
             position: 'absolute',
             top: '100%',
