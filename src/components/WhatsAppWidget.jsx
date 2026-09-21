@@ -38,14 +38,24 @@ export default function WhatsAppWidget() {
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '32px',
-        right: '32px',
-        zIndex: 50,
-      }}
-    >
+    <>
+      <style>{`
+        @media (max-width: 768px) {
+          .whatsapp-widget {
+            bottom: 16px !important;
+            right: 16px !important;
+          }
+        }
+      `}</style>
+      <div
+        className="whatsapp-widget"
+        style={{
+          position: 'fixed',
+          bottom: '32px',
+          right: '32px',
+          zIndex: 50,
+        }}
+      >
       <button
         onClick={handleMessageClick}
         onMouseEnter={() => setIsHovered(true)}
@@ -82,6 +92,7 @@ export default function WhatsAppWidget() {
           </span>
         )}
       </button>
-    </div>
+      </div>
+    </>
   );
 }

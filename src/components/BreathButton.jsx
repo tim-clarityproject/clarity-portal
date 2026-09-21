@@ -6,7 +6,16 @@ export default function BreathButton() {
 
   return (
     <>
+      <style>{`
+        @media (max-width: 768px) {
+          .breathe-button {
+            bottom: 72px !important;
+            right: 16px !important;
+          }
+        }
+      `}</style>
       <button
+        className="breathe-button"
         onClick={() => setShowBreathing(true)}
         style={{
           position: 'fixed',
