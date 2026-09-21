@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, Calendar, Clock } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -444,61 +444,67 @@ export default function PlanMeeting() {
             <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-end' }}>
               <div style={{ maxWidth: '180px' }}>
                 <label style={labelStyle}>Date</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  style={{
-                    ...inputStyle,
-                    padding: '12px 14px',
-                    border: '2px solid #e5e5e5',
-                    fontSize: '15px',
-                    fontWeight: '500',
-                    color: date ? '#333' : '#999',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#F08571';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#e5e5e5';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    style={{
+                      ...inputStyle,
+                      padding: '12px 14px 12px 40px',
+                      border: '2px solid #e5e5e5',
+                      fontSize: '15px',
+                      fontWeight: '500',
+                      color: date ? '#333' : '#999',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#F08571';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e5e5e5';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                  <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
+                </div>
               </div>
               <div style={{ maxWidth: '150px' }}>
                 <label style={labelStyle}>Start Time</label>
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  style={{
-                    ...inputStyle,
-                    padding: '12px 14px',
-                    border: '2px solid #e5e5e5',
-                    fontSize: '15px',
-                    fontWeight: '500',
-                    color: time ? '#333' : '#999',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#F08571';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#e5e5e5';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    style={{
+                      ...inputStyle,
+                      padding: '12px 14px 12px 40px',
+                      border: '2px solid #e5e5e5',
+                      fontSize: '15px',
+                      fontWeight: '500',
+                      color: time ? '#333' : '#999',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#F08571';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(240, 133, 113, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e5e5e5';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                  <Clock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
+                </div>
               </div>
               <div style={{ maxWidth: '150px' }}>
                 <label style={labelStyle}>End Time</label>
                 <div
                   style={{
-                    padding: '12px 14px',
+                    padding: '12px 14px 12px 40px',
                     border: '2px solid #e5e5e5',
                     fontSize: '15px',
                     fontWeight: '500',
@@ -508,11 +514,12 @@ export default function PlanMeeting() {
                     backgroundColor: '#fafafa',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    position: 'relative',
                     minHeight: '42px',
                   }}
                 >
-                  {endTime || '—'}
+                  <Clock size={18} style={{ position: 'absolute', left: '12px', color: '#999' }} />
+                  <span style={{ marginLeft: 'auto', marginRight: 'auto' }}>{endTime || '—'}</span>
                 </div>
               </div>
             </div>
