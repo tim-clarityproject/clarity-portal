@@ -18,13 +18,6 @@ export default function Login() {
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
 
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && !isLoading) {
-      navigate('/welcome');
-    }
-  }, [user, isLoading, navigate]);
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
