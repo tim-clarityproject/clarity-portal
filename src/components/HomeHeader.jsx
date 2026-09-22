@@ -211,8 +211,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             top: '50%',
             transform: 'translate(-50%, -50%)',
             pointerEvents: 'none',
-            maxWidth: 'calc(100% - 100px)',
-            padding: '0 16px',
+            maxWidth: '80vw',
             animation: 'fadeInMission 0.8s ease-in-out',
           }}>
             <div style={{
