@@ -146,6 +146,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           top: 0,
           left: 0,
           right: 0,
+          width: '100%',
           zIndex: 2000,
           backgroundColor: 'white',
           boxSizing: 'border-box',
