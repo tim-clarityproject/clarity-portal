@@ -215,7 +215,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
-              maxWidth: '100%',
+              maxWidth: 'calc(100% - 120px)',
               minWidth: 0,
             }}>
               <span style={{
