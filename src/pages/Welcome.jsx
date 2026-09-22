@@ -43,34 +43,38 @@ export default function Welcome() {
   const [showGreetingText, setShowGreetingText] = useState(false);
   const [showGoalSetup, setShowGoalSetup] = useState(false);
   const isGuest = location.state?.isGuest || false;
+  const isNewSignup = location.state?.isNewSignup || false;
 
-  // Show goal setup modal for new users
+  // Show goal setup modal only for new users
   useEffect(() => {
     if (isGuest || !user) return;
 
-    const goalSetupShown = localStorage.getItem(`goal-setup-shown-${user.id}`);
-    if (!goalSetupShown) {
-      // Check if user has already set a goal
-      const checkGoal = async () => {
-        try {
-          const { data } = await supabase
-            .from('profiles')
-            .select('personal_goal')
-            .eq('id', user.id)
-            .single();
+    const checkGoal = async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('personal_goal, created_at')
+          .eq('id', user.id)
+          .single();
 
-          if (!data?.personal_goal) {
+        if (!data?.personal_goal) {
+          // Only show goal setup if user is brand new (created in last 10 minutes)
+          // or if explicitly marked as new signup via route state
+          const createdAt = data?.created_at ? new Date(data.created_at) : null;
+          const now = new Date();
+          const isRecentlyCreated = createdAt && (now - createdAt) < 10 * 60 * 1000;
+
+          if (isNewSignup || isRecentlyCreated) {
             setShowGoalSetup(true);
           }
-          localStorage.setItem(`goal-setup-shown-${user.id}`, 'true');
-        } catch (error) {
-          console.error('Error checking goal:', error);
         }
-      };
+      } catch (error) {
+        console.error('Error checking goal:', error);
+      }
+    };
 
-      checkGoal();
-    }
-  }, [user, isGuest]);
+    checkGoal();
+  }, [user, isGuest, isNewSignup]);
 
   // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
