@@ -31,6 +31,7 @@ export default function PersonalOperatingPlanEdit() {
         .select('*')
         .eq('id', missionId)
         .eq('user_id', user.id)
+        .is('archived_at', null)
         .single();
 
       if (mission) {

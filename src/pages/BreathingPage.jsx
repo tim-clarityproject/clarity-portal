@@ -12,6 +12,7 @@ export default function BreathingPage() {
   const [isBreathing, setIsBreathing] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [setupComplete, setSetupComplete] = useState({ sigh: false, vagal: false, box: false });
+  const [hideInstructions, setHideInstructions] = useState(false);
   const sessionStartTimeRef = useRef(null);
   const isBreathingRef = useRef(false);
 
@@ -90,7 +91,38 @@ export default function BreathingPage() {
       <HomeHeader isGuest={isGuest} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px', paddingTop: '64px', position: 'relative' }}>
+        {/* Show Instructions Button */}
+        {hideInstructions && (
+          <button
+            onClick={() => setHideInstructions(false)}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '32px',
+              padding: '8px 12px',
+              backgroundColor: 'white',
+              border: '1px solid #d0d0d0',
+              borderRadius: '4px',
+              fontSize: '12px',
+              color: '#666',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#f5f5f5';
+              e.target.style.borderColor = '#999';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'white';
+              e.target.style.borderColor = '#d0d0d0';
+            }}
+          >
+            ? Help
+          </button>
+        )}
+
         {/* Title and instructions at top */}
+        {!hideInstructions && (
         <div style={{ width: '100%', maxWidth: '800px', marginBottom: '48px', textAlign: 'left' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>
             {breathingType === 'vagal' ? 'Vagal Breathing' : breathingType === 'box' ? 'Box Breathing' : 'Physiological Sigh'}
@@ -151,6 +183,7 @@ export default function BreathingPage() {
             {breathingType === 'sigh' && 'Repeat 1-3 times for immediate stress relief.'}
           </p>
         </div>
+        )}
 
         {/* Breathing Type Selector - positioned at bottom */}
         <div style={{ position: 'absolute', bottom: '56px', display: 'flex', border: '2px solid #d0d0d0', borderRadius: '8px', overflow: 'hidden' }}>
@@ -294,6 +327,8 @@ export default function BreathingPage() {
           onClick={() => {
             if (isBreathing) {
               setElapsedSeconds(0);
+            } else {
+              setHideInstructions(true);
             }
             setIsBreathing(!isBreathing);
           }}

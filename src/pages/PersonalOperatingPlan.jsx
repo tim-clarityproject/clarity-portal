@@ -36,6 +36,7 @@ export default function PersonalOperatingPlan() {
         .from('missions')
         .select('*')
         .eq('user_id', user.id)
+        .is('archived_at', null)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
@@ -84,6 +85,31 @@ export default function PersonalOperatingPlan() {
       ...prev,
       [strategyId]: !prev[strategyId]
     }));
+  };
+
+  const handleArchiveMission = async () => {
+    const confirmed = window.confirm(
+      'Archive this mission? It will be moved to your archived missions, but you can restore it anytime. All reviews will be preserved.'
+    );
+    if (!confirmed) return;
+
+    const doubleConfirm = window.confirm(
+      'Are you sure? This cannot be undone immediately (but you can restore it later). Your mission data is safe.'
+    );
+    if (!doubleConfirm) return;
+
+    try {
+      await supabase
+        .from('missions')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('id', mission.id)
+        .eq('user_id', user.id);
+
+      navigate('/my-account', { state: { isGuest, tab: 'archived-missions' } });
+    } catch (error) {
+      console.error('Error archiving mission:', error);
+      alert('Failed to archive mission');
+    }
   };
 
   const getTacticDisplay = (tactic) => {
@@ -280,6 +306,34 @@ export default function PersonalOperatingPlan() {
             onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
           >
             Review Plan
+          </button>
+        </div>
+
+        {/* Archive Button */}
+        <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e5e5e5' }}>
+          <button
+            onClick={handleArchiveMission}
+            style={{
+              padding: '10px 16px',
+              backgroundColor: 'white',
+              border: '1px solid #e5e5e5',
+              borderRadius: '6px',
+              color: '#999',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '13px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#F08571';
+              e.target.style.color = '#F08571';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.color = '#999';
+            }}
+          >
+            Archive Mission
           </button>
         </div>
       </div>

@@ -17,6 +17,8 @@ export default function MyAccount() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBreathingSettings, setShowBreathingSettings] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
+  const [archivedMissions, setArchivedMissions] = useState([]);
+  const [showArchivedMissions, setShowArchivedMissions] = useState(false);
   const isGuest = false;
 
   const handleDeleteAccount = async () => {
@@ -80,6 +82,67 @@ export default function MyAccount() {
 
     fetchUserData();
   }, [user]);
+
+  useEffect(() => {
+    if (showArchivedMissions && user) {
+      loadArchivedMissions();
+    }
+  }, [showArchivedMissions, user]);
+
+  const loadArchivedMissions = async () => {
+    try {
+      const { data } = await supabase
+        .from('missions')
+        .select('*')
+        .eq('user_id', user.id)
+        .not('archived_at', 'is', null)
+        .order('archived_at', { ascending: false });
+
+      setArchivedMissions(data || []);
+    } catch (error) {
+      console.error('Error loading archived missions:', error);
+    }
+  };
+
+  const handleRestoreMission = async (missionId) => {
+    try {
+      await supabase
+        .from('missions')
+        .update({ archived_at: null })
+        .eq('id', missionId)
+        .eq('user_id', user.id);
+
+      loadArchivedMissions();
+    } catch (error) {
+      console.error('Error restoring mission:', error);
+      alert('Failed to restore mission');
+    }
+  };
+
+  const handleDeleteArchivedMission = async (missionId) => {
+    const confirmed = window.confirm(
+      'Permanently delete this archived mission? This cannot be undone. All reviews will be lost.'
+    );
+    if (!confirmed) return;
+
+    const doubleConfirm = window.confirm(
+      'Are you absolutely sure? This is permanent and cannot be recovered.'
+    );
+    if (!doubleConfirm) return;
+
+    try {
+      await supabase
+        .from('missions')
+        .delete()
+        .eq('id', missionId)
+        .eq('user_id', user.id);
+
+      loadArchivedMissions();
+    } catch (error) {
+      console.error('Error deleting mission:', error);
+      alert('Failed to delete mission');
+    }
+  };
 
   // Re-fetch goal when modal closes (to show updated value immediately)
   useEffect(() => {
@@ -319,6 +382,116 @@ export default function MyAccount() {
                 Edit
               </button>
             </div>
+          </div>
+
+          {/* Archived Missions */}
+          <div style={{
+            paddingTop: '24px',
+            borderTop: '1px solid #e5e5e5',
+          }}>
+            <button
+              onClick={() => setShowArchivedMissions(!showArchivedMissions)}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                padding: '0',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '16px',
+              }}
+            >
+              <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Archived Missions
+              </h2>
+              <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>
+                ({archivedMissions.length})
+              </span>
+            </button>
+
+            {showArchivedMissions && (
+              <div>
+                {archivedMissions.length === 0 ? (
+                  <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>No archived missions</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {archivedMissions.map((mission) => (
+                      <div key={mission.id} style={{
+                        padding: '12px',
+                        backgroundColor: '#fafafa',
+                        border: '1px solid #e5e5e5',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
+                            {mission.title}
+                          </p>
+                          <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
+                            Archived {new Date(mission.archived_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                          <button
+                            onClick={() => handleRestoreMission(mission.id)}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e5e5',
+                              borderRadius: '4px',
+                              color: '#F08571',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              transition: 'all 0.2s',
+                              whiteSpace: 'nowrap',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.backgroundColor = '#f9f9f9';
+                              e.target.style.borderColor = '#F08571';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = 'white';
+                              e.target.style.borderColor = '#e5e5e5';
+                            }}
+                          >
+                            Restore
+                          </button>
+                          <button
+                            onClick={() => handleDeleteArchivedMission(mission.id)}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e5e5',
+                              borderRadius: '4px',
+                              color: '#c0574c',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              transition: 'all 0.2s',
+                              whiteSpace: 'nowrap',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.backgroundColor = 'rgba(192, 87, 76, 0.1)';
+                              e.target.style.borderColor = '#c0574c';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = 'white';
+                              e.target.style.borderColor = '#e5e5e5';
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Danger Zone */}
