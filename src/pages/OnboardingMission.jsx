@@ -72,7 +72,7 @@ export default function OnboardingMission() {
           animateQuestion();
         }, 1200);
       }
-    }, 50);
+    }, 100);
 
     const animateQuestion = () => {
       const questionText = 'What\'s your big mission?';
@@ -89,7 +89,7 @@ export default function OnboardingMission() {
             setShowInput(true);
           }, 300);
         }
-      }, 50);
+      }, 80);
     };
 
     return () => clearInterval(greetingInterval);
