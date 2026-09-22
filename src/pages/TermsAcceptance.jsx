@@ -15,16 +15,10 @@ export default function ReviewAcceptTerms() {
 
     setIsAccepting(true);
     try {
-      localStorage.setItem(`terms_${user.id}`, 'true');
-
-      try {
-        await supabase
-          .from('profiles')
-          .update({ terms_accepted: true })
-          .eq('id', user.id);
-      } catch (dbError) {
-        console.warn('Could not save to database, using localStorage fallback:', dbError);
-      }
+      await supabase
+        .from('profiles')
+        .update({ terms_accepted: true })
+        .eq('id', user.id);
 
       navigate('/welcome');
     } catch (error) {

@@ -65,7 +65,6 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
       let holdDuration = 0;
       let exhaleDuration = 6000;
 
-      // Try to load from Supabase if user is logged in
       if (user) {
         try {
           const { data, error } = await supabase
@@ -79,22 +78,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
             inhaleDuration = (settings.inhale || 4) * 1000;
             holdDuration = (settings.hold || 0) * 1000;
             exhaleDuration = (settings.exhale || 6) * 1000;
-            startAnimation(inhaleDuration, holdDuration, exhaleDuration);
-            return;
           }
-        } catch (e) {
-          console.error('Error loading breathing settings from Supabase:', e);
-        }
-      }
-
-      // Fall back to localStorage
-      const saved = localStorage.getItem('breathingSettings');
-      if (saved) {
-        try {
-          const settings = JSON.parse(saved);
-          inhaleDuration = (settings.inhale || 4) * 1000;
-          holdDuration = (settings.hold || 0) * 1000;
-          exhaleDuration = (settings.exhale || 6) * 1000;
         } catch (e) {
           console.error('Error loading breathing settings:', e);
         }

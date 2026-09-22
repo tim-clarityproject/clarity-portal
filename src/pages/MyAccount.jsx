@@ -69,11 +69,6 @@ export default function MyAccount() {
 
           if (profile.show_mission_in_header !== null && profile.show_mission_in_header !== undefined) {
             setShowGoalInHeader(profile.show_mission_in_header);
-          } else {
-            const savedVisibility = localStorage.getItem(`goal-visibility-${user.id}`);
-            if (savedVisibility !== null) {
-              setShowGoalInHeader(JSON.parse(savedVisibility));
-            }
           }
         }
       } catch (error) {
@@ -118,14 +113,10 @@ export default function MyAccount() {
 
     if (user) {
       try {
-        // Save to Supabase
         await supabase
           .from('profiles')
           .update({ show_mission_in_header: newVisibility })
           .eq('id', user.id);
-
-        // Also save to localStorage for instant effect
-        localStorage.setItem(`goal-visibility-${user.id}`, JSON.stringify(newVisibility));
       } catch (error) {
         console.error('Error updating visibility preference:', error);
       }

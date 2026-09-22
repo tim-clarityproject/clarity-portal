@@ -68,31 +68,26 @@ function AppContent() {
 
     const handleRedirects = async () => {
       try {
-        // Check if user needs to accept terms (with fallback to localStorage)
-        let termsAccepted = localStorage.getItem(`terms_${user.id}`) === 'true';
+        let termsAccepted = false;
 
-        if (!termsAccepted) {
-          try {
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('terms_accepted')
-              .eq('id', user.id)
-              .single();
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('terms_accepted')
+            .eq('id', user.id)
+            .single();
 
-            if (error) {
-              console.warn('Profile not found or error fetching:', error);
-              // For new users, terms_accepted defaults to false
-              termsAccepted = false;
-            } else {
-              termsAccepted = profile?.terms_accepted || false;
-            }
-          } catch (err) {
-            console.warn('Could not fetch terms from profile:', err);
+          if (error) {
+            console.warn('Profile not found or error fetching:', error);
             termsAccepted = false;
+          } else {
+            termsAccepted = profile?.terms_accepted || false;
           }
+        } catch (err) {
+          console.warn('Could not fetch terms from profile:', err);
+          termsAccepted = false;
         }
 
-        // Redirect to terms if not accepted (highest priority)
         if (!termsAccepted && !location.pathname.includes('accept-terms')) {
           navigate('/accept-terms', { replace: true });
           return;

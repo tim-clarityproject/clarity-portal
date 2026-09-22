@@ -44,19 +44,38 @@ export default function Welcome() {
 
   // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
-    if (isGuest) return;
+    if (isGuest || !user) return;
 
-    const lastBreathingTime = localStorage.getItem('lastBreathingGuideTime');
-    const now = Date.now();
-    const twoHours = 2 * 60 * 60 * 1000;
+    const checkBreathingGuideTimer = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('last_breathing_guide_shown')
+          .eq('id', user.id)
+          .single();
 
-    if (!lastBreathingTime || now - parseInt(lastBreathingTime) > twoHours) {
-      // Breathing exercise dormant - disabled for now
-      // setShowBreathingGuide(true);
-      // setShowGreetingText(true);
-      localStorage.setItem('lastBreathingGuideTime', now.toString());
-    }
-  }, [isGuest]);
+        if (data) {
+          const lastBreathingTime = data.last_breathing_guide_shown ? new Date(data.last_breathing_guide_shown).getTime() : null;
+          const now = Date.now();
+          const twoHours = 2 * 60 * 60 * 1000;
+
+          if (!lastBreathingTime || now - lastBreathingTime > twoHours) {
+            // Breathing exercise dormant - disabled for now
+            // setShowBreathingGuide(true);
+            // setShowGreetingText(true);
+            await supabase
+              .from('profiles')
+              .update({ last_breathing_guide_shown: new Date().toISOString() })
+              .eq('id', user.id);
+          }
+        }
+      } catch (e) {
+        console.error('Error checking breathing guide timer:', e);
+      }
+    };
+
+    checkBreathingGuideTimer();
+  }, [isGuest, user]);
 
   useEffect(() => {
     if (!user || isGuest) return;
