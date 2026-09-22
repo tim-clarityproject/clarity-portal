@@ -211,25 +211,16 @@ export default function Welcome() {
 
       <style>{`
         .welcome-h1 {
-          font-size: 44px;
-          min-height: 60px;
+          font-size: clamp(28px, 4.5vw, 44px);
+          min-height: clamp(40px, 5vw, 60px);
         }
         .welcome-content {
           flex: 1;
           display: flex;
           alignItems: flex-start;
           justify-content: center;
-          padding: 40px 32px;
+          padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 32px);
           overflow: auto;
-        }
-        @media (max-width: 768px) {
-          .welcome-h1 {
-            font-size: 28px;
-            min-height: 40px;
-          }
-          .welcome-content {
-            padding: 32px 16px !important;
-          }
         }
       `}</style>
 
