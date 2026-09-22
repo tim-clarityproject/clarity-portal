@@ -150,6 +150,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           zIndex: 2000,
           backgroundColor: 'white',
           padding: '16px 32px',
+          boxSizing: 'border-box',
         }}
       >
       {/* Hamburger Menu */}
