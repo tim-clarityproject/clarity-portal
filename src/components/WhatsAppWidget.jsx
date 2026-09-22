@@ -42,30 +42,39 @@ export default function WhatsAppWidget() {
       <style>{`
         .whatsapp-widget {
           position: fixed;
-          bottom: 24px;
+          bottom: 32px;
           right: 24px;
           z-index: 50;
+        }
+        .whatsapp-button {
+          width: 48px;
+          height: 48px;
+          min-width: 48px;
+          min-height: 48px;
         }
         .whatsapp-icon {
           width: 24px;
           height: 24px;
+          flex-shrink: 0;
         }
       `}</style>
       <div
         className="whatsapp-widget"
       >
       <button
+        className="whatsapp-button"
         onClick={handleMessageClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          padding: isHovered ? '12px 16px' : '12px',
+          justifyContent: 'center',
+          position: 'relative',
+          padding: 0,
           backgroundColor: '#F08571',
           border: 'none',
-          borderRadius: '50px',
+          borderRadius: '50%',
           cursor: 'pointer',
           boxShadow: '0 4px 12px rgba(240, 133, 113, 0.3)',
           transition: 'all 0.3s ease',
@@ -79,13 +88,18 @@ export default function WhatsAppWidget() {
         {isHovered && (
           <span
             style={{
+              position: 'absolute',
+              left: '-160px',
+              top: '50%',
+              transform: 'translateY(-50%)',
               color: 'white',
               fontSize: '13px',
               fontWeight: '600',
               whiteSpace: 'nowrap',
-              maxWidth: '150px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              pointerEvents: 'none',
             }}
           >
             Speak directly to Tim

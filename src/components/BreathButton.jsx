@@ -8,7 +8,7 @@ export default function BreathButton() {
     <>
       <style>{`
         .breathe-button {
-          bottom: 104px;
+          bottom: 88px;
           right: 24px;
           width: 48px;
           height: 48px;
