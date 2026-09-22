@@ -210,27 +210,32 @@ export default function Welcome() {
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       <style>{`
-        .page-container {
-          padding: 40px 32px;
-        }
         .welcome-h1 {
           font-size: 44px;
           min-height: 60px;
         }
+        .welcome-content {
+          flex: 1;
+          display: flex;
+          alignItems: flex-start;
+          justify-content: center;
+          padding: 40px 32px;
+          overflow: auto;
+        }
         @media (max-width: 768px) {
-          .page-container {
-            padding: 32px 16px;
-          }
           .welcome-h1 {
             font-size: 28px;
             min-height: 40px;
+          }
+          .welcome-content {
+            padding: 32px 16px !important;
           }
         }
       `}</style>
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }} className="page-container">
-        <div style={{ width: '100%', maxWidth: '1000px' }}>
+      <div className="welcome-content">
+        <div style={{ maxWidth: '1000px', width: '100%' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
             <h1 className="welcome-h1" style={{ fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
               {displayedGreeting}
