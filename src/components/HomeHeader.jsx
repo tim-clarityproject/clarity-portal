@@ -141,7 +141,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           borderBottom: '1px solid #f0f0f0',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: 'center',
           position: 'fixed',
           top: 0,
           left: 0,
@@ -164,7 +164,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           flexDirection: 'column',
           gap: '4px',
           transition: 'color 0.2s',
-          flexShrink: 0,
+          position: 'absolute',
+          left: 'clamp(12px, 2vw, 16px)',
           zIndex: 100,
         }}
         onMouseEnter={(e) => e.target.style.color = '#e07560'}
@@ -185,7 +186,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         <button onClick={() => handleMenuClick('/about')} className="desktop-nav-item" style={{ backgroundColor: 'transparent', border: 'none', color: '#333' }}>About</button>
       </div>
 
-      {/* Center Mission Display - Absolutely Positioned for True Centering */}
+      {/* Center Mission Display - Responsive Flex Item */}
       {contextMission && contextShowInHeader && displayMission && (
         <>
           <style>{`
@@ -197,26 +198,20 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
                 opacity: 1;
               }
             }
+            .mission-container {
+              flex: 1;
+              display: flex;
+              justify-content: center;
+              min-width: 0;
+              animation: fadeInMission 0.8s ease-in-out;
+            }
             @media (max-width: 900px) {
               .mission-container {
                 display: none !important;
               }
             }
           `}</style>
-          <div className="mission-container" style={{
-            position: 'fixed',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            pointerEvents: 'none',
-            width: '100%',
-            maxWidth: 'calc(100vw - 200px)',
-            paddingLeft: '100px',
-            paddingRight: '100px',
-            boxSizing: 'border-box',
-            animation: 'fadeInMission 0.8s ease-in-out',
-            zIndex: 1999,
-          }}>
+          <div className="mission-container">
             <div style={{
               background: 'white',
               padding: '12px 24px',
@@ -225,9 +220,10 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
+              maxWidth: '100%',
             }}>
               <span style={{
-                fontSize: '16px',
+                fontSize: 'clamp(13px, 1.8vw, 16px)',
                 fontWeight: '600',
                 lineHeight: '1.5',
                 letterSpacing: '0.3px',
@@ -787,9 +783,9 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           alignItems: 'center',
           gap: '4px',
           cursor: 'pointer',
-          flexShrink: 0,
+          position: 'absolute',
+          right: 'clamp(12px, 2vw, 16px)',
           minWidth: 0,
-          overflow: 'hidden',
         }}
       >
         <a
