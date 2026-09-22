@@ -109,12 +109,25 @@ function AppContent() {
     );
   }
 
+  // Determine if buttons should be hidden on current page
+  const hideButtons = [
+    '/',
+    '/create-account',
+    '/auth/callback',
+    '/accept-terms',
+    '/onboarding-mission',
+    '/terms-of-service',
+    '/privacy-policy',
+    '/data-storage-notice'
+  ].includes(location.pathname);
+
   return (
-    <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/welcome" element={<Welcome />} />
-      <Route path="/onboarding-mission" element={<OnboardingMission />} />
+    <>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/onboarding-mission" element={<OnboardingMission />} />
       <Route path="/create-account" element={<CreateAccount />} />
       <Route path="/about" element={<About />} />
       <Route path="/my-account" element={<MyAccount />} />
@@ -160,7 +173,14 @@ function AppContent() {
       <Route path="/data-storage-notice" element={<DataStorageNotice />} />
       <Route path="/edit-profile" element={<EditPersonalDetails />} />
       <Route path="/accept-terms" element={<TermsAcceptance />} />
-    </Routes>
+      </Routes>
+      {!hideButtons && (
+        <div className="no-print">
+          <BreathButton />
+          <WhatsAppWidget />
+        </div>
+      )}
+    </>
   );
 }
 
