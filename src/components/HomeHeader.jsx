@@ -220,15 +220,16 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               minWidth: 0,
             }}>
               <span style={{
-                fontSize: 'clamp(11px, 1.4vw, 16px)',
+                fontSize: 'clamp(10px, 1.2vw, 14px)',
                 fontWeight: '600',
                 lineHeight: '1.4',
                 letterSpacing: '0.2px',
                 display: 'block',
                 textAlign: 'center',
-                whiteSpace: 'nowrap',
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                maxHeight: '60px',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
               }}>
                 <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{contextMission}</span>
               </span>
