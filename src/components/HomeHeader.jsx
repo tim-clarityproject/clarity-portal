@@ -78,8 +78,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       <style>{`
         .header-container {
           padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px);
-          width: 100%;
           min-height: 70px;
+          box-sizing: border-box;
         }
         .hamburger-button {
           display: flex;
