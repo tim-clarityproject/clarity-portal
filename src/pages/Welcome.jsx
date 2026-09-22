@@ -211,7 +211,7 @@ export default function Welcome() {
 
       {/* Main Content */}
       <div className="welcome-content">
-        <div style={{ maxWidth: '1000px', width: '100%' }}>
+        <div style={{ maxWidth: '1000px', width: '100%', padding: 'clamp(24px, 4vw, 40px) clamp(16px, 3vw, 32px)' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
             <h1 className="welcome-h1" style={{ fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
               {displayedGreeting}
