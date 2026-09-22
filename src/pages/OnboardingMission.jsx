@@ -147,14 +147,12 @@ export default function OnboardingMission() {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        @keyframes slideUpAndFade {
+        @keyframes slideUp {
           from {
-            opacity: 1;
             transform: translateY(0);
           }
           to {
-            opacity: 0;
-            transform: translateY(-60px);
+            transform: translateY(-100px);
           }
         }
       `}</style>
@@ -207,7 +205,7 @@ export default function OnboardingMission() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              animation: showInput ? 'slideUpAndFade 0.6s ease-out forwards' : 'none',
+              animation: showInput ? 'slideUp 0.6s ease-out forwards' : 'none',
             }}>
               {question}
               {question.length < "What's your big mission?".length && (
