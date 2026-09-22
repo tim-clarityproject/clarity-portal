@@ -783,7 +783,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           gap: '4px',
           cursor: 'pointer',
           position: 'absolute',
-          right: 'clamp(12px, 2vw, 16px)',
+          right: '16px',
           minWidth: 0,
         }}
       >
