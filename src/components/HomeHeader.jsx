@@ -149,6 +149,15 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           right: 0,
           zIndex: 2000,
           backgroundColor: 'white',
+          paddingRight: '32px',
+          paddingLeft: '32px',
+          paddingTop: '16px',
+          paddingBottom: '16px',
+        }}
+        onClickCapture={(e) => {
+          if (menuOpen && !menuRef.current?.contains(e.target) && !hamburgerRef.current?.contains(e.target)) {
+            setMenuOpen(false);
+          }
         }}
       >
       {/* Hamburger Menu */}
@@ -242,15 +251,17 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           ref={menuRef}
           className="menu-dropdown"
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: '0',
+            position: 'fixed',
+            top: '70px',
+            left: '32px',
             backgroundColor: 'white',
             border: '1px solid #e5e5e5',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            width: '180px',
+            width: '300px',
             zIndex: 1000,
+            maxHeight: 'calc(100vh - 100px)',
+            overflowY: 'auto',
           }}
         >
           <button
