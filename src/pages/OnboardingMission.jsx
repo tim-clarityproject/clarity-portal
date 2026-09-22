@@ -212,42 +212,48 @@ export default function OnboardingMission() {
             {/* Input Section - Shows after question types in */}
             {showInput && (
               <div style={{ animation: 'fadeIn 0.6s ease-in' }}>
+                <div style={{
+                  textAlign: 'center',
+                  marginBottom: '24px',
+                  fontSize: '14px',
+                  color: '#999',
+                }}>
+                  Type here
+                </div>
+
                 <textarea
                   value={mission}
                   onChange={(e) => setMission(e.target.value.slice(0, MAX_GOAL_LENGTH))}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type here"
+                  placeholder=""
                   style={{
                     width: '100%',
                     minHeight: '80px',
                     padding: '16px',
-                    border: '2px solid ' + (isOverLimit ? '#F08571' : '#e5e5e5'),
-                    borderRadius: '8px',
+                    border: 'none',
+                    borderRadius: '0px',
                     fontSize: '16px',
                     fontFamily: 'inherit',
                     boxSizing: 'border-box',
                     outline: 'none',
-                    marginBottom: '12px',
+                    marginBottom: '24px',
                     resize: 'none',
-                    transition: 'border-color 0.2s',
+                    transition: 'all 0.2s',
+                    backgroundColor: '#f9f9f9',
                   }}
-                  onFocus={(e) => !isOverLimit && (e.target.style.borderColor = '#F08571')}
-                  onBlur={(e) => e.target.style.borderColor = isOverLimit ? '#F08571' : '#e5e5e5'}
                   autoFocus
                 />
 
-                {/* Character Counter */}
+                {/* Character Counter - Centered */}
                 <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  textAlign: 'center',
                   marginBottom: '32px',
                   fontSize: '12px',
                   color: isOverLimit ? '#F08571' : '#999',
                 }}>
-                  <span>{charCount}/{MAX_GOAL_LENGTH} characters</span>
+                  {charCount}/{MAX_GOAL_LENGTH} characters
                   {isOverLimit && (
-                    <span style={{ fontWeight: '600' }}>Limit exceeded</span>
+                    <div style={{ fontWeight: '600', marginTop: '4px' }}>Limit exceeded</div>
                   )}
                 </div>
 
