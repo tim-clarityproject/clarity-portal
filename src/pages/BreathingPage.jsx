@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
@@ -10,11 +9,9 @@ export default function BreathingPage() {
   const { user } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
   const [breathingType, setBreathingType] = useState('sigh');
-  const [view, setView] = useState('instructions'); // 'instructions' | 'breathing'
+  const [view, setView] = useState('instructions');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [expandedHelp, setExpandedHelp] = useState(false);
   const sessionStartTimeRef = useRef(null);
-  const isBreathingRef = useRef(false);
 
   // Force light backgrounds
   useEffect(() => {
@@ -62,12 +59,10 @@ export default function BreathingPage() {
   const handleStartBreathing = () => {
     setView('breathing');
     sessionStartTimeRef.current = Date.now();
-    isBreathingRef.current = true;
     setElapsedSeconds(0);
   };
 
   const handleStopBreathing = () => {
-    isBreathingRef.current = false;
     saveBreathingSession();
     setView('instructions');
   };
@@ -77,7 +72,6 @@ export default function BreathingPage() {
       handleStopBreathing();
     }
     setBreathingType(type);
-    setExpandedHelp(false);
   };
 
   // Timer for elapsed seconds during breathing
@@ -95,32 +89,29 @@ export default function BreathingPage() {
     sigh: {
       name: 'Physiological Sigh',
       instructions: [
-        { step: 'First Inhale', text: 'Take a deep, natural breath in through your nose until your lungs feel full.' },
-        { step: 'Second Inhale', text: 'Without exhaling, take a quick second "top-up" inhalation (a sharp sniff) through your nose to maximally inflate your lungs.' },
-        { step: 'Exhale', text: 'Release a long, slow exhale through your mouth until your lungs are completely empty.' },
+        'Take a deep breath in through your nose until your lungs feel full.',
+        'Without exhaling, take a quick second "top-up" breath through your nose.',
+        'Release a long, slow exhale through your mouth.',
+        'Repeat 1-3 times for immediate stress relief.',
       ],
-      help: 'This rapid stress-relief technique activates your parasympathetic nervous system. The double inhale maximizes oxygen intake, and the long exhale triggers the relaxation response. Repeat 1-3 times for immediate relief.',
-      note: 'Repeat 1-3 times for immediate stress relief.',
     },
     vagal: {
       name: 'Vagal Breathing',
       instructions: [
-        { step: 'Inhale', text: 'Inhale slowly through your nose for four seconds, allowing your lungs to fill completely.' },
-        { step: 'Exhale', text: 'Exhale slowly through your mouth for six seconds, releasing all the air gradually.' },
+        'Inhale slowly through your nose for 4 seconds.',
+        'Exhale slowly through your mouth for 6 seconds.',
+        'Repeat for as many cycles as you like.',
       ],
-      help: 'This technique directly stimulates the vagus nerve, a key component of your parasympathetic nervous system. The longer exhale than inhale signals your body to relax. Safe and effective for anxiety, tension, and sleep.',
-      note: 'Repeat for as many cycles as you like.',
     },
     box: {
       name: 'Box Breathing',
       instructions: [
-        { step: 'Inhale', text: 'Inhale slowly through your nose for four seconds.' },
-        { step: 'Hold', text: 'Hold your breath for four seconds.' },
-        { step: 'Exhale', text: 'Exhale slowly through your mouth for four seconds.' },
-        { step: 'Hold', text: 'Hold your breath for four seconds.' },
+        'Inhale through your nose for 4 seconds.',
+        'Hold your breath for 4 seconds.',
+        'Exhale through your mouth for 4 seconds.',
+        'Hold your breath for 4 seconds.',
+        'Repeat for as many cycles as you like.',
       ],
-      help: 'This balanced breathing pattern is used by Navy SEALs and stress-management professionals. The equal timing creates a rhythm that calms your mind and body. Perfect for focus, anxiety, or emotional regulation.',
-      note: 'Repeat for as many cycles as you like.',
     },
   };
 
@@ -132,109 +123,56 @@ export default function BreathingPage() {
 
       {view === 'instructions' ? (
         // INSTRUCTION VIEW
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px', paddingTop: '32px' }}>
-          <div style={{ width: '100%', maxWidth: '600px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px', paddingTop: '48px' }}>
+          <div style={{ width: '100%', maxWidth: '700px' }}>
             {/* Breathing Type Selector */}
-            <div style={{ display: 'flex', border: '2px solid #d0d0d0', borderRadius: '8px', overflow: 'hidden', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', border: '2px solid #e5e5e5', borderRadius: '8px', overflow: 'hidden', marginBottom: '40px', gap: 0 }}>
               {['sigh', 'vagal', 'box'].map((type) => (
                 <button
                   key={type}
                   onClick={() => handleSwitchBreathingType(type)}
                   style={{
                     flex: 1,
-                    padding: '10px 20px',
-                    backgroundColor: breathingType === type ? 'white' : '#f5f5f5',
+                    padding: '12px 16px',
+                    backgroundColor: breathingType === type ? '#F08571' : 'white',
                     border: 'none',
-                    color: breathingType === type ? '#333' : '#999',
+                    color: breathingType === type ? 'white' : '#999',
                     cursor: 'pointer',
                     fontSize: '13px',
                     fontWeight: '600',
                     transition: 'all 0.2s',
-                    borderRight: type !== 'box' ? '1px solid #d0d0d0' : 'none',
                   }}
                   onMouseEnter={(e) => {
                     if (breathingType !== type) {
-                      e.currentTarget.style.backgroundColor = '#ececec';
+                      e.currentTarget.style.backgroundColor = '#f9f9f9';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (breathingType !== type) {
-                      e.currentTarget.style.backgroundColor = '#f5f5f5';
+                      e.currentTarget.style.backgroundColor = 'white';
                     }
                   }}
                 >
-                  {breathingType === type ? '✓' : ''} {type === 'sigh' ? 'Sigh' : type === 'vagal' ? 'Vagal' : 'Box'}
+                  {type === 'sigh' ? 'Sigh' : type === 'vagal' ? 'Vagal' : 'Box'}
                 </button>
               ))}
             </div>
 
             {/* Breathing Type Title */}
-            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#333', margin: '0 0 24px 0', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#333', margin: '0 0 32px 0', textAlign: 'center' }}>
               {info.name}
             </h1>
 
             {/* Instructions */}
-            <div style={{ backgroundColor: '#fafafa', padding: '24px', borderRadius: '8px', marginBottom: '24px', borderLeft: '4px solid #F08571' }}>
+            <div style={{ backgroundColor: '#fafafa', padding: '28px', borderRadius: '8px', marginBottom: '40px', borderLeft: '4px solid #F08571' }}>
               {info.instructions.map((inst, idx) => (
                 <div key={idx} style={{ marginBottom: idx < info.instructions.length - 1 ? '16px' : '0' }}>
-                  <p style={{ fontSize: '13px', fontWeight: '600', color: '#333', margin: '0 0 6px 0' }}>
-                    Step {idx + 1}: {inst.step}
-                  </p>
-                  <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.6', marginLeft: '12px' }}>
-                    {inst.text}
+                  <p style={{ fontSize: '14px', lineHeight: '1.7', color: '#333', margin: 0 }}>
+                    {inst}
                   </p>
                 </div>
               ))}
-              <p style={{ fontSize: '13px', color: '#999', margin: '16px 0 0 0', textAlign: 'center', fontStyle: 'italic' }}>
-                {info.note}
-              </p>
             </div>
-
-            {/* Help Section (Collapsible) */}
-            <button
-              onClick={() => setExpandedHelp(!expandedHelp)}
-              style={{
-                width: '100%',
-                backgroundColor: 'white',
-                border: '1px solid #e5e5e5',
-                borderRadius: '6px',
-                padding: '12px 16px',
-                marginBottom: expandedHelp ? '12px' : '24px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9f9f9';
-                e.currentTarget.style.borderColor = '#F08571';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.borderColor = '#e5e5e5';
-              }}
-            >
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>
-                ? How does this work?
-              </span>
-              <ChevronDown
-                size={16}
-                style={{
-                  color: '#999',
-                  transform: expandedHelp ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s',
-                }}
-              />
-            </button>
-
-            {expandedHelp && (
-              <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '6px', marginBottom: '24px', borderLeft: '3px solid #F08571' }}>
-                <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.8' }}>
-                  {info.help}
-                </p>
-              </div>
-            )}
 
             {/* Start Button */}
             <button
@@ -246,19 +184,16 @@ export default function BreathingPage() {
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
-                fontSize: '16px',
+                fontSize: '15px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                boxShadow: '0 4px 12px rgba(240, 133, 113, 0.2)',
               }}
               onMouseEnter={(e) => {
                 e.target.style.backgroundColor = '#e07560';
-                e.target.style.boxShadow = '0 6px 16px rgba(240, 133, 113, 0.3)';
               }}
               onMouseLeave={(e) => {
                 e.target.style.backgroundColor = '#F08571';
-                e.target.style.boxShadow = '0 4px 12px rgba(240, 133, 113, 0.2)';
               }}
             >
               Start Breathing
@@ -268,19 +203,19 @@ export default function BreathingPage() {
       ) : (
         // BREATHING VIEW
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
-          {/* Breathing Animation Component */}
-          <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-            {breathingType === 'sigh' && <PhysiologicalSigh isActive={view === 'breathing'} />}
-            {breathingType === 'vagal' && <VagalBreathing isActive={view === 'breathing'} />}
-            {breathingType === 'box' && <BoxBreathing isActive={view === 'breathing'} />}
+          {/* Breathing Animation */}
+          <div style={{ marginBottom: '64px' }}>
+            {breathingType === 'sigh' && <PhysiologicalSighAnimation isActive={view === 'breathing'} />}
+            {breathingType === 'vagal' && <VagalBreathingAnimation isActive={view === 'breathing'} />}
+            {breathingType === 'box' && <BoxBreathingAnimation isActive={view === 'breathing'} />}
           </div>
 
           {/* Timer */}
-          <p style={{ fontSize: '18px', color: '#666', fontWeight: '500', marginBottom: '48px' }}>
+          <p style={{ fontSize: '16px', color: '#999', fontWeight: '500', marginBottom: '48px' }}>
             {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}
           </p>
 
-          {/* Stop Button */}
+          {/* Done Button */}
           <button
             onClick={handleStopBreathing}
             style={{
@@ -289,7 +224,7 @@ export default function BreathingPage() {
               color: '#F08571',
               border: '2px solid #F08571',
               borderRadius: '8px',
-              fontSize: '14px',
+              fontSize: '15px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
@@ -309,50 +244,39 @@ export default function BreathingPage() {
   );
 }
 
-// Animation Components (kept from original)
-function BoxBreathing({ isActive }) {
-  const [progress, setProgress] = useState(0);
+// Vagal Breathing: Expanding/Contracting Circle
+function VagalBreathingAnimation({ isActive }) {
+  const [scale, setScale] = useState(0.5);
   const [phase, setPhase] = useState('inhale');
   const [secondsLeft, setSecondsLeft] = useState(4);
-  const wasActiveRef = React.useRef(false);
 
   useEffect(() => {
-    if (isActive) {
-      wasActiveRef.current = true;
-    } else if (wasActiveRef.current && !isActive) {
-      wasActiveRef.current = false;
-      setProgress(0);
+    if (!isActive) {
+      setScale(0.5);
       setPhase('inhale');
       setSecondsLeft(4);
+      return;
     }
-  }, [isActive]);
 
-  useEffect(() => {
-    if (!isActive) return;
-
-    let animationFrame;
     let startTime = Date.now();
-    const cycleDuration = 16000;
+    let animationFrame;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      const cycleElapsed = elapsed % cycleDuration;
-      const normalizedProgress = cycleElapsed / cycleDuration;
+      const cycleTime = 10000; // 4s inhale + 6s exhale
+      const cycleProgress = (elapsed % cycleTime) / cycleTime;
 
-      setProgress(normalizedProgress);
-
-      if (cycleElapsed < 4000) {
+      if (cycleProgress < 0.4) {
+        // Inhale: 4 seconds (0-40%)
         setPhase('inhale');
-        setSecondsLeft(Math.ceil((4000 - cycleElapsed) / 1000));
-      } else if (cycleElapsed < 8000) {
-        setPhase('hold');
-        setSecondsLeft(Math.ceil((8000 - cycleElapsed) / 1000));
-      } else if (cycleElapsed < 12000) {
-        setPhase('exhale');
-        setSecondsLeft(Math.ceil((12000 - cycleElapsed) / 1000));
+        setScale(0.5 + cycleProgress); // 0.5 to 1.5
+        setSecondsLeft(Math.ceil((4000 - (elapsed % cycleTime)) / 1000));
       } else {
-        setPhase('hold');
-        setSecondsLeft(Math.ceil((16000 - cycleElapsed) / 1000));
+        // Exhale: 6 seconds (40-100%)
+        setPhase('exhale');
+        const exhaleProgress = (cycleProgress - 0.4) / 0.6;
+        setScale(1.5 - exhaleProgress); // 1.5 to 0.5
+        setSecondsLeft(Math.ceil((10000 - (elapsed % cycleTime)) / 1000));
       }
 
       animationFrame = requestAnimationFrame(animate);
@@ -362,31 +286,28 @@ function BoxBreathing({ isActive }) {
     return () => cancelAnimationFrame(animationFrame);
   }, [isActive]);
 
-  const size = 200;
-  const circumference = 2 * Math.PI * (size / 2 - 10);
-  const offset = circumference - (progress * circumference);
+  const size = 240;
+  const baseRadius = size / 2.5;
+  const radius = baseRadius * scale;
 
   return (
     <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={size / 2 - 10} fill="none" stroke="#e5e5e5" strokeWidth="2" />
+      <svg width={size} height={size} style={{ position: 'absolute' }}>
         <circle
           cx={size / 2}
           cy={size / 2}
-          r={size / 2 - 10}
-          fill="none"
+          r={radius}
+          fill="rgba(240, 133, 113, 0.1)"
           stroke="#F08571"
           strokeWidth="3"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
+          style={{ transition: 'r 0.05s linear' }}
         />
       </svg>
-      <div style={{ position: 'absolute', textAlign: 'center' }}>
-        <div style={{ fontSize: '24px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
+        <div style={{ fontSize: '56px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
           {secondsLeft}
         </div>
-        <div style={{ fontSize: '14px', color: '#999', textTransform: 'capitalize' }}>
+        <div style={{ fontSize: '16px', color: '#999', fontWeight: '500', textTransform: 'capitalize' }}>
           {phase}
         </div>
       </div>
@@ -394,43 +315,44 @@ function BoxBreathing({ isActive }) {
   );
 }
 
-function VagalBreathing({ isActive }) {
-  const [progress, setProgress] = useState(0);
+// Box Breathing: Square with Animated Perimeter Line
+function BoxBreathingAnimation({ isActive }) {
+  const [strokeDashoffset, setStrokeDashoffset] = useState(0);
   const [phase, setPhase] = useState('inhale');
   const [secondsLeft, setSecondsLeft] = useState(4);
-  const wasActiveRef = React.useRef(false);
 
   useEffect(() => {
-    if (isActive) {
-      wasActiveRef.current = true;
-    } else if (wasActiveRef.current && !isActive) {
-      wasActiveRef.current = false;
-      setProgress(0);
+    if (!isActive) {
+      setStrokeDashoffset(0);
       setPhase('inhale');
       setSecondsLeft(4);
+      return;
     }
-  }, [isActive]);
 
-  useEffect(() => {
-    if (!isActive) return;
-
-    let animationFrame;
     let startTime = Date.now();
-    const cycleDuration = 10000;
+    let animationFrame;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      const cycleElapsed = elapsed % cycleDuration;
-      const normalizedProgress = cycleElapsed / cycleDuration;
+      const cycleTime = 16000; // 4s × 4 phases
+      const cycleProgress = (elapsed % cycleTime) / cycleTime;
 
-      setProgress(normalizedProgress);
+      // Animate perimeter line (going around the box)
+      setStrokeDashoffset(-(cycleProgress * 800)); // Perimeter of 200×200 box ≈ 800
 
-      if (cycleElapsed < 4000) {
+      // Determine phase and countdown
+      if (elapsed % cycleTime < 4000) {
         setPhase('inhale');
-        setSecondsLeft(Math.ceil((4000 - cycleElapsed) / 1000));
-      } else {
+        setSecondsLeft(Math.ceil((4000 - (elapsed % cycleTime)) / 1000));
+      } else if (elapsed % cycleTime < 8000) {
+        setPhase('hold');
+        setSecondsLeft(Math.ceil((8000 - (elapsed % cycleTime)) / 1000));
+      } else if (elapsed % cycleTime < 12000) {
         setPhase('exhale');
-        setSecondsLeft(Math.ceil((10000 - cycleElapsed) / 1000));
+        setSecondsLeft(Math.ceil((12000 - (elapsed % cycleTime)) / 1000));
+      } else {
+        setPhase('hold');
+        setSecondsLeft(Math.ceil((16000 - (elapsed % cycleTime)) / 1000));
       }
 
       animationFrame = requestAnimationFrame(animate);
@@ -440,31 +362,39 @@ function VagalBreathing({ isActive }) {
     return () => cancelAnimationFrame(animationFrame);
   }, [isActive]);
 
-  const size = 200;
-  const circumference = 2 * Math.PI * (size / 2 - 10);
-  const offset = circumference - (progress * circumference);
+  const boxSize = 200;
 
   return (
-    <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={size / 2 - 10} fill="none" stroke="#e5e5e5" strokeWidth="2" />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={size / 2 - 10}
+    <div style={{ position: 'relative', width: boxSize, height: boxSize, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width={boxSize} height={boxSize} style={{ position: 'absolute' }}>
+        <rect
+          x="20"
+          y="20"
+          width={boxSize - 40}
+          height={boxSize - 40}
+          fill="none"
+          stroke="#e5e5e5"
+          strokeWidth="2"
+        />
+        <rect
+          x="20"
+          y="20"
+          width={boxSize - 40}
+          height={boxSize - 40}
           fill="none"
           stroke="#F08571"
           strokeWidth="3"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
+          strokeDasharray="800"
+          strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.05s linear' }}
         />
       </svg>
-      <div style={{ position: 'absolute', textAlign: 'center' }}>
-        <div style={{ fontSize: '24px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
+        <div style={{ fontSize: '56px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
           {secondsLeft}
         </div>
-        <div style={{ fontSize: '14px', color: '#999', textTransform: 'capitalize' }}>
+        <div style={{ fontSize: '16px', color: '#999', fontWeight: '500', textTransform: 'capitalize' }}>
           {phase}
         </div>
       </div>
@@ -472,46 +402,44 @@ function VagalBreathing({ isActive }) {
   );
 }
 
-function PhysiologicalSigh({ isActive }) {
-  const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState('inhale1');
-  const [secondsLeft, setSecondsLeft] = useState(1);
-  const wasActiveRef = React.useRef(false);
+// Physiological Sigh: Expanding Circle with Double Inhale Visual
+function PhysiologicalSighAnimation({ isActive }) {
+  const [scale, setScale] = useState(0.5);
+  const [phase, setPhase] = useState('inhale');
+  const [secondsLeft, setSecondsLeft] = useState(2);
 
   useEffect(() => {
-    if (isActive) {
-      wasActiveRef.current = true;
-    } else if (wasActiveRef.current && !isActive) {
-      wasActiveRef.current = false;
-      setProgress(0);
-      setPhase('inhale1');
-      setSecondsLeft(1);
+    if (!isActive) {
+      setScale(0.5);
+      setPhase('inhale');
+      setSecondsLeft(2);
+      return;
     }
-  }, [isActive]);
 
-  useEffect(() => {
-    if (!isActive) return;
-
-    let animationFrame;
     let startTime = Date.now();
-    const cycleDuration = 4000;
+    let animationFrame;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      const cycleElapsed = elapsed % cycleDuration;
-      const normalizedProgress = cycleElapsed / cycleDuration;
+      const cycleTime = 4000; // Full cycle
+      const cycleProgress = (elapsed % cycleTime) / cycleTime;
 
-      setProgress(normalizedProgress);
-
-      if (cycleElapsed < 2000) {
-        setPhase('inhale1');
-        setSecondsLeft(Math.ceil((2000 - cycleElapsed) / 1000));
-      } else if (cycleElapsed < 2500) {
-        setPhase('inhale2');
+      if (cycleProgress < 0.5) {
+        // First inhale: 2 seconds
+        setPhase('inhale');
+        setScale(0.5 + cycleProgress); // 0.5 to 1.0
+        setSecondsLeft(Math.ceil((2000 - (elapsed % cycleTime)) / 1000));
+      } else if (cycleProgress < 0.625) {
+        // Second inhale (sniff): 0.5 seconds
+        setPhase('sniff');
+        setScale(1.0 + (cycleProgress - 0.5) * 2); // 1.0 to 1.25
         setSecondsLeft(1);
       } else {
+        // Exhale: 1.5 seconds
         setPhase('exhale');
-        setSecondsLeft(Math.ceil((4000 - cycleElapsed) / 1000));
+        const exhaleProgress = (cycleProgress - 0.625) / 0.375;
+        setScale(1.25 - exhaleProgress * 0.75); // 1.25 to 0.5
+        setSecondsLeft(Math.ceil((4000 - (elapsed % cycleTime)) / 1000));
       }
 
       animationFrame = requestAnimationFrame(animate);
@@ -521,32 +449,29 @@ function PhysiologicalSigh({ isActive }) {
     return () => cancelAnimationFrame(animationFrame);
   }, [isActive]);
 
-  const size = 200;
-  const circumference = 2 * Math.PI * (size / 2 - 10);
-  const offset = circumference - (progress * circumference);
+  const size = 240;
+  const baseRadius = size / 2.5;
+  const radius = baseRadius * scale;
 
   return (
     <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={size / 2 - 10} fill="none" stroke="#e5e5e5" strokeWidth="2" />
+      <svg width={size} height={size} style={{ position: 'absolute' }}>
         <circle
           cx={size / 2}
           cy={size / 2}
-          r={size / 2 - 10}
-          fill="none"
+          r={radius}
+          fill="rgba(240, 133, 113, 0.1)"
           stroke="#F08571"
           strokeWidth="3"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
+          style={{ transition: 'r 0.05s linear' }}
         />
       </svg>
-      <div style={{ position: 'absolute', textAlign: 'center' }}>
-        <div style={{ fontSize: '24px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
+        <div style={{ fontSize: '56px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
           {secondsLeft}
         </div>
-        <div style={{ fontSize: '14px', color: '#999', textTransform: 'capitalize' }}>
-          {phase === 'inhale1' ? 'Inhale' : phase === 'inhale2' ? 'Sniff' : 'Exhale'}
+        <div style={{ fontSize: '16px', color: '#999', fontWeight: '500', textTransform: 'capitalize' }}>
+          {phase === 'sniff' ? 'Sniff' : phase}
         </div>
       </div>
     </div>
