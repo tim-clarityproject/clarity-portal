@@ -210,7 +210,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           <div className="mission-container">
             <div style={{
               background: 'white',
-              padding: '12px clamp(12px, 2vw, 24px)',
+              padding: 'clamp(14px, 2vw, 18px) clamp(12px, 2vw, 24px)',
               borderRadius: '8px',
               border: '1px solid #e5e5e5',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
