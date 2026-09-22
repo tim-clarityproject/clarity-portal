@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 
-export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '', delayMission = false, className = '' }) {
+export default function HomeHeader({ isGuest = false, delayMission = false, className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
@@ -188,7 +188,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       </div>
 
       {/* Center Mission Display - Responsive Flex Item */}
-      {contextMission && contextShowInHeader && displayMission && (
+      {(contextMission || isGuest) && (contextShowInHeader || isGuest) && displayMission && (
         <>
           <style>{`
             @keyframes fadeInMission {
@@ -206,8 +206,20 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               animation: fadeInMission 0.8s ease-in-out;
               padding: 0 clamp(8px, 1.5vw, 16px);
             }
+            .mission-container > div {
+              max-width: calc(100% - 90px);
+            }
           `}</style>
-          <div className="mission-container">
+          <button
+            onClick={() => !isGuest && navigate('/personal-operating-plan', { state: { isGuest } })}
+            className="mission-container"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: isGuest ? 'default' : 'pointer',
+              padding: 0,
+            }}
+          >
             <div style={{
               background: 'white',
               paddingTop: 'clamp(16px, 2.5vw, 20px)',
@@ -217,27 +229,28 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               borderRadius: '8px',
               border: '1px solid #e5e5e5',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-              wordBreak: 'break-word',
-              overflowWrap: 'break-word',
-              maxWidth: 'calc(100% - 50px)',
+              maxWidth: '100%',
               minWidth: 0,
-              maxHeight: '80px',
-              overflow: 'hidden',
-            }}>
-              <span style={{
-                fontSize: 'clamp(9px, 1.1vw, 13px)',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => !isGuest && (e.currentTarget.style.borderColor = '#F08571')}
+            onMouseLeave={(e) => !isGuest && (e.currentTarget.style.borderColor = '#e5e5e5')}
+            >
+              <div style={{
+                fontSize: 'clamp(12px, 1.6vw, 16px)',
                 fontWeight: '600',
                 lineHeight: '1.4',
                 letterSpacing: '0.2px',
-                display: 'block',
                 textAlign: 'center',
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                minWidth: 0,
               }}>
-                <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{contextMission}</span>
-              </span>
+                <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{isGuest ? 'Build something remarkable for the world' : contextMission}</span>
+              </div>
             </div>
-          </div>
+          </button>
         </>
       )}
 
@@ -386,6 +399,29 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 My Plans
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/personal-operating-plan', { state: location.state });
+                  setMenuOpen(false);
+                  setPlanSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Personal Operating Plan
               </button>
             </>
           )}
@@ -565,6 +601,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               if (!journalSubmenuOpen) {
                 setDecisionsSubmenuOpen(false);
                 setPlanSubmenuOpen(false);
+                setGroundSubmenuOpen(false);
               }
             }}
             style={{

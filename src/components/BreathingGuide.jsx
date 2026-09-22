@@ -1,8 +1,10 @@
 import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 export default function BreathingGuide({ isOpen, onClose, showGreeting = false, firstName = 'there' }) {
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [phase, setPhase] = useState('inhale');
   const [scale, setScale] = useState(1);
@@ -155,10 +157,11 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         backgroundColor: 'white',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         zIndex: 1999,
         flexDirection: 'column',
-        gap: '24px',
+        padding: '32px 24px',
+        boxSizing: 'border-box',
       }}
       onClick={onClose}
     >
@@ -194,7 +197,7 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         </div>
       )}
 
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '100px', opacity: isShowingGreeting ? 0 : 1, transition: 'opacity 0.5s ease-in' }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '100px', opacity: isShowingGreeting ? 0 : 1, transition: 'opacity 0.5s ease-in', flex: 1, justifyContent: 'center' }}>
         {/* Text above circle */}
         <div
           style={{
@@ -251,9 +254,9 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         <button
           onClick={onClose}
           style={{
-            marginTop: '32px',
-            marginBottom: '2px',
-            padding: '12px 24px',
+            marginTop: '24px',
+            marginBottom: '24px',
+            padding: '10px 20px',
             backgroundColor: 'white',
             border: '2px solid #e5e5e5',
             borderRadius: '6px',
@@ -275,28 +278,81 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
           Finish
         </button>
 
-        {/* Settings link */}
-        <button
-          onClick={() => {
-            onClose();
-            window.location.href = '/my-account#breathing-settings';
-          }}
-          style={{
-            marginTop: '0',
-            padding: '0',
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: '#999',
-            fontSize: '12px',
-            cursor: 'pointer',
-            transition: 'color 0.2s',
-            textDecoration: 'none',
-          }}
-          onMouseEnter={(e) => e.target.style.color = '#666'}
-          onMouseLeave={(e) => e.target.style.color = '#999'}
-        >
-          Edit breathing settings
-        </button>
+        {/* Bottom options container */}
+        <div style={{
+          display: 'flex',
+          border: '1px solid #e5e5e5',
+          borderRadius: '6px',
+          overflow: 'hidden',
+          backgroundColor: 'white',
+          width: '100%',
+          maxWidth: '280px',
+          margin: '0 auto',
+          marginTop: '16px',
+        }}>
+          {/* All Breathing Tools cell */}
+          <button
+            onClick={() => {
+              onClose();
+              navigate('/breathe');
+            }}
+            style={{
+              flex: 1,
+              padding: '8px 10px',
+              backgroundColor: 'white',
+              border: 'none',
+              color: '#999',
+              fontSize: '12px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              borderRight: '1px solid #e5e5e5',
+              whiteSpace: 'nowrap',
+              textAlign: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.color = '#666';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'white';
+              e.target.style.color = '#999';
+            }}
+          >
+            All Breathing Tools
+          </button>
+
+          {/* Settings cell */}
+          <button
+            onClick={() => {
+              onClose();
+              window.location.href = '/my-account#breathing-settings';
+            }}
+            style={{
+              flex: 1,
+              padding: '8px 10px',
+              backgroundColor: 'white',
+              border: 'none',
+              color: '#999',
+              fontSize: '12px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+              textAlign: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.color = '#666';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'white';
+              e.target.style.color = '#999';
+            }}
+          >
+            Edit Settings
+          </button>
+        </div>
       </div>
     </div>
   );

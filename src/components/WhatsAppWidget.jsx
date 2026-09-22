@@ -45,16 +45,17 @@ export default function WhatsAppWidget() {
           bottom: 32px;
           right: 24px;
           z-index: 50;
+          height: 40px;
         }
         .whatsapp-button {
-          width: 48px;
-          height: 48px;
-          min-width: 48px;
-          min-height: 48px;
+          height: 40px;
+          min-height: 40px;
+          padding: 0;
+          margin: 0;
         }
         .whatsapp-icon {
-          width: 24px;
-          height: 24px;
+          width: 18px;
+          height: 18px;
           flex-shrink: 0;
         }
       `}</style>
@@ -70,41 +71,34 @@ export default function WhatsAppWidget() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'relative',
-          padding: 0,
-          backgroundColor: '#F08571',
-          border: 'none',
-          borderRadius: '50%',
+          gap: isHovered ? '8px' : '0',
+          width: isHovered ? 'auto' : '40px',
+          minWidth: '40px',
+          paddingLeft: isHovered ? '12px' : '0',
+          paddingRight: isHovered ? '8px' : '0',
+          backgroundColor: isHovered ? '#f0f0f0' : '#fafafa',
+          border: `1.5px solid ${isHovered ? '#e07560' : '#F08571'}`,
+          borderRadius: '8px',
           cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(240, 133, 113, 0.3)',
-          transition: 'all 0.3s ease',
-          transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+          boxShadow: 'none',
+          transition: 'all 0.2s ease',
+          whiteSpace: 'nowrap',
         }}
         title={isNorthAmerica ? "Chat with Tim on iMessage" : "Chat with Tim on WhatsApp"}
       >
-        <div className="whatsapp-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <MessageCircle color="white" fill="white" style={{ width: '100%', height: '100%' }} />
-        </div>
         {isHovered && (
-          <span
-            style={{
-              position: 'absolute',
-              left: '-160px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'white',
-              fontSize: '13px',
-              fontWeight: '600',
-              whiteSpace: 'nowrap',
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              padding: '6px 12px',
-              borderRadius: '4px',
-              pointerEvents: 'none',
-            }}
-          >
-            Speak directly to Tim
+          <span style={{
+            fontSize: '12px',
+            fontWeight: '500',
+            color: isHovered ? '#e07560' : '#F08571',
+            flex: 1,
+          }}>
+            Chat directly with Tim
           </span>
         )}
+        <div className="whatsapp-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: '18px', height: '18px' }}>
+          <MessageCircle color={isHovered ? '#e07560' : '#F08571'} fill="none" style={{ width: '100%', height: '100%' }} />
+        </div>
       </button>
       </div>
     </>

@@ -9,19 +9,19 @@ const ALL_PROBLEMS = [
   { id: 'tough-conversation', title: 'I need to give tough feedback', description: 'Create a script for giving feedback', tools: ['tough-conversation'], status: null },
   { id: 'stop-doing', title: 'I\'ve got too many things to do', description: 'Reclaim hours by stopping or delegating time-sink activities', tools: ['stop-doing-audit'], status: null },
   { id: 'if-then', title: 'I\'m feeling anxious about an uncertain situation', description: 'Prepare for uncertain situations with contingency plans', tools: ['if-then-planning'], status: null },
-  { id: 'new-hire', title: 'Making a new hire', description: 'Plan and prepare for bringing on new team members', tools: ['new-hire'], status: 'coming-soon' },
-  { id: 'onboarding', title: 'Onboarding a new member of staff', description: 'Guide and support new team members in their first weeks', tools: ['onboarding'], status: 'coming-soon' },
-  { id: 'energy', title: 'What to focus my energy on', description: 'Allocate your priorities wisely', tools: ['energy-allocation'], status: 'coming-soon' },
-  { id: 'goals', title: 'What goals to set', description: 'Set meaningful, values-aligned goals', tools: ['goal-setting'], status: 'coming-soon' },
-  { id: 'improve', title: 'Getting better at what I do', description: 'Create an individual development plan', tools: ['idp'], status: 'coming-soon' },
-  { id: 'alignment', title: 'Creating alignment in my team', description: 'Improve team clarity and shared direction', tools: ['alignment'], status: 'coming-soon' },
-  { id: 'habits', title: 'Improving my habits', description: 'Build better habits and break unhelpful ones', tools: ['habits'], status: 'coming-soon' },
-  { id: 'rut', title: 'Getting out of a rut', description: 'Refocus on what\'s working and build momentum', tools: ['rut'], status: 'coming-soon' },
-  { id: 'purpose', title: 'Feeling more purposeful', description: 'Reconnect with your intention and "why"', tools: ['purpose'], status: 'coming-soon' },
-  { id: 'gratitude', title: 'Cultivating gratitude', description: 'Shift perspective and boost wellbeing', tools: ['gratitude'], status: 'coming-soon' },
-  { id: 'performance', title: 'Looking after my wellbeing', description: 'Human performance audit and recovery', tools: ['performance-audit'], status: 'coming-soon' },
-  { id: 'team-goals', title: 'Setting team goals and OKRs', description: 'Define and align on team objectives', tools: ['team-goals'], status: 'coming-soon' },
-  { id: 'team-performance', title: 'Team health & performance', description: 'Assess team dynamics and performance', tools: ['team-performance'], status: 'coming-soon' },
+  { id: 'new-hire', title: 'I need to make a new hire', description: 'Plan and prepare for bringing on new team members', tools: ['new-hire'], status: 'coming-soon' },
+  { id: 'onboarding', title: 'I need to onboard a new team member', description: 'Guide and support new team members in their first weeks', tools: ['onboarding'], status: 'coming-soon' },
+  { id: 'energy', title: 'I want to focus my energy wisely', description: 'Allocate your priorities wisely', tools: ['energy-allocation'], status: 'coming-soon' },
+  { id: 'goals', title: 'I want to set meaningful goals', description: 'Set meaningful, values-aligned goals', tools: ['goal-setting'], status: 'coming-soon' },
+  { id: 'improve', title: 'I want to get better at what I do', description: 'Create an individual development plan', tools: ['idp'], status: 'coming-soon' },
+  { id: 'alignment', title: 'I need to create alignment in my team', description: 'Improve team clarity and shared direction', tools: ['alignment'], status: 'coming-soon' },
+  { id: 'habits', title: 'I want to improve my habits', description: 'Build better habits and break unhelpful ones', tools: ['habits'], status: 'coming-soon' },
+  { id: 'rut', title: 'I want to get out of a rut', description: 'Refocus on what\'s working and build momentum', tools: ['rut'], status: 'coming-soon' },
+  { id: 'purpose', title: 'I want to feel more purposeful', description: 'Reconnect with your intention and "why"', tools: ['purpose'], status: 'coming-soon' },
+  { id: 'gratitude', title: 'I want to cultivate gratitude', description: 'Shift perspective and boost wellbeing', tools: ['gratitude'], status: 'coming-soon' },
+  { id: 'performance', title: 'I need to look after my wellbeing', description: 'Human performance audit and recovery', tools: ['performance-audit'], status: 'coming-soon' },
+  { id: 'team-goals', title: 'I need to set team goals and OKRs', description: 'Define and align on team objectives', tools: ['team-goals'], status: 'coming-soon' },
+  { id: 'team-performance', title: 'I need to assess team health & performance', description: 'Assess team dynamics and performance', tools: ['team-performance'], status: 'coming-soon' },
 ];
 
 export default function DecisionTools() {
@@ -56,13 +56,13 @@ export default function DecisionTools() {
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '48px 32px' }} className="page-container">
+        <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>All Decision Tools</h1>
           <button
             onClick={() => navigate('/decision-history', { state: { isGuest } })}
             style={{
-              padding: '8px 16px',
+              padding: '6px 12px',
               backgroundColor: 'transparent',
               border: '2px solid #e5e5e5',
               borderRadius: '6px',
@@ -86,14 +86,14 @@ export default function DecisionTools() {
         </div>
 
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '0' }}>
           {problems.map((problem) => (
             <button
               key={problem.id}
               onClick={() => handleProblemSelect(problem)}
               disabled={problem.status === 'coming-soon'}
               style={{
-                padding: '24px',
+                padding: '20px',
                 backgroundColor: problem.status === 'coming-soon' ? '#f9f9f9' : 'white',
                 border: problem.status === 'coming-soon' ? '2px solid #e5e5e5' : '2px solid #e5e5e5',
                 borderRadius: '12px',
@@ -105,8 +105,8 @@ export default function DecisionTools() {
                 textAlign: 'left',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px',
-                minHeight: '180px',
+                gap: '8px',
+                minHeight: '140px',
               }}
               onMouseEnter={(e) => {
                 if (problem.status !== 'coming-soon') {

@@ -56,6 +56,10 @@ import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
 import TermsAcceptance from './pages/TermsAcceptance';
 import OnboardingMission from './pages/OnboardingMission';
+import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
+import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
+import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
+import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -116,6 +120,9 @@ function AppContent() {
     '/auth/callback',
     '/accept-terms',
     '/onboarding-mission',
+    '/personal-operating-plan-edit',
+    '/personal-operating-plan-review',
+    '/mission-progress-review',
     '/terms-of-service',
     '/privacy-policy',
     '/data-storage-notice'
@@ -128,6 +135,10 @@ function AppContent() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/onboarding-mission" element={<OnboardingMission />} />
+        <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
+        <Route path="/personal-operating-plan-edit" element={<PersonalOperatingPlanEdit />} />
+        <Route path="/personal-operating-plan-review" element={<PersonalOperatingPlanReview />} />
+        <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
       <Route path="/create-account" element={<CreateAccount />} />
       <Route path="/about" element={<About />} />
       <Route path="/my-account" element={<MyAccount />} />

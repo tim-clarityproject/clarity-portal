@@ -16,24 +16,39 @@ export default function MyReviews() {
 
   useEffect(() => {
     if (user && !isGuest) {
+      setIsLoading(true);
       loadEntries();
     }
-  }, [user, isGuest]);
+  }, [user, isGuest, filterType]);
 
   const loadEntries = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('journal_entries')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      if (filterType === 'mission-progress') {
+        // Load mission progress reviews
+        const { data, error } = await supabase
+          .from('mission_progress_reviews')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (data) {
-        setEntries(data);
+        if (error) throw error;
+        setEntries(data || []);
+      } else {
+        // Load journal entries for other review types
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (data) {
+          setEntries(data);
+        }
       }
     } catch (error) {
-      console.error('Error loading journal entries:', error);
+      console.error('Error loading entries:', error);
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +73,19 @@ export default function MyReviews() {
     } catch (error) {
       console.error('Error deleting entry:', error);
       alert('Failed to delete entry');
+    }
+  };
+
+  const handleDeleteMissionProgress = async (reviewId) => {
+    try {
+      await supabase
+        .from('mission_progress_reviews')
+        .delete()
+        .eq('id', reviewId);
+      setEntries(entries.filter(e => e.id !== reviewId));
+    } catch (error) {
+      console.error('Error deleting mission progress review:', error);
+      alert('Failed to delete review');
     }
   };
 
@@ -195,112 +223,170 @@ export default function MyReviews() {
           >
             Progress Reviews
           </button>
+          <button
+            onClick={() => setFilterType('mission-progress')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: filterType === 'mission-progress' ? '#F08571' : 'transparent',
+              color: filterType === 'mission-progress' ? 'white' : '#333',
+              border: `2px solid ${filterType === 'mission-progress' ? '#F08571' : '#e5e5e5'}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (filterType !== 'mission-progress') {
+                e.target.style.borderColor = '#F08571';
+                e.target.style.backgroundColor = '#f9f9f9';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (filterType !== 'mission-progress') {
+                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            Mission Progress
+          </button>
         </div>
 
         {isLoading ? (
           <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
-        ) : entries.filter(e => filterType === 'all' || e.review_type === filterType).length === 0 ? (
+        ) : entries.length === 0 ? (
           <div style={{ textAlign: 'center', paddingTop: '48px', paddingBottom: '120px' }}>
             <p style={{ color: '#999', fontSize: '14px' }}>No reviews yet</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {entries.filter(e => filterType === 'all' || e.review_type === filterType).map((entry) => (
-              <button
-                key={entry.id}
-                onClick={() => navigate('/review-summary', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } })}
-                style={{
-                  padding: '16px',
-                  backgroundColor: '#f9f9f9',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  minHeight: '70px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f0f0f0';
-                  e.currentTarget.style.borderColor = '#F08571';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f9f9f9';
-                  e.currentTarget.style.borderColor = '#e5e5e5';
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {entry.title || (entry.review_type === 'after-action' ? 'After-Action Review' : entry.review_type === 'progress' ? 'Progress Review' : 'Weekly Momentum Review')}
-                    </p>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        color: 'white',
-                        backgroundColor: '#F08571',
-                        padding: '4px 12px',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review'}
-                    </span>
+            {entries.filter(e => {
+              if (filterType === 'mission-progress') {
+                return true; // Already filtered by loadEntries
+              }
+              return filterType === 'all' || e.review_type === filterType;
+            }).map((entry) => {
+              const isMissionProgress = filterType === 'mission-progress' || !entry.review_type;
+              const displayTitle = isMissionProgress
+                ? `Mission Review: ${entry.review_data?.mission_title || 'Untitled'}`
+                : (entry.title || (entry.review_type === 'after-action' ? 'After-Action Review' : entry.review_type === 'progress' ? 'Progress Review' : 'Weekly Momentum Review'));
+
+              return (
+                <button
+                  key={entry.id}
+                  onClick={() => {
+                    if (isMissionProgress) {
+                      navigate('/mission-progress-review', { state: { isGuest, reviewId: entry.id } });
+                    } else {
+                      navigate('/review-summary', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } });
+                    }
+                  }}
+                  style={{
+                    padding: '16px',
+                    backgroundColor: '#f9f9f9',
+                    border: '1px solid #e5e5e5',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    minHeight: '70px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f0f0f0';
+                    e.currentTarget.style.borderColor = '#F08571';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f9f9f9';
+                    e.currentTarget.style.borderColor = '#e5e5e5';
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                        {displayTitle}
+                      </p>
+                      <span
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          color: 'white',
+                          backgroundColor: '#F08571',
+                          padding: '4px 12px',
+                          borderRadius: '4px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {isMissionProgress ? 'Mission Progress' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
+                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
+                        {formatDateTime(entry.created_at)}
+                      </p>
+                      {!isMissionProgress && (
+                        <>
+                          <button
+                            onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type, entryId: entry.id } })}
+                            title="Edit review"
+                            style={{
+                              padding: '8px',
+                              backgroundColor: 'transparent',
+                              color: '#F08571',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              height: '34px',
+                              width: '34px',
+                            }}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                          >
+                            <Edit size={18} />
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isMissionProgress) {
+                            if (!window.confirm('Delete this mission progress review?')) return;
+                            handleDeleteMissionProgress(entry.id);
+                          } else {
+                            handleDelete(entry.id, e);
+                          }
+                        }}
+                        title="Delete entry"
+                        style={{
+                          padding: '8px',
+                          backgroundColor: 'transparent',
+                          color: '#F08571',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: '34px',
+                          width: '34px',
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
-                    <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                      {formatDateTime(entry.created_at)}
-                    </p>
-                    <button
-                      onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type, entryId: entry.id } })}
-                      title="Edit review"
-                      style={{
-                        padding: '8px',
-                        backgroundColor: 'transparent',
-                        color: '#F08571',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '34px',
-                        width: '34px',
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(entry.id, e)}
-                      title="Delete entry"
-                      style={{
-                        padding: '8px',
-                        backgroundColor: 'transparent',
-                        color: '#F08571',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '34px',
-                        width: '34px',
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
