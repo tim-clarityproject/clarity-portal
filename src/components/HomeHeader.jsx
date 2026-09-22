@@ -785,9 +785,11 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           gap: '4px',
           cursor: 'pointer',
           flexShrink: 0,
+          minWidth: 0,
+          overflow: 'hidden',
         }}
       >
-        <span>Created by</span>
+        <span style={{ whiteSpace: 'nowrap' }}>Created by</span>
         <a
           href="https://theclarityproject.co.uk/"
           target="_blank"
@@ -798,6 +800,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             cursor: 'pointer',
             transition: 'opacity 0.2s',
             marginLeft: '-12px',
+            maxWidth: '80px',
           }}
           onMouseEnter={(e) => e.target.style.opacity = '1'}
           onMouseLeave={(e) => e.target.style.opacity = '0.9'}
@@ -807,7 +810,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             src="/clarity-logo.png"
             alt="The Clarity Project"
             style={{
-              height: '67px',
+              height: '40px',
               width: 'auto',
               display: 'block',
               opacity: 0.9,
