@@ -121,22 +121,33 @@ export default function BreathingPage() {
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} />
 
+      <style>{`
+        .breathing-container {
+          padding: 40px 32px;
+        }
+        @media (max-width: 768px) {
+          .breathing-container {
+            padding: 32px 16px;
+          }
+        }
+      `}</style>
+
       {view === 'instructions' ? (
         // INSTRUCTION VIEW
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px', paddingTop: '48px' }}>
-          <div style={{ width: '100%', maxWidth: '700px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="breathing-container">
+          <div style={{ width: '100%', maxWidth: '800px' }}>
             {/* Breathing Type Selector */}
-            <div style={{ display: 'flex', border: '2px solid #e5e5e5', borderRadius: '8px', overflow: 'hidden', marginBottom: '40px', gap: 0 }}>
+            <div style={{ display: 'flex', border: '2px solid #e5e5e5', borderRadius: '6px', overflow: 'hidden', marginBottom: '32px', gap: 0 }}>
               {['sigh', 'vagal', 'box'].map((type) => (
                 <button
                   key={type}
                   onClick={() => handleSwitchBreathingType(type)}
                   style={{
                     flex: 1,
-                    padding: '12px 16px',
+                    padding: '8px 16px',
                     backgroundColor: breathingType === type ? '#F08571' : 'white',
                     border: 'none',
-                    color: breathingType === type ? 'white' : '#999',
+                    color: breathingType === type ? 'white' : '#333',
                     cursor: 'pointer',
                     fontSize: '13px',
                     fontWeight: '600',
@@ -159,15 +170,15 @@ export default function BreathingPage() {
             </div>
 
             {/* Breathing Type Title */}
-            <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#333', margin: '0 0 32px 0', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#333', margin: '0 0 24px 0', textAlign: 'center' }}>
               {info.name}
             </h1>
 
             {/* Instructions */}
-            <div style={{ backgroundColor: '#fafafa', padding: '28px', borderRadius: '8px', marginBottom: '40px', borderLeft: '4px solid #F08571' }}>
+            <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', marginBottom: '32px', borderLeft: '4px solid #F08571', border: '1px solid #e5e5e5', paddingLeft: '24px' }}>
               {info.instructions.map((inst, idx) => (
-                <div key={idx} style={{ marginBottom: idx < info.instructions.length - 1 ? '16px' : '0' }}>
-                  <p style={{ fontSize: '14px', lineHeight: '1.7', color: '#333', margin: 0 }}>
+                <div key={idx} style={{ marginBottom: idx < info.instructions.length - 1 ? '12px' : '0' }}>
+                  <p style={{ fontSize: '13px', lineHeight: '1.6', color: '#666', margin: 0 }}>
                     {inst}
                   </p>
                 </div>
@@ -202,16 +213,16 @@ export default function BreathingPage() {
         </div>
       ) : (
         // BREATHING VIEW
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }} className="breathing-container">
           {/* Breathing Animation */}
-          <div style={{ marginBottom: '64px' }}>
+          <div style={{ marginBottom: '48px' }}>
             {breathingType === 'sigh' && <PhysiologicalSighAnimation isActive={view === 'breathing'} />}
             {breathingType === 'vagal' && <VagalBreathingAnimation isActive={view === 'breathing'} />}
             {breathingType === 'box' && <BoxBreathingAnimation isActive={view === 'breathing'} />}
           </div>
 
           {/* Timer */}
-          <p style={{ fontSize: '16px', color: '#999', fontWeight: '500', marginBottom: '48px' }}>
+          <p style={{ fontSize: '14px', color: '#999', fontWeight: '500', marginBottom: '48px' }}>
             {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}
           </p>
 
@@ -219,21 +230,23 @@ export default function BreathingPage() {
           <button
             onClick={handleStopBreathing}
             style={{
-              padding: '12px 32px',
+              padding: '12px 24px',
               backgroundColor: 'white',
-              color: '#F08571',
-              border: '2px solid #F08571',
-              borderRadius: '8px',
-              fontSize: '15px',
+              color: '#333',
+              border: '2px solid #e5e5e5',
+              borderRadius: '6px',
+              fontSize: '14px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#f9f9f9';
+              e.currentTarget.style.backgroundColor = '#f9f9f9';
+              e.currentTarget.style.borderColor = '#F08571';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'white';
+              e.currentTarget.style.backgroundColor = 'white';
+              e.currentTarget.style.borderColor = '#e5e5e5';
             }}
           >
             Done
@@ -304,10 +317,10 @@ function VagalBreathingAnimation({ isActive }) {
         />
       </svg>
       <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
-        <div style={{ fontSize: '56px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
           {secondsLeft}
         </div>
-        <div style={{ fontSize: '16px', color: '#999', fontWeight: '500', textTransform: 'capitalize' }}>
+        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', textTransform: 'capitalize' }}>
           {phase}
         </div>
       </div>
@@ -391,10 +404,10 @@ function BoxBreathingAnimation({ isActive }) {
         />
       </svg>
       <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
-        <div style={{ fontSize: '56px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
           {secondsLeft}
         </div>
-        <div style={{ fontSize: '16px', color: '#999', fontWeight: '500', textTransform: 'capitalize' }}>
+        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', textTransform: 'capitalize' }}>
           {phase}
         </div>
       </div>
