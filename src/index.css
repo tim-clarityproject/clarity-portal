@@ -48,23 +48,12 @@
   }
 }
 
-html {
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
   box-sizing: border-box;
-  overflow: hidden;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-  display: flex;
+  overflow-x: hidden;
 }
 
 *, *::before, *::after {
@@ -73,13 +62,11 @@ body {
 
 #root {
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 h1,
