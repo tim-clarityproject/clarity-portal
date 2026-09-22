@@ -204,9 +204,8 @@ export default function Welcome() {
   };
 
   return (
-    <>
+    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} delayMission={true} />
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
@@ -378,7 +377,6 @@ export default function Welcome() {
           }}
         />
       )}
-      </div>
-    </>
+    </div>
   );
 }
