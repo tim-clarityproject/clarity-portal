@@ -21,7 +21,7 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !isLoading) {
-      navigate('/onboarding-mission');
+      navigate('/welcome');
     }
   }, [user, isLoading, navigate]);
 
