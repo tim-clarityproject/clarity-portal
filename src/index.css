@@ -130,9 +130,11 @@ code {
   align-items: flex-start;
   justify-content: center;
   padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 32px);
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
   width: 100%;
+  scrollbar-gutter: stable;
 }
 
 @keyframes blink {
