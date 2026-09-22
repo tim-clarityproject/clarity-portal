@@ -209,21 +209,6 @@ export default function Welcome() {
       <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
-      <style>{`
-        .welcome-h1 {
-          font-size: clamp(28px, 4.5vw, 44px);
-          min-height: clamp(40px, 5vw, 60px);
-        }
-        .welcome-content {
-          flex: 1;
-          display: flex;
-          alignItems: flex-start;
-          justify-content: center;
-          padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 32px);
-          overflow: auto;
-        }
-      `}</style>
-
       {/* Main Content */}
       <div className="welcome-content">
         <div style={{ maxWidth: '1000px', width: '100%' }}>
@@ -237,13 +222,6 @@ export default function Welcome() {
               {displayedQuestion.length > 0 && displayedQuestion.length < 'What are we working on?'.length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h2>
           </div>
-
-          <style>{`
-            @keyframes blink {
-              0%, 49% { opacity: 1; }
-              50%, 100% { opacity: 0; }
-            }
-          `}</style>
 
           <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
             {/* Problem selector dropdown */}
