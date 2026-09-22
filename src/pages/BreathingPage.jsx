@@ -4,6 +4,9 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 
+// Unified visual size for all breathing animations
+const BREATHING_VISUAL_SIZE = 240; // px - same for circle and box
+
 export default function BreathingPage() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
@@ -92,7 +95,7 @@ export default function BreathingPage() {
         'Take a deep breath in through your nose until your lungs feel full.',
         'Without exhaling, take a quick second "top-up" breath through your nose.',
         'Release a long, slow exhale through your mouth.',
-        'Repeat 1-3 times for immediate stress relief.',
+        'Repeat for as many cycles as you like.',
       ],
     },
     vagal: {
@@ -257,39 +260,43 @@ export default function BreathingPage() {
   );
 }
 
-// Vagal Breathing: Expanding/Contracting Circle
+// ===== ANIMATION COMPONENTS =====
+
+// Vagal Breathing: Circle expands (4s) then shrinks (6s)
 function VagalBreathingAnimation({ isActive }) {
-  const [scale, setScale] = useState(0.5);
   const [phase, setPhase] = useState('inhale');
-  const [secondsLeft, setSecondsLeft] = useState(4);
+  const [countdownSeconds, setCountdownSeconds] = useState(4);
+  const [scale, setScale] = useState(0.5);
 
   useEffect(() => {
     if (!isActive) {
-      setScale(0.5);
       setPhase('inhale');
-      setSecondsLeft(4);
+      setCountdownSeconds(4);
+      setScale(0.5);
       return;
     }
 
-    let startTime = Date.now();
     let animationFrame;
+    let startTime = Date.now();
+    const cycleDuration = 10000; // 4s inhale + 6s exhale
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      const cycleTime = 10000; // 4s inhale + 6s exhale
-      const cycleProgress = (elapsed % cycleTime) / cycleTime;
+      const cycleElapsed = elapsed % cycleDuration;
 
-      if (cycleProgress < 0.4) {
-        // Inhale: 4 seconds (0-40%)
+      // Calculate scale and phase
+      if (cycleElapsed < 4000) {
+        // Inhale: 4 seconds, scale 0.5 → 1.5
         setPhase('inhale');
-        setScale(0.5 + cycleProgress); // 0.5 to 1.5
-        setSecondsLeft(Math.ceil((4000 - (elapsed % cycleTime)) / 1000));
+        const inhalProgress = cycleElapsed / 4000;
+        setScale(0.5 + inhalProgress);
+        setCountdownSeconds(4 - Math.floor(cycleElapsed / 1000));
       } else {
-        // Exhale: 6 seconds (40-100%)
+        // Exhale: 6 seconds, scale 1.5 → 0.5
         setPhase('exhale');
-        const exhaleProgress = (cycleProgress - 0.4) / 0.6;
-        setScale(1.5 - exhaleProgress); // 1.5 to 0.5
-        setSecondsLeft(Math.ceil((10000 - (elapsed % cycleTime)) / 1000));
+        const exhaleProgress = (cycleElapsed - 4000) / 6000;
+        setScale(1.5 - exhaleProgress);
+        setCountdownSeconds(10 - Math.floor(cycleElapsed / 1000));
       }
 
       animationFrame = requestAnimationFrame(animate);
@@ -299,26 +306,24 @@ function VagalBreathingAnimation({ isActive }) {
     return () => cancelAnimationFrame(animationFrame);
   }, [isActive]);
 
-  const size = 240;
-  const baseRadius = size / 2.5;
-  const radius = baseRadius * scale;
+  const radius = (BREATHING_VISUAL_SIZE / 2) * scale;
+  const circumference = 2 * Math.PI * (BREATHING_VISUAL_SIZE / 2 - 8);
 
   return (
-    <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width={size} height={size} style={{ position: 'absolute' }}>
+    <div style={{ position: 'relative', width: BREATHING_VISUAL_SIZE, height: BREATHING_VISUAL_SIZE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width={BREATHING_VISUAL_SIZE} height={BREATHING_VISUAL_SIZE} style={{ position: 'absolute' }}>
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx={BREATHING_VISUAL_SIZE / 2}
+          cy={BREATHING_VISUAL_SIZE / 2}
           r={radius}
-          fill="rgba(240, 133, 113, 0.1)"
+          fill="rgba(240, 133, 113, 0.08)"
           stroke="#F08571"
           strokeWidth="3"
-          style={{ transition: 'r 0.05s linear' }}
         />
       </svg>
       <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
         <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-          {secondsLeft}
+          {Math.max(0, countdownSeconds)}
         </div>
         <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', textTransform: 'capitalize' }}>
           {phase}
@@ -328,45 +333,39 @@ function VagalBreathingAnimation({ isActive }) {
   );
 }
 
-// Box Breathing: Square with Animated Perimeter Line
+// Box Breathing: Square with animated line (4s per side)
 function BoxBreathingAnimation({ isActive }) {
-  const [strokeDashoffset, setStrokeDashoffset] = useState(0);
   const [phase, setPhase] = useState('inhale');
-  const [secondsLeft, setSecondsLeft] = useState(4);
+  const [countdownSeconds, setCountdownSeconds] = useState(4);
+  const [strokeDashoffset, setStrokeDashoffset] = useState(0);
 
   useEffect(() => {
     if (!isActive) {
-      setStrokeDashoffset(0);
       setPhase('inhale');
-      setSecondsLeft(4);
+      setCountdownSeconds(4);
+      setStrokeDashoffset(0);
       return;
     }
 
-    let startTime = Date.now();
     let animationFrame;
+    let startTime = Date.now();
+    const cycleDuration = 16000; // 4s × 4 phases
+
+    const phaseLabels = ['inhale', 'hold', 'exhale', 'hold'];
+    const perimeter = (BREATHING_VISUAL_SIZE - 40) * 4; // approximate perimeter of inner square
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      const cycleTime = 16000; // 4s × 4 phases
-      const cycleProgress = (elapsed % cycleTime) / cycleTime;
+      const cycleElapsed = elapsed % cycleDuration;
+      const phaseIndex = Math.floor(cycleElapsed / 4000);
 
-      // Animate perimeter line (going around the box)
-      setStrokeDashoffset(-(cycleProgress * 800)); // Perimeter of 200×200 box ≈ 800
+      // Animate the line around the box perimeter
+      const phaseProgress = (cycleElapsed % 4000) / 4000;
+      setStrokeDashoffset(-phaseProgress * perimeter);
 
-      // Determine phase and countdown
-      if (elapsed % cycleTime < 4000) {
-        setPhase('inhale');
-        setSecondsLeft(Math.ceil((4000 - (elapsed % cycleTime)) / 1000));
-      } else if (elapsed % cycleTime < 8000) {
-        setPhase('hold');
-        setSecondsLeft(Math.ceil((8000 - (elapsed % cycleTime)) / 1000));
-      } else if (elapsed % cycleTime < 12000) {
-        setPhase('exhale');
-        setSecondsLeft(Math.ceil((12000 - (elapsed % cycleTime)) / 1000));
-      } else {
-        setPhase('hold');
-        setSecondsLeft(Math.ceil((16000 - (elapsed % cycleTime)) / 1000));
-      }
+      // Update phase and countdown
+      setPhase(phaseLabels[phaseIndex]);
+      setCountdownSeconds(4 - Math.floor((cycleElapsed % 4000) / 1000));
 
       animationFrame = requestAnimationFrame(animate);
     };
@@ -375,37 +374,39 @@ function BoxBreathingAnimation({ isActive }) {
     return () => cancelAnimationFrame(animationFrame);
   }, [isActive]);
 
-  const boxSize = 200;
+  const boxSize = BREATHING_VISUAL_SIZE - 40;
+  const perimeter = boxSize * 4;
 
   return (
-    <div style={{ position: 'relative', width: boxSize, height: boxSize, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width={boxSize} height={boxSize} style={{ position: 'absolute' }}>
+    <div style={{ position: 'relative', width: BREATHING_VISUAL_SIZE, height: BREATHING_VISUAL_SIZE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width={BREATHING_VISUAL_SIZE} height={BREATHING_VISUAL_SIZE} style={{ position: 'absolute' }}>
+        {/* Background box */}
         <rect
           x="20"
           y="20"
-          width={boxSize - 40}
-          height={boxSize - 40}
-          fill="none"
+          width={boxSize}
+          height={boxSize}
+          fill="rgba(240, 133, 113, 0.08)"
           stroke="#e5e5e5"
           strokeWidth="2"
         />
+        {/* Animated line */}
         <rect
           x="20"
           y="20"
-          width={boxSize - 40}
-          height={boxSize - 40}
+          width={boxSize}
+          height={boxSize}
           fill="none"
           stroke="#F08571"
           strokeWidth="3"
-          strokeDasharray="800"
+          strokeDasharray={perimeter}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.05s linear' }}
         />
       </svg>
       <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
         <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-          {secondsLeft}
+          {Math.max(0, countdownSeconds)}
         </div>
         <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', textTransform: 'capitalize' }}>
           {phase}
@@ -415,44 +416,46 @@ function BoxBreathingAnimation({ isActive }) {
   );
 }
 
-// Physiological Sigh: Expanding Circle with Double Inhale Visual
+// Physiological Sigh: Expand (4s) → slight re-expand (sniff) → exhale (8s)
 function PhysiologicalSighAnimation({ isActive }) {
+  const [phase, setPhase] = useState('first-inhale');
+  const [countdownSeconds, setCountdownSeconds] = useState(4);
   const [scale, setScale] = useState(0.5);
-  const [phase, setPhase] = useState('inhale');
-  const [secondsLeft, setSecondsLeft] = useState(2);
 
   useEffect(() => {
     if (!isActive) {
+      setPhase('first-inhale');
+      setCountdownSeconds(4);
       setScale(0.5);
-      setPhase('inhale');
-      setSecondsLeft(2);
       return;
     }
 
-    let startTime = Date.now();
     let animationFrame;
+    let startTime = Date.now();
+    const cycleDuration = 12000; // 4s inhale + 0.5s sniff + 7.5s exhale (simplified to 12s)
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      const cycleTime = 4000; // Full cycle
-      const cycleProgress = (elapsed % cycleTime) / cycleTime;
+      const cycleElapsed = elapsed % cycleDuration;
 
-      if (cycleProgress < 0.5) {
-        // First inhale: 2 seconds
-        setPhase('inhale');
-        setScale(0.5 + cycleProgress); // 0.5 to 1.0
-        setSecondsLeft(Math.ceil((2000 - (elapsed % cycleTime)) / 1000));
-      } else if (cycleProgress < 0.625) {
-        // Second inhale (sniff): 0.5 seconds
-        setPhase('sniff');
-        setScale(1.0 + (cycleProgress - 0.5) * 2); // 1.0 to 1.25
-        setSecondsLeft(1);
+      if (cycleElapsed < 4000) {
+        // First inhale: 4 seconds, scale 0.5 → 1.3
+        setPhase('first-inhale');
+        const inhalProgress = cycleElapsed / 4000;
+        setScale(0.5 + inhalProgress * 0.8);
+        setCountdownSeconds(4 - Math.floor(cycleElapsed / 1000));
+      } else if (cycleElapsed < 4500) {
+        // Second inhale (sniff): 0.5 seconds, scale 1.3 → 1.5
+        setPhase('second-inhale');
+        const sniffProgress = (cycleElapsed - 4000) / 500;
+        setScale(1.3 + sniffProgress * 0.2);
+        setCountdownSeconds(1);
       } else {
-        // Exhale: 1.5 seconds
+        // Exhale: 7.5 seconds, scale 1.5 → 0.5
         setPhase('exhale');
-        const exhaleProgress = (cycleProgress - 0.625) / 0.375;
-        setScale(1.25 - exhaleProgress * 0.75); // 1.25 to 0.5
-        setSecondsLeft(Math.ceil((4000 - (elapsed % cycleTime)) / 1000));
+        const exhaleProgress = (cycleElapsed - 4500) / 7500;
+        setScale(1.5 - exhaleProgress);
+        setCountdownSeconds(Math.max(0, 8 - Math.floor((cycleElapsed - 4000) / 1000)));
       }
 
       animationFrame = requestAnimationFrame(animate);
@@ -462,29 +465,39 @@ function PhysiologicalSighAnimation({ isActive }) {
     return () => cancelAnimationFrame(animationFrame);
   }, [isActive]);
 
-  const size = 240;
-  const baseRadius = size / 2.5;
-  const radius = baseRadius * scale;
+  const radius = (BREATHING_VISUAL_SIZE / 2) * scale;
+
+  const getPhaseLabel = () => {
+    switch (phase) {
+      case 'first-inhale':
+        return 'First Inhale';
+      case 'second-inhale':
+        return 'Second Inhale';
+      case 'exhale':
+        return 'Exhale';
+      default:
+        return '';
+    }
+  };
 
   return (
-    <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width={size} height={size} style={{ position: 'absolute' }}>
+    <div style={{ position: 'relative', width: BREATHING_VISUAL_SIZE, height: BREATHING_VISUAL_SIZE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width={BREATHING_VISUAL_SIZE} height={BREATHING_VISUAL_SIZE} style={{ position: 'absolute' }}>
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx={BREATHING_VISUAL_SIZE / 2}
+          cy={BREATHING_VISUAL_SIZE / 2}
           r={radius}
-          fill="rgba(240, 133, 113, 0.1)"
+          fill="rgba(240, 133, 113, 0.08)"
           stroke="#F08571"
           strokeWidth="3"
-          style={{ transition: 'r 0.05s linear' }}
         />
       </svg>
       <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
-        <div style={{ fontSize: '56px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-          {secondsLeft}
+        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+          {Math.max(0, countdownSeconds)}
         </div>
-        <div style={{ fontSize: '16px', color: '#999', fontWeight: '500', textTransform: 'capitalize' }}>
-          {phase === 'sniff' ? 'Sniff' : phase}
+        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500' }}>
+          {getPhaseLabel()}
         </div>
       </div>
     </div>
