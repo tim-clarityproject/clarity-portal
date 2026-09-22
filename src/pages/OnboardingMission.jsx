@@ -212,20 +212,11 @@ export default function OnboardingMission() {
             {/* Input Section - Shows after question types in */}
             {showInput && (
               <div style={{ animation: 'fadeIn 0.6s ease-in' }}>
-                <div style={{
-                  textAlign: 'center',
-                  marginBottom: '24px',
-                  fontSize: '14px',
-                  color: '#999',
-                }}>
-                  Type here
-                </div>
-
                 <textarea
                   value={mission}
                   onChange={(e) => setMission(e.target.value.slice(0, MAX_GOAL_LENGTH))}
                   onKeyPress={handleKeyPress}
-                  placeholder=""
+                  placeholder="Type here"
                   style={{
                     width: '100%',
                     minHeight: '80px',
@@ -239,10 +230,17 @@ export default function OnboardingMission() {
                     marginBottom: '24px',
                     resize: 'none',
                     transition: 'all 0.2s',
-                    backgroundColor: '#f9f9f9',
+                    backgroundColor: 'transparent',
+                    borderBottom: '1px solid #f0f0f0',
                   }}
                   autoFocus
                 />
+                <style>{`
+                  textarea::placeholder {
+                    color: #999;
+                    text-align: center;
+                  }
+                `}</style>
 
                 {/* Character Counter - Centered */}
                 <div style={{
