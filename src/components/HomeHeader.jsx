@@ -141,7 +141,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           borderBottom: '1px solid #f0f0f0',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
           position: 'fixed',
           top: 0,
           left: 0,
@@ -164,8 +164,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           flexDirection: 'column',
           gap: '4px',
           transition: 'color 0.2s',
-          position: 'absolute',
-          left: 'clamp(12px, 2vw, 16px)',
+          flexShrink: 0,
           zIndex: 100,
         }}
         onMouseEnter={(e) => e.target.style.color = '#e07560'}
@@ -214,13 +213,14 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           <div className="mission-container">
             <div style={{
               background: 'white',
-              padding: '12px 24px',
+              padding: '12px clamp(12px, 2vw, 24px)',
               borderRadius: '8px',
               border: '1px solid #e5e5e5',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
               maxWidth: '100%',
+              minWidth: 0,
             }}>
               <span style={{
                 fontSize: 'clamp(13px, 1.8vw, 16px)',
@@ -783,8 +783,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           alignItems: 'center',
           gap: '4px',
           cursor: 'pointer',
-          position: 'absolute',
-          right: 'clamp(12px, 2vw, 16px)',
+          flexShrink: 0,
           minWidth: 0,
         }}
       >
