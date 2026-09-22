@@ -42,15 +42,13 @@ export default function WhatsAppWidget() {
       <style>{`
         .whatsapp-widget {
           position: fixed;
-          bottom: 32px;
-          right: 32px;
+          bottom: clamp(16px, 3vw, 32px);
+          right: clamp(16px, 3vw, 32px);
           z-index: 50;
         }
-        @media (max-width: 768px) {
-          .whatsapp-widget {
-            bottom: 16px;
-            right: 16px;
-          }
+        .whatsapp-icon {
+          width: clamp(20px, 3vw, 24px);
+          height: clamp(20px, 3vw, 24px);
         }
       `}</style>
       <div
@@ -63,8 +61,8 @@ export default function WhatsAppWidget() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          padding: isHovered ? '12px 16px' : '12px',
+          gap: 'clamp(8px, 1.5vw, 12px)',
+          padding: isHovered ? 'clamp(10px, 1.5vw, 12px) clamp(12px, 2vw, 16px)' : 'clamp(10px, 1.5vw, 12px)',
           backgroundColor: '#F08571',
           border: 'none',
           borderRadius: '50px',
@@ -75,12 +73,14 @@ export default function WhatsAppWidget() {
         }}
         title={isNorthAmerica ? "Chat with Tim on iMessage" : "Chat with Tim on WhatsApp"}
       >
-        <MessageCircle size={24} color="white" fill="white" />
+        <div className="whatsapp-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <MessageCircle color="white" fill="white" style={{ width: '100%', height: '100%' }} />
+        </div>
         {isHovered && (
           <span
             style={{
               color: 'white',
-              fontSize: '13px',
+              fontSize: 'clamp(11px, 1.5vw, 13px)',
               fontWeight: '600',
               whiteSpace: 'nowrap',
               maxWidth: '150px',
