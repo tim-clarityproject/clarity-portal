@@ -199,7 +199,7 @@ export default function OnboardingMission() {
               fontSize: '48px',
               fontWeight: 'bold',
               color: 'black',
-              margin: '0 0 48px 0',
+              margin: '0 0 24px 0',
               lineHeight: '1.3',
               minHeight: '100px',
               display: 'flex',
@@ -265,57 +265,63 @@ export default function OnboardingMission() {
                   )}
                 </div>
 
-                <button
-                  onClick={handleSaveMission}
-                  disabled={!mission.trim() || isSaving || isOverLimit}
-                  style={{
-                    padding: '12px 32px',
-                    backgroundColor: !mission.trim() || isSaving || isOverLimit ? '#ccc' : '#F08571',
-                    color: 'white',
-                    fontWeight: '600',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: !mission.trim() || isSaving || isOverLimit ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (mission.trim() && !isSaving && !isOverLimit) {
-                      e.target.style.backgroundColor = '#e07560';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (mission.trim() && !isSaving && !isOverLimit) {
-                      e.target.style.backgroundColor = '#F08571';
-                    }
-                  }}
-                >
-                  {isSaving ? 'Saving...' : 'Get Started'}
-                </button>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '12px',
+                }}>
+                  <button
+                    onClick={handleSaveMission}
+                    disabled={!mission.trim() || isSaving || isOverLimit}
+                    style={{
+                      padding: '12px 32px',
+                      backgroundColor: !mission.trim() || isSaving || isOverLimit ? '#ccc' : '#F08571',
+                      color: 'white',
+                      fontWeight: '600',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: !mission.trim() || isSaving || isOverLimit ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (mission.trim() && !isSaving && !isOverLimit) {
+                        e.target.style.backgroundColor = '#e07560';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (mission.trim() && !isSaving && !isOverLimit) {
+                        e.target.style.backgroundColor = '#F08571';
+                      }
+                    }}
+                  >
+                    {isSaving ? 'Saving...' : 'Get Started'}
+                  </button>
 
-                <button
-                  onClick={() => navigate('/welcome')}
-                  style={{
-                    marginTop: '16px',
-                    padding: '8px 16px',
-                    backgroundColor: 'transparent',
-                    color: '#999',
-                    fontWeight: '500',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.color = '#666';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.color = '#999';
-                  }}
-                >
-                  I'll do this later in settings
-                </button>
+                  <button
+                    onClick={() => navigate('/welcome')}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: 'transparent',
+                      color: '#999',
+                      fontWeight: '500',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.color = '#666';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.color = '#999';
+                    }}
+                  >
+                    I'll do this later in settings
+                  </button>
+                </div>
               </div>
             )}
           </div>
