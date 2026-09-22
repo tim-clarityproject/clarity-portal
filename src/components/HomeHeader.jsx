@@ -141,7 +141,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           borderBottom: '1px solid #f0f0f0',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: 'center',
           position: 'fixed',
           top: 0,
           left: 0,
@@ -164,7 +164,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           flexDirection: 'column',
           gap: '4px',
           transition: 'color 0.2s',
-          flexShrink: 0,
+          position: 'absolute',
+          left: 'clamp(12px, 2vw, 16px)',
           zIndex: 100,
         }}
         onMouseEnter={(e) => e.target.style.color = '#e07560'}
@@ -198,7 +199,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               }
             }
             .mission-container {
-              flex: 0 1 auto;
               display: flex;
               justify-content: center;
               min-width: 0;
@@ -782,7 +782,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           alignItems: 'center',
           gap: '4px',
           cursor: 'pointer',
-          flexShrink: 0,
+          position: 'absolute',
+          right: 'clamp(12px, 2vw, 16px)',
           minWidth: 0,
         }}
       >
