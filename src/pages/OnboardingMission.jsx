@@ -232,6 +232,7 @@ export default function OnboardingMission() {
                     transition: 'all 0.2s',
                     backgroundColor: 'transparent',
                     borderBottom: '1px solid #f0f0f0',
+                    textAlign: 'center',
                   }}
                   autoFocus
                 />
