@@ -204,13 +204,14 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             }
           `}</style>
           <div className="mission-container" style={{
-            position: 'absolute',
+            position: 'fixed',
             left: '50%',
             top: '50%',
             transform: 'translate(-50%, -50%)',
             pointerEvents: 'none',
             maxWidth: 'calc(100vw - 200px)',
             animation: 'fadeInMission 0.8s ease-in-out',
+            zIndex: 1999,
           }}>
             <div style={{
               background: 'white',
