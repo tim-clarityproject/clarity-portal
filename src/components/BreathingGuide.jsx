@@ -3,148 +3,77 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function BreathingGuide({ isOpen, onClose, showGreeting = false, firstName = 'there' }) {
+const CONTAINER_SIZE = 300;
+const CIRCLE_BASE_RADIUS = 45;
+
+export default function BreathingGuide({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const [isBreathing, setIsBreathing] = useState(false);
   const [phase, setPhase] = useState('inhale');
+  const [countdownSeconds, setCountdownSeconds] = useState(4);
   const [scale, setScale] = useState(1);
-  const [seconds, setSeconds] = useState(0);
-  const [greetingPhase, setGreetingPhase] = useState('typing');
-  const [displayedText, setDisplayedText] = useState('');
 
-  // Greeting animation phase
+  // Vagal Breathing animation: 4s inhale + 6s exhale
   useEffect(() => {
-    if (!isOpen || !showGreeting) {
-      setGreetingPhase('typing');
-      setDisplayedText('');
+    if (!isOpen || !isBreathing) {
+      setPhase('inhale');
+      setCountdownSeconds(4);
+      setScale(1);
       return;
     }
 
-    // Wait for firstName to be available
-    if (!firstName || firstName === 'there') {
-      return;
-    }
+    let animationFrame;
+    let startTime = Date.now();
+    const cycleDuration = 10000; // 4s inhale + 6s exhale
 
-    const getTimeGreeting = () => {
-      const hour = new Date().getHours();
-      if (hour >= 22 || hour < 4) return "You're a night owl";
-      if (hour >= 4 && hour < 7) return 'Rise and shine';
-      if (hour >= 7 && hour < 12) return 'Morning';
-      if (hour >= 12 && hour < 17) return 'Afternoon';
-      if (hour >= 17 && hour < 22) return 'Evening';
-      return "You're a night owl";
-    };
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const cycleElapsed = elapsed % cycleDuration;
 
-    const timeGreeting = getTimeGreeting();
-    const fullText = `${timeGreeting}, ${firstName}. Let's breathe.`;
-    let charIndex = 0;
-
-    // Type out text
-    const typingInterval = setInterval(() => {
-      if (charIndex <= fullText.length) {
-        setDisplayedText(fullText.substring(0, charIndex));
-        charIndex++;
+      if (cycleElapsed < 4000) {
+        // Inhale: 4 seconds, scale 1 → 3
+        setPhase('inhale');
+        const inhalProgress = cycleElapsed / 4000;
+        setScale(1 + inhalProgress * 2);
+        setCountdownSeconds(4 - Math.floor(cycleElapsed / 1000));
       } else {
-        clearInterval(typingInterval);
-        // After typing, wait 1.5 seconds then transition to breathing
-        setTimeout(() => {
-          setGreetingPhase('transitioning');
-          setTimeout(() => {
-            setGreetingPhase('done');
-          }, 1000);
-        }, 1500);
+        // Exhale: 6 seconds, scale 3 → 1
+        setPhase('exhale');
+        const exhaleProgress = (cycleElapsed - 4000) / 6000;
+        setScale(3 - exhaleProgress * 2);
+        setCountdownSeconds(10 - Math.floor(cycleElapsed / 1000));
       }
-    }, 50);
-
-    return () => clearInterval(typingInterval);
-  }, [isOpen, showGreeting, firstName]);
-
-  useEffect(() => {
-    if (!isOpen || (showGreeting && greetingPhase !== 'done')) return;
-
-    const loadSettings = async () => {
-      let inhaleDuration = 4000;
-      let holdDuration = 0;
-      let exhaleDuration = 6000;
-
-      if (user) {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('breathing_settings')
-            .eq('id', user.id)
-            .single();
-
-          if (data?.breathing_settings) {
-            const settings = data.breathing_settings;
-            inhaleDuration = (settings.inhale || 4) * 1000;
-            holdDuration = (settings.hold || 0) * 1000;
-            exhaleDuration = (settings.exhale || 6) * 1000;
-          }
-        } catch (e) {
-          console.error('Error loading breathing settings:', e);
-        }
-      }
-
-      startAnimation(inhaleDuration, holdDuration, exhaleDuration);
-    };
-
-    const startAnimation = (inhaleDuration, holdDuration, exhaleDuration) => {
-      let animationFrame;
-      let startTime = Date.now();
-      const cycleDuration = inhaleDuration + holdDuration + exhaleDuration + holdDuration;
-
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const cycleElapsed = elapsed % cycleDuration;
-
-        if (cycleElapsed < inhaleDuration) {
-          // Inhale phase: scale from 1 to 1.5
-          setPhase('inhale');
-          const progress = cycleElapsed / inhaleDuration;
-          setScale(1 + progress * 0.5);
-          const remainingSeconds = Math.ceil((inhaleDuration - cycleElapsed) / 1000);
-          setSeconds(Math.max(remainingSeconds, 0));
-        } else if (cycleElapsed < inhaleDuration + holdDuration) {
-          // Hold phase (after inhale): maintain 1.5 scale, count down
-          setPhase('hold');
-          setScale(1.5);
-          const holdElapsed = cycleElapsed - inhaleDuration;
-          const remainingSeconds = Math.ceil((holdDuration - holdElapsed) / 1000);
-          setSeconds(Math.max(remainingSeconds, 0));
-        } else if (cycleElapsed < inhaleDuration + holdDuration + exhaleDuration) {
-          // Exhale phase: scale from 1.5 to 1
-          setPhase('exhale');
-          const exhaleElapsed = cycleElapsed - inhaleDuration - holdDuration;
-          const progress = exhaleElapsed / exhaleDuration;
-          setScale(1.5 - progress * 0.5);
-          const remainingSeconds = Math.ceil((exhaleDuration - exhaleElapsed) / 1000);
-          setSeconds(Math.max(remainingSeconds, 0));
-        } else {
-          // Hold phase (after exhale): maintain 1 scale, count down
-          setPhase('hold');
-          setScale(1);
-          const holdElapsed = cycleElapsed - inhaleDuration - holdDuration - exhaleDuration;
-          const remainingSeconds = Math.ceil((holdDuration - holdElapsed) / 1000);
-          setSeconds(Math.max(remainingSeconds, 0));
-        }
-
-        animationFrame = requestAnimationFrame(animate);
-      };
 
       animationFrame = requestAnimationFrame(animate);
-
-      return () => cancelAnimationFrame(animationFrame);
     };
 
-    loadSettings();
-  }, [isOpen, greetingPhase, showGreeting, user]);
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isOpen, isBreathing]);
+
+  const handleReset = () => {
+    setIsBreathing(false);
+  };
+
+  const handleStart = () => {
+    setIsBreathing(true);
+  };
+
+  const handleFullBreathing = () => {
+    onClose();
+    navigate('/breathe');
+  };
+
+  const handleSettings = () => {
+    onClose();
+    window.location.href = '/my-account#breathing-settings';
+  };
 
   if (!isOpen) return null;
 
-  const isShowingGreeting = showGreeting && greetingPhase !== 'done';
-  const greetingOpacity = greetingPhase === 'transitioning' ? 0 : 1;
-  const greetingTransform = greetingPhase === 'transitioning' ? 'translateY(-100px)' : 'translateY(0)';
+  const radius = CIRCLE_BASE_RADIUS * scale;
+  const center = CONTAINER_SIZE / 2;
 
   return (
     <div
@@ -154,203 +83,160 @@ export default function BreathingGuide({ isOpen, onClose, showGreeting = false, 
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        zIndex: 1999,
-        flexDirection: 'column',
-        padding: '32px 24px',
-        boxSizing: 'border-box',
+        justifyContent: 'center',
+        zIndex: 2000,
+        backdropFilter: 'blur(4px)',
       }}
       onClick={onClose}
     >
-      {isShowingGreeting && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: `translate(-50%, -50%) ${greetingTransform}`,
-            textAlign: 'center',
-            fontSize: '56px',
-            fontWeight: '600',
-            color: '#333',
-            maxWidth: '90%',
-            opacity: greetingOpacity,
-            transition: 'all 1s ease-out',
-            minHeight: '80px',
-            lineHeight: '1.3',
-            letterSpacing: '-0.5px',
-          }}
-        >
-          {displayedText}
-          {displayedText.length < `Good morning, ${firstName}. Let's take a breath.`.length && greetingPhase === 'typing' && (
-            <span style={{ animation: 'blink 1s infinite', marginLeft: '8px' }}>|</span>
-          )}
-          <style>{`
-            @keyframes blink {
-              0%, 49% { opacity: 1; }
-              50%, 100% { opacity: 0; }
-            }
-          `}</style>
-        </div>
-      )}
-
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '100px', opacity: isShowingGreeting ? 0 : 1, transition: 'opacity 0.5s ease-in', flex: 1, justifyContent: 'center' }}>
-        {/* Text above circle */}
-        <div
-          style={{
-            fontSize: '28px',
-            fontWeight: '600',
-            color: '#333',
-            textAlign: 'center',
-            minHeight: '32px',
-            minWidth: '300px',
-          }}
-        >
-          {phase === 'inhale' ? 'Breathe in through your nose' : phase === 'hold' ? 'Hold' : 'Breathe out through your mouth'}
-        </div>
-
-        {/* Circle with timer inside */}
-        <div
-          style={{
-            position: 'relative',
-            width: '200px',
-            height: '200px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              width: '200px',
-              height: '200px',
-              backgroundColor: '#F08571',
-              borderRadius: '50%',
-              transform: `scale(${scale})`,
-              transition: 'none',
-              boxShadow: '0 10px 40px rgba(240, 133, 113, 0.3)',
-            }}
-          />
-          {/* Timer in center */}
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              fontSize: '48px',
-              fontWeight: 'bold',
-              color: 'white',
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-            }}
-          >
-            {typeof seconds === 'number' ? Math.round(seconds) : '—'}
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '32px 24px',
+          maxWidth: '400px',
+          width: '90%',
+          textAlign: 'center',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Breathing Circle */}
+        <div style={{ position: 'relative', width: CONTAINER_SIZE, height: CONTAINER_SIZE, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px' }}>
+          <svg width={CONTAINER_SIZE} height={CONTAINER_SIZE} style={{ position: 'absolute' }}>
+            <circle
+              cx={center}
+              cy={center}
+              r={radius}
+              fill="rgba(240, 133, 113, 0.08)"
+              stroke="#F08571"
+              strokeWidth="3"
+            />
+          </svg>
+          <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
+            <div style={{ fontSize: '44px', fontWeight: '600', color: '#333', marginBottom: '6px' }}>
+              {Math.max(0, countdownSeconds)}
+            </div>
+            <div style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'capitalize' }}>
+              {phase}
+            </div>
           </div>
         </div>
 
-        {/* Done button */}
-        <button
-          onClick={onClose}
-          style={{
-            marginTop: '24px',
-            marginBottom: '24px',
-            padding: '10px 20px',
-            backgroundColor: 'white',
-            border: '2px solid #e5e5e5',
-            borderRadius: '6px',
-            color: '#333',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#f9f9f9';
-            e.target.style.borderColor = '#F08571';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'white';
-            e.target.style.borderColor = '#e5e5e5';
-          }}
-        >
-          Finish
-        </button>
+        {/* Control Buttons */}
+        <div style={{ display: 'flex', gap: '8px', width: '100%', marginBottom: '16px' }}>
+          {!isBreathing ? (
+            <button
+              onClick={handleStart}
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                backgroundColor: '#F08571',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#e07560';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#F08571';
+              }}
+            >
+              Start
+            </button>
+          ) : (
+            <button
+              onClick={handleReset}
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                backgroundColor: 'white',
+                color: '#333',
+                border: '2px solid #e5e5e5',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f9f9f9';
+                e.currentTarget.style.borderColor = '#F08571';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.borderColor = '#e5e5e5';
+              }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
 
-        {/* Bottom options container */}
-        <div style={{
-          display: 'flex',
-          border: '1px solid #e5e5e5',
-          borderRadius: '6px',
-          overflow: 'hidden',
-          backgroundColor: 'white',
-          width: '100%',
-          maxWidth: '280px',
-          margin: '0 auto',
-          marginTop: '16px',
-        }}>
-          {/* All Breathing Tools cell */}
+        {/* Quick Links */}
+        <div style={{ display: 'flex', gap: '8px', width: '100%', fontSize: '12px' }}>
           <button
-            onClick={() => {
-              onClose();
-              navigate('/breathe');
-            }}
+            onClick={handleFullBreathing}
             style={{
               flex: 1,
-              padding: '8px 10px',
-              backgroundColor: 'white',
-              border: 'none',
-              color: '#999',
-              fontSize: '12px',
+              padding: '8px 12px',
+              backgroundColor: '#f9f9f9',
+              border: '1px solid #e5e5e5',
+              borderRadius: '4px',
+              color: '#666',
               fontWeight: '500',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              borderRight: '1px solid #e5e5e5',
-              whiteSpace: 'nowrap',
-              textAlign: 'center',
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#f9f9f9';
-              e.target.style.color = '#666';
+              e.currentTarget.style.backgroundColor = '#f0f0f0';
+              e.currentTarget.style.borderColor = '#F08571';
+              e.currentTarget.style.color = '#333';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'white';
-              e.target.style.color = '#999';
+              e.currentTarget.style.backgroundColor = '#f9f9f9';
+              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.color = '#666';
             }}
           >
-            All Breathing Tools
+            All Tools
           </button>
-
-          {/* Settings cell */}
           <button
-            onClick={() => {
-              onClose();
-              window.location.href = '/my-account#breathing-settings';
-            }}
+            onClick={handleSettings}
             style={{
               flex: 1,
-              padding: '8px 10px',
-              backgroundColor: 'white',
-              border: 'none',
-              color: '#999',
-              fontSize: '12px',
+              padding: '8px 12px',
+              backgroundColor: '#f9f9f9',
+              border: '1px solid #e5e5e5',
+              borderRadius: '4px',
+              color: '#666',
               fontWeight: '500',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-              textAlign: 'center',
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#f9f9f9';
-              e.target.style.color = '#666';
+              e.currentTarget.style.backgroundColor = '#f0f0f0';
+              e.currentTarget.style.borderColor = '#F08571';
+              e.currentTarget.style.color = '#333';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'white';
-              e.target.style.color = '#999';
+              e.currentTarget.style.backgroundColor = '#f9f9f9';
+              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.color = '#666';
             }}
           >
-            Edit Settings
+            Settings
           </button>
         </div>
       </div>

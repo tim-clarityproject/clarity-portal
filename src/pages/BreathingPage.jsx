@@ -361,9 +361,10 @@ function BoxBreathingAnimation({ isActive }) {
       const cycleElapsed = elapsed % cycleDuration;
       const phaseIndex = Math.floor(cycleElapsed / 4000);
 
-      // Animate the line around the box perimeter
+      // Animate the line around the box perimeter (1/4 of perimeter per phase)
       const phaseProgress = (cycleElapsed % 4000) / 4000;
-      setStrokeDashoffset(-phaseProgress * perimeter);
+      const totalProgress = (phaseIndex + phaseProgress) / 4;
+      setStrokeDashoffset(-totalProgress * perimeter);
 
       // Update phase and countdown
       setPhase(phaseLabels[phaseIndex]);
