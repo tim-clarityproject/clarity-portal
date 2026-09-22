@@ -8,8 +8,8 @@ export default function BreathButton() {
     <>
       <style>{`
         .breathe-button {
-          bottom: clamp(60px, 8vw, 96px);
-          right: clamp(12px, 3vw, 32px);
+          bottom: clamp(120px, 12vw, 140px);
+          right: clamp(16px, 3vw, 32px);
           width: clamp(40px, 6vw, 48px);
           height: clamp(40px, 6vw, 48px);
         }

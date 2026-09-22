@@ -42,13 +42,13 @@ export default function WhatsAppWidget() {
       <style>{`
         .whatsapp-widget {
           position: fixed;
-          bottom: clamp(16px, 3vw, 32px);
+          bottom: clamp(16px, 3vw, 28px);
           right: clamp(16px, 3vw, 32px);
           z-index: 50;
         }
         .whatsapp-icon {
-          width: clamp(20px, 3vw, 24px);
-          height: clamp(20px, 3vw, 24px);
+          width: clamp(18px, 2.5vw, 22px);
+          height: clamp(18px, 2.5vw, 22px);
         }
       `}</style>
       <div
