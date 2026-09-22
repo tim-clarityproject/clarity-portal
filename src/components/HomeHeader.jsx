@@ -198,16 +198,12 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               }
             }
             .mission-container {
-              flex: 1;
+              flex: 0 1 auto;
               display: flex;
               justify-content: center;
               min-width: 0;
               animation: fadeInMission 0.8s ease-in-out;
-            }
-            @media (max-width: 900px) {
-              .mission-container {
-                display: none !important;
-              }
+              padding: 0 clamp(8px, 1.5vw, 16px);
             }
           `}</style>
           <div className="mission-container">
@@ -223,12 +219,15 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               minWidth: 0,
             }}>
               <span style={{
-                fontSize: 'clamp(13px, 1.8vw, 16px)',
+                fontSize: 'clamp(11px, 1.4vw, 16px)',
                 fontWeight: '600',
-                lineHeight: '1.5',
-                letterSpacing: '0.3px',
+                lineHeight: '1.4',
+                letterSpacing: '0.2px',
                 display: 'block',
                 textAlign: 'center',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}>
                 <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{contextMission}</span>
               </span>
