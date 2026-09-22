@@ -80,7 +80,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           padding: 16px 32px;
         }
         .hamburger-button {
-          display: none;
+          display: flex;
           padding: 8px;
           min-width: auto;
           min-height: auto;
@@ -89,7 +89,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           justify-content: center;
         }
         .desktop-nav {
-          display: flex;
+          display: none;
           gap: 0;
           align-items: center;
           flex: 1;
