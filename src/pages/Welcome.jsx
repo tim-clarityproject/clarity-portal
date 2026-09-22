@@ -204,7 +204,7 @@ export default function Welcome() {
   };
 
   return (
-    <div style={{ height: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+    <div style={{ width: '100%', height: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
       <HomeHeader isGuest={isGuest} delayMission={true} />
       <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
