@@ -188,7 +188,7 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
       </div>
 
       {/* Center Mission Display - Responsive Flex Item */}
-      {(contextMission || isGuest) && (contextShowInHeader || isGuest) && displayMission && (
+      {(contextMission || isGuest) && (contextShowInHeader || isGuest) && displayMission && location.pathname !== '/personal-operating-plan' && (
         <>
           <style>{`
             @keyframes fadeInMission {
