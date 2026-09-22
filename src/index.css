@@ -58,6 +58,11 @@ html, body {
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 #root {
@@ -68,6 +73,7 @@ html, body {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 h1,

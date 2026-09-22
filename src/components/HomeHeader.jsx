@@ -106,7 +106,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         }
         .menu-dropdown {
           width: 300px;
-          max-width: 90vw;
+          max-width: calc(100% - 64px);
           left: auto;
           display: none;
         }
@@ -125,7 +125,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           }
           .menu-dropdown {
             display: block;
-            width: calc(100vw - 32px);
+            width: calc(100% - 32px);
             max-width: none;
             left: 16px;
           }
@@ -211,7 +211,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             top: '50%',
             transform: 'translate(-50%, -50%)',
             pointerEvents: 'none',
-            maxWidth: 'calc(100vw - 200px)',
+            maxWidth: 'calc(100% - 100px)',
+            padding: '0 16px',
             animation: 'fadeInMission 0.8s ease-in-out',
           }}>
             <div style={{

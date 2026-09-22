@@ -102,7 +102,9 @@
   /* Modal/dialog adjustments */
   [data-modal] {
     padding: 16px !important;
-    width: 90vw !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
     max-width: 500px !important;
   }
 
@@ -200,15 +202,10 @@
     right: auto !important;
   }
 
-  /* Ensure overflow doesn't cause horizontal scroll */
-  * {
-    max-width: 100%;
-  }
-
-  /* Make containers overflow-x: auto instead of breaking */
-  div[style*="display: 'flex'"],
-  div[style*="display: flex"] {
-    overflow-x: auto;
+  /* Prevent overflow in grid/flex layouts */
+  [style*="display: grid"],
+  [style*="display: flex"] {
+    overflow-x: visible;
   }
 
   /* Readable text sizes */
@@ -236,9 +233,9 @@
   /* Make modals fit screen */
   div[style*="position: 'fixed'"],
   div[style*="position: fixed"] {
-    width: 90vw !important;
-    left: 5vw !important;
-    right: 5vw !important;
-    max-width: calc(100vw - 32px) !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    max-width: calc(100% - 32px) !important;
   }
 }
