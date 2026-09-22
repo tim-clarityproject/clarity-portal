@@ -789,28 +789,27 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           overflow: 'hidden',
         }}
       >
-        <span style={{ whiteSpace: 'nowrap' }}>Created by</span>
         <a
           href="https://theclarityproject.co.uk/"
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            display: 'inline-block',
+            display: 'inline-flex',
+            alignItems: 'center',
             flexShrink: 0,
             cursor: 'pointer',
             transition: 'opacity 0.2s',
-            marginLeft: '-12px',
-            maxWidth: '80px',
+            height: 'clamp(45px, 7vw, 60px)',
           }}
           onMouseEnter={(e) => e.target.style.opacity = '1'}
-          onMouseLeave={(e) => e.target.style.opacity = '0.9'}
+          onMouseLeave={(e) => e.target.style.opacity = '0.85'}
           onClick={(e) => e.stopPropagation()}
         >
           <img
             src="/clarity-logo.png"
             alt="The Clarity Project"
             style={{
-              height: '40px',
+              height: '100%',
               width: 'auto',
               display: 'block',
               opacity: 0.9,
