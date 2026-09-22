@@ -254,6 +254,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
             zIndex: 1000,
             maxHeight: 'calc(100vh - 100px)',
             overflowY: 'auto',
+            display: 'block',
           }}
         >
           <button
