@@ -142,7 +142,7 @@ export default function BreathingPage() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="breathing-container">
           <div style={{ width: '100%', maxWidth: '800px' }}>
             {/* Breathing Type Selector */}
-            <div style={{ display: 'flex', border: '2px solid #e5e5e5', borderRadius: '6px', overflow: 'hidden', marginBottom: '32px', gap: 0 }}>
+            <div style={{ display: 'flex', border: '2px solid #e5e5e5', borderRadius: '6px', overflow: 'hidden', marginTop: '32px', marginBottom: '32px', gap: 0 }}>
               {['sigh', 'vagal', 'box'].map((type) => (
                 <button
                   key={type}
