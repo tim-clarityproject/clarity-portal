@@ -294,6 +294,30 @@ export default function OnboardingMission() {
                 >
                   {isSaving ? 'Saving...' : 'Get Started'}
                 </button>
+
+                <button
+                  onClick={() => navigate('/welcome')}
+                  style={{
+                    marginTop: '16px',
+                    padding: '8px 16px',
+                    backgroundColor: 'transparent',
+                    color: '#999',
+                    fontWeight: '500',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.color = '#666';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.color = '#999';
+                  }}
+                >
+                  I'll do this later in settings
+                </button>
               </div>
             )}
           </div>
