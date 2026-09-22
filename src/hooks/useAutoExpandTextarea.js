@@ -1,8 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 
-export const useAutoExpandTextarea = (value) => {
-  const ref = useRef(null);
-
+export const useAutoExpandTextarea = (ref, value) => {
   useEffect(() => {
     if (ref.current) {
       // Reset height to auto to get the correct scrollHeight
@@ -10,7 +8,5 @@ export const useAutoExpandTextarea = (value) => {
       // Set height to scrollHeight
       ref.current.style.height = ref.current.scrollHeight + 'px';
     }
-  }, [value]);
-
-  return ref;
+  }, [value, ref]);
 };
