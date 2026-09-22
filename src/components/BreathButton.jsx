@@ -8,10 +8,10 @@ export default function BreathButton() {
     <>
       <style>{`
         .breathe-button {
-          bottom: clamp(120px, 12vw, 140px);
-          right: clamp(16px, 3vw, 32px);
-          width: clamp(40px, 6vw, 48px);
-          height: clamp(40px, 6vw, 48px);
+          bottom: 104px;
+          right: 24px;
+          width: 48px;
+          height: 48px;
         }
       `}</style>
       <button
@@ -23,7 +23,7 @@ export default function BreathButton() {
           backgroundColor: '#F08571',
           border: 'none',
           color: 'white',
-          fontSize: 'clamp(6px, 1vw, 8px)',
+          fontSize: '8px',
           fontWeight: 'bold',
           cursor: 'pointer',
           boxShadow: '0 4px 12px rgba(240, 133, 113, 0.3)',

@@ -42,13 +42,13 @@ export default function WhatsAppWidget() {
       <style>{`
         .whatsapp-widget {
           position: fixed;
-          bottom: clamp(16px, 3vw, 28px);
-          right: clamp(16px, 3vw, 32px);
+          bottom: 24px;
+          right: 24px;
           z-index: 50;
         }
         .whatsapp-icon {
-          width: clamp(18px, 2.5vw, 22px);
-          height: clamp(18px, 2.5vw, 22px);
+          width: 24px;
+          height: 24px;
         }
       `}</style>
       <div
@@ -61,8 +61,8 @@ export default function WhatsAppWidget() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 'clamp(8px, 1.5vw, 12px)',
-          padding: isHovered ? 'clamp(10px, 1.5vw, 12px) clamp(12px, 2vw, 16px)' : 'clamp(10px, 1.5vw, 12px)',
+          gap: '12px',
+          padding: isHovered ? '12px 16px' : '12px',
           backgroundColor: '#F08571',
           border: 'none',
           borderRadius: '50px',
@@ -80,7 +80,7 @@ export default function WhatsAppWidget() {
           <span
             style={{
               color: 'white',
-              fontSize: 'clamp(11px, 1.5vw, 13px)',
+              fontSize: '13px',
               fontWeight: '600',
               whiteSpace: 'nowrap',
               maxWidth: '150px',
