@@ -219,8 +219,9 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
-              maxWidth: 'calc(100% - 120px)',
+              maxWidth: 'calc(100% - 80px)',
               minWidth: 0,
+              overflow: 'hidden',
             }}>
               <span style={{
                 fontSize: 'clamp(9px, 1.1vw, 13px)',
@@ -230,7 +231,8 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
                 display: 'block',
                 textAlign: 'center',
                 whiteSpace: 'nowrap',
-                overflow: 'visible',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}>
                 <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{contextMission}</span>
               </span>
