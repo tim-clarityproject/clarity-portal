@@ -6,7 +6,6 @@ import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 import BreathingGuide from '../components/BreathingGuide';
-import GoalSetupModal from '../components/GoalSetupModal';
 
 const ALL_PROBLEMS = [
   // Plan
@@ -41,40 +40,7 @@ export default function Welcome() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
   const [showGreetingText, setShowGreetingText] = useState(false);
-  const [showGoalSetup, setShowGoalSetup] = useState(false);
   const isGuest = location.state?.isGuest || false;
-  const isNewSignup = location.state?.isNewSignup || false;
-
-  // Show goal setup modal only for new users
-  useEffect(() => {
-    if (isGuest || !user) return;
-
-    const checkGoal = async () => {
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('personal_goal, created_at')
-          .eq('id', user.id)
-          .single();
-
-        if (!data?.personal_goal) {
-          // Only show goal setup if user is brand new (created in last 10 minutes)
-          // or if explicitly marked as new signup via route state
-          const createdAt = data?.created_at ? new Date(data.created_at) : null;
-          const now = new Date();
-          const isRecentlyCreated = createdAt && (now - createdAt) < 10 * 60 * 1000;
-
-          if (isNewSignup || isRecentlyCreated) {
-            setShowGoalSetup(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking goal:', error);
-      }
-    };
-
-    checkGoal();
-  }, [user, isGuest, isNewSignup]);
 
   // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
@@ -210,7 +176,6 @@ export default function Welcome() {
   return (
     <div style={{ width: '100%', minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
       <HomeHeader isGuest={isGuest} delayMission={true} />
-      <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}
