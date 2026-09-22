@@ -59,8 +59,8 @@
 
   /* ====== Form Elements ====== */
 
-  /* Ensure buttons meet minimum touch target size (44px) */
-  button {
+  /* Ensure buttons meet minimum touch target size (44px) - exclude fixed action buttons */
+  button:not(.breathe-button) {
     min-height: 44px;
     padding: 12px 16px !important;
     font-size: 14px !important;
