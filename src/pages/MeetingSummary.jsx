@@ -106,15 +106,19 @@ export default function MeetingSummary() {
       <HomeHeader isGuest={isGuest} className="no-print" />
 
       <style>{`
+        .page-container {
+          padding: 64px 32px;
+          padding-bottom: 100px;
+        }
         @media (max-width: 768px) {
           .page-container {
-            padding: 32px 16px !important;
-            paddingBottom: 100px !important;
+            padding: 32px 16px;
+            padding-bottom: 100px;
           }
         }
       `}</style>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%' }} className="page-container print-container">
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <button
             onClick={() => navigate('/my-plans', { state: { isGuest } })}

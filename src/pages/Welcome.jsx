@@ -210,22 +210,29 @@ export default function Welcome() {
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       <style>{`
+        .page-container {
+          padding: 40px 32px;
+        }
+        .welcome-h1 {
+          font-size: 44px;
+          min-height: 60px;
+        }
         @media (max-width: 768px) {
           .page-container {
-            padding: 32px 16px !important;
+            padding: 32px 16px;
           }
           .welcome-h1 {
-            fontSize: 28px !important;
-            minHeight: 40px !important;
+            font-size: 28px;
+            min-height: 40px;
           }
         }
       `}</style>
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 32px' }} className="page-container">
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }} className="page-container">
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-            <h1 className="welcome-h1" style={{ fontSize: '44px', fontWeight: 'bold', color: 'black', marginBottom: '8px', minHeight: '60px' }}>
+            <h1 className="welcome-h1" style={{ fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
               {displayedGreeting}
               {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Morning, ${displayName}.` : 'Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h1>

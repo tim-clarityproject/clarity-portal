@@ -7,10 +7,18 @@ export default function BreathButton() {
   return (
     <>
       <style>{`
+        .breathe-button {
+          bottom: 96px;
+          right: 32px;
+          width: 48px;
+          height: 48px;
+        }
         @media (max-width: 768px) {
           .breathe-button {
-            bottom: 72px !important;
-            right: 16px !important;
+            bottom: 72px;
+            right: 16px;
+            width: 48px;
+            height: 48px;
           }
         }
       `}</style>
@@ -19,10 +27,6 @@ export default function BreathButton() {
         onClick={() => setShowBreathing(true)}
         style={{
           position: 'fixed',
-          bottom: '96px',
-          right: '32px',
-          width: '48px',
-          height: '48px',
           borderRadius: '50%',
           backgroundColor: '#F08571',
           border: 'none',

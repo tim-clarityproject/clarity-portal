@@ -76,20 +76,35 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
       }}
     >
       <style>{`
+        .header-container {
+          padding: 16px 32px;
+        }
+        .hamburger-button {
+          padding: 8px;
+          min-width: auto;
+          min-height: auto;
+        }
+        .menu-dropdown {
+          width: 300px;
+          max-width: 90vw;
+          left: auto;
+        }
         @media (max-width: 768px) {
           .header-container {
-            padding: 12px 16px !important;
+            padding: 12px 16px;
           }
           .hamburger-button {
-            padding: 12px !important;
+            padding: 12px;
+            min-width: 44px;
+            min-height: 44px;
           }
           .menu-dropdown {
-            width: calc(100vw - 32px) !important;
-            max-width: none !important;
-            left: 16px !important;
+            width: calc(100vw - 32px);
+            max-width: none;
+            left: 16px;
           }
           .mission-container-mobile {
-            display: none !important;
+            display: none;
           }
         }
       `}</style>
@@ -120,7 +135,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           backgroundColor: 'transparent',
           border: 'none',
           cursor: 'pointer',
-          padding: '8px',
           color: '#F08571',
           display: 'flex',
           flexDirection: 'column',
@@ -128,8 +142,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           transition: 'color 0.2s',
           flexShrink: 0,
           zIndex: 100,
-          minWidth: '44px',
-          minHeight: '44px',
           alignItems: 'center',
           justifyContent: 'center',
         }}

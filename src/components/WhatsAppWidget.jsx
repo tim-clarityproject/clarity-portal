@@ -40,21 +40,21 @@ export default function WhatsAppWidget() {
   return (
     <>
       <style>{`
+        .whatsapp-widget {
+          position: fixed;
+          bottom: 32px;
+          right: 32px;
+          z-index: 50;
+        }
         @media (max-width: 768px) {
           .whatsapp-widget {
-            bottom: 16px !important;
-            right: 16px !important;
+            bottom: 16px;
+            right: 16px;
           }
         }
       `}</style>
       <div
         className="whatsapp-widget"
-        style={{
-          position: 'fixed',
-          bottom: '32px',
-          right: '32px',
-          zIndex: 50,
-        }}
       >
       <button
         onClick={handleMessageClick}

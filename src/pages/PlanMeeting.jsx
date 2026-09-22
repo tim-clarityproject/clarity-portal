@@ -324,22 +324,37 @@ export default function PlanMeeting() {
       <HomeHeader isGuest={isGuest} />
 
       <style>{`
+        .page-container {
+          padding: 64px 32px;
+          padding-bottom: 80px;
+        }
+        .form-row {
+          display: flex;
+          gap: 16px;
+        }
+        .form-row > div {
+          max-width: 100%;
+        }
+        .fixed-bottom-bar {
+          padding: 12px 32px;
+          gap: 16px;
+        }
         @media (max-width: 768px) {
           .page-container {
-            padding: 32px 16px !important;
-            paddingBottom: 120px !important;
+            padding: 32px 16px;
+            padding-bottom: 120px;
           }
           .form-row {
-            flex-direction: column !important;
-            gap: 0 !important;
+            flex-direction: column;
+            gap: 0;
           }
           .form-row > div {
-            max-width: 100% !important;
-            width: 100% !important;
+            max-width: 100%;
+            width: 100%;
           }
           .fixed-bottom-bar {
-            padding: 12px 16px !important;
-            gap: 8px !important;
+            padding: 12px 16px;
+            gap: 8px;
           }
         }
       `}</style>
