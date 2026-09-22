@@ -210,8 +210,8 @@ export default function Welcome() {
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}
-      <div className="welcome-content">
-        <div style={{ maxWidth: '1000px', width: '100%' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'clamp(20px, 5vw, 40px) clamp(16px, 5vw, 32px)' }}>
+        <div style={{ width: '100%', maxWidth: '1000px' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
             <h1 className="welcome-h1" style={{ fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
               {displayedGreeting}
