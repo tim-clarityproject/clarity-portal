@@ -193,9 +193,8 @@
 
   /* ====== Additional Mobile Responsive Patterns ====== */
 
-  /* Make absolutely positioned dropdowns work better on mobile */
-  div[style*="position: 'absolute'"],
-  div[style*="position: absolute"] {
+  /* Make absolutely positioned dropdowns work better on mobile - exclude header elements */
+  .menu-dropdown {
     position: relative !important;
     width: 100% !important;
     left: auto !important;
