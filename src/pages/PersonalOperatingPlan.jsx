@@ -4,7 +4,6 @@ import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
-import { createTestPlan } from '../lib/createTestPlan';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PersonalOperatingPlan() {
@@ -122,61 +121,29 @@ export default function PersonalOperatingPlan() {
     );
   }
 
-  const handleCreateTestPlan = async () => {
-    try {
-      await createTestPlan(user.id);
-      loadPlan();
-    } catch (error) {
-      alert('Error creating test plan: ' + error.message);
-    }
-  };
-
   if (!mission) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader isGuest={isGuest} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 32px' }}>
           <p style={{ color: '#999', fontSize: '14px', marginBottom: '24px' }}>No personal operating plan yet</p>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              onClick={() => navigate('/personal-operating-plan-edit', { state: { isGuest, isNew: true } })}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#F08571',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-            >
-              Create Your Plan
-            </button>
-            <button
-              onClick={handleCreateTestPlan}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'white',
-                color: '#F08571',
-                border: '2px solid #F08571',
-                borderRadius: '8px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#fff0ee';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'white';
-              }}
-            >
-              Load Example Plan
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/personal-operating-plan-edit', { state: { isGuest, isNew: true } })}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#F08571',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+          >
+            Create Your Plan
+          </button>
         </div>
       </div>
     );
