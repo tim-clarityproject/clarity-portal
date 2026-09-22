@@ -202,11 +202,6 @@
     right: auto !important;
   }
 
-  /* Prevent overflow in grid/flex layouts */
-  [style*="display: grid"],
-  [style*="display: flex"] {
-    overflow-x: visible;
-  }
 
   /* Readable text sizes */
   body {
