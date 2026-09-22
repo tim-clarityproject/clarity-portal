@@ -72,7 +72,7 @@ export default function OnboardingMission() {
           animateQuestion();
         }, 1200);
       }
-    }, 100);
+    }, 80);
 
     const animateQuestion = () => {
       const questionText = 'What\'s your big mission?';
