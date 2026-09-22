@@ -379,7 +379,6 @@ export default function Welcome() {
         />
       )}
       </div>
-      </div>
     </>
   );
 }
