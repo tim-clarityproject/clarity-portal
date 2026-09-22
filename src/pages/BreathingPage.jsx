@@ -323,7 +323,7 @@ function VagalBreathingAnimation({ isActive }) {
           strokeWidth="3"
         />
       </svg>
-      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
+      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10, padding: '32px' }}>
         <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
           {Math.max(0, countdownSeconds)}
         </div>
@@ -408,7 +408,7 @@ function BoxBreathingAnimation({ isActive }) {
           strokeLinecap="round"
         />
       </svg>
-      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
+      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10, padding: '32px' }}>
         <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
           {Math.max(0, countdownSeconds)}
         </div>
@@ -522,7 +522,7 @@ function PhysiologicalSighAnimation({ isActive }) {
           />
         )}
       </svg>
-      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10 }}>
+      <div style={{ position: 'relative', textAlign: 'center', zIndex: 10, padding: '32px' }}>
         <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
           {countdownSeconds > 0 ? countdownSeconds : ''}
         </div>
