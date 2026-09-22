@@ -80,25 +80,51 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           padding: 16px 32px;
         }
         .hamburger-button {
+          display: none;
           padding: 8px;
           min-width: auto;
           min-height: auto;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        .desktop-nav {
+          display: flex;
+          gap: 0;
+          align-items: center;
+          flex: 1;
+        }
+        .desktop-nav-item {
+          padding: 8px 12px;
+          font-size: 14px;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: color 0.2s;
+        }
+        .desktop-nav-item:hover {
+          color: #F08571 !important;
         }
         .menu-dropdown {
           width: 300px;
           max-width: 90vw;
           left: auto;
+          display: none;
         }
         @media (max-width: 768px) {
           .header-container {
             padding: 12px 16px;
           }
           .hamburger-button {
+            display: flex;
             padding: 12px;
             min-width: 44px;
             min-height: 44px;
           }
+          .desktop-nav {
+            display: none;
+          }
           .menu-dropdown {
+            display: block;
             width: calc(100vw - 32px);
             max-width: none;
             left: 16px;
@@ -113,7 +139,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         ref={headerRef}
         className="header-container"
         style={{
-          padding: '16px 32px',
           borderBottom: '1px solid #f0f0f0',
           display: 'flex',
           alignItems: 'center',
@@ -136,14 +161,11 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           border: 'none',
           cursor: 'pointer',
           color: '#F08571',
-          display: 'flex',
           flexDirection: 'column',
           gap: '4px',
           transition: 'color 0.2s',
           flexShrink: 0,
           zIndex: 100,
-          alignItems: 'center',
-          justifyContent: 'center',
         }}
         onMouseEnter={(e) => e.target.style.color = '#e07560'}
         onMouseLeave={(e) => e.target.style.color = '#F08571'}
@@ -152,6 +174,16 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         <div style={{ width: '24px', height: '2px', backgroundColor: 'currentColor' }} />
         <div style={{ width: '24px', height: '2px', backgroundColor: 'currentColor' }} />
       </button>
+
+      {/* Desktop Navigation */}
+      <div className="desktop-nav">
+        <button onClick={() => handleMenuClick('/welcome')} className="desktop-nav-item" style={{ backgroundColor: 'transparent', border: 'none', color: '#333' }}>Home</button>
+        <button onClick={() => handleMenuClick('/my-plans')} className="desktop-nav-item" style={{ backgroundColor: 'transparent', border: 'none', color: '#333' }}>Plan</button>
+        <button onClick={() => handleMenuClick('/decision-history')} className="desktop-nav-item" style={{ backgroundColor: 'transparent', border: 'none', color: '#333' }}>Decide</button>
+        <button onClick={() => handleMenuClick('/breathe')} className="desktop-nav-item" style={{ backgroundColor: 'transparent', border: 'none', color: '#333' }}>Ground</button>
+        <button onClick={() => handleMenuClick('/my-reviews')} className="desktop-nav-item" style={{ backgroundColor: 'transparent', border: 'none', color: '#333' }}>Review</button>
+        <button onClick={() => handleMenuClick('/about')} className="desktop-nav-item" style={{ backgroundColor: 'transparent', border: 'none', color: '#333' }}>About</button>
+      </div>
 
       {/* Center Mission Display - Absolutely Positioned for True Centering */}
       {contextMission && contextShowInHeader && displayMission && (
@@ -204,7 +236,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
         </>
       )}
 
-      {/* Menu Dropdown */}
+      {/* Mobile Menu Dropdown */}
       {menuOpen && (
         <div
           ref={menuRef}
