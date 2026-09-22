@@ -153,7 +153,7 @@ export default function BreathingPage() {
                     }
                   }}
                 >
-                  {type === 'sigh' ? 'Sigh' : type === 'vagal' ? 'Vagal' : 'Box'}
+                  {type === 'sigh' ? 'Physiological Sigh' : type === 'vagal' ? 'Vagal Breathing' : 'Box Breathing'}
                 </button>
               ))}
             </div>
