@@ -77,7 +77,9 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
     >
       <style>{`
         .header-container {
-          padding: 16px 32px;
+          padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px);
+          width: 100%;
+          min-height: 70px;
         }
         .hamburger-button {
           display: flex;
@@ -111,9 +113,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           display: none;
         }
         @media (max-width: 768px) {
-          .header-container {
-            padding: 12px 16px;
-          }
           .hamburger-button {
             display: flex;
             padding: 12px;
@@ -149,7 +148,6 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           right: 0,
           zIndex: 2000,
           backgroundColor: 'white',
-          padding: '16px 32px',
           boxSizing: 'border-box',
         }}
       >
