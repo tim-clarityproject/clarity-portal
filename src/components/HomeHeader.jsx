@@ -243,12 +243,13 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           className="menu-dropdown"
           style={{
             position: 'fixed',
-            top: '70px',
+            top: '69px',
             left: '32px',
             backgroundColor: 'white',
             border: '1px solid #e5e5e5',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            borderTop: 'none',
+            borderRadius: '0px 0px 8px 8px',
+            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.12)',
             width: '300px',
             zIndex: 1000,
             maxHeight: 'calc(100vh - 100px)',
