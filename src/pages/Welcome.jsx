@@ -204,14 +204,14 @@ export default function Welcome() {
   };
 
   return (
-    <div style={{ width: '100%', height: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
+    <div style={{ width: '100%', minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
       <HomeHeader isGuest={isGuest} delayMission={true} />
       <GoalSetupModal isOpen={showGoalSetup} onClose={() => setShowGoalSetup(false)} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}
       <div className="welcome-content">
-        <div style={{ maxWidth: '1000px', width: '100%', padding: 'clamp(24px, 4vw, 40px) clamp(16px, 3vw, 32px)' }}>
+        <div style={{ maxWidth: '1000px', width: '100%' }}>
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
             <h1 className="welcome-h1" style={{ fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
               {displayedGreeting}
