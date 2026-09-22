@@ -149,15 +149,7 @@ export default function HomeHeader({ isGuest = false, personalGoal: propGoal = '
           right: 0,
           zIndex: 2000,
           backgroundColor: 'white',
-          paddingRight: '32px',
-          paddingLeft: '32px',
-          paddingTop: '16px',
-          paddingBottom: '16px',
-        }}
-        onClickCapture={(e) => {
-          if (menuOpen && !menuRef.current?.contains(e.target) && !hamburgerRef.current?.contains(e.target)) {
-            setMenuOpen(false);
-          }
+          padding: '16px 32px',
         }}
       >
       {/* Hamburger Menu */}
