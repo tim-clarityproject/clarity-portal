@@ -193,15 +193,6 @@
 
   /* ====== Additional Mobile Responsive Patterns ====== */
 
-  /* Make absolutely positioned dropdowns work better on mobile - exclude header elements */
-  .menu-dropdown {
-    position: relative !important;
-    width: 100% !important;
-    left: auto !important;
-    right: auto !important;
-  }
-
-
   /* Readable text sizes */
   body {
     font-size: 16px !important;
