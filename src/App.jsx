@@ -98,29 +98,6 @@ function AppContent() {
           return;
         }
 
-        // Check if user has set their mission - only show onboarding for NEW users
-        if (termsAccepted && location.hash.includes('access_token')) {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('personal_goal, created_at')
-              .eq('id', user.id)
-              .single();
-
-            // Only show onboarding mission if user is brand new (created <10 min ago) AND has no goal
-            const createdAt = profile?.created_at ? new Date(profile.created_at) : null;
-            const now = new Date();
-            const isNewUser = createdAt && (now - createdAt) < 10 * 60 * 1000;
-
-            if (!profile?.personal_goal && isNewUser) {
-              navigate('/onboarding-mission', { replace: true });
-            } else {
-              navigate('/welcome', { replace: true });
-            }
-          } catch (err) {
-            navigate('/welcome', { replace: true });
-          }
-        }
       } catch (error) {
         console.error('Error in redirects:', error);
       }

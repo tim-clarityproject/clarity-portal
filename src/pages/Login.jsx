@@ -61,14 +61,8 @@ export default function Login() {
 
       if (success) {
         if (isSignUp) {
-          // Show verification email message
-          setVerificationEmailSent(true);
-          setShowEmailModal(false);
-          setIsSignUp(false);
-          setEmail('');
-          setPassword('');
-          setFirstName('');
-          setLastName('');
+          // No email verification needed - redirect to onboarding mission
+          navigate('/onboarding-mission', { state: { isNewSignup: true } });
         } else {
           // Login succeeded, redirect to welcome
           navigate('/welcome');
