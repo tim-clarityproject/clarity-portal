@@ -210,14 +210,18 @@ export default function DecisionSummary() {
         {/* GROW Specific Sections */}
         {toolType === 'grow' && (
           <>
-            <SectionBlock
-              title="Your Goal"
-              content={formData.goal || decision.title}
-            />
-            <SectionBlock
-              title="Your Reality"
-              content={formData.constraints}
-            />
+            {(formData.goal || decision.title) && (
+              <SectionBlock
+                title="Your Goal"
+                content={formData.goal || decision.title}
+              />
+            )}
+            {formData.constraints && (
+              <SectionBlock
+                title="Your Reality"
+                content={formData.constraints}
+              />
+            )}
             {formData.options && formData.options.length > 0 && (
               <div style={{ marginBottom: '32px' }}>
                 <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -236,7 +240,7 @@ export default function DecisionSummary() {
         )}
 
         {/* Your Goal - shown for non-GROW, non-Tough Conversation types */}
-        {toolType !== 'tough-conversation' && toolType !== 'grow' && (
+        {toolType !== 'tough-conversation' && toolType !== 'grow' && (formData.goal || decision.title) && (
           <SectionBlock
             title="Your Goal"
             content={formData.goal || decision.title}
@@ -603,7 +607,7 @@ export default function DecisionSummary() {
         )}
 
         {/* What you said you'd do - not shown for Tough Conversation or Strategic Alignment */}
-        {toolType !== 'tough-conversation' && toolType !== 'strategic-alignment' && (
+        {toolType !== 'tough-conversation' && toolType !== 'strategic-alignment' && (formData.will_do || formData.plan) && (
           <SectionBlock
             title={toolType === 'grow' ? 'What you said you\'d do' : 'Action You Said You\'d Take'}
             content={formData.will_do || formData.plan}

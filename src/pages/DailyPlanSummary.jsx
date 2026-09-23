@@ -152,32 +152,38 @@ export default function DailyPlanSummary() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
-          <div style={summaryStyles.section}>
-            <h2 style={summaryStyles.sectionHeading}>
-              Top Priority
-            </h2>
-            <p style={summaryStyles.contentText}>
-              {formData.topPriority || '—'}
-            </p>
-          </div>
+          {formData.topPriority && (
+            <div style={summaryStyles.section}>
+              <h2 style={summaryStyles.sectionHeading}>
+                Top Priority
+              </h2>
+              <p style={summaryStyles.contentText}>
+                {formData.topPriority}
+              </p>
+            </div>
+          )}
 
-          <div style={summaryStyles.section}>
-            <h2 style={summaryStyles.sectionHeading}>
-              What's within your control today?
-            </h2>
-            <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
-              {formData.showUp}
-            </p>
-          </div>
+          {formData.showUp && (
+            <div style={summaryStyles.section}>
+              <h2 style={summaryStyles.sectionHeading}>
+                What's within your control today?
+              </h2>
+              <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
+                {formData.showUp}
+              </p>
+            </div>
+          )}
 
-          <div style={summaryStyles.section}>
-            <h2 style={summaryStyles.sectionHeading}>
-              What don't you want to do?
-            </h2>
-            <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
-              {formData.notDo}
-            </p>
-          </div>
+          {formData.notDo && (
+            <div style={summaryStyles.section}>
+              <h2 style={summaryStyles.sectionHeading}>
+                What don't you want to do?
+              </h2>
+              <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
+                {formData.notDo}
+              </p>
+            </div>
+          )}
         </div>
 
       </div>

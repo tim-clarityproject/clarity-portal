@@ -195,58 +195,78 @@ export default function ReviewSummary() {
         {/* After-Action Review Sections */}
         {isAfterAction && (
           <>
-            <SectionBlock
-              title="What did I intend to happen?"
-              content={parsedContent.q1}
-            />
-            <SectionBlock
-              title="What actually happened?"
-              content={parsedContent.q2}
-            />
-            <SectionBlock
-              title="Why was there a difference?"
-              content={parsedContent.q3}
-            />
-            <SectionBlock
-              title="What can I learn from this?"
-              content={parsedContent.q4}
-            />
+            {parsedContent.q1 && (
+              <SectionBlock
+                title="What did I intend to happen?"
+                content={parsedContent.q1}
+              />
+            )}
+            {parsedContent.q2 && (
+              <SectionBlock
+                title="What actually happened?"
+                content={parsedContent.q2}
+              />
+            )}
+            {parsedContent.q3 && (
+              <SectionBlock
+                title="Why was there a difference?"
+                content={parsedContent.q3}
+              />
+            )}
+            {parsedContent.q4 && (
+              <SectionBlock
+                title="What can I learn from this?"
+                content={parsedContent.q4}
+              />
+            )}
           </>
         )}
 
         {/* Progress Review Sections */}
         {isProgressReview && (
           <>
-            <SectionBlock
-              title="What's been going well?"
-              content={parsedContent.q1}
-            />
-            <SectionBlock
-              title="What have you learned recently?"
-              content={parsedContent.q2}
-            />
-            <SectionBlock
-              title="What next steps will expand your performance potential?"
-              content={parsedContent.q3}
-            />
+            {parsedContent.q1 && (
+              <SectionBlock
+                title="What's been going well?"
+                content={parsedContent.q1}
+              />
+            )}
+            {parsedContent.q2 && (
+              <SectionBlock
+                title="What have you learned recently?"
+                content={parsedContent.q2}
+              />
+            )}
+            {parsedContent.q3 && (
+              <SectionBlock
+                title="What next steps will expand your performance potential?"
+                content={parsedContent.q3}
+              />
+            )}
           </>
         )}
 
         {/* Weekly Momentum Review Sections */}
         {isWeeklyMomentum && (
           <>
-            <SectionBlock
-              title="What moved forward this week?"
-              content={parsedContent.q1}
-            />
-            <SectionBlock
-              title="What did you do better this week?"
-              content={parsedContent.q2}
-            />
-            <SectionBlock
-              title="What's one priority for next week?"
-              content={parsedContent.q3}
-            />
+            {parsedContent.q1 && (
+              <SectionBlock
+                title="What moved forward this week?"
+                content={parsedContent.q1}
+              />
+            )}
+            {parsedContent.q2 && (
+              <SectionBlock
+                title="What did you do better this week?"
+                content={parsedContent.q2}
+              />
+            )}
+            {parsedContent.q3 && (
+              <SectionBlock
+                title="What's one priority for next week?"
+                content={parsedContent.q3}
+              />
+            )}
 
             {/* Ratings Section */}
             <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
