@@ -144,10 +144,15 @@ export default function MeetingSummary() {
           </button>
         </div>
 
-        {/* Meeting Title - Only on Screen */}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#000', margin: '0 0 24px 0' }} className="no-print">
-          {data.title || 'Meeting Plan'}
-        </h1>
+        {/* Meeting Title with Tag - Only on Screen */}
+        <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#000', margin: 0, flex: 1 }}>
+            {data.title || 'Meeting Plan'}
+          </h1>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+            Meeting Planner
+          </span>
+        </div>
 
         {/* Title for Print */}
         <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#000', margin: '0 0 24px 0' }} className="print-only">
