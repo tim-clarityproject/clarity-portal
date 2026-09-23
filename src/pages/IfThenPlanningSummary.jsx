@@ -147,7 +147,7 @@ export default function IfThenPlanningSummary() {
         {/* Scenarios */}
         {items && items.length > 0 && (
           <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>If-Then Scenarios</h2>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Scenarios</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {items.map((item, index) => (
                 <div key={index} style={{
