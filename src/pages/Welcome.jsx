@@ -9,9 +9,9 @@ import BreathingGuide from '../components/BreathingGuide';
 
 const ALL_PROBLEMS = [
   // Plan
+  { id: 'personal-plan', title: 'I want to shape my personal operating plan', tools: ['personal-operating-plan'], status: null, category: 'Plan' },
   { id: 'plan-day', title: 'I want to make the most of today', tools: ['plan-day'], status: null, category: 'Plan' },
   { id: 'plan-meeting', title: 'I want to hold a high quality meeting', tools: ['plan-meeting'], status: null, category: 'Plan' },
-  { id: 'personal-plan', title: 'I want to review my personal operating plan', tools: ['personal-operating-plan'], status: null, category: 'Plan' },
 
   // Ground
   { id: 'if-then', title: 'I\'m feeling anxious about an uncertain situation', tools: ['if-then-planning'], status: null, category: 'Ground' },

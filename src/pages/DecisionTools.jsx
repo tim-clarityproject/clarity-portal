@@ -5,10 +5,11 @@ import HomeHeader from '../components/HomeHeader';
 
 const ALL_PROBLEMS = [
   { id: 'decision', title: 'I\'m navigating a tricky decision', description: 'Use the GROW model to get clear on the way forward', tools: ['grow'], status: null },
-  { id: 'strategic', title: 'I need to provide my team direction', description: 'Assess how your current projects align with your team\'s objective', tools: ['strategic-alignment'], status: 'coming-soon' },
   { id: 'tough-conversation', title: 'I need to give tough feedback', description: 'Create a script for giving feedback', tools: ['tough-conversation'], status: null },
   { id: 'stop-doing', title: 'I\'ve got too many things to do', description: 'Reclaim hours by stopping or delegating time-sink activities', tools: ['stop-doing-audit'], status: null },
   { id: 'if-then', title: 'I\'m feeling anxious about an uncertain situation', description: 'Prepare for uncertain situations with contingency plans', tools: ['if-then-planning'], status: null },
+  { id: 'personal-operating-plan', title: 'I want to shape my personal operating plan', description: 'Define your mission, strategies, and tactics', tools: ['personal-operating-plan'], status: null },
+  { id: 'strategic', title: 'I need to provide my team direction', description: 'Assess how your current projects align with your team\'s objective', tools: ['strategic-alignment'], status: 'coming-soon' },
   { id: 'new-hire', title: 'I need to make a new hire', description: 'Plan and prepare for bringing on new team members', tools: ['new-hire'], status: 'coming-soon' },
   { id: 'onboarding', title: 'I need to onboard a new team member', description: 'Guide and support new team members in their first weeks', tools: ['onboarding'], status: 'coming-soon' },
   { id: 'energy', title: 'I want to focus my energy wisely', description: 'Allocate your priorities wisely', tools: ['energy-allocation'], status: 'coming-soon' },

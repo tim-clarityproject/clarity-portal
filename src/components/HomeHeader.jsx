@@ -328,6 +328,29 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
             <>
               <button
                 onClick={() => {
+                  navigate('/personal-operating-plan', { state: location.state });
+                  setMenuOpen(false);
+                  setPlanSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                Shape Your Personal Operating Plan
+              </button>
+              <button
+                onClick={() => {
                   navigate('/plan-my-day', { state: location.state });
                   setMenuOpen(false);
                   setPlanSubmenuOpen(false);
@@ -394,29 +417,6 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 My Plans
-              </button>
-              <button
-                onClick={() => {
-                  navigate('/personal-operating-plan', { state: location.state });
-                  setMenuOpen(false);
-                  setPlanSubmenuOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px 12px 32px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: '#666',
-                  textAlign: 'left',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'backgroundColor 0.2s',
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Personal Operating Plan
               </button>
             </>
           )}

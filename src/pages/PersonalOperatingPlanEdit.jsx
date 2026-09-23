@@ -283,7 +283,7 @@ export default function PersonalOperatingPlanEdit() {
 
         {/* PAGE TITLE */}
         <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#333', margin: '0 0 48px 0', lineHeight: '1.2' }}>
-          Shape Your Vision
+          Shape Your Personal Operating Plan
         </h1>
 
         {/* MISSION STATEMENT SECTION */}
