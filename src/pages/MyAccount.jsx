@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 import BreathingSettingsModal from '../components/BreathingSettingsModal';
 import PersonalGoalModal from '../components/PersonalGoalModal';
+import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
 export default function MyAccount() {
   const navigate = useNavigate();
@@ -208,6 +209,8 @@ export default function MyAccount() {
         <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '32px' }}>
           My Account
         </h1>
+
+        <EmailVerificationBanner />
 
         {/* Settings Container */}
         <div style={{ backgroundColor: 'white' }}>

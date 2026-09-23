@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 import BreathingGuide from '../components/BreathingGuide';
+import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
 const ALL_PROBLEMS = [
   // Plan
@@ -202,6 +203,7 @@ export default function Welcome() {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'clamp(20px, 5vw, 40px) clamp(16px, 5vw, 32px)' }}>
         <div style={{ width: '100%', maxWidth: '1000px' }}>
+          <EmailVerificationBanner />
           <div style={{ marginBottom: '48px', textAlign: 'center' }}>
             <h1 className="welcome-h1" style={{ fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
               {displayedGreeting}
