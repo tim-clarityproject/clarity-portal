@@ -158,6 +158,12 @@ export default function PersonalOperatingPlanEdit() {
           .eq('id', currentMissionId);
       }
 
+      // Sync mission title to profiles.personal_goal for consistency
+      await supabase
+        .from('profiles')
+        .update({ personal_goal: missionTitle })
+        .eq('id', user.id);
+
       // Delete removed strategies
       for (const strategy of strategies) {
         if (!strategy.isNew && strategy.id) {

@@ -17,18 +17,34 @@ export function MissionProvider({ children }) {
 
     const fetchMission = async () => {
       try {
-        const { data } = await supabase
+        // Fetch from missions table (primary source of truth)
+        const { data: missionData } = await supabase
+          .from('missions')
+          .select('*')
+          .eq('user_id', user.id)
+          .is('archived_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (missionData?.title) {
+          setMission(missionData.title);
+          // Sync to profiles table for consistency
+          await supabase
+            .from('profiles')
+            .update({ personal_goal: missionData.title })
+            .eq('id', user.id);
+        }
+
+        // Get visibility preference from profiles
+        const { data: profileData } = await supabase
           .from('profiles')
-          .select('personal_goal, show_mission_in_header')
+          .select('show_mission_in_header')
           .eq('id', user.id)
           .single();
 
-        if (data?.personal_goal) {
-          setMission(data.personal_goal);
-        }
-
-        if (data?.show_mission_in_header !== null && data?.show_mission_in_header !== undefined) {
-          setShowInHeader(data.show_mission_in_header);
+        if (profileData?.show_mission_in_header !== null && profileData?.show_mission_in_header !== undefined) {
+          setShowInHeader(profileData.show_mission_in_header);
         }
       } catch (error) {
         console.error('Error fetching mission:', error);
@@ -44,6 +60,7 @@ export function MissionProvider({ children }) {
 
     if (user) {
       try {
+        // Update profiles table
         await supabase
           .from('profiles')
           .update({
@@ -51,6 +68,29 @@ export function MissionProvider({ children }) {
             show_mission_in_header: visible !== undefined ? visible : showInHeader
           })
           .eq('id', user.id);
+
+        // Also sync to missions table
+        const { data: existingMission } = await supabase
+          .from('missions')
+          .select('*')
+          .eq('user_id', user.id)
+          .is('archived_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (existingMission) {
+          // Update existing mission
+          await supabase
+            .from('missions')
+            .update({ title: newMission })
+            .eq('id', existingMission.id);
+        } else {
+          // Create new mission if none exists
+          await supabase
+            .from('missions')
+            .insert([{ user_id: user.id, title: newMission }]);
+        }
       } catch (error) {
         console.error('Error updating mission:', error);
       }
