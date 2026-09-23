@@ -117,6 +117,8 @@ export default function PersonalOperatingPlan() {
   };
 
   const getTacticDisplay = (tactic) => {
+    const tacticText = tactic.name || tactic.action || 'Untitled tactic';
+
     if (tactic.is_done !== undefined) {
       return (
         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
@@ -124,22 +126,32 @@ export default function PersonalOperatingPlan() {
             type="checkbox"
             checked={tactic.is_done || false}
             disabled
-            style={{ width: '16px', height: '16px', cursor: 'not-allowed', accentColor: '#F08571' }}
+            style={{
+              width: '16px',
+              height: '16px',
+              cursor: 'not-allowed',
+              accentColor: '#F08571',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              border: '2px solid #ccc',
+              borderRadius: '3px',
+              backgroundColor: tactic.is_done ? '#F08571' : 'white',
+            }}
           />
-          <span style={{ fontSize: '13px', color: '#333' }}>{tactic.name}</span>
+          <span style={{ fontSize: '13px', color: '#333' }}>{tacticText}</span>
         </label>
       );
     } else if (tactic.target_value !== undefined) {
       return (
         <div>
-          <div style={{ fontSize: '13px', color: '#333', marginBottom: '4px' }}>{tactic.name}</div>
+          <div style={{ fontSize: '13px', color: '#333', marginBottom: '4px' }}>{tacticText}</div>
           <div style={{ fontSize: '12px', color: '#999' }}>
             {tactic.current_value || '0'} / {tactic.target_value} {tactic.unit || ''}
           </div>
         </div>
       );
     }
-    return <span style={{ fontSize: '13px', color: '#333' }}>{tactic.name}</span>;
+    return <span style={{ fontSize: '13px', color: '#333' }}>{tacticText}</span>;
   };
 
   if (isLoading) {
@@ -199,17 +211,16 @@ export default function PersonalOperatingPlan() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }} className="pop-page-container">
 
-        {/* MISSION SECTION - Premium Hero */}
+        {/* MISSION SECTION - Premium Hero with Coral Background */}
         <div style={{
-          backgroundColor: '#f9f9f9',
+          backgroundColor: '#F08571',
           padding: '32px',
           borderRadius: '8px',
-          border: '1px solid #e5e5e5',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+          boxShadow: '0 4px 12px rgba(240, 133, 113, 0.15)',
           marginBottom: '48px',
         }}>
-          <p style={{ fontSize: '11px', color: '#999', margin: '0 0 12px 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your Mission</p>
-          <h1 style={{ fontSize: '36px', fontWeight: '700', color: '#333', margin: '0', lineHeight: '1.3', letterSpacing: '-0.3px' }}>
+          <p style={{ fontSize: '11px', color: 'white', margin: '0 0 12px 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>Your Mission</p>
+          <h1 style={{ fontSize: '36px', fontWeight: '700', color: 'white', margin: '0', lineHeight: '1.3', letterSpacing: '-0.3px' }}>
             {mission.title}
           </h1>
         </div>

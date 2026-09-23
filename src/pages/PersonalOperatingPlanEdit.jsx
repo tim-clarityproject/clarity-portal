@@ -229,6 +229,7 @@ export default function PersonalOperatingPlanEdit() {
               .from('tactics')
               .update({
                 action: tactic.action,
+                name: tactic.action,
                 type: tactic.type,
                 target_value: tactic.type === 'measurable' ? tactic.target_value : null,
                 unit: tactic.type === 'measurable' ? tactic.unit : null,
