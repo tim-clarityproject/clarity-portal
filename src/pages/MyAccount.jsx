@@ -443,16 +443,25 @@ export default function MyAccount() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {archivedMissions.map((mission) => (
                       <div key={mission.id} style={{
-                        padding: '12px',
-                        backgroundColor: '#fafafa',
+                        padding: '20px',
+                        backgroundColor: 'white',
                         border: '1px solid #e5e5e5',
-                        borderRadius: '6px',
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                      }}>
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
+                      }}
+                      >
                         <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
+                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '6px' }}>
                             {mission.title}
                           </p>
                           <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
