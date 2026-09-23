@@ -9,48 +9,48 @@ export function MissionProvider({ children }) {
   const [mission, setMission] = useState('');
   const [showInHeader, setShowInHeader] = useState(true);
 
-  useEffect(() => {
+  const fetchMission = async () => {
     if (!user) {
       setMission('');
       return;
     }
 
-    const fetchMission = async () => {
-      try {
-        // Fetch from missions table (primary source of truth)
-        const { data: missionData } = await supabase
-          .from('missions')
-          .select('*')
-          .eq('user_id', user.id)
-          .is('archived_at', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+    try {
+      // Fetch from missions table (primary source of truth)
+      const { data: missionData } = await supabase
+        .from('missions')
+        .select('*')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-        if (missionData?.title) {
-          setMission(missionData.title);
-          // Sync to profiles table for consistency
-          await supabase
-            .from('profiles')
-            .update({ personal_goal: missionData.title })
-            .eq('id', user.id);
-        }
-
-        // Get visibility preference from profiles
-        const { data: profileData } = await supabase
+      if (missionData?.title) {
+        setMission(missionData.title);
+        // Sync to profiles table for consistency
+        await supabase
           .from('profiles')
-          .select('show_mission_in_header')
-          .eq('id', user.id)
-          .single();
-
-        if (profileData?.show_mission_in_header !== null && profileData?.show_mission_in_header !== undefined) {
-          setShowInHeader(profileData.show_mission_in_header);
-        }
-      } catch (error) {
-        console.error('Error fetching mission:', error);
+          .update({ personal_goal: missionData.title })
+          .eq('id', user.id);
       }
-    };
 
+      // Get visibility preference from profiles
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('show_mission_in_header')
+        .eq('id', user.id)
+        .single();
+
+      if (profileData?.show_mission_in_header !== null && profileData?.show_mission_in_header !== undefined) {
+        setShowInHeader(profileData.show_mission_in_header);
+      }
+    } catch (error) {
+      console.error('Error fetching mission:', error);
+    }
+  };
+
+  useEffect(() => {
     fetchMission();
   }, [user?.id]);
 
@@ -98,7 +98,7 @@ export function MissionProvider({ children }) {
   };
 
   return (
-    <MissionContext.Provider value={{ mission, showInHeader, setShowInHeader, updateMission }}>
+    <MissionContext.Provider value={{ mission, showInHeader, setShowInHeader, updateMission, refetchMission: fetchMission }}>
       {children}
     </MissionContext.Provider>
   );

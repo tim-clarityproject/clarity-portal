@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
 import BreathingSettingsModal from '../components/BreathingSettingsModal';
@@ -11,6 +12,7 @@ export default function MyAccount() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
+  const { refetchMission } = useContext(MissionContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [personalGoal, setPersonalGoal] = useState('');
@@ -126,8 +128,8 @@ export default function MyAccount() {
         .eq('id', missionId)
         .eq('user_id', user.id);
 
-      // Refresh the active mission in MissionContext by triggering auth state change
-      await supabase.auth.refreshSession();
+      // Immediately refetch mission in MissionContext to update header
+      await refetchMission();
 
       loadArchivedMissions();
     } catch (error) {
