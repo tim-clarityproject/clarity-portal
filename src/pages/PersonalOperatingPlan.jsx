@@ -67,9 +67,13 @@ export default function PersonalOperatingPlan() {
           }
           setTactics(tacticsByStrategy);
 
-          // Expand first strategy by default
+          // Expand all strategies by default for full visibility
           if (strategiesData.length > 0) {
-            setExpandedStrategies({ [strategiesData[0].id]: true });
+            const allExpanded = {};
+            strategiesData.forEach(s => {
+              allExpanded[s.id] = true;
+            });
+            setExpandedStrategies(allExpanded);
           }
         }
       }
