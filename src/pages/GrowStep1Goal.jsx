@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { designTokens } from '../lib/designTokens';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';

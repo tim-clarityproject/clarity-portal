@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
+import { designTokens } from '../lib/designTokens';
 import HomeHeader from '../components/HomeHeader';
 import BreathingSettingsModal from '../components/BreathingSettingsModal';
 import PersonalGoalModal from '../components/PersonalGoalModal';
