@@ -196,34 +196,6 @@ export default function MyReviews() {
             After-Action Reviews
           </button>
           <button
-            onClick={() => setFilterType('progress')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: filterType === 'progress' ? '#F08571' : 'transparent',
-              color: filterType === 'progress' ? 'white' : '#333',
-              border: `2px solid ${filterType === 'progress' ? '#F08571' : '#e5e5e5'}`,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '600',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (filterType !== 'progress') {
-                e.target.style.borderColor = '#F08571';
-                e.target.style.backgroundColor = '#f9f9f9';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (filterType !== 'progress') {
-                e.target.style.borderColor = '#e5e5e5';
-                e.target.style.backgroundColor = 'transparent';
-              }
-            }}
-          >
-            Progress Reviews
-          </button>
-          <button
             onClick={() => setFilterType('mission-progress')}
             style={{
               padding: '8px 16px',
@@ -249,7 +221,7 @@ export default function MyReviews() {
               }
             }}
           >
-            Mission Progress
+            Mission Progress Reviews
           </button>
         </div>
 
@@ -303,25 +275,24 @@ export default function MyReviews() {
                     e.currentTarget.style.borderColor = '#e5e5e5';
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {displayTitle}
-                      </p>
-                      <span
-                        style={{
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: 'white',
-                          backgroundColor: '#F08571',
-                          padding: '4px 12px',
-                          borderRadius: '4px',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {isMissionProgress ? 'Mission Progress' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Progress Review')}
-                      </span>
-                    </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', alignItems: 'center', gap: '16px', width: '100%' }}>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                      {displayTitle}
+                    </p>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: 'white',
+                        backgroundColor: '#F08571',
+                        padding: '4px 12px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {isMissionProgress ? 'Mission Progress Reviews' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Weekly Momentum Review')}
+                    </span>
+                    <div></div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
                         {formatDateTime(entry.created_at)}

@@ -627,29 +627,6 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
             <>
               <button
                 onClick={() => {
-                  navigate('/my-journal', { state: { ...location.state, reviewType: 'weekly-momentum' } });
-                  setMenuOpen(false);
-                  setJournalSubmenuOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px 12px 32px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: '#666',
-                  textAlign: 'left',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  transition: 'backgroundColor 0.2s',
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Weekly Momentum Review
-              </button>
-              <button
-                onClick={() => {
                   navigate('/my-journal', { state: { ...location.state, reviewType: 'after-action' } });
                   setMenuOpen(false);
                   setJournalSubmenuOpen(false);
@@ -673,7 +650,7 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
               </button>
               <button
                 onClick={() => {
-                  navigate('/my-journal', { state: { ...location.state, reviewType: 'progress' } });
+                  navigate('/my-journal', { state: { ...location.state, reviewType: 'weekly-momentum' } });
                   setMenuOpen(false);
                   setJournalSubmenuOpen(false);
                 }}
@@ -692,7 +669,30 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                Progress Review
+                Weekly Momentum Review
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/personal-operating-plan-review', { state: location.state });
+                  setMenuOpen(false);
+                  setJournalSubmenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 32px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#666',
+                  textAlign: 'left',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'backgroundColor 0.2s',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                I want to review my mission progress
               </button>
               <button
                 onClick={() => {
