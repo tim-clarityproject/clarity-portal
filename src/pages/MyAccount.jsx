@@ -21,6 +21,7 @@ export default function MyAccount() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [archivedMissions, setArchivedMissions] = useState([]);
   const [showArchivedMissions, setShowArchivedMissions] = useState(false);
+  const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
   const isGuest = false;
 
   const handleDeleteAccount = async () => {
@@ -92,6 +93,7 @@ export default function MyAccount() {
   }, [showArchivedMissions, user]);
 
   const loadArchivedMissions = async () => {
+    setLoadingArchivedMissions(true);
     try {
       const { data } = await supabase
         .from('missions')
@@ -103,6 +105,8 @@ export default function MyAccount() {
       setArchivedMissions(data || []);
     } catch (error) {
       console.error('Error loading archived missions:', error);
+    } finally {
+      setLoadingArchivedMissions(false);
     }
   };
 
@@ -113,6 +117,9 @@ export default function MyAccount() {
         .update({ archived_at: null })
         .eq('id', missionId)
         .eq('user_id', user.id);
+
+      // Refresh the active mission in MissionContext by triggering auth state change
+      await supabase.auth.refreshSession();
 
       loadArchivedMissions();
     } catch (error) {
@@ -428,7 +435,9 @@ export default function MyAccount() {
 
             {showArchivedMissions && (
               <div>
-                {archivedMissions.length === 0 ? (
+                {loadingArchivedMissions ? (
+                  <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Loading archived missions...</p>
+                ) : archivedMissions.length === 0 ? (
                   <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>No archived missions</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
