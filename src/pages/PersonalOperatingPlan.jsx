@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
+import { designTokens, applyTypography } from '../lib/designTokens';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PersonalOperatingPlan() {
@@ -213,14 +214,14 @@ export default function PersonalOperatingPlan() {
 
         {/* MISSION SECTION - Premium Hero with Coral Background */}
         <div style={{
-          backgroundColor: '#F08571',
-          padding: '32px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(240, 133, 113, 0.15)',
-          marginBottom: '48px',
+          backgroundColor: designTokens.colors.primary,
+          padding: designTokens.spacing.xl,
+          borderRadius: designTokens.borderRadius.lg,
+          boxShadow: designTokens.shadow.coral,
+          marginBottom: designTokens.layout.gapBetweenSections,
         }}>
-          <p style={{ fontSize: '11px', color: 'white', margin: '0 0 12px 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>Your Mission</p>
-          <h1 style={{ fontSize: '36px', fontWeight: '700', color: 'white', margin: '0', lineHeight: '1.3', letterSpacing: '-0.3px' }}>
+          <p style={{ ...designTokens.typography.label, color: 'white', margin: `0 0 ${designTokens.spacing.md} 0`, opacity: 0.9 }}>Your Mission</p>
+          <h1 style={{ ...designTokens.typography.h1, color: 'white', margin: '0' }}>
             {mission.title}
           </h1>
         </div>
@@ -237,28 +238,28 @@ export default function PersonalOperatingPlan() {
                 <div
                   key={strategy.id}
                   style={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e5e5',
-                    borderRadius: '8px',
-                    borderLeft: '4px solid #F08571',
+                    backgroundColor: designTokens.colors.background.default,
+                    border: `1px solid ${designTokens.colors.border.medium}`,
+                    borderRadius: designTokens.borderRadius.lg,
+                    borderLeft: `4px solid ${designTokens.colors.primary}`,
                     overflow: 'hidden',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                    boxShadow: designTokens.shadow.sm,
                     transition: 'all 0.2s',
                     cursor: 'pointer',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
+                    e.currentTarget.style.boxShadow = designTokens.shadow.md;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
+                    e.currentTarget.style.boxShadow = designTokens.shadow.sm;
                   }}
                 >
                   <button
                     onClick={() => toggleStrategy(strategy.id)}
                     style={{
                       width: '100%',
-                      padding: '20px',
-                      backgroundColor: 'white',
+                      padding: designTokens.spacing.lg,
+                      backgroundColor: designTokens.colors.background.default,
                       border: 'none',
                       cursor: 'pointer',
                       display: 'flex',
@@ -266,15 +267,15 @@ export default function PersonalOperatingPlan() {
                       alignItems: 'flex-start',
                       transition: 'background-color 0.2s',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = designTokens.colors.background.secondary}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = designTokens.colors.background.default}
                   >
                     <div style={{ textAlign: 'left', flex: 1 }}>
-                      <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#333', margin: '0 0 6px 0', lineHeight: '1.4' }}>
+                      <h3 style={{ ...designTokens.typography.h3, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.sm} 0` }}>
                         {strategy.name}
                       </h3>
                       {strategy.description && (
-                        <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.5' }}>
+                        <p style={{ ...designTokens.typography.bodySm, color: designTokens.colors.text.secondary, margin: 0 }}>
                           {strategy.description}
                         </p>
                       )}
@@ -328,30 +329,22 @@ export default function PersonalOperatingPlan() {
         </div>
 
         {/* ACTION BUTTONS - Premium Styling */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+        <div style={{ display: 'flex', gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.xl }}>
           <button
             onClick={() => navigate('/personal-operating-plan-edit', { state: { isGuest, missionId: mission.id } })}
             style={{
               flex: 1,
-              padding: '14px 24px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              color: '#333',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
+              ...designTokens.button.secondary,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-              e.currentTarget.style.color = '#F08571';
+              e.currentTarget.style.borderColor = designTokens.colors.primary;
+              e.currentTarget.style.backgroundColor = designTokens.colors.background.secondary;
+              e.currentTarget.style.color = designTokens.colors.primary;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'white';
-              e.currentTarget.style.color = '#333';
+              e.currentTarget.style.borderColor = designTokens.colors.border.medium;
+              e.currentTarget.style.backgroundColor = designTokens.colors.background.default;
+              e.currentTarget.style.color = designTokens.colors.text.primary;
             }}
           >
             Edit Plan
@@ -360,51 +353,33 @@ export default function PersonalOperatingPlan() {
             onClick={() => navigate('/personal-operating-plan-review', { state: { isGuest, missionId: mission.id } })}
             style={{
               flex: 1,
-              padding: '14px 24px',
-              backgroundColor: '#F08571',
-              border: 'none',
-              borderRadius: '8px',
-              color: 'white',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
+              ...designTokens.button.primary,
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e07560'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F08571'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = designTokens.button.primary.hoverBackgroundColor}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = designTokens.colors.primary}
           >
             Review Plan
           </button>
         </div>
 
         {/* ARCHIVE BUTTON - Tertiary Action */}
-        <div style={{ paddingTop: '24px', borderTop: '1px solid #e5e5e5' }}>
+        <div style={{ paddingTop: designTokens.spacing.lg, borderTop: `1px solid ${designTokens.colors.border.medium}` }}>
           <button
             onClick={handleArchiveMission}
             style={{
-              padding: 0,
-              backgroundColor: 'transparent',
-              border: 'none',
-              borderRadius: '0',
-              color: '#999',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '12px',
-              transition: 'all 0.2s',
-              textTransform: 'uppercase',
-              letterSpacing: '0.3px',
+              ...designTokens.button.tertiary,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = '#d32f2f';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#999';
+              e.currentTarget.style.color = designTokens.colors.text.tertiary;
             }}
             title="Archived missions and their reviews are stored in your Profile settings."
           >
             Archive Mission
           </button>
-          <p style={{ fontSize: '11px', color: '#bbb', margin: '8px 0 0 0' }}>
+          <p style={{ ...designTokens.typography.caption, color: designTokens.colors.text.disabled, margin: `${designTokens.spacing.sm} 0 0 0` }}>
             Archived missions and their reviews are stored in your Profile settings.
           </p>
         </div>

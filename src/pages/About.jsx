@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { designTokens } from '../lib/designTokens';
 import HomeHeader from '../components/HomeHeader';
 
 export default function About() {
@@ -12,48 +13,48 @@ export default function About() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         {/* Hero Section */}
-        <div style={{ marginBottom: '64px' }}>
-          <h1 style={{ fontSize: '36px', fontWeight: '700', color: '#333', margin: '0 0 24px 0', lineHeight: '1.3', letterSpacing: '-0.3px' }}>
+        <div style={{ marginBottom: designTokens.layout.gapBetweenSections }}>
+          <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
             About The Clarity Portal
           </h1>
-          <p style={{ fontSize: '16px', fontWeight: '500', color: '#666', margin: 0, lineHeight: '1.6' }}>
+          <p style={{ fontSize: '16px', fontWeight: '500', color: designTokens.colors.text.secondary, margin: 0, lineHeight: '1.6' }}>
             A thinking companion for high-performers who value clarity, intentionality, and genuine conviction.
           </p>
         </div>
 
         {/* Main Content */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '48px', marginBottom: '48px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.layout.gapBetweenSections, marginBottom: designTokens.layout.gapBetweenSections }}>
           {/* Philosophy Section */}
-          <section style={{ paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <section style={{ paddingLeft: designTokens.spacing.lg, borderLeft: `4px solid ${designTokens.colors.primary}` }}>
+            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
               Our Philosophy
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <p style={{ fontSize: '15px', color: '#555', margin: 0, lineHeight: '1.7' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.md }}>
+              <p style={{ ...designTokens.typography.body, color: designTokens.colors.text.secondary, margin: 0 }}>
                 You won't find an AI chatbot here giving you the easy answers.
               </p>
-              <p style={{ fontSize: '15px', color: '#555', margin: 0, lineHeight: '1.7' }}>
+              <p style={{ ...designTokens.typography.body, color: designTokens.colors.text.secondary, margin: 0 }}>
                 This is the place for high-performers who want to stay fully-engaged with their own thinking and make decisions with clarity and genuine conviction.
               </p>
             </div>
           </section>
 
           {/* Purpose Section */}
-          <section style={{ paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <section style={{ paddingLeft: designTokens.spacing.lg, borderLeft: `4px solid ${designTokens.colors.primary}` }}>
+            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
               What We Do
             </h2>
-            <p style={{ fontSize: '15px', color: '#555', margin: 0, lineHeight: '1.7' }}>
+            <p style={{ ...designTokens.typography.body, color: designTokens.colors.text.secondary, margin: 0 }}>
               The tools found here are designed to scaffold your thinking, increase your daily intentionality, and drive your performance through true reflection.
             </p>
           </section>
 
           {/* Features Grid */}
           <section>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#333', margin: '0 0 24px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
               Key Features
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: designTokens.layout.gapBetweenCards }}>
               {[
                 { icon: '🎯', title: 'Daily Intentions', desc: 'Start each day with clarity on your top priority' },
                 { icon: '🤔', title: 'Deep Reflection', desc: 'After-action reviews and decision frameworks' },
@@ -61,17 +62,17 @@ export default function About() {
                 { icon: '📈', title: 'Progress Tracking', desc: 'Weekly momentum reviews to build momentum' }
               ].map((feature, idx) => (
                 <div key={idx} style={{
-                  padding: '20px',
-                  backgroundColor: '#f9f9f9',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '8px',
+                  padding: designTokens.spacing.lg,
+                  backgroundColor: designTokens.colors.background.secondary,
+                  border: `1px solid ${designTokens.colors.border.medium}`,
+                  borderRadius: designTokens.borderRadius.lg,
                   textAlign: 'center',
                 }}>
-                  <div style={{ fontSize: '28px', marginBottom: '12px' }}>{feature.icon}</div>
-                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: '0 0 8px 0' }}>
+                  <div style={{ fontSize: '28px', marginBottom: designTokens.spacing.md }}>{feature.icon}</div>
+                  <h3 style={{ ...designTokens.typography.h4, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.sm} 0` }}>
                     {feature.title}
                   </h3>
-                  <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: '1.5' }}>
+                  <p style={{ ...designTokens.typography.bodySm, color: designTokens.colors.text.secondary, margin: 0 }}>
                     {feature.desc}
                   </p>
                 </div>
@@ -80,11 +81,11 @@ export default function About() {
           </section>
 
           {/* Created By */}
-          <section style={{ paddingTop: '24px', borderTop: '1px solid #e5e5e5', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#333', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <section style={{ paddingTop: designTokens.spacing.lg, borderTop: `1px solid ${designTokens.colors.border.medium}`, paddingLeft: designTokens.spacing.lg, borderLeft: `4px solid ${designTokens.colors.primary}` }}>
+            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.md} 0` }}>
               Created By
             </h2>
-            <p style={{ fontSize: '15px', color: '#555', margin: 0, lineHeight: '1.7', marginBottom: '12px' }}>
+            <p style={{ ...designTokens.typography.body, color: designTokens.colors.text.secondary, margin: 0, marginBottom: designTokens.spacing.md }}>
               The Clarity Project is dedicated to helping high-performers think better and lead with clarity.
             </p>
             <a
@@ -92,15 +93,15 @@ export default function About() {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: '#F08571',
+                color: designTokens.colors.primary,
                 textDecoration: 'none',
                 fontWeight: '600',
                 fontSize: '14px',
                 transition: 'color 0.2s',
                 cursor: 'pointer',
               }}
-              onMouseEnter={(e) => e.target.style.color = '#e07560'}
-              onMouseLeave={(e) => e.target.style.color = '#F08571'}
+              onMouseEnter={(e) => e.target.style.color = designTokens.button.primary.hoverBackgroundColor}
+              onMouseLeave={(e) => e.target.style.color = designTokens.colors.primary}
             >
               Visit The Clarity Project →
             </a>
@@ -112,18 +113,10 @@ export default function About() {
           onClick={() => navigate('/welcome', { state: { isGuest } })}
           style={{
             alignSelf: 'flex-start',
-            padding: '12px 24px',
-            backgroundColor: '#F08571',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
+            ...designTokens.button.primary,
           }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+          onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.button.primary.hoverBackgroundColor}
+          onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.colors.primary}
         >
           ← Back to Home
         </button>

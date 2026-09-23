@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
+import { designTokens } from '../lib/designTokens';
 import HomeHeader from '../components/HomeHeader';
 import BreathingGuide from '../components/BreathingGuide';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -229,13 +230,13 @@ export default function Welcome() {
                   onClick={() => setIsOpen(!isOpen)}
                   style={{
                     width: '100%',
-                    padding: '18px 24px',
-                    backgroundColor: 'white',
-                    border: '2px solid #e5e5e5',
-                    borderRadius: '8px',
+                    padding: `${designTokens.spacing.lg} ${designTokens.spacing.lg}`,
+                    backgroundColor: designTokens.colors.background.default,
+                    border: `2px solid ${designTokens.colors.border.medium}`,
+                    borderRadius: designTokens.borderRadius.lg,
                     fontSize: '16px',
                     fontWeight: '500',
-                    color: '#999',
+                    color: designTokens.colors.text.tertiary,
                     textAlign: 'left',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
@@ -244,10 +245,10 @@ export default function Welcome() {
                     alignItems: 'center',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#F08571';
+                    e.currentTarget.style.borderColor = designTokens.colors.primary;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = isOpen ? '#F08571' : '#e5e5e5';
+                    e.currentTarget.style.borderColor = isOpen ? designTokens.colors.primary : designTokens.colors.border.medium;
                   }}
                 >
                   <span>Choose an option...</span>
@@ -261,14 +262,14 @@ export default function Welcome() {
                       top: '100%',
                       left: 0,
                       right: 0,
-                      backgroundColor: 'white',
-                      border: '2px solid #F08571',
-                      borderRadius: '8px',
-                      marginTop: '4px',
+                      backgroundColor: designTokens.colors.background.default,
+                      border: `2px solid ${designTokens.colors.primary}`,
+                      borderRadius: designTokens.borderRadius.lg,
+                      marginTop: designTokens.spacing.sm,
                       maxHeight: '400px',
                       overflowY: 'auto',
                       zIndex: 1000,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      boxShadow: designTokens.shadow.md,
                     }}
                   >
                     {(() => {
