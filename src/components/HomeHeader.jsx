@@ -19,15 +19,10 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
 
-  // On Welcome page, delay mission display until greeting is shown
+  // On Welcome page, display mission immediately (no delay needed now that header is pre-sized)
   useEffect(() => {
-    if (delayMission) {
-      const timer = setTimeout(() => setDisplayMission(true), 3500);
-      return () => clearTimeout(timer);
-    } else {
-      setDisplayMission(true);
-    }
-  }, [delayMission]);
+    setDisplayMission(true);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -78,7 +73,7 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
       <style>{`
         .header-container {
           padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px);
-          min-height: 70px;
+          min-height: 120px;
           box-sizing: border-box;
         }
         .hamburger-button {
