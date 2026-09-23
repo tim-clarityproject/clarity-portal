@@ -371,10 +371,10 @@ export default function PersonalOperatingPlan() {
           <button
             onClick={handleArchiveMission}
             style={{
-              padding: '10px 16px',
-              backgroundColor: 'white',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
+              padding: 0,
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderRadius: '0',
               color: '#999',
               fontWeight: '600',
               cursor: 'pointer',
@@ -384,16 +384,18 @@ export default function PersonalOperatingPlan() {
               letterSpacing: '0.3px',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.color = '#F08571';
+              e.currentTarget.style.color = '#d32f2f';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
               e.currentTarget.style.color = '#999';
             }}
+            title="Archived missions and their reviews are stored in your Profile settings."
           >
             Archive Mission
           </button>
+          <p style={{ fontSize: '11px', color: '#bbb', margin: '8px 0 0 0' }}>
+            Archived missions and their reviews are stored in your Profile settings.
+          </p>
         </div>
 
       </div>
