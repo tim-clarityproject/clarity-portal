@@ -201,21 +201,21 @@ export default function Welcome() {
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'clamp(20px, 5vw, 40px) clamp(16px, 5vw, 32px)' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(20px, 5vw, 40px) clamp(16px, 5vw, 32px)' }}>
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <EmailVerificationBanner />
-          <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-            <h1 className="welcome-h1" style={{ fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
+          <div style={{ marginBottom: '64px', marginTop: '32px', textAlign: 'center' }}>
+            <h1 className="welcome-h1" style={{ fontSize: 'clamp(36px, 8vw, 56px)', fontWeight: '700', color: 'black', marginBottom: '16px', lineHeight: '1.2' }}>
               {displayedGreeting}
               {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Morning, ${displayName}.` : 'Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h1>
-            <h2 style={{ fontSize: '20px', fontWeight: '400', color: '#333', margin: 0, minHeight: '30px' }}>
+            <h2 style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: '400', color: '#666', margin: 0, minHeight: '32px', lineHeight: '1.4' }}>
               {displayedQuestion}
               {displayedQuestion.length > 0 && displayedQuestion.length < 'What are we working on?'.length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
             </h2>
           </div>
 
-          <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
+          <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto', marginTop: '48px' }}>
             {/* Problem selector dropdown */}
             <div>
               <div
@@ -229,12 +229,12 @@ export default function Welcome() {
                   onClick={() => setIsOpen(!isOpen)}
                   style={{
                     width: '100%',
-                    padding: '16px 20px',
+                    padding: '18px 24px',
                     backgroundColor: 'white',
                     border: '2px solid #e5e5e5',
                     borderRadius: '8px',
-                    fontSize: '15px',
-                    fontWeight: '600',
+                    fontSize: '16px',
+                    fontWeight: '500',
                     color: '#999',
                     textAlign: 'left',
                     cursor: 'pointer',
