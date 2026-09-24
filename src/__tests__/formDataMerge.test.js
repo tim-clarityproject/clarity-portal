@@ -151,6 +151,34 @@ function testCompletedGuardBlocksIncomplete() {
   console.log('  PASS: Validation correctly identifies incomplete records');
 }
 
+// Test 4: Field names must use snake_case in saved form_data
+function testFieldNamesUseSnakeCase() {
+  console.log('\n✓ Test 4: Field names must use snake_case in saved form_data');
+
+  const formData = {
+    goal: 'Improve productivity',
+    constraints: 'Limited time',
+    opportunities: 'New tools available',
+    options: ['Option A', 'Option B'],
+    will_do: 'Start tomorrow morning'
+  };
+
+  // Simulate saving through SaveDiscardButtons (should preserve snake_case keys)
+  const saved = mergeFormData({}, formData);
+
+  console.log('  Saved form_data:', JSON.stringify(saved));
+
+  // Verify snake_case is preserved, NOT camelCase
+  if (saved.will_do !== 'Start tomorrow morning') {
+    throw new Error('Field must be saved as will_do (snake_case)');
+  }
+  if (saved.hasOwnProperty('willDo')) {
+    throw new Error('Field must NOT be saved as willDo (camelCase)');
+  }
+
+  console.log('  PASS: All field names use snake_case');
+}
+
 // Run all tests
 try {
   console.log('========================================');
@@ -160,6 +188,7 @@ try {
   testGoalSurvivesAcrossSteps();
   testUndefinedValuesDoNotErase();
   testCompletedGuardBlocksIncomplete();
+  testFieldNamesUseSnakeCase();
 
   console.log('\n========================================');
   console.log('All tests passed ✓');

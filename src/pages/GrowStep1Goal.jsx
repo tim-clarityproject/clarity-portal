@@ -44,7 +44,7 @@ export default function GrowStep1Goal() {
       updateFormData('constraints', '');
       updateFormData('opportunities', '');
       updateFormData('options', []);
-      updateFormData('willDo', '');
+      updateFormData('will_do', '');
     }
   }, []);
 
@@ -81,7 +81,7 @@ export default function GrowStep1Goal() {
           updateFormData('constraints', formDataLoaded.constraints || '');
           updateFormData('opportunities', formDataLoaded.opportunities || '');
           updateFormData('options', formDataLoaded.options || []);
-          updateFormData('willDo', formDataLoaded.will_do || '');
+          updateFormData('will_do', formDataLoaded.will_do || '');
         }
       } catch (err) {
         console.error('Error loading decision:', err);

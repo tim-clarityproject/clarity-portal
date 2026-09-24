@@ -396,7 +396,7 @@ export default function GrowStep4WillDo() {
           </div>
         ) : (
           <SaveDiscardButtons
-            formData={{ willDo: willDoValue, options: optionsValue }}
+            formData={{ will_do: willDoValue, options: optionsValue }}
             pageType="decision"
             toolType="grow"
             onNext={handleSaveClick}
