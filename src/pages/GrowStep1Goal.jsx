@@ -12,12 +12,21 @@ import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 export default function GrowStep1Goal() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData, getFieldValue, setLoadedDecisionId } = useContext(FormContext);
+  const { formData, updateFormData, getFieldValue, setLoadedDecisionId, clearFormData } = useContext(FormContext);
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
   const [isLoading, setIsLoading] = useState(false);
   const refGoal = useRef(null);
   useAutoExpandTextarea(refGoal, goal);
+
+  // Reset FormContext when creating fresh decision (no decisionId)
+  // This prevents data leaks from previous decisions across browser refreshes
+  useEffect(() => {
+    if (!location.state?.decisionId) {
+      clearFormData();
+      setLoadedDecisionId(null);
+    }
+  }, [location.state?.decisionId, clearFormData, setLoadedDecisionId]);
 
   // Clear form and localStorage on fresh start, or recover from localStorage
   useEffect(() => {
