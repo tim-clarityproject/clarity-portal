@@ -788,7 +788,7 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
             </button>
           )}
 
-          {!isGuest && (
+          {!isGuest && user && (
             <button
               onClick={handleLogout}
               style={{

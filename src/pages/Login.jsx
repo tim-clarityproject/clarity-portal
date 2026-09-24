@@ -1,10 +1,11 @@
 import { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase, auth } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, signup, isLoading, user } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -57,8 +58,13 @@ export default function Login() {
           // No email verification needed - redirect to onboarding mission
           navigate('/onboarding-mission', { state: { isNewSignup: true } });
         } else {
-          // Login succeeded, redirect to welcome
-          navigate('/welcome');
+          // Login succeeded - redirect to originally requested page or welcome
+          const returnTo = location.state?.returnTo;
+          if (returnTo && returnTo !== '/login') {
+            navigate(returnTo);
+          } else {
+            navigate('/welcome');
+          }
         }
       } else {
         // Display specific error message from auth function
