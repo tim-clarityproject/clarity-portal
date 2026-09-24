@@ -19,15 +19,15 @@ export function AuthProvider({ children }) {
           // Session exists and is valid
           setUser(session.user);
           const userData = await dataSyncManager.loadUserData(session.user.id);
-          sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+          localStorage.setItem('clarity-user-data', JSON.stringify(userData));
         } else {
           // Session is invalid or missing - clear cached data and logout
-          sessionStorage.removeItem('clarity-user-data');
+          localStorage.removeItem('clarity-user-data');
           setUser(null);
         }
       } catch (error) {
         console.error('Auth check error:', error);
-        sessionStorage.removeItem('clarity-user-data');
+        localStorage.removeItem('clarity-user-data');
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
                 });
 
               const userData = await dataSyncManager.loadUserData(session.user.id);
-              sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+              localStorage.setItem('clarity-user-data', JSON.stringify(userData));
             }
             else if ((firstName || lastName) && !profile?.first_name && !profile?.last_name) {
               await supabase
@@ -84,14 +84,14 @@ export function AuthProvider({ children }) {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           try {
             const userData = await dataSyncManager.loadUserData(session.user.id);
-            sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+            localStorage.setItem('clarity-user-data', JSON.stringify(userData));
           } catch (error) {
             // Silently handle data sync errors
           }
         }
       } else {
         // No valid session - clear all cached user data
-        sessionStorage.removeItem('clarity-user-data');
+        localStorage.removeItem('clarity-user-data');
         setUser(null);
       }
     });
@@ -135,8 +135,8 @@ export function AuthProvider({ children }) {
         sessionManager.saveSessionMetadata(session);
         // Load user's data from Supabase
         const userData = await dataSyncManager.loadUserData(session.user.id);
-        // Store user data in sessionStorage for quick access
-        sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+        // Store user data in localStorage for quick access
+        localStorage.setItem('clarity-user-data', JSON.stringify(userData));
       }
       return { success: true };
     } catch (err) {
@@ -207,7 +207,7 @@ export function AuthProvider({ children }) {
 
         // STEP 6: Load user data
         const userData = await dataSyncManager.loadUserData(userSession.user.id);
-        sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+        localStorage.setItem('clarity-user-data', JSON.stringify(userData));
         console.log('✓ Step 6: User data loaded');
 
         return { success: true };
