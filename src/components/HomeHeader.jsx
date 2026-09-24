@@ -715,7 +715,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                I want to review my mission progress
+                Mission Progress Review
               </button>
               <button
                 onClick={() => {

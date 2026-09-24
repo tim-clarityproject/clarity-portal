@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
 
-const MAX_GOAL_LENGTH = 50;
+const MAX_GOAL_LENGTH = 70;
 
 export default function OnboardingMission() {
   const navigate = useNavigate();
