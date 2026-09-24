@@ -323,11 +323,11 @@ function VagalBreathingAnimation({ isActive }) {
           strokeWidth="3"
         />
       </svg>
-      <div style={{ textAlign: 'center', zIndex: 10 }}>
-        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', lineHeight: '1', marginBottom: '8px' }}>
           {Math.max(0, countdownSeconds)}
         </div>
-        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', textTransform: 'capitalize' }}>
+        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', textTransform: 'capitalize', lineHeight: '1' }}>
           {phase}
         </div>
       </div>
@@ -408,11 +408,11 @@ function BoxBreathingAnimation({ isActive }) {
           strokeLinecap="round"
         />
       </svg>
-      <div style={{ textAlign: 'center', zIndex: 10 }}>
-        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', lineHeight: '1', marginBottom: '8px' }}>
           {Math.max(0, countdownSeconds)}
         </div>
-        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', textTransform: 'capitalize' }}>
+        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', textTransform: 'capitalize', lineHeight: '1' }}>
           {phase}
         </div>
       </div>
@@ -522,11 +522,11 @@ function PhysiologicalSighAnimation({ isActive }) {
           />
         )}
       </svg>
-      <div style={{ textAlign: 'center', zIndex: 10 }}>
-        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+        <div style={{ fontSize: '48px', fontWeight: '600', color: '#333', lineHeight: '1', marginBottom: '8px' }}>
           {countdownSeconds > 0 ? countdownSeconds : ''}
         </div>
-        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500' }}>
+        <div style={{ fontSize: '13px', color: '#666', fontWeight: '500', lineHeight: '1' }}>
           {getPhaseLabel()}
         </div>
       </div>

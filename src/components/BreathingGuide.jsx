@@ -119,11 +119,11 @@ export default function BreathingGuide({ isOpen, onClose }) {
               strokeWidth="3"
             />
           </svg>
-          <div style={{ textAlign: 'center', zIndex: 10 }}>
-            <div style={{ fontSize: '44px', fontWeight: '600', color: '#333', marginBottom: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+            <div style={{ fontSize: '44px', fontWeight: '600', color: '#333', lineHeight: '1', marginBottom: '6px' }}>
               {Math.max(0, countdownSeconds)}
             </div>
-            <div style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'capitalize' }}>
+            <div style={{ fontSize: '12px', color: '#666', fontWeight: '500', textTransform: 'capitalize', lineHeight: '1' }}>
               {phase}
             </div>
           </div>
