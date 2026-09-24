@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
 
+// Single source of truth for multi-step form state, decision tracking, and dirty field detection
 export const FormContext = createContext();
 
 const DEFAULT_FORM_DATA = {
