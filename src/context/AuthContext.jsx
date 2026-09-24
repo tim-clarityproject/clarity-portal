@@ -155,45 +155,108 @@ export function AuthProvider({ children }) {
 
   const signup = async (email, password, firstName = '', lastName = '') => {
     setIsLoading(true);
+    let authUserCreated = false;
+    let userSession = null;
+
     try {
       try {
+        // STEP 1: Create Auth user
         await auth.signUp(email, password);
+        authUserCreated = true;
+        console.log('✓ Step 1: Auth user created');
+
+        // STEP 2: Sign in to get session
         await auth.signIn(email, password);
-        const session = await sessionManager.getSession();
-        if (session?.user) {
-          if (firstName || lastName) {
-            await supabase
-              .from('profiles')
-              .upsert({
-                id: session.user.id,
-                first_name: firstName,
-                last_name: lastName,
-                email: email,
-                terms_accepted: true,
-              })
-              .select();
-          } else {
-            await supabase
-              .from('profiles')
-              .upsert({
-                id: session.user.id,
-                email: email,
-                terms_accepted: true,
-              })
-              .select();
-          }
-          sessionManager.saveSessionMetadata(session);
-          const userData = await dataSyncManager.loadUserData(session.user.id);
-          sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+        console.log('✓ Step 2: User signed in');
+
+        // STEP 3: Get session info
+        userSession = await sessionManager.getSession();
+        if (!userSession?.user) {
+          throw new Error('Failed to get session after signup');
         }
+        console.log('✓ Step 3: Session retrieved');
+
+        // STEP 4: Create profile record
+        if (firstName || lastName) {
+          await supabase
+            .from('profiles')
+            .upsert({
+              id: userSession.user.id,
+              first_name: firstName,
+              last_name: lastName,
+              email: email,
+              terms_accepted: true,
+            })
+            .select();
+        } else {
+          await supabase
+            .from('profiles')
+            .upsert({
+              id: userSession.user.id,
+              email: email,
+              terms_accepted: true,
+            })
+            .select();
+        }
+        console.log('✓ Step 4: Profile created');
+
+        // STEP 5: Save session metadata
+        sessionManager.saveSessionMetadata(userSession);
+        console.log('✓ Step 5: Session metadata saved');
+
+        // STEP 6: Load user data
+        const userData = await dataSyncManager.loadUserData(userSession.user.id);
+        sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
+        console.log('✓ Step 6: User data loaded');
+
         return { success: true };
       } catch (signupErr) {
-        console.error('Signup error:', signupErr);
-        // Check for specific error types
+        console.error('Signup error at step:', signupErr);
+
+        // ROLLBACK: If Auth user was created but later steps failed, delete it to prevent orphaning
+        if (authUserCreated && userSession?.user) {
+          console.log('⚠️  Rolling back: Deleting orphaned Auth user...');
+          try {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession?.access_token) {
+              const response = await fetch(
+                `${new URL(supabase.supabaseUrl).origin}/functions/v1/delete-user`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${currentSession.access_token}`,
+                    'Content-Type': 'application/json',
+                  },
+                }
+              );
+              if (response.ok) {
+                console.log('✓ Rollback: Orphaned Auth user deleted');
+              } else {
+                console.error('⚠️  Rollback failed: Could not delete Auth user');
+                // Continue anyway - at least profile/session won't exist
+              }
+            }
+          } catch (rollbackErr) {
+            console.error('⚠️  Rollback exception:', rollbackErr);
+            // Continue - user will need manual cleanup but email will be free after logout
+          }
+
+          // Always logout to clear the session
+          try {
+            await auth.signOut();
+            console.log('✓ User logged out');
+          } catch (logoutErr) {
+            console.error('Logout during rollback failed:', logoutErr);
+          }
+        }
+
+        // Provide user-facing error
         if (signupErr.message?.includes('already registered') || signupErr.status === 422) {
           return { success: false, error: 'An account with this email already exists. Try logging in instead.' };
         } else if (signupErr.status === 400) {
           return { success: false, error: 'Invalid email or password. Please try again.' };
+        } else if (signupErr.status === 429) {
+          return { success: false, error: 'Too many requests. Please wait a moment and try again.' };
         } else {
           return { success: false, error: signupErr.message || 'Signup failed. Please try again.' };
         }
