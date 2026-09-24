@@ -119,7 +119,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
               strokeWidth="3"
             />
           </svg>
-          <div style={{ position: 'relative', textAlign: 'center', zIndex: 10, padding: '24px' }}>
+          <div style={{ textAlign: 'center', zIndex: 10 }}>
             <div style={{ fontSize: '44px', fontWeight: '600', color: '#333', marginBottom: '6px' }}>
               {Math.max(0, countdownSeconds)}
             </div>
