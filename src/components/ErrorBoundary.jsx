@@ -14,10 +14,10 @@ export class ErrorBoundary extends Component {
     console.error('Error caught by boundary:', error, errorInfo);
   }
 
-  handleBack = () => {
+  handleBack() {
     this.setState({ hasError: false, error: null });
     window.history.back();
-  };
+  }
 
   render() {
     if (this.state.hasError) {

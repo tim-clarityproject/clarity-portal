@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { saveProgress, clearProgress, AUTO_SAVE_KEY } from '../lib/saveProgress';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { mergeFormData } from '../utils/mergeFormData';
 
 export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, onSaveAsDraft = null, nextLabel = 'Continue' }) {
   const navigate = useNavigate();
@@ -31,17 +32,11 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
         if (fetchError) {
           console.error('Error fetching existing decision:', fetchError);
-          return null;
+          throw new Error(`Cannot save: Unable to load existing record for merging. ${fetchError.message}`);
         }
 
         const existingFormData = existingRecord?.form_data || {};
-        const mergedFormData = { ...existingFormData };
-
-        Object.entries(formData).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            mergedFormData[key] = value;
-          }
-        });
+        const mergedFormData = mergeFormData(existingFormData, formData);
 
         const { data, error } = await supabase
           .from('decisions')
@@ -107,17 +102,11 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
           if (fetchError) {
             console.error('Error fetching existing decision:', fetchError);
-            throw fetchError;
+            throw new Error(`Cannot save draft: Unable to load existing record for merging. ${fetchError.message}`);
           }
 
           const existingFormData = existingRecord?.form_data || {};
-          const mergedFormData = { ...existingFormData };
-
-          Object.entries(formData).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              mergedFormData[key] = value;
-            }
-          });
+          const mergedFormData = mergeFormData(existingFormData, formData);
 
           await supabase
             .from('decisions')

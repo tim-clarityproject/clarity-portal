@@ -3,18 +3,7 @@
  * Tests the behavior of combining new fields with existing saved data
  */
 
-// Simulate the merge logic from SaveDiscardButtons
-function mergeFormData(existingFormData = {}, newFormData = {}) {
-  const merged = { ...existingFormData };
-
-  Object.entries(newFormData).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      merged[key] = value;
-    }
-  });
-
-  return merged;
-}
+import { mergeFormData } from '../utils/mergeFormData.js';
 
 // Test 1: Save step 1, then step 2, goal survives
 function testGoalSurvivesAcrossSteps() {
