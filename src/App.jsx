@@ -47,6 +47,7 @@ import GrowStep4WillDo from './pages/GrowStep4WillDo';
 import InversionStep1Goal from './pages/InversionStep1Goal';
 import InversionStep2Fuckups from './pages/InversionStep2Fuckups';
 import InversionStep3Plan from './pages/InversionStep3Plan';
+import InversionThinkingSummary from './pages/InversionThinkingSummary';
 import ToughConversationStep1Feedback from './pages/ToughConversationStep1Feedback';
 import ToughConversationSummary from './pages/ToughConversationSummary';
 import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coaching';
@@ -178,6 +179,7 @@ function AppContent() {
       <Route path="/inversion-step-1" element={<InversionStep1Goal />} />
       <Route path="/inversion-step-2" element={<InversionStep2Fuckups />} />
       <Route path="/inversion-step-3" element={<InversionStep3Plan />} />
+      <Route path="/inversion-thinking-summary" element={<InversionThinkingSummary />} />
       <Route path="/tough-conversation-step-1" element={<ToughConversationStep1Feedback />} />
       <Route path="/tough-conversation-step-2" element={<ToughConversationStep2Coaching />} />
       <Route path="/tough-conversation-summary" element={<ToughConversationSummary />} />

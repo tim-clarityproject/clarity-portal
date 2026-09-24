@@ -111,7 +111,7 @@ export default function InversionStep3Plan() {
 
       setCurrentTitle(decisionName);
       clearProgress();
-      navigate('/decision-summary', { state: { isGuest, decisionId } });
+      navigate('/inversion-thinking-summary', { state: { isGuest, decisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
