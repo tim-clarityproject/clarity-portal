@@ -22,7 +22,7 @@ export default function GrowStep4WillDo() {
   const [showNamingModal, setShowNamingModal] = useState(false);
 
   // Load decision data for edit mode; returns values from FormContext
-  const { isLoading, isEditMode, willDo, options } = useLoadDecisionStep(['willDo', 'options']);
+  const { isLoading, isEditMode, error, onRetry, markDirty, clearDirty, willDo, options } = useLoadDecisionStep(['willDo', 'options']);
 
   const willDoValue = willDo || '';
   const optionsValue = options || [];
@@ -76,6 +76,7 @@ export default function GrowStep4WillDo() {
     newOptions.splice(dropIndex, 0, draggedItem.item);
 
     updateFormData('options', newOptions);
+    markDirty('options');
     setDraggedItem(null);
     setDragOverIndex(null);
   };
@@ -149,6 +150,7 @@ export default function GrowStep4WillDo() {
 
       setCurrentTitle(decisionName);
       clearProgress();
+      clearDirty();
       navigate('/decision-summary', { state: { decisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
@@ -313,8 +315,11 @@ export default function GrowStep4WillDo() {
               Be specific about how and when you will take action.
             </p>
             <textarea
-              value={willDo}
-              onChange={(e) => setWillDo(e.target.value)}
+              value={willDoValue}
+              onChange={(e) => {
+                updateFormData('will_do', e.target.value);
+                markDirty('will_do');
+              }}
               placeholder="Type here"
               style={{
                 width: '100%',
@@ -335,6 +340,32 @@ export default function GrowStep4WillDo() {
           </div>
         </div>
 
+        {error && (
+          <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: '#ffebee', borderRadius: '8px', border: '1px solid #ef5350' }}>
+            <p style={{ fontSize: '14px', color: '#c62828', margin: '0 0 12px 0', fontWeight: '500' }}>
+              {error}
+            </p>
+            <button
+              onClick={onRetry}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#ef5350',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e53935'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#ef5350'}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {isLoading ? (
           <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
             Loading saved data...
@@ -345,7 +376,7 @@ export default function GrowStep4WillDo() {
             pageType="decision"
             toolType="grow"
             onNext={handleSaveClick}
-            canNext={willDoValue.trim() && !isSaving && !isLoading}
+            canNext={!error && willDoValue.trim() && !isSaving && !isLoading}
             onBack={() => navigate('/grow-step-3b-prioritize', { state: { decisionId: location.state?.decisionId } })}
             nextLabel={isSaving ? 'Saving...' : 'Finish'}
           />

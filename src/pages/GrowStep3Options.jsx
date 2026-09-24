@@ -14,7 +14,7 @@ export default function GrowStep3Options() {
   const decisionId = location.state?.decisionId;
 
   // Load decision data for edit mode; returns values from FormContext
-  const { isLoading, isEditMode, options } = useLoadDecisionStep(['options']);
+  const { isLoading, isEditMode, error, onRetry, markDirty, options } = useLoadDecisionStep(['options']);
 
   // Initialize with empty options array for new decisions
   const optionsValue = options || ['', '', ''];
@@ -31,16 +31,19 @@ export default function GrowStep3Options() {
     const newOptions = [...optionsValue];
     newOptions[index] = value;
     updateFormData('options', newOptions);
+    markDirty('options');
   };
 
   const handleAddOption = () => {
     const newOptions = [...optionsValue, ''];
     updateFormData('options', newOptions);
+    markDirty('options');
   };
 
   const handleRemoveOption = (index) => {
     const newOptions = optionsValue.filter((_, i) => i !== index);
     updateFormData('options', newOptions);
+    markDirty('options');
   };
 
   const handleNext = useCallback((newDecisionId) => {
@@ -178,6 +181,32 @@ export default function GrowStep3Options() {
           + Add Option
         </button>
 
+        {error && (
+          <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: '#ffebee', borderRadius: '8px', border: '1px solid #ef5350' }}>
+            <p style={{ fontSize: '14px', color: '#c62828', margin: '0 0 12px 0', fontWeight: '500' }}>
+              {error}
+            </p>
+            <button
+              onClick={onRetry}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#ef5350',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e53935'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#ef5350'}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {isLoading ? (
           <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
             Loading saved data...
@@ -188,7 +217,7 @@ export default function GrowStep3Options() {
             pageType="decision"
             toolType="grow"
             onNext={handleNext}
-            canNext={canSubmit}
+            canNext={!error && canSubmit}
             onBack={() => navigate('/grow-step-2', { state: { decisionId: location.state?.decisionId, problemTitle: location.state?.problemTitle } })}
           />
         )}

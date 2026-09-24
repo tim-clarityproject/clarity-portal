@@ -15,7 +15,7 @@ export default function GrowStep2Reality() {
   const refOpportunities = useRef(null);
 
   // Load decision data for edit mode; returns values from FormContext
-  const { isLoading, isEditMode, constraints, opportunities } = useLoadDecisionStep(['constraints', 'opportunities']);
+  const { isLoading, isEditMode, error, onRetry, markDirty, constraints, opportunities } = useLoadDecisionStep(['constraints', 'opportunities']);
 
   useAutoExpandTextarea(refConstraints, constraints);
   useAutoExpandTextarea(refOpportunities, opportunities);
@@ -50,11 +50,13 @@ export default function GrowStep2Reality() {
   const handleConstraintsChange = (e) => {
     const value = e.target.value;
     updateFormData('constraints', value);
+    markDirty('constraints');
   };
 
   const handleOpportunitiesChange = (e) => {
     const value = e.target.value;
     updateFormData('opportunities', value);
+    markDirty('opportunities');
   };
 
   return (
@@ -147,6 +149,32 @@ export default function GrowStep2Reality() {
           />
         </div>
 
+        {error && (
+          <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: '#ffebee', borderRadius: '8px', border: '1px solid #ef5350' }}>
+            <p style={{ fontSize: '14px', color: '#c62828', margin: '0 0 12px 0', fontWeight: '500' }}>
+              {error}
+            </p>
+            <button
+              onClick={onRetry}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#ef5350',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e53935'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#ef5350'}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {isLoading ? (
           <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
             Loading saved data...
@@ -157,7 +185,7 @@ export default function GrowStep2Reality() {
             pageType="decision"
             toolType="grow"
             onNext={handleNext}
-            canNext={(getFieldValue('constraints') || '').trim() || (getFieldValue('opportunities') || '').trim()}
+            canNext={!error && ((getFieldValue('constraints') || '').trim() || (getFieldValue('opportunities') || '').trim())}
             onBack={() => navigate('/grow-step-1', { state: { decisionId: location.state?.decisionId, problemTitle: location.state?.problemTitle } })}
           />
         )}
