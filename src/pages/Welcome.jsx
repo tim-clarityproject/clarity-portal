@@ -28,7 +28,7 @@ const ALL_PROBLEMS = [
   // Review
   { id: 'weekly-momentum', title: 'I want to review my week', tools: ['weekly-momentum'], status: null, category: 'Review' },
   { id: 'after-action', title: 'I need to review a situation', tools: ['after-action'], status: null, category: 'Review' },
-  { id: 'progress', title: 'I want to review my mission progress', tools: ['progress'], status: null, category: 'Review' },
+  { id: 'progress', title: 'I want to review my personal operating plan', tools: ['progress'], status: null, category: 'Review' },
 ];
 
 export default function Welcome() {
