@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
-import { designTokens, applyTypography } from '../lib/designTokens';
+import { designTokens } from '../lib/designTokens';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PersonalOperatingPlan() {
