@@ -200,8 +200,12 @@ export default function GrowStep3bPrioritize() {
     return prioritizedOptions;
   };
 
-  const handleNext = (newDecisionId) => {
+  // Keep FormContext in sync with prioritized options for saving
+  useEffect(() => {
     updateFormData('options', prioritizedOptions);
+  }, [prioritizedOptions, updateFormData]);
+
+  const handleNext = (newDecisionId) => {
     const finalDecisionId = newDecisionId || location.state?.decisionId;
     navigate('/grow-step-4', {
       state: {
