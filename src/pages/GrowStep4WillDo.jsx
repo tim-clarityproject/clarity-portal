@@ -216,7 +216,7 @@ export default function GrowStep4WillDo() {
                 border: '2px dashed #e5e5e5',
               }}
             >
-              {options.map((option, index) => (
+              {optionsValue.map((option, index) => (
                 <div
                   key={index}
                   draggable={editingIndex !== index}

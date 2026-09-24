@@ -107,7 +107,7 @@ export default function GrowStep3Options() {
         />
 
         <div style={{ marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {options.map((option, index) => (
+          {optionsValue.map((option, index) => (
             <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
               <input
                 type="text"
