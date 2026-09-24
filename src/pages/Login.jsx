@@ -71,11 +71,11 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'row' }} className="mobile-responsive-row">
+    <div style={{ height: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'row' }} className="mobile-responsive-row">
       {/* Left Column - Welcome */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px', backgroundColor: '#fafafa', borderRight: '1px solid #e5e5e5' }} className="mobile-responsive-column">
         <div style={{ width: '100%', maxWidth: '400px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>
             Welcome to The Clarity Portal
           </h1>
 
@@ -122,7 +122,7 @@ export default function Login() {
         <div style={{ width: '100%', maxWidth: '400px' }}>
           {/* Login/Signup Form */}
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
               {isSignUp ? 'Create Account' : 'Login'}
             </h2>
             {error && (

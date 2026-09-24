@@ -6,6 +6,8 @@
 @media (max-width: 768px) {
   .mobile-responsive-row {
     flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
   }
 
   /* Flex column with responsive padding */
