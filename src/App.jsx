@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outle
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { MissionProvider } from './context/MissionContext';
 import { FormProvider } from './context/FormContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
 import WhatsAppWidget from './components/WhatsAppWidget';
@@ -136,9 +137,10 @@ function AppContent() {
 
   return (
     <>
-      <Routes>
-        {/* PUBLIC ROUTES - No auth required */}
-        <Route path="/" element={<Login />} />
+      <ErrorBoundary>
+        <Routes>
+          {/* PUBLIC ROUTES - No auth required */}
+          <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/create-account" element={<CreateAccount />} />
@@ -202,9 +204,10 @@ function AppContent() {
           <Route path="/accept-terms" element={<TermsAcceptance />} />
         </Route>
 
-        {/* Catch-all for unmatched routes */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Catch-all for unmatched routes */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
       {!hideButtons && (
         <div className="no-print">
           <BreathButton />

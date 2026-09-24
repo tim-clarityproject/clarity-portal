@@ -12,6 +12,10 @@ const DEFAULT_FORM_DATA = {
   matrix: {},
   progress: {},
   ratings: {},
+  constraints: '',
+  opportunities: '',
+  options: [],
+  will_do: '',
 };
 
 export function FormProvider({ children }) {
