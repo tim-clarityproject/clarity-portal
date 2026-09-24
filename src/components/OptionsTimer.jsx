@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function OptionsTimer({ initialSeconds = null, onTimeChange = null }) {
   const DEFAULT_TIME = 6 * 60; // 6 minutes in seconds
@@ -7,7 +7,18 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
   const [secondsLeft, setSecondsLeft] = useState(startTime);
   const [isRunning, setIsRunning] = useState(!initialSeconds); // only auto-start if no initial time provided
   const [inputMinutes, setInputMinutes] = useState(Math.floor(startTime / 60).toString());
+  const userPausedRef = useRef(false); // Track if user explicitly paused
 
+  // Start timer when this component mounts with no initial time (fresh start)
+  // User can still manually pause after
+  useEffect(() => {
+    if (!initialSeconds) {
+      setIsRunning(true);
+      userPausedRef.current = false;
+    }
+  }, [initialSeconds]);
+
+  // Countdown timer interval
   useEffect(() => {
     if (!isRunning || secondsLeft <= 0) return;
 
@@ -47,7 +58,11 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
   };
 
   const handleToggle = () => {
-    setIsRunning(!isRunning);
+    const newState = !isRunning;
+    setIsRunning(newState);
+    if (!newState) {
+      userPausedRef.current = true; // User explicitly paused
+    }
   };
 
   return (
