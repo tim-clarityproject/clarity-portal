@@ -61,8 +61,8 @@ export default function CreateAccount() {
 
     setIsLoading(true);
     try {
-      const success = await signup(email, password);
-      if (success) {
+      const result = await signup(email, password);
+      if (result.success) {
         // Set terms as accepted for email signups (they checked the box)
         try {
           const { data: { user } } = await supabase.auth.getUser();
@@ -85,7 +85,8 @@ export default function CreateAccount() {
         setConfirmPassword('');
         setTermsAccepted(false);
       } else {
-        setError('Failed to create account');
+        // Display user-facing error message from signup
+        setError(result.error || 'Failed to create account');
       }
     } catch (err) {
       setError(err.message || 'Failed to create account');

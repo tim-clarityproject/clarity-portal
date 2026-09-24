@@ -48,11 +48,11 @@ export default function Login() {
     }
 
     try {
-      const success = isSignUp
+      const result = isSignUp
         ? await signup(email, password, firstName, lastName)
         : await login(email, password);
 
-      if (success) {
+      if (result.success) {
         if (isSignUp) {
           // No email verification needed - redirect to onboarding mission
           navigate('/onboarding-mission', { state: { isNewSignup: true } });
@@ -61,11 +61,8 @@ export default function Login() {
           navigate('/welcome');
         }
       } else {
-        if (isSignUp) {
-          setError('Failed to create account. Please try again.');
-        } else {
-          setError('Invalid email or password. Please check and try again.');
-        }
+        // Display specific error message from auth function
+        setError(result.error || (isSignUp ? 'Failed to create account. Please try again.' : 'Invalid email or password. Please check and try again.'));
       }
     } catch (err) {
       setError(err.message || 'An error occurred');

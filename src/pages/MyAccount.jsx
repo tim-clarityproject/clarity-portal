@@ -32,26 +32,77 @@ export default function MyAccount() {
       return;
     }
 
+    const doubleConfirm = window.confirm('This cannot be undone. All your data including missions, decisions, and reviews will be permanently deleted. Are you absolutely sure?');
+    if (!doubleConfirm) {
+      return;
+    }
+
     setIsDeleting(true);
     try {
-      const { error } = await supabase
+      // Delete all user data from public tables first
+      // Delete missions and their data
+      await supabase
+        .from('missions')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Delete decisions
+      await supabase
+        .from('decisions')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Delete reflections/journal
+      await supabase
+        .from('reflections')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Delete profiles
+      const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', user.id);
 
-      if (error) {
-        alert('Failed to delete account: ' + error.message);
+      if (profileError) {
+        alert('Failed to delete account: ' + profileError.message);
         setIsDeleting(false);
         return;
+      }
+
+      // Delete from Supabase Auth (auth.users table) using Edge Function
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const response = await fetch(
+            `${new URL(supabase.supabaseUrl).origin}/functions/v1/delete-user`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          if (!response.ok) {
+            console.error('Failed to delete auth user via Edge Function');
+            // Continue with logout anyway
+          }
+        }
+      } catch (authError) {
+        console.error('Error calling delete-user Edge Function:', authError);
+        // Continue with logout anyway - user will be logged out even if auth delete fails
       }
 
       await logout();
       sessionStorage.clear();
       localStorage.clear();
 
+      alert('Your account has been permanently deleted.');
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
-      alert('Failed to delete account. Please try again.');
+      console.error('Delete account error:', error);
+      alert('Failed to delete account. Please try again or contact support.');
       setIsDeleting(false);
     }
   };

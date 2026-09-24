@@ -137,10 +137,17 @@ export function AuthProvider({ children }) {
         // Store user data in sessionStorage for quick access
         sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
       }
-      return true;
+      return { success: true };
     } catch (err) {
       console.error('Login error:', err);
-      return false;
+      // Provide user-facing error messages
+      if (err.status === 400 || err.message?.includes('Invalid login credentials')) {
+        return { success: false, error: 'Invalid email or password. Please try again.' };
+      } else if (err.status === 401) {
+        return { success: false, error: 'Email not confirmed. Check your email for verification link.' };
+      } else {
+        return { success: false, error: err.message || 'Login failed. Please try again.' };
+      }
     } finally {
       setIsLoading(false);
     }
@@ -179,16 +186,21 @@ export function AuthProvider({ children }) {
           const userData = await dataSyncManager.loadUserData(session.user.id);
           sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
         }
-        return true;
+        return { success: true };
       } catch (signupErr) {
+        console.error('Signup error:', signupErr);
+        // Check for specific error types
         if (signupErr.message?.includes('already registered') || signupErr.status === 422) {
-          return false;
+          return { success: false, error: 'An account with this email already exists. Try logging in instead.' };
+        } else if (signupErr.status === 400) {
+          return { success: false, error: 'Invalid email or password. Please try again.' };
         } else {
-          throw signupErr;
+          return { success: false, error: signupErr.message || 'Signup failed. Please try again.' };
         }
       }
     } catch (err) {
-      return false;
+      console.error('Signup exception:', err);
+      return { success: false, error: err.message || 'An error occurred. Please try again.' };
     } finally {
       setIsLoading(false);
     }
