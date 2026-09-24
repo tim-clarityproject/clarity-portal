@@ -4,7 +4,7 @@ import { Lock } from 'lucide-react';
 import HomeHeader from '../components/HomeHeader';
 
 const ALL_PROBLEMS = [
-  { id: 'decision', title: 'I\'m navigating a tricky decision', description: 'Use the GROW model to get clear on the way forward', tools: ['grow'], status: null },
+  { id: 'decision', title: 'I\'m navigating a tricky decision', description: 'Use the GROW model to get clear on the way forward', tools: ['grow'], status: 'coming-soon' },
   { id: 'tough-conversation', title: 'I need to give tough feedback', description: 'Create a script for giving feedback', tools: ['tough-conversation'], status: null },
   { id: 'stop-doing', title: 'I\'ve got too many things to do', description: 'Reclaim hours by stopping or delegating time-sink activities', tools: ['stop-doing-audit'], status: null },
   { id: 'if-then', title: 'I\'m feeling anxious about an uncertain situation', description: 'Prepare for uncertain situations with contingency plans', tools: ['if-then-planning'], status: null },
