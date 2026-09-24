@@ -8,6 +8,12 @@
   "redirects": [
     {
       "source": "/:path(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "clarity-portal-app.vercel.app"
+        }
+      ],
       "destination": "https://portal.theclarityproject.co.uk/:path",
       "permanent": false
     }
