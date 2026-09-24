@@ -223,8 +223,8 @@ export default function MyAccount() {
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader isGuest={isGuest} personalGoal={showGoalInHeader ? personalGoal : ''} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', marginBottom: '32px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: designTokens.layout.contentPadding }} className="page-container">
+        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginBottom: designTokens.spacing.xl }}>
           My Account
         </h1>
 
@@ -238,7 +238,7 @@ export default function MyAccount() {
             marginBottom: '32px',
             borderBottom: '1px solid #e5e5e5',
           }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
               Profile
             </h2>
             <div style={{
@@ -258,20 +258,12 @@ export default function MyAccount() {
               <button
                 onClick={() => navigate('/edit-profile')}
                 style={{
-                  padding: '10px 20px',
-                  backgroundColor: 'transparent',
-                  border: '2px solid #F08571',
-                  borderRadius: '6px',
-                  color: '#F08571',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.2s',
+                  ...designTokens.button.secondary,
                   flexShrink: 0,
                   marginLeft: '16px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
+                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
               >
                 Edit
               </button>
@@ -284,7 +276,7 @@ export default function MyAccount() {
             marginBottom: '32px',
             borderBottom: '1px solid #e5e5e5',
           }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
               Your Mission
             </h2>
 
@@ -311,20 +303,12 @@ export default function MyAccount() {
               <button
                 onClick={() => setShowGoalModal(true)}
                 style={{
-                  padding: '10px 20px',
-                  backgroundColor: 'transparent',
-                  border: '2px solid #F08571',
-                  borderRadius: '6px',
-                  color: '#F08571',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.2s',
+                  ...designTokens.button.secondary,
                   flexShrink: 0,
                   marginLeft: '16px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
+                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
               >
                 Edit
               </button>
@@ -348,23 +332,15 @@ export default function MyAccount() {
               <button
                 onClick={handleToggleGoalVisibility}
                 style={{
-                  padding: '10px 20px',
-                  backgroundColor: 'transparent',
-                  border: '2px solid #F08571',
-                  borderRadius: '6px',
-                  color: '#F08571',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.2s',
+                  ...designTokens.button.secondary,
                   flexShrink: 0,
                   marginLeft: '16px',
                   minWidth: '76px',
                   textAlign: 'center',
                   opacity: showGoalInHeader ? 1 : 0.6,
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
+                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
               >
                 {showGoalInHeader ? 'Visible' : 'Hidden'}
               </button>
@@ -377,7 +353,7 @@ export default function MyAccount() {
             marginBottom: '32px',
             borderBottom: '1px solid #e5e5e5',
           }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
               Advanced
             </h2>
 
@@ -398,20 +374,12 @@ export default function MyAccount() {
               <button
                 onClick={() => setShowBreathingSettings(true)}
                 style={{
-                  padding: '10px 20px',
-                  backgroundColor: 'transparent',
-                  border: '2px solid #F08571',
-                  borderRadius: '6px',
-                  color: '#F08571',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.2s',
+                  ...designTokens.button.secondary,
                   flexShrink: 0,
                   marginLeft: '16px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
+                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
               >
                 Edit
               </button>
@@ -454,28 +422,23 @@ export default function MyAccount() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {archivedMissions.map((mission) => (
                       <div key={mission.id} style={{
-                        padding: '20px',
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e5e5',
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                        ...designTokens.card,
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        transition: 'all 0.2s',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
+                        e.currentTarget.style.boxShadow = designTokens.shadow.md;
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
+                        e.currentTarget.style.boxShadow = designTokens.shadow.sm;
                       }}
                       >
                         <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '6px' }}>
+                          <p style={{ ...designTokens.typography.button, color: designTokens.colors.text.primary, margin: 0, marginBottom: designTokens.spacing.sm }}>
                             {mission.title}
                           </p>
-                          <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>
+                          <p style={{ ...designTokens.typography.caption, color: designTokens.colors.text.tertiary, margin: 0 }}>
                             Archived {new Date(mission.archived_at).toLocaleDateString()}
                           </p>
                         </div>
@@ -544,7 +507,7 @@ export default function MyAccount() {
             paddingTop: '24px',
             borderTop: '2px solid #fee5de',
           }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#c0574c', margin: '0 0 20px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ ...designTokens.typography.h2, color: '#c0574c', margin: `0 0 ${designTokens.spacing.lg} 0` }}>
               Danger Zone
             </h2>
 
