@@ -113,7 +113,7 @@ export default function DecisionHistory() {
       'if_then_planning': '/if-then-planning',
     };
     const editPage = editPageMap[decision.tool_type] || '/decision-tools';
-    navigate(editPage, { state: { isGuest, decisionId: decision.id, ...decision } });
+    navigate(editPage, { state: { decisionId: decision.id, ...decision } });
   };
 
   const handleDelete = async (decisionId, e) => {
@@ -185,7 +185,7 @@ export default function DecisionHistory() {
                   let route = '/decision-summary';
                   if (decision.tool_type === 'daily_plan') route = '/daily-plan-summary';
                   if (decision.tool_type === 'if_then_planning') route = '/if-then-planning-summary';
-                  navigate(route, { state: { isGuest, decisionId: decision.id, ...decision } });
+                  navigate(route, { state: { decisionId: decision.id, ...decision } });
                 }}
                 style={{
                   padding: '16px',

@@ -111,7 +111,7 @@ export default function JournalLog() {
             {entries.map((entry) => (
               <button
                 key={entry.id}
-                onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date } })}
+                onClick={() => navigate('/my-journal', { state: { selectedDate: entry.entry_date } })}
                 style={{
                   padding: '16px',
                   backgroundColor: '#f9f9f9',
@@ -146,7 +146,7 @@ export default function JournalLog() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
                     <button
-                      onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date } })}
+                      onClick={() => navigate('/my-journal', { state: { selectedDate: entry.entry_date } })}
                       style={{
                         padding: '6px 12px',
                         backgroundColor: '#F08571',

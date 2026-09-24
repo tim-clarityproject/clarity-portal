@@ -223,7 +223,7 @@ export default function MyJournal() {
       clearProgress();
       setSaved(true);
       setTimeout(() => {
-        navigate('/review-summary', { state: { isGuest, selectedDate, reviewType, entryId: savedEntryId } });
+        navigate('/review-summary', { state: { selectedDate, reviewType, entryId: savedEntryId } });
       }, 1000);
     } catch (error) {
       console.error('Error saving review:', error);

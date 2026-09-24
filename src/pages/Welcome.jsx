@@ -46,7 +46,7 @@ export default function Welcome() {
 
   // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
-    if (isGuest || !user) return;
+    if (!user) return;
 
     const checkBreathingGuideTimer = async () => {
       try {
@@ -77,7 +77,7 @@ export default function Welcome() {
     };
 
     checkBreathingGuideTimer();
-  }, [isGuest, user]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -198,7 +198,7 @@ export default function Welcome() {
 
     const route = routeMap[tool];
     if (route) {
-      const state = { isGuest, ...location.state, problemTitle: problem.title };
+      const state = { ...location.state, problemTitle: problem.title };
       if (tool === 'after-action') state.reviewType = 'after-action';
       if (tool === 'progress') state.reviewType = 'progress';
       if (tool === 'weekly-momentum') state.reviewType = 'weekly-momentum';

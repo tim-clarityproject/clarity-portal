@@ -31,7 +31,7 @@ export default function ProjectScatter() {
   const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
 
   const handleSaveToLogClick = () => {
-    if (isGuest || !user) {
+    if (!user) {
       alert('Please log in to save decisions');
       return;
     }
@@ -44,7 +44,7 @@ export default function ProjectScatter() {
 
   const handleSaveToLogConfirmed = async (decisionName) => {
     setShowNamingModal(false);
-    if (isGuest || !user) return;
+    if (!user) return;
 
     setIsSaving(true);
     try {
@@ -93,7 +93,7 @@ export default function ProjectScatter() {
       }
 
       setCurrentTitle(decisionName);
-      navigate('/decision-summary', { state: { isGuest, decisionId: savedDecisionId } });
+      navigate('/decision-summary', { state: { decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
       alert(`Failed to save: ${error.message}`);

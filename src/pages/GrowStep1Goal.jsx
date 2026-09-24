@@ -104,7 +104,6 @@ export default function GrowStep1Goal() {
         state: {
           problemTitle,
           goal,
-          isGuest,
           decisionId: finalDecisionId,
         }
       });

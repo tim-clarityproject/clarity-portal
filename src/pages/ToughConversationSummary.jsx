@@ -40,7 +40,7 @@ export default function ToughConversationSummary() {
   };
 
   const handleEdit = () => {
-    navigate('/tough-conversation-step-1', { state: { isGuest, decisionId, ...conversation.form_data } });
+    navigate('/tough-conversation-step-1', { state: { decisionId, ...conversation.form_data } });
   };
 
   const handleDownloadPDF = () => {

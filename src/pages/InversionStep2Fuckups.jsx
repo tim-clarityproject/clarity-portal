@@ -58,7 +58,6 @@ export default function InversionStep2Fuckups() {
           ...location.state,
           ...formData,
           fuckups: filledFuckups,
-          isGuest,
           decisionId: finalDecisionId
         }
       });

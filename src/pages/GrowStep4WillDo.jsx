@@ -162,7 +162,7 @@ export default function GrowStep4WillDo() {
 
       setCurrentTitle(decisionName);
       clearProgress();
-      navigate('/decision-summary', { state: { isGuest, decisionId } });
+      navigate('/decision-summary', { state: { decisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);

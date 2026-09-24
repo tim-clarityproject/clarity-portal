@@ -49,7 +49,7 @@ export default function IfThenPlanningSummary() {
   };
 
   const handleEdit = () => {
-    navigate('/if-then-planning', { state: { isGuest, decisionId, ...planning.form_data } });
+    navigate('/if-then-planning', { state: { decisionId, ...planning.form_data } });
   };
 
   const handleDownloadPDF = () => {

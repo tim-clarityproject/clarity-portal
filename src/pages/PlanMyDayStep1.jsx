@@ -100,8 +100,7 @@ export default function PlanMyDayStep1() {
       setTimeout(() => {
         navigate('/daily-plan-summary', {
           state: {
-            decisionId: resultDecisionId,
-            isGuest
+            decisionId: resultDecisionId
           }
         });
       }, 1500);

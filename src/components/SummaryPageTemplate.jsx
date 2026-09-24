@@ -7,7 +7,6 @@ export default function SummaryPageTemplate({
   sections = [],
   backLink,
   onEdit,
-  isGuest = false,
 }) {
   const navigate = useNavigate();
 

@@ -48,7 +48,7 @@ export default function DecisionTools() {
 
     const route = routeMap[problem.tools[0]];
     if (route) {
-      navigate(route, { state: { isGuest, ...location.state, problemTitle: problem.title } });
+      navigate(route, { state: { ...location.state, problemTitle: problem.title } });
     }
   };
 

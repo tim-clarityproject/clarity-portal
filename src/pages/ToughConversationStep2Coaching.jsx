@@ -170,7 +170,7 @@ export default function ToughConversationStep2Coaching() {
       setCurrentTitle(decisionName);
       clearProgress();
       console.log('Save successful, navigating to tough-conversation-summary');
-      navigate('/tough-conversation-summary', { state: { isGuest, decisionId: savedDecisionId } });
+      navigate('/tough-conversation-summary', { state: { decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving:', error);
       alert(`Failed to save: ${error.message || error}`);
@@ -223,7 +223,6 @@ export default function ToughConversationStep2Coaching() {
     navigate('/tough-conversation-step-1', {
       state: {
         problemTitle: location.state?.problemTitle,
-        isGuest,
         decisionId,
         observation,
         impact,

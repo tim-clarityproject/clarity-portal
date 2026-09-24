@@ -61,7 +61,6 @@ export default function GrowStep3Options() {
           opportunities: location.state?.opportunities,
           options: filledOptions,
           timerSeconds,
-          isGuest,
           decisionId: finalDecisionId,
         }
       });

@@ -99,7 +99,6 @@ export default function InversionStep1Goal() {
         state: {
           ...formData,
           goal,
-          isGuest,
           decisionId: finalDecisionId
         }
       });

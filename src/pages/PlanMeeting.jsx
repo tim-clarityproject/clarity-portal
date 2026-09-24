@@ -216,7 +216,7 @@ export default function PlanMeeting() {
 
       setIsSaved(true);
       setTimeout(() => {
-        navigate('/meeting-summary', { state: { isGuest, decisionId: savedId } });
+        navigate('/meeting-summary', { state: { decisionId: savedId } });
       }, 500);
     } catch (error) {
       console.error('Error saving meeting:', error);

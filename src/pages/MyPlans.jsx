@@ -62,7 +62,7 @@ export default function MyPlans() {
       plan_meeting: '/plan-meeting',
     };
     const editPage = editPageMap[plan.tool_type] || '/plan-my-day';
-    const navState = { isGuest, decisionId: plan.id, ...plan.form_data };
+    const navState = { decisionId: plan.id, ...plan.form_data };
     console.log('[MyPlans] handleEdit -> navigating to', editPage, 'with state:', navState);
     navigate(editPage, { state: navState });
   };
@@ -205,13 +205,13 @@ export default function MyPlans() {
                   tabIndex={0}
                   onClick={() => {
                     const route = plan.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/meeting-summary';
-                    navigate(route, { state: { isGuest, decisionId: plan.id, ...plan } });
+                    navigate(route, { state: { decisionId: plan.id, ...plan } });
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       const route = plan.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/meeting-summary';
-                      navigate(route, { state: { isGuest, decisionId: plan.id, ...plan } });
+                      navigate(route, { state: { decisionId: plan.id, ...plan } });
                     }
                   }}
                   style={{

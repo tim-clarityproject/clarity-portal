@@ -128,7 +128,7 @@ export default function StopDoingAudit() {
       setIsSaved(true);
       clearProgress();
       setTimeout(() => {
-        navigate('/stop-doing-audit-summary', { state: { isGuest, decisionId: savedId } });
+        navigate('/stop-doing-audit-summary', { state: { decisionId: savedId } });
       }, 500);
     } catch (error) {
       console.error('Error saving audit:', error);

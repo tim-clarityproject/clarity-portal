@@ -248,9 +248,9 @@ export default function MyReviews() {
                   key={entry.id}
                   onClick={() => {
                     if (isMissionProgress) {
-                      navigate('/mission-progress-review', { state: { isGuest, reviewId: entry.id } });
+                      navigate('/mission-progress-review', { state: { reviewId: entry.id } });
                     } else {
-                      navigate('/review-summary', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type } });
+                      navigate('/review-summary', { state: { selectedDate: entry.entry_date, reviewType: entry.review_type } });
                     }
                   }}
                   style={{
@@ -299,7 +299,7 @@ export default function MyReviews() {
                       {!isMissionProgress && (
                         <>
                           <button
-                            onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: entry.entry_date, reviewType: entry.review_type, entryId: entry.id } })}
+                            onClick={() => navigate('/my-journal', { state: { selectedDate: entry.entry_date, reviewType: entry.review_type, entryId: entry.id } })}
                             title="Edit review"
                             style={{
                               padding: '8px',
@@ -376,7 +376,7 @@ export default function MyReviews() {
         zIndex: 10,
       }}>
         <button
-          onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'weekly-momentum' } })}
+          onClick={() => navigate('/my-journal', { state: { reviewType: 'weekly-momentum' } })}
           style={{
             padding: '10px 20px',
             backgroundColor: 'transparent',
@@ -400,7 +400,7 @@ export default function MyReviews() {
           + Weekly Momentum Review
         </button>
         <button
-          onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'after-action' } })}
+          onClick={() => navigate('/my-journal', { state: { reviewType: 'after-action' } })}
           style={{
             padding: '10px 20px',
             backgroundColor: 'transparent',
@@ -424,7 +424,7 @@ export default function MyReviews() {
           + After-Action Review
         </button>
         <button
-          onClick={() => navigate('/my-journal', { state: { isGuest, reviewType: 'progress' } })}
+          onClick={() => navigate('/my-journal', { state: { reviewType: 'progress' } })}
           style={{
             padding: '10px 20px',
             backgroundColor: 'transparent',

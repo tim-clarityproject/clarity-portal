@@ -59,7 +59,7 @@ export default function MeetingSummary() {
   };
 
   const handleEdit = () => {
-    navigate('/plan-meeting', { state: { isGuest, decisionId, ...meeting.form_data } });
+    navigate('/plan-meeting', { state: { decisionId, ...meeting.form_data } });
   };
 
   const handleDownloadPDF = () => {

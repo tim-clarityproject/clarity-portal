@@ -47,7 +47,6 @@ export default function ToughConversationStep1Feedback() {
     navigate('/tough-conversation-step-2', {
       state: {
         problemTitle: location.state?.problemTitle,
-        isGuest,
         decisionId,
         observation,
         impact,

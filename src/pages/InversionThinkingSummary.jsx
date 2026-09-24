@@ -40,7 +40,7 @@ export default function InversionThinkingSummary() {
   };
 
   const handleEdit = () => {
-    navigate('/inversion-step-1', { state: { isGuest, decisionId, ...thinking.form_data } });
+    navigate('/inversion-step-1', { state: { decisionId, ...thinking.form_data } });
   };
 
   const handleDownloadPDF = () => {

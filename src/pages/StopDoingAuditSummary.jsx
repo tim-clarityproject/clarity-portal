@@ -44,7 +44,7 @@ export default function StopDoingAuditSummary() {
   };
 
   const handleEdit = () => {
-    navigate('/stop-doing-audit', { state: { isGuest, decisionId, ...audit.form_data } });
+    navigate('/stop-doing-audit', { state: { decisionId, ...audit.form_data } });
   };
 
   const handleDownloadPDF = () => {

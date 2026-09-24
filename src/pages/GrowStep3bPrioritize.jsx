@@ -159,7 +159,6 @@ export default function GrowStep3bPrioritize() {
         options: prioritizedOptions,
         availableOptions: availableOptions,
         prioritizedOptions: prioritizedOptions,
-        isGuest,
         decisionId: finalDecisionId,
       },
     });

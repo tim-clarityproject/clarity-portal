@@ -109,7 +109,7 @@ export default function PersonalOperatingPlan() {
         .eq('id', mission.id)
         .eq('user_id', user.id);
 
-      navigate('/personal-operating-plan-edit', { state: { isGuest, isNew: true } });
+      navigate('/personal-operating-plan-edit', { state: { isNew: true } });
     } catch (error) {
       console.error('Error archiving mission:', error);
       alert('Failed to archive mission');
@@ -172,7 +172,7 @@ export default function PersonalOperatingPlan() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px', marginBottom: '24px' }}>No personal operating plan yet</p>
           <button
-            onClick={() => navigate('/personal-operating-plan-edit', { state: { isGuest, isNew: true } })}
+            onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}
             style={{
               padding: '14px 24px',
               backgroundColor: '#F08571',
@@ -330,7 +330,7 @@ export default function PersonalOperatingPlan() {
         {/* ACTION BUTTONS - Premium Styling */}
         <div style={{ display: 'flex', gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.xl }}>
           <button
-            onClick={() => navigate('/personal-operating-plan-edit', { state: { isGuest, missionId: mission.id } })}
+            onClick={() => navigate('/personal-operating-plan-edit', { state: { missionId: mission.id } })}
             style={{
               flex: 1,
               ...designTokens.button.secondary,
@@ -349,7 +349,7 @@ export default function PersonalOperatingPlan() {
             Edit Plan
           </button>
           <button
-            onClick={() => navigate('/personal-operating-plan-review', { state: { isGuest, missionId: mission.id } })}
+            onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: mission.id } })}
             style={{
               flex: 1,
               ...designTokens.button.primary,

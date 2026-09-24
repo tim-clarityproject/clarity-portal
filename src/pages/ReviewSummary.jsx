@@ -309,7 +309,7 @@ export default function ReviewSummary() {
         {/* Action Button */}
         <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
           <button
-            onClick={() => navigate('/my-journal', { state: { isGuest, selectedDate: review.entry_date, reviewType } })}
+            onClick={() => navigate('/my-journal', { state: { selectedDate: review.entry_date, reviewType } })}
             style={{
               padding: '12px 24px',
               backgroundColor: '#F08571',
