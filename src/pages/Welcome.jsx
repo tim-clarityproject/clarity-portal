@@ -28,7 +28,7 @@ const ALL_PROBLEMS = [
   // Review
   { id: 'weekly-momentum', title: 'I want to review my week', tools: ['weekly-momentum'], status: null, category: 'Review' },
   { id: 'after-action', title: 'I need to review a situation', tools: ['after-action'], status: null, category: 'Review' },
-  { id: 'progress', title: 'I want to review my progress', tools: ['progress'], status: null, category: 'Review' },
+  { id: 'progress', title: 'I want to review my mission progress', tools: ['progress'], status: null, category: 'Review' },
 ];
 
 export default function Welcome() {
@@ -192,7 +192,7 @@ export default function Welcome() {
       'breathe': '/breathe',
       'stop-doing-audit': '/stop-doing-audit',
       'after-action': '/my-journal',
-      'progress': '/my-journal',
+      'progress': '/personal-operating-plan-review',
       'weekly-momentum': '/my-journal',
     };
 
