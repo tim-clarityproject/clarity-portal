@@ -202,6 +202,9 @@ function AppContent() {
           <Route path="/edit-profile" element={<EditPersonalDetails />} />
           <Route path="/accept-terms" element={<TermsAcceptance />} />
         </Route>
+
+        {/* Catch-all for unmatched routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {!hideButtons && (
         <div className="no-print">

@@ -9,7 +9,7 @@
     {
       "source": "/:path(.*)",
       "destination": "https://portal.theclarityproject.co.uk/:path",
-      "permanent": true
+      "permanent": false
     }
   ],
   "headers": [
