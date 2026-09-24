@@ -1,4 +1,4 @@
-import { useContext, useCallback, useEffect } from 'react';
+import { useState, useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
@@ -18,7 +18,7 @@ export default function GrowStep3Options() {
 
   // Initialize with empty options array for new decisions
   const optionsValue = options || ['', '', ''];
-  const timerSeconds = location.state?.timerSeconds || null;
+  const [timerSeconds, setTimerSeconds] = useState(location.state?.timerSeconds || null);
 
   // Clear on fresh start (new decision)
   useEffect(() => {
