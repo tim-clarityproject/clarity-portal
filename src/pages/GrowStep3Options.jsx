@@ -55,11 +55,17 @@ export default function GrowStep3Options() {
       const finalDecisionId = newDecisionId || decisionId;
       navigate('/grow-step-3b-prioritize', {
         state: {
+          problemTitle,
+          goal: getFieldValue('goal'),
+          constraints: getFieldValue('constraints'),
+          opportunities: getFieldValue('opportunities'),
+          options: optionsValue,
+          timerSeconds,
           decisionId: finalDecisionId,
         }
       });
     }
-  }, [isLoading, optionsValue, decisionId, navigate]);
+  }, [isLoading, optionsValue, decisionId, navigate, problemTitle, timerSeconds, getFieldValue]);
 
   const filledCount = optionsValue.filter(option => (option || '').trim()).length;
   const canSubmit = filledCount >= 1;

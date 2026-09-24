@@ -1,12 +1,15 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { AuthContext } from '../context/AuthContext';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
+import { supabase } from '../lib/supabase';
 
 export default function GrowStep3bPrioritize() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [availableOptions, setAvailableOptions] = useState(() => location.state?.availableOptions || location.state?.options || []);
   const [prioritizedOptions, setPrioritizedOptions] = useState(() => location.state?.prioritizedOptions || []);
@@ -15,6 +18,9 @@ export default function GrowStep3bPrioritize() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState('');
   const [editingSource, setEditingSource] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const loadAttemptRef = useRef(new Set());
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.options) {
@@ -25,6 +31,46 @@ export default function GrowStep3bPrioritize() {
       localStorage.removeItem('clarity_form_data');
     }
   }, []);
+
+  // Load options from DB if missing from navigation state (e.g., after page refresh)
+  useEffect(() => {
+    const decisionId = location.state?.decisionId;
+    const hasOptions = location.state?.options && location.state?.options.length > 0;
+
+    if (decisionId && !hasOptions && user && !loadAttemptRef.current.has(decisionId)) {
+      const loadOptions = async () => {
+        loadAttemptRef.current.add(decisionId);
+        setIsLoading(true);
+        setError(null);
+
+        try {
+          const { data, error: fetchError } = await supabase
+            .from('decisions')
+            .select('form_data')
+            .eq('id', decisionId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (fetchError) {
+            throw new Error(fetchError.message || 'Failed to load options');
+          }
+
+          const options = data?.form_data?.options || [];
+          if (options.length > 0) {
+            setAvailableOptions(options);
+            updateFormData('availableOptions', options);
+          }
+          setIsLoading(false);
+        } catch (err) {
+          console.error('Error loading options:', err);
+          setError(err.message || 'Failed to load options');
+          setIsLoading(false);
+        }
+      };
+
+      loadOptions();
+    }
+  }, [location.state?.decisionId, location.state?.options, user, updateFormData]);
 
   const handleEditStart = (index, value, source) => {
     setEditingIndex(index);
@@ -208,6 +254,38 @@ export default function GrowStep3bPrioritize() {
         <p style={{ fontSize: '14px', color: '#666', marginBottom: '24px', lineHeight: '1.6' }}>
           Drag and drop your options to the right to place them in order of fit for your situation. You can leave any ideas you think are bad on the left.
         </p>
+
+        {isLoading && (
+          <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px', marginBottom: '24px' }}>
+            Loading saved options...
+          </div>
+        )}
+
+        {error && (
+          <div style={{ padding: '16px', marginBottom: '24px', backgroundColor: '#ffebee', borderRadius: '8px', border: '1px solid #ef5350' }}>
+            <p style={{ fontSize: '14px', color: '#c62828', margin: '0 0 12px 0', fontWeight: '500' }}>
+              {error}
+            </p>
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#ef5350',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#e53935'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#ef5350'}
+            >
+              Go Back
+            </button>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', flex: 1 }}>
           {/* Available Options */}

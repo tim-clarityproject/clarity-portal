@@ -41,6 +41,8 @@ export default function GrowStep2Reality() {
         state: {
           problemTitle: location.state?.problemTitle,
           goal: location.state?.goal,
+          constraints: constraintsValue,
+          opportunities: opportunitiesValue,
           decisionId: finalDecisionId
         }
       });
