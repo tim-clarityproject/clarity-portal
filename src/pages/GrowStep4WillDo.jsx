@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
-import { useLoadDecision } from '../hooks/useLoadDecision';
+import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import BackArrow from '../components/BackArrow';
@@ -13,29 +13,29 @@ import HomeHeader from '../components/HomeHeader';
 export default function GrowStep4WillDo() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
+  const { updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const [willDo, setWillDo] = useState(() => location.state?.will_do || '');
-  const [options, setOptions] = useState(() => location.state?.options || []);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState('');
+  const [showNamingModal, setShowNamingModal] = useState(false);
 
-  useLoadDecision(updateFormData);
+  // Load decision data for edit mode; returns values from FormContext
+  const { isLoading, isEditMode, willDo, options } = useLoadDecisionStep(['willDo', 'options']);
 
+  const willDoValue = willDo || '';
+  const optionsValue = options || [];
+
+  // Clear on fresh start (new decision)
   useEffect(() => {
-    if (location.state?.will_do) setWillDo(location.state.will_do);
-    if (location.state?.options) setOptions(location.state.options);
-  }, [location.state?.will_do, location.state?.options]);
-
-  useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.options) {
-      setWillDo('');
+    if (!isEditMode && !location.state?.options) {
       updateFormData('willDo', '');
-      localStorage.removeItem('clarity_form_data');
     }
-  }, []);
+  }, [isEditMode, location.state?.options, updateFormData]);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
 
   const handleEditStart = (index, value) => {
     setEditingIndex(index);
@@ -44,9 +44,9 @@ export default function GrowStep4WillDo() {
 
   const handleEditSave = () => {
     if (editingIndex !== null) {
-      const newOptions = [...options];
+      const newOptions = [...optionsValue];
       newOptions[editingIndex] = editingValue;
-      setOptions(newOptions);
+      updateFormData('options', newOptions);
     }
     setEditingIndex(null);
     setEditingValue('');
@@ -56,20 +56,6 @@ export default function GrowStep4WillDo() {
     setEditingIndex(null);
     setEditingValue('');
   };
-
-  useEffect(() => {
-    if (location.state?.will_do) {
-      setWillDo(location.state.will_do);
-      updateFormData('willDo', location.state.will_do);
-    }
-    if (location.state?.options) {
-      setOptions(location.state.options);
-    }
-  }, [location.state?.will_do, location.state?.options, updateFormData]);
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [showNamingModal, setShowNamingModal] = useState(false);
-  const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
 
   const handleDragStart = (e, item, index) => {
     setDraggedItem({ item, index });
@@ -85,11 +71,10 @@ export default function GrowStep4WillDo() {
     e.preventDefault();
     if (!draggedItem) return;
 
-    const newOptions = [...options];
+    const newOptions = [...optionsValue];
     newOptions.splice(draggedItem.index, 1);
     newOptions.splice(dropIndex, 0, draggedItem.item);
 
-    setOptions(newOptions);
     updateFormData('options', newOptions);
     setDraggedItem(null);
     setDragOverIndex(null);
@@ -98,7 +83,9 @@ export default function GrowStep4WillDo() {
   const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
 
   const handleSaveClick = (newDecisionId) => {
-    if (!willDo.trim()) return;
+    // Prevent save while loading edit data
+    if (isLoading) return;
+    if (!willDoValue.trim()) return;
 
     if (false) {
       alert('Please log in to save decisions');
@@ -122,11 +109,11 @@ export default function GrowStep4WillDo() {
     setIsSaving(true);
     try {
       const formDataComplete = {
-        goal: getFieldValue('goal') || location.state?.goal,
-        constraints: getFieldValue('constraints') || location.state?.constraints,
-        opportunities: getFieldValue('opportunities') || location.state?.opportunities,
-        options: options || getFieldValue('options') || [],
-        will_do: willDo,
+        goal: getFieldValue('goal') || '',
+        constraints: getFieldValue('constraints') || '',
+        opportunities: getFieldValue('opportunities') || '',
+        options: getFieldValue('options') || [],
+        will_do: willDoValue,
       };
 
       let decisionId = location.state?.decisionId;
@@ -348,15 +335,21 @@ export default function GrowStep4WillDo() {
           </div>
         </div>
 
-        <SaveDiscardButtons
-          formData={{ willDo, options }}
-          pageType="decision"
-          toolType="grow"
-          onNext={handleSaveClick}
-          canNext={willDo.trim() && !isSaving}
-          onBack={() => navigate('/grow-step-3b-prioritize', { state: { ...location.state, availableOptions: location.state?.availableOptions, prioritizedOptions: options, decisionId: location.state?.decisionId } })}
-          nextLabel={isSaving ? 'Saving...' : 'Finish'}
-        />
+        {isLoading ? (
+          <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+            Loading saved data...
+          </div>
+        ) : (
+          <SaveDiscardButtons
+            formData={{ willDo: willDoValue, options: optionsValue }}
+            pageType="decision"
+            toolType="grow"
+            onNext={handleSaveClick}
+            canNext={willDoValue.trim() && !isSaving && !isLoading}
+            onBack={() => navigate('/grow-step-3b-prioritize', { state: { decisionId: location.state?.decisionId } })}
+            nextLabel={isSaving ? 'Saving...' : 'Finish'}
+          />
+        )}
 
         <NamingModal
           isOpen={showNamingModal}

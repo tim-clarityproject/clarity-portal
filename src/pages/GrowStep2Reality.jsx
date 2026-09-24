@@ -1,7 +1,7 @@
-import { useState, useContext, useCallback, useEffect, useRef } from 'react';
+import { useContext, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
-import { useLoadDecision } from '../hooks/useLoadDecision';
+import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import HomeHeader from '../components/HomeHeader';
@@ -10,57 +10,50 @@ import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 export default function GrowStep2Reality() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [constraints, setConstraints] = useState(location.state?.constraints || '');
-  const [opportunities, setOpportunities] = useState(location.state?.opportunities || '');
+  const { updateFormData, getFieldValue } = useContext(FormContext);
   const refConstraints = useRef(null);
   const refOpportunities = useRef(null);
+
+  // Load decision data for edit mode; returns values from FormContext
+  const { isLoading, isEditMode, constraints, opportunities } = useLoadDecisionStep(['constraints', 'opportunities']);
+
   useAutoExpandTextarea(refConstraints, constraints);
   useAutoExpandTextarea(refOpportunities, opportunities);
 
-  useLoadDecision(updateFormData);
-
+  // Clear on fresh start (new decision)
   useEffect(() => {
-    if (location.state?.constraints) setConstraints(location.state.constraints);
-    if (location.state?.opportunities) setOpportunities(location.state.opportunities);
-  }, [location.state?.constraints, location.state?.opportunities]);
-
-  useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.goal) {
-      setConstraints('');
-      setOpportunities('');
+    if (!isEditMode && !location.state?.goal) {
       updateFormData('constraints', '');
       updateFormData('opportunities', '');
-      localStorage.removeItem('clarity_form_data');
     }
-  }, []);
+  }, [isEditMode, location.state?.goal, updateFormData]);
 
   const handleNext = useCallback((newDecisionId) => {
-    if (constraints.trim() || opportunities.trim()) {
-      updateFormData('constraints', constraints);
-      updateFormData('opportunities', opportunities);
+    // Prevent save while loading edit data
+    if (isLoading) return;
+
+    const constraintsValue = getFieldValue('constraints');
+    const opportunitiesValue = getFieldValue('opportunities');
+
+    if (constraintsValue.trim() || opportunitiesValue.trim()) {
       const finalDecisionId = newDecisionId || location.state?.decisionId;
       navigate('/grow-step-3', {
         state: {
           problemTitle: location.state?.problemTitle,
           goal: location.state?.goal,
-          constraints,
-          opportunities,
           decisionId: finalDecisionId
         }
       });
     }
-  }, [constraints, opportunities, location.state?.problemTitle, location.state?.goal, location.state?.decisionId, navigate, updateFormData]);
+  }, [isLoading, location.state?.problemTitle, location.state?.goal, location.state?.decisionId, navigate, getFieldValue]);
 
   const handleConstraintsChange = (e) => {
     const value = e.target.value;
-    setConstraints(value);
     updateFormData('constraints', value);
   };
 
   const handleOpportunitiesChange = (e) => {
     const value = e.target.value;
-    setOpportunities(value);
     updateFormData('opportunities', value);
   };
 
@@ -154,14 +147,20 @@ export default function GrowStep2Reality() {
           />
         </div>
 
-        <SaveDiscardButtons
-          formData={{ constraints, opportunities }}
-          pageType="decision"
-          toolType="grow"
-          onNext={handleNext}
-          canNext={constraints.trim() || opportunities.trim()}
-          onBack={() => navigate('/grow-step-1', { state: { ...location.state, decisionId: location.state?.decisionId } })}
-        />
+        {isLoading ? (
+          <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+            Loading saved data...
+          </div>
+        ) : (
+          <SaveDiscardButtons
+            formData={{ constraints: getFieldValue('constraints'), opportunities: getFieldValue('opportunities') }}
+            pageType="decision"
+            toolType="grow"
+            onNext={handleNext}
+            canNext={(getFieldValue('constraints') || '').trim() || (getFieldValue('opportunities') || '').trim()}
+            onBack={() => navigate('/grow-step-1', { state: { decisionId: location.state?.decisionId, problemTitle: location.state?.problemTitle } })}
+          />
+        )}
       </div>
     </div>
   );
