@@ -4,5 +4,15 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "redirects": [
+    {
+      "source": "/:path(.*)",
+      "destination": "https://portal.theclarityproject.co.uk/:path",
+      "permanent": true
+    }
+  ],
+  "env": {
+    "CANONICAL_DOMAIN": "portal.theclarityproject.co.uk"
+  }
 }
