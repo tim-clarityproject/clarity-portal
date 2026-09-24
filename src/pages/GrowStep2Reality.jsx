@@ -20,13 +20,13 @@ export default function GrowStep2Reality() {
   useAutoExpandTextarea(refConstraints, constraints);
   useAutoExpandTextarea(refOpportunities, opportunities);
 
-  // Clear on fresh start (new decision)
+  // Only clear on mount if starting fresh (no decisionId)
   useEffect(() => {
-    if (!isEditMode && !location.state?.goal) {
+    if (!location.state?.decisionId) {
       updateFormData('constraints', '');
       updateFormData('opportunities', '');
     }
-  }, [isEditMode, location.state?.goal, updateFormData]);
+  }, []);
 
   const handleNext = useCallback((newDecisionId) => {
     // Prevent save while loading edit data
