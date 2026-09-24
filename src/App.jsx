@@ -38,6 +38,7 @@ import MeetingSummary from './pages/MeetingSummary';
 import IfThenPlanning from './pages/IfThenPlanning';
 import IfThenPlanningSummary from './pages/IfThenPlanningSummary';
 import BreathingPage from './pages/BreathingPage';
+import BreathingSessionsSummary from './pages/BreathingSessionsSummary';
 import StopDoingAudit from './pages/StopDoingAudit';
 import StopDoingAuditSummary from './pages/StopDoingAuditSummary';
 import GrowStep1Goal from './pages/GrowStep1Goal';
@@ -172,6 +173,7 @@ function AppContent() {
       <Route path="/if-then-planning" element={<IfThenPlanning />} />
       <Route path="/if-then-planning-summary" element={<IfThenPlanningSummary />} />
       <Route path="/breathe" element={<BreathingPage />} />
+      <Route path="/breathing-sessions-summary" element={<BreathingSessionsSummary />} />
       <Route path="/stop-doing-audit" element={<StopDoingAudit />} />
       <Route path="/stop-doing-audit-summary" element={<StopDoingAuditSummary />} />
       <Route path="/my-plans" element={<MyPlans />} />
