@@ -57,8 +57,12 @@ export default function GrowStep3bPrioritize() {
 
           const options = data?.form_data?.options || [];
           if (options.length > 0) {
-            setAvailableOptions(options);
-            updateFormData('availableOptions', options);
+            // For edit mode: restore prioritized options if they were previously ranked
+            // (they would have been saved in ranked order by Step 3b)
+            setPrioritizedOptions(options);
+            updateFormData('prioritizedOptions', options);
+            setAvailableOptions([]);
+            updateFormData('availableOptions', []);
           }
           setIsLoading(false);
         } catch (err) {

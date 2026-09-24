@@ -217,8 +217,14 @@ export default function DecisionSummary() {
             )}
             {formData.constraints && (
               <SectionBlock
-                title="Your Reality"
+                title="Constraints"
                 content={formData.constraints}
+              />
+            )}
+            {formData.opportunities && (
+              <SectionBlock
+                title="Opportunities"
+                content={formData.opportunities}
               />
             )}
             {formData.options && formData.options.length > 0 && (
