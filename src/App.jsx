@@ -26,6 +26,7 @@ import MyJournal from './pages/MyJournal';
 import JournalLog from './pages/JournalLog';
 import MyReviews from './pages/MyReviews';
 import ReviewSummary from './pages/ReviewSummary';
+import WeeklyMomentumReviewSummary from './pages/WeeklyMomentumReviewSummary';
 import DecisionTools from './pages/DecisionTools';
 import DecisionHistory from './pages/DecisionHistory';
 import DecisionSummary from './pages/DecisionSummary';
@@ -160,6 +161,7 @@ function AppContent() {
       <Route path="/journal-log" element={<JournalLog />} />
       <Route path="/my-reviews" element={<MyReviews />} />
       <Route path="/review-summary" element={<ReviewSummary />} />
+      <Route path="/weekly-momentum-review-summary" element={<WeeklyMomentumReviewSummary />} />
       <Route path="/decision-tools" element={<DecisionTools />} />
       <Route path="/decision-history" element={<DecisionHistory />} />
       <Route path="/decision-summary" element={<DecisionSummary />} />
