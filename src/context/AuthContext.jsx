@@ -31,6 +31,7 @@ export function AuthProvider({ children }) {
         setUser(null);
       } finally {
         setIsLoading(false);
+        console.log('[AuthContext] Initial auth check complete - user:', session?.user?.email || 'null', 'isLoading: false');
       }
     };
 

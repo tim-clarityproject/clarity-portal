@@ -11,16 +11,26 @@ export default function ProtectedLayout() {
   const { user, isLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  console.log('[ProtectedLayout] Rendered - user:', user?.email || 'null', 'isLoading:', isLoading);
+
   useEffect(() => {
     // Only check after auth is fully loaded
-    if (isLoading) return;
+    if (isLoading) {
+      console.log('[ProtectedLayout] Auth loading, showing spinner');
+      return;
+    }
+
+    console.log('[ProtectedLayout] Auth check complete - user:', user?.email || 'null');
 
     // If no valid user after auth check complete, redirect to login immediately
     if (!user) {
+      console.log('[ProtectedLayout] No user, redirecting to login');
       navigate('/login', {
         state: { returnTo: window.location.pathname, fromDirect: true },
         replace: true
       });
+    } else {
+      console.log('[ProtectedLayout] User authenticated, rendering child routes');
     }
   }, [isLoading, user, navigate]);
 
