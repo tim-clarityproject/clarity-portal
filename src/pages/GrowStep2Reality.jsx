@@ -92,7 +92,7 @@ export default function GrowStep2Reality() {
             My Decisions
           </button>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>What's the current situation?</h1>
+        <h1 className="page-heading">What's the current situation?</h1>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '50%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />

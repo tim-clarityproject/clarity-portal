@@ -101,7 +101,7 @@ export default function GrowStep3Options() {
             My Decisions
           </button>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>What options do you have?</h1>
+        <h1 className="page-heading">What options do you have?</h1>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '75%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />

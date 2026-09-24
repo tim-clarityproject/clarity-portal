@@ -58,7 +58,7 @@ export default function DecisionTools() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '48px 32px' }} className="page-container">
         <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>All Decision Tools</h1>
+          <h1 className="page-heading">All Decision Tools</h1>
           <button
             onClick={() => navigate('/decision-history')}
             style={{

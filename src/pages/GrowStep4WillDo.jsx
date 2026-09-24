@@ -216,7 +216,7 @@ export default function GrowStep4WillDo() {
             My Decisions
           </button>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>What will I do?</h1>
+        <h1 className="page-heading">What will I do?</h1>
 
         <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
