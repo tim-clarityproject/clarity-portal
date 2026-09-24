@@ -149,7 +149,7 @@ function AppContent() {
         <Route path="/data-storage-notice" element={<DataStorageNotice />} />
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
-        <Route element={<ProtectedLayout><Outlet /></ProtectedLayout>}>
+        <Route element={<ProtectedLayout />}>
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/onboarding-mission" element={<OnboardingMission />} />
           <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
