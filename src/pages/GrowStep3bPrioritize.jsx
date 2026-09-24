@@ -33,11 +33,14 @@ export default function GrowStep3bPrioritize() {
   }, []);
 
   // Load options from DB if missing from navigation state (e.g., after page refresh)
+  // For edit mode: restore the ranked order that was previously saved
   useEffect(() => {
     const decisionId = location.state?.decisionId;
     const hasOptions = location.state?.options && location.state?.options.length > 0;
+    const hasPrioritized = location.state?.prioritizedOptions && location.state?.prioritizedOptions.length > 0;
 
-    if (decisionId && !hasOptions && user && !loadAttemptRef.current.has(decisionId)) {
+    // Only load from DB if this is edit mode AND we don't have prioritized options from navigation
+    if (decisionId && !hasPrioritized && !hasOptions && user && !loadAttemptRef.current.has(decisionId)) {
       const loadOptions = async () => {
         loadAttemptRef.current.add(decisionId);
         setIsLoading(true);
@@ -57,8 +60,8 @@ export default function GrowStep3bPrioritize() {
 
           const options = data?.form_data?.options || [];
           if (options.length > 0) {
-            // For edit mode: restore prioritized options if they were previously ranked
-            // (they would have been saved in ranked order by Step 3b)
+            // For edit mode: options from DB are in ranked order
+            // Set them as prioritized (right side) and clear available (left side)
             setPrioritizedOptions(options);
             updateFormData('prioritizedOptions', options);
             setAvailableOptions([]);
@@ -74,7 +77,7 @@ export default function GrowStep3bPrioritize() {
 
       loadOptions();
     }
-  }, [location.state?.decisionId, location.state?.options, user, updateFormData]);
+  }, [location.state?.decisionId, location.state?.options, location.state?.prioritizedOptions, user, updateFormData]);
 
   const handleEditStart = (index, value, source) => {
     setEditingIndex(index);
