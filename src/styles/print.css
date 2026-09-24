@@ -1,0 +1,428 @@
+/**
+ * Print Styles for Clarity Portal
+ * Ensures clean PDF exports with no browser artifacts
+ * Applied to all pages that support printing/PDF export
+ */
+
+@media print {
+  /* Remove all browser-generated artifacts and UI elements */
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+    color: #333;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  /* Hide all navigation and UI chrome */
+  header,
+  nav,
+  .header,
+  .navigation,
+  .menu,
+  .hamburger-menu,
+  .top-nav,
+  .breadcrumb,
+  .floating-widget,
+  .floating-action-button,
+  .modal,
+  .modal-overlay,
+  .toast,
+  .notification,
+  .tooltip,
+  .popover,
+  .sidebar,
+  .footer,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remove browser print headers/footers */
+  @page {
+    margin: 15mm 20mm;
+    size: A4 portrait;
+  }
+
+  /* Set page break behavior */
+  * {
+    orphans: 3;
+    widows: 3;
+    page-break-inside: avoid;
+  }
+
+  /* Allow specific elements to break across pages */
+  .print-page-break-allowed {
+    page-break-inside: auto;
+  }
+
+  /* Force new page for major sections */
+  .print-page-break-before {
+    page-break-before: always;
+  }
+
+  /* Prevent page breaks within content blocks */
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+
+  /* Typography for print */
+  h1 {
+    font-size: 18pt;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    page-break-after: avoid;
+    color: #333;
+  }
+
+  h2 {
+    font-size: 14pt;
+    font-weight: 700;
+    margin: 12px 0 8px 0;
+    page-break-after: avoid;
+    color: #333;
+  }
+
+  h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    margin: 10px 0 6px 0;
+    page-break-after: avoid;
+    color: #333;
+  }
+
+  h4 {
+    font-size: 11pt;
+    font-weight: 600;
+    margin: 8px 0 4px 0;
+    page-break-after: avoid;
+    color: #333;
+  }
+
+  p {
+    margin: 0 0 8px 0;
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+
+  /* Lists */
+  ul,
+  ol {
+    margin: 0 0 8px 0;
+    padding-left: 20px;
+  }
+
+  li {
+    margin: 0 0 4px 0;
+    font-size: 11pt;
+  }
+
+  /* Colors - ensure they render in print */
+  a {
+    color: #0066cc;
+    text-decoration: underline;
+  }
+
+  /* Cards and containers */
+  .card,
+  .container,
+  .section {
+    background: white;
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+
+  /* Remove box shadows (don't print well) */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Borders and dividers */
+  hr,
+  .divider {
+    border: 1px solid #ccc;
+    margin: 16px 0;
+    page-break-inside: avoid;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: avoid;
+    margin: 0 0 12px 0;
+  }
+
+  table,
+  th,
+  td {
+    border: 1px solid #ccc;
+  }
+
+  th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    text-align: left;
+    padding: 6px;
+  }
+
+  td {
+    padding: 6px;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Images */
+  img {
+    max-width: 100%;
+    height: auto;
+    page-break-inside: avoid;
+  }
+
+  /* Buttons - hide in print */
+  button,
+  .btn,
+  .button,
+  input[type='button'],
+  input[type='submit'],
+  input[type='reset'] {
+    display: none !important;
+  }
+
+  /* Forms - simplify for print */
+  input,
+  textarea,
+  select {
+    border: 1px solid #ccc;
+    background: white;
+    font-size: 11pt;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    border: 1px solid #333;
+  }
+
+  /* Visibility controls */
+  .screen-only,
+  .hide-on-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Spacing adjustments */
+  main,
+  .main-content,
+  .content {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure white space for readability */
+  body {
+    line-height: 1.6;
+  }
+
+  /* Remove any background colors that bleed in print */
+  body,
+  main,
+  .main-content {
+    background-color: white;
+  }
+
+  /* Print-specific branded header (optional) */
+  .print-header {
+    border-bottom: 2px solid #F08571;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    page-break-after: avoid;
+    display: block !important;
+  }
+
+  .print-header h1 {
+    margin: 0 0 6px 0;
+  }
+
+  .print-header-meta {
+    font-size: 10pt;
+    color: #999;
+    margin: 0;
+  }
+
+  /* Print-specific footer */
+  .print-footer {
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid #ccc;
+    font-size: 9pt;
+    color: #999;
+    page-break-before: avoid;
+    display: block !important;
+  }
+
+  /* Accent colors for print (coral brand color) */
+  .accent,
+  .brand-accent {
+    border-color: #F08571 !important;
+    color: #333 !important;
+  }
+
+  .accent-bg {
+    background-color: #f9f9f9 !important;
+  }
+
+  /* Section spacing */
+  .print-section {
+    margin-bottom: 16px;
+    page-break-inside: avoid;
+  }
+
+  .print-section + .print-section {
+    page-break-before: avoid;
+  }
+
+  /* Tactics/items listing */
+  .print-item {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e5e5;
+    page-break-inside: avoid;
+  }
+
+  .print-item:last-child {
+    border-bottom: none;
+  }
+
+  .print-item-title {
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    font-size: 11pt;
+  }
+
+  .print-item-meta {
+    font-size: 10pt;
+    color: #666;
+    margin: 0;
+  }
+
+  .print-item-note {
+    background-color: #f9f9f9;
+    border-left: 2px solid #F08571;
+    padding: 8px 10px;
+    margin-top: 6px;
+    font-size: 10pt;
+  }
+
+  /* Notification badge for print */
+  .print-note-label {
+    font-weight: 600;
+    color: #999;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin: 0 0 4px 0;
+  }
+
+  .print-note-content {
+    color: #333;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  /* Hide scrollbars and overflow indicators */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Preserve text wrapping */
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  /* Date and timestamp styling */
+  .print-date {
+    font-size: 10pt;
+    color: #999;
+  }
+
+  /* Progress indicators (simplified for print) */
+  .progress-bar,
+  .progress-indicator {
+    border: 1px solid #ccc;
+    height: 4pt;
+    page-break-inside: avoid;
+  }
+
+  .progress-bar-fill {
+    background-color: #F08571;
+  }
+
+  /* Code blocks */
+  code,
+  pre {
+    font-family: 'Courier New', monospace;
+    font-size: 10pt;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 4px;
+    page-break-inside: avoid;
+  }
+
+  /* Status badges */
+  .status-badge {
+    padding: 2px 6px;
+    font-size: 9pt;
+    border: 1px solid #ccc;
+    display: inline-block;
+  }
+
+  /* Checkboxes and radios */
+  input[type='checkbox']::after,
+  input[type='radio']::after {
+    content: '';
+  }
+
+  /* Ensure consistent font stack */
+  body,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  li,
+  td,
+  th {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+/* Print landscape option (for wide tables) */
+@media print and (orientation: landscape) {
+  @page {
+    size: A4 landscape;
+    margin: 15mm 20mm;
+  }
+}
+
+/* High-contrast print mode for accessibility */
+@media print and (prefers-color-scheme: light) {
+  body {
+    background: white;
+    color: #000;
+  }
+
+  a {
+    color: #0066cc;
+  }
+}
