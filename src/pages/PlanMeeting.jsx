@@ -10,7 +10,6 @@ export default function PlanMeeting() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
   const [title, setTitle] = useState('');
@@ -82,10 +81,10 @@ export default function PlanMeeting() {
   }, []);
 
   useEffect(() => {
-    if (decisionId && user && !isGuest) {
+    if (decisionId && user) {
       loadMeeting();
     }
-  }, [decisionId, user, isGuest]);
+  }, [decisionId, user]);
 
   const loadMeeting = async () => {
     if (!user) return;
@@ -274,7 +273,7 @@ export default function PlanMeeting() {
   };
 
   const handleNavigateToPlans = () => {
-    navigate('/my-plans', { state: { isGuest } });
+    navigate('/my-plans');
   };
 
   const handleDelete = () => {
@@ -288,7 +287,7 @@ export default function PlanMeeting() {
       setMeetingContext('');
       setPreReads('');
       setSections(['agenda']);
-      navigate('/decision-tools', { state: { isGuest } });
+      navigate('/decision-tools');
     }
   };
 
@@ -321,7 +320,7 @@ export default function PlanMeeting() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <style>{`
         .page-container {

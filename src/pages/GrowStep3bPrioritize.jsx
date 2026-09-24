@@ -15,7 +15,6 @@ export default function GrowStep3bPrioritize() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState('');
   const [editingSource, setEditingSource] = useState(null);
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.options) {
@@ -170,12 +169,12 @@ export default function GrowStep3bPrioritize() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -600,7 +599,7 @@ export default function GrowStep3bPrioritize() {
           toolType="grow"
           onNext={handleNext}
           canNext={canSubmit}
-          onBack={() => navigate('/grow-step-3', { state: { ...location.state, options: [...availableOptions, ...prioritizedOptions], timerSeconds: location.state?.timerSeconds, isGuest, decisionId: location.state?.decisionId } })}
+          onBack={() => navigate('/grow-step-3', { state: { ...location.state, options: [...availableOptions, ...prioritizedOptions], timerSeconds: location.state?.timerSeconds, decisionId: location.state?.decisionId } })}
         />
       </div>
     </div>

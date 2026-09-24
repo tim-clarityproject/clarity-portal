@@ -5,11 +5,10 @@ import { saveProgress, clearProgress, AUTO_SAVE_KEY } from '../lib/saveProgress'
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, onSaveAsDraft = null, isGuest: propIsGuest = null, nextLabel = 'Continue' }) {
+export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, onSaveAsDraft = null, nextLabel = 'Continue' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = propIsGuest !== null ? propIsGuest : location.state?.isGuest || false;
   const [isSaving, setIsSaving] = useState(false);
 
   const saveToSupabase = async () => {
@@ -117,7 +116,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
     setIsSaving(false);
     // Navigate to decision history
-    navigate('/decision-history', { state: { isGuest } });
+    navigate('/decision-history');
   };
 
   const handleNext = async () => {
@@ -134,7 +133,6 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
         onNext(location.state?.decisionId);
       }
     } else {
-      // Guests proceed without saving
       onNext(location.state?.decisionId);
     }
   };
@@ -143,9 +141,9 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
     if (window.confirm('Are you sure you want to discard this entry?')) {
       clearProgress();
       if (pageType === 'decision') {
-        navigate('/decision-tools', { state: { isGuest } });
+        navigate('/decision-tools');
       } else if (pageType === 'journal') {
-        navigate('/my-journal', { state: { isGuest } });
+        navigate('/my-journal');
       }
     }
   };

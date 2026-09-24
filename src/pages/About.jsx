@@ -5,11 +5,10 @@ import HomeHeader from '../components/HomeHeader';
 export default function About() {
   const navigate = useNavigate();
   const location = useLocation();
-  const isGuest = location.state?.isGuest || false;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         {/* Hero Section */}
@@ -109,7 +108,7 @@ export default function About() {
 
         {/* Back Button */}
         <button
-          onClick={() => navigate('/welcome', { state: { isGuest } })}
+          onClick={() => navigate('/welcome')}
           style={{
             alignSelf: 'flex-start',
             ...designTokens.button.primary,

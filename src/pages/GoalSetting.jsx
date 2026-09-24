@@ -18,7 +18,6 @@ export default function GoalSetting() {
 
   const problemTitle = location.state?.problemTitle || '';
   const path = location.state?.path || (problemTitle?.includes('team') ? 'team' : 'personal');
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
     // Sync goal from location.state when it exists (e.g., coming back from next page or resuming draft)
@@ -43,7 +42,7 @@ export default function GoalSetting() {
     }
     if (goal.trim()) {
       const finalDecisionId = newDecisionId || location.state?.decisionId;
-      navigate('/risks-assessment', { state: { ...location.state, goal, path, isGuest, decisionId: finalDecisionId } });
+      navigate('/risks-assessment', { state: { ...location.state, goal, path, decisionId: finalDecisionId } });
     }
   };
 
@@ -55,7 +54,7 @@ export default function GoalSetting() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -71,7 +70,7 @@ export default function GoalSetting() {
             )}
           </div>
           <button
-            onClick={() => navigate('/my-decisions', { state: { isGuest } })}
+            onClick={() => navigate('/my-decisions')}
             style={{
               padding: '10px 16px',
               backgroundColor: 'transparent',

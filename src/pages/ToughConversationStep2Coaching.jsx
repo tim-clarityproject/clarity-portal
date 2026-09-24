@@ -26,7 +26,6 @@ export default function ToughConversationStep2Coaching() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const { updateFormData } = useContext(FormContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
   useLoadDecision(updateFormData);
@@ -104,7 +103,7 @@ export default function ToughConversationStep2Coaching() {
   const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
 
   const handleCompleteClick = useCallback(() => {
-    if (!user || isGuest) {
+    if (!user) {
       alert('Please log in to save decisions');
       return;
     }
@@ -113,10 +112,10 @@ export default function ToughConversationStep2Coaching() {
     } else {
       handleCompleteConfirmed(currentTitle);
     }
-  }, [user, isGuest, needsNaming, currentTitle]);
+  }, [user, needsNaming, currentTitle]);
 
   const handleSaveAsDraftClick = useCallback(() => {
-    if (!user || isGuest) {
+    if (!user) {
       alert('Please log in to save decisions');
       return;
     }
@@ -125,11 +124,11 @@ export default function ToughConversationStep2Coaching() {
     } else {
       handleSaveAsDraftConfirmed(currentTitle);
     }
-  }, [user, isGuest, needsNaming, currentTitle]);
+  }, [user, needsNaming, currentTitle]);
 
   const handleCompleteConfirmed = useCallback(async (decisionName) => {
     setShowNamingModal(false);
-    if (!user || isGuest) return;
+    if (!user) return;
 
     try {
       const data = {
@@ -176,11 +175,11 @@ export default function ToughConversationStep2Coaching() {
       console.error('Error saving:', error);
       alert(`Failed to save: ${error.message || error}`);
     }
-  }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate]);
+  }, [user, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate]);
 
   const handleSaveAsDraftConfirmed = useCallback(async (decisionName) => {
     setShowNamingModal(false);
-    if (!user || isGuest) return;
+    if (!user) return;
 
     try {
       const data = {
@@ -218,7 +217,7 @@ export default function ToughConversationStep2Coaching() {
       console.error('Error saving draft:', error);
       alert(`Failed to save draft: ${error.message || error}`);
     }
-  }, [user, isGuest, observation, impact, need, selectedQuestions, customQuestion, decisionId]);
+  }, [user, observation, impact, need, selectedQuestions, customQuestion, decisionId]);
 
   const handleBack = useCallback(() => {
     navigate('/tough-conversation-step-1', {
@@ -233,11 +232,11 @@ export default function ToughConversationStep2Coaching() {
         customQuestion,
       },
     });
-  }, [observation, impact, need, decisionId, isGuest, navigate, selectedQuestions, customQuestion, location.state?.problemTitle]);
+  }, [observation, impact, need, decisionId, navigate, selectedQuestions, customQuestion, location.state?.problemTitle]);
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
@@ -246,7 +245,7 @@ export default function ToughConversationStep2Coaching() {
             <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>Plan your coaching and follow-up questions</p>
           </div>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -518,7 +517,6 @@ export default function ToughConversationStep2Coaching() {
           onSaveAsDraft={handleSaveAsDraftClick}
           nextLabel="Finish"
           canNext={true}
-          isGuest={isGuest}
         />
 
         <NamingModal

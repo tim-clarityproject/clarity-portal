@@ -16,7 +16,6 @@ export default function GrowStep1Goal() {
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
   const [isLoading, setIsLoading] = useState(false);
-  const isGuest = location.state?.isGuest || false;
   const refGoal = useRef(null);
   useAutoExpandTextarea(refGoal, goal);
 
@@ -110,7 +109,7 @@ export default function GrowStep1Goal() {
         }
       });
     }
-  }, [goal, isGuest, problemTitle, decisionId, navigate, updateFormData]);
+  }, [goal, problemTitle, decisionId, navigate, updateFormData]);
 
   const handleChange = (e) => {
     const newGoal = e.target.value;
@@ -120,7 +119,7 @@ export default function GrowStep1Goal() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
@@ -128,7 +127,7 @@ export default function GrowStep1Goal() {
             <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>Define your goal clearly</h1>
           </div>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',

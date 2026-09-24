@@ -9,7 +9,6 @@ export default function DailyPlanSummary() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
   const [plan, setPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +64,7 @@ export default function DailyPlanSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }} className="page-container">
           <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
         </div>
@@ -76,11 +75,11 @@ export default function DailyPlanSummary() {
   if (!plan) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }} className="page-container">
           <p style={{ color: '#999', fontSize: '14px' }}>Plan not found</p>
           <button
-            onClick={() => navigate('/plan-my-day', { state: { isGuest } })}
+            onClick={() => navigate('/plan-my-day')}
             style={{
               marginTop: '16px',
               padding: '12px 24px',
@@ -104,7 +103,7 @@ export default function DailyPlanSummary() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <style>{`
         .page-container {
@@ -123,7 +122,7 @@ export default function DailyPlanSummary() {
         {/* Back Button */}
         <div style={summaryStyles.backButtonContainer}>
           <button
-            onClick={() => navigate('/my-plans', { state: { isGuest } })}
+            onClick={() => navigate('/my-plans')}
             style={{
               ...summaryStyles.backButton,
               marginBottom: 0,
@@ -202,7 +201,7 @@ export default function DailyPlanSummary() {
         zIndex: 10,
       }}>
         <button
-          onClick={() => navigate('/decision-tools', { state: { isGuest } })}
+          onClick={() => navigate('/decision-tools')}
           style={{
             padding: '10px 20px',
             backgroundColor: 'transparent',

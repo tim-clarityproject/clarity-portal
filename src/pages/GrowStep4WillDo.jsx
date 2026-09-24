@@ -70,7 +70,6 @@ export default function GrowStep4WillDo() {
   const [isSaving, setIsSaving] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
-  const isGuest = location.state?.isGuest || false;
 
   const handleDragStart = (e, item, index) => {
     setDraggedItem({ item, index });
@@ -101,7 +100,7 @@ export default function GrowStep4WillDo() {
   const handleSaveClick = (newDecisionId) => {
     if (!willDo.trim()) return;
 
-    if (isGuest) {
+    if (false) {
       alert('Please log in to save decisions');
       return;
     }
@@ -175,12 +174,12 @@ export default function GrowStep4WillDo() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -354,8 +353,8 @@ export default function GrowStep4WillDo() {
           pageType="decision"
           toolType="grow"
           onNext={handleSaveClick}
-          canNext={willDo.trim() && !isSaving && !isGuest}
-          onBack={() => navigate('/grow-step-3b-prioritize', { state: { ...location.state, availableOptions: location.state?.availableOptions, prioritizedOptions: options, isGuest, decisionId: location.state?.decisionId } })}
+          canNext={willDo.trim() && !isSaving}
+          onBack={() => navigate('/grow-step-3b-prioritize', { state: { ...location.state, availableOptions: location.state?.availableOptions, prioritizedOptions: options, decisionId: location.state?.decisionId } })}
           nextLabel={isSaving ? 'Saving...' : 'Finish'}
         />
 

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 // Higher-order component that protects routes by checking auth before rendering
-export default function ProtectedRoute({ children, allowGuest = false }) {
+export default function ProtectedRoute({ children }) {
   const { user, isLoading } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -12,29 +12,20 @@ export default function ProtectedRoute({ children, allowGuest = false }) {
     // Only check after auth is loaded
     if (isLoading) return;
 
-    // If user exists, allow access - no action needed
+    // If user exists, allow access
     if (user) {
       return;
     }
 
-    // No user found
-    // If guest mode allowed and explicitly in guest state, allow access
-    if (allowGuest && location.state?.isGuest) {
-      return;
-    }
-
-    // No valid session and not in guest mode - redirect to login immediately
-    if (!user && !allowGuest) {
-      navigate('/login', {
-        state: {
-          returnTo: location.pathname,
-          fromDirect: true
-        },
-        replace: true // Use replace to prevent back button returning to protected page
-      });
-      return;
-    }
-  }, [user, isLoading, navigate, location, allowGuest]);
+    // No user - redirect to login
+    navigate('/login', {
+      state: {
+        returnTo: location.pathname,
+        fromDirect: true
+      },
+      replace: true
+    });
+  }, [user, isLoading, navigate, location]);
 
   // During auth check, show loading screen
   if (isLoading) {
@@ -45,17 +36,11 @@ export default function ProtectedRoute({ children, allowGuest = false }) {
     );
   }
 
-  // After auth check complete:
-  // If user is logged in, render children
+  // After auth check complete, only render if user exists
   if (user) {
     return children;
   }
 
-  // If guest mode allowed and in guest state, render children
-  if (allowGuest && location.state?.isGuest) {
-    return children;
-  }
-
-  // No access - redirect in progress, show nothing
+  // No access - redirect in progress
   return null;
 }

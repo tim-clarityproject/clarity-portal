@@ -28,7 +28,6 @@ const ALL_PROBLEMS = [
 export default function DecisionTools() {
   const navigate = useNavigate();
   const location = useLocation();
-  const isGuest = location.state?.isGuest || false;
 
   const problems = [...ALL_PROBLEMS].sort((a, b) => {
     if (a.status === 'coming-soon' && b.status !== 'coming-soon') return 1;
@@ -55,13 +54,13 @@ export default function DecisionTools() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '48px 32px' }} className="page-container">
         <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>All Decision Tools</h1>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '6px 12px',
               backgroundColor: 'transparent',

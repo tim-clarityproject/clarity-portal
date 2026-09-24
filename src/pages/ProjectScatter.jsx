@@ -27,7 +27,6 @@ export default function ProjectScatter() {
   const progress = location.state?.progress || {};
   const factors = location.state?.factors || [];
   const path = location.state?.path || 'personal';
-  const isGuest = location.state?.isGuest || false;
 
   const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
 
@@ -186,13 +185,13 @@ export default function ProjectScatter() {
           }
         }
       `}</style>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -469,7 +468,7 @@ export default function ProjectScatter() {
             toolType="team-focus"
             onNext={handleSaveToLogClick}
             canNext={true}
-            onBack={() => navigate('/project-progress', { state: { ...location.state, isGuest } })}
+            onBack={() => navigate('/project-progress', { state: { ...location.state } })}
             nextLabel="Finish"
           />
 

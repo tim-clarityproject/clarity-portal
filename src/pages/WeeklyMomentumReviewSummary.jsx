@@ -12,7 +12,6 @@ export default function WeeklyMomentumReviewSummary() {
   const { user } = useContext(AuthContext);
   const [review, setReview] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const isGuest = location.state?.isGuest || false;
   const selectedDate = location.state?.selectedDate;
   const entryId = location.state?.entryId;
 
@@ -67,7 +66,7 @@ export default function WeeklyMomentumReviewSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading review...</p>
         </div>
@@ -78,7 +77,7 @@ export default function WeeklyMomentumReviewSummary() {
   if (!review) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Review not found</p>
         </div>
@@ -115,7 +114,7 @@ export default function WeeklyMomentumReviewSummary() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
         <BackArrow />
@@ -165,7 +164,7 @@ export default function WeeklyMomentumReviewSummary() {
         {/* Bottom Action Buttons */}
         <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap', paddingTop: '32px', borderTop: '1px solid #f0f0f0', justifyContent: 'flex-end' }} className="no-print">
           <button
-            onClick={() => navigate('/my-journal', { state: { isGuest } })}
+            onClick={() => navigate('/my-journal')}
             style={{
               padding: '10px 20px',
               backgroundColor: 'white',

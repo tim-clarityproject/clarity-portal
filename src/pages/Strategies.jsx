@@ -14,7 +14,6 @@ export default function Strategies() {
 
   const risks = location.state?.risks || [];
   const path = location.state?.path || 'personal';
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
     if (!location.state?.decisionId && !location.state?.strategies) {
@@ -30,7 +29,7 @@ export default function Strategies() {
     }
     updateFormData('strategies', strategies);
     const finalDecisionId = newDecisionId || location.state?.decisionId;
-    navigate('/project-list', { state: { ...location.state, ...formData, strategies, path, isGuest, decisionId: finalDecisionId } });
+    navigate('/project-list', { state: { ...location.state, ...formData, strategies, path, decisionId: finalDecisionId } });
   };
 
   const handleStrategyChange = (index, value) => {
@@ -48,7 +47,7 @@ export default function Strategies() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -175,7 +174,7 @@ export default function Strategies() {
           toolType="strategic-alignment"
           onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={true}
-          onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state, isGuest } })}
+          onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state } })}
         />
       </div>
 

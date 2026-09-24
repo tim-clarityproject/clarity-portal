@@ -16,7 +16,6 @@ export default function ProjectList() {
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const factors = location.state?.factors || [];
   const path = location.state?.path || 'team';
-  const isGuest = location.state?.isGuest || false;
 
   useLoadDecision(updateFormData);
 
@@ -79,7 +78,7 @@ export default function ProjectList() {
       updateFormData('projects', filledProjects);
       const finalDecisionId = newDecisionId || location.state?.decisionId;
       navigate('/project-matrix', {
-        state: { ...location.state, projects: filledProjects, path, isGuest, decisionId: finalDecisionId }
+        state: { ...location.state, projects: filledProjects, path, decisionId: finalDecisionId }
       });
     }
   };
@@ -89,13 +88,13 @@ export default function ProjectList() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -276,7 +275,7 @@ export default function ProjectList() {
           toolType="strategic-alignment"
           onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={canSubmit}
-          onBack={() => navigate('/critical-success-factors', { state: { ...formData, ...location.state, isGuest } })}
+          onBack={() => navigate('/critical-success-factors', { state: { ...formData, ...location.state } })}
         />
       </div>
 

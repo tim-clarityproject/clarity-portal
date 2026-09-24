@@ -25,7 +25,6 @@ export default function MyAccount() {
   const [archivedMissions, setArchivedMissions] = useState([]);
   const [showArchivedMissions, setShowArchivedMissions] = useState(false);
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
-  const isGuest = false;
 
   // Handle scrolling to sections when navigated with state.scrollTo
   useEffect(() => {
@@ -282,7 +281,7 @@ export default function MyAccount() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} personalGoal={showGoalInHeader ? personalGoal : ''} />
+      <HomeHeader personalGoal={showGoalInHeader ? personalGoal : ''} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: designTokens.layout.contentPadding }} className="page-container">
         <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '12px', marginBottom: designTokens.spacing.xl }}>

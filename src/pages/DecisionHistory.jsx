@@ -14,13 +14,12 @@ export default function DecisionHistory() {
   const { user } = useContext(AuthContext);
   const [decisions, setDecisions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
-    if (user && !isGuest) {
+    if (user) {
       loadDecisions();
     }
-  }, [user, isGuest]);
+  }, [user]);
 
   const loadDecisions = async () => {
     if (!user) return;
@@ -141,7 +140,7 @@ export default function DecisionHistory() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '48px' }}>My Decisions</h1>
@@ -152,7 +151,7 @@ export default function DecisionHistory() {
           <div style={{ textAlign: 'center', paddingTop: '32px' }}>
             <p style={{ color: '#999', fontSize: '14px', marginBottom: '16px' }}>No decisions yet</p>
             <button
-              onClick={() => navigate('/decision-tools', { state: { isGuest } })}
+              onClick={() => navigate('/decision-tools')}
               style={{
                 padding: '12px 24px',
                 backgroundColor: '#F08571',
@@ -322,7 +321,7 @@ export default function DecisionHistory() {
         zIndex: 10,
       }}>
         <button
-          onClick={() => navigate('/decision-tools', { state: { isGuest } })}
+          onClick={() => navigate('/decision-tools')}
           style={{
             padding: '10px 20px',
             backgroundColor: 'transparent',

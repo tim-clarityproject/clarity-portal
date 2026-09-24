@@ -9,7 +9,6 @@ export default function PersonalOperatingPlanEdit() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const missionId = location.state?.missionId;
   const isNew = location.state?.isNew || false;
 
@@ -241,7 +240,7 @@ export default function PersonalOperatingPlanEdit() {
         }
       }
 
-      navigate('/personal-operating-plan', { state: { isGuest } });
+      navigate('/personal-operating-plan');
     } catch (error) {
       console.error('Error saving plan:', error);
       alert('Failed to save plan');
@@ -260,7 +259,7 @@ export default function PersonalOperatingPlanEdit() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <style>{`
         .edit-page-container {
@@ -601,7 +600,7 @@ export default function PersonalOperatingPlanEdit() {
         {/* ACTION BUTTONS */}
         <div style={{ display: 'flex', gap: '12px', paddingTop: '24px', borderTop: '1px solid #e5e5e5' }}>
           <button
-            onClick={() => navigate('/personal-operating-plan', { state: { isGuest } })}
+            onClick={() => navigate('/personal-operating-plan')}
             style={{
               flex: 1,
               padding: '14px 24px',

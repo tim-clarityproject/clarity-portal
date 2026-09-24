@@ -11,13 +11,13 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
     saveProgress(currentPage, formData, location.state);
     setSaved(true);
     setTimeout(() => {
-      navigate('/welcome', { state: { isGuest: location.state?.isGuest } });
+      navigate('/welcome', { state: {  } });
     }, 1500);
   };
 
   const handleDiscard = () => {
     clearProgress();
-    navigate('/welcome', { state: { isGuest: location.state?.isGuest } });
+    navigate('/welcome', { state: {  } });
   };
 
   if (!isOpen) return null;

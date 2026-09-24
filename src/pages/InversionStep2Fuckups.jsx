@@ -11,7 +11,6 @@ export default function InversionStep2Fuckups() {
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [fuckups, setFuckups] = useState(() => location.state?.fuckups || ['', '']);
-  const isGuest = location.state?.isGuest || false;
 
   useLoadDecision(updateFormData);
 
@@ -71,12 +70,12 @@ export default function InversionStep2Fuckups() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -189,7 +188,7 @@ export default function InversionStep2Fuckups() {
           toolType="inversion"
           onNext={handleNext}
           canNext={canSubmit}
-          onBack={() => navigate('/inversion-step-1', { state: { ...formData, isGuest, decisionId: location.state?.decisionId } })}
+          onBack={() => navigate('/inversion-step-1', { state: { ...formData, decisionId: location.state?.decisionId } })}
         />
       </div>
     </div>

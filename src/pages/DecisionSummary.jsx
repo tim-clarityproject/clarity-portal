@@ -13,7 +13,6 @@ export default function DecisionSummary() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProjectIdx, setSelectedProjectIdx] = useState(null);
   const [hoveredQuadrant, setHoveredQuadrant] = useState(null);
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
     const loadDecision = async () => {
@@ -51,7 +50,7 @@ export default function DecisionSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Loading decision...</p>
         </div>
@@ -62,7 +61,7 @@ export default function DecisionSummary() {
   if (!decision) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Decision not found</p>
         </div>
@@ -179,13 +178,13 @@ export default function DecisionSummary() {
           }
         }
       `}</style>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }} className="page-container">
         {/* Back Button */}
         <div style={summaryStyles.backButtonContainer}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               ...summaryStyles.backButton,
               marginBottom: 0,

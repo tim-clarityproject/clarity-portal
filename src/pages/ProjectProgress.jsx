@@ -15,7 +15,6 @@ export default function ProjectProgress() {
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const projects = location.state?.projects || [];
   const path = location.state?.path || 'team';
-  const isGuest = location.state?.isGuest || false;
 
   useLoadDecision(updateFormData);
 
@@ -61,12 +60,12 @@ export default function ProjectProgress() {
     }
     updateFormData('progress', progress);
     const finalDecisionId = newDecisionId || location.state?.decisionId;
-    navigate('/project-scatter', { state: { ...location.state, progress, isGuest, decisionId: finalDecisionId } });
+    navigate('/project-scatter', { state: { ...location.state, progress, decisionId: finalDecisionId } });
   };
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -133,7 +132,7 @@ export default function ProjectProgress() {
           toolType="strategic-alignment"
           onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={true}
-          onBack={() => navigate('/project-matrix', { state: { ...location.state, isGuest } })}
+          onBack={() => navigate('/project-matrix', { state: { ...location.state } })}
         />
       </div>
 

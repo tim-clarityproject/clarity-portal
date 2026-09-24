@@ -8,7 +8,6 @@ export default function IfThenPlanningSummary() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
   const [planning, setPlanning] = useState(null);
@@ -60,7 +59,7 @@ export default function IfThenPlanningSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
         </div>
@@ -71,7 +70,7 @@ export default function IfThenPlanningSummary() {
   if (!planning) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Planning not found</p>
         </div>
@@ -93,7 +92,7 @@ export default function IfThenPlanningSummary() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <style>{`
         .page-container {
@@ -112,7 +111,7 @@ export default function IfThenPlanningSummary() {
         {/* Back to Decisions Button */}
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',

@@ -12,7 +12,6 @@ export default function GrowStep3Options() {
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [options, setOptions] = useState(() => location.state?.options || ['', '', '']);
   const [timerSeconds, setTimerSeconds] = useState(location.state?.timerSeconds || null);
-  const isGuest = location.state?.isGuest || false;
   const problemTitle = location.state?.problemTitle;
   const decisionId = location.state?.decisionId;
 
@@ -67,19 +66,19 @@ export default function GrowStep3Options() {
         }
       });
     }
-  }, [options, timerSeconds, problemTitle, decisionId, navigate, isGuest, updateFormData]);
+  }, [options, timerSeconds, problemTitle, decisionId, navigate, updateFormData]);
 
   const filledCount = options.filter(option => option.trim()).length;
   const canSubmit = filledCount >= 1;
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -195,7 +194,7 @@ export default function GrowStep3Options() {
           toolType="grow"
           onNext={handleNext}
           canNext={canSubmit}
-          onBack={() => navigate('/grow-step-2', { state: { ...formData, isGuest, decisionId: location.state?.decisionId } })}
+          onBack={() => navigate('/grow-step-2', { state: { ...formData, decisionId: location.state?.decisionId } })}
         />
       </div>
     </div>

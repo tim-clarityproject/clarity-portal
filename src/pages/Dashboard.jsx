@@ -11,7 +11,6 @@ export default function Dashboard() {
   const { formData } = useContext(FormContext);
   const risks = location.state?.risks || [];
   const strategies = location.state?.strategies || formData.strategies || [];
-  const isGuest = location.state?.isGuest || false;
   const displayStrategies = useMemo(() => strategies.slice(0, risks.length), [strategies, risks.length]);
   const [ratings, setRatings] = useState(displayStrategies.map(() => null));
 
@@ -23,7 +22,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -175,7 +174,7 @@ export default function Dashboard() {
       <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', paddingBottom: '24px' }}>
         <button
           type="button"
-          onClick={() => navigate('/strategies', { state: { ...location.state, isGuest } })}
+          onClick={() => navigate('/strategies', { state: { ...location.state } })}
           style={{
             backgroundColor: 'transparent',
             border: 'none',
@@ -203,7 +202,7 @@ export default function Dashboard() {
           <BackArrow />
         </button>
         <button
-          onClick={() => navigate('/results', { state: { ...formData, strategies: displayStrategies, ratings, ...location.state, isGuest } })}
+          onClick={() => navigate('/results', { state: { ...formData, strategies: displayStrategies, ratings, ...location.state } })}
           style={{
             padding: '16px 32px',
             backgroundColor: '#F08571',

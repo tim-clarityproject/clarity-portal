@@ -11,7 +11,6 @@ export default function PersonalOperatingPlan() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isLoading: authLoading } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
 
   const [mission, setMission] = useState(null);
   const [strategies, setStrategies] = useState([]);
@@ -20,10 +19,10 @@ export default function PersonalOperatingPlan() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user && !isGuest) {
+    if (user) {
       loadPlan();
     }
-  }, [user, isGuest]);
+  }, [user]);
 
   const loadPlan = async () => {
     if (!user) {
@@ -158,7 +157,7 @@ export default function PersonalOperatingPlan() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
         </div>
@@ -169,7 +168,7 @@ export default function PersonalOperatingPlan() {
   if (!mission) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px', marginBottom: '24px' }}>No personal operating plan yet</p>
           <button
@@ -197,7 +196,7 @@ export default function PersonalOperatingPlan() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <style>{`
         .pop-page-container {

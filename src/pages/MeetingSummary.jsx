@@ -9,7 +9,6 @@ export default function MeetingSummary() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
   const [meeting, setMeeting] = useState(null);
@@ -70,7 +69,7 @@ export default function MeetingSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading meeting...</p>
         </div>
@@ -81,7 +80,7 @@ export default function MeetingSummary() {
   if (!meeting) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Meeting not found</p>
         </div>
@@ -103,7 +102,7 @@ export default function MeetingSummary() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} className="no-print" />
+      <HomeHeader className="no-print" />
 
       <style>{`
         .page-container {
@@ -121,7 +120,7 @@ export default function MeetingSummary() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%' }} className="page-container print-container">
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <button
-            onClick={() => navigate('/my-plans', { state: { isGuest } })}
+            onClick={() => navigate('/my-plans')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',

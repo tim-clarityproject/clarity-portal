@@ -19,7 +19,6 @@ export default function CriticalSuccessFactors() {
   useLoadDecision(updateFormData);
 
   const path = location.state?.path || 'team';
-  const isGuest = location.state?.isGuest || false;
   const risks = location.state?.risks || [];
 
   useEffect(() => {
@@ -64,7 +63,7 @@ export default function CriticalSuccessFactors() {
     if (filledFactors.length >= 1) {
       updateFormData('factors', filledFactors);
       const finalDecisionId = newDecisionId || location.state?.decisionId;
-      navigate('/project-list', { state: { ...location.state, factors: filledFactors, path, isGuest, decisionId: finalDecisionId } });
+      navigate('/project-list', { state: { ...location.state, factors: filledFactors, path, decisionId: finalDecisionId } });
     }
   };
 
@@ -73,7 +72,7 @@ export default function CriticalSuccessFactors() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -195,7 +194,7 @@ export default function CriticalSuccessFactors() {
           toolType="strategic-alignment"
           onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={canSubmit}
-          onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state, isGuest } })}
+          onBack={() => navigate('/risks-assessment', { state: { ...formData, ...location.state } })}
         />
       </div>
 

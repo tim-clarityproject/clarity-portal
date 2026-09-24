@@ -17,7 +17,6 @@ export default function RisksAssessment() {
   useLoadDecision(updateFormData);
 
   const path = location.state?.path || 'personal';
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
     // Sync risks from location.state when it exists (e.g., coming back from next page or resuming draft)
@@ -62,7 +61,7 @@ export default function RisksAssessment() {
       updateFormData('risks', filledRisks);
       const finalDecisionId = newDecisionId || location.state?.decisionId;
       const nextPage = path === 'team' ? '/critical-success-factors' : '/strategies';
-      navigate(nextPage, { state: { ...location.state, risks: filledRisks, path, isGuest, decisionId: finalDecisionId } });
+      navigate(nextPage, { state: { ...location.state, risks: filledRisks, path, decisionId: finalDecisionId } });
     }
   };
 
@@ -77,7 +76,7 @@ export default function RisksAssessment() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -180,7 +179,7 @@ export default function RisksAssessment() {
           toolType="strategic-alignment"
           onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={canSubmit}
-          onBack={() => navigate('/goal-setting', { state: { ...location.state, path, isGuest } })}
+          onBack={() => navigate('/goal-setting', { state: { ...location.state, path } })}
         />
       </div>
     </div>

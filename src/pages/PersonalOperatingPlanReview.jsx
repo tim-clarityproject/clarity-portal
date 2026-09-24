@@ -9,7 +9,6 @@ export default function PersonalOperatingPlanReview() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const missionId = location.state?.missionId;
 
   const [mission, setMission] = useState(null);
@@ -150,7 +149,7 @@ export default function PersonalOperatingPlanReview() {
         }
       }
 
-      navigate('/personal-operating-plan', { state: { isGuest } });
+      navigate('/personal-operating-plan');
     } catch (error) {
       console.error('Error submitting review:', error);
       alert('Failed to submit review');
@@ -170,7 +169,7 @@ export default function PersonalOperatingPlanReview() {
   if (!mission) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
           <p style={{ color: '#999' }}>Plan not found</p>
         </div>
@@ -180,7 +179,7 @@ export default function PersonalOperatingPlanReview() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: '0 0 8px 0' }}>Review: {mission.title}</h1>
@@ -305,7 +304,7 @@ export default function PersonalOperatingPlanReview() {
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
           <button
-            onClick={() => navigate('/personal-operating-plan', { state: { isGuest } })}
+            onClick={() => navigate('/personal-operating-plan')}
             style={{
               flex: 1,
               padding: '10px 20px',

@@ -12,7 +12,6 @@ const BOX_SIZE = 280; // px - box side length, comparable to largest expanded ci
 export default function BreathingPage() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const [breathingType, setBreathingType] = useState('sigh');
   const [view, setView] = useState('instructions');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -46,7 +45,7 @@ export default function BreathingPage() {
   }, []);
 
   const saveBreathingSession = async () => {
-    if (!user || isGuest || !sessionStartTimeRef.current) return;
+    if (!user || !sessionStartTimeRef.current) return;
 
     try {
       const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
@@ -124,7 +123,7 @@ export default function BreathingPage() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <style>{`
         .breathing-container {

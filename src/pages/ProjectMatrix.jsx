@@ -16,7 +16,6 @@ export default function ProjectMatrix() {
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const factors = location.state?.factors || [];
   const path = location.state?.path || 'team';
-  const isGuest = location.state?.isGuest || false;
 
   useLoadDecision(updateFormData);
 
@@ -92,7 +91,7 @@ export default function ProjectMatrix() {
       updateFormData('matrix', matrix);
       const finalDecisionId = newDecisionId || location.state?.decisionId;
       navigate('/project-progress', {
-        state: { ...location.state, projects: filledProjects, matrix, path, isGuest, decisionId: finalDecisionId }
+        state: { ...location.state, projects: filledProjects, matrix, path, decisionId: finalDecisionId }
       });
     }
   };
@@ -102,7 +101,7 @@ export default function ProjectMatrix() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
@@ -200,7 +199,7 @@ export default function ProjectMatrix() {
           toolType="strategic-alignment"
           onNext={(newDecisionId) => handleSubmit(null, newDecisionId)}
           canNext={canSubmit}
-          onBack={() => navigate('/project-list', { state: { ...location.state, isGuest } })}
+          onBack={() => navigate('/project-list', { state: { ...location.state } })}
         />
       </div>
 

@@ -11,7 +11,6 @@ export default function MissionProgressReviewDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const reviewId = location.state?.reviewId;
 
   const [review, setReview] = useState(null);
@@ -78,7 +77,7 @@ export default function MissionProgressReviewDetail() {
   if (!review) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
           <p style={{ color: '#999' }}>Review not found</p>
         </div>
@@ -90,7 +89,7 @@ export default function MissionProgressReviewDetail() {
   if (!data) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
           <p style={{ color: '#999' }}>Invalid review data</p>
         </div>
@@ -100,13 +99,13 @@ export default function MissionProgressReviewDetail() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="page-container">
         {/* Header */}
         <div style={{ marginBottom: '32px' }}>
           <button
-            onClick={() => navigate('/my-reviews', { state: { isGuest } })}
+            onClick={() => navigate('/my-reviews')}
             style={{
               padding: '8px 12px',
               backgroundColor: 'transparent',
@@ -270,7 +269,7 @@ export default function MissionProgressReviewDetail() {
         {/* Action Button */}
         <div>
           <button
-            onClick={() => navigate('/my-reviews', { state: { isGuest } })}
+            onClick={() => navigate('/my-reviews')}
             style={{
               width: '100%',
               padding: '12px 24px',

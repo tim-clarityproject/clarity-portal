@@ -13,7 +13,6 @@ export default function GrowStep2Reality() {
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [constraints, setConstraints] = useState(location.state?.constraints || '');
   const [opportunities, setOpportunities] = useState(location.state?.opportunities || '');
-  const isGuest = location.state?.isGuest || false;
   const refConstraints = useRef(null);
   const refOpportunities = useRef(null);
   useAutoExpandTextarea(refConstraints, constraints);
@@ -52,7 +51,7 @@ export default function GrowStep2Reality() {
         }
       });
     }
-  }, [constraints, opportunities, isGuest, location.state?.problemTitle, location.state?.goal, location.state?.decisionId, navigate, updateFormData]);
+  }, [constraints, opportunities, location.state?.problemTitle, location.state?.goal, location.state?.decisionId, navigate, updateFormData]);
 
   const handleConstraintsChange = (e) => {
     const value = e.target.value;
@@ -68,12 +67,12 @@ export default function GrowStep2Reality() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -162,7 +161,7 @@ export default function GrowStep2Reality() {
           toolType="grow"
           onNext={handleNext}
           canNext={constraints.trim() || opportunities.trim()}
-          onBack={() => navigate('/grow-step-1', { state: { ...location.state, isGuest, decisionId: location.state?.decisionId } })}
+          onBack={() => navigate('/grow-step-1', { state: { ...location.state, decisionId: location.state?.decisionId } })}
         />
       </div>
     </div>

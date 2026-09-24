@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 
-export default function HomeHeader({ isGuest = false, delayMission = false, className = '' }) {
+export default function HomeHeader({ delayMission = false, className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
@@ -183,7 +183,7 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
       </div>
 
       {/* Center Mission Display - Responsive Flex Item */}
-      {(contextMission || isGuest) && (contextShowInHeader || isGuest) && displayMission && location.pathname !== '/personal-operating-plan' && (
+      {contextMission && contextShowInHeader && displayMission && location.pathname !== '/personal-operating-plan' && (
         <>
           <style>{`
             @keyframes fadeInMission {
@@ -206,12 +206,12 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
             }
           `}</style>
           <button
-            onClick={() => !isGuest && navigate('/personal-operating-plan', { state: { isGuest } })}
+            onClick={() => navigate('/personal-operating-plan')}
             className="mission-container"
             style={{
               background: 'transparent',
               border: 'none',
-              cursor: isGuest ? 'default' : 'pointer',
+              cursor: 'pointer',
               padding: 0,
             }}
           >
@@ -228,8 +228,8 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
               minWidth: 0,
               transition: 'all 0.2s',
             }}
-            onMouseEnter={(e) => !isGuest && (e.currentTarget.style.borderColor = '#F08571')}
-            onMouseLeave={(e) => !isGuest && (e.currentTarget.style.borderColor = '#e5e5e5')}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#F08571'}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e5e5e5'}
             >
               <div style={{
                 fontSize: 'clamp(12px, 1.6vw, 16px)',
@@ -242,7 +242,7 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
                 textOverflow: 'ellipsis',
                 minWidth: 0,
               }}>
-                <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{isGuest ? 'Build something remarkable for the world' : contextMission}</span>
+                <span style={{ color: '#F08571' }}>Your Mission:</span> <span style={{ fontWeight: '700', color: '#333' }}>{contextMission}</span>
               </div>
             </div>
           </button>
@@ -743,32 +743,9 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
             </>
           )}
 
-          {isGuest && (
+          {(
             <button
-              onClick={handleCreateAccount}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                border: 'none',
-                backgroundColor: 'transparent',
-                color: '#5ECCC0',
-                textAlign: 'left',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'backgroundColor 0.2s',
-                borderBottom: '1px solid #f0f0f0',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#E8F8F6'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-            >
-              Create Account
-            </button>
-          )}
-
-          {!isGuest && (
-            <button
-              onClick={() => navigate('/my-account', { state: { ...location.state, isGuest } })}
+              onClick={() => navigate('/my-account')}
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -788,7 +765,7 @@ export default function HomeHeader({ isGuest = false, delayMission = false, clas
             </button>
           )}
 
-          {!isGuest && user && (
+          {user && (
             <button
               onClick={handleLogout}
               style={{

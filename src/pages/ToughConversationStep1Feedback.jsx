@@ -9,7 +9,6 @@ export default function ToughConversationStep1Feedback() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
   const isEditMode = Boolean(decisionId);
 
@@ -57,10 +56,10 @@ export default function ToughConversationStep1Feedback() {
         customQuestion: location.state?.customQuestion || '',
       },
     });
-  }, [observation, impact, need, decisionId, isGuest, navigate, location.state]);
+  }, [observation, impact, need, decisionId, navigate, location.state]);
 
   const handleSaveAsDraft = useCallback(async () => {
-    if (!user || isGuest) return;
+    if (!user) return;
 
     try {
       const data = {
@@ -97,16 +96,16 @@ export default function ToughConversationStep1Feedback() {
         if (error) throw error;
       }
       alert('Saved as draft');
-      navigate('/decision-history', { state: { isGuest } });
+      navigate('/decision-history');
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Failed to save draft');
     }
-  }, [user, isGuest, observation, impact, need, decisionId, navigate]);
+  }, [user, observation, impact, need, decisionId, navigate]);
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
@@ -115,7 +114,7 @@ export default function ToughConversationStep1Feedback() {
             <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>Frame your feedback clearly and compassionately</p>
           </div>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -242,7 +241,6 @@ export default function ToughConversationStep1Feedback() {
         <SaveDiscardButtons
           onNext={handleNext}
           onSaveAsDraft={handleSaveAsDraft}
-          isGuest={isGuest}
         />
       </div>
     </div>

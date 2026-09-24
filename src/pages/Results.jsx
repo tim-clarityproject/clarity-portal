@@ -15,7 +15,6 @@ export default function Results() {
 
   const strategies = location.state?.strategies || [];
   const ratings = location.state?.ratings || [];
-  const isGuest = location.state?.isGuest || false;
   const path = location.state?.path || 'personal';
 
   const data = strategies.map((strategy, index) => ({
@@ -59,7 +58,7 @@ export default function Results() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -148,7 +147,7 @@ export default function Results() {
       <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', paddingBottom: '24px' }}>
         <button
           type="button"
-          onClick={() => navigate(path === 'team' ? '/project-scatter' : '/dashboard', { state: { ...location.state, isGuest } })}
+          onClick={() => navigate(path === 'team' ? '/project-scatter' : '/dashboard', { state: { ...location.state } })}
           style={{
             backgroundColor: 'transparent',
             border: 'none',

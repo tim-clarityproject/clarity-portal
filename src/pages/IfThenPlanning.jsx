@@ -12,7 +12,6 @@ export default function IfThenPlanning() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
   const [situation, setSituation] = useState('');
@@ -25,10 +24,10 @@ export default function IfThenPlanning() {
   useAutoExpandTextarea(refSituation, situation);
 
   useEffect(() => {
-    if (decisionId && user && !isGuest) {
+    if (decisionId && user) {
       loadPlanning();
     }
-  }, [decisionId, user, isGuest]);
+  }, [decisionId, user]);
 
   const loadPlanning = async () => {
     if (!user) return;
@@ -208,7 +207,7 @@ export default function IfThenPlanning() {
       setSituation('');
       setItems([{ id: 1, ifCondition: '', thenAction: '' }]);
       setNextId(2);
-      navigate('/decision-tools', { state: { isGuest } });
+      navigate('/decision-tools');
     }
   };
 
@@ -218,7 +217,7 @@ export default function IfThenPlanning() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>

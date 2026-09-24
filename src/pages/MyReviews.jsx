@@ -12,14 +12,13 @@ export default function MyReviews() {
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState('all');
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
-    if (user && !isGuest) {
+    if (user) {
       setIsLoading(true);
       loadEntries();
     }
-  }, [user, isGuest, filterType]);
+  }, [user, filterType]);
 
   const loadEntries = async () => {
     if (!user) return;
@@ -105,7 +104,7 @@ export default function MyReviews() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>My Reviews</h1>

@@ -11,7 +11,6 @@ export default function StopDoingAudit() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
 
   const [items, setItems] = useState([{ id: 1, activity: '', timePerWeek: '', action: '' }]);
@@ -27,10 +26,10 @@ export default function StopDoingAudit() {
   useAutoExpandTextarea(refTimeUse, timeUse);
 
   useEffect(() => {
-    if (decisionId && user && !isGuest) {
+    if (decisionId && user) {
       loadAudit();
     }
-  }, [decisionId, user, isGuest]);
+  }, [decisionId, user]);
 
   const loadAudit = async () => {
     if (!user) return;
@@ -180,7 +179,7 @@ export default function StopDoingAudit() {
       setItems([{ id: 1, activity: '', timePerWeek: '', action: '' }]);
       setNextId(2);
       setTimeUse('');
-      navigate('/decision-tools', { state: { isGuest } });
+      navigate('/decision-tools');
     }
   };
 
@@ -193,7 +192,7 @@ export default function StopDoingAudit() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>

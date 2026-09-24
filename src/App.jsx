@@ -7,7 +7,6 @@ import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BreathButton from './components/BreathButton';
-import ProtectedRoute from './components/ProtectedRoute';
 import ProtectedLayout from './components/ProtectedLayout';
 import Login from './pages/Login';
 import Welcome from './pages/Welcome';

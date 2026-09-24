@@ -19,7 +19,6 @@ export default function MyJournal() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const isGuest = location.state?.isGuest || false;
   const isEditMode = !!location.state?.selectedDate;
 
   const [q1, setQ1] = useState('');
@@ -85,10 +84,10 @@ export default function MyJournal() {
   }, [reviewType, isEditMode]);
 
   useEffect(() => {
-    if (user && !isGuest && isEditMode) {
+    if (user && isEditMode) {
       loadEntry(selectedDate);
     }
-  }, [selectedDate, user, isGuest, isEditMode, reviewType]);
+  }, [selectedDate, user, isEditMode, reviewType]);
 
   const loadEntry = async (date) => {
     if (!user) return;
@@ -150,7 +149,7 @@ export default function MyJournal() {
   const needsNaming = reviewType !== 'after-action' && !currentTitle;
 
   const handleSaveClick = () => {
-    if (!user || isGuest) {
+    if (!user) {
       alert('Please log in to save reviews');
       return;
     }
@@ -285,7 +284,7 @@ export default function MyJournal() {
           border-radius: 3px;
         }
       `}</style>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>{pageTitle}</h1>
@@ -467,7 +466,7 @@ export default function MyJournal() {
           <button
             onClick={() => {
               if (window.confirm(`Delete this ${pageTitle}? It will be lost forever.`)) {
-                navigate('/my-reviews', { state: { isGuest } });
+                navigate('/my-reviews');
               }
             }}
             title={`Delete ${pageTitle}`}
@@ -531,7 +530,7 @@ export default function MyJournal() {
 
           <button
             onClick={handleSaveClick}
-            disabled={isSaving || isGuest}
+            disabled={isSaving}
             style={{
               padding: '10px 20px',
               backgroundColor: '#F08571',
@@ -545,10 +544,10 @@ export default function MyJournal() {
               opacity: isSaving ? 0.7 : 1,
             }}
             onMouseEnter={(e) => {
-              if (!isSaving && !isGuest) e.currentTarget.style.backgroundColor = '#e07560';
+              if (!isSaving) e.currentTarget.style.backgroundColor = '#e07560';
             }}
             onMouseLeave={(e) => {
-              if (!isSaving && !isGuest) e.currentTarget.style.backgroundColor = '#F08571';
+              if (!isSaving) e.currentTarget.style.backgroundColor = '#F08571';
             }}
           >
             {isSaving ? 'Finishing...' : 'Finish'}

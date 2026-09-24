@@ -20,7 +20,6 @@ export default function InversionStep3Plan() {
   const [isSaving, setIsSaving] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
-  const isGuest = location.state?.isGuest || false;
   const fuckups = location.state?.fuckups || [];
 
   useLoadDecision(updateFormData);
@@ -51,7 +50,7 @@ export default function InversionStep3Plan() {
   const handleSaveClick = (newDecisionId) => {
     if (!plan.trim() || !goal.trim()) return;
 
-    if (isGuest) {
+    if (false) {
       alert('Please log in to save decisions');
       return;
     }
@@ -123,12 +122,12 @@ export default function InversionStep3Plan() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/decision-history', { state: { isGuest } })}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
@@ -239,8 +238,8 @@ export default function InversionStep3Plan() {
           pageType="decision"
           toolType="inversion"
           onNext={handleSaveClick}
-          canNext={plan.trim() && goal.trim() && !isSaving && !isGuest}
-          onBack={() => navigate('/inversion-step-2', { state: { ...formData, isGuest, decisionId: location.state?.decisionId } })}
+          canNext={plan.trim() && goal.trim() && !isSaving}
+          onBack={() => navigate('/inversion-step-2', { state: { ...formData, decisionId: location.state?.decisionId } })}
           nextLabel={isSaving ? 'Saving...' : 'Finish'}
         />
 

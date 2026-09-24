@@ -109,7 +109,7 @@ export default function CreateAccount() {
           }
         }
       `}</style>
-      <HomeHeader isGuest={true} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }} className="page-container">
         <div style={{ width: '100%', maxWidth: '400px' }}>

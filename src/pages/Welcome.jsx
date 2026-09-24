@@ -43,7 +43,6 @@ export default function Welcome() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
   const [showGreetingText, setShowGreetingText] = useState(false);
-  const isGuest = location.state?.isGuest || false;
 
   // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
@@ -81,7 +80,7 @@ export default function Welcome() {
   }, [isGuest, user]);
 
   useEffect(() => {
-    if (!user || isGuest) {
+    if (!user) {
       setFirstName('');
       return;
     }
@@ -124,7 +123,7 @@ export default function Welcome() {
     };
 
     loadUserName();
-  }, [user, isGuest]);
+  }, [user]);
 
   useEffect(() => {
     setShowDropdown(false);
@@ -209,7 +208,7 @@ export default function Welcome() {
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
-      <HomeHeader isGuest={isGuest} delayMission={true} />
+      <HomeHeader delayMission={true} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}

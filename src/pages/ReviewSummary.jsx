@@ -11,7 +11,6 @@ export default function ReviewSummary() {
   const { user } = useContext(AuthContext);
   const [review, setReview] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const isGuest = location.state?.isGuest || false;
   const reviewType = location.state?.reviewType || 'after-action';
   const selectedDate = location.state?.selectedDate;
   const entryId = location.state?.entryId;
@@ -64,7 +63,7 @@ export default function ReviewSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Loading review...</p>
         </div>
@@ -75,7 +74,7 @@ export default function ReviewSummary() {
   if (!review) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader isGuest={isGuest} />
+        <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Review not found</p>
         </div>
@@ -153,13 +152,13 @@ export default function ReviewSummary() {
           }
         }
       `}</style>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }} className="page-container">
         {/* Back Button */}
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <button
-            onClick={() => navigate('/my-reviews', { state: { isGuest } })}
+            onClick={() => navigate('/my-reviews')}
             style={{
               backgroundColor: 'transparent',
               border: 'none',

@@ -11,7 +11,6 @@ export default function PlanMyDayStep1() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const isGuest = location.state?.isGuest || false;
   const decisionId = location.state?.decisionId;
   const isEditMode = Boolean(decisionId);
   const [topPriority, setTopPriority] = useState(() => location.state?.topPriority || '');
@@ -31,12 +30,12 @@ export default function PlanMyDayStep1() {
   }, [location.state, decisionId, isEditMode]);
 
   const handleSave = async () => {
-    if (!user && !isGuest) {
+    if (!user) {
       alert('Please log in to save');
       return;
     }
 
-    if (isGuest) {
+    if (false) {
       alert('Please log in to save decisions');
       return;
     }
@@ -119,7 +118,7 @@ export default function PlanMyDayStep1() {
       setTopPriority('');
       setShowUp('');
       setNotDo('');
-      navigate('/decision-history', { state: { isGuest } });
+      navigate('/decision-history');
     }
   };
 
@@ -135,7 +134,7 @@ export default function PlanMyDayStep1() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>

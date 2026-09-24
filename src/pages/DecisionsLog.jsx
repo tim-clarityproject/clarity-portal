@@ -12,13 +12,12 @@ export default function DecisionsLog() {
   const { user } = useContext(AuthContext);
   const [decisions, setDecisions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
-    if (user && !isGuest) {
+    if (user) {
       loadDecisions();
     }
-  }, [user, isGuest]);
+  }, [user]);
 
   const loadDecisions = async () => {
     if (!user) return;
@@ -73,12 +72,12 @@ export default function DecisionsLog() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
-            onClick={() => navigate('/welcome', { state: { isGuest } })}
+            onClick={() => navigate('/welcome')}
             style={{
               backgroundColor: 'transparent',
               border: 'none',
@@ -96,7 +95,7 @@ export default function DecisionsLog() {
           <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>Decision-Making Tools</h2>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button
-              onClick={() => navigate('/grow-step-1', { state: { isGuest } })}
+              onClick={() => navigate('/grow-step-1')}
               style={{
                 padding: '12px 24px',
                 backgroundColor: 'transparent',
@@ -120,7 +119,7 @@ export default function DecisionsLog() {
               GROW Model
             </button>
             <button
-              onClick={() => navigate('/inversion-step-1', { state: { isGuest } })}
+              onClick={() => navigate('/inversion-step-1')}
               style={{
                 padding: '12px 24px',
                 backgroundColor: 'transparent',
@@ -144,7 +143,7 @@ export default function DecisionsLog() {
               Inversion
             </button>
             <button
-              onClick={() => navigate('/goal-setting', { state: { path: 'team', isGuest } })}
+              onClick={() => navigate('/goal-setting', { state: { path: 'team' } })}
               style={{
                 padding: '12px 24px',
                 backgroundColor: 'transparent',

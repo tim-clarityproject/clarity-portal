@@ -13,13 +13,12 @@ export default function MyPlans() {
   const [plans, setPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('daily-plans'); // 'daily-plans' or 'meetings'
-  const isGuest = location.state?.isGuest || false;
 
   useEffect(() => {
-    if (user && !isGuest) {
+    if (user) {
       loadPlans();
     }
-  }, [user, isGuest]);
+  }, [user]);
 
   const loadPlans = async () => {
     if (!user) return;
@@ -92,7 +91,7 @@ export default function MyPlans() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader isGuest={isGuest} />
+      <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>
@@ -165,7 +164,7 @@ export default function MyPlans() {
             <button
               onClick={() => {
                 const route = filter === 'meetings' ? '/plan-meeting' : '/plan-my-day';
-                navigate(route, { state: { isGuest } });
+                navigate(route);
               }}
               style={{
                 padding: '12px 24px',
@@ -334,7 +333,7 @@ export default function MyPlans() {
         <button
           onClick={() => {
             const route = filter === 'meetings' ? '/plan-meeting' : '/plan-my-day';
-            navigate(route, { state: { isGuest } });
+            navigate(route);
           }}
           style={{
             padding: '10px 20px',
