@@ -170,8 +170,8 @@ export default function ToughConversationStep2Coaching() {
       }
       setCurrentTitle(decisionName);
       clearProgress();
-      console.log('Save successful, navigating to decision-summary');
-      navigate('/decision-summary', { state: { isGuest, decisionId: savedDecisionId } });
+      console.log('Save successful, navigating to tough-conversation-summary');
+      navigate('/tough-conversation-summary', { state: { isGuest, decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving:', error);
       alert(`Failed to save: ${error.message || error}`);

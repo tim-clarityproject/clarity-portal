@@ -48,6 +48,7 @@ import InversionStep1Goal from './pages/InversionStep1Goal';
 import InversionStep2Fuckups from './pages/InversionStep2Fuckups';
 import InversionStep3Plan from './pages/InversionStep3Plan';
 import ToughConversationStep1Feedback from './pages/ToughConversationStep1Feedback';
+import ToughConversationSummary from './pages/ToughConversationSummary';
 import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coaching';
 import AuthCallback from './pages/AuthCallback';
 import TermsOfService from './pages/TermsOfService';
@@ -179,6 +180,7 @@ function AppContent() {
       <Route path="/inversion-step-3" element={<InversionStep3Plan />} />
       <Route path="/tough-conversation-step-1" element={<ToughConversationStep1Feedback />} />
       <Route path="/tough-conversation-step-2" element={<ToughConversationStep2Coaching />} />
+      <Route path="/tough-conversation-summary" element={<ToughConversationSummary />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/data-storage-notice" element={<DataStorageNotice />} />
