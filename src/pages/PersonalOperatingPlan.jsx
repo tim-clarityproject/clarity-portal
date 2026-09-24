@@ -10,7 +10,7 @@ import HomeHeader from '../components/HomeHeader';
 export default function PersonalOperatingPlan() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useContext(AuthContext);
+  const { user, isLoading: authLoading } = useContext(AuthContext);
   const isGuest = location.state?.isGuest || false;
 
   const [mission, setMission] = useState(null);
@@ -18,6 +18,16 @@ export default function PersonalOperatingPlan() {
   const [tactics, setTactics] = useState({});
   const [expandedStrategies, setExpandedStrategies] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+
+  // Safety check: redirect if no valid session
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login', {
+        state: { returnTo: location.pathname, fromDirect: true },
+        replace: true
+      });
+    }
+  }, [authLoading, user, navigate, location]);
 
   useEffect(() => {
     if (user && !isGuest) {
