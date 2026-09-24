@@ -49,9 +49,6 @@ export default function StopDoingAudit() {
           const maxId = Math.max(...formData.items.map(item => item.id || 0));
           setNextId(maxId + 1);
         }
-        if (formData.firstStop) {
-          setFirstStop(formData.firstStop);
-        }
         if (formData.firstAction) {
           setFirstAction(formData.firstAction);
         }
