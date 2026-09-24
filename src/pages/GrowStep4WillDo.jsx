@@ -22,15 +22,15 @@ export default function GrowStep4WillDo() {
   const [showNamingModal, setShowNamingModal] = useState(false);
 
   // Load decision data for edit mode; returns values from FormContext
-  const { isLoading, isEditMode, error, onRetry, markDirty, clearDirty, willDo, options } = useLoadDecisionStep(['willDo', 'options']);
+  const { isLoading, isEditMode, error, onRetry, markDirty, clearDirty, will_do, options } = useLoadDecisionStep(['will_do', 'options']);
 
-  const willDoValue = willDo || '';
+  const willDoValue = will_do || '';
   const optionsValue = options || [];
 
   // Clear on fresh start (new decision)
   useEffect(() => {
     if (!isEditMode && !location.state?.options) {
-      updateFormData('willDo', '');
+      updateFormData('will_do', '');
     }
   }, [isEditMode, location.state?.options, updateFormData]);
 
