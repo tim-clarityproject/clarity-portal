@@ -67,7 +67,7 @@ export default function BreathingGuide({ isOpen, onClose }) {
 
   const handleSettings = () => {
     onClose();
-    window.location.href = '/my-account#breathing-settings';
+    navigate('/my-account', { state: { scrollTo: 'breathing-settings' } });
   };
 
   if (!isOpen) return null;

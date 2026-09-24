@@ -27,6 +27,16 @@ export default function MyAccount() {
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
   const isGuest = false;
 
+  // Handle scrolling to sections when navigated with state.scrollTo
+  useEffect(() => {
+    if (location.state?.scrollTo) {
+      const element = document.getElementById(location.state.scrollTo);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [location.state?.scrollTo]);
+
   const handleDeleteAccount = async () => {
     if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
       return;
