@@ -12,32 +12,56 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkUser = async () => {
       try {
+        // DIAGNOSTIC: Check what's in localStorage at app launch
+        const storedUserData = localStorage.getItem('clarity-user-data');
+        const storedAuthToken = localStorage.getItem('clarity-portal-auth');
+        console.log('[AuthContext] APP LAUNCH DIAGNOSTIC:');
+        console.log('[AuthContext] - clarity-user-data in localStorage?', !!storedUserData);
+        console.log('[AuthContext] - clarity-portal-auth token in localStorage?', !!storedAuthToken);
+        if (storedAuthToken) {
+          try {
+            const parsed = JSON.parse(storedAuthToken);
+            console.log('[AuthContext] - Token expires at:', parsed.expires_at ? new Date(parsed.expires_at * 1000).toISOString() : 'unknown');
+            console.log('[AuthContext] - Token refresh token present?', !!parsed.refresh_token);
+          } catch (e) {
+            console.log('[AuthContext] - Could not parse stored token');
+          }
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[AuthContext] - getSession() returned:', !!session, 'error:', error?.message || 'none');
+        if (session) {
+          console.log('[AuthContext] - Session user email:', session.user?.email);
+          console.log('[AuthContext] - Session token present?', !!session.access_token);
+        }
 
         // Check session validity
         if (session?.user && !error) {
           // Session exists and is valid
+          console.log('[AuthContext] - Session valid, setting user:', session.user.email);
           setUser(session.user);
           const userData = await dataSyncManager.loadUserData(session.user.id);
           localStorage.setItem('clarity-user-data', JSON.stringify(userData));
         } else {
           // Session is invalid or missing - clear cached data and logout
+          console.log('[AuthContext] - No session or error, logging out. Error:', error?.message);
           localStorage.removeItem('clarity-user-data');
           setUser(null);
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error('[AuthContext] Auth check error:', error);
         localStorage.removeItem('clarity-user-data');
         setUser(null);
       } finally {
         setIsLoading(false);
-        console.log('[AuthContext] Initial auth check complete - user:', session?.user?.email || 'null', 'isLoading: false');
+        console.log('[AuthContext] Initial auth check complete - isLoading: false');
       }
     };
 
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[AuthContext] Auth state changed:', event, 'has user?', !!session?.user);
       setUser(session?.user || null);
 
       if (session?.user) {
