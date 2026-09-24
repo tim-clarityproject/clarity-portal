@@ -12,7 +12,7 @@ import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 export default function GrowStep1Goal() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
+  const { formData, updateFormData, getFieldValue, setLoadedDecisionId } = useContext(FormContext);
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -82,6 +82,7 @@ export default function GrowStep1Goal() {
           updateFormData('opportunities', formDataLoaded.opportunities || '');
           updateFormData('options', formDataLoaded.options || []);
           updateFormData('will_do', formDataLoaded.will_do || '');
+          setLoadedDecisionId(decisionId);
         }
       } catch (err) {
         console.error('Error loading decision:', err);
