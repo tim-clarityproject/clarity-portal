@@ -1,5 +1,5 @@
 import { useContext, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { MissionProvider } from './context/MissionContext';
 import { FormProvider } from './context/FormContext';
@@ -8,6 +8,7 @@ import './lib/debugStorage'; // Make debugging utilities available
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BreathButton from './components/BreathButton';
 import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedLayout from './components/ProtectedLayout';
 import Login from './pages/Login';
 import Welcome from './pages/Welcome';
 import CreateAccount from './pages/CreateAccount';
@@ -137,65 +138,70 @@ function AppContent() {
   return (
     <>
       <Routes>
+        {/* PUBLIC ROUTES - No auth required */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/welcome" element={<ProtectedRoute allowGuest={true}><Welcome /></ProtectedRoute>} />
-        <Route path="/onboarding-mission" element={<ProtectedRoute><OnboardingMission /></ProtectedRoute>} />
-        <Route path="/personal-operating-plan" element={<ProtectedRoute><PersonalOperatingPlan /></ProtectedRoute>} />
-        <Route path="/personal-operating-plan-summary" element={<ProtectedRoute><PersonalOperatingPlanSummary /></ProtectedRoute>} />
-        <Route path="/personal-operating-plan-edit" element={<ProtectedRoute><PersonalOperatingPlanEdit /></ProtectedRoute>} />
-        <Route path="/personal-operating-plan-review" element={<ProtectedRoute><PersonalOperatingPlanReview /></ProtectedRoute>} />
-        <Route path="/mission-progress-review" element={<ProtectedRoute><MissionProgressReviewDetail /></ProtectedRoute>} />
-      <Route path="/create-account" element={<CreateAccount />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/my-account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
-      <Route path="/goal-setting" element={<ProtectedRoute><GoalSetting /></ProtectedRoute>} />
-      <Route path="/risks-assessment" element={<ProtectedRoute><RisksAssessment /></ProtectedRoute>} />
-      <Route path="/strategies" element={<ProtectedRoute><Strategies /></ProtectedRoute>} />
-      <Route path="/critical-success-factors" element={<ProtectedRoute><CriticalSuccessFactors /></ProtectedRoute>} />
-      <Route path="/project-list" element={<ProtectedRoute><ProjectList /></ProtectedRoute>} />
-      <Route path="/project-matrix" element={<ProtectedRoute><ProjectMatrix /></ProtectedRoute>} />
-      <Route path="/project-progress" element={<ProtectedRoute><ProjectProgress /></ProtectedRoute>} />
-      <Route path="/project-scatter" element={<ProtectedRoute><ProjectScatter /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
-      <Route path="/my-journal" element={<ProtectedRoute><MyJournal /></ProtectedRoute>} />
-      <Route path="/journal-log" element={<ProtectedRoute><JournalLog /></ProtectedRoute>} />
-      <Route path="/my-reviews" element={<ProtectedRoute><MyReviews /></ProtectedRoute>} />
-      <Route path="/review-summary" element={<ProtectedRoute><ReviewSummary /></ProtectedRoute>} />
-      <Route path="/weekly-momentum-review-summary" element={<ProtectedRoute><WeeklyMomentumReviewSummary /></ProtectedRoute>} />
-      <Route path="/decision-tools" element={<ProtectedRoute><DecisionTools /></ProtectedRoute>} />
-      <Route path="/decision-history" element={<ProtectedRoute><DecisionHistory /></ProtectedRoute>} />
-      <Route path="/decision-summary" element={<ProtectedRoute><DecisionSummary /></ProtectedRoute>} />
-      <Route path="/plan-my-day" element={<ProtectedRoute><PlanMyDayStep1 /></ProtectedRoute>} />
-      <Route path="/daily-plan-summary" element={<ProtectedRoute><DailyPlanSummary /></ProtectedRoute>} />
-      <Route path="/plan-meeting" element={<ProtectedRoute><PlanMeeting /></ProtectedRoute>} />
-      <Route path="/meeting-summary" element={<ProtectedRoute><MeetingSummary /></ProtectedRoute>} />
-      <Route path="/if-then-planning" element={<ProtectedRoute><IfThenPlanning /></ProtectedRoute>} />
-      <Route path="/if-then-planning-summary" element={<ProtectedRoute><IfThenPlanningSummary /></ProtectedRoute>} />
-      <Route path="/breathe" element={<ProtectedRoute><BreathingPage /></ProtectedRoute>} />
-      <Route path="/breathing-sessions-summary" element={<ProtectedRoute><BreathingSessionsSummary /></ProtectedRoute>} />
-      <Route path="/stop-doing-audit" element={<ProtectedRoute><StopDoingAudit /></ProtectedRoute>} />
-      <Route path="/stop-doing-audit-summary" element={<ProtectedRoute><StopDoingAuditSummary /></ProtectedRoute>} />
-      <Route path="/my-plans" element={<ProtectedRoute><MyPlans /></ProtectedRoute>} />
-      <Route path="/grow-step-1" element={<ProtectedRoute><GrowStep1Goal /></ProtectedRoute>} />
-      <Route path="/grow-step-2" element={<ProtectedRoute><GrowStep2Reality /></ProtectedRoute>} />
-      <Route path="/grow-step-3" element={<ProtectedRoute><GrowStep3Options /></ProtectedRoute>} />
-      <Route path="/grow-step-3b-prioritize" element={<ProtectedRoute><GrowStep3bPrioritize /></ProtectedRoute>} />
-      <Route path="/grow-step-4" element={<ProtectedRoute><GrowStep4WillDo /></ProtectedRoute>} />
-      <Route path="/inversion-step-1" element={<ProtectedRoute><InversionStep1Goal /></ProtectedRoute>} />
-      <Route path="/inversion-step-2" element={<ProtectedRoute><InversionStep2Fuckups /></ProtectedRoute>} />
-      <Route path="/inversion-step-3" element={<ProtectedRoute><InversionStep3Plan /></ProtectedRoute>} />
-      <Route path="/inversion-thinking-summary" element={<ProtectedRoute><InversionThinkingSummary /></ProtectedRoute>} />
-      <Route path="/tough-conversation-step-1" element={<ProtectedRoute><ToughConversationStep1Feedback /></ProtectedRoute>} />
-      <Route path="/tough-conversation-step-2" element={<ProtectedRoute><ToughConversationStep2Coaching /></ProtectedRoute>} />
-      <Route path="/tough-conversation-summary" element={<ProtectedRoute><ToughConversationSummary /></ProtectedRoute>} />
-      <Route path="/terms-of-service" element={<TermsOfService />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-      <Route path="/data-storage-notice" element={<DataStorageNotice />} />
-      <Route path="/edit-profile" element={<ProtectedRoute><EditPersonalDetails /></ProtectedRoute>} />
-      <Route path="/accept-terms" element={<ProtectedRoute><TermsAcceptance /></ProtectedRoute>} />
+        <Route path="/create-account" element={<CreateAccount />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/data-storage-notice" element={<DataStorageNotice />} />
+
+        {/* PROTECTED ROUTES - ALL routes here require valid session */}
+        <Route element={<ProtectedLayout><Outlet /></ProtectedLayout>}>
+          <Route path="/welcome" element={<Welcome />} />
+          <Route path="/onboarding-mission" element={<OnboardingMission />} />
+          <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
+          <Route path="/personal-operating-plan-summary" element={<PersonalOperatingPlanSummary />} />
+          <Route path="/personal-operating-plan-edit" element={<PersonalOperatingPlanEdit />} />
+          <Route path="/personal-operating-plan-review" element={<PersonalOperatingPlanReview />} />
+          <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
+          <Route path="/my-account" element={<MyAccount />} />
+          <Route path="/goal-setting" element={<GoalSetting />} />
+          <Route path="/risks-assessment" element={<RisksAssessment />} />
+          <Route path="/strategies" element={<Strategies />} />
+          <Route path="/critical-success-factors" element={<CriticalSuccessFactors />} />
+          <Route path="/project-list" element={<ProjectList />} />
+          <Route path="/project-matrix" element={<ProjectMatrix />} />
+          <Route path="/project-progress" element={<ProjectProgress />} />
+          <Route path="/project-scatter" element={<ProjectScatter />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/results" element={<Results />} />
+          <Route path="/my-journal" element={<MyJournal />} />
+          <Route path="/journal-log" element={<JournalLog />} />
+          <Route path="/my-reviews" element={<MyReviews />} />
+          <Route path="/review-summary" element={<ReviewSummary />} />
+          <Route path="/weekly-momentum-review-summary" element={<WeeklyMomentumReviewSummary />} />
+          <Route path="/decision-tools" element={<DecisionTools />} />
+          <Route path="/decision-history" element={<DecisionHistory />} />
+          <Route path="/decision-summary" element={<DecisionSummary />} />
+          <Route path="/plan-my-day" element={<PlanMyDayStep1 />} />
+          <Route path="/daily-plan-summary" element={<DailyPlanSummary />} />
+          <Route path="/plan-meeting" element={<PlanMeeting />} />
+          <Route path="/meeting-summary" element={<MeetingSummary />} />
+          <Route path="/if-then-planning" element={<IfThenPlanning />} />
+          <Route path="/if-then-planning-summary" element={<IfThenPlanningSummary />} />
+          <Route path="/breathe" element={<BreathingPage />} />
+          <Route path="/breathing-sessions-summary" element={<BreathingSessionsSummary />} />
+          <Route path="/stop-doing-audit" element={<StopDoingAudit />} />
+          <Route path="/stop-doing-audit-summary" element={<StopDoingAuditSummary />} />
+          <Route path="/my-plans" element={<MyPlans />} />
+          <Route path="/grow-step-1" element={<GrowStep1Goal />} />
+          <Route path="/grow-step-2" element={<GrowStep2Reality />} />
+          <Route path="/grow-step-3" element={<GrowStep3Options />} />
+          <Route path="/grow-step-3b-prioritize" element={<GrowStep3bPrioritize />} />
+          <Route path="/grow-step-4" element={<GrowStep4WillDo />} />
+          <Route path="/inversion-step-1" element={<InversionStep1Goal />} />
+          <Route path="/inversion-step-2" element={<InversionStep2Fuckups />} />
+          <Route path="/inversion-step-3" element={<InversionStep3Plan />} />
+          <Route path="/inversion-thinking-summary" element={<InversionThinkingSummary />} />
+          <Route path="/tough-conversation-step-1" element={<ToughConversationStep1Feedback />} />
+          <Route path="/tough-conversation-step-2" element={<ToughConversationStep2Coaching />} />
+          <Route path="/tough-conversation-summary" element={<ToughConversationSummary />} />
+          <Route path="/edit-profile" element={<EditPersonalDetails />} />
+          <Route path="/accept-terms" element={<TermsAcceptance />} />
+        </Route>
       </Routes>
       {!hideButtons && (
         <div className="no-print">
