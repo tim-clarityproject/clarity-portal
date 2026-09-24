@@ -59,6 +59,7 @@ import EditPersonalDetails from './pages/EditPersonalDetails';
 import TermsAcceptance from './pages/TermsAcceptance';
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
+import PersonalOperatingPlanSummary from './pages/PersonalOperatingPlanSummary';
 import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
 import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
@@ -138,6 +139,7 @@ function AppContent() {
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/onboarding-mission" element={<OnboardingMission />} />
         <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
+        <Route path="/personal-operating-plan-summary" element={<PersonalOperatingPlanSummary />} />
         <Route path="/personal-operating-plan-edit" element={<PersonalOperatingPlanEdit />} />
         <Route path="/personal-operating-plan-review" element={<PersonalOperatingPlanReview />} />
         <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
