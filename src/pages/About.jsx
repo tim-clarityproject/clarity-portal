@@ -56,10 +56,10 @@ export default function About() {
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: designTokens.layout.gapBetweenCards }}>
               {[
-                { icon: '🎯', title: 'Daily Intentions', desc: 'Start each day with clarity on your top priority' },
-                { icon: '🤔', title: 'Deep Reflection', desc: 'After-action reviews and decision frameworks' },
-                { icon: '📋', title: 'Personal Operating Plan', desc: 'Define your mission, strategies, and tactics' },
-                { icon: '📈', title: 'Progress Tracking', desc: 'Weekly momentum reviews to build momentum' }
+                { title: 'Daily Intentions', desc: 'Start each day with clarity on your top priority' },
+                { title: 'Deep Reflection', desc: 'After-action reviews and decision frameworks' },
+                { title: 'Personal Operating Plan', desc: 'Define your mission, strategies, and tactics' },
+                { title: 'Progress Tracking', desc: 'Weekly momentum reviews to build momentum' }
               ].map((feature, idx) => (
                 <div key={idx} style={{
                   padding: designTokens.spacing.lg,
@@ -68,7 +68,6 @@ export default function About() {
                   borderRadius: designTokens.borderRadius.lg,
                   textAlign: 'center',
                 }}>
-                  <div style={{ fontSize: '28px', marginBottom: designTokens.spacing.md }}>{feature.icon}</div>
                   <h3 style={{ ...designTokens.typography.h4, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.sm} 0` }}>
                     {feature.title}
                   </h3>
