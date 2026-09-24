@@ -27,16 +27,6 @@ export default function MyAccount() {
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
   const isGuest = false;
 
-  // Safety check: if auth is done loading and no user, redirect to login
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/login', {
-        state: { returnTo: location.pathname, fromDirect: true },
-        replace: true
-      });
-    }
-  }, [isLoading, user, navigate, location]);
-
   const handleDeleteAccount = async () => {
     if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
       return;

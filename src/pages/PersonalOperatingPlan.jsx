@@ -19,16 +19,6 @@ export default function PersonalOperatingPlan() {
   const [expandedStrategies, setExpandedStrategies] = useState({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // Safety check: redirect if no valid session
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login', {
-        state: { returnTo: location.pathname, fromDirect: true },
-        replace: true
-      });
-    }
-  }, [authLoading, user, navigate, location]);
-
   useEffect(() => {
     if (user && !isGuest) {
       loadPlan();
