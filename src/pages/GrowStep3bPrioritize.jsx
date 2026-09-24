@@ -36,7 +36,9 @@ export default function GrowStep3bPrioritize() {
   // For edit mode: restore the ranked order that was previously saved
   useEffect(() => {
     const decisionId = location.state?.decisionId;
-    const hasOptions = location.state?.options && location.state?.options.length > 0;
+    // Check for options in both location.state (from Step 3) and location.state.form_data (from reopening)
+    const hasOptions = (location.state?.options && location.state?.options.length > 0) ||
+                      (location.state?.form_data?.options && location.state?.form_data?.options.length > 0);
     const hasPrioritized = location.state?.prioritizedOptions && location.state?.prioritizedOptions.length > 0;
 
     // Only load from DB if this is edit mode AND we don't have prioritized options from navigation
@@ -113,11 +115,17 @@ export default function GrowStep3bPrioritize() {
       setAvailableOptions(location.state.availableOptions);
     } else if (location.state?.options) {
       setAvailableOptions(location.state.options);
+    } else if (location.state?.form_data?.options) {
+      // When reopening from My Decisions, options are nested in form_data
+      setPrioritizedOptions(location.state.form_data.options);
+      updateFormData('prioritizedOptions', location.state.form_data.options);
+      setAvailableOptions([]);
+      updateFormData('availableOptions', []);
     }
     if (location.state?.prioritizedOptions) {
       setPrioritizedOptions(location.state.prioritizedOptions);
     }
-  }, [location.state?.availableOptions, location.state?.options, location.state?.prioritizedOptions]);
+  }, [location.state?.availableOptions, location.state?.options, location.state?.prioritizedOptions, location.state?.form_data, updateFormData]);
 
   useEffect(() => {
     const prioritizedSet = new Set(prioritizedOptions);
