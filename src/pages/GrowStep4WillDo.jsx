@@ -36,6 +36,7 @@ export default function GrowStep4WillDo() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
+  const [validationError, setValidationError] = useState('');
 
   const handleEditStart = (index, value) => {
     setEditingIndex(index);
@@ -107,14 +108,37 @@ export default function GrowStep4WillDo() {
 
   const handleSaveConfirmed = async (decisionName) => {
     setShowNamingModal(false);
+    setValidationError('');
     setIsSaving(true);
     try {
+      const goal = getFieldValue('goal') || '';
+      const constraints = getFieldValue('constraints') || '';
+      const opportunities = getFieldValue('opportunities') || '';
+      const options = getFieldValue('options') || [];
+      const willDo = willDoValue || '';
+
+      // Validate all 5 fields are filled before marking as completed
+      const missingFields = [];
+      if (!goal.trim()) missingFields.push('Goal');
+      if (!constraints.trim()) missingFields.push('Constraints');
+      if (!opportunities.trim()) missingFields.push('Opportunities');
+      if (!Array.isArray(options) || options.length === 0 || options.every(opt => !opt?.trim?.())) {
+        missingFields.push('Options');
+      }
+      if (!willDo.trim()) missingFields.push('Will Do');
+
+      if (missingFields.length > 0) {
+        setValidationError(`Cannot mark as completed. Missing: ${missingFields.join(', ')}`);
+        setIsSaving(false);
+        return;
+      }
+
       const formDataComplete = {
-        goal: getFieldValue('goal') || '',
-        constraints: getFieldValue('constraints') || '',
-        opportunities: getFieldValue('opportunities') || '',
-        options: getFieldValue('options') || [],
-        will_do: willDoValue,
+        goal,
+        constraints,
+        opportunities,
+        options,
+        will_do: willDo,
       };
 
       let decisionId = location.state?.decisionId;
@@ -380,6 +404,14 @@ export default function GrowStep4WillDo() {
             onBack={() => navigate('/grow-step-3b-prioritize', { state: { decisionId: location.state?.decisionId } })}
             nextLabel={isSaving ? 'Saving...' : 'Finish'}
           />
+        )}
+
+        {validationError && (
+          <div style={{ padding: '16px', marginTop: '16px', backgroundColor: '#ffebee', borderRadius: '8px', border: '1px solid #ef5350' }}>
+            <p style={{ fontSize: '14px', color: '#c62828', margin: 0, fontWeight: '500' }}>
+              {validationError}
+            </p>
+          </div>
         )}
 
         <NamingModal

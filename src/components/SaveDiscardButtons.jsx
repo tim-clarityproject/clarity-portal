@@ -21,11 +21,32 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
       const title = location.state?.problemTitle || location.state?.title || dateTitle;
 
       if (decisionId) {
-        // Update existing decision
+        // Update existing decision: merge new data with existing, never overwrite with undefined/null
+        const { data: existingRecord, error: fetchError } = await supabase
+          .from('decisions')
+          .select('form_data')
+          .eq('id', decisionId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching existing decision:', fetchError);
+          return null;
+        }
+
+        const existingFormData = existingRecord?.form_data || {};
+        const mergedFormData = { ...existingFormData };
+
+        Object.entries(formData).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            mergedFormData[key] = value;
+          }
+        });
+
         const { data, error } = await supabase
           .from('decisions')
           .update({
-            form_data: formData,
+            form_data: mergedFormData,
             updated_at: new Date().toISOString()
           })
           .eq('id', decisionId)
@@ -76,11 +97,32 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
         const title = location.state?.problemTitle || location.state?.title || dateTitle;
 
         if (decisionId) {
-          // Update existing decision with draft status
+          // Update existing decision with draft status: merge instead of replace
+          const { data: existingRecord, error: fetchError } = await supabase
+            .from('decisions')
+            .select('form_data')
+            .eq('id', decisionId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching existing decision:', fetchError);
+            throw fetchError;
+          }
+
+          const existingFormData = existingRecord?.form_data || {};
+          const mergedFormData = { ...existingFormData };
+
+          Object.entries(formData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              mergedFormData[key] = value;
+            }
+          });
+
           await supabase
             .from('decisions')
             .update({
-              form_data: formData,
+              form_data: mergedFormData,
               status: 'draft',
               draft: true,
               updated_at: new Date().toISOString()
