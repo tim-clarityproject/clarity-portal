@@ -182,7 +182,7 @@ export default function PersonalOperatingPlanReview() {
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="page-container">
-        <h1 className="page-heading">Review: {mission.title}</h1>
+        <h1 className="page-heading" style={{ marginTop: '60px' }}>Review: {mission.title}</h1>
         <p style={{ fontSize: '13px', color: '#999', margin: '0 0 32px 0' }}>Review your progress on each tactic</p>
 
         {/* Strategies Section */}
