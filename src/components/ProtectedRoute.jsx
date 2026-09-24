@@ -1,56 +1,43 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
+// Higher-order component that protects routes by checking auth before rendering
 export default function ProtectedRoute({ children, allowGuest = false }) {
   const { user, isLoading } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
-  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Wait for auth check to complete
+    // Only check after auth is loaded
     if (isLoading) return;
 
-    // If user is logged in, allow access
+    // If user exists, allow access - no action needed
     if (user) {
-      setIsChecking(false);
       return;
     }
 
-    // If no user and guest mode is allowed, check if explicitly in guest mode
+    // No user found
+    // If guest mode allowed and explicitly in guest state, allow access
     if (allowGuest && location.state?.isGuest) {
-      setIsChecking(false);
       return;
     }
 
-    // If no user and not in guest mode, redirect to login with return path
+    // No valid session and not in guest mode - redirect to login immediately
     if (!user && !allowGuest) {
       navigate('/login', {
         state: {
           returnTo: location.pathname,
           fromDirect: true
-        }
+        },
+        replace: true // Use replace to prevent back button returning to protected page
       });
       return;
     }
-
-    // No valid session and guest mode not allowed
-    if (!user) {
-      navigate('/login', {
-        state: {
-          returnTo: location.pathname,
-          fromDirect: true
-        }
-      });
-      return;
-    }
-
-    setIsChecking(false);
   }, [user, isLoading, navigate, location, allowGuest]);
 
-  // Show loading state while checking auth
-  if (isLoading || isChecking) {
+  // During auth check, show loading screen
+  if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
@@ -58,14 +45,17 @@ export default function ProtectedRoute({ children, allowGuest = false }) {
     );
   }
 
-  // Allow access if:
-  // 1. User is logged in, OR
-  // 2. Guest mode allowed and explicitly in guest state
-  const hasAccess = user || (allowGuest && location.state?.isGuest);
-
-  if (!hasAccess) {
-    return null; // Will redirect in useEffect above
+  // After auth check complete:
+  // If user is logged in, render children
+  if (user) {
+    return children;
   }
 
-  return children;
+  // If guest mode allowed and in guest state, render children
+  if (allowGuest && location.state?.isGuest) {
+    return children;
+  }
+
+  // No access - redirect in progress, show nothing
+  return null;
 }

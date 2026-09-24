@@ -12,7 +12,7 @@ import EmailVerificationBanner from '../components/EmailVerificationBanner';
 export default function MyAccount() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, isLoading } = useContext(AuthContext);
   const { refetchMission } = useContext(MissionContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -26,6 +26,16 @@ export default function MyAccount() {
   const [showArchivedMissions, setShowArchivedMissions] = useState(false);
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
   const isGuest = false;
+
+  // Safety check: if auth is done loading and no user, redirect to login
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/login', {
+        state: { returnTo: location.pathname, fromDirect: true },
+        replace: true
+      });
+    }
+  }, [isLoading, user, navigate, location]);
 
   const handleDeleteAccount = async () => {
     if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
