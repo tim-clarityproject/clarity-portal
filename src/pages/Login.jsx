@@ -58,13 +58,8 @@ export default function Login() {
           // No email verification needed - redirect to onboarding mission
           navigate('/onboarding-mission', { state: { isNewSignup: true } });
         } else {
-          // Login succeeded - redirect to originally requested page or welcome
-          const returnTo = location.state?.returnTo;
-          if (returnTo && returnTo !== '/login') {
-            navigate(returnTo);
-          } else {
-            navigate('/welcome');
-          }
+          // Login succeeded - always redirect to homepage
+          navigate('/welcome');
         }
       } else {
         // Display specific error message from auth function
