@@ -58,8 +58,28 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     flowType: 'implicit',
     // Keep access token alive for longer periods
     tokenRefreshMarginSeconds: 60,
+    // Cookie settings for cross-domain support (portal.theclarityproject.co.uk and vercel.app)
+    // Note: Supabase auth cookies are set for the domain, not shared across subdomains
+    // Each domain maintains its own session separately
   },
 });
+
+// Add session recovery for cross-domain access
+// When accessing from a different domain, validate session with Supabase directly
+export async function recoverSession() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (!error && session) {
+      return session;
+    }
+    // Try to refresh token if session exists but might be stale
+    const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+    return refreshError ? null : refreshedSession;
+  } catch (err) {
+    console.error('Session recovery error:', err);
+    return null;
+  }
+}
 
 // Auth functions
 export const auth = {

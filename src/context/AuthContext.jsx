@@ -12,23 +12,22 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-        if (session?.user) {
+        // Check session validity
+        if (session?.user && !error) {
+          // Session exists and is valid
           setUser(session.user);
           const userData = await dataSyncManager.loadUserData(session.user.id);
           sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
         } else {
-          const currentUser = await auth.getCurrentUser();
-          if (currentUser) {
-            setUser(currentUser);
-            const userData = await dataSyncManager.loadUserData(currentUser.id);
-            sessionStorage.setItem('clarity-user-data', JSON.stringify(userData));
-          } else {
-            setUser(null);
-          }
+          // Session is invalid or missing - clear cached data and logout
+          sessionStorage.removeItem('clarity-user-data');
+          setUser(null);
         }
       } catch (error) {
+        console.error('Auth check error:', error);
+        sessionStorage.removeItem('clarity-user-data');
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -90,7 +89,9 @@ export function AuthProvider({ children }) {
           }
         }
       } else {
+        // No valid session - clear all cached user data
         sessionStorage.removeItem('clarity-user-data');
+        setUser(null);
       }
     });
 

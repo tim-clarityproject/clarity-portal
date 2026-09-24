@@ -81,23 +81,33 @@ export default function Welcome() {
   }, [isGuest, user]);
 
   useEffect(() => {
-    if (!user || isGuest) return;
-
-    try {
-      const cachedData = sessionStorage.getItem('clarity-user-data');
-      if (cachedData) {
-        const userData = JSON.parse(cachedData);
-        if (userData.first_name) {
-          setFirstName(userData.first_name);
-          return;
-        }
-      }
-    } catch (err) {
-      console.error('Error reading cached data:', err);
+    if (!user || isGuest) {
+      setFirstName('');
+      return;
     }
 
-    const fetchUserName = async () => {
+    const loadUserName = async () => {
       try {
+        // First, verify session is still valid
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+        if (authError || !currentUser) {
+          // Session has expired - clear cached data
+          sessionStorage.removeItem('clarity-user-data');
+          setFirstName('');
+          return;
+        }
+
+        // Session is valid - try cached data first
+        const cachedData = sessionStorage.getItem('clarity-user-data');
+        if (cachedData) {
+          const userData = JSON.parse(cachedData);
+          if (userData.first_name) {
+            setFirstName(userData.first_name);
+            return;
+          }
+        }
+
+        // No cached data, fetch from Supabase
         const { data, error } = await supabase
           .from('profiles')
           .select('first_name')
@@ -108,11 +118,12 @@ export default function Welcome() {
           setFirstName(data.first_name);
         }
       } catch (err) {
-        console.error('Error fetching user name:', err);
+        console.error('Error loading user name:', err);
+        setFirstName('');
       }
     };
 
-    fetchUserName();
+    loadUserName();
   }, [user, isGuest]);
 
   useEffect(() => {

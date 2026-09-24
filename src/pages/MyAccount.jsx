@@ -224,7 +224,7 @@ export default function MyAccount() {
       <HomeHeader isGuest={isGuest} personalGoal={showGoalInHeader ? personalGoal : ''} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: designTokens.layout.contentPadding }} className="page-container">
-        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginBottom: designTokens.spacing.xl }}>
+        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '12px', marginBottom: designTokens.spacing.xl }}>
           My Account
         </h1>
 
