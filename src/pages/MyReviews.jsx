@@ -279,7 +279,7 @@ export default function MyReviews() {
                     e.currentTarget.style.borderColor = '#e5e5e5';
                   }}
                 >
-                  <div style={{ display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', alignItems: 'center', gap: '16px', width: '100%' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '16px', width: '100%' }}>
                     <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
                       {displayTitle}
                     </p>
@@ -296,7 +296,6 @@ export default function MyReviews() {
                     >
                       {isMissionProgress ? 'Mission Progress Reviews' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Weekly Momentum Review')}
                     </span>
-                    <div></div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
                         {formatTimeOnly(entry.created_at)}

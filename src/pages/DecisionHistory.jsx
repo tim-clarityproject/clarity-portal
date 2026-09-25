@@ -209,16 +209,16 @@ export default function DecisionHistory() {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {decision.tool_type === 'daily_plan' ? (
-                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {formatDailyPlanDateAndTime(decision.created_at)}
-                      </p>
-                    ) : (
-                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
-                      </p>
-                    )}
+                  {decision.tool_type === 'daily_plan' ? (
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                      {formatDailyPlanDateAndTime(decision.created_at)}
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                      {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span
                       style={{
                         fontSize: '12px',

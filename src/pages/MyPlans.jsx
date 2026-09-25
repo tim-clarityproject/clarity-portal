@@ -236,10 +236,10 @@ export default function MyPlans() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                        {plan.tool_type === 'daily_plan' ? formatDailyPlanDateAndTime(plan.created_at) : plan.title || 'Meeting'}
-                      </p>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                      {plan.tool_type === 'daily_plan' ? formatDailyPlanDateAndTime(plan.created_at) : plan.title || 'Meeting'}
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <span
                         style={{
                           fontSize: '12px',
@@ -253,8 +253,6 @@ export default function MyPlans() {
                       >
                         {plan.tool_type === 'daily_plan' ? 'Daily Plan' : 'Meeting Plan'}
                       </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       {plan.tool_type === 'plan_meeting' && (
                         <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
                           {plan.form_data && plan.form_data.date && plan.form_data.time
