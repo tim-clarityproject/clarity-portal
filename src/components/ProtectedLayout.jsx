@@ -37,7 +37,7 @@ export default function ProtectedLayout() {
   // During auth check, show loading screen (blocks rendering of child routes)
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
       </div>
     );
