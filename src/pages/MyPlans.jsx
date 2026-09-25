@@ -4,6 +4,7 @@ import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
+import { formatReviewDate, formatTimeOnly } from '../lib/dateFormatter';
 import HomeHeader from '../components/HomeHeader';
 
 export default function MyPlans() {
@@ -237,7 +238,7 @@ export default function MyPlans() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
                     <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {plan.tool_type === 'daily_plan' ? formatDailyPlanDateAndTime(plan.created_at) : plan.title || 'Meeting'}
+                      {plan.tool_type === 'daily_plan' ? formatReviewDate(plan.created_at) : plan.title || 'Meeting'}
                     </p>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <span
@@ -255,9 +256,9 @@ export default function MyPlans() {
                       </span>
                       {plan.tool_type === 'plan_meeting' && (
                         <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                          {plan.form_data && plan.form_data.date && plan.form_data.time
-                            ? `${new Date(plan.form_data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} ${new Date(`2000-01-01T${plan.form_data.time}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
-                            : new Date(plan.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) + ' ' + new Date(plan.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                          {plan.form_data && plan.form_data.time
+                            ? formatTimeOnly(`2000-01-01T${plan.form_data.time}`)
+                            : formatTimeOnly(plan.created_at)
                           }
                         </p>
                       )}

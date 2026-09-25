@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
+import { formatReviewDate } from '../lib/dateFormatter';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import HomeHeader from '../components/HomeHeader';
@@ -161,7 +162,7 @@ export default function MyJournal() {
       handleSaveConfirmed(reviewTitle);
     } else if (reviewType === 'weekly-momentum') {
       // Generate date-based title for weekly momentum reviews
-      const dateTitle = formatDate(selectedDate);
+      const dateTitle = formatReviewDate(selectedDate);
       handleSaveConfirmed(dateTitle);
     } else if (needsNaming) {
       setShowNamingModal(true);
@@ -235,11 +236,6 @@ export default function MyJournal() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };
@@ -504,7 +500,7 @@ export default function MyJournal() {
                   }
                 } else if (reviewType === 'weekly-momentum') {
                   // Generate date-based title for weekly momentum reviews
-                  const dateTitle = formatDate(selectedDate);
+                  const dateTitle = formatReviewDate(selectedDate);
                   handleSaveConfirmed(dateTitle);
                 } else if (needsNaming) {
                   setShowNamingModal(true);

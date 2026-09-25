@@ -4,7 +4,7 @@ import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { formatDateWithOrdinal } from '../lib/dateFormatter';
+import { formatDateWithOrdinal, formatDateTimeWithOrdinal } from '../lib/dateFormatter';
 import HomeHeader from '../components/HomeHeader';
 import BackArrow from '../components/BackArrow';
 
@@ -251,7 +251,7 @@ export default function DecisionHistory() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                     <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                      {decision.tool_type === 'daily_plan' ? '' : formatDateAndTime(decision.created_at)}
+                      {decision.tool_type === 'daily_plan' ? '' : formatDateTimeWithOrdinal(decision.created_at)}
                     </p>
                     <button
                       onClick={(e) => handleEdit(decision, e)}
