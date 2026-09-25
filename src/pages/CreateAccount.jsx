@@ -61,10 +61,9 @@ export default function CreateAccount() {
 
     setIsLoading(true);
     try {
-      // Store name in localStorage so it can be retrieved after email confirmation
-      localStorage.setItem('pendingSignupName', JSON.stringify({ firstName, lastName }));
-
-      const result = await signup(email, password);
+      // Pass firstName and lastName directly to signup() - they'll be saved to Supabase user_metadata
+      // This is more reliable than localStorage (survives browser closures, device switches, etc.)
+      const result = await signup(email, password, firstName, lastName);
       if (result.success) {
         // Clear form and navigate to dedicated confirmation page
         setFirstName('');
@@ -75,6 +74,7 @@ export default function CreateAccount() {
         setTermsAccepted(false);
 
         // Navigate to check-email confirmation page (NOT just showing a message on this page)
+        console.log('[CreateAccount] Signup successful, navigating to check-email-confirmation with email:', email);
         navigate('/check-email-confirmation', { state: { email } });
       } else {
         // Display user-facing error message from signup

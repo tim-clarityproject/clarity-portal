@@ -68,8 +68,9 @@ export function AuthProvider({ children }) {
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
           try {
             const metadata = session.user.user_metadata || {};
-            const firstName = metadata.given_name || metadata.name?.split(' ')[0] || metadata.full_name?.split(' ')[0] || '';
-            const lastName = metadata.family_name || metadata.name?.split(' ').slice(1).join(' ') || metadata.full_name?.split(' ').slice(1).join(' ') || '';
+            // Prefer names from user_metadata (set during signup) over OAuth provider metadata
+            const firstName = metadata.first_name || metadata.given_name || metadata.name?.split(' ')[0] || metadata.full_name?.split(' ')[0] || '';
+            const lastName = metadata.last_name || metadata.family_name || metadata.name?.split(' ').slice(1).join(' ') || metadata.full_name?.split(' ').slice(1).join(' ') || '';
 
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
@@ -78,15 +79,32 @@ export function AuthProvider({ children }) {
               .single();
 
             if (profileError && profileError.code === 'PGRST116') {
-              await supabase
-                .from('profiles')
-                .insert({
-                  id: session.user.id,
-                  first_name: firstName || '',
-                  last_name: lastName || '',
-                  email: session.user.email || '',
-                  terms_accepted: false,
-                });
+              // Profile doesn't exist - only create if terms were already accepted
+              // (e.g., from email confirmation flow). Don't create with terms_accepted=false
+              // as that would trigger the accept-terms redirect
+              const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
+              if (justConfirmedEmail) {
+                await supabase
+                  .from('profiles')
+                  .insert({
+                    id: session.user.id,
+                    first_name: firstName || '',
+                    last_name: lastName || '',
+                    email: session.user.email || '',
+                    terms_accepted: true,
+                  });
+              } else {
+                // For other sign-in methods, create with terms_accepted=false
+                await supabase
+                  .from('profiles')
+                  .insert({
+                    id: session.user.id,
+                    first_name: firstName || '',
+                    last_name: lastName || '',
+                    email: session.user.email || '',
+                    terms_accepted: false,
+                  });
+              }
 
               const userData = await dataSyncManager.loadUserData(session.user.id);
               localStorage.setItem('clarity-user-data', JSON.stringify(userData));
@@ -184,22 +202,30 @@ export function AuthProvider({ children }) {
     try {
       try {
         // STEP 1: Create Auth user (sends confirmation email)
+        // Save firstName/lastName in user_metadata (server-side) instead of relying on localStorage
+        // This ensures names persist across browser closures, device switches, etc.
         const { data, error: signupError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             redirectTo: `${window.location.origin}/email-confirmation`,
+            data: {
+              first_name: firstName || '',
+              last_name: lastName || '',
+            },
           },
         });
 
         if (signupError) throw signupError;
         if (!data.user) throw new Error('No user returned from signup');
 
-        console.log('✓ Step 1: Auth user created, confirmation email sent to:', email);
+        console.log('✓ Step 1: Auth user created with name, confirmation email sent to:', email);
+        console.log('[AuthContext.signup] Names saved to user_metadata:', { first_name: firstName, last_name: lastName });
 
         // Note: User email is NOT confirmed yet - they must click the confirmation link
         // Do NOT attempt to sign in here - that will fail until email is confirmed
         // The confirmation page will handle post-confirmation logic
+        // Names are now safely stored server-side in user_metadata
 
         return { success: true };
       } catch (signupErr) {

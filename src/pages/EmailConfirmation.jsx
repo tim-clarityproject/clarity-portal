@@ -28,10 +28,13 @@ export default function EmailConfirmation() {
         if (session?.user) {
           console.log('✓ Email confirmed and session established');
 
-          // Create profile record with name from localStorage and mark terms as accepted
+          // Create profile record with name from user_metadata (saved at signup) and mark terms as accepted
           try {
-            const pendingSignupName = localStorage.getItem('pendingSignupName');
-            const { firstName = '', lastName = '' } = pendingSignupName ? JSON.parse(pendingSignupName) : {};
+            // Get names from user_metadata (saved during signup, more reliable than localStorage)
+            const userData = session.user.user_metadata || {};
+            const firstName = userData.first_name || '';
+            const lastName = userData.last_name || '';
+            console.log('[EmailConfirmation] Retrieved names from user_metadata:', { firstName, lastName });
 
             // Check if profile already exists
             const { data: existingProfile, error: fetchError } = await supabase
@@ -51,7 +54,7 @@ export default function EmailConfirmation() {
                   last_name: lastName,
                   terms_accepted: true,
                 });
-              console.log('✓ Profile created with name and terms accepted');
+              console.log('✓ Profile created with name from user_metadata and terms accepted');
             } else if (!fetchError) {
               // Profile exists, update it with name and terms accepted
               await supabase
@@ -62,11 +65,12 @@ export default function EmailConfirmation() {
                   terms_accepted: true,
                 })
                 .eq('id', session.user.id);
-              console.log('✓ Profile updated with name and terms accepted');
+              console.log('✓ Profile updated with name from user_metadata and terms accepted');
             }
 
             // Mark this as a new signup confirmation (to skip /accept-terms redirect)
             localStorage.setItem('justConfirmedEmail', 'true');
+            // Clean up old localStorage name storage (no longer needed)
             localStorage.removeItem('pendingSignupName');
           } catch (profileErr) {
             console.error('Profile creation error (non-fatal):', profileErr);

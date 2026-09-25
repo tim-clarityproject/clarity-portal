@@ -35,7 +35,15 @@ export const sessionManager = {
   async refreshSession() {
     try {
       const { data, error } = await supabase.auth.refreshSession();
-      if (error) throw error;
+      if (error) {
+        // Suppress "Invalid Refresh Token" errors from unconfirmed email signup
+        // These are expected during the signup → email confirmation flow
+        if (error.message?.includes('Invalid Refresh Token') || error.message?.includes('Refresh Token Not Found')) {
+          console.log('Refresh token not available (expected during email confirmation), skipping refresh');
+          return null;
+        }
+        throw error;
+      }
       return data?.session;
     } catch (error) {
       console.error('Error refreshing session:', error);

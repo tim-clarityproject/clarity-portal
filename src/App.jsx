@@ -84,8 +84,14 @@ function AppContent() {
         // Check if user just confirmed their email (new signup flow)
         const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
         if (justConfirmedEmail) {
+          // If not already on the mission page, redirect there for new users
+          if (!location.pathname.includes('onboarding-mission')) {
+            console.log('[App.handleRedirects] New signup confirmed, redirecting to mission page');
+            navigate('/onboarding-mission', { replace: true });
+            return;
+          }
+          // Already on mission page, just remove the flag
           localStorage.removeItem('justConfirmedEmail');
-          // Skip the accept-terms check - already accepted at signup
           return;
         }
 
@@ -109,7 +115,9 @@ function AppContent() {
           termsAccepted = false;
         }
 
-        if (!termsAccepted && !location.pathname.includes('accept-terms')) {
+        // Skip terms check if on onboarding-mission (new users go here after email confirmation)
+        // They've already accepted terms during signup
+        if (!termsAccepted && !location.pathname.includes('accept-terms') && !location.pathname.includes('onboarding-mission')) {
           navigate('/accept-terms', { replace: true });
           return;
         }
