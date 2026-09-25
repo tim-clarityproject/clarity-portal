@@ -129,16 +129,68 @@ export default function CreateAccount() {
           )}
 
           {verificationEmailSent && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '12px 16px',
-              backgroundColor: '#e8f5e9',
-              borderRadius: '8px',
-              border: '1px solid #4caf50'
-            }}>
-              <p style={{ color: '#2e7d32', fontSize: '13px', margin: 0, fontWeight: '500' }}>
-                ✓ Account created! Check your email for a verification link to complete signup.
-              </p>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                marginBottom: '32px',
+                padding: '32px 24px',
+                backgroundColor: '#e8f5e9',
+                borderRadius: '8px',
+                border: '1px solid #4caf50'
+              }}>
+                <h2 style={{ color: '#2e7d32', fontSize: '20px', fontWeight: 'bold', margin: '0 0 16px 0' }}>
+                  ✓ Account Created!
+                </h2>
+                <p style={{ color: '#2e7d32', fontSize: '14px', margin: '0 0 12px 0', lineHeight: '1.6' }}>
+                  We've sent a confirmation email to <strong>{email}</strong>
+                </p>
+                <p style={{ color: '#2e7d32', fontSize: '13px', margin: 0, lineHeight: '1.6' }}>
+                  Click the confirmation link in the email to activate your account and start exploring The Clarity Project tools.
+                </p>
+              </div>
+
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '8px',
+                marginBottom: '24px'
+              }}>
+                <p style={{ color: '#666', fontSize: '13px', margin: '0 0 12px 0' }}>
+                  <strong>Didn't receive the email?</strong>
+                </p>
+                <ul style={{ color: '#666', fontSize: '12px', margin: '0 0 12px 0', paddingLeft: '20px', lineHeight: '1.8' }}>
+                  <li>Check your spam or junk folder</li>
+                  <li>The link expires in 24 hours — if it has, you can sign up again</li>
+                  <li>Make sure you entered the correct email address</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => {
+                  setVerificationEmailSent(false);
+                  setEmail('');
+                }}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: 'transparent',
+                  border: '2px solid #e5e5e5',
+                  color: '#333',
+                  fontWeight: '600',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.borderColor = '#F08571';
+                  e.target.style.backgroundColor = '#f9f9f9';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.borderColor = '#e5e5e5';
+                  e.target.style.backgroundColor = 'transparent';
+                }}
+              >
+                Sign Up with a Different Email
+              </button>
             </div>
           )}
 

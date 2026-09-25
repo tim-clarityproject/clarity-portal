@@ -56,6 +56,7 @@ import ToughConversationStep1Feedback from './pages/ToughConversationStep1Feedba
 import ToughConversationSummary from './pages/ToughConversationSummary';
 import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coaching';
 import AuthCallback from './pages/AuthCallback';
+import EmailConfirmation from './pages/EmailConfirmation';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DataStorageNotice from './pages/DataStorageNotice';
@@ -125,6 +126,7 @@ function AppContent() {
     '/',
     '/create-account',
     '/auth/callback',
+    '/email-confirmation',
     '/accept-terms',
     '/onboarding-mission',
     '/personal-operating-plan-edit',
@@ -143,6 +145,7 @@ function AppContent() {
           <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/about" element={<About />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />

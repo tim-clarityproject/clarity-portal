@@ -180,102 +180,32 @@ export function AuthProvider({ children }) {
 
   const signup = async (email, password, firstName = '', lastName = '') => {
     setIsLoading(true);
-    let authUserCreated = false;
-    let userSession = null;
 
     try {
       try {
-        // STEP 1: Create Auth user
-        await auth.signUp(email, password);
-        authUserCreated = true;
-        console.log('✓ Step 1: Auth user created');
+        // STEP 1: Create Auth user (sends confirmation email)
+        const { data, error: signupError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            redirectTo: `${window.location.origin}/email-confirmation`,
+          },
+        });
 
-        // STEP 2: Sign in to get session
-        await auth.signIn(email, password);
-        console.log('✓ Step 2: User signed in');
+        if (signupError) throw signupError;
+        if (!data.user) throw new Error('No user returned from signup');
 
-        // STEP 3: Get session info
-        userSession = await sessionManager.getSession();
-        if (!userSession?.user) {
-          throw new Error('Failed to get session after signup');
-        }
-        console.log('✓ Step 3: Session retrieved');
+        console.log('✓ Step 1: Auth user created, confirmation email sent to:', email);
 
-        // STEP 4: Create profile record
-        if (firstName || lastName) {
-          await supabase
-            .from('profiles')
-            .upsert({
-              id: userSession.user.id,
-              first_name: firstName,
-              last_name: lastName,
-              email: email,
-              terms_accepted: true,
-            })
-            .select();
-        } else {
-          await supabase
-            .from('profiles')
-            .upsert({
-              id: userSession.user.id,
-              email: email,
-              terms_accepted: true,
-            })
-            .select();
-        }
-        console.log('✓ Step 4: Profile created');
-
-        // STEP 5: Save session metadata
-        sessionManager.saveSessionMetadata(userSession);
-        console.log('✓ Step 5: Session metadata saved');
-
-        // STEP 6: Load user data
-        const userData = await dataSyncManager.loadUserData(userSession.user.id);
-        localStorage.setItem('clarity-user-data', JSON.stringify(userData));
-        console.log('✓ Step 6: User data loaded');
+        // Note: User email is NOT confirmed yet - they must click the confirmation link
+        // Do NOT attempt to sign in here - that will fail until email is confirmed
+        // The confirmation page will handle post-confirmation logic
 
         return { success: true };
       } catch (signupErr) {
-        console.error('Signup error at step:', signupErr);
+        console.error('Signup error:', signupErr);
 
-        // ROLLBACK: If Auth user was created but later steps failed, delete it to prevent orphaning
-        if (authUserCreated && userSession?.user) {
-          console.log('⚠️  Rolling back: Deleting orphaned Auth user...');
-          try {
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
-            if (currentSession?.access_token) {
-              const response = await fetch(
-                `${new URL(supabase.supabaseUrl).origin}/functions/v1/delete-user`,
-                {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${currentSession.access_token}`,
-                    'Content-Type': 'application/json',
-                  },
-                }
-              );
-              if (response.ok) {
-                console.log('✓ Rollback: Orphaned Auth user deleted');
-              } else {
-                console.error('⚠️  Rollback failed: Could not delete Auth user');
-                // Continue anyway - at least profile/session won't exist
-              }
-            }
-          } catch (rollbackErr) {
-            console.error('⚠️  Rollback exception:', rollbackErr);
-            // Continue - user will need manual cleanup but email will be free after logout
-          }
-
-          // Always logout to clear the session
-          try {
-            await auth.signOut();
-            console.log('✓ User logged out');
-          } catch (logoutErr) {
-            console.error('Logout during rollback failed:', logoutErr);
-          }
-        }
-
-        // Provide user-facing error
+        // Provide user-facing error messages
         if (signupErr.message?.includes('already registered') || signupErr.status === 422) {
           return { success: false, error: 'An account with this email already exists. Try logging in instead.' };
         } else if (signupErr.status === 400) {
