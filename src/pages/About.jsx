@@ -32,10 +32,10 @@ export default function About() {
         {/* Created By */}
         <section style={{ marginBottom: designTokens.layout.gapBetweenSections, paddingTop: designTokens.spacing.lg, borderTop: `1px solid ${designTokens.colors.border.medium}`, paddingLeft: designTokens.spacing.lg, borderLeft: `4px solid ${designTokens.colors.primary}` }}>
           <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.md} 0` }}>
-            Created by
+            Created by The Clarity Project
           </h2>
           <p style={{ ...designTokens.typography.body, color: designTokens.colors.text.secondary, margin: 0, marginBottom: designTokens.spacing.md }}>
-            Clarity project dedicated to helping high performers think better and lead with clarity.
+            The Clarity Project is dedicated to helping high-performers think and lead with more clarity and conviction.
           </p>
           <a
             href="https://theclarityproject.co.uk/"
