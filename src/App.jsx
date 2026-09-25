@@ -57,6 +57,7 @@ import ToughConversationSummary from './pages/ToughConversationSummary';
 import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coaching';
 import AuthCallback from './pages/AuthCallback';
 import EmailConfirmation from './pages/EmailConfirmation';
+import CheckEmailConfirmation from './pages/CheckEmailConfirmation';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DataStorageNotice from './pages/DataStorageNotice';
@@ -80,6 +81,14 @@ function AppContent() {
 
     const handleRedirects = async () => {
       try {
+        // Check if user just confirmed their email (new signup flow)
+        const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
+        if (justConfirmedEmail) {
+          localStorage.removeItem('justConfirmedEmail');
+          // Skip the accept-terms check - already accepted at signup
+          return;
+        }
+
         let termsAccepted = false;
 
         try {
@@ -125,6 +134,7 @@ function AppContent() {
   const hideButtons = [
     '/',
     '/create-account',
+    '/check-email-confirmation',
     '/auth/callback',
     '/email-confirmation',
     '/accept-terms',
@@ -146,6 +156,7 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
+        <Route path="/check-email-confirmation" element={<CheckEmailConfirmation />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/about" element={<About />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />

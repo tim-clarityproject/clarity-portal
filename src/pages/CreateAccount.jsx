@@ -61,29 +61,21 @@ export default function CreateAccount() {
 
     setIsLoading(true);
     try {
+      // Store name in localStorage so it can be retrieved after email confirmation
+      localStorage.setItem('pendingSignupName', JSON.stringify({ firstName, lastName }));
+
       const result = await signup(email, password);
       if (result.success) {
-        // Set terms as accepted for email signups (they checked the box)
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase
-              .from('profiles')
-              .update({ first_name: firstName, last_name: lastName, terms_accepted: true })
-              .eq('id', user.id);
-          }
-        } catch (profileErr) {
-          console.error('Error updating profile:', profileErr);
-        }
-
-        // Show verification email message
-        setVerificationEmailSent(true);
+        // Clear form and navigate to dedicated confirmation page
         setFirstName('');
         setLastName('');
         setEmail('');
         setPassword('');
         setConfirmPassword('');
         setTermsAccepted(false);
+
+        // Navigate to check-email confirmation page (NOT just showing a message on this page)
+        navigate('/check-email-confirmation', { state: { email } });
       } else {
         // Display user-facing error message from signup
         setError(result.error || 'Failed to create account');

@@ -27,10 +27,57 @@ export default function EmailConfirmation() {
 
         if (session?.user) {
           console.log('✓ Email confirmed and session established');
+
+          // Create profile record with name from localStorage and mark terms as accepted
+          try {
+            const pendingSignupName = localStorage.getItem('pendingSignupName');
+            const { firstName = '', lastName = '' } = pendingSignupName ? JSON.parse(pendingSignupName) : {};
+
+            // Check if profile already exists
+            const { data: existingProfile, error: fetchError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', session.user.id)
+              .single();
+
+            if (fetchError && fetchError.code === 'PGRST116') {
+              // Profile doesn't exist, create it
+              await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  email: session.user.email,
+                  first_name: firstName,
+                  last_name: lastName,
+                  terms_accepted: true,
+                });
+              console.log('✓ Profile created with name and terms accepted');
+            } else if (!fetchError) {
+              // Profile exists, update it with name and terms accepted
+              await supabase
+                .from('profiles')
+                .update({
+                  first_name: firstName,
+                  last_name: lastName,
+                  terms_accepted: true,
+                })
+                .eq('id', session.user.id);
+              console.log('✓ Profile updated with name and terms accepted');
+            }
+
+            // Mark this as a new signup confirmation (to skip /accept-terms redirect)
+            localStorage.setItem('justConfirmedEmail', 'true');
+            localStorage.removeItem('pendingSignupName');
+          } catch (profileErr) {
+            console.error('Profile creation error (non-fatal):', profileErr);
+            // Continue anyway - user can still proceed
+          }
+
           setStatus('success');
           setMessage('Email confirmed! Redirecting to your mission...');
 
           // Redirect to the mission/purpose onboarding page after a brief delay
+          // This is CRITICAL for new users to set their mission
           setTimeout(() => {
             navigate('/onboarding-mission');
           }, 2000);
