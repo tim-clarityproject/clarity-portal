@@ -55,8 +55,8 @@ export default function Login() {
 
       if (result.success) {
         if (isSignUp) {
-          // No email verification needed - redirect to onboarding mission
-          navigate('/onboarding-mission', { state: { isNewSignup: true } });
+          // Email verification required - redirect to check-email-confirmation page
+          navigate('/check-email-confirmation', { state: { email } });
         } else {
           // Login succeeded - always redirect to homepage
           navigate('/welcome');
