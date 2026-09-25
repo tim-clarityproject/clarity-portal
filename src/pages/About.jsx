@@ -14,7 +14,7 @@ export default function About() {
         {/* About this portal section */}
         <section style={{ marginBottom: designTokens.layout.gapBetweenSections, paddingLeft: designTokens.spacing.lg, borderLeft: `4px solid ${designTokens.colors.primary}` }}>
           <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-            About the Clarity Portal
+            About The Clarity Portal
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.md }}>
             <p style={{ ...designTokens.typography.body, color: designTokens.colors.text.secondary, margin: 0 }}>
