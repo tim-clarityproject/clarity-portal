@@ -4,7 +4,7 @@ import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { formatReviewDate, formatTimeOnly } from '../lib/dateFormatter';
+import { formatReviewDate, formatTimeOnly, formatDateTimeWithOrdinal } from '../lib/dateFormatter';
 import HomeHeader from '../components/HomeHeader';
 
 export default function MyPlans() {
@@ -254,9 +254,9 @@ export default function MyPlans() {
                       {plan.tool_type === 'daily_plan' ? 'Daily Plan' : 'Meeting Plan'}
                     </span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
-                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: '60px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                        {plan.tool_type === 'plan_meeting' && plan.form_data && plan.form_data.time
-                          ? formatTimeOnly(`2000-01-01T${plan.form_data.time}`)
+                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: plan.tool_type === 'plan_meeting' ? '170px' : '60px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        {plan.tool_type === 'plan_meeting'
+                          ? formatDateTimeWithOrdinal(plan.created_at)
                           : formatTimeOnly(plan.created_at)
                         }
                       </p>
