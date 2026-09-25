@@ -371,10 +371,31 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           {planSubmenuOpen && (
             <>
               <button
-                onClick={() => {
-                  navigate('/personal-operating-plan', { state: location.state });
-                  setMenuOpen(false);
-                  setPlanSubmenuOpen(false);
+                onClick={async () => {
+                  // Fetch the latest mission to get its ID for the review page
+                  try {
+                    const { data: missionData } = await supabase
+                      .from('missions')
+                      .select('id')
+                      .eq('user_id', user?.id)
+                      .is('archived_at', null)
+                      .order('created_at', { ascending: false })
+                      .limit(1)
+                      .single();
+
+                    if (missionData) {
+                      navigate('/personal-operating-plan-review', { state: { missionId: missionData.id } });
+                    } else {
+                      // No mission exists yet, go to the main POP page
+                      navigate('/personal-operating-plan', { state: location.state });
+                    }
+                  } catch (err) {
+                    // Fallback to main POP page if fetch fails
+                    navigate('/personal-operating-plan', { state: location.state });
+                  } finally {
+                    setMenuOpen(false);
+                    setPlanSubmenuOpen(false);
+                  }
                 }}
                 style={{
                   width: '100%',
@@ -716,10 +737,27 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
                 Weekly Momentum Review
               </button>
               <button
-                onClick={() => {
-                  navigate('/personal-operating-plan-review', { state: location.state });
-                  setMenuOpen(false);
-                  setJournalSubmenuOpen(false);
+                onClick={async () => {
+                  // Fetch the latest mission to get its ID for the review page
+                  try {
+                    const { data: missionData } = await supabase
+                      .from('missions')
+                      .select('id')
+                      .eq('user_id', user?.id)
+                      .is('archived_at', null)
+                      .order('created_at', { ascending: false })
+                      .limit(1)
+                      .single();
+
+                    if (missionData) {
+                      navigate('/personal-operating-plan-review', { state: { missionId: missionData.id } });
+                    }
+                  } catch (err) {
+                    console.error('Error fetching mission:', err);
+                  } finally {
+                    setMenuOpen(false);
+                    setJournalSubmenuOpen(false);
+                  }
                 }}
                 style={{
                   width: '100%',
@@ -736,7 +774,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
                 onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
-                Mission Progress Review
+                Personal Operating Plan Review
               </button>
               <button
                 onClick={() => {
