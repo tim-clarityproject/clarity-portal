@@ -81,6 +81,13 @@ function AppContent() {
 
     const handleRedirects = async () => {
       try {
+        // Skip redirects for public auth pages (don't interfere with signup/email confirmation flow)
+        if (location.pathname.includes('create-account') ||
+            location.pathname.includes('check-email-confirmation') ||
+            location.pathname.includes('email-confirmation')) {
+          return;
+        }
+
         // Check if user just confirmed their email (new signup flow)
         const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
         if (justConfirmedEmail) {

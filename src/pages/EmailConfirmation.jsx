@@ -14,6 +14,11 @@ export default function EmailConfirmation() {
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
+        // CRITICAL: Set the justConfirmedEmail flag FIRST, before anything else
+        // This ensures it's available in localStorage even before session is fully processed
+        localStorage.setItem('justConfirmedEmail', 'true');
+        console.log('[EmailConfirmation] Flag set: justConfirmedEmail = true');
+
         // Supabase automatically processes the token if detectSessionInUrl is enabled
         // Check if session was successfully created by the confirmation
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -68,8 +73,6 @@ export default function EmailConfirmation() {
               console.log('✓ Profile updated with name from user_metadata and terms accepted');
             }
 
-            // Mark this as a new signup confirmation (to skip /accept-terms redirect)
-            localStorage.setItem('justConfirmedEmail', 'true');
             // Clean up old localStorage name storage (no longer needed)
             localStorage.removeItem('pendingSignupName');
           } catch (profileErr) {
@@ -82,6 +85,7 @@ export default function EmailConfirmation() {
 
           // Redirect to the mission/purpose onboarding page after a brief delay
           // This is CRITICAL for new users to set their mission
+          // The justConfirmedEmail flag is already set, so handleRedirects won't interfere
           setTimeout(() => {
             navigate('/onboarding-mission');
           }, 2000);
