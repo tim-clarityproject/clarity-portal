@@ -44,6 +44,7 @@ export default function DecisionTools() {
       'tough-conversation': '/tough-conversation-step-1',
       'stop-doing-audit': '/stop-doing-audit',
       'if-then-planning': '/if-then-planning',
+      'personal-operating-plan': '/personal-operating-plan',
     };
 
     const route = routeMap[problem.tools[0]];
