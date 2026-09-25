@@ -24,6 +24,27 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
     setDisplayMission(true);
   }, []);
 
+  // Measure actual header height and update CSS variable for dynamic spacing
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        const height = headerRef.current.offsetHeight;
+        document.documentElement.style.setProperty('--header-height', `${height}px`);
+      }
+    };
+
+    // Measure on mount and after short delay (allow content to render)
+    updateHeaderHeight();
+    const timeoutId = setTimeout(updateHeaderHeight, 100);
+
+    // Remeasure on window resize (handles responsive layout changes)
+    window.addEventListener('resize', updateHeaderHeight);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateHeaderHeight);
+    };
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       // Close menu if clicking anywhere except the hamburger button or menu
