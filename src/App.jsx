@@ -77,14 +77,33 @@ function AppContent() {
 
   // Check terms acceptance and handle redirects
   useEffect(() => {
+    // CRITICAL: Skip ALL redirect logic if user is null or on public auth pages
+    // This prevents ProtectedLayout from rendering during the signup→check-email flow
+    // where routes haven't settled yet and state is in transition
     if (isLoading || !user) return;
+
+    // Also skip if on ANY public page - these should never be subject to auth redirects
+    const publicPages = [
+      '/',
+      '/login',
+      '/create-account',
+      '/check-email-confirmation',
+      '/email-confirmation',
+      '/auth/callback',
+      '/about',
+      '/terms-of-service',
+      '/privacy-policy',
+      '/data-storage-notice'
+    ];
+
+    if (publicPages.some(page => location.pathname === page)) {
+      return;
+    }
 
     const handleRedirects = async () => {
       try {
-        // Skip redirects for public auth pages (don't interfere with signup/email confirmation flow)
-        if (location.pathname.includes('create-account') ||
-            location.pathname.includes('check-email-confirmation') ||
-            location.pathname.includes('email-confirmation')) {
+        // Double-check we're not on a public page (inner safety check)
+        if (publicPages.some(page => location.pathname === page)) {
           return;
         }
 
