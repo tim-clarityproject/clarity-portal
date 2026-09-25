@@ -32,43 +32,18 @@ export default function EmailConfirmation() {
 
         if (session?.user) {
           console.log('✓ Email confirmed and session established');
+          console.log('[EmailConfirmation] User:', session.user.email, 'ID:', session.user.id);
 
-          // Create profile record with name from user_metadata (saved at signup) and mark terms as accepted
-          try {
-            // Get names from user_metadata (saved during signup, more reliable than localStorage)
-            const userData = session.user.user_metadata || {};
-            const firstName = userData.first_name || '';
-            const lastName = userData.last_name || '';
-            console.log('[EmailConfirmation] Retrieved names from user_metadata:', { firstName, lastName });
+          // CRITICAL: Don't do profile UPSERT here - AuthContext handles it
+          // Multiple simultaneous UPSERT calls cause 409 conflicts
+          // AuthContext's onAuthStateChange listener will:
+          // 1. See the SIGNED_IN event (from detectSessionInUrl)
+          // 2. Read justConfirmedEmail flag from localStorage
+          // 3. Do the profile UPSERT with names from user_metadata and terms_accepted=true
+          // 4. Call loadUserData to sync other tables
 
-            // Use UPSERT to handle both cases atomically:
-            // - If profile exists (created by trigger), update it
-            // - If profile doesn't exist, create it
-            // This eliminates 409 Conflict errors and 406 permission issues from SELECT
-            const { error: upsertError } = await supabase
-              .from('profiles')
-              .upsert({
-                id: session.user.id,
-                email: session.user.email,
-                first_name: firstName,
-                last_name: lastName,
-                terms_accepted: true,
-              }, {
-                onConflict: 'id' // Use id as the conflict resolution column
-              });
-
-            if (upsertError) {
-              console.error('✗ Profile upsert error:', upsertError);
-            } else {
-              console.log('✓ Profile upserted (created or updated) with name from user_metadata and terms accepted');
-            }
-
-            // Clean up old localStorage name storage (no longer needed)
-            localStorage.removeItem('pendingSignupName');
-          } catch (profileErr) {
-            console.error('Profile creation error (non-fatal):', profileErr);
-            // Continue anyway - user can still proceed
-          }
+          // Clean up old localStorage name storage (no longer needed)
+          localStorage.removeItem('pendingSignupName');
 
           setStatus('success');
           setMessage('Email confirmed! Redirecting to your mission...');

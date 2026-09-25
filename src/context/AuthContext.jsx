@@ -79,7 +79,7 @@ export function AuthProvider({ children }) {
             const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
             const termsAccepted = justConfirmedEmail ? true : false; // New signups accept terms, existing logins default to false
 
-            await supabase
+            const upsertResult = await supabase
               .from('profiles')
               .upsert({
                 id: session.user.id,
@@ -88,8 +88,18 @@ export function AuthProvider({ children }) {
                 email: session.user.email || '',
                 terms_accepted: termsAccepted,
               }, {
-                onConflict: 'id'
+                onConflict: ['id']
               });
+
+            if (upsertResult.error) {
+              console.error('[AuthContext] Profile upsert error:', upsertResult.error);
+            } else {
+              console.log('[AuthContext] Profile upserted successfully');
+            }
+
+            // Wait 500ms for session to fully settle before querying other tables
+            // This prevents 406 errors on SELECT queries that depend on RLS checks
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             const userData = await dataSyncManager.loadUserData(session.user.id);
             localStorage.setItem('clarity-user-data', JSON.stringify(userData));
