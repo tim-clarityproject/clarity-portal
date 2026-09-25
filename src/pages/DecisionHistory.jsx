@@ -208,16 +208,14 @@ export default function DecisionHistory() {
                   e.currentTarget.style.borderColor = '#e5e5e5';
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
-                  {decision.tool_type === 'daily_plan' ? (
-                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {formatDailyPlanDateAndTime(decision.created_at)}
-                    </p>
-                  ) : (
-                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'}
-                    </p>
-                  )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '16px', width: '100%' }}>
+                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
+                    {decision.tool_type === 'daily_plan' ? (
+                      formatDailyPlanDateAndTime(decision.created_at)
+                    ) : (
+                      decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'
+                    )}
+                  </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span
                       style={{

@@ -236,34 +236,30 @@ export default function MyPlans() {
                     e.currentTarget.style.borderColor = '#e5e5e5';
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', width: '100%' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '16px', width: '100%' }}>
                     <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {plan.tool_type === 'daily_plan' ? formatReviewDate(plan.created_at) : plan.title || 'Meeting'}
+                      {plan.tool_type === 'daily_plan' ? formatReviewDate(plan.created_at.split('T')[0]) : plan.title || 'Meeting'}
                     </p>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: 'white',
+                        backgroundColor: '#F08571',
+                        padding: '4px 12px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {plan.tool_type === 'daily_plan' ? 'Daily Plan' : 'Meeting Plan'}
+                    </span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
-                      <span
-                        style={{
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: 'white',
-                          backgroundColor: '#F08571',
-                          padding: '4px 12px',
-                          borderRadius: '4px',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {plan.tool_type === 'daily_plan' ? 'Daily Plan' : 'Meeting Plan'}
-                      </span>
-                      {plan.tool_type === 'plan_meeting' && (
-                        <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                          {plan.form_data && plan.form_data.time
-                            ? formatTimeOnly(`2000-01-01T${plan.form_data.time}`)
-                            : formatTimeOnly(plan.created_at)
-                          }
-                        </p>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
+                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
+                        {plan.tool_type === 'plan_meeting' && plan.form_data && plan.form_data.time
+                          ? formatTimeOnly(`2000-01-01T${plan.form_data.time}`)
+                          : formatTimeOnly(plan.created_at)
+                        }
+                      </p>
                       <button
                         onClick={(e) => handleEdit(plan, e)}
                         title="Edit plan"
@@ -309,7 +305,6 @@ export default function MyPlans() {
                         <Trash2 size={18} />
                       </button>
                     </div>
-                  </div>
                 </div>
               ))}
           </div>
