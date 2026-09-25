@@ -55,7 +55,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: customStorage,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'implicit',
+    flowType: 'pkce',
     // Keep access token alive for longer periods
     tokenRefreshMarginSeconds: 60,
     // Cookie settings for cross-domain support (portal.theclarityproject.co.uk and vercel.app)
