@@ -159,6 +159,10 @@ export default function MyJournal() {
         return;
       }
       handleSaveConfirmed(reviewTitle);
+    } else if (reviewType === 'weekly-momentum') {
+      // Generate date-based title for weekly momentum reviews
+      const dateTitle = formatDate(selectedDate);
+      handleSaveConfirmed(dateTitle);
     } else if (needsNaming) {
       setShowNamingModal(true);
     } else {
@@ -498,6 +502,10 @@ export default function MyJournal() {
                   } else {
                     alert('Please enter what you are reviewing');
                   }
+                } else if (reviewType === 'weekly-momentum') {
+                  // Generate date-based title for weekly momentum reviews
+                  const dateTitle = formatDate(selectedDate);
+                  handleSaveConfirmed(dateTitle);
                 } else if (needsNaming) {
                   setShowNamingModal(true);
                 } else {
