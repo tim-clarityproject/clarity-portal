@@ -41,36 +41,26 @@ export default function EmailConfirmation() {
             const lastName = userData.last_name || '';
             console.log('[EmailConfirmation] Retrieved names from user_metadata:', { firstName, lastName });
 
-            // Check if profile already exists
-            const { data: existingProfile, error: fetchError } = await supabase
+            // Use UPSERT to handle both cases atomically:
+            // - If profile exists (created by trigger), update it
+            // - If profile doesn't exist, create it
+            // This eliminates 409 Conflict errors and 406 permission issues from SELECT
+            const { error: upsertError } = await supabase
               .from('profiles')
-              .select('id')
-              .eq('id', session.user.id)
-              .single();
+              .upsert({
+                id: session.user.id,
+                email: session.user.email,
+                first_name: firstName,
+                last_name: lastName,
+                terms_accepted: true,
+              }, {
+                onConflict: 'id' // Use id as the conflict resolution column
+              });
 
-            if (fetchError && fetchError.code === 'PGRST116') {
-              // Profile doesn't exist, create it
-              await supabase
-                .from('profiles')
-                .insert({
-                  id: session.user.id,
-                  email: session.user.email,
-                  first_name: firstName,
-                  last_name: lastName,
-                  terms_accepted: true,
-                });
-              console.log('✓ Profile created with name from user_metadata and terms accepted');
-            } else if (!fetchError) {
-              // Profile exists, update it with name and terms accepted
-              await supabase
-                .from('profiles')
-                .update({
-                  first_name: firstName,
-                  last_name: lastName,
-                  terms_accepted: true,
-                })
-                .eq('id', session.user.id);
-              console.log('✓ Profile updated with name from user_metadata and terms accepted');
+            if (upsertError) {
+              console.error('✗ Profile upsert error:', upsertError);
+            } else {
+              console.log('✓ Profile upserted (created or updated) with name from user_metadata and terms accepted');
             }
 
             // Clean up old localStorage name storage (no longer needed)
