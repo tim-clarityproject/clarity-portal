@@ -62,7 +62,7 @@ export default function ReviewSummary() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Loading review...</p>
@@ -73,7 +73,7 @@ export default function ReviewSummary() {
 
   if (!review) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Review not found</p>
@@ -115,7 +115,7 @@ export default function ReviewSummary() {
   const pageTitle = isAfterAction ? 'After-Action Review' : isProgressReview ? 'Progress Review' : 'Weekly Momentum Review';
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @page {
           margin: 0.4in 0.5in;

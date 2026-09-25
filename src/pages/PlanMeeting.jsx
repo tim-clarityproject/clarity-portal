@@ -319,7 +319,7 @@ export default function PlanMeeting() {
   const sectionInnerStyle = { paddingLeft: '24px' };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader />
 
       <style>{`

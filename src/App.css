@@ -1,3 +1,8 @@
+/* Global header height constant - prevents content overlap with fixed header */
+:root {
+  --header-height: 120px;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

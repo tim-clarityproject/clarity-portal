@@ -53,7 +53,7 @@ export default function About() {
             onMouseEnter={(e) => e.target.style.color = designTokens.button.primary.hoverBackgroundColor}
             onMouseLeave={(e) => e.target.style.color = designTokens.colors.primary}
           >
-            Visit the Clarity project
+            Visit The Clarity Project
           </a>
         </section>
 

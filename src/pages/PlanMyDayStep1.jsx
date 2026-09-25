@@ -132,7 +132,7 @@ export default function PlanMyDayStep1() {
   const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">

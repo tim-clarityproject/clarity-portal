@@ -68,7 +68,7 @@ export default function MeetingSummary() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading meeting...</p>
@@ -79,7 +79,7 @@ export default function MeetingSummary() {
 
   if (!meeting) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Meeting not found</p>
@@ -101,7 +101,7 @@ export default function MeetingSummary() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader className="no-print" />
 
       <style>{`

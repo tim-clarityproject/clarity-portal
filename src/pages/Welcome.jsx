@@ -207,7 +207,7 @@ export default function Welcome() {
   };
 
   return (
-    <div style={{ width: '100%', minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
+    <div style={{ width: '100%', minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
       <HomeHeader delayMission={true} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 

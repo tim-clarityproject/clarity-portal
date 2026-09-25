@@ -87,7 +87,7 @@ export default function ProjectList() {
   const canSubmit = filledProjects >= 1;
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader />
 
       {/* Main Content */}

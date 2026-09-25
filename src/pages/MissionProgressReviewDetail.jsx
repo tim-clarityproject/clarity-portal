@@ -68,7 +68,7 @@ export default function MissionProgressReviewDetail() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
       </div>
     );
@@ -76,7 +76,7 @@ export default function MissionProgressReviewDetail() {
 
   if (!review) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
           <p style={{ color: '#999' }}>Review not found</p>
@@ -88,7 +88,7 @@ export default function MissionProgressReviewDetail() {
   const data = review.review_data;
   if (!data) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
           <p style={{ color: '#999' }}>Invalid review data</p>
@@ -98,7 +98,7 @@ export default function MissionProgressReviewDetail() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="page-container">

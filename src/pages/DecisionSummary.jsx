@@ -49,7 +49,7 @@ export default function DecisionSummary() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Loading decision...</p>
@@ -60,7 +60,7 @@ export default function DecisionSummary() {
 
   if (!decision) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Decision not found</p>
@@ -100,7 +100,7 @@ export default function DecisionSummary() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @page {
           margin: 0.4in 0.5in;

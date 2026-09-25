@@ -191,7 +191,7 @@ export default function StopDoingAudit() {
   const totalTime = getTotalTime();
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '70px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
