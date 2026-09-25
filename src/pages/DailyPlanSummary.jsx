@@ -151,6 +151,17 @@ export default function DailyPlanSummary() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+          {formData.gratitude && (
+            <div style={summaryStyles.section}>
+              <h2 style={summaryStyles.sectionHeading}>
+                What are you grateful for today?
+              </h2>
+              <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
+                {formData.gratitude}
+              </p>
+            </div>
+          )}
+
           {formData.topPriority && (
             <div style={summaryStyles.section}>
               <h2 style={summaryStyles.sectionHeading}>

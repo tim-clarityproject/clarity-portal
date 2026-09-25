@@ -13,14 +13,17 @@ export default function PlanMyDayStep1() {
   const { user } = useContext(AuthContext);
   const decisionId = location.state?.decisionId;
   const isEditMode = Boolean(decisionId);
+  const [gratitude, setGratitude] = useState(() => location.state?.gratitude || '');
   const [topPriority, setTopPriority] = useState(() => location.state?.topPriority || '');
   const [showUp, setShowUp] = useState(() => location.state?.showUp || '');
   const [notDo, setNotDo] = useState(() => location.state?.notDo || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const refGratitude = useRef(null);
   const refTopPriority = useRef(null);
   const refShowUp = useRef(null);
   const refNotDo = useRef(null);
+  useAutoExpandTextarea(refGratitude, gratitude);
   useAutoExpandTextarea(refTopPriority, topPriority);
   useAutoExpandTextarea(refShowUp, showUp);
   useAutoExpandTextarea(refNotDo, notDo);
@@ -43,6 +46,7 @@ export default function PlanMyDayStep1() {
     setIsSaving(true);
     try {
       const formData = {
+        gratitude,
         topPriority,
         showUp,
         notDo,
@@ -114,6 +118,7 @@ export default function PlanMyDayStep1() {
 
   const handleDelete = () => {
     if (window.confirm('Discard this plan?')) {
+      setGratitude('');
       setTopPriority('');
       setShowUp('');
       setNotDo('');
@@ -150,6 +155,19 @@ export default function PlanMyDayStep1() {
         </div>
 
         <div style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: '1fr', gap: '0' }}>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
+              What are you grateful for today?
+            </label>
+            <textarea
+              ref={refGratitude}
+              value={gratitude}
+              onChange={(e) => setGratitude(e.target.value)}
+              placeholder="Type here"
+              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'none', overflow: 'hidden'}}
+            />
+          </div>
+
           <div style={sectionStyle}>
             <label style={labelStyle}>
               What's your top priority today?
