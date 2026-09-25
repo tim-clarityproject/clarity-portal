@@ -36,6 +36,7 @@ export default function CreateAccount() {
   const guestFormData = location.state || {};
 
   const handleCreateAccount = async (e) => {
+    console.log('[CreateAccount] handleCreateAccount called');
     e.preventDefault();
     setError('');
 
