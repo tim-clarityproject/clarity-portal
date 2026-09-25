@@ -59,6 +59,11 @@ export default function MyReviews() {
            date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatTimeOnly = (dateTimeStr) => {
+    const date = new Date(dateTimeStr);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+
   const handleDelete = async (entryId, e) => {
     e.stopPropagation();
     if (!window.confirm('Delete this entry?')) return;
@@ -294,7 +299,7 @@ export default function MyReviews() {
                     <div></div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
-                        {formatDateTime(entry.created_at)}
+                        {formatTimeOnly(entry.created_at)}
                       </p>
                       {!isMissionProgress && (
                         <>
