@@ -12,9 +12,9 @@ export default function About() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         {/* About this portal section */}
-        <section style={{ marginBottom: designTokens.layout.gapBetweenSections }}>
+        <section style={{ marginBottom: designTokens.layout.gapBetweenSections, paddingLeft: designTokens.spacing.lg, borderLeft: `4px solid ${designTokens.colors.primary}` }}>
           <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-            About this portal?
+            About the Clarity Portal
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: designTokens.spacing.md }}>
             <p style={{ ...designTokens.typography.body, color: designTokens.colors.text.secondary, margin: 0 }}>
@@ -30,30 +30,31 @@ export default function About() {
         </section>
 
         {/* Created By */}
-        <section style={{ marginBottom: designTokens.layout.gapBetweenSections, paddingTop: designTokens.spacing.lg, borderTop: `1px solid ${designTokens.colors.border.medium}` }}>
+        <section style={{ marginBottom: designTokens.layout.gapBetweenSections, paddingTop: designTokens.spacing.lg, borderTop: `1px solid ${designTokens.colors.border.medium}`, paddingLeft: designTokens.spacing.lg, borderLeft: `4px solid ${designTokens.colors.primary}` }}>
           <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.md} 0` }}>
             Created by
           </h2>
           <p style={{ ...designTokens.typography.body, color: designTokens.colors.text.secondary, margin: 0, marginBottom: designTokens.spacing.md }}>
             Clarity project dedicated to helping high performers think better and lead with clarity.
-            {' '}
-            <a
-              href="https://theclarityproject.co.uk/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: designTokens.colors.primary,
-                textDecoration: 'none',
-                fontWeight: '600',
-                transition: 'color 0.2s',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => e.target.style.color = designTokens.button.primary.hoverBackgroundColor}
-              onMouseLeave={(e) => e.target.style.color = designTokens.colors.primary}
-            >
-              Visit the Clarity project
-            </a>
           </p>
+          <a
+            href="https://theclarityproject.co.uk/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: designTokens.colors.primary,
+              textDecoration: 'none',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'color 0.2s',
+              cursor: 'pointer',
+              display: 'inline-block',
+            }}
+            onMouseEnter={(e) => e.target.style.color = designTokens.button.primary.hoverBackgroundColor}
+            onMouseLeave={(e) => e.target.style.color = designTokens.colors.primary}
+          >
+            Visit the Clarity project
+          </a>
         </section>
 
         {/* Back Button */}
