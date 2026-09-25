@@ -64,6 +64,8 @@ export default function CreateAccount() {
       // Pass firstName and lastName directly to signup() - they'll be saved to Supabase user_metadata
       // This is more reliable than localStorage (survives browser closures, device switches, etc.)
       const result = await signup(email, password, firstName, lastName);
+      console.log('[CreateAccount] signup() returned:', { success: result.success, error: result.error });
+
       if (result.success) {
         // Clear form and navigate to dedicated confirmation page
         setFirstName('');
@@ -78,9 +80,11 @@ export default function CreateAccount() {
         navigate('/check-email-confirmation', { state: { email } });
       } else {
         // Display user-facing error message from signup
+        console.log('[CreateAccount] Signup failed with error:', result.error);
         setError(result.error || 'Failed to create account');
       }
     } catch (err) {
+      console.log('[CreateAccount] Exception during signup:', err.message);
       setError(err.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
