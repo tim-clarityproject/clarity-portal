@@ -248,7 +248,7 @@ export default function DecisionHistory() {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
-                    <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
+                    <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: '170px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                       {decision.tool_type === 'daily_plan' ? '' : formatDateTimeWithOrdinal(decision.created_at)}
                     </p>
                     <button

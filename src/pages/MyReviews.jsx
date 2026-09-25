@@ -297,7 +297,7 @@ export default function MyReviews() {
                       {isMissionProgress ? 'Mission Progress Reviews' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Weekly Momentum Review')}
                     </span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
-                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px' }}>
+                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: '60px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                         {formatTimeOnly(entry.created_at)}
                       </p>
                       {!isMissionProgress && (
