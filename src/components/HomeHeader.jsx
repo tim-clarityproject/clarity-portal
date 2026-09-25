@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useContext } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
+import { supabase } from '../lib/supabase';
 
 export default function HomeHeader({ delayMission = false, className = '' }) {
   const navigate = useNavigate();
