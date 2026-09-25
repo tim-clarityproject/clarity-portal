@@ -212,7 +212,7 @@ export default function Welcome() {
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(20px, 5vw, 40px) clamp(16px, 5vw, 32px)', marginBottom: '200px' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 'clamp(40px, 8vw, 80px)', paddingBottom: 'clamp(20px, 5vw, 40px)', paddingLeft: 'clamp(16px, 5vw, 32px)', paddingRight: 'clamp(16px, 5vw, 32px)', marginBottom: '200px' }}>
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <EmailVerificationBanner />
           <div style={{ marginBottom: '64px', marginTop: '32px', textAlign: 'center' }}>
