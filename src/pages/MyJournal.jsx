@@ -28,9 +28,10 @@ export default function MyJournal() {
   const [q3, setQ3] = useState('');
   const [q4, setQ4] = useState('');
   const [reviewTitle, setReviewTitle] = useState('');
-  const [intentionality, setIntentionality] = useState(3);
-  const [communication, setCommunication] = useState(3);
-  const [progress, setProgress] = useState(3);
+  const [momentum, setMomentum] = useState(1);
+  const [intentionality, setIntentionality] = useState(1);
+  const [communication, setCommunication] = useState(1);
+  const [performanceUnderPressure, setPerformanceUnderPressure] = useState(1);
   const [showNamingModal, setShowNamingModal] = useState(false);
   const [currentTitle, setCurrentTitle] = useState('');
 
@@ -79,9 +80,10 @@ export default function MyJournal() {
       setQ3('');
       setQ4('');
       setReviewTitle('');
-      setIntentionality(3);
-      setCommunication(3);
-      setProgress(3);
+      setMomentum(1);
+      setIntentionality(1);
+      setCommunication(1);
+      setPerformanceUnderPressure(1);
     }
   }, [reviewType, isEditMode]);
 
@@ -118,17 +120,19 @@ export default function MyJournal() {
           setQ2(parsed.q2 || '');
           setQ3(parsed.q3 || '');
           setQ4(parsed.q4 || '');
+          if (parsed.momentum) setMomentum(parsed.momentum);
           if (parsed.intentionality) setIntentionality(parsed.intentionality);
           if (parsed.communication) setCommunication(parsed.communication);
-          if (parsed.progress) setProgress(parsed.progress);
+          if (parsed.performanceUnderPressure) setPerformanceUnderPressure(parsed.performanceUnderPressure);
         } catch (e) {
           setQ1('');
           setQ2('');
           setQ3('');
           setQ4('');
-          setIntentionality(3);
-          setCommunication(3);
-          setProgress(3);
+          setMomentum(1);
+          setIntentionality(1);
+          setCommunication(1);
+          setPerformanceUnderPressure(1);
         }
       } else {
         setCurrentTitle('');
@@ -180,7 +184,7 @@ export default function MyJournal() {
       if (reviewType === 'progress') {
         entryContent = JSON.stringify({ q1, q2, q3, reviewType });
       } else if (reviewType === 'weekly-momentum') {
-        entryContent = JSON.stringify({ q1, q2, q3, intentionality, communication, progress, reviewType });
+        entryContent = JSON.stringify({ q1, q2, q3, momentum, intentionality, communication, performanceUnderPressure, reviewType });
       } else {
         entryContent = JSON.stringify({ q1, q2, q3, q4, reviewType });
       }
@@ -246,17 +250,18 @@ export default function MyJournal() {
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
       <style>{`
-        input[type="range"] {
+        .rating-slider {
           appearance: none;
           -webkit-appearance: none;
           width: 100%;
           height: 6px;
           border-radius: 3px;
-          background: linear-gradient(to right, #F08571 0%, #F08571 var(--value), #e5e5e5 var(--value), #e5e5e5 100%);
+          background: #e5e5e5;
           outline: none;
           cursor: pointer;
+          background: linear-gradient(to right, #F08571 0%, #F08571 var(--value), #e5e5e5 var(--value), #e5e5e5 100%);
         }
-        input[type="range"]::-webkit-slider-thumb {
+        .rating-slider::-webkit-slider-thumb {
           appearance: none;
           -webkit-appearance: none;
           width: 18px;
@@ -266,7 +271,7 @@ export default function MyJournal() {
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        input[type="range"]::-moz-range-thumb {
+        .rating-slider::-moz-range-thumb {
           width: 18px;
           height: 18px;
           border-radius: 50%;
@@ -275,14 +280,35 @@ export default function MyJournal() {
           border: none;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        input[type="range"]::-moz-range-track {
+        .rating-slider::-moz-range-track {
           background: transparent;
           border: none;
         }
-        input[type="range"]::-moz-range-progress {
+        .rating-slider::-moz-range-progress {
           background: #F08571;
           height: 6px;
           border-radius: 3px;
+        }
+        .rating-tick-marks {
+          display: flex;
+          justify-content: space-between;
+          padding: 0 9px;
+          margin-top: 4px;
+          margin-bottom: 8px;
+          pointer-events: none;
+        }
+        .rating-tick {
+          width: 2px;
+          height: 8px;
+          background: #ccc;
+          position: relative;
+        }
+        .rating-labels {
+          display: flex;
+          justify-content: space-between;
+          font-size: '11px';
+          color: '#999';
+          margin-top: 4px;
         }
       `}</style>
       <HomeHeader />
@@ -311,81 +337,160 @@ export default function MyJournal() {
 
         {reviewType === 'weekly-momentum' && (
           <div style={sectionStyle}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '24px' }}>
               Rate your week (1-5)
             </h2>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={labelStyle}>Intentionality</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={intentionality}
-                  onChange={(e) => {
-                    setIntentionality(parseInt(e.target.value));
-                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                  }}
-                  onInput={(e) => {
-                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                  }}
-                  style={{ flex: 1, cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+                <label style={{...labelStyle, margin: 0 }}>Momentum</label>
+                <span style={{ fontSize: '14px', color: '#999' }}>How much did things move forward this week?</span>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="1"
+                    value={momentum}
+                    onChange={(e) => {
+                      setMomentum(parseInt(e.target.value));
+                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                    }}
+                    onInput={(e) => {
+                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                    }}
+                    className="rating-slider"
+                    style={{ '--value': `${((momentum - 1) / 4) * 100}%` }}
+                  />
+                  <div className="rating-tick-marks">
+                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="rating-tick" />)}
+                  </div>
+                  <div className="rating-labels" style={{ fontSize: '11px', color: '#999' }}>
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '35px', textAlign: 'center' }}>
+                  {momentum}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+                <label style={{...labelStyle, margin: 0 }}>Intentionality</label>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="1"
+                    value={intentionality}
+                    onChange={(e) => {
+                      setIntentionality(parseInt(e.target.value));
+                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                    }}
+                    onInput={(e) => {
+                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                    }}
+                    className="rating-slider"
+                    style={{ '--value': `${((intentionality - 1) / 4) * 100}%` }}
+                  />
+                  <div className="rating-tick-marks">
+                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="rating-tick" />)}
+                  </div>
+                  <div className="rating-labels" style={{ fontSize: '11px', color: '#999' }}>
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '35px', textAlign: 'center' }}>
                   {intentionality}
                 </span>
               </div>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={labelStyle}>Communication</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={communication}
-                  onChange={(e) => {
-                    setCommunication(parseInt(e.target.value));
-                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                  }}
-                  onInput={(e) => {
-                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                  }}
-                  style={{ flex: 1, cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+                <label style={{...labelStyle, margin: 0 }}>Communication</label>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="1"
+                    value={communication}
+                    onChange={(e) => {
+                      setCommunication(parseInt(e.target.value));
+                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                    }}
+                    onInput={(e) => {
+                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                    }}
+                    className="rating-slider"
+                    style={{ '--value': `${((communication - 1) / 4) * 100}%` }}
+                  />
+                  <div className="rating-tick-marks">
+                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="rating-tick" />)}
+                  </div>
+                  <div className="rating-labels" style={{ fontSize: '11px', color: '#999' }}>
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '35px', textAlign: 'center' }}>
                   {communication}
                 </span>
               </div>
             </div>
 
             <div>
-              <label style={labelStyle}>Progress</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={progress}
-                  onChange={(e) => {
-                    setProgress(parseInt(e.target.value));
-                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                  }}
-                  onInput={(e) => {
-                    const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                    e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                  }}
-                  style={{ flex: 1, cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '30px', textAlign: 'center' }}>
-                  {progress}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+                <label style={{...labelStyle, margin: 0 }}>Performance Under Pressure</label>
+                <span style={{ fontSize: '14px', color: '#999' }}>How well did you perform under pressure this week?</span>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="1"
+                    value={performanceUnderPressure}
+                    onChange={(e) => {
+                      setPerformanceUnderPressure(parseInt(e.target.value));
+                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                    }}
+                    onInput={(e) => {
+                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
+                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
+                    }}
+                    className="rating-slider"
+                    style={{ '--value': `${((performanceUnderPressure - 1) / 4) * 100}%` }}
+                  />
+                  <div className="rating-tick-marks">
+                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="rating-tick" />)}
+                  </div>
+                  <div className="rating-labels" style={{ fontSize: '11px', color: '#999' }}>
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '35px', textAlign: 'center' }}>
+                  {performanceUnderPressure}
                 </span>
               </div>
             </div>
