@@ -52,7 +52,7 @@ export default function EditPersonalDetails() {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           first_name: firstName,
@@ -60,10 +60,15 @@ export default function EditPersonalDetails() {
           role: role || null,
           organisation: organisation || null,
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
 
       if (error) {
         throw error;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Failed to save profile: profile not found or no changes made');
       }
 
       setSaved(true);
@@ -86,6 +91,7 @@ export default function EditPersonalDetails() {
       }, 1500);
     } catch (error) {
       console.error('Error saving profile:', error);
+      alert(`Failed to save profile: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }

@@ -1,12 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
-import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import BackArrow from '../components/BackArrow';
-import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import SavedConfirmation from '../components/SavedConfirmation';
 import HomeHeader from '../components/HomeHeader';
@@ -14,52 +10,28 @@ import HomeHeader from '../components/HomeHeader';
 export default function InversionStep3Plan() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
+  const decisionId = location.state?.decisionId;
+
   const [goal, setGoal] = useState(location.state?.goal || '');
-  const [plan, setPlan] = useState(() => location.state?.plan || '');
+  const [plan, setPlan] = useState(location.state?.plan || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
-  const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
+  const [currentTitle, setCurrentTitle] = useState(location.state?.problemTitle || '');
   const fuckups = location.state?.fuckups || [];
-
-  useLoadDecision(updateFormData);
-
-  useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.fuckups) {
-      setGoal('');
-      setPlan('');
-      updateFormData('goal', '');
-      updateFormData('plan', '');
-      localStorage.removeItem('clarity_form_data');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (location.state?.goal) {
-      setGoal(location.state.goal);
-      updateFormData('goal', location.state.goal);
-    }
-    if (location.state?.plan) {
-      setPlan(location.state.plan);
-      updateFormData('plan', location.state.plan);
-    }
-  }, [location.state?.goal, location.state?.plan, updateFormData]);
 
   const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
 
-  const handleSaveClick = (newDecisionId) => {
-    if (!plan.trim() || !goal.trim()) return;
-
-    if (false) {
-      alert('Please log in to save decisions');
+  const handleSaveClick = () => {
+    if (!plan.trim() || !goal.trim()) {
+      alert('Please fill in all required fields');
       return;
     }
 
-    // Store the newDecisionId if provided (from SaveDiscardButtons auto-save)
-    if (newDecisionId) {
-      location.state.decisionId = newDecisionId;
+    if (!user) {
+      alert('Please log in to save decisions');
+      return;
     }
 
     if (needsNaming) {
@@ -79,19 +51,24 @@ export default function InversionStep3Plan() {
         plan,
       };
 
-      let decisionId = location.state?.decisionId;
+      let finalDecisionId = decisionId;
 
       if (decisionId) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .update({
             form_data: formDataComplete,
             title: decisionName,
             status: 'completed',
-            draft: false
+            draft: false,
+            updated_at: new Date().toISOString(),
           })
-          .eq('id', decisionId);
+          .eq('id', decisionId)
+          .eq('user_id', user.id)
+          .select();
+
         if (error) throw error;
+        if (!data || data.length === 0) throw new Error('Failed to update - no rows affected');
       } else {
         const { data, error } = await supabase
           .from('decisions')
@@ -104,24 +81,96 @@ export default function InversionStep3Plan() {
             draft: false
           }])
           .select();
+
         if (error) throw error;
-        if (data && data.length > 0) {
-          decisionId = data[0].id;
-        }
+        if (!data || data.length === 0) throw new Error('Failed to save - no rows returned');
+        finalDecisionId = data[0].id;
       }
 
       setCurrentTitle(decisionName);
       clearProgress();
       setSaved(true);
       setTimeout(() => {
-        navigate('/inversion-thinking-summary', { state: { decisionId } });
+        navigate('/inversion-thinking-summary', { state: { decisionId: finalDecisionId } });
       }, 1500);
     } catch (error) {
       console.error('Error saving decision:', error);
-      console.error('Error details:', error.message);
-      alert(`Failed to save decision: ${error.message}`);
+      alert(`Failed to save: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!user) {
+      alert('Please log in to save decisions');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const formDataComplete = {
+        goal,
+        fuckups,
+        plan,
+      };
+
+      const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+      const title = currentTitle || dateTitle;
+
+      if (decisionId) {
+        const { data, error } = await supabase
+          .from('decisions')
+          .update({
+            form_data: formDataComplete,
+            status: 'draft',
+            draft: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', decisionId)
+          .eq('user_id', user.id)
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error('Failed to update draft - no rows affected');
+      } else {
+        const { data, error } = await supabase
+          .from('decisions')
+          .insert([{
+            user_id: user.id,
+            tool_type: 'inversion',
+            title,
+            form_data: formDataComplete,
+            status: 'draft',
+            draft: true
+          }])
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error('Failed to save draft - no rows returned');
+      }
+
+      clearProgress();
+      alert('Saved as draft');
+      navigate('/decision-history');
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBack = () => {
+    navigate('/inversion-step-2', { state: { decisionId, goal, fuckups, problemTitle: currentTitle } });
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Discard this entry?')) {
+      setGoal('');
+      setPlan('');
+      clearProgress();
+      navigate('/decision-tools');
     }
   };
 
@@ -238,15 +287,91 @@ export default function InversionStep3Plan() {
           />
         </div>
 
-        <SaveDiscardButtons
-          formData={{ plan }}
-          pageType="decision"
-          toolType="inversion"
-          onNext={handleSaveClick}
-          canNext={plan.trim() && goal.trim() && !isSaving}
-          onBack={() => navigate('/inversion-step-2', { state: { ...formData, decisionId: location.state?.decisionId } })}
-          nextLabel={isSaving ? 'Saving...' : 'Finish'}
-        />
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginTop: '32px', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleBack}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: 'transparent',
+              border: '2px solid #e5e5e5',
+              borderRadius: '8px',
+              color: '#333',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#F08571';
+              e.target.style.backgroundColor = '#f9f9f9';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.backgroundColor = 'transparent';
+            }}
+          >
+            Back
+          </button>
+
+          <button
+            onClick={handleDelete}
+            title="Delete this entry"
+            style={{
+              padding: '12px',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            ×
+          </button>
+
+          <button
+            onClick={handleSaveDraft}
+            disabled={isSaving}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              fontWeight: '600',
+              border: '2px solid #F08571',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+              opacity: isSaving ? 0.7 : 1,
+            }}
+            onMouseEnter={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#f9f9f9')}
+            onMouseLeave={(e) => !isSaving && (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            Save as Draft
+          </button>
+
+          <button
+            onClick={handleSaveClick}
+            disabled={!(plan.trim() && goal.trim()) || isSaving}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: (!(plan.trim() && goal.trim()) || isSaving) ? '#ccc' : '#F08571',
+              color: 'white',
+              fontWeight: 'bold',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: (!(plan.trim() && goal.trim()) || isSaving) ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => (!(plan.trim() && goal.trim()) || isSaving) || (e.currentTarget.style.backgroundColor = '#e07560')}
+            onMouseLeave={(e) => (!(plan.trim() && goal.trim()) || isSaving) || (e.currentTarget.style.backgroundColor = '#F08571')}
+          >
+            {isSaving ? 'Saving...' : 'Finish'}
+          </button>
+        </div>
 
         <NamingModal
           isOpen={showNamingModal}

@@ -1,66 +1,158 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FormContext } from '../context/FormContext';
-import { useLoadDecision } from '../hooks/useLoadDecision';
-import BackArrow from '../components/BackArrow';
-import SaveDiscardButtons from '../components/SaveDiscardButtons';
+import { AuthContext } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { clearProgress } from '../lib/saveProgress';
 import HomeHeader from '../components/HomeHeader';
 
 export default function InversionStep2Fuckups() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [fuckups, setFuckups] = useState(() => location.state?.fuckups || ['', '']);
+  const { user } = useContext(AuthContext);
+  const decisionId = location.state?.decisionId;
 
-  useLoadDecision(updateFormData);
-
-  useEffect(() => {
-    if (!location.state?.decisionId && !location.state?.goal) {
-      setFuckups(['', '']);
-      updateFormData('fuckups', ['', '']);
-      localStorage.removeItem('clarity_form_data');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (location.state?.fuckups) {
-      setFuckups(location.state.fuckups);
-      updateFormData('fuckups', location.state.fuckups);
-    }
-  }, [location.state?.fuckups, updateFormData]);
+  const [fuckups, setFuckups] = useState(location.state?.fuckups || ['', '']);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const handleFuckupChange = (index, value) => {
     const newFuckups = [...fuckups];
     newFuckups[index] = value;
     setFuckups(newFuckups);
-    updateFormData('fuckups', newFuckups);
   };
 
   const handleAddFuckup = () => {
-    const newFuckups = [...fuckups, ''];
-    setFuckups(newFuckups);
-    updateFormData('fuckups', newFuckups);
+    setFuckups([...fuckups, '']);
   };
 
   const handleRemoveFuckup = (index) => {
     const newFuckups = fuckups.filter((_, i) => i !== index);
     setFuckups(newFuckups);
-    updateFormData('fuckups', newFuckups);
   };
 
-  const handleNext = (newDecisionId) => {
-    const filledFuckups = fuckups.filter(f => f.trim());
-    if (filledFuckups.length >= 1) {
-      updateFormData('fuckups', filledFuckups);
-      const finalDecisionId = newDecisionId || location.state?.decisionId;
-      navigate('/inversion-step-3', {
-        state: {
-          ...location.state,
-          ...formData,
-          fuckups: filledFuckups,
-          decisionId: finalDecisionId
-        }
-      });
+  const handleSave = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
+    try {
+      const filledFuckups = fuckups.filter(f => f.trim());
+      if (filledFuckups.length < 1) {
+        alert('Please list at least one potential failure');
+        setIsSaving(false);
+        return;
+      }
+
+      const formData = { goal: location.state?.goal || '', fuckups: filledFuckups, plan: location.state?.plan || '' };
+      let savedId = decisionId;
+      const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+      const title = location.state?.problemTitle || dateTitle;
+
+      if (decisionId) {
+        const { data, error } = await supabase
+          .from('decisions')
+          .update({
+            form_data: formData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', decisionId)
+          .eq('user_id', user.id)
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error('Failed to update - no rows affected');
+        savedId = data[0].id;
+      } else {
+        const { data, error } = await supabase
+          .from('decisions')
+          .insert({
+            user_id: user.id,
+            tool_type: 'inversion',
+            title,
+            form_data: formData,
+            status: 'completed',
+          })
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error('Failed to create - no rows returned');
+        savedId = data[0].id;
+      }
+
+      setIsSaved(true);
+      clearProgress();
+      setTimeout(() => {
+        navigate('/inversion-step-3', { state: { decisionId: savedId, goal: location.state?.goal, fuckups: filledFuckups, problemTitle: title } });
+      }, 500);
+    } catch (error) {
+      console.error('Error saving:', error);
+      alert(`Failed to save: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
+    try {
+      const formData = { goal: location.state?.goal || '', fuckups, plan: location.state?.plan || '' };
+      const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+      const title = location.state?.problemTitle || dateTitle;
+
+      if (decisionId) {
+        const { data, error } = await supabase
+          .from('decisions')
+          .update({
+            form_data: formData,
+            status: 'draft',
+            draft: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', decisionId)
+          .eq('user_id', user.id)
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error('Failed to update draft - no rows affected');
+      } else {
+        const { data, error } = await supabase
+          .from('decisions')
+          .insert({
+            user_id: user.id,
+            tool_type: 'inversion',
+            title,
+            form_data: formData,
+            status: 'draft',
+            draft: true,
+          })
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error('Failed to save draft - no rows returned');
+      }
+
+      setIsSaved(true);
+      clearProgress();
+      alert('Saved as draft');
+      navigate('/decision-history');
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBack = () => {
+    navigate('/inversion-step-1', { state: { decisionId, goal: location.state?.goal, problemTitle: location.state?.problemTitle } });
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Discard this entry?')) {
+      setFuckups(['', '']);
+      clearProgress();
+      navigate('/decision-tools');
     }
   };
 
@@ -181,14 +273,91 @@ export default function InversionStep2Fuckups() {
           + Add
         </button>
 
-        <SaveDiscardButtons
-          formData={{ fuckups }}
-          pageType="decision"
-          toolType="inversion"
-          onNext={handleNext}
-          canNext={canSubmit}
-          onBack={() => navigate('/inversion-step-1', { state: { ...formData, decisionId: location.state?.decisionId } })}
-        />
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginTop: '32px', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleBack}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: 'transparent',
+              border: '2px solid #e5e5e5',
+              borderRadius: '8px',
+              color: '#333',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#F08571';
+              e.target.style.backgroundColor = '#f9f9f9';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.backgroundColor = 'transparent';
+            }}
+          >
+            Back
+          </button>
+
+          <button
+            onClick={handleDelete}
+            title="Delete this entry"
+            style={{
+              padding: '12px',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            ×
+          </button>
+
+          <button
+            onClick={handleSaveDraft}
+            disabled={isSaving}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              fontWeight: '600',
+              border: '2px solid #F08571',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+              opacity: isSaving ? 0.7 : 1,
+            }}
+            onMouseEnter={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#f9f9f9')}
+            onMouseLeave={(e) => !isSaving && (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            Save as Draft
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={!canSubmit || isSaving}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: (!canSubmit || isSaving) ? '#ccc' : '#F08571',
+              color: 'white',
+              fontWeight: 'bold',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: (!canSubmit || isSaving) ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => (!canSubmit || isSaving) || (e.currentTarget.style.backgroundColor = '#e07560')}
+            onMouseLeave={(e) => (!canSubmit || isSaving) || (e.currentTarget.style.backgroundColor = '#F08571')}
+          >
+            {isSaving ? 'Saving...' : 'Continue'}
+          </button>
+        </div>
       </div>
     </div>
   );

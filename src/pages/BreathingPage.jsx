@@ -16,6 +16,55 @@ export default function BreathingPage() {
   const [view, setView] = useState('instructions');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const sessionStartTimeRef = useRef(null);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+  // Load user's breathing preference from Supabase
+  useEffect(() => {
+    const loadBreathingPreference = async () => {
+      if (!user) {
+        setIsLoadingSettings(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('breathing_preference')
+          .eq('id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading breathing preference:', error);
+        } else if (data?.breathing_preference) {
+          setBreathingType(data.breathing_preference);
+        }
+      } catch (error) {
+        console.error('Error loading breathing preference:', error);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    loadBreathingPreference();
+  }, [user]);
+
+  // Save breathing preference to Supabase when changed
+  const saveBreathingPreference = async (type) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ breathing_preference: type })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error saving breathing preference:', error);
+      }
+    } catch (error) {
+      console.error('Error saving breathing preference:', error);
+    }
+  };
 
   // Force light backgrounds
   useEffect(() => {
@@ -76,6 +125,7 @@ export default function BreathingPage() {
       handleStopBreathing();
     }
     setBreathingType(type);
+    saveBreathingPreference(type);
   };
 
   // Timer for elapsed seconds during breathing
