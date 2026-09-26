@@ -91,13 +91,13 @@ export default function Welcome() {
         const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
         if (authError || !currentUser) {
           // Session has expired - clear cached data
-          sessionStorage.removeItem('clarity-user-data');
+          localStorage.removeItem('clarity-user-data');
           setFirstName('');
           return;
         }
 
         // Session is valid - try cached data first
-        const cachedData = sessionStorage.getItem('clarity-user-data');
+        const cachedData = localStorage.getItem('clarity-user-data');
         if (cachedData) {
           const userData = JSON.parse(cachedData);
           if (userData.first_name) {
