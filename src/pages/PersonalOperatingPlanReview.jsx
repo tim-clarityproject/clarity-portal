@@ -186,7 +186,7 @@ export default function PersonalOperatingPlanReview() {
 
         {/* Page Title */}
         <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '0', marginBottom: designTokens.spacing.xl, paddingBottom: designTokens.spacing.lg, borderBottom: `2px solid ${designTokens.colors.primary}` }}>
-          Review your progress on each tactic
+          Review your progress
         </h1>
 
         {/* Strategies Section */}
