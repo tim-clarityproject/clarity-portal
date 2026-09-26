@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import HomeHeader from '../components/HomeHeader';
 
 export default function CheckEmailConfirmation() {
   const location = useLocation();
@@ -12,14 +11,16 @@ export default function CheckEmailConfirmation() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
-
+    <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
         <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: '600', color: '#333', marginBottom: '32px', marginTop: '0' }}>
-            Check your email to confirm your account
+          <h1 style={{ fontSize: '28px', fontWeight: '600', color: '#333', marginBottom: '3em', marginTop: '0', lineHeight: '1.4' }}>
+            Check the email you signed up with to confirm your account
           </h1>
+
+          <p style={{ fontSize: '14px', color: '#999', marginBottom: '3em', marginTop: '0' }}>
+            OR
+          </p>
 
           <button
             onClick={handleStartOver}
