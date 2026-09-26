@@ -14,6 +14,7 @@ export default function StopDoingAuditSummary() {
 
   const [audit, setAudit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
 
@@ -24,22 +25,41 @@ export default function StopDoingAuditSummary() {
   }, [decisionId, user]);
 
   const loadAudit = async () => {
-    if (!user) return;
+    if (!user) {
+      setError('User not authenticated');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!decisionId) {
+      setError('No audit ID provided');
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      console.log('[StopDoingAuditSummary] Loading audit:', { decisionId, userId: user.id });
+
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
         .eq('id', decisionId)
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
       if (error) {
-        console.error('Error loading audit:', error);
+        console.error('[StopDoingAuditSummary] Supabase error:', error);
+        setError(`Failed to load audit: ${error.message || 'Unknown error'}`);
       } else if (data) {
+        console.log('[StopDoingAuditSummary] Audit loaded successfully');
         setAudit(data);
+      } else {
+        console.warn('[StopDoingAuditSummary] No audit found');
+        setError('Audit not found');
       }
-    } catch (error) {
-      console.error('Error loading audit:', error);
+    } catch (err) {
+      console.error('[StopDoingAuditSummary] Exception:', err);
+      setError(`Error loading audit: ${err?.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -67,6 +87,40 @@ export default function StopDoingAuditSummary() {
         <HomeHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading audit...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+        <HomeHeader />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
+          <div style={{ maxWidth: '500px', textAlign: 'center' }}>
+            <p style={{ color: '#F08571', fontSize: '16px', fontWeight: '600', margin: '0 0 16px 0' }}>Error Loading Audit</p>
+            <p style={{ color: '#666', fontSize: '14px', lineHeight: '1.6', margin: '0 0 20px 0' }}>
+              {error}
+            </p>
+            <button
+              onClick={() => navigate('/decision-history')}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#F08571',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e07560'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F08571'}
+            >
+              Back to Decisions
+            </button>
+          </div>
         </div>
       </div>
     );
