@@ -246,9 +246,19 @@ export default function PersonalOperatingPlanReview() {
                           type="checkbox"
                           checked={reviewData[tactic.id]?.isDone || false}
                           onChange={(e) => updateReview(tactic.id, 'isDone', e.target.checked)}
-                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                          style={{
+                            width: '16px',
+                            height: '16px',
+                            cursor: 'pointer',
+                            accentColor: '#F08571',
+                            appearance: 'none',
+                            WebkitAppearance: 'none',
+                            border: '2px solid #ccc',
+                            borderRadius: '3px',
+                            backgroundColor: reviewData[tactic.id]?.isDone ? '#F08571' : 'white',
+                          }}
                         />
-                        <label style={{ cursor: 'pointer' }}>Mark as done</label>
+                        <label style={{ cursor: 'pointer', fontSize: '11px', color: '#666' }}>Mark as done</label>
                       </div>
                     ) : (
                       // Measurable review

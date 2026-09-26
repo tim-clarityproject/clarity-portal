@@ -121,25 +121,10 @@ export default function PersonalOperatingPlan() {
 
     if (tactic.is_done !== undefined) {
       return (
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={tactic.is_done || false}
-            disabled
-            style={{
-              width: '16px',
-              height: '16px',
-              cursor: 'not-allowed',
-              accentColor: '#F08571',
-              appearance: 'none',
-              WebkitAppearance: 'none',
-              border: '2px solid #ccc',
-              borderRadius: '3px',
-              backgroundColor: tactic.is_done ? '#F08571' : 'white',
-            }}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '16px', lineHeight: '1', color: '#999' }}>•</span>
           <span style={{ fontSize: '13px', color: '#333' }}>{tacticText}</span>
-        </label>
+        </div>
       );
     } else if (tactic.target_value !== undefined) {
       return (
