@@ -59,8 +59,7 @@ export default function DecisionTools() {
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '48px 32px' }} className="page-container">
-        <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '24px', paddingBottom: designTokens.spacing.lg, borderBottom: `2px solid ${designTokens.colors.primary}` }}>All Decision Tools</h1>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button
             onClick={() => navigate('/decision-history')}
             style={{
@@ -85,6 +84,12 @@ export default function DecisionTools() {
           >
             My Decisions
           </button>
+        </div>
+
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '8px' }}>All Decision Tools</h1>
+
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '100%', backgroundColor: designTokens.colors.primary, transition: 'width 0.3s ease' }} />
         </div>
 
 
