@@ -248,27 +248,8 @@ export default function ReviewSummary() {
         {/* Weekly Momentum Review Sections */}
         {isWeeklyMomentum && (
           <>
-            {parsedContent.q1 && (
-              <SectionBlock
-                title="What moved forward this week?"
-                content={parsedContent.q1}
-              />
-            )}
-            {parsedContent.q2 && (
-              <SectionBlock
-                title="What did you do better this week?"
-                content={parsedContent.q2}
-              />
-            )}
-            {parsedContent.q3 && (
-              <SectionBlock
-                title="What's one priority for next week?"
-                content={parsedContent.q3}
-              />
-            )}
-
-            {/* Ratings Section */}
-            <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+            {/* Ratings Section - appears first */}
+            <div style={{ marginBottom: '32px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
               <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Weekly Ratings
               </h2>
@@ -313,6 +294,26 @@ export default function ReviewSummary() {
                 </div>
               </div>
             </div>
+
+            {/* Written Response Sections */}
+            {parsedContent.q1 && (
+              <SectionBlock
+                title="What moved forward this week?"
+                content={parsedContent.q1}
+              />
+            )}
+            {parsedContent.q2 && (
+              <SectionBlock
+                title="What did you do better this week?"
+                content={parsedContent.q2}
+              />
+            )}
+            {parsedContent.q3 && (
+              <SectionBlock
+                title="What's one priority for next week?"
+                content={parsedContent.q3}
+              />
+            )}
           </>
         )}
 
