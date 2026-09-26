@@ -7,7 +7,7 @@ export default function PrivacyPolicy() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', padding: '40px 20px' }} className="page-container">
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <button
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/')}
           style={{
             backgroundColor: 'transparent',
             border: 'none',

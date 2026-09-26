@@ -515,18 +515,39 @@ export default function Login() {
               <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: 'black' }}>Terms of Service</h2>
               <button onClick={() => setShowTermsModal(false)} style={{ backgroundColor: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#999', padding: '0', width: '30px', height: '30px' }}>✕</button>
             </div>
-            <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#333' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>1. Acceptance of Terms</h3>
-              <p>By accessing and using the Clarity Portal, you accept and agree to be bound by the terms and provision of this agreement.</p>
+            <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#333' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>1. Acceptance of Terms</h3>
+              <p style={{ marginBottom: '16px' }}>By accessing and using the Clarity Portal, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.</p>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>2. Use License</h3>
-              <p>Permission is granted to temporarily download one copy of the materials for personal, non-commercial transitory viewing only.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>2. Use License</h3>
+              <p style={{ marginBottom: '12px' }}>Permission is granted to temporarily download one copy of the materials (information or software) on the Clarity Portal for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:</p>
+              <ul style={{ marginLeft: '20px', marginBottom: '16px' }}>
+                <li>Modify or copy the materials</li>
+                <li>Use the materials for any commercial purpose or for any public display</li>
+                <li>Attempt to decompile or reverse engineer any software contained on the portal</li>
+                <li>Remove any copyright or other proprietary notations from the materials</li>
+                <li>Transfer the materials to another person or "mirror" the materials on any other server</li>
+              </ul>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>3. Disclaimer</h3>
-              <p>The materials on the Clarity Portal are provided "as is". We make no warranties, expressed or implied.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>3. Disclaimer</h3>
+              <p style={{ marginBottom: '16px' }}>The materials on the Clarity Portal are provided "as is". We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.</p>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>4. Governing Law</h3>
-              <p>These terms and conditions are governed by the laws of the United Kingdom.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>4. Limitations</h3>
+              <p style={{ marginBottom: '16px' }}>In no event shall The Clarity Project or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on the Clarity Portal.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>5. Accuracy of Materials</h3>
+              <p style={{ marginBottom: '16px' }}>The materials appearing on the Clarity Portal could include technical, typographical, or photographic errors. The Clarity Project does not warrant that any of the materials on the portal are accurate, complete, or current. The Clarity Project may make changes to the materials contained on the portal at any time without notice.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>6. Links</h3>
+              <p style={{ marginBottom: '16px' }}>The Clarity Project has not reviewed all of the sites linked to its website and is not responsible for the contents of any such linked site. The inclusion of any link does not imply endorsement by The Clarity Project of the site. Use of any such linked website is at the user's own risk.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>7. Modifications</h3>
+              <p style={{ marginBottom: '16px' }}>The Clarity Project may revise these terms of service for the portal at any time without notice. By using this portal, you are agreeing to be bound by the then current version of these terms of service.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>8. Governing Law</h3>
+              <p style={{ marginBottom: '16px' }}>These terms and conditions are governed by and construed in accordance with the laws of the United Kingdom, and you irrevocably submit to the exclusive jurisdiction of the courts in that location.</p>
+
+              <p style={{ color: '#999', fontSize: '12px', marginTop: '20px' }}>Last updated: August 2026</p>
             </div>
           </div>
         </div>
@@ -560,18 +581,58 @@ export default function Login() {
               <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: 'black' }}>Privacy Policy</h2>
               <button onClick={() => setShowPrivacyModal(false)} style={{ backgroundColor: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#999', padding: '0', width: '30px', height: '30px' }}>✕</button>
             </div>
-            <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#333' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>Information We Collect</h3>
-              <p>We collect information you provide directly to us, such as name, email address, and profile information when you create an account.</p>
+            <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#333' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>1. Introduction</h3>
+              <p style={{ marginBottom: '16px' }}>The Clarity Project ("we," "us," "our," or "Company") respects the privacy of our users ("user" or "you"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services, including the Clarity Portal.</p>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>How We Use Your Information</h3>
-              <p>We use the information we collect to provide, maintain, and improve our services; process your authentication; and comply with legal obligations.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>2. Information We Collect</h3>
+              <p style={{ marginBottom: '12px' }}>We may collect information about you in a variety of ways. The information we may collect on the site includes:</p>
+              <ul style={{ marginLeft: '20px', marginBottom: '16px' }}>
+                <li><strong>Personal Data:</strong> Email address, name, and authentication credentials when you create an account</li>
+                <li><strong>User-Generated Content:</strong> Decisions, reflections, journal entries, and other content you create within the portal</li>
+                <li><strong>Usage Data:</strong> Information about how you interact with our services, including pages visited, time spent, and features used</li>
+                <li><strong>Device Information:</strong> Information about your device, browser, and IP address</li>
+              </ul>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>Data Security</h3>
-              <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>3. How We Use Your Information</h3>
+              <p style={{ marginBottom: '12px' }}>We use the information we collect to:</p>
+              <ul style={{ marginLeft: '20px', marginBottom: '16px' }}>
+                <li>Provide, maintain, and improve our services</li>
+                <li>Process your authentication and maintain your account</li>
+                <li>Store and sync your data across devices</li>
+                <li>Communicate with you about service updates</li>
+                <li>Monitor and analyze service usage and trends</li>
+                <li>Detect and prevent fraudulent activity</li>
+                <li>Comply with legal obligations</li>
+              </ul>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>Your Rights</h3>
-              <p>You have the right to access, correct, or delete your personal data. Contact us to exercise these rights.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>4. Data Storage and Security</h3>
+              <p style={{ marginBottom: '16px' }}>Your data is stored securely using Supabase, a secure cloud database platform. We implement industry-standard security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>5. Data Retention</h3>
+              <p style={{ marginBottom: '16px' }}>We retain your personal data for as long as your account is active or as needed to provide you with our services. You may request deletion of your account and associated data at any time by contacting us. Some data may be retained as required by law or for legitimate business purposes.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>6. Third-Party Services</h3>
+              <p style={{ marginBottom: '16px' }}>Our services may contain links to third-party websites and services that are not operated by us. This Privacy Policy does not apply to third-party services, and we are not responsible for their privacy practices. We encourage you to review their privacy policies before providing any information.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>7. Your Rights</h3>
+              <p style={{ marginBottom: '12px' }}>Depending on your location, you may have the following rights:</p>
+              <ul style={{ marginLeft: '20px', marginBottom: '16px' }}>
+                <li>The right to access your personal data</li>
+                <li>The right to correct inaccurate data</li>
+                <li>The right to request deletion of your data</li>
+                <li>The right to restrict processing of your data</li>
+                <li>The right to data portability</li>
+              </ul>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>8. Children's Privacy</h3>
+              <p style={{ marginBottom: '16px' }}>The Clarity Portal is not intended for children under the age of 13. We do not knowingly collect personal information from children under 13. If we become aware that a child under 13 has provided us with personal information, we will take steps to delete such information and terminate the child's account.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>9. Contact Us</h3>
+              <p style={{ marginBottom: '16px' }}>If you have questions about this Privacy Policy or our privacy practices, please contact us at:</p>
+              <p style={{ marginBottom: '16px' }}>The Clarity Project<br />Email: privacy@theclarityproject.co.uk</p>
+
+              <p style={{ color: '#999', fontSize: '12px', marginTop: '20px' }}>Last updated: August 2026</p>
             </div>
           </div>
         </div>
@@ -605,18 +666,57 @@ export default function Login() {
               <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: 'black' }}>Data Storage Notice</h2>
               <button onClick={() => setShowDataStorageModal(false)} style={{ backgroundColor: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#999', padding: '0', width: '30px', height: '30px' }}>✕</button>
             </div>
-            <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#333' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>Data Storage Infrastructure</h3>
-              <p>Your data is stored on Supabase, a secure, open-source backend-as-a-service platform built on PostgreSQL.</p>
+            <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#333' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>Overview</h3>
+              <p style={{ marginBottom: '16px' }}>This Data Storage Notice explains how the Clarity Portal stores and manages your data. By using the Clarity Portal, you acknowledge that you understand and agree to the data storage practices outlined below.</p>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>Types of Data Stored</h3>
-              <p>Authentication data, decisions, reflections, strategic alignments, and account metadata are stored in your account.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>1. Data Storage Infrastructure</h3>
+              <p style={{ marginBottom: '16px' }}>Your data is stored on Supabase, a secure, open-source backend-as-a-service platform built on PostgreSQL. Supabase provides enterprise-grade security and reliability for data storage and management.</p>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>Data Encryption</h3>
-              <p>Your data is transmitted over encrypted connections (HTTPS/TLS). Passwords are hashed using industry-standard algorithms.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>2. Types of Data Stored</h3>
+              <p style={{ marginBottom: '12px' }}>The following types of data are stored in your account:</p>
+              <ul style={{ marginLeft: '20px', marginBottom: '16px' }}>
+                <li><strong>Authentication Data:</strong> Email address, hashed password, and session tokens</li>
+                <li><strong>Decisions:</strong> GROW model decisions and Inversion model decisions with all associated form data</li>
+                <li><strong>Reflections:</strong> Journal entries and reflections you create</li>
+                <li><strong>Strategic Alignments:</strong> Team planning and alignment data</li>
+                <li><strong>Account Metadata:</strong> Name, profile information, and preferences</li>
+              </ul>
 
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px', color: 'black' }}>Data Access Control</h3>
-              <p>We implement Row-Level Security (RLS) policies to ensure each user can only access their own data.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>3. Data Encryption</h3>
+              <p style={{ marginBottom: '16px' }}>Your data is transmitted over encrypted connections (HTTPS/TLS) to and from our servers. Sensitive data including passwords are hashed using industry-standard algorithms before storage. Supabase employs encryption for data at rest.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>4. Data Access Control</h3>
+              <p style={{ marginBottom: '16px' }}>We implement Row-Level Security (RLS) policies to ensure that each user can only access their own data. Only authenticated users can view, edit, or delete their personal data. Your data is never shared with other users unless you explicitly choose to share it.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>5. Session Management</h3>
+              <p style={{ marginBottom: '16px' }}>When you log in to the Clarity Portal, we create a secure session that lasts for up to 30 days. Your session is stored in your browser's local storage and synced with our servers. You can log out at any time to end your session immediately.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>6. Data Backup and Recovery</h3>
+              <p style={{ marginBottom: '16px' }}>Supabase maintains regular backups of all data to ensure recovery in case of unforeseen circumstances. These backups are stored securely and are subject to the same security measures as live data.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>7. Data Deletion</h3>
+              <p style={{ marginBottom: '16px' }}>You may request deletion of your account and all associated data at any time. Upon deletion, your personal data will be permanently removed from our systems within 30 days. Some data may be retained for compliance or legal purposes as required by law.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>8. Third-Party Providers</h3>
+              <p style={{ marginBottom: '12px' }}>We use the following third-party services to store and manage your data:</p>
+              <ul style={{ marginLeft: '20px', marginBottom: '12px' }}>
+                <li><strong>Supabase:</strong> Database and authentication services</li>
+                <li><strong>Vercel:</strong> Application hosting and deployment</li>
+                <li><strong>Google:</strong> OAuth authentication provider</li>
+              </ul>
+              <p style={{ marginBottom: '16px' }}>These providers are bound by confidentiality agreements and are only allowed to use your data for the purposes specified in this notice.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>9. Data Transfer</h3>
+              <p style={{ marginBottom: '16px' }}>You can export your data at any time by requesting a copy from your account settings. This data will be provided in a standard format that you can use with other applications.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>10. Changes to This Notice</h3>
+              <p style={{ marginBottom: '16px' }}>We may update this Data Storage Notice from time to time. Changes will be effective immediately upon posting to the website. Your continued use of the Clarity Portal constitutes acceptance of any changes to this notice.</p>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>11. Contact Us</h3>
+              <p style={{ marginBottom: '16px' }}>If you have questions about this Data Storage Notice, please contact us at:<br />The Clarity Project<br />Email: data@theclarityproject.co.uk</p>
+
+              <p style={{ color: '#999', fontSize: '12px', marginTop: '20px' }}>Last updated: August 2026</p>
             </div>
           </div>
         </div>
