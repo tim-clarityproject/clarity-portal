@@ -161,6 +161,45 @@ export default function WeeklyMomentumReviewSummary() {
           />
         )}
 
+        {/* Ratings Section */}
+        {(parsedContent.momentum || parsedContent.intentionality || parsedContent.communication || parsedContent.performanceUnderPressure) && (
+          <div style={{ marginBottom: '32px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Weekly Ratings
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px' }}>
+              {parsedContent.momentum !== undefined && (
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0', fontWeight: '500' }}>Momentum</p>
+                  <p style={{ fontSize: '24px', fontWeight: '700', color: '#F08571', margin: 0 }}>{parsedContent.momentum || '-'}</p>
+                  <p style={{ fontSize: '11px', color: '#ccc', margin: '4px 0 0 0' }}>of 5</p>
+                </div>
+              )}
+              {parsedContent.intentionality !== undefined && (
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0', fontWeight: '500' }}>Intentionality</p>
+                  <p style={{ fontSize: '24px', fontWeight: '700', color: '#F08571', margin: 0 }}>{parsedContent.intentionality || '-'}</p>
+                  <p style={{ fontSize: '11px', color: '#ccc', margin: '4px 0 0 0' }}>of 5</p>
+                </div>
+              )}
+              {parsedContent.communication !== undefined && (
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0', fontWeight: '500' }}>Communication</p>
+                  <p style={{ fontSize: '24px', fontWeight: '700', color: '#F08571', margin: 0 }}>{parsedContent.communication || '-'}</p>
+                  <p style={{ fontSize: '11px', color: '#ccc', margin: '4px 0 0 0' }}>of 5</p>
+                </div>
+              )}
+              {parsedContent.performanceUnderPressure !== undefined && (
+                <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '12px', color: '#999', margin: '0 0 8px 0', fontWeight: '500' }}>Perf. Under Pressure</p>
+                  <p style={{ fontSize: '24px', fontWeight: '700', color: '#F08571', margin: 0 }}>{parsedContent.performanceUnderPressure || '-'}</p>
+                  <p style={{ fontSize: '11px', color: '#ccc', margin: '4px 0 0 0' }}>of 5</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Bottom Action Buttons */}
         <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap', paddingTop: '32px', borderTop: '1px solid #f0f0f0', justifyContent: 'flex-end' }} className="no-print">
           <button
