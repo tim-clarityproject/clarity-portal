@@ -205,7 +205,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
       </div>
 
       {/* Center Mission Display - Responsive Flex Item */}
-      {contextMission && contextShowInHeader && displayMission && location.pathname !== '/personal-operating-plan' && (
+      {contextMission && contextShowInHeader && displayMission && (
         <>
           <style>{`
             @keyframes fadeInMission {

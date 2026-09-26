@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2, GripVertical } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { designTokens } from '../lib/designTokens';
 import SavedConfirmation from '../components/SavedConfirmation';
 import InfoModal from '../components/InfoModal';
 import HomeHeader from '../components/HomeHeader';
@@ -334,7 +335,7 @@ export default function PersonalOperatingPlanEdit() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }} className="edit-page-container">
 
         {/* PAGE TITLE */}
-        <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#333', margin: '0 0 48px 0', lineHeight: '1.2' }}>
+        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '0', marginBottom: designTokens.spacing.xl, paddingBottom: designTokens.spacing.lg, borderBottom: `2px solid ${designTokens.colors.primary}` }}>
           Shape Your Personal Operating Plan
         </h1>
 
