@@ -108,7 +108,7 @@ export default function StopDoingAudit() {
         console.log('[StopDoingAudit] UPDATE result: rows affected =', data?.length, 'error =', error);
         if (error) throw error;
         if (!data || data.length === 0) {
-          console.warn('[StopDoingAudit] UPDATE matched 0 rows for decisionId', decisionId);
+          throw new Error('Failed to update audit - no rows affected');
         }
       } else {
         const { data, error } = await supabase
@@ -121,9 +121,11 @@ export default function StopDoingAudit() {
           })
           .select();
 
-        if (data && data.length > 0) {
-          savedId = data[0].id;
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error('Failed to save audit - no rows returned');
         }
+        savedId = data[0].id;
       }
 
       setIsSaved(true);
@@ -133,7 +135,7 @@ export default function StopDoingAudit() {
       }, 1500);
     } catch (error) {
       console.error('Error saving audit:', error);
-      alert('Failed to save audit');
+      alert(`Failed to save audit: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
@@ -147,29 +149,41 @@ export default function StopDoingAudit() {
       const formData = { items, firstAction, timeUse };
 
       if (decisionId) {
-        await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .update({
             form_data: formData,
             updated_at: new Date().toISOString(),
           })
           .eq('id', decisionId)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error('Failed to update draft - no rows affected');
+        }
       } else {
-        await supabase
+        const { data, error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
             tool_type: 'stop_doing_audit',
             title: 'Stop Doing Audit',
             form_data: formData,
-          });
+          })
+          .select();
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error('Failed to save draft - no rows returned');
+        }
       }
 
       setIsSaved(true);
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert('Failed to save draft');
+      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }

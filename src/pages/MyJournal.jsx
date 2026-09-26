@@ -194,14 +194,19 @@ export default function MyJournal() {
 
       if (existingEntryId && isEditMode) {
         // Update existing entry if editing
-        const { error: updateError } = await supabase
+        const { error: updateError, count } = await supabase
           .from('journal_entries')
           .update({ content: entryContent, title: reviewName, updated_at: new Date().toISOString() })
-          .eq('id', existingEntryId);
+          .eq('id', existingEntryId)
+          .select('id', { count: 'exact' });
 
         if (updateError) {
           console.error('Error updating entry:', updateError);
           throw updateError;
+        }
+
+        if (count === 0) {
+          throw new Error('Failed to update review: entry not found or no changes made');
         }
       } else {
         // Always insert new entry (allow multiple reviews per day)

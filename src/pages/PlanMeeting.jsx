@@ -194,7 +194,7 @@ export default function PlanMeeting() {
         console.log('[PlanMeeting] UPDATE result: rows affected =', data?.length, 'error =', error);
         if (error) throw error;
         if (!data || data.length === 0) {
-          console.warn('[PlanMeeting] UPDATE matched 0 rows for decisionId', decisionId);
+          throw new Error('Failed to update meeting: meeting not found or no changes made');
         }
       } else {
         const { data, error } = await supabase
@@ -209,9 +209,11 @@ export default function PlanMeeting() {
           })
           .select();
 
-        if (data && data.length > 0) {
-          savedId = data[0].id;
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error('Failed to save meeting: no record returned');
         }
+        savedId = data[0].id;
       }
 
       setIsSaved(true);
@@ -220,7 +222,7 @@ export default function PlanMeeting() {
       }, 500);
     } catch (error) {
       console.error('Error saving meeting:', error);
-      alert('Failed to save meeting');
+      alert(`Failed to save meeting: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }

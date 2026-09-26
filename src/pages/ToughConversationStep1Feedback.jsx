@@ -78,11 +78,11 @@ export default function ToughConversationStep1Feedback() {
         console.log('[ToughConversation] UPDATE result: rows affected =', updateData?.length, 'error =', error);
         if (error) throw error;
         if (!updateData || updateData.length === 0) {
-          console.warn('[ToughConversation] UPDATE matched 0 rows for decisionId', decisionId);
+          throw new Error('Failed to update draft - no rows affected');
         }
       } else {
         const title = location.state?.problemTitle || new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-        const { error } = await supabase
+        const { data: insertData, error } = await supabase
           .from('decisions')
           .insert({
             user_id: user.id,
@@ -91,14 +91,18 @@ export default function ToughConversationStep1Feedback() {
             form_data: data,
             draft: true,
             status: 'draft',
-          });
+          })
+          .select();
         if (error) throw error;
+        if (!insertData || insertData.length === 0) {
+          throw new Error('Failed to save draft - no rows returned');
+        }
       }
       alert('Saved as draft');
       navigate('/decision-history');
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert('Failed to save draft');
+      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
     }
   }, [user, observation, impact, need, decisionId, navigate]);
 

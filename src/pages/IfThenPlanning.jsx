@@ -147,7 +147,7 @@ export default function IfThenPlanning() {
       }, 500);
     } catch (error) {
       console.error('Error saving planning:', error);
-      alert('Failed to save planning');
+      alert(`Failed to save planning: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
       setShowNamingModal(false);
@@ -176,6 +176,10 @@ export default function IfThenPlanning() {
           console.error('[IfThenPlanning] Draft update error:', error);
           throw error;
         }
+
+        if (!data || data.length === 0) {
+          throw new Error('Failed to update draft - no rows affected');
+        }
       } else {
         const { data, error } = await supabase
           .from('decisions')
@@ -191,12 +195,16 @@ export default function IfThenPlanning() {
           console.error('[IfThenPlanning] Draft insert error:', error);
           throw error;
         }
+
+        if (!data || data.length === 0) {
+          throw new Error('Failed to save draft - no rows returned');
+        }
       }
 
       setIsSaved(true);
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert('Failed to save draft');
+      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
