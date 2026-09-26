@@ -189,11 +189,13 @@ export function AuthProvider({ children }) {
         // STEP 1: Create Auth user (sends confirmation email)
         // Save firstName/lastName in user_metadata (server-side) instead of relying on localStorage
         // This ensures names persist across browser closures, device switches, etc.
+        const redirectToUrl = `${window.location.origin}/email-confirmation`;
+        console.log('[AuthContext.signup] Setting redirectTo:', redirectToUrl);
         const { data, error: signupError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            redirectTo: `${window.location.origin}/email-confirmation`,
+            redirectTo: redirectToUrl,
             data: {
               first_name: firstName || '',
               last_name: lastName || '',

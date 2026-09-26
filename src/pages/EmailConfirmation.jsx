@@ -14,6 +14,20 @@ export default function EmailConfirmation() {
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
+        // Check for error parameters in URL (from Supabase if something went wrong)
+        const errorCode = searchParams.get('error_code');
+        const error = searchParams.get('error');
+        if (error || errorCode) {
+          console.error('[EmailConfirmation] Error in URL:', { error, errorCode });
+          setStatus('error');
+          setMessage(
+            errorCode === 'otp_expired'
+              ? 'The confirmation link has expired. Please sign up again.'
+              : error || 'Email confirmation failed. Please try signing up again.'
+          );
+          return;
+        }
+
         // CRITICAL: Set the justConfirmedEmail flag FIRST, before anything else
         // This ensures it's available in localStorage even before session is fully processed
         localStorage.setItem('justConfirmedEmail', 'true');

@@ -74,6 +74,24 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Handle confirmation code redirects (Supabase email links may land on root with code parameter)
+  useEffect(() => {
+    // Check if we're on the root path with a confirmation code
+    if (location.pathname === '/' && location.search) {
+      const params = new URLSearchParams(location.search);
+      const code = params.get('code');
+      const type = params.get('type');
+      const error = params.get('error');
+
+      // If there's a code or error parameter, redirect to email-confirmation to handle it properly
+      if (code || error) {
+        console.log('[App] Detected confirmation code/error on root, redirecting to /email-confirmation');
+        console.log('[App] Code:', code, 'Type:', type, 'Error:', error);
+        navigate(`/email-confirmation${location.search}${location.hash}`, { replace: true });
+      }
+    }
+  }, [location.pathname, location.search, location.hash, navigate]);
+
   // Handle post-signup redirect to mission page
   useEffect(() => {
     if (isLoading || !user) return;
