@@ -422,7 +422,7 @@ export default function StopDoingAudit() {
 
         <div style={sectionStyle}>
           <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
-            How Specifically Will You Take Action on This?
+            How specifically will you take action on this?
           </h2>
           <label style={labelStyle}>Describe your specific approach or steps</label>
           <textarea
@@ -438,7 +438,7 @@ export default function StopDoingAudit() {
 
         <div style={sectionStyle}>
           <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
-            What Will You Do With the Time Instead?
+            What will you do with the time instead?
           </h2>
           <label style={labelStyle}>How will you use the hours you reclaim?</label>
           <textarea
