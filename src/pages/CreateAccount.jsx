@@ -346,10 +346,15 @@ export default function CreateAccount() {
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
                 style={{
-                  width: '20px',
-                  height: '20px',
+                  width: '16px',
+                  height: '16px',
                   cursor: 'pointer',
                   accentColor: '#F08571',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  border: '2px solid #ccc',
+                  borderRadius: '3px',
+                  backgroundColor: termsAccepted ? '#F08571' : 'white',
                   flexShrink: 0,
                   margin: 0,
                 }}
