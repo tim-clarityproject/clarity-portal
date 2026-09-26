@@ -115,6 +115,7 @@ function AppContent() {
   // Determine if buttons should be hidden on current page
   const hideButtons = [
     '/',
+    '/login',
     '/check-email-confirmation',
     '/auth/callback',
     '/email-confirmation',
