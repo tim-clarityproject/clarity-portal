@@ -31,7 +31,16 @@ export default function StopDoingAudit() {
 
   useEffect(() => {
     if (decisionId && user) {
+      // Load existing audit from Supabase when editing
       loadAudit();
+    } else if (!decisionId && user) {
+      // On fresh page load (no decisionId), ensure all fields are blank
+      // This prevents showing stale form data from browser history
+      setItems([{ id: 1, activity: '', timePerWeek: '', action: '' }]);
+      setNextId(2);
+      setFirstAction('');
+      setActionHow('');
+      setTimeUse('');
     }
   }, [decisionId, user]);
 
@@ -207,7 +216,7 @@ export default function StopDoingAudit() {
   const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '16px 20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };
   const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
   const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
-  const textareaStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box', minHeight: '80px', resize: 'none', overflow: 'hidden' };
+  const textareaStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box', minHeight: '80px', resize: 'none', overflow: 'hidden', textTransform: 'none' };
 
   const totalTime = getTotalTime();
 
@@ -246,6 +255,7 @@ export default function StopDoingAudit() {
                   placeholder="Type here"
                   value={item.activity}
                   onChange={(e) => handleItemChange(item.id, 'activity', e.target.value)}
+                  autoComplete="off"
                   style={{ ...inputStyle, flex: 1 }}
                 />
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -388,6 +398,7 @@ export default function StopDoingAudit() {
             <select
               value={firstAction}
               onChange={(e) => setFirstAction(e.target.value)}
+              autoComplete="off"
               style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
             >
               <option value="">Choose an activity...</option>
@@ -417,6 +428,7 @@ export default function StopDoingAudit() {
             placeholder="Type here"
             value={actionHow}
             onChange={(e) => setActionHow(e.target.value)}
+            autoComplete="off"
             style={{ ...textareaStyle, marginBottom: 0 }}
           />
         </div>
@@ -431,6 +443,7 @@ export default function StopDoingAudit() {
             placeholder="Type here"
             value={timeUse}
             onChange={(e) => setTimeUse(e.target.value)}
+            autoComplete="off"
             style={{ ...textareaStyle, marginBottom: 0 }}
           />
         </div>
