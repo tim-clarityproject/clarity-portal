@@ -431,6 +431,7 @@ export default function StopDoingAudit() {
             value={actionHow}
             onChange={(e) => setActionHow(e.target.value)}
             autoComplete="off"
+            autoCapitalize="off"
             style={{ ...textareaStyle, marginBottom: 0 }}
           />
         </div>
@@ -446,6 +447,7 @@ export default function StopDoingAudit() {
             value={timeUse}
             onChange={(e) => setTimeUse(e.target.value)}
             autoComplete="off"
+            autoCapitalize="off"
             style={{ ...textareaStyle, marginBottom: 0 }}
           />
         </div>
