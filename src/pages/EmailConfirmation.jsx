@@ -19,46 +19,76 @@ export default function EmailConfirmation() {
         localStorage.setItem('justConfirmedEmail', 'true');
         console.log('[EmailConfirmation] Flag set: justConfirmedEmail = true');
 
-        // Supabase automatically processes the token if detectSessionInUrl is enabled
-        // Check if session was successfully created by the confirmation
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // CRITICAL: Wait for the onAuthStateChange event to fire
+        // Supabase's detectSessionInUrl processes the token asynchronously
+        // We need to wait for the session to actually be created and the listener to fire
+        // Rather than calling getSession() immediately (which might return null if still processing)
+        let sessionReady = false;
+        let sessionError = null;
+        let detectedUser = null;
 
-        if (error) {
-          console.error('Email confirmation error:', error);
+        // Listen for the auth state change event (fired when token is processed)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('[EmailConfirmation] Auth state changed:', event, 'has session?', !!session?.user);
+
+            if (event === 'SIGNED_IN' && session?.user) {
+              // Token was successfully exchanged for a session
+              console.log('✓ Email confirmed and session established');
+              console.log('[EmailConfirmation] User:', session.user.email, 'ID:', session.user.id);
+              detectedUser = session.user;
+              sessionReady = true;
+            } else if (event === 'SIGNED_IN') {
+              // SIGNED_IN but no user - something is wrong
+              sessionError = 'Session created but no user data';
+              sessionReady = true;
+            }
+          }
+        );
+
+        // Poll for session ready or timeout after 10 seconds
+        let waitTime = 0;
+        const maxWait = 10000; // 10 second timeout
+        const pollInterval = 100;
+
+        while (!sessionReady && waitTime < maxWait) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          waitTime += pollInterval;
+        }
+
+        // Clean up the subscription
+        subscription?.unsubscribe();
+
+        if (sessionError || !detectedUser) {
+          console.error('[EmailConfirmation] Session error or timeout:', sessionError);
           setStatus('error');
-          setMessage(error.message || 'Failed to confirm email. The link may have expired. Please try signing up again.');
+          setMessage(
+            sessionError || 'Email confirmation timed out. The link may have expired. Please try signing up again.'
+          );
           return;
         }
 
-        if (session?.user) {
-          console.log('✓ Email confirmed and session established');
-          console.log('[EmailConfirmation] User:', session.user.email, 'ID:', session.user.id);
+        // CRITICAL: Don't do profile UPSERT here - AuthContext handles it
+        // Multiple simultaneous UPSERT calls cause 409 conflicts
+        // AuthContext's onAuthStateChange listener will:
+        // 1. See the SIGNED_IN event (from detectSessionInUrl)
+        // 2. Read justConfirmedEmail flag from localStorage
+        // 3. Do the profile UPSERT with names from user_metadata and terms_accepted=true
+        // 4. Call loadUserData to sync other tables
 
-          // CRITICAL: Don't do profile UPSERT here - AuthContext handles it
-          // Multiple simultaneous UPSERT calls cause 409 conflicts
-          // AuthContext's onAuthStateChange listener will:
-          // 1. See the SIGNED_IN event (from detectSessionInUrl)
-          // 2. Read justConfirmedEmail flag from localStorage
-          // 3. Do the profile UPSERT with names from user_metadata and terms_accepted=true
-          // 4. Call loadUserData to sync other tables
+        // Clean up old localStorage name storage (no longer needed)
+        localStorage.removeItem('pendingSignupName');
 
-          // Clean up old localStorage name storage (no longer needed)
-          localStorage.removeItem('pendingSignupName');
+        setStatus('success');
+        setMessage('Email confirmed! Redirecting to your mission...');
 
-          setStatus('success');
-          setMessage('Email confirmed! Redirecting to your mission...');
-
-          // Redirect to the mission/purpose onboarding page after a brief delay
-          // This is CRITICAL for new users to set their mission
-          // The justConfirmedEmail flag is already set, so handleRedirects won't interfere
-          setTimeout(() => {
-            navigate('/onboarding-mission');
-          }, 2000);
-        } else {
-          console.warn('No session after email confirmation');
-          setStatus('error');
-          setMessage('Email confirmation completed, but session could not be established. Please try logging in.');
-        }
+        // Redirect to the mission/purpose onboarding page after a brief delay
+        // This is CRITICAL for new users to set their mission
+        // The justConfirmedEmail flag is already set
+        // The user should now be authenticated in AuthContext via the onAuthStateChange listener
+        setTimeout(() => {
+          navigate('/onboarding-mission');
+        }, 1000);
       } catch (err) {
         console.error('Email confirmation exception:', err);
         setStatus('error');
