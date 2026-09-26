@@ -123,6 +123,8 @@ export default function BreathingGuide({ isOpen, onClose }) {
             backgroundColor: 'transparent',
             border: 'none',
             fontSize: '24px',
+            lineHeight: '1',
+            letterSpacing: '0',
             color: '#999',
             cursor: 'pointer',
             display: 'flex',
