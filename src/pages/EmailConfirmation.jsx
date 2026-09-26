@@ -114,19 +114,21 @@ export default function EmailConfirmation() {
   }, [navigate]);
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+    <div style={{ minHeight: '100vh', paddingTop: status === 'error' ? '0' : 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      {status !== 'error' && <HomeHeader />}
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
         <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-          <div style={{ marginBottom: '32px' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', marginBottom: '16px' }}>
-              The Clarity Project
-            </h1>
-            <p style={{ color: '#666', fontSize: '14px', marginBottom: '24px', lineHeight: '1.6' }}>
-              We're confirming your email address so you can access your personalized clarity tools.
-            </p>
-          </div>
+          {status !== 'error' && (
+            <div style={{ marginBottom: '32px' }}>
+              <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', marginBottom: '16px' }}>
+                The Clarity Project
+              </h1>
+              <p style={{ color: '#666', fontSize: '14px', marginBottom: '24px', lineHeight: '1.6' }}>
+                We're confirming your email address so you can access your personalized clarity tools.
+              </p>
+            </div>
+          )}
 
           {status === 'confirming' && (
             <div style={{ padding: '32px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
@@ -169,46 +171,36 @@ export default function EmailConfirmation() {
           )}
 
           {status === 'error' && (
-            <div style={{
-              padding: '24px 32px',
-              backgroundColor: '#ffebee',
-              borderRadius: '8px',
-              border: '1px solid #f44336',
-              marginBottom: '24px'
-            }}>
-              <p style={{ color: '#c62828', fontSize: '14px', margin: 0, fontWeight: '500' }}>
-                Confirmation Issue
+            <>
+              <p style={{ fontSize: '14px', color: '#333', marginBottom: '24px', lineHeight: '1.6' }}>
+                You've already confirmed your email. Log in to your account now to access The Clarity Portal.
               </p>
-              <p style={{ color: '#c62828', fontSize: '13px', margin: '8px 0 0 0' }}>
-                {message}
-              </p>
-            </div>
+              <button
+                onClick={() => navigate('/login')}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: '#F08571',
+                  color: 'white',
+                  fontWeight: '600',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+              >
+                Log In
+              </button>
+            </>
           )}
 
-          {status === 'error' && (
-            <button
-              onClick={() => navigate('/create-account')}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#F08571',
-                color: 'white',
-                fontWeight: '600',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-            >
-              Try Signing Up Again
-            </button>
+          {status !== 'error' && (
+            <p style={{ color: '#999', fontSize: '12px', marginTop: '32px', lineHeight: '1.6' }}>
+              This page is part of The Clarity Project. We never share your data and your privacy is important to us.
+            </p>
           )}
-
-          <p style={{ color: '#999', fontSize: '12px', marginTop: '32px', lineHeight: '1.6' }}>
-            This page is part of The Clarity Project. We never share your data and your privacy is important to us.
-          </p>
         </div>
       </div>
     </div>
