@@ -197,9 +197,13 @@ export default function PersonalOperatingPlan() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="pop-page-container">
 
         {/* Page Title */}
-        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '0', marginBottom: designTokens.spacing.xl, paddingBottom: designTokens.spacing.lg, borderBottom: `2px solid ${designTokens.colors.primary}` }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '8px' }}>
           Your Personal Operating Plan
         </h1>
+
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '100%', backgroundColor: designTokens.colors.primary, transition: 'width 0.3s ease' }} />
+        </div>
 
         {/* STRATEGIES SECTION - Premium Cards */}
         <div style={{ marginBottom: '48px' }}>

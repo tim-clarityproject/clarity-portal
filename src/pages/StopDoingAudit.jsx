@@ -196,13 +196,15 @@ export default function StopDoingAudit() {
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <div style={{ marginBottom: '48px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
-            Stop Doing Audit
-          </h1>
-          <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
-            Identify time-sink activities and reclaim your time
-          </p>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
+          Stop Doing Audit
+        </h1>
+        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
+          Identify time-sink activities and reclaim your time
+        </p>
+
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
         </div>
 
         <div style={sectionStyle}>

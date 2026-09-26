@@ -240,7 +240,7 @@ export default function ToughConversationStep2Coaching() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>Have a tough conversation</h1>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>Have a Tough Conversation</h1>
             <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>Plan your coaching and follow-up questions</p>
           </div>
           <button
