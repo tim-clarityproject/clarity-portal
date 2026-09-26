@@ -4,6 +4,7 @@ import { Trash2, GripVertical } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import SavedConfirmation from '../components/SavedConfirmation';
+import InfoModal from '../components/InfoModal';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PersonalOperatingPlanEdit() {
@@ -18,6 +19,7 @@ export default function PersonalOperatingPlanEdit() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(!isNew);
   const [saved, setSaved] = useState(false);
+  const [openModal, setOpenModal] = useState(null); // 'strategy' or 'tactic'
 
   useEffect(() => {
     if (missionId && user) {
@@ -320,9 +322,37 @@ export default function PersonalOperatingPlanEdit() {
 
         {/* STRATEGIES SECTION */}
         <div style={{ marginBottom: '48px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#333', margin: '0 0 24px 0', paddingBottom: '12px', borderBottom: '1px solid #e5e5e5' }}>
-            Your Strategies
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid #e5e5e5' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#333', margin: 0 }}>
+              Your Strategies
+            </h2>
+            <button
+              onClick={() => setOpenModal('strategy')}
+              style={{
+                padding: '6px 12px',
+                backgroundColor: '#f0f0f0',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: '600',
+                color: '#666',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#e5e5e5';
+                e.currentTarget.style.color = '#333';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#f0f0f0';
+                e.currentTarget.style.color = '#666';
+              }}
+              title="Learn about strategies"
+            >
+              What is a strategy?
+            </button>
+          </div>
 
           {strategies.length === 0 ? (
             <div style={{ padding: '32px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px dashed #e5e5e5', textAlign: 'center' }}>
@@ -419,9 +449,37 @@ export default function PersonalOperatingPlanEdit() {
 
                   {/* TACTICS SECTION */}
                   <div style={{ paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
-                    <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Tactics
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Tactics
+                      </p>
+                      <button
+                        onClick={() => setOpenModal('tactic')}
+                        style={{
+                          padding: '4px 10px',
+                          backgroundColor: '#f0f0f0',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          color: '#666',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          whiteSpace: 'nowrap',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#e5e5e5';
+                          e.currentTarget.style.color = '#333';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f0f0f0';
+                          e.currentTarget.style.color = '#666';
+                        }}
+                        title="Learn about tactics"
+                      >
+                        What is a tactic?
+                      </button>
+                    </div>
 
                     {strategy.tactics.length === 0 ? (
                       <p style={{ fontSize: '13px', color: '#999', margin: '0 0 12px 0', fontStyle: 'italic' }}>No tactics yet. Add one below.</p>
@@ -666,6 +724,20 @@ export default function PersonalOperatingPlanEdit() {
       <SavedConfirmation
         isVisible={saved}
         onDismiss={() => setSaved(false)}
+      />
+
+      <InfoModal
+        isOpen={openModal === 'strategy'}
+        onClose={() => setOpenModal(null)}
+        title="What is a Strategy?"
+        content="A strategy is the big-picture approach you take to achieve your mission. It's your overall direction — how you'll tackle things in a consistent, thoughtful way. Unlike tactics (which happen day-to-day), your strategies don't change frequently. They're the foundation that guides your daily actions."
+      />
+
+      <InfoModal
+        isOpen={openModal === 'tactic'}
+        onClose={() => setOpenModal(null)}
+        title="What is a Tactic?"
+        content="A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do — the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy."
       />
     </div>
   );
