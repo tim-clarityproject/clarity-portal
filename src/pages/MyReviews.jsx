@@ -88,7 +88,7 @@ export default function MyReviews() {
         .eq('id', reviewId);
       setEntries(entries.filter(e => e.id !== reviewId));
     } catch (error) {
-      console.error('Error deleting mission progress review:', error);
+      console.error('Error deleting Personal Operating Plan review:', error);
       alert('Failed to delete review');
     }
   };
@@ -225,7 +225,7 @@ export default function MyReviews() {
               }
             }}
           >
-            Mission Progress Reviews
+            Personal Operating Plan Review
           </button>
         </div>
 
@@ -294,7 +294,7 @@ export default function MyReviews() {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {isMissionProgress ? 'Mission Progress Reviews' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Weekly Momentum Review')}
+                      {isMissionProgress ? 'POP Review' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Weekly Momentum Review')}
                     </span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: '60px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -330,7 +330,7 @@ export default function MyReviews() {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isMissionProgress) {
-                            if (!window.confirm('Delete this mission progress review?')) return;
+                            if (!window.confirm('Delete this Personal Operating Plan review?')) return;
                             handleDeleteMissionProgress(entry.id);
                           } else {
                             handleDelete(entry.id, e);

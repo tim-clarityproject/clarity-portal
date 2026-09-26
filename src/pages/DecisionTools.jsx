@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import HomeHeader from '../components/HomeHeader';
+import { designTokens } from '../lib/designTokens';
 
 const ALL_PROBLEMS = [
   { id: 'decision', title: 'I\'m navigating a tricky decision', description: 'Use the GROW model to get clear on the way forward', tools: ['grow'], status: 'coming-soon' },
@@ -59,7 +60,7 @@ export default function DecisionTools() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '48px 32px' }} className="page-container">
         <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 className="page-heading">All Decision Tools</h1>
+          <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '24px', paddingBottom: designTokens.spacing.lg, borderBottom: `2px solid ${designTokens.colors.primary}` }}>All Decision Tools</h1>
           <button
             onClick={() => navigate('/decision-history')}
             style={{
