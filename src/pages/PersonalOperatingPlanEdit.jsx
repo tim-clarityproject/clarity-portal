@@ -167,17 +167,27 @@ export default function PersonalOperatingPlanEdit() {
         .update({ personal_goal: missionTitle })
         .eq('id', user.id);
 
-      // Delete removed strategies
-      for (const strategy of strategies) {
-        if (!strategy.isNew && strategy.id) {
-          const exists = await supabase
-            .from('strategies')
-            .select('id')
-            .eq('id', strategy.id)
-            .single();
+      // Delete removed strategies and their tactics
+      // Load all existing strategies for this mission
+      const { data: existingStrategies } = await supabase
+        .from('strategies')
+        .select('id')
+        .eq('mission_id', currentMissionId);
 
-          if (exists.data && strategies.find(s => s.id === strategy.id) === undefined) {
-            await supabase.from('strategies').delete().eq('id', strategy.id);
+      // Delete strategies that are no longer in the current list
+      if (existingStrategies) {
+        for (const existingStrategy of existingStrategies) {
+          const stillExists = strategies.some(s => s.id === existingStrategy.id);
+          if (!stillExists) {
+            // Deleting the strategy will cascade delete tactics if foreign key is set up
+            const { error: deleteError } = await supabase
+              .from('strategies')
+              .delete()
+              .eq('id', existingStrategy.id);
+            if (deleteError) {
+              console.error('Error deleting strategy:', deleteError);
+              throw deleteError;
+            }
           }
         }
       }
@@ -211,12 +221,34 @@ export default function PersonalOperatingPlanEdit() {
             .eq('id', strategy.id);
         }
 
+        // Delete tactics that were removed from this strategy
+        const { data: existingTactics } = await supabase
+          .from('tactics')
+          .select('id')
+          .eq('strategy_id', strategies[sIndex].id);
+
+        if (existingTactics) {
+          for (const existingTactic of existingTactics) {
+            const tacticStillExists = strategy.tactics.some(t => t.id === existingTactic.id);
+            if (!tacticStillExists) {
+              const { error: deleteError } = await supabase
+                .from('tactics')
+                .delete()
+                .eq('id', existingTactic.id);
+              if (deleteError) {
+                console.error('Error deleting tactic:', deleteError);
+                throw deleteError;
+              }
+            }
+          }
+        }
+
         // Upsert tactics
         for (let tIndex = 0; tIndex < strategy.tactics.length; tIndex++) {
           const tactic = strategy.tactics[tIndex];
 
           if (tactic.isNew) {
-            await supabase.from('tactics').insert([{
+            const { data: newTactic, error: tacticError } = await supabase.from('tactics').insert([{
               strategy_id: strategies[sIndex].id,
               action: tactic.action,
               name: tactic.action,
@@ -226,9 +258,19 @@ export default function PersonalOperatingPlanEdit() {
               current_value: tactic.type === 'measurable' ? tactic.current_value : null,
               is_done: tactic.type === 'tickable' ? false : null,
               sort_order: tIndex
-            }]);
+            }])
+            .select()
+            .single();
+
+            if (tacticError) {
+              console.error('Error inserting tactic:', tacticError);
+              throw tacticError;
+            }
+            // Update the local tactic with the new ID from database
+            strategies[sIndex].tactics[tIndex].id = newTactic.id;
+            strategies[sIndex].tactics[tIndex].isNew = false;
           } else {
-            await supabase
+            const { error: updateError } = await supabase
               .from('tactics')
               .update({
                 action: tactic.action,
@@ -240,6 +282,11 @@ export default function PersonalOperatingPlanEdit() {
                 sort_order: tIndex
               })
               .eq('id', tactic.id);
+
+            if (updateError) {
+              console.error('Error updating tactic:', updateError);
+              throw updateError;
+            }
           }
         }
       }
