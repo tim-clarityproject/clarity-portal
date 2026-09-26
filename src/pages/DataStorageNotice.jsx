@@ -26,21 +26,21 @@ export default function DataStorageNotice() {
         </h1>
 
         <div style={{ color: '#333', lineHeight: '1.8', fontSize: '14px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             Overview
           </h2>
           <p style={{ marginBottom: '16px' }}>
             This Data Storage Notice explains how the Clarity Portal stores and manages your data. By using the Clarity Portal, you acknowledge that you understand and agree to the data storage practices outlined below.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             1. Data Storage Infrastructure
           </h2>
           <p style={{ marginBottom: '16px' }}>
             Your data is stored on Supabase, a secure, open-source backend-as-a-service platform built on PostgreSQL. Supabase provides enterprise-grade security and reliability for data storage and management.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             2. Types of Data Stored
           </h2>
           <p style={{ marginBottom: '12px' }}>
@@ -54,42 +54,42 @@ export default function DataStorageNotice() {
             <li><strong>Account Metadata:</strong> Name, profile information, and preferences</li>
           </ul>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             3. Data Encryption
           </h2>
           <p style={{ marginBottom: '16px' }}>
             Your data is transmitted over encrypted connections (HTTPS/TLS) to and from our servers. Sensitive data including passwords are hashed using industry-standard algorithms before storage. Supabase employs encryption for data at rest.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             4. Data Access Control
           </h2>
           <p style={{ marginBottom: '16px' }}>
             We implement Row-Level Security (RLS) policies to ensure that each user can only access their own data. Only authenticated users can view, edit, or delete their personal data. Your data is never shared with other users unless you explicitly choose to share it.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             5. Session Management
           </h2>
           <p style={{ marginBottom: '16px' }}>
             When you log in to the Clarity Portal, we create a secure session that lasts for up to 30 days. Your session is stored in your browser's local storage and synced with our servers. You can log out at any time to end your session immediately.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             6. Data Backup and Recovery
           </h2>
           <p style={{ marginBottom: '16px' }}>
             Supabase maintains regular backups of all data to ensure recovery in case of unforeseen circumstances. These backups are stored securely and are subject to the same security measures as live data.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             7. Data Deletion
           </h2>
           <p style={{ marginBottom: '16px' }}>
             You may request deletion of your account and all associated data at any time. Upon deletion, your personal data will be permanently removed from our systems within 30 days. Some data may be retained for compliance or legal purposes as required by law.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             8. Third-Party Providers
           </h2>
           <p style={{ marginBottom: '16px' }}>
@@ -104,21 +104,21 @@ export default function DataStorageNotice() {
             These providers are bound by confidentiality agreements and are only allowed to use your data for the purposes specified in this notice.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             9. Data Transfer
           </h2>
           <p style={{ marginBottom: '16px' }}>
             You can export your data at any time by requesting a copy from your account settings. This data will be provided in a standard format that you can use with other applications.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             10. Changes to This Notice
           </h2>
           <p style={{ marginBottom: '16px' }}>
             We may update this Data Storage Notice from time to time. Changes will be effective immediately upon posting to the website. Your continued use of the Clarity Portal constitutes acceptance of any changes to this notice.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             11. Contact Us
           </h2>
           <p style={{ marginBottom: '32px' }}>

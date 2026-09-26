@@ -374,6 +374,9 @@ export default function CreateAccount() {
                   flexShrink: 0,
                   margin: 0,
                   outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
                 }}
               />
               <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer', margin: 0, flex: 1 }}>
@@ -420,26 +423,6 @@ export default function CreateAccount() {
             </button>
           </form>
           )}
-
-          <div style={{ marginTop: '24px', textAlign: 'center' }}>
-            <button
-              type="button"
-              onClick={() => navigate('/welcome', { state: location.state })}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: '#F08571',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.color = '#e07560'}
-              onMouseLeave={(e) => e.target.style.color = '#F08571'}
-            >
-              Back to portal
-            </button>
-          </div>
 
           {showTermsModal && (
             <div style={{

@@ -26,14 +26,14 @@ export default function PrivacyPolicy() {
         </h1>
 
         <div style={{ color: '#333', lineHeight: '1.8', fontSize: '14px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             1. Introduction
           </h2>
           <p style={{ marginBottom: '16px' }}>
             The Clarity Project ("we," "us," "our," or "Company") respects the privacy of our users ("user" or "you"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services, including the Clarity Portal.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             2. Information We Collect
           </h2>
           <p style={{ marginBottom: '12px' }}>
@@ -46,7 +46,7 @@ export default function PrivacyPolicy() {
             <li><strong>Device Information:</strong> Information about your device, browser, and IP address</li>
           </ul>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             3. How We Use Your Information
           </h2>
           <p style={{ marginBottom: '12px' }}>
@@ -62,28 +62,28 @@ export default function PrivacyPolicy() {
             <li>Comply with legal obligations</li>
           </ul>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             4. Data Storage and Security
           </h2>
           <p style={{ marginBottom: '16px' }}>
             Your data is stored securely using Supabase, a secure cloud database platform. We implement industry-standard security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             5. Data Retention
           </h2>
           <p style={{ marginBottom: '16px' }}>
             We retain your personal data for as long as your account is active or as needed to provide you with our services. You may request deletion of your account and associated data at any time by contacting us. Some data may be retained as required by law or for legitimate business purposes.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             6. Third-Party Services
           </h2>
           <p style={{ marginBottom: '16px' }}>
             Our services may contain links to third-party websites and services that are not operated by us. This Privacy Policy does not apply to third-party services, and we are not responsible for their privacy practices. We encourage you to review their privacy policies before providing any information.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             7. Your Rights
           </h2>
           <p style={{ marginBottom: '12px' }}>
@@ -97,14 +97,14 @@ export default function PrivacyPolicy() {
             <li>The right to data portability</li>
           </ul>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             8. Children's Privacy
           </h2>
           <p style={{ marginBottom: '16px' }}>
             The Clarity Portal is not intended for children under the age of 13. We do not knowingly collect personal information from children under 13. If we become aware that a child under 13 has provided us with personal information, we will take steps to delete such information and terminate the child's account.
           </p>
 
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
             9. Contact Us
           </h2>
           <p style={{ marginBottom: '16px' }}>
