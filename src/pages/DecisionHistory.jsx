@@ -84,6 +84,7 @@ export default function DecisionHistory() {
     // Special cases
     if (toolType === 'if_then_planning') return 'If-Then Plan';
     if (toolType === 'grow') return 'GROW';
+    if (toolType === 'stop_doing_audit') return 'Stop-Doing Audit';
 
     const words = toolType
       .split(/[-_]/)
@@ -111,6 +112,7 @@ export default function DecisionHistory() {
       'strategic-alignment': '/goal-setting',
       'daily_plan': '/plan-my-day',
       'if_then_planning': '/if-then-planning',
+      'stop_doing_audit': '/stop-doing-audit',
     };
     const editPage = editPageMap[decision.tool_type] || '/decision-tools';
     navigate(editPage, { state: { decisionId: decision.id, ...decision } });
@@ -185,6 +187,7 @@ export default function DecisionHistory() {
                   let route = '/decision-summary';
                   if (decision.tool_type === 'daily_plan') route = '/daily-plan-summary';
                   if (decision.tool_type === 'if_then_planning') route = '/if-then-planning-summary';
+                  if (decision.tool_type === 'stop_doing_audit') route = '/stop-doing-audit-summary';
                   navigate(route, { state: { decisionId: decision.id, ...decision } });
                 }}
                 style={{

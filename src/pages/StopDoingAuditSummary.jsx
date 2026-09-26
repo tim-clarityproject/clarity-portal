@@ -167,7 +167,7 @@ export default function StopDoingAuditSummary() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-start',
+            justifyContent: 'center',
             padding: '8px 12px',
             backgroundColor: 'transparent',
             border: 'none',

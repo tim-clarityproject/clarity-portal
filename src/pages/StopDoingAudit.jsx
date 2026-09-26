@@ -131,8 +131,9 @@ export default function StopDoingAudit() {
           .insert({
             user_id: user.id,
             tool_type: 'stop_doing_audit',
-            title: 'Stop Doing Audit',
+            title: 'Reclaiming My Time',
             form_data: formData,
+            status: 'completed',
           })
           .select();
 
@@ -184,8 +185,9 @@ export default function StopDoingAudit() {
           .insert({
             user_id: user.id,
             tool_type: 'stop_doing_audit',
-            title: 'Stop Doing Audit',
+            title: 'Reclaiming My Time',
             form_data: formData,
+            status: 'draft',
           })
           .select();
 
