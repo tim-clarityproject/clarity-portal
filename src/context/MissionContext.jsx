@@ -17,14 +17,17 @@ export function MissionProvider({ children }) {
 
     try {
       // Fetch from missions table (primary source of truth)
-      const { data: missionData } = await supabase
+      // Note: New users might not have a mission yet, so don't use .single() which fails on zero rows
+      const { data: missionDataArray, error: missionError } = await supabase
         .from('missions')
         .select('*')
         .eq('user_id', user.id)
         .is('archived_at', null)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
+
+      // Get the first mission if it exists (it's fine if array is empty for new users)
+      const missionData = missionDataArray?.[0] || null;
 
       if (missionData?.title) {
         setMission(missionData.title);
@@ -33,15 +36,19 @@ export function MissionProvider({ children }) {
           .from('profiles')
           .update({ personal_goal: missionData.title })
           .eq('id', user.id);
+      } else {
+        setMission('');
       }
 
       // Get visibility preference from profiles
-      const { data: profileData } = await supabase
+      // Note: Don't use .single() here either - handle empty/missing gracefully
+      const { data: profileDataArray, error: profileError } = await supabase
         .from('profiles')
         .select('show_mission_in_header')
         .eq('id', user.id)
-        .single();
+        .limit(1);
 
+      const profileData = profileDataArray?.[0] || null;
       if (profileData?.show_mission_in_header !== null && profileData?.show_mission_in_header !== undefined) {
         setShowInHeader(profileData.show_mission_in_header);
       }
@@ -70,14 +77,16 @@ export function MissionProvider({ children }) {
           .eq('id', user.id);
 
         // Also sync to missions table
-        const { data: existingMission } = await supabase
+        // Don't use .single() - handle the case where no mission exists yet
+        const { data: existingMissionArray } = await supabase
           .from('missions')
           .select('*')
           .eq('user_id', user.id)
           .is('archived_at', null)
           .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(1);
+
+        const existingMission = existingMissionArray?.[0] || null;
 
         if (existingMission) {
           // Update existing mission
