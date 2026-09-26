@@ -196,7 +196,7 @@ export default function ReviewSummary() {
           <>
             {parsedContent.q1 && (
               <SectionBlock
-                title="What did I intend to happen?"
+                title="What did I plan to do?"
                 content={parsedContent.q1}
               />
             )}
