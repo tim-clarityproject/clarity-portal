@@ -56,7 +56,7 @@ export default function MyJournal() {
   const weeklyMomentumQuestions = [
     { id: 'q1', label: 'What moved forward this week?', value: q1, setter: setQ1 },
     { id: 'q2', label: 'What did you do better this week?', value: q2, setter: setQ2 },
-    { id: 'q3', label: "What's one priority for next week?", value: q3, setter: setQ3 },
+    { id: 'q3', label: 'What are your priorities for next week?', value: q3, setter: setQ3 },
   ];
 
   let questions = [];
