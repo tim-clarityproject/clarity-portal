@@ -79,15 +79,29 @@ export function AuthProvider({ children }) {
             const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
             const termsAccepted = justConfirmedEmail ? true : false; // New signups accept terms, existing logins default to false
 
+            // Build the upsert payload - only include name fields if we have actual data
+            // This prevents overwriting existing names with empty strings from stale user_metadata
+            const upsertPayload = {
+              id: session.user.id,
+              email: session.user.email || '',
+              terms_accepted: termsAccepted,
+            };
+
+            // Only update names if we have actual data to write
+            // If firstName or lastName are empty, skip them so we don't erase existing data
+            if (firstName) upsertPayload.first_name = firstName;
+            if (lastName) upsertPayload.last_name = lastName;
+
+            // For new signups (justConfirmedEmail), ensure we have at least empty strings for names
+            // so the columns are initialized, but only if they're truly new
+            if (justConfirmedEmail) {
+              upsertPayload.first_name = firstName || '';
+              upsertPayload.last_name = lastName || '';
+            }
+
             const upsertResult = await supabase
               .from('profiles')
-              .upsert({
-                id: session.user.id,
-                first_name: firstName || '',
-                last_name: lastName || '',
-                email: session.user.email || '',
-                terms_accepted: termsAccepted,
-              }, {
+              .upsert(upsertPayload, {
                 onConflict: ['id']
               });
 
