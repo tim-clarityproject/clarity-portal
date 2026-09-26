@@ -104,9 +104,45 @@ export default function BreathingGuide({ isOpen, onClose }) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          position: 'relative',
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            width: '40px',
+            height: '40px',
+            minWidth: '40px',
+            minHeight: '40px',
+            padding: 0,
+            backgroundColor: 'transparent',
+            border: 'none',
+            fontSize: '24px',
+            color: '#999',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '6px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#f0f0f0';
+            e.currentTarget.style.color = '#333';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#999';
+          }}
+          aria-label="Close breathing guide"
+        >
+          ×
+        </button>
         {/* Breathing Circle */}
         <div style={{ position: 'relative', width: CONTAINER_SIZE, height: CONTAINER_SIZE, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px' }}>
           <svg width={CONTAINER_SIZE} height={CONTAINER_SIZE} style={{ position: 'absolute' }}>
