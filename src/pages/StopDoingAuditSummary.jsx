@@ -1,10 +1,9 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Download, Mail, X } from 'lucide-react';
+import { Download, Mail, X, ChevronLeft } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import HomeHeader from '../components/HomeHeader';
-import BackArrow from '../components/BackArrow';
 
 export default function StopDoingAuditSummary() {
   const navigate = useNavigate();
@@ -163,7 +162,34 @@ export default function StopDoingAuditSummary() {
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
-        <BackArrow />
+        <button
+          onClick={() => navigate('/decision-history')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            padding: '8px 12px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: '#F08571',
+            cursor: 'pointer',
+            borderRadius: '6px',
+            transition: 'all 0.2s',
+            marginBottom: '24px',
+            fontSize: '13px',
+            fontWeight: '600',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.7';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+          className="no-print"
+        >
+          <ChevronLeft size={20} />
+          <span style={{ marginLeft: '4px' }}>Back to My Decisions</span>
+        </button>
 
         <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
