@@ -13,8 +13,8 @@ export default function CheckEmailConfirmation() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
-        <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '600', color: '#333', marginBottom: '3em', marginTop: '0', lineHeight: '1.4' }}>
+        <div style={{ maxWidth: '900px', width: '100%', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '42px', fontWeight: '700', color: '#333', marginBottom: '3em', marginTop: '0', lineHeight: '1.3', fontFamily: "system-ui, 'Segoe UI', Roboto, sans-serif" }}>
             Check the email you signed up with to confirm your account
           </h1>
 

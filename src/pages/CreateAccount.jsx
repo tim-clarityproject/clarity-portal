@@ -94,6 +94,25 @@ export default function CreateAccount() {
             transform: translateY(0);
           }
         }
+        #terms {
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          outline: none;
+        }
+        #terms:checked {
+          background-color: #F08571;
+          border-color: #F08571;
+        }
+        #terms:checked::after {
+          content: '✓';
+          color: white;
+          font-size: 12px;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
       `}</style>
       <HomeHeader />
 
@@ -349,14 +368,12 @@ export default function CreateAccount() {
                   width: '16px',
                   height: '16px',
                   cursor: 'pointer',
-                  accentColor: '#F08571',
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
                   border: '2px solid #ccc',
                   borderRadius: '3px',
-                  backgroundColor: termsAccepted ? '#F08571' : 'white',
+                  backgroundColor: 'white',
                   flexShrink: 0,
                   margin: 0,
+                  outline: 'none',
                 }}
               />
               <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer', margin: 0, flex: 1 }}>
