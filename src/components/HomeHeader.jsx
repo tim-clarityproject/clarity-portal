@@ -78,12 +78,6 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
     setMenuOpen(false);
   };
 
-  const handleCreateAccount = () => {
-    navigate('/create-account', { state: location.state });
-    setMenuOpen(false);
-  };
-
-
   return (
     <div
       className={className}

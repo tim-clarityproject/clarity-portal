@@ -11,7 +11,6 @@ import BreathButton from './components/BreathButton';
 import ProtectedLayout from './components/ProtectedLayout';
 import Login from './pages/Login';
 import Welcome from './pages/Welcome';
-import CreateAccount from './pages/CreateAccount';
 import About from './pages/About';
 import MyAccount from './pages/MyAccount';
 import GoalSetting from './pages/GoalSetting';
@@ -116,7 +115,6 @@ function AppContent() {
   // Determine if buttons should be hidden on current page
   const hideButtons = [
     '/',
-    '/create-account',
     '/check-email-confirmation',
     '/auth/callback',
     '/email-confirmation',
@@ -139,7 +137,6 @@ function AppContent() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/check-email-confirmation" element={<CheckEmailConfirmation />} />
-        <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/about" element={<About />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -220,10 +217,6 @@ export default function App() {
         <FormProvider>
           <BrowserRouter>
             <AppContent />
-            <div className="no-print">
-              <BreathButton />
-              <WhatsAppWidget />
-            </div>
           </BrowserRouter>
         </FormProvider>
       </MissionProvider>

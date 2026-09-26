@@ -7,7 +7,7 @@ export default function DataStorageNotice() {
     <div style={{ minHeight: '100vh', backgroundColor: 'white', padding: '40px 20px' }} className="page-container">
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <button
-          onClick={() => navigate('/create-account')}
+          onClick={() => navigate('/login')}
           style={{
             backgroundColor: 'transparent',
             border: 'none',
