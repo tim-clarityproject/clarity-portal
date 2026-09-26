@@ -82,25 +82,34 @@ export default function MyAccount() {
       // Delete from Supabase Auth (auth.users table) using Edge Function
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          const response = await fetch(
-            `${new URL(supabase.supabaseUrl).origin}/functions/v1/delete-user`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          if (!response.ok) {
-            console.error('Failed to delete auth user via Edge Function');
-            // Continue with logout anyway
-          }
+        if (!session?.access_token) {
+          throw new Error('No active session for account deletion');
         }
+
+        const response = await fetch(
+          `${new URL(supabase.supabaseUrl).origin}/functions/v1/delete-user`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          console.error('Delete auth user error:', responseData);
+          throw new Error(responseData.error || 'Failed to delete account from authentication system');
+        }
+
+        console.log('✓ Auth user deleted successfully');
       } catch (authError) {
-        console.error('Error calling delete-user Edge Function:', authError);
-        // Continue with logout anyway - user will be logged out even if auth delete fails
+        console.error('Error deleting auth user:', authError);
+        setIsDeleting(false);
+        alert('Failed to delete account: ' + (authError.message || 'Unknown error occurred'));
+        return;
       }
 
       await logout();
