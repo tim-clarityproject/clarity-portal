@@ -209,21 +209,7 @@ export default function PersonalOperatingPlan() {
         }
       `}</style>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }} className="pop-page-container">
-
-        {/* MISSION SECTION - Premium Hero with Coral Background */}
-        <div style={{
-          backgroundColor: designTokens.colors.primary,
-          padding: designTokens.spacing.xl,
-          borderRadius: designTokens.borderRadius.lg,
-          boxShadow: designTokens.shadow.coral,
-          marginBottom: designTokens.layout.gapBetweenSections,
-        }}>
-          <p style={{ ...designTokens.typography.label, color: 'white', margin: `0 0 ${designTokens.spacing.md} 0`, opacity: 0.9 }}>Your Mission</p>
-          <h1 style={{ ...designTokens.typography.h1, color: 'white', margin: '0' }}>
-            {mission.title}
-          </h1>
-        </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="pop-page-container">
 
         {/* STRATEGIES SECTION - Premium Cards */}
         <div style={{ marginBottom: '48px' }}>

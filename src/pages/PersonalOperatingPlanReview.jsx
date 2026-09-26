@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { designTokens } from '../lib/designTokens';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PersonalOperatingPlanReview() {
@@ -183,21 +182,6 @@ export default function PersonalOperatingPlanReview() {
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="page-container">
-
-        {/* Your Mission Panel */}
-        <div style={{
-          backgroundColor: designTokens.colors.primary,
-          padding: designTokens.spacing.xl,
-          borderRadius: designTokens.borderRadius.lg,
-          boxShadow: designTokens.shadow.coral,
-          marginBottom: designTokens.layout.gapBetweenSections,
-        }}>
-          <p style={{ ...designTokens.typography.label, color: 'white', margin: `0 0 ${designTokens.spacing.md} 0`, opacity: 0.9 }}>Your Mission</p>
-          <h1 style={{ ...designTokens.typography.h1, color: 'white', margin: '0' }}>
-            {mission.title}
-          </h1>
-        </div>
-
         <p style={{ fontSize: '13px', color: '#999', margin: '0 0 32px 0' }}>Review your progress on each tactic</p>
 
         {/* Strategies Section */}
