@@ -17,13 +17,16 @@ export default function StopDoingAudit() {
   const [items, setItems] = useState([{ id: 1, activity: '', timePerWeek: '', action: '' }]);
   const [nextId, setNextId] = useState(2);
   const [firstAction, setFirstAction] = useState('');
+  const [actionHow, setActionHow] = useState('');
   const [timeUse, setTimeUse] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const isEditMode = Boolean(decisionId);
   const refFirstAction = useRef(null);
+  const refActionHow = useRef(null);
   const refTimeUse = useRef(null);
   useAutoExpandTextarea(refFirstAction, firstAction);
+  useAutoExpandTextarea(refActionHow, actionHow);
   useAutoExpandTextarea(refTimeUse, timeUse);
 
   useEffect(() => {
@@ -51,6 +54,9 @@ export default function StopDoingAudit() {
         }
         if (formData.firstAction) {
           setFirstAction(formData.firstAction);
+        }
+        if (formData.actionHow) {
+          setActionHow(formData.actionHow);
         }
         if (formData.timeUse) {
           setTimeUse(formData.timeUse);
@@ -90,7 +96,7 @@ export default function StopDoingAudit() {
 
     setIsSaving(true);
     try {
-      const formData = { items, firstAction, timeUse };
+      const formData = { items, firstAction, actionHow, timeUse };
       let savedId = decisionId;
 
       if (isEditMode && decisionId) {
@@ -146,7 +152,7 @@ export default function StopDoingAudit() {
 
     setIsSaving(true);
     try {
-      const formData = { items, firstAction, timeUse };
+      const formData = { items, firstAction, actionHow, timeUse };
 
       if (decisionId) {
         const { data, error } = await supabase
@@ -399,6 +405,20 @@ export default function StopDoingAudit() {
               </div>
             )}
           </div>
+        </div>
+
+        <div style={sectionStyle}>
+          <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
+            How Specifically Will You Take Action on This?
+          </h2>
+          <label style={labelStyle}>Describe your specific approach or steps</label>
+          <textarea
+            ref={refActionHow}
+            placeholder="Type here"
+            value={actionHow}
+            onChange={(e) => setActionHow(e.target.value)}
+            style={{ ...textareaStyle, marginBottom: 0 }}
+          />
         </div>
 
         <div style={sectionStyle}>

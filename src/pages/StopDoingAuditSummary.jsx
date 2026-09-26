@@ -165,10 +165,6 @@ export default function StopDoingAuditSummary() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
         <BackArrow />
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
-        </div>
-
         <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
             Stop Doing Audit
@@ -257,13 +253,25 @@ export default function StopDoingAuditSummary() {
           </div>
         )}
 
+        {/* How Specifically Will Take Action */}
+        {data.actionHow && (
+          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              How Specifically Will You Take Action
+            </h2>
+            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
+              {data.actionHow}
+            </p>
+          </div>
+        )}
+
         {/* Time Use Reflection */}
         {data.timeUse && (
           <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
             <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               What You'll Do With the Time Instead
             </h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
+            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap', textTransform: 'none' }}>
               {data.timeUse}
             </p>
           </div>
