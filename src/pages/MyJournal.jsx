@@ -342,9 +342,9 @@ export default function MyJournal() {
             </h2>
 
             <div style={{ marginBottom: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                <label style={{...labelStyle, margin: 0 }}>Momentum</label>
-                <span style={{ fontSize: '14px', color: '#999' }}>How much did things move forward this week?</span>
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{...labelStyle, margin: 0, display: 'inline' }}>Momentum:</label>
+                <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>How much did things move forward this week?</span>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <div style={{ flex: 1 }}>
@@ -381,8 +381,9 @@ export default function MyJournal() {
             </div>
 
             <div style={{ marginBottom: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                <label style={{...labelStyle, margin: 0 }}>Intentionality</label>
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{...labelStyle, margin: 0, display: 'inline' }}>Intentionality:</label>
+                <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>How clear was your focus on your priorities this week?</span>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <div style={{ flex: 1 }}>
@@ -419,8 +420,9 @@ export default function MyJournal() {
             </div>
 
             <div style={{ marginBottom: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                <label style={{...labelStyle, margin: 0 }}>Communication</label>
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{...labelStyle, margin: 0, display: 'inline' }}>Communication:</label>
+                <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>How well did you communicate with those you lead or work with this week?</span>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <div style={{ flex: 1 }}>
@@ -457,9 +459,9 @@ export default function MyJournal() {
             </div>
 
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                <label style={{...labelStyle, margin: 0 }}>Performance Under Pressure</label>
-                <span style={{ fontSize: '14px', color: '#999' }}>How well did you perform under pressure this week?</span>
+              <div style={{ marginBottom: '8px' }}>
+                <label style={{...labelStyle, margin: 0, display: 'inline' }}>Performance Under Pressure:</label>
+                <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>How well did you perform under pressure this week?</span>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <div style={{ flex: 1 }}>
