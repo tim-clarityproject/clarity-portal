@@ -116,33 +116,6 @@ export const auth = {
     return subscription;
   },
 
-  async signInWithGoogle() {
-    const origin = window.location.origin;
-    const redirectUrl = `${origin}/auth/callback`;
-    console.log('🔷 OAuth: Starting Google sign in...');
-    console.log('🔷 Current origin:', origin);
-    console.log('🔷 Current URL:', window.location.href);
-    console.log('🔷 Redirect will go to:', redirectUrl);
-    console.log('🔷 Supabase URL:', supabaseUrl);
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-        },
-      });
-      if (error) {
-        console.error('❌ OAuth error from Supabase:', error);
-        throw error;
-      }
-      console.log('✅ OAuth request sent, should redirect to Google...');
-      return data;
-    } catch (err) {
-      console.error('❌ OAuth exception:', err.message, err);
-      throw err;
-    }
-  },
-
 };
 
 // Plans functions
