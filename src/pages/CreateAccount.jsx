@@ -21,7 +21,6 @@ export default function CreateAccount() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [expandedSection, setExpandedSection] = useState(null);
 
-
   // Guest data from previous session
   const guestFormData = location.state || {};
 
