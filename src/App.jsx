@@ -62,7 +62,6 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
-import TermsAcceptance from './pages/TermsAcceptance';
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
 import PersonalOperatingPlanSummary from './pages/PersonalOperatingPlanSummary';
@@ -75,86 +74,18 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check terms acceptance and handle redirects
+  // Handle post-signup redirect to mission page
   useEffect(() => {
-    // CRITICAL: Skip ALL redirect logic if user is null or on public auth pages
-    // This prevents ProtectedLayout from rendering during the signup→check-email flow
-    // where routes haven't settled yet and state is in transition
     if (isLoading || !user) return;
 
-    // Also skip if on ANY public page - these should never be subject to auth redirects
-    const publicPages = [
-      '/',
-      '/login',
-      '/create-account',
-      '/check-email-confirmation',
-      '/email-confirmation',
-      '/auth/callback',
-      '/about',
-      '/terms-of-service',
-      '/privacy-policy',
-      '/data-storage-notice'
-    ];
-
-    if (publicPages.some(page => location.pathname === page)) {
-      return;
+    // Check if user just confirmed their email (new signup flow)
+    const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
+    if (justConfirmedEmail && !location.pathname.includes('onboarding-mission')) {
+      console.log('[App] New signup confirmed, redirecting to mission page');
+      navigate('/onboarding-mission', { replace: true });
+      localStorage.removeItem('justConfirmedEmail');
     }
-
-    const handleRedirects = async () => {
-      try {
-        // Double-check we're not on a public page (inner safety check)
-        if (publicPages.some(page => location.pathname === page)) {
-          return;
-        }
-
-        // Check if user just confirmed their email (new signup flow)
-        const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
-        if (justConfirmedEmail) {
-          // If not already on the mission page, redirect there for new users
-          if (!location.pathname.includes('onboarding-mission')) {
-            console.log('[App.handleRedirects] New signup confirmed, redirecting to mission page');
-            navigate('/onboarding-mission', { replace: true });
-            return;
-          }
-          // Already on mission page, just remove the flag
-          localStorage.removeItem('justConfirmedEmail');
-          return;
-        }
-
-        let termsAccepted = false;
-
-        try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('terms_accepted')
-            .eq('id', user.id)
-            .single();
-
-          if (error) {
-            console.warn('Profile not found or error fetching:', error);
-            termsAccepted = false;
-          } else {
-            termsAccepted = profile?.terms_accepted || false;
-          }
-        } catch (err) {
-          console.warn('Could not fetch terms from profile:', err);
-          termsAccepted = false;
-        }
-
-        // Skip terms check if on onboarding-mission (new users go here after email confirmation)
-        // They've already accepted terms during signup
-        if (!termsAccepted && !location.pathname.includes('accept-terms') && !location.pathname.includes('onboarding-mission')) {
-          navigate('/accept-terms', { replace: true });
-          return;
-        }
-
-      } catch (error) {
-        console.error('Error in redirects:', error);
-      }
-    };
-
-    handleRedirects();
-  }, [user, isLoading, location.pathname, location.hash, navigate]);
+  }, [user, isLoading, location.pathname, navigate]);
 
   if (isLoading) {
     return (
@@ -171,7 +102,6 @@ function AppContent() {
     '/check-email-confirmation',
     '/auth/callback',
     '/email-confirmation',
-    '/accept-terms',
     '/onboarding-mission',
     '/personal-operating-plan-edit',
     '/personal-operating-plan-review',
@@ -249,7 +179,6 @@ function AppContent() {
           <Route path="/tough-conversation-step-2" element={<ToughConversationStep2Coaching />} />
           <Route path="/tough-conversation-summary" element={<ToughConversationSummary />} />
           <Route path="/edit-profile" element={<EditPersonalDetails />} />
-          <Route path="/accept-terms" element={<TermsAcceptance />} />
         </Route>
 
           {/* Catch-all for unmatched routes */}
