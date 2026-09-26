@@ -4,6 +4,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
+import SavedConfirmation from '../components/SavedConfirmation';
 import HomeHeader from '../components/HomeHeader';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
@@ -129,7 +130,7 @@ export default function StopDoingAudit() {
       clearProgress();
       setTimeout(() => {
         navigate('/stop-doing-audit-summary', { state: { decisionId: savedId } });
-      }, 500);
+      }, 1500);
     } catch (error) {
       console.error('Error saving audit:', error);
       alert('Failed to save audit');
@@ -489,6 +490,11 @@ export default function StopDoingAudit() {
           {isSaved ? 'Finished' : 'Finish'}
         </button>
       </div>
+
+      <SavedConfirmation
+        isVisible={isSaved}
+        onDismiss={() => setIsSaved(false)}
+      />
     </div>
   );
 }

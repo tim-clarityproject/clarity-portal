@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
+import SavedConfirmation from '../components/SavedConfirmation';
 import HomeHeader from '../components/HomeHeader';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
@@ -271,6 +272,11 @@ export default function PlanMyDayStep1() {
           {isSaving ? 'Finishing...' : 'Finish'}
         </button>
       </div>
+
+      <SavedConfirmation
+        isVisible={saved}
+        onDismiss={() => setSaved(false)}
+      />
     </div>
   );
 }

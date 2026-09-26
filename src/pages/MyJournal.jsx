@@ -8,6 +8,7 @@ import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 import { formatReviewDate } from '../lib/dateFormatter';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
+import SavedConfirmation from '../components/SavedConfirmation';
 import HomeHeader from '../components/HomeHeader';
 
 export default function MyJournal() {
@@ -564,6 +565,11 @@ export default function MyJournal() {
         itemType="review"
         onConfirm={handleSaveConfirmed}
         onCancel={() => setShowNamingModal(false)}
+      />
+
+      <SavedConfirmation
+        isVisible={saved}
+        onDismiss={() => setSaved(false)}
       />
     </div>
   );

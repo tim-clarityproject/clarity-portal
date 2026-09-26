@@ -8,6 +8,7 @@ import { clearProgress } from '../lib/saveProgress';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
+import SavedConfirmation from '../components/SavedConfirmation';
 import HomeHeader from '../components/HomeHeader';
 
 export default function GrowStep4WillDo() {
@@ -35,6 +36,7 @@ export default function GrowStep4WillDo() {
   }, [isEditMode, location.state?.options, updateFormData]);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
   const [validationError, setValidationError] = useState('');
 
@@ -175,7 +177,10 @@ export default function GrowStep4WillDo() {
       setCurrentTitle(decisionName);
       clearProgress();
       clearDirty();
-      navigate('/decision-summary', { state: { decisionId } });
+      setSaved(true);
+      setTimeout(() => {
+        navigate('/decision-summary', { state: { decisionId } });
+      }, 1500);
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
@@ -421,6 +426,11 @@ export default function GrowStep4WillDo() {
           onCancel={() => setShowNamingModal(false)}
         />
       </div>
+
+      <SavedConfirmation
+        isVisible={saved}
+        onDismiss={() => setSaved(false)}
+      />
     </div>
   );
 }

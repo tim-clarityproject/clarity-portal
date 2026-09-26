@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2, GripVertical } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import SavedConfirmation from '../components/SavedConfirmation';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PersonalOperatingPlanEdit() {
@@ -16,6 +17,7 @@ export default function PersonalOperatingPlanEdit() {
   const [strategies, setStrategies] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(!isNew);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (missionId && user) {
@@ -240,7 +242,10 @@ export default function PersonalOperatingPlanEdit() {
         }
       }
 
-      navigate('/personal-operating-plan');
+      setSaved(true);
+      setTimeout(() => {
+        navigate('/personal-operating-plan');
+      }, 1500);
     } catch (error) {
       console.error('Error saving plan:', error);
       alert('Failed to save plan');
@@ -657,6 +662,11 @@ export default function PersonalOperatingPlanEdit() {
         </div>
 
       </div>
+
+      <SavedConfirmation
+        isVisible={saved}
+        onDismiss={() => setSaved(false)}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import SavedConfirmation from '../components/SavedConfirmation';
 import HomeHeader from '../components/HomeHeader';
 
 export default function EditPersonalDetails() {
@@ -13,7 +14,7 @@ export default function EditPersonalDetails() {
   const [organisation, setOrganisation] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -49,7 +50,6 @@ export default function EditPersonalDetails() {
     if (!user) return;
 
     setIsSaving(true);
-    setMessage('');
 
     try {
       const { error } = await supabase
@@ -66,7 +66,7 @@ export default function EditPersonalDetails() {
         throw error;
       }
 
-      setMessage('✓ Profile saved successfully!');
+      setSaved(true);
 
       const { data: freshProfile } = await supabase
         .from('profiles')
@@ -85,7 +85,7 @@ export default function EditPersonalDetails() {
         navigate('/my-account');
       }, 1500);
     } catch (error) {
-      setMessage(`Error: ${error.message || 'Could not save profile.'}`);
+      console.error('Error saving profile:', error);
     } finally {
       setIsSaving(false);
     }
@@ -248,20 +248,6 @@ export default function EditPersonalDetails() {
               />
             </div>
 
-            {/* Success/Error Message */}
-            {message && (
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: message.includes('Error') ? '#ffe5e5' : '#e5f5f2',
-                color: message.includes('Error') ? '#d32f2f' : '#00897b',
-                borderRadius: '6px',
-                fontSize: '13px',
-                textAlign: 'center',
-              }}>
-                {message}
-              </div>
-            )}
-
             {/* Save Button */}
             <button
               onClick={handleSaveProfile}
@@ -286,6 +272,11 @@ export default function EditPersonalDetails() {
           </div>
         )}
       </div>
+
+      <SavedConfirmation
+        isVisible={saved}
+        onDismiss={() => setSaved(false)}
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { clearProgress } from '../lib/saveProgress';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
+import SavedConfirmation from '../components/SavedConfirmation';
 import HomeHeader from '../components/HomeHeader';
 
 export default function InversionStep3Plan() {
@@ -18,6 +19,7 @@ export default function InversionStep3Plan() {
   const [goal, setGoal] = useState(location.state?.goal || '');
   const [plan, setPlan] = useState(() => location.state?.plan || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
   const fuckups = location.state?.fuckups || [];
@@ -110,7 +112,10 @@ export default function InversionStep3Plan() {
 
       setCurrentTitle(decisionName);
       clearProgress();
-      navigate('/inversion-thinking-summary', { state: { decisionId } });
+      setSaved(true);
+      setTimeout(() => {
+        navigate('/inversion-thinking-summary', { state: { decisionId } });
+      }, 1500);
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
@@ -250,6 +255,11 @@ export default function InversionStep3Plan() {
           onCancel={() => setShowNamingModal(false)}
         />
       </div>
+
+      <SavedConfirmation
+        isVisible={saved}
+        onDismiss={() => setSaved(false)}
+      />
     </div>
   );
 }
