@@ -8,26 +8,20 @@ export default function Login() {
   const location = useLocation();
   const { login, signup, isLoading, user } = useContext(AuthContext);
 
-  // CSS for checkbox styling
   const checkboxStyles = `
     #terms {
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      outline: none;
-    }
-    #terms:checked {
-      background-color: #F08571;
-      border-color: #F08571;
+      position: relative;
     }
     #terms:checked::after {
       content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       color: white;
-      font-size: 12px;
+      font-size: 10px;
       font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      line-height: 1;
     }
   `;
   const [firstName, setFirstName] = useState('');
@@ -363,16 +357,14 @@ export default function Login() {
                   style={{
                     width: '16px',
                     height: '16px',
-                    marginTop: '2px',
                     cursor: 'pointer',
                     flexShrink: 0,
-                    border: '2px solid #ccc',
-                    borderRadius: '3px',
-                    backgroundColor: 'white',
+                    accentColor: '#F08571',
                     appearance: 'none',
                     WebkitAppearance: 'none',
-                    MozAppearance: 'none',
-                    outline: 'none',
+                    border: '2px solid #ccc',
+                    borderRadius: '3px',
+                    backgroundColor: termsAccepted ? '#F08571' : 'white',
                   }}
                 />
                 <label htmlFor="terms" style={{ fontSize: '13px', color: '#333', cursor: 'pointer', lineHeight: '1.5', margin: 0 }}>
