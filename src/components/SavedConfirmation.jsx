@@ -18,22 +18,22 @@ export default function SavedConfirmation({ isVisible, onDismiss }) {
     <div
       style={{
         position: 'fixed',
-        bottom: '32px',
+        top: '50%',
         left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 3000,
-        animation: 'slideUp 0.3s ease-out',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 5000,
+        animation: 'fadeScaleIn 0.3s ease-out',
       }}
     >
       <style>{`
-        @keyframes slideUp {
+        @keyframes fadeScaleIn {
           from {
             opacity: 0;
-            transform: translateX(-50%) translateY(20px);
+            transform: translate(-50%, -50%) scale(0.8);
           }
           to {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
+            transform: translate(-50%, -50%) scale(1);
           }
         }
 
@@ -49,22 +49,23 @@ export default function SavedConfirmation({ isVisible, onDismiss }) {
 
       <div
         style={{
-          backgroundColor: '#5ECCC0',
-          borderRadius: '12px',
-          padding: '16px 24px',
+          backgroundColor: 'white',
+          borderRadius: '24px',
+          width: '140px',
+          height: '140px',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          gap: '12px',
-          boxShadow: '0 8px 24px rgba(94, 204, 192, 0.3)',
-          minWidth: '160px',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
+          padding: '24px',
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
         }}
       >
-        {/* Animated Checkmark */}
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        {/* Animated Checkmark - Larger */}
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginTop: '8px' }}>
           <path
             d="M4 12.5L10 18.5L20 7.5"
-            stroke="white"
+            stroke="#5ECCC0"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -78,10 +79,11 @@ export default function SavedConfirmation({ isVisible, onDismiss }) {
         {/* Text */}
         <span
           style={{
-            color: 'white',
+            color: '#333',
             fontSize: '16px',
             fontWeight: '600',
             letterSpacing: '0.3px',
+            marginBottom: '4px',
           }}
         >
           Saved
