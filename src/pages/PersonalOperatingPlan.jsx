@@ -211,6 +211,11 @@ export default function PersonalOperatingPlan() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="pop-page-container">
 
+        {/* Page Title */}
+        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '0', marginBottom: designTokens.spacing.xl, paddingBottom: designTokens.spacing.lg, borderBottom: `2px solid ${designTokens.colors.primary}` }}>
+          Your Personal Operating Plan
+        </h1>
+
         {/* STRATEGIES SECTION - Premium Cards */}
         <div style={{ marginBottom: '48px' }}>
           {strategies.length === 0 ? (

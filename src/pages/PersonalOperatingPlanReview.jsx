@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { designTokens } from '../lib/designTokens';
 import HomeHeader from '../components/HomeHeader';
 
 export default function PersonalOperatingPlanReview() {
@@ -182,7 +183,11 @@ export default function PersonalOperatingPlanReview() {
       <HomeHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="page-container">
-        <p style={{ fontSize: '13px', color: '#999', margin: '0 0 32px 0' }}>Review your progress on each tactic</p>
+
+        {/* Page Title */}
+        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '0', marginBottom: designTokens.spacing.md, paddingBottom: designTokens.spacing.lg, borderBottom: `2px solid ${designTokens.colors.primary}` }}>
+          Review your progress on each tactic
+        </h1>
 
         {/* Strategies Section */}
         {strategies.map(strategy => (
