@@ -275,6 +275,16 @@ export default function ReviewSummary() {
 
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Momentum</span>
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.momentum || '—'}/5</span>
+                </div>
+                <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(parsedContent.momentum || 0) * 20}%`, backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Intentionality</span>
                   <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.intentionality || '—'}/5</span>
                 </div>
@@ -295,11 +305,11 @@ export default function ReviewSummary() {
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Progress</span>
-                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.progress || '—'}/5</span>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#333' }}>Perf. Under Pressure</span>
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#F08571' }}>{parsedContent.performanceUnderPressure || '—'}/5</span>
                 </div>
                 <div style={{ width: '100%', height: '6px', backgroundColor: '#e5e5e5', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(parsedContent.progress || 0) * 20}%`, backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+                  <div style={{ height: '100%', width: `${(parsedContent.performanceUnderPressure || 0) * 20}%`, backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
                 </div>
               </div>
             </div>
