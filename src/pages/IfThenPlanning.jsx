@@ -20,6 +20,7 @@ export default function IfThenPlanning() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showNamingModal, setShowNamingModal] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState('');
   const refSituation = useRef(null);
   useAutoExpandTextarea(refSituation, situation);
 
@@ -39,13 +40,16 @@ export default function IfThenPlanning() {
         .eq('user_id', user.id)
         .single();
 
-      if (data && data.form_data) {
-        const formData = data.form_data;
-        if (formData.situation) setSituation(formData.situation);
-        if (formData.items && formData.items.length > 0) {
-          setItems(formData.items);
-          const maxId = Math.max(...formData.items.map(item => item.id || 0));
-          setNextId(maxId + 1);
+      if (data) {
+        if (data.title) setCurrentTitle(data.title);
+        if (data.form_data) {
+          const formData = data.form_data;
+          if (formData.situation) setSituation(formData.situation);
+          if (formData.items && formData.items.length > 0) {
+            setItems(formData.items);
+            const maxId = Math.max(...formData.items.map(item => item.id || 0));
+            setNextId(maxId + 1);
+          }
         }
       }
     } catch (error) {
@@ -72,8 +76,8 @@ export default function IfThenPlanning() {
 
   const handleSave = () => {
     if (decisionId) {
-      // If editing existing decision, save with existing title (no rename)
-      handleNameConfirm(location.state?.title || 'If-Then Planning');
+      // If editing existing decision, save with existing title from Supabase
+      handleNameConfirm(currentTitle || 'If-Then Planning');
     } else {
       // If new decision, show naming modal
       setShowNamingModal(true);
