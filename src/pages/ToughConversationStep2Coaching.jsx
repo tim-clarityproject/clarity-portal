@@ -50,6 +50,28 @@ export default function ToughConversationStep2Coaching() {
     }
   }, [isFreshStart]);
 
+  // Load decision title from Supabase when in edit mode
+  useEffect(() => {
+    if (!isFreshStart && location.state?.decisionId && user) {
+      const loadTitle = async () => {
+        try {
+          const { data } = await supabase
+            .from('decisions')
+            .select('title')
+            .eq('id', location.state.decisionId)
+            .eq('user_id', user.id)
+            .single();
+          if (data?.title) {
+            setCurrentTitle(data.title);
+          }
+        } catch (error) {
+          console.error('Error loading decision title:', error);
+        }
+      };
+      loadTitle();
+    }
+  }, [isFreshStart, location.state?.decisionId, user]);
+
   const cleanPhrase = (text, phrasesToRemove, lowercaseFirst = false) => {
     let cleaned = text.trim();
     for (const phrase of phrasesToRemove) {

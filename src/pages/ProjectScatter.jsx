@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
@@ -21,6 +21,28 @@ export default function ProjectScatter() {
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
 
   useLoadDecision(updateFormData);
+
+  // Load decision title from Supabase when in edit mode
+  useEffect(() => {
+    if (location.state?.decisionId && user) {
+      const loadTitle = async () => {
+        try {
+          const { data } = await supabase
+            .from('decisions')
+            .select('title')
+            .eq('id', location.state.decisionId)
+            .eq('user_id', user.id)
+            .single();
+          if (data?.title) {
+            setCurrentTitle(data.title);
+          }
+        } catch (error) {
+          console.error('Error loading decision title:', error);
+        }
+      };
+      loadTitle();
+    }
+  }, [location.state?.decisionId, user]);
 
   const projects = location.state?.projects || [];
   const matrix = location.state?.matrix || {};

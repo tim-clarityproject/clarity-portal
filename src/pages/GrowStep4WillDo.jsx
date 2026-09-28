@@ -40,6 +40,28 @@ export default function GrowStep4WillDo() {
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
   const [validationError, setValidationError] = useState('');
 
+  // Load decision title from Supabase when in edit mode
+  useEffect(() => {
+    if (isEditMode && location.state?.decisionId && user) {
+      const loadTitle = async () => {
+        try {
+          const { data } = await supabase
+            .from('decisions')
+            .select('title')
+            .eq('id', location.state.decisionId)
+            .eq('user_id', user.id)
+            .single();
+          if (data?.title) {
+            setCurrentTitle(data.title);
+          }
+        } catch (error) {
+          console.error('Error loading decision title:', error);
+        }
+      };
+      loadTitle();
+    }
+  }, [isEditMode, location.state?.decisionId, user]);
+
   const handleEditStart = (index, value) => {
     setEditingIndex(index);
     setEditingValue(value);
