@@ -193,10 +193,10 @@ export default function StopDoingAuditSummary() {
 
         <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
-            Stop Doing Audit
+            Time Allocation Audit
           </h1>
           <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-            Stop Doing Audit
+            Time Allocation Audit
           </span>
         </div>
 

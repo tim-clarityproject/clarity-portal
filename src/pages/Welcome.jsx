@@ -23,7 +23,7 @@ const ALL_PROBLEMS = [
   { id: 'grow', title: 'I\'m navigating a tricky decision', tools: ['grow'], status: null, category: 'Decide' },
   { id: 'tough-conversation', title: 'I need to give tough feedback', tools: ['tough-conversation'], status: null, category: 'Decide' },
   { id: 'strategic', title: 'I need to provide my team direction', tools: ['strategic-alignment'], status: null, category: 'Decide' },
-  { id: 'stop-doing', title: 'I\'ve got too many things to do', tools: ['stop-doing-audit'], status: null, category: 'Decide' },
+  { id: 'stop-doing', title: 'I\'ve got too many things to do', tools: ['time-allocation-audit'], status: null, category: 'Decide' },
 
   // Review
   { id: 'weekly-momentum', title: 'I want to review my week', tools: ['weekly-momentum'], status: null, category: 'Review' },
@@ -190,7 +190,7 @@ export default function Welcome() {
       'personal-operating-plan': '/personal-operating-plan',
       'if-then-planning': '/if-then-planning',
       'breathe': '/breathe',
-      'stop-doing-audit': '/stop-doing-audit',
+      'time-allocation-audit': '/stop-doing-audit',
       'after-action': '/my-journal',
       'progress': '/personal-operating-plan-review',
       'weekly-momentum': '/my-journal',

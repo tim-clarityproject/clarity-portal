@@ -84,7 +84,7 @@ export default function DecisionHistory() {
     // Special cases
     if (toolType === 'if_then_planning') return 'If-Then Plan';
     if (toolType === 'grow') return 'GROW';
-    if (toolType === 'stop_doing_audit') return 'Stop-Doing Audit';
+    if (toolType === 'stop_doing_audit') return 'Time Allocation Audit';
 
     const words = toolType
       .split(/[-_]/)

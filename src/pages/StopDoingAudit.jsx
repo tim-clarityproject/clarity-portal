@@ -228,7 +228,7 @@ export default function StopDoingAudit() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
-          Stop Doing Audit
+          Time Allocation Audit
         </h1>
         <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
           Identify time-sink activities and reclaim your time
