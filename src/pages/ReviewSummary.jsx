@@ -196,7 +196,7 @@ export default function ReviewSummary() {
           <>
             {parsedContent.q1 && (
               <SectionBlock
-                title="What did I plan to do?"
+                title="What did you plan to do?"
                 content={parsedContent.q1}
               />
             )}
@@ -214,7 +214,7 @@ export default function ReviewSummary() {
             )}
             {parsedContent.q4 && (
               <SectionBlock
-                title="What can I learn from this?"
+                title="What can you learn from this?"
                 content={parsedContent.q4}
               />
             )}

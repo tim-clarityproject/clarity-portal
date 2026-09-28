@@ -41,10 +41,10 @@ export default function MyJournal() {
   const refQ4 = useAutoExpandTextarea(q4);
 
   const afterActionQuestions = [
-    { id: 'q1', label: 'What did I plan to do?', value: q1, setter: setQ1 },
+    { id: 'q1', label: 'What did you plan to do?', value: q1, setter: setQ1 },
     { id: 'q2', label: 'What actually happened?', value: q2, setter: setQ2 },
     { id: 'q3', label: 'Why was there a difference?', value: q3, setter: setQ3 },
-    { id: 'q4', label: 'What can I learn from this?', value: q4, setter: setQ4 },
+    { id: 'q4', label: 'What can you learn from this?', value: q4, setter: setQ4 },
   ];
 
   const progressQuestions = [
