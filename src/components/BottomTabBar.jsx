@@ -8,7 +8,7 @@ export default function BottomTabBar() {
   const tabs = [
     { id: 'home', label: 'Home', path: '/welcome', icon: Home },
     { id: 'ground', label: 'Ground', path: '/ground-section', icon: Compass },
-    { id: 'plan-decide', label: 'Plan', path: '/plan-section', icon: FileText },
+    { id: 'plan-decide', label: 'Plan & Decide', path: '/plan-section', icon: FileText },
     { id: 'review', label: 'Review', path: '/review-section', icon: CheckSquare },
   ];
 

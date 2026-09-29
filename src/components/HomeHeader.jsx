@@ -18,11 +18,14 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
   const [missionExpanded, setMissionExpanded] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [logoMenuOpen, setLogoMenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
   const accountMenuRef = useRef(null);
   const accountButtonRef = useRef(null);
+  const logoMarkRef = useRef(null);
+  const logoMenuRef = useRef(null);
 
   // On Welcome page, display mission immediately (no delay needed now that header is pre-sized)
   useEffect(() => {
@@ -76,11 +79,22 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
       ) {
         setAccountMenuOpen(false);
       }
+
+      // Close logo menu if clicking anywhere except the logo or menu
+      if (
+        logoMenuOpen &&
+        logoMarkRef.current &&
+        logoMenuRef.current &&
+        !logoMarkRef.current.contains(event.target) &&
+        !logoMenuRef.current.contains(event.target)
+      ) {
+        setLogoMenuOpen(false);
+      }
     };
 
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [menuOpen, accountMenuOpen]);
+  }, [menuOpen, accountMenuOpen, logoMenuOpen]);
 
   const handleMenuClick = (path) => {
     navigate(path, { state: location.state });
@@ -186,13 +200,14 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             cursor: pointer;
             font-size: 13px;
             font-weight: 600;
-            color: #F08571;
-            padding: 8px 12px;
-            background: white;
-            border: 2px solid #e5e5e5;
+            color: white;
+            padding: 10px 16px;
+            background: #F08571;
+            border: none;
             border-radius: 8px;
             margin: 4px;
             width: fit-content;
+            max-width: calc(100% - 8px);
           }
           .mission-expansion-container {
             display: block;
@@ -224,16 +239,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             display: none !important;
           }
           .account-button-mobile {
-            display: flex;
-            position: absolute;
-            right: 56px;
-            width: 36px;
-            height: 36px;
-            padding: 0;
-            min-width: 36px;
-            min-height: 36px;
-            align-items: center;
-            justify-content: center;
+            display: none !important;
           }
           .account-menu-mobile {
             display: block;
@@ -974,10 +980,12 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           minWidth: 0,
         }}
       >
+        {/* Desktop Logo Link */}
         <a
           href="https://theclarityproject.co.uk/"
           target="_blank"
           rel="noopener noreferrer"
+          className="logo-desktop"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -991,7 +999,6 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           onClick={(e) => e.stopPropagation()}
         >
           <img
-            className="logo-desktop"
             src="/clarity-logo.png"
             alt="The Clarity Project"
             style={{
@@ -1000,8 +1007,31 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               opacity: 0.9,
             }}
           />
+        </a>
+
+        {/* Mobile Logo Button - opens menu */}
+        <button
+          ref={logoMarkRef}
+          className="logo-mobile-mark"
+          onClick={(e) => {
+            e.stopPropagation();
+            setLogoMenuOpen(!logoMenuOpen);
+          }}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '0.9'}
+          title="Menu"
+        >
           <img
-            className="logo-mobile-mark"
             src="/favicon.png"
             alt="Clarity"
             style={{
@@ -1010,32 +1040,13 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               opacity: 0.9,
             }}
           />
-        </a>
+        </button>
       </div>
 
-      {/* Mobile Account Menu Button */}
-      <button
-        ref={accountButtonRef}
-        className="account-button-mobile"
-        onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-        style={{
-          backgroundColor: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          color: '#F08571',
-          transition: 'color 0.2s',
-        }}
-        onMouseEnter={(e) => e.target.style.color = '#e07560'}
-        onMouseLeave={(e) => e.target.style.color = '#F08571'}
-      >
-        <User size={20} />
-      </button>
-
-      {/* Mobile Account Menu Dropdown */}
-      {accountMenuOpen && (
+      {/* Mobile Logo Menu Dropdown */}
+      {logoMenuOpen && (
         <div
-          ref={accountMenuRef}
-          className="account-menu-mobile"
+          ref={logoMenuRef}
           style={{
             position: 'fixed',
             top: '69px',
@@ -1048,7 +1059,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             borderRadius: '0px',
             boxShadow: 'inset -1px 0 0 rgba(0, 0, 0, 0.06)',
             width: 'auto',
-            minWidth: '140px',
+            minWidth: '160px',
             zIndex: 1000,
             maxHeight: 'calc(100vh - 100px)',
             overflowY: 'auto',
@@ -1056,31 +1067,8 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         >
           <button
             onClick={() => {
-              navigate('/about', { state: location.state });
-              setAccountMenuOpen(false);
-            }}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: '#333',
-              textAlign: 'left',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'backgroundColor 0.2s',
-              borderBottom: '1px solid #f0f0f0',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            About
-          </button>
-
-          <button
-            onClick={() => {
               navigate('/my-account', { state: location.state });
-              setAccountMenuOpen(false);
+              setLogoMenuOpen(false);
             }}
             style={{
               width: '100%',
@@ -1101,10 +1089,33 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           </button>
 
           <button
+            onClick={() => {
+              navigate('/about', { state: location.state });
+              setLogoMenuOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#333',
+              textAlign: 'left',
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'backgroundColor 0.2s',
+              borderBottom: '1px solid #f0f0f0',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            About
+          </button>
+
+          <button
             onClick={async () => {
               await logout();
               navigate('/');
-              setAccountMenuOpen(false);
+              setLogoMenuOpen(false);
             }}
             style={{
               width: '100%',
@@ -1117,14 +1128,38 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               fontWeight: '500',
               cursor: 'pointer',
               transition: 'backgroundColor 0.2s',
+              borderBottom: '1px solid #f0f0f0',
             }}
             onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
           >
             Log Out
           </button>
+
+          <button
+            onClick={() => {
+              window.open('https://theclarityproject.co.uk/', '_blank');
+              setLogoMenuOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#333',
+              textAlign: 'left',
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'backgroundColor 0.2s',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            Visit Website
+          </button>
         </div>
       )}
+
     </div>
     </div>
   );
