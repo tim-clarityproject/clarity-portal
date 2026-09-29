@@ -16,6 +16,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
+  const [missionExpanded, setMissionExpanded] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
@@ -123,10 +124,23 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           left: auto;
           display: none;
         }
+        .mission-label-mobile {
+          display: none;
+        }
+        .mission-expansion-container {
+          display: none;
+        }
+        .logo-mobile-mark {
+          display: none;
+        }
         @media (max-width: 768px) {
+          .header-container {
+            min-height: auto;
+            padding: 8px clamp(12px, 3vw, 20px);
+          }
           .hamburger-button {
             display: flex;
-            padding: 12px;
+            padding: 10px;
             min-width: 44px;
             min-height: 44px;
           }
@@ -140,6 +154,40 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             left: 16px;
           }
           .mission-container-mobile {
+            display: none;
+          }
+          .mission-label-mobile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 0;
+            gap: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #F08571;
+          }
+          .mission-expansion-container {
+            display: block;
+            padding: 12px clamp(12px, 3vw, 20px);
+            background: white;
+            border-top: 1px solid #f0f0f0;
+            border-bottom: 1px solid #f0f0f0;
+            margin-top: -1px;
+          }
+          .mission-text-expanded {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+          }
+          .logo-mobile-mark {
+            display: block;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+          }
+          .logo-desktop {
             display: none;
           }
         }
@@ -222,7 +270,14 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             }
           `}</style>
           <button
-            onClick={() => navigate('/personal-operating-plan')}
+            onClick={() => {
+              const isMobile = window.innerWidth <= 768;
+              if (isMobile) {
+                setMissionExpanded(!missionExpanded);
+              } else {
+                navigate('/personal-operating-plan');
+              }
+            }}
             className="mission-container"
             style={{
               background: 'transparent',
@@ -231,6 +286,9 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               padding: 0,
             }}
           >
+            <div className="mission-label-mobile">
+              Your Mission
+            </div>
             <div style={{
               background: 'white',
               paddingTop: 'clamp(16px, 2.5vw, 20px)',
@@ -262,6 +320,13 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               </div>
             </div>
           </button>
+          {missionExpanded && (
+            <div className="mission-expansion-container">
+              <div className="mission-text-expanded">
+                {contextMission}
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -832,7 +897,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           gap: '4px',
           cursor: 'pointer',
           position: 'absolute',
-          right: '16px',
+          right: 'clamp(12px, 2vw, 16px)',
           minWidth: 0,
         }}
       >
@@ -853,11 +918,23 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           onClick={(e) => e.stopPropagation()}
         >
           <img
+            className="logo-desktop"
             src="/clarity-logo.png"
             alt="The Clarity Project"
             style={{
               height: '100%',
               width: 'auto',
+              display: 'block',
+              opacity: 0.9,
+            }}
+          />
+          <img
+            className="logo-mobile-mark"
+            src="/favicon.png"
+            alt="Clarity"
+            style={{
+              height: '40px',
+              width: '40px',
               display: 'block',
               opacity: 0.9,
             }}
