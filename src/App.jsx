@@ -143,13 +143,13 @@ function AppContent() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/check-email-confirmation" element={<CheckEmailConfirmation />} />
-        <Route path="/about" element={<About />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/data-storage-notice" element={<DataStorageNotice />} />
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>
+          <Route path="/about" element={<About />} />
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/onboarding-mission" element={<OnboardingMission />} />
           <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />

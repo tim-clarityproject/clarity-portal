@@ -135,6 +135,23 @@ export default function Welcome() {
     const fullGreeting = timeGreeting + namePart;
     const question = 'What are we working on?';
 
+    // Check if greeting animation has already played this session
+    let hasPlayedAnimation = false;
+    try {
+      hasPlayedAnimation = sessionStorage.getItem('clarity-portal-greeting-played') === 'true';
+    } catch (e) {
+      console.error('Error reading sessionStorage:', e);
+    }
+
+    // If animation already played, show text instantly
+    if (hasPlayedAnimation) {
+      setDisplayedGreeting(fullGreeting);
+      setDisplayedQuestion(question);
+      setTimeout(() => setShowDropdown(true), 200);
+      return;
+    }
+
+    // First time - run animation and mark it as played
     let greetingIndex = 0;
     let questionIndex = 0;
     let isGreetingDone = false;
@@ -150,6 +167,12 @@ export default function Welcome() {
         questionIndex++;
       } else {
         clearInterval(typeInterval);
+        // Mark animation as played for this session
+        try {
+          sessionStorage.setItem('clarity-portal-greeting-played', 'true');
+        } catch (e) {
+          console.error('Error writing to sessionStorage:', e);
+        }
         // Show dropdown after all text types out
         setTimeout(() => setShowDropdown(true), 200);
       }

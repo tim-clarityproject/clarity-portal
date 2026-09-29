@@ -161,6 +161,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             min-height: auto;
             padding: 2px clamp(12px, 3vw, 20px);
             background: #F08571;
+            border-radius: 16px 16px 0 0;
           }
           .hamburger-button {
             display: none !important;
@@ -188,26 +189,26 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             font-size: 13px;
             font-weight: 600;
             color: #333;
-            padding: 10px 16px 16px 16px;
+            padding: 12px 20px 18px 20px;
             background: white;
-            border: none;
-            border-radius: 8px;
-            margin: 4px;
+            border: 2px solid #F08571;
+            border-radius: 12px;
+            margin: 8px;
             width: fit-content;
-            max-width: calc(100% - 8px);
+            max-width: calc(100% - 16px);
             position: relative;
           }
           .mission-label-mobile::after {
             content: '';
             position: absolute;
-            bottom: 4px;
+            bottom: 5px;
             left: 50%;
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-top: 6px solid #333;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #333;
           }
           .mission-expansion-container {
             display: block;
@@ -218,10 +219,12 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             width: 100%;
             padding: 16px;
             background: white;
-            border-bottom: none;
+            border: 2px solid #F08571;
+            border-top: none;
+            border-radius: 0 0 16px 16px;
             z-index: 1000;
             box-sizing: border-box;
-            max-height: calc(100vh - var(--header-height, 70px) - 70px);
+            max-height: calc(100vh - var(--header-height, 70px) - 80px);
             overflow-y: auto;
           }
           .mission-text-expanded {
