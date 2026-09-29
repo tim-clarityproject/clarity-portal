@@ -160,6 +160,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           .header-container {
             min-height: auto;
             padding: 2px clamp(12px, 3vw, 20px);
+            background: #F08571;
           }
           .hamburger-button {
             display: none !important;
@@ -178,7 +179,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           }
           .mission-label-mobile {
             display: flex !important;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             flex: 0;
             min-width: fit-content;
@@ -186,14 +187,27 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             cursor: pointer;
             font-size: 13px;
             font-weight: 600;
-            color: white;
-            padding: 10px 16px;
-            background: #F08571;
+            color: #333;
+            padding: 10px 16px 16px 16px;
+            background: white;
             border: none;
             border-radius: 8px;
             margin: 4px;
             width: fit-content;
             max-width: calc(100% - 8px);
+            position: relative;
+          }
+          .mission-label-mobile::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #333;
           }
           .mission-expansion-container {
             display: block;
@@ -204,7 +218,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             width: 100%;
             padding: 16px;
             background: white;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: none;
             z-index: 1000;
             box-sizing: border-box;
             max-height: calc(100vh - var(--header-height, 70px) - 70px);
@@ -214,6 +228,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             font-size: 14px;
             line-height: 1.5;
             color: #333;
+            text-align: center;
           }
           .logo-mobile-mark {
             display: none !important;

@@ -71,6 +71,7 @@ import PlanSection from './pages/PlanSection';
 import GroundSection from './pages/GroundSection';
 import DecideSection from './pages/DecideSection';
 import ReviewSection from './pages/ReviewSection';
+import AccountSection from './pages/AccountSection';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -179,6 +180,7 @@ function AppContent() {
           <Route path="/ground-section" element={<GroundSection />} />
           <Route path="/decide-section" element={<DecideSection />} />
           <Route path="/review-section" element={<ReviewSection />} />
+          <Route path="/account-section" element={<AccountSection />} />
           <Route path="/plan-my-day" element={<PlanMyDayStep1 />} />
           <Route path="/daily-plan-summary" element={<DailyPlanSummary />} />
           <Route path="/plan-meeting" element={<PlanMeeting />} />
