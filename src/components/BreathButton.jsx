@@ -19,9 +19,7 @@ export default function BreathButton() {
         }
         @media (max-width: 768px) {
           .breathe-button {
-            bottom: calc(70px + 12px);
-            right: 16px;
-            height: 36px;
+            display: none !important;
           }
         }
       `}</style>

@@ -49,9 +49,7 @@ export default function WhatsAppWidget() {
         }
         @media (max-width: 768px) {
           .whatsapp-widget {
-            bottom: calc(70px + 56px);
-            right: 16px;
-            height: 36px;
+            display: none !important;
           }
         }
         .whatsapp-button {

@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import HomeHeader from '../components/HomeHeader';
 import { designTokens } from '../lib/designTokens';
 
@@ -7,14 +8,47 @@ const PLAN_ITEMS = [
   { id: 'daily', title: 'Daily Intentions', description: 'Plan your day with clear priorities', route: '/plan-my-day' },
   { id: 'meeting', title: 'Meeting Planner', description: 'Organize and prepare effective meetings', route: '/plan-meeting' },
   { id: 'my-plans', title: 'My Plans', description: 'View and manage all your plans', route: '/my-plans' },
+  { id: 'contact', title: 'Chat to Tim', description: 'Get in touch via WhatsApp or iMessage', isContact: true },
 ];
 
 export default function PlanSection() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isNorthAmerica, setIsNorthAmerica] = useState(false);
 
-  const handlePlanSelect = (route) => {
-    navigate(route, { state: { ...location.state } });
+  useEffect(() => {
+    const checkLocation = async () => {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      if (timezone.startsWith('America/') || timezone.startsWith('Canada/')) {
+        setIsNorthAmerica(true);
+        return;
+      }
+
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        const countryCode = data.country_code;
+        setIsNorthAmerica(countryCode === 'US' || countryCode === 'CA');
+      } catch (error) {
+        console.error('Geolocation fetch failed:', error);
+      }
+    };
+
+    checkLocation();
+  }, []);
+
+  const handlePlanSelect = (item) => {
+    if (item.isContact) {
+      const message = "Hi Tim, I'd like to chat with you.";
+      if (isNorthAmerica) {
+        window.location.href = `imessage://+447792332439?text=${encodeURIComponent(message)}`;
+      } else {
+        window.open(`https://wa.me/447792332439?text=${encodeURIComponent(message)}`, '_blank');
+      }
+    } else {
+      navigate(item.route, { state: { ...location.state } });
+    }
   };
 
   return (
@@ -30,7 +64,7 @@ export default function PlanSection() {
           {PLAN_ITEMS.map((item) => (
             <button
               key={item.id}
-              onClick={() => handlePlanSelect(item.route)}
+              onClick={() => handlePlanSelect(item)}
               style={{
                 padding: '20px',
                 backgroundColor: 'white',

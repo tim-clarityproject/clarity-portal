@@ -159,7 +159,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         @media (max-width: 768px) {
           .header-container {
             min-height: auto;
-            padding: 6px clamp(12px, 3vw, 20px);
+            padding: 4px clamp(12px, 3vw, 20px);
           }
           .hamburger-button {
             display: none !important;
@@ -327,9 +327,15 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               min-width: 0;
               animation: fadeInMission 0.8s ease-in-out;
               padding: 0 clamp(8px, 1.5vw, 16px);
+              flex-wrap: wrap;
             }
-            .mission-container > div {
+            .mission-container > div:not(.mission-label-mobile) {
               max-width: calc(100% - 90px);
+            }
+            @media (max-width: 768px) {
+              .mission-container > div {
+                max-width: 100%;
+              }
             }
           `}</style>
           <button
