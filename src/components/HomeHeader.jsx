@@ -181,7 +181,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             align-items: center;
             justify-content: center;
             flex: 0;
-            min-width: 0;
+            min-width: fit-content;
             gap: 4px;
             cursor: pointer;
             font-size: 13px;

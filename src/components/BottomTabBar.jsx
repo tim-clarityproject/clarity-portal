@@ -23,6 +23,7 @@ export default function BottomTabBar() {
         left: 0,
         right: 0,
         width: '100%',
+        boxSizing: 'border-box',
         backgroundColor: 'white',
         borderTop: '1px solid #f0f0f0',
         display: 'flex',
