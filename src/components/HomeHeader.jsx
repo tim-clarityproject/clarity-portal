@@ -144,8 +144,11 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         .mission-expansion-container {
           display: none;
         }
+        .logo-desktop {
+          display: block;
+        }
         .logo-mobile-mark {
-          display: none;
+          display: none !important;
         }
         .account-button-mobile {
           display: none;
@@ -156,7 +159,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         @media (max-width: 768px) {
           .header-container {
             min-height: auto;
-            padding: 8px clamp(12px, 3vw, 20px);
+            padding: 6px clamp(12px, 3vw, 20px);
           }
           .hamburger-button {
             display: none !important;
@@ -177,19 +180,18 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             display: flex !important;
             align-items: center;
             justify-content: center;
-            flex: 1;
+            flex: 0;
             min-width: 0;
             gap: 4px;
             cursor: pointer;
             font-size: 13px;
             font-weight: 600;
             color: #F08571;
-            padding: 12px 16px;
+            padding: 8px 12px;
             background: white;
             border: 2px solid #e5e5e5;
             border-radius: 8px;
-            margin: 8px auto;
-            max-width: 200px;
+            margin: 4px;
             width: fit-content;
           }
           .mission-expansion-container {
@@ -213,23 +215,23 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             color: #333;
           }
           .logo-mobile-mark {
-            display: block;
+            display: block !important;
             width: 40px;
             height: 40px;
             flex-shrink: 0;
           }
           .logo-desktop {
-            display: none;
+            display: none !important;
           }
           .account-button-mobile {
             display: flex;
             position: absolute;
-            right: 52px;
-            width: 40px;
-            height: 40px;
+            right: 56px;
+            width: 36px;
+            height: 36px;
             padding: 0;
-            min-width: 40px;
-            min-height: 40px;
+            min-width: 36px;
+            min-height: 36px;
             align-items: center;
             justify-content: center;
           }
@@ -985,7 +987,6 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             style={{
               height: '100%',
               width: 'auto',
-              display: 'block',
               opacity: 0.9,
             }}
           />
@@ -996,7 +997,6 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             style={{
               height: '40px',
               width: '40px',
-              display: 'block',
               opacity: 0.9,
             }}
           />
