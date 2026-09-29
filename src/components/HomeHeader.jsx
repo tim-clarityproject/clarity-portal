@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect, useContext } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, User } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
@@ -17,9 +17,12 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
   const [missionExpanded, setMissionExpanded] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
+  const accountMenuRef = useRef(null);
+  const accountButtonRef = useRef(null);
 
   // On Welcome page, display mission immediately (no delay needed now that header is pre-sized)
   useEffect(() => {
@@ -49,7 +52,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Close menu if clicking anywhere except the hamburger button or menu
+      // Close hamburger menu if clicking anywhere except the hamburger button or menu
       if (
         menuOpen &&
         hamburgerRef.current &&
@@ -62,11 +65,22 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         setJournalSubmenuOpen(false);
         setGroundSubmenuOpen(false);
       }
+
+      // Close account menu if clicking anywhere except the button or menu
+      if (
+        accountMenuOpen &&
+        accountButtonRef.current &&
+        accountMenuRef.current &&
+        !accountButtonRef.current.contains(event.target) &&
+        !accountMenuRef.current.contains(event.target)
+      ) {
+        setAccountMenuOpen(false);
+      }
     };
 
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [menuOpen]);
+  }, [menuOpen, accountMenuOpen]);
 
   const handleMenuClick = (path) => {
     navigate(path, { state: location.state });
@@ -133,6 +147,12 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         .logo-mobile-mark {
           display: none;
         }
+        .account-button-mobile {
+          display: none;
+        }
+        .account-menu-mobile {
+          display: none;
+        }
         @media (max-width: 768px) {
           .header-container {
             min-height: auto;
@@ -189,6 +209,36 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           }
           .logo-desktop {
             display: none;
+          }
+          .account-button-mobile {
+            display: flex;
+            position: absolute;
+            right: 52px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            min-width: 40px;
+            min-height: 40px;
+            align-items: center;
+            justify-content: center;
+          }
+          .account-menu-mobile {
+            display: block;
+            position: fixed;
+            top: 69px;
+            right: 0;
+            backgroundColor: 'white';
+            border: '1px solid #e5e5e5';
+            borderLeft: '1px solid #e5e5e5';
+            borderTop: 'none';
+            borderRight: 'none';
+            borderRadius: '0px';
+            boxShadow: 'inset -1px 0 0 rgba(0, 0, 0, 0.06)';
+            width: 'auto';
+            minWidth: '140px';
+            zIndex: 1000;
+            maxHeight: 'calc(100vh - 100px)';
+            overflowY: 'auto';
           }
         }
       `}</style>
@@ -941,6 +991,119 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           />
         </a>
       </div>
+
+      {/* Mobile Account Menu Button */}
+      <button
+        ref={accountButtonRef}
+        className="account-button-mobile"
+        onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+        style={{
+          backgroundColor: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#F08571',
+          transition: 'color 0.2s',
+        }}
+        onMouseEnter={(e) => e.target.style.color = '#e07560'}
+        onMouseLeave={(e) => e.target.style.color = '#F08571'}
+      >
+        <User size={20} />
+      </button>
+
+      {/* Mobile Account Menu Dropdown */}
+      {accountMenuOpen && (
+        <div
+          ref={accountMenuRef}
+          className="account-menu-mobile"
+          style={{
+            position: 'fixed',
+            top: '69px',
+            right: '0',
+            backgroundColor: 'white',
+            border: '1px solid #e5e5e5',
+            borderLeft: '1px solid #e5e5e5',
+            borderTop: 'none',
+            borderRight: 'none',
+            borderRadius: '0px',
+            boxShadow: 'inset -1px 0 0 rgba(0, 0, 0, 0.06)',
+            width: 'auto',
+            minWidth: '140px',
+            zIndex: 1000,
+            maxHeight: 'calc(100vh - 100px)',
+            overflowY: 'auto',
+          }}
+        >
+          <button
+            onClick={() => {
+              navigate('/about', { state: location.state });
+              setAccountMenuOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#333',
+              textAlign: 'left',
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'backgroundColor 0.2s',
+              borderBottom: '1px solid #f0f0f0',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            About
+          </button>
+
+          <button
+            onClick={() => {
+              navigate('/my-account', { state: location.state });
+              setAccountMenuOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#333',
+              textAlign: 'left',
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'backgroundColor 0.2s',
+              borderBottom: '1px solid #f0f0f0',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            My Account
+          </button>
+
+          <button
+            onClick={async () => {
+              await logout();
+              navigate('/');
+              setAccountMenuOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#F08571',
+              textAlign: 'left',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'backgroundColor 0.2s',
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#f9f9f9'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+          >
+            Log Out
+          </button>
+        </div>
+      )}
     </div>
     </div>
   );

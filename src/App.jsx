@@ -67,6 +67,10 @@ import PersonalOperatingPlanSummary from './pages/PersonalOperatingPlanSummary';
 import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
 import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
+import PlanSection from './pages/PlanSection';
+import GroundSection from './pages/GroundSection';
+import DecideSection from './pages/DecideSection';
+import ReviewSection from './pages/ReviewSection';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -171,6 +175,10 @@ function AppContent() {
           <Route path="/decision-tools" element={<DecisionTools />} />
           <Route path="/decision-history" element={<DecisionHistory />} />
           <Route path="/decision-summary" element={<DecisionSummary />} />
+          <Route path="/plan-section" element={<PlanSection />} />
+          <Route path="/ground-section" element={<GroundSection />} />
+          <Route path="/decide-section" element={<DecideSection />} />
+          <Route path="/review-section" element={<ReviewSection />} />
           <Route path="/plan-my-day" element={<PlanMyDayStep1 />} />
           <Route path="/daily-plan-summary" element={<DailyPlanSummary />} />
           <Route path="/plan-meeting" element={<PlanMeeting />} />
