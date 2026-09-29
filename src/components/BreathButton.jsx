@@ -15,6 +15,14 @@ export default function BreathButton() {
           height: 40px;
           padding: 0;
           margin: 0;
+          z-index: 999;
+        }
+        @media (max-width: 768px) {
+          .breathe-button {
+            bottom: calc(70px + 12px);
+            right: 16px;
+            height: 36px;
+          }
         }
       `}</style>
       <button

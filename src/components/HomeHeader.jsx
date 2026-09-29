@@ -159,25 +159,22 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             padding: 8px clamp(12px, 3vw, 20px);
           }
           .hamburger-button {
-            display: flex;
-            padding: 10px;
-            min-width: 44px;
-            min-height: 44px;
+            display: none !important;
           }
           .desktop-nav {
             display: none;
           }
           .menu-dropdown {
-            display: block;
-            width: calc(100% - 32px);
-            max-width: none;
-            left: 16px;
+            display: none !important;
           }
           .mission-container-mobile {
             display: none;
           }
+          .mission-container > div:not(.mission-label-mobile) {
+            display: none !important;
+          }
           .mission-label-mobile {
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             flex: 1;
@@ -187,14 +184,28 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             font-size: 13px;
             font-weight: 600;
             color: #F08571;
+            padding: 12px 16px;
+            background: white;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            margin: 8px auto;
+            max-width: 200px;
+            width: fit-content;
           }
           .mission-expansion-container {
             display: block;
-            padding: 12px clamp(12px, 3vw, 20px);
+            position: fixed;
+            top: calc(var(--header-height, 70px));
+            left: 0;
+            right: 0;
+            width: 100%;
+            padding: 16px;
             background: white;
-            border-top: 1px solid #f0f0f0;
             border-bottom: 1px solid #f0f0f0;
-            margin-top: -1px;
+            z-index: 1000;
+            box-sizing: border-box;
+            max-height: calc(100vh - var(--header-height, 70px) - 70px);
+            overflow-y: auto;
           }
           .mission-text-expanded {
             font-size: 14px;
