@@ -159,7 +159,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         @media (max-width: 768px) {
           .header-container {
             min-height: auto;
-            padding: 4px clamp(12px, 3vw, 20px);
+            padding: 2px clamp(12px, 3vw, 20px);
           }
           .hamburger-button {
             display: none !important;
@@ -333,6 +333,10 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               max-width: calc(100% - 90px);
             }
             @media (max-width: 768px) {
+              .mission-container {
+                min-width: auto;
+                flex: 0 0 auto;
+              }
               .mission-container > div {
                 max-width: 100%;
               }
