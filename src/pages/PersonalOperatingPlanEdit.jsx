@@ -21,12 +21,66 @@ export default function PersonalOperatingPlanEdit() {
   const [isLoading, setIsLoading] = useState(!isNew);
   const [saved, setSaved] = useState(false);
   const [openModal, setOpenModal] = useState(null); // 'strategy' or 'tactic'
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Load plan only once on mount (missionId in dependency array, NOT user)
   useEffect(() => {
     if (missionId && user) {
       loadPlan();
     }
-  }, [missionId, user]);
+  }, [missionId]); // FIXED: removed user from dependency - user reference changes on token refresh
+
+  // Autosave draft to sessionStorage when form changes
+  useEffect(() => {
+    if (!missionId || !hasUnsavedChanges) return;
+
+    const timeout = setTimeout(() => {
+      try {
+        const draft = {
+          missionTitle,
+          strategies,
+          timestamp: Date.now()
+        };
+        sessionStorage.setItem(`clarity-pplan-draft-${missionId}`, JSON.stringify(draft));
+      } catch (e) {
+        console.error('Error saving draft:', e);
+      }
+    }, 1000); // Debounce saves by 1 second
+
+    return () => clearTimeout(timeout);
+  }, [missionTitle, strategies, missionId, hasUnsavedChanges]);
+
+  // Warn on unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Restore draft if one exists
+  useEffect(() => {
+    if (draftRestored || !missionId) return;
+
+    try {
+      const draft = sessionStorage.getItem(`clarity-pplan-draft-${missionId}`);
+      if (draft) {
+        const { missionTitle: draftTitle, strategies: draftStrategies } = JSON.parse(draft);
+        setMissionTitle(draftTitle);
+        setStrategies(draftStrategies);
+        setDraftRestored(true);
+        setHasUnsavedChanges(true);
+        console.log('[PlanEdit] Draft restored from sessionStorage');
+      }
+    } catch (e) {
+      console.error('Error restoring draft:', e);
+    }
+  }, [missionId, draftRestored]);
 
   const loadPlan = async () => {
     try {
@@ -82,17 +136,20 @@ export default function PersonalOperatingPlanEdit() {
       isNew: true
     };
     setStrategies([...strategies, newStrategy]);
+    setHasUnsavedChanges(true);
   };
 
   const updateStrategy = (index, field, value) => {
     const updated = [...strategies];
     updated[index][field] = value;
     setStrategies(updated);
+    setHasUnsavedChanges(true);
   };
 
   const deleteStrategy = (index) => {
     if (window.confirm('Delete this strategy and all its tactics?')) {
       setStrategies(strategies.filter((_, i) => i !== index));
+      setHasUnsavedChanges(true);
     }
   };
 
@@ -104,6 +161,7 @@ export default function PersonalOperatingPlanEdit() {
       [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
     }
     setStrategies(updated);
+    setHasUnsavedChanges(true);
   };
 
   const addTactic = (strategyIndex) => {
@@ -116,12 +174,14 @@ export default function PersonalOperatingPlanEdit() {
       isNew: true
     });
     setStrategies(updated);
+    setHasUnsavedChanges(true);
   };
 
   const updateTactic = (strategyIndex, tacticIndex, field, value) => {
     const updated = [...strategies];
     updated[strategyIndex].tactics[tacticIndex][field] = value;
     setStrategies(updated);
+    setHasUnsavedChanges(true);
   };
 
   const deleteTactic = (strategyIndex, tacticIndex) => {
@@ -129,6 +189,7 @@ export default function PersonalOperatingPlanEdit() {
       const updated = [...strategies];
       updated[strategyIndex].tactics = updated[strategyIndex].tactics.filter((_, i) => i !== tacticIndex);
       setStrategies(updated);
+      setHasUnsavedChanges(true);
     }
   };
 
@@ -290,6 +351,13 @@ export default function PersonalOperatingPlanEdit() {
         }
       }
 
+      // Clear draft on successful save
+      try {
+        sessionStorage.removeItem(`clarity-pplan-draft-${currentMissionId}`);
+      } catch (e) {
+        console.error('Error clearing draft:', e);
+      }
+      setHasUnsavedChanges(false);
       setSaved(true);
       setTimeout(() => {
         navigate('/personal-operating-plan');
@@ -346,7 +414,10 @@ export default function PersonalOperatingPlanEdit() {
           </label>
           <textarea
             value={missionTitle}
-            onChange={(e) => setMissionTitle(e.target.value)}
+            onChange={(e) => {
+              setMissionTitle(e.target.value);
+              setHasUnsavedChanges(true);
+            }}
             placeholder="Define your mission in clear, compelling language..."
             style={{
               width: '100%',

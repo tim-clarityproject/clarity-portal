@@ -156,14 +156,14 @@ export default function MyAccount() {
     };
 
     fetchUserData();
-  }, [user]);
+  }, [user?.id]);
 
   // Load archived missions on component mount to prevent stale count
   useEffect(() => {
     if (user) {
       loadArchivedMissions();
     }
-  }, [user]);
+  }, [user?.id]);
 
   // Reload when section is expanded (in case new archives happened)
   useEffect(() => {

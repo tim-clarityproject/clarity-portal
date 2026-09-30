@@ -18,12 +18,66 @@ export default function PersonalOperatingPlanReview() {
   const [expandedStrategies, setExpandedStrategies] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Load plan only once on mount (missionId in dependency array, NOT user)
   useEffect(() => {
     if (missionId && user) {
       loadPlan();
     }
-  }, [missionId, user]);
+  }, [missionId]); // FIXED: removed user from dependency - user reference changes on token refresh
+
+  // Autosave draft to sessionStorage when form changes
+  useEffect(() => {
+    if (!missionId || !hasUnsavedChanges) return;
+
+    const timeout = setTimeout(() => {
+      try {
+        const draft = {
+          reviewData,
+          expandedStrategies,
+          timestamp: Date.now()
+        };
+        sessionStorage.setItem(`clarity-preview-draft-${missionId}`, JSON.stringify(draft));
+      } catch (e) {
+        console.error('Error saving draft:', e);
+      }
+    }, 1000); // Debounce saves by 1 second
+
+    return () => clearTimeout(timeout);
+  }, [reviewData, expandedStrategies, missionId, hasUnsavedChanges]);
+
+  // Warn on unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Restore draft if one exists
+  useEffect(() => {
+    if (draftRestored || !missionId) return;
+
+    try {
+      const draft = sessionStorage.getItem(`clarity-preview-draft-${missionId}`);
+      if (draft) {
+        const { reviewData: draftReviewData, expandedStrategies: draftExpanded } = JSON.parse(draft);
+        setReviewData(draftReviewData);
+        setExpandedStrategies(draftExpanded);
+        setDraftRestored(true);
+        setHasUnsavedChanges(true);
+        console.log('[PlanReview] Draft restored from sessionStorage');
+      }
+    } catch (e) {
+      console.error('Error restoring draft:', e);
+    }
+  }, [missionId, draftRestored]);
 
   const loadPlan = async () => {
     try {
@@ -90,6 +144,7 @@ export default function PersonalOperatingPlanReview() {
       ...prev,
       [strategyId]: !prev[strategyId]
     }));
+    setHasUnsavedChanges(true);
   };
 
   const updateReview = (tacticId, field, value) => {
@@ -100,6 +155,7 @@ export default function PersonalOperatingPlanReview() {
         [field]: value
       }
     }));
+    setHasUnsavedChanges(true);
   };
 
   const submitReview = async () => {
@@ -150,6 +206,13 @@ export default function PersonalOperatingPlanReview() {
         }
       }
 
+      // Clear draft on successful submit
+      try {
+        sessionStorage.removeItem(`clarity-preview-draft-${missionId}`);
+      } catch (e) {
+        console.error('Error clearing draft:', e);
+      }
+      setHasUnsavedChanges(false);
       navigate('/personal-operating-plan');
     } catch (error) {
       console.error('Error submitting review:', error);

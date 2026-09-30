@@ -18,7 +18,7 @@ export default function EditPersonalDetails() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) {
+      if (!user?.id) {
         setIsLoading(false);
         return;
       }
@@ -44,7 +44,7 @@ export default function EditPersonalDetails() {
     };
 
     fetchProfile();
-  }, [user]);
+  }, [user?.id]);
 
   const handleSaveProfile = async () => {
     if (!user) return;

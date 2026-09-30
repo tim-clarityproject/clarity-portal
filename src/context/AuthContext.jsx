@@ -62,7 +62,25 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[AuthContext] Auth state changed:', event, 'has user?', !!session?.user);
-      setUser(session?.user || null);
+
+      // Use functional update to preserve user object reference when ID unchanged
+      // This prevents unnecessary re-renders in components with [user] in dependencies
+      setUser(prevUser => {
+        const nextUser = session?.user || null;
+
+        // During token refresh with no actual user change, keep previous reference
+        // This prevents refetch chains in child components
+        if (
+          event === 'TOKEN_REFRESHED' &&
+          prevUser?.id === nextUser?.id &&
+          event !== 'USER_UPDATED'
+        ) {
+          return prevUser;
+        }
+
+        // For actual user changes (login, logout, initial session), always update
+        return nextUser;
+      });
 
       if (session?.user) {
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
@@ -131,8 +149,9 @@ export function AuthProvider({ children }) {
           }
         }
       } else {
-        // No valid session - clear all cached user data
+        // No valid session - clear all cached user data and drafts
         localStorage.removeItem('clarity-user-data');
+        clearUserDrafts();
         setUser(null);
       }
     });
@@ -251,9 +270,32 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Helper: Clear draft autosave data on logout
+  const clearUserDrafts = () => {
+    try {
+      // Remove draft keys from sessionStorage
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith('clarity-') && key.includes('-draft-')) {
+          sessionStorage.removeItem(key);
+        }
+      }
+      // Remove draft keys from localStorage
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('clarity-') && key.includes('-draft-')) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (e) {
+      console.error('Error clearing drafts on logout:', e);
+    }
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
+      clearUserDrafts();
       await auth.signOut();
       sessionManager.clearSession();
       setUser(null);

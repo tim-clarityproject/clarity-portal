@@ -17,10 +17,10 @@ export default function InversionStep1Goal() {
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    if (decisionId && user) {
+    if (decisionId && user?.id) {
       loadDecision();
     }
-  }, [decisionId, user]);
+  }, [decisionId, user?.id]);
 
   const loadDecision = async () => {
     if (!user) return;

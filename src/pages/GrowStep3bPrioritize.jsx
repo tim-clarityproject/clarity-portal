@@ -79,7 +79,7 @@ export default function GrowStep3bPrioritize() {
 
       loadOptions();
     }
-  }, [location.state?.decisionId, location.state?.options, location.state?.prioritizedOptions, user, updateFormData]);
+  }, [location.state?.decisionId, location.state?.options, location.state?.prioritizedOptions, user?.id, updateFormData]);
 
   const handleEditStart = (index, value, source) => {
     setEditingIndex(index);

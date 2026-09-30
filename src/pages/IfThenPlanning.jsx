@@ -28,7 +28,7 @@ export default function IfThenPlanning() {
     if (decisionId && user) {
       loadPlanning();
     }
-  }, [decisionId, user]);
+  }, [decisionId, user?.id]);
 
   const loadPlanning = async () => {
     if (!user) return;

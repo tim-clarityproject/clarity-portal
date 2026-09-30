@@ -42,7 +42,7 @@ export default function StopDoingAudit() {
       setActionHow('');
       setTimeUse('');
     }
-  }, [decisionId, user]);
+  }, [decisionId, user?.id]);
 
   const loadAudit = async () => {
     if (!user) return;

@@ -42,7 +42,7 @@ export default function GrowStep4WillDo() {
 
   // Load decision title from Supabase when in edit mode
   useEffect(() => {
-    if (isEditMode && location.state?.decisionId && user) {
+    if (isEditMode && location.state?.decisionId && user?.id) {
       const loadTitle = async () => {
         try {
           const { data } = await supabase
@@ -60,7 +60,7 @@ export default function GrowStep4WillDo() {
       };
       loadTitle();
     }
-  }, [isEditMode, location.state?.decisionId, user]);
+  }, [isEditMode, location.state?.decisionId, user?.id]);
 
   const handleEditStart = (index, value) => {
     setEditingIndex(index);

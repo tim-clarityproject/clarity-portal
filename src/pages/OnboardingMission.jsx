@@ -50,7 +50,7 @@ export default function OnboardingMission() {
     };
 
     fetchFirstName();
-  }, [user, navigate]);
+  }, [user?.id, navigate]);
 
   useEffect(() => {
     if (!firstName) return;
