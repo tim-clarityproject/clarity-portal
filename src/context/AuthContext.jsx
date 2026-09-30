@@ -62,7 +62,6 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[AuthContext] Auth state changed:', event, 'has user?', !!session?.user);
-      console.log('[AUTH_EVENT_AUDIT]', event); // Temporary: log all events during tab switch test
 
       // Use functional update to preserve user object reference when ID unchanged
       // This prevents unnecessary re-renders in components with [user] in dependencies
