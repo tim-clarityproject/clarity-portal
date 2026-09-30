@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase, auth } from '../lib/supabase';
+import { isStandalone } from '../utils/isStandalone';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -240,7 +241,7 @@ export default function Login() {
                     }}
                     onFocus={(e) => e.target.style.borderColor = '#F08571'}
                     onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-                    onPointerUp={(e) => e.currentTarget.focus()}
+                    onPointerUp={isStandalone() ? (e) => e.currentTarget.focus() : undefined}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
@@ -263,7 +264,7 @@ export default function Login() {
                     }}
                     onFocus={(e) => e.target.style.borderColor = '#F08571'}
                     onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-                    onPointerUp={(e) => e.currentTarget.focus()}
+                    onPointerUp={isStandalone() ? (e) => e.currentTarget.focus() : undefined}
                   />
                 </div>
               </div>
@@ -275,6 +276,8 @@ export default function Login() {
               </label>
               <input
                 type="email"
+                inputMode="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Type here"
@@ -289,7 +292,7 @@ export default function Login() {
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#F08571'}
                 onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-                onPointerUp={(e) => e.currentTarget.focus()}
+                onPointerUp={isStandalone() ? (e) => e.currentTarget.focus() : undefined}
               />
             </div>
 
@@ -299,6 +302,7 @@ export default function Login() {
               </label>
               <input
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Type here"
@@ -313,7 +317,7 @@ export default function Login() {
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#F08571'}
                 onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-                onPointerUp={(e) => e.currentTarget.focus()}
+                onPointerUp={isStandalone() ? (e) => e.currentTarget.focus() : undefined}
               />
             </div>
 
@@ -324,6 +328,7 @@ export default function Login() {
                 </label>
                 <input
                   type="password"
+                  autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Type here"
@@ -338,7 +343,7 @@ export default function Login() {
                   }}
                   onFocus={(e) => e.target.style.borderColor = '#F08571'}
                   onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-                  onPointerUp={(e) => e.currentTarget.focus()}
+                  onPointerUp={isStandalone() ? (e) => e.currentTarget.focus() : undefined}
                 />
               </div>
             )}
