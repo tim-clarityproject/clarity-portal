@@ -213,7 +213,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           .mission-expansion-container {
             display: block;
             position: fixed;
-            top: calc(var(--header-height, 70px));
+            top: calc(var(--header-height, 80px));
             left: 0;
             right: 0;
             width: 100%;
@@ -224,7 +224,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             border-radius: 0 0 16px 16px;
             z-index: 1000;
             box-sizing: border-box;
-            max-height: calc(100vh - var(--header-height, 70px) - 80px);
+            max-height: calc(100vh - var(--header-height, 80px) - 80px);
             overflow-y: auto;
           }
           .mission-text-expanded {
