@@ -36,6 +36,15 @@ export default function MyAccount() {
     }
   }, [location.state?.scrollTo]);
 
+  // Handle opening Edit Mission pop-up from header link
+  useEffect(() => {
+    if (location.state?.openEditMission) {
+      setShowGoalModal(true);
+      // Clear the state to prevent reopening on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [location.state?.openEditMission]);
+
   const handleDeleteAccount = async () => {
     if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
       return;
@@ -340,7 +349,7 @@ export default function MyAccount() {
           </div>
 
           {/* Mission Section */}
-          <div style={{
+          <div id="mission-section" style={{
             paddingBottom: '24px',
             marginBottom: '32px',
             borderBottom: '1px solid #e5e5e5',
