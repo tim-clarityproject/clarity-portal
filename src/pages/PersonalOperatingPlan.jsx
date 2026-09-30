@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
 import { designTokens } from '../lib/designTokens';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function PersonalOperatingPlan() {
   const navigate = useNavigate();
@@ -142,7 +142,7 @@ export default function PersonalOperatingPlan() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
         </div>
@@ -153,7 +153,7 @@ export default function PersonalOperatingPlan() {
   if (!mission) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px', marginBottom: '24px' }}>No personal operating plan yet</p>
           <button
@@ -181,7 +181,7 @@ export default function PersonalOperatingPlan() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <style>{`
         .pop-page-container {

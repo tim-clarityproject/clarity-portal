@@ -9,7 +9,7 @@ import { formatReviewDate } from '../lib/dateFormatter';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import SavedConfirmation from '../components/SavedConfirmation';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function MyJournal() {
   const navigate = useNavigate();
@@ -316,7 +316,7 @@ export default function MyJournal() {
           margin-top: 4px;
         }
       `}</style>
-      <HomeHeader />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>{pageTitle}</h1>

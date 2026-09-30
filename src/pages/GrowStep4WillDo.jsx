@@ -9,7 +9,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import SavedConfirmation from '../components/SavedConfirmation';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function GrowStep4WillDo() {
   const navigate = useNavigate();
@@ -214,7 +214,7 @@ export default function GrowStep4WillDo() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>

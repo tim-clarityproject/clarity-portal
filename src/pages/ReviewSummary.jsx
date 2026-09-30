@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateWithOrdinal } from '../lib/dateFormatter';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function ReviewSummary() {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ export default function ReviewSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Loading review...</p>
         </div>
@@ -74,7 +74,7 @@ export default function ReviewSummary() {
   if (!review) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999' }}>Review not found</p>
         </div>
@@ -152,7 +152,7 @@ export default function ReviewSummary() {
           }
         }
       `}</style>
-      <HomeHeader />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }} className="page-container">
         {/* Back Button */}

@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import SavedConfirmation from '../components/SavedConfirmation';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 
 export default function PlanMyDayStep1() {
@@ -139,7 +139,7 @@ export default function PlanMyDayStep1() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>

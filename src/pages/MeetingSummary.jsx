@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Download, X, ChevronLeft } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function MeetingSummary() {
   const navigate = useNavigate();
@@ -69,7 +69,7 @@ export default function MeetingSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading meeting...</p>
         </div>
@@ -80,7 +80,7 @@ export default function MeetingSummary() {
   if (!meeting) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Meeting not found</p>
         </div>
@@ -102,7 +102,7 @@ export default function MeetingSummary() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader className="no-print" />
+      <DesignHeader className="no-print" />
 
       <style>{`
         .page-container {

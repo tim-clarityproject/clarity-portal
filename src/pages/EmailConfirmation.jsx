@@ -2,7 +2,7 @@ import { useEffect, useContext, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function EmailConfirmation() {
   const navigate = useNavigate();
@@ -115,7 +115,7 @@ export default function EmailConfirmation() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: status === 'error' ? '0' : 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      {status !== 'error' && <HomeHeader />}
+      {status !== 'error' && <DesignHeader />}
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
         <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>

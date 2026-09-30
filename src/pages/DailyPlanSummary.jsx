@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 import { summaryStyles } from '../styles/summaryStyles';
 
 export default function DailyPlanSummary() {
@@ -64,7 +64,7 @@ export default function DailyPlanSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }} className="page-container">
           <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
         </div>
@@ -75,7 +75,7 @@ export default function DailyPlanSummary() {
   if (!plan) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }} className="page-container">
           <p style={{ color: '#999', fontSize: '14px' }}>Plan not found</p>
           <button
@@ -103,7 +103,7 @@ export default function DailyPlanSummary() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <style>{`
         .page-container {

@@ -5,7 +5,7 @@ import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { designTokens } from '../lib/designTokens';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 import BreathingGuide from '../components/BreathingGuide';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
@@ -350,7 +350,7 @@ export default function Welcome() {
           }
         `}</style>
       )}
-      <HomeHeader delayMission={true} />
+      <DesignHeader />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}

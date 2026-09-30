@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
 import { generateMissionProgressPDF } from '../lib/pdfExport';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function MissionProgressReviewDetail() {
   const navigate = useNavigate();
@@ -77,7 +77,7 @@ export default function MissionProgressReviewDetail() {
   if (!review) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
           <p style={{ color: '#999' }}>Review not found</p>
         </div>
@@ -89,7 +89,7 @@ export default function MissionProgressReviewDetail() {
   if (!data) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
           <p style={{ color: '#999' }}>Invalid review data</p>
         </div>
@@ -99,7 +99,7 @@ export default function MissionProgressReviewDetail() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="page-container">
         {/* Header */}

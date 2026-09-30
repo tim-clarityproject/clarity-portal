@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
 import { designTokens } from '../lib/designTokens';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 import BreathingSettingsModal from '../components/BreathingSettingsModal';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -290,7 +290,7 @@ export default function MyAccount() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader personalGoal={showGoalInHeader ? personalGoal : ''} />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: designTokens.layout.contentPadding }} className="page-container">
         <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '12px', marginBottom: designTokens.spacing.xl }}>

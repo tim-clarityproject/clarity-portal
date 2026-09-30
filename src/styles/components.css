@@ -319,7 +319,6 @@
   transform: translate(-50%, -50%) translateY(8px);
   opacity: 0;
   animation: ui-modal-in var(--dur-slow) var(--ease) forwards;
-  box-shadow: 0 20px 60px var(--scrim);
   z-index: 3000;
 }
 

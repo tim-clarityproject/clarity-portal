@@ -7,7 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function ProjectScatter() {
   const navigate = useNavigate();
@@ -207,7 +207,7 @@ export default function ProjectScatter() {
           }
         }
       `}</style>
-      <HomeHeader />
+      <DesignHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">

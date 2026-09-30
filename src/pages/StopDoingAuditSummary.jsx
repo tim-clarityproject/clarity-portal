@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Download, Mail, X, ChevronLeft } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function StopDoingAuditSummary() {
   const navigate = useNavigate();
@@ -83,7 +83,7 @@ export default function StopDoingAuditSummary() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Loading audit...</p>
         </div>
@@ -94,7 +94,7 @@ export default function StopDoingAuditSummary() {
   if (error) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
           <div style={{ maxWidth: '500px', textAlign: 'center' }}>
             <p style={{ color: '#F08571', fontSize: '16px', fontWeight: '600', margin: '0 0 16px 0' }}>Error Loading Audit</p>
@@ -128,7 +128,7 @@ export default function StopDoingAuditSummary() {
   if (!audit) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
+        <DesignHeader />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: '#999', fontSize: '14px' }}>Audit not found</p>
         </div>
@@ -159,7 +159,7 @@ export default function StopDoingAuditSummary() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
         <button

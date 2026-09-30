@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { designTokens } from '../lib/designTokens';
 import SavedConfirmation from '../components/SavedConfirmation';
 import InfoModal from '../components/InfoModal';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function PersonalOperatingPlanEdit() {
   const navigate = useNavigate();
@@ -380,7 +380,7 @@ export default function PersonalOperatingPlanEdit() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <style>{`
         .edit-page-container {

@@ -1,14 +1,18 @@
 import { useContext, useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
+import DesktopMenuDropdown from './DesktopMenuDropdown';
 
-export default function DesignHeader() {
+export default function DesignHeader({ className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { mission, showInHeader } = useContext(MissionContext);
   const [expandedPanel, setExpandedPanel] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const panelRef = useRef(null);
   const scrimRef = useRef(null);
+  const hamburgerRef = useRef(null);
+  const menuRef = useRef(null);
 
   // Close panel on Escape key
   useEffect(() => {
@@ -20,6 +24,23 @@ export default function DesignHeader() {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [expandedPanel]);
+
+  // Close desktop menu when clicking outside it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuOpen &&
+        hamburgerRef.current &&
+        menuRef.current &&
+        !hamburgerRef.current.contains(event.target) &&
+        !menuRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [menuOpen]);
 
   // Close panel when clicking scrim
   const handleScrimClick = () => {
@@ -37,7 +58,7 @@ export default function DesignHeader() {
   const shouldShowPill = mission && showInHeader;
 
   return (
-    <div className="ui-root" style={{
+    <div className={`ui-root ${className}`.trim()} style={{
       background: 'var(--bg)',
       color: 'var(--text)',
     }}>
@@ -213,12 +234,12 @@ export default function DesignHeader() {
 
         {/* DESKTOP HEADER */}
         <div className="design-header-desktop">
-          {/* Hamburger */}
+          {/* Hamburger - opens the existing desktop menu */}
           <button
+            ref={hamburgerRef}
             className="hamburger"
-            onClick={() => {
-              // Will hook up to existing menu in a future task
-            }}
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-expanded={menuOpen}
           >
             <div className="hamburger-line" />
             <div className="hamburger-line" />
@@ -331,6 +352,13 @@ export default function DesignHeader() {
           </div>
         </>
       )}
+
+      {/* Existing desktop menu, opened by the hamburger above */}
+      <DesktopMenuDropdown
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        menuRef={menuRef}
+      />
     </div>
   );
 }
