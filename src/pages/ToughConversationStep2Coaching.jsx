@@ -52,7 +52,7 @@ export default function ToughConversationStep2Coaching() {
 
   // Load decision title from Supabase when in edit mode
   useEffect(() => {
-    if (!isFreshStart && location.state?.decisionId && user) {
+    if (!isFreshStart && location.state?.decisionId && user?.id) {
       const loadTitle = async () => {
         try {
           const { data } = await supabase
