@@ -68,10 +68,9 @@ export function AuthProvider({ children }) {
       setUser(prevUser => {
         const nextUser = session?.user || null;
 
-        // During token refresh with no actual user change, keep previous reference
-        // This prevents refetch chains in child components
+        // For any event, if user ID is same and not a USER_UPDATED event, preserve reference
+        // This prevents refetch chains in child components across all auth state transitions
         if (
-          event === 'TOKEN_REFRESHED' &&
           prevUser?.id === nextUser?.id &&
           event !== 'USER_UPDATED'
         ) {
