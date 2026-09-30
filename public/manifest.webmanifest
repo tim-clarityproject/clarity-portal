@@ -5,7 +5,7 @@
   "description": "The Clarity Portal by The Clarity Project",
   "start_url": "/",
   "scope": "/",
-  "display": "standalone",
+  "display": "browser",
   "lang": "en-GB",
   "background_color": "#ffffff",
   "theme_color": "#F08571",
