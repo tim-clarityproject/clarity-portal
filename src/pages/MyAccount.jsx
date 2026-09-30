@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { designTokens } from '../lib/designTokens';
 import HomeHeader from '../components/HomeHeader';
 import BreathingSettingsModal from '../components/BreathingSettingsModal';
-import PersonalGoalModal from '../components/PersonalGoalModal';
+import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
 export default function MyAccount() {
@@ -366,7 +366,7 @@ export default function MyAccount() {
                   {personalGoal || 'No mission set yet'}
                 </p>
                 <p style={{ fontSize: '12px', color: '#bbb', margin: '6px 0 0 0' }}>
-                  {personalGoal.length}/50 characters
+                  {personalGoal.length}/{MAX_GOAL_LENGTH} characters
                 </p>
               </div>
               <button

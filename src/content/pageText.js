@@ -1,10 +1,9 @@
 export const pageText = {
   // Top-level pages (no overline, Home has no subtitle)
-  home: { overline: '', subtitle: '' },
   welcome: { overline: '', subtitle: '' },
   about: { overline: '', subtitle: '' },
   myAccount: { overline: '', subtitle: '' },
-  editProfile: { overline: '', subtitle: '' },
+  editPersonalDetails: { overline: '', subtitle: '' },
 
   // Onboarding pages
   onboardingMission: { overline: '', subtitle: '' },
@@ -18,6 +17,7 @@ export const pageText = {
   personalOperatingPlanReview: { overline: 'Plan', subtitle: '' },
   personalOperatingPlanSummary: { overline: 'Plan', subtitle: '' },
   goalSetting: { overline: 'Plan', subtitle: '' },
+  risksAssessment: { overline: 'Plan', subtitle: '' },
   projectList: { overline: 'Plan', subtitle: '' },
   projectMatrix: { overline: 'Plan', subtitle: '' },
   projectProgress: { overline: 'Plan', subtitle: '' },
@@ -25,7 +25,7 @@ export const pageText = {
   strategies: { overline: 'Plan', subtitle: '' },
   criticalSuccessFactors: { overline: 'Plan', subtitle: '' },
   results: { overline: 'Plan', subtitle: '' },
-  planMyDay: { overline: 'Plan', subtitle: '' },
+  planMyDayStep1: { overline: 'Plan', subtitle: '' },
   dailyPlanSummary: { overline: 'Plan', subtitle: '' },
   planMeeting: { overline: 'Plan', subtitle: '' },
   meetingSummary: { overline: 'Plan', subtitle: '' },
@@ -40,7 +40,6 @@ export const pageText = {
   // Decide section (becomes Plan in later task)
   decisionTools: { overline: 'Plan', subtitle: '' },
   decisionHistory: { overline: 'Plan', subtitle: '' },
-  decisionsLog: { overline: 'Plan', subtitle: '' },
   decisionSummary: { overline: 'Plan', subtitle: '' },
 
   // Grow steps
