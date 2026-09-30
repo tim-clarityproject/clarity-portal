@@ -1,6 +1,7 @@
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { diag } from '../utils/diag';
 
 /**
  * Master auth guard - wraps ALL protected routes via React Router layout pattern.
@@ -10,8 +11,26 @@ import { AuthContext } from '../context/AuthContext';
 export default function ProtectedLayout() {
   const { user, isLoading } = useContext(AuthContext);
   const navigate = useNavigate();
+  const prevStateRef = useRef({ isLoading: true, userExists: false });
 
   console.log('[ProtectedLayout] Rendered - user:', user?.email || 'null', 'isLoading:', isLoading);
+
+  // Log state changes
+  useEffect(() => {
+    const prevIsLoading = prevStateRef.current.isLoading;
+    const prevUserExists = prevStateRef.current.userExists;
+    const currentUserExists = !!user;
+
+    if (prevIsLoading !== isLoading) {
+      diag('PROTECTED_LAYOUT_LOADING', { isLoading });
+      prevStateRef.current.isLoading = isLoading;
+    }
+
+    if (prevUserExists !== currentUserExists) {
+      diag('PROTECTED_LAYOUT_USER', { userExists: currentUserExists });
+      prevStateRef.current.userExists = currentUserExists;
+    }
+  }, [isLoading, user]);
 
   useEffect(() => {
     // Only check after auth is fully loaded

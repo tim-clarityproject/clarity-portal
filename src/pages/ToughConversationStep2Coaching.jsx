@@ -5,6 +5,7 @@ import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
+import { diag } from '../utils/diag';
 import HomeHeader from '../components/HomeHeader';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
@@ -29,6 +30,14 @@ export default function ToughConversationStep2Coaching() {
   const decisionId = location.state?.decisionId;
 
   useLoadDecision(updateFormData);
+
+  // Log mount and unmount
+  useEffect(() => {
+    diag('STEP2_MOUNT', { decisionIdPresent: !!decisionId });
+    return () => {
+      diag('STEP2_UNMOUNT', { decisionIdPresent: !!decisionId });
+    };
+  }, [decisionId]);
 
   const isFreshStart = !location.state?.decisionId && !location.state?.observation;
 

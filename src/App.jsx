@@ -1,5 +1,6 @@
 import { useContext, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet, useNavigationType } from 'react-router-dom';
+import { diag } from './utils/diag';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { MissionProvider } from './context/MissionContext';
 import { FormProvider } from './context/FormContext';
@@ -72,6 +73,32 @@ function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
+  const navigationType = useNavigationType();
+
+  // Boot diagnostics
+  useEffect(() => {
+    try {
+      const navEntry = performance.getEntriesByType('navigation')[0];
+      const navType = navEntry?.type || 'unknown';
+      diag('APP_BOOT', {
+        navType,
+        pathname: location.pathname,
+        historyLength: window.history.length
+      });
+    } catch (e) {
+      // Silently ignore
+    }
+  }, []);
+
+  // Route change diagnostics
+  useEffect(() => {
+    diag('ROUTE_CHANGE', {
+      pathname: location.pathname,
+      key: location.key,
+      navType: navigationType,
+      historyLength: window.history.length
+    });
+  }, [location.pathname, location.key, navigationType]);
 
   // Handle confirmation code redirects (Supabase email links may land on root with code parameter)
   useEffect(() => {

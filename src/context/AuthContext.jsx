@@ -2,6 +2,7 @@ import { createContext, useEffect, useState } from 'react';
 import { supabase, auth } from '../lib/supabase';
 import { sessionManager } from '../lib/sessionManager';
 import { dataSyncManager } from '../lib/dataSyncManager';
+import { diag } from '../utils/diag';
 
 export const AuthContext = createContext();
 
@@ -67,6 +68,8 @@ export function AuthProvider({ children }) {
       // This prevents unnecessary re-renders in components with [user] in dependencies
       setUser(prevUser => {
         const nextUser = session?.user || null;
+        const userIdShort = nextUser?.id?.substring(0, 8) || 'null';
+        let outcome = 'replaced';
 
         // For any event, if user ID is same and not a USER_UPDATED event, preserve reference
         // This prevents refetch chains in child components across all auth state transitions
@@ -74,10 +77,16 @@ export function AuthProvider({ children }) {
           prevUser?.id === nextUser?.id &&
           event !== 'USER_UPDATED'
         ) {
+          outcome = 'kept';
+          diag('AUTH_EVENT', { event, userIdShort, outcome });
           return prevUser;
         }
 
         // For actual user changes (login, logout, initial session), always update
+        if (!nextUser) {
+          outcome = 'null';
+        }
+        diag('AUTH_EVENT', { event, userIdShort, outcome });
         return nextUser;
       });
 
@@ -167,11 +176,30 @@ export function AuthProvider({ children }) {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         // Tab became visible - refresh session to extend expiry
-        await sessionManager.refreshSession();
+        diag('VISIBILITY_CHANGE', { state: 'visible' });
+        const result = await sessionManager.refreshSession();
+        diag('REFRESH_SESSION', { result: result ? 'success' : 'null' });
       }
     };
 
+    const handleVisibilityChangeAll = () => {
+      if (document.visibilityState !== 'visible') {
+        diag('VISIBILITY_CHANGE', { state: document.visibilityState });
+      }
+    };
+
+    const handlePageShow = (e) => {
+      diag('PAGESHOW', { persisted: e.persisted });
+    };
+
+    const handleBeforeUnload = () => {
+      diag('BEFOREUNLOAD', {});
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChangeAll);
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     // Periodically refresh session every 12 hours to keep it alive
     const refreshInterval = setInterval(() => {
@@ -180,6 +208,9 @@ export function AuthProvider({ children }) {
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChangeAll);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       clearInterval(refreshInterval);
     };
   }, [user]);
