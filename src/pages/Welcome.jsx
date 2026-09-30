@@ -43,8 +43,9 @@ export default function Welcome() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
   const [showGreetingText, setShowGreetingText] = useState(false);
-  const [dropdownOpenUpward, setDropdownOpenUpward] = useState(false);
+  const [dropdownMaxHeight, setDropdownMaxHeight] = useState(240); // Default: 5 rows x 48px
   const dropdownButtonRef = useRef(null);
+  const isScrollingProgrammaticallyRef = useRef(false);
 
   // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
@@ -183,36 +184,87 @@ export default function Welcome() {
     return () => clearInterval(typeInterval);
   }, [firstName]);
 
-  // Handle dropdown positioning and closing on scroll
+  // Handle dropdown positioning: scroll page if needed to fit below button
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || window.innerWidth > 768) return;
 
-    const checkDropdownPosition = () => {
+    const ensureDropdownFits = async () => {
       if (!dropdownButtonRef.current) return;
+
+      // Get BottomTabBar height dynamically
+      const tabBar = document.querySelector('.bottom-tab-bar');
+      let tabBarHeight = 60;
+      if (tabBar) {
+        const tabBarRect = tabBar.getBoundingClientRect();
+        tabBarHeight = tabBarRect.height;
+      }
+      const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom') || '0') || 0;
+      const totalTabBarSpace = tabBarHeight + safeAreaBottom;
 
       const button = dropdownButtonRef.current;
       const rect = button.getBoundingClientRect();
-      const dropdownHeight = 240; // 5 rows x 48px
-      const tabBarHeight = 60;
-      const viewportHeight = window.innerHeight;
+      const desiredDropdownHeight = 240; // 5 rows x 48px
+      const gap = 8; // margin between button and list
+      const minSpaceNeeded = desiredDropdownHeight + gap;
 
-      // Check if dropdown would go below tab bar on mobile
-      if (window.innerWidth <= 768) {
-        const spaceBelow = viewportHeight - rect.bottom - tabBarHeight;
-        if (spaceBelow < dropdownHeight) {
-          setDropdownOpenUpward(true);
+      // Calculate how much space is available below the button
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom - totalTabBarSpace;
+
+      // If not enough space, scroll the page up to create space
+      if (spaceBelow < minSpaceNeeded) {
+        const scrollNeeded = minSpaceNeeded - spaceBelow + 16; // 16px buffer
+        isScrollingProgrammaticallyRef.current = true;
+
+        window.scrollBy({ top: scrollNeeded, behavior: 'smooth' });
+
+        // Wait for scroll to finish before clearing flag
+        // Use scrollend event if available, otherwise fallback to timeout
+        const handleScrollEnd = () => {
+          window.removeEventListener('scrollend', handleScrollEnd);
+          isScrollingProgrammaticallyRef.current = false;
+        };
+
+        if ('onscrollend' in window) {
+          window.addEventListener('scrollend', handleScrollEnd, { once: true });
         } else {
-          setDropdownOpenUpward(false);
+          setTimeout(() => {
+            isScrollingProgrammaticallyRef.current = false;
+          }, 350);
         }
       }
+
+      // After potential scroll, check again if full height fits
+      // This handles cases like landscape mode where space is limited even after scroll
+      setTimeout(() => {
+        if (!dropdownButtonRef.current) return;
+        const updatedRect = dropdownButtonRef.current.getBoundingClientRect();
+        const updatedSpaceBelow = viewportHeight - updatedRect.bottom - totalTabBarSpace;
+
+        if (updatedSpaceBelow < desiredDropdownHeight) {
+          // Not enough space - reduce dropdown height to fit
+          const availableHeight = Math.max(48, updatedSpaceBelow - gap); // At least 1 row (48px)
+          setDropdownMaxHeight(availableHeight);
+        } else {
+          // Plenty of space - use full 5 rows
+          setDropdownMaxHeight(desiredDropdownHeight);
+        }
+      }, 100);
     };
+
+    ensureDropdownFits();
+  }, [isOpen]);
+
+  // Handle closing dropdown on scroll
+  useEffect(() => {
+    if (!isOpen) return;
 
     const handleScroll = () => {
+      // Ignore programmatic scroll triggered by our own scroll logic
+      if (isScrollingProgrammaticallyRef.current) return;
       setIsOpen(false);
-      setDropdownOpenUpward(false);
     };
 
-    checkDropdownPosition();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isOpen]);
@@ -284,6 +336,9 @@ export default function Welcome() {
             padding: 12px 16px !important;
             font-size: 16px !important;
           }
+          .welcome-main-content {
+            padding-bottom: calc(400px + 200px) !important;
+          }
         }
       `}</style>
       {isOpen && (
@@ -299,7 +354,7 @@ export default function Welcome() {
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 'clamp(40px, 8vw, 80px)', paddingBottom: 'clamp(20px, 5vw, 40px)', paddingLeft: 'clamp(16px, 5vw, 32px)', paddingRight: 'clamp(16px, 5vw, 32px)', marginBottom: '200px' }}>
+      <div className="welcome-main-content" style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 'clamp(40px, 8vw, 80px)', paddingBottom: 'clamp(20px, 5vw, 40px)', paddingLeft: 'clamp(16px, 5vw, 32px)', paddingRight: 'clamp(16px, 5vw, 32px)', marginBottom: '200px' }}>
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <EmailVerificationBanner />
           <div style={{ marginBottom: '64px', marginTop: '32px', textAlign: 'center' }}>
@@ -357,20 +412,7 @@ export default function Welcome() {
                 {isOpen && (
                   <div
                     className="welcome-dropdown-list"
-                    style={dropdownOpenUpward ? {
-                      position: 'absolute',
-                      bottom: '100%',
-                      left: 0,
-                      right: 0,
-                      backgroundColor: designTokens.colors.background.default,
-                      border: `2px solid ${designTokens.colors.primary}`,
-                      borderRadius: designTokens.borderRadius.lg,
-                      marginBottom: designTokens.spacing.sm,
-                      maxHeight: '400px',
-                      overflowY: 'auto',
-                      zIndex: 1000,
-                      boxShadow: designTokens.shadow.md,
-                    } : {
+                    style={{
                       position: 'absolute',
                       top: '100%',
                       left: 0,
@@ -379,7 +421,7 @@ export default function Welcome() {
                       border: `2px solid ${designTokens.colors.primary}`,
                       borderRadius: designTokens.borderRadius.lg,
                       marginTop: designTokens.spacing.sm,
-                      maxHeight: '400px',
+                      maxHeight: window.innerWidth <= 768 ? `${dropdownMaxHeight}px` : '400px',
                       overflowY: 'auto',
                       zIndex: 1000,
                       boxShadow: designTokens.shadow.md,
