@@ -68,6 +68,11 @@ import PersonalOperatingPlanSummary from './pages/PersonalOperatingPlanSummary';
 import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
 import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
+import PlanSection from './pages/PlanSection';
+import GroundSection from './pages/GroundSection';
+import DecideSection from './pages/DecideSection';
+import ReviewSection from './pages/ReviewSection';
+import AccountSection from './pages/AccountSection';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -165,13 +170,13 @@ function AppContent() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/check-email-confirmation" element={<CheckEmailConfirmation />} />
-        <Route path="/about" element={<About />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/data-storage-notice" element={<DataStorageNotice />} />
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>
+          <Route path="/about" element={<About />} />
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/onboarding-mission" element={<OnboardingMission />} />
           <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
@@ -198,6 +203,11 @@ function AppContent() {
           <Route path="/decision-tools" element={<DecisionTools />} />
           <Route path="/decision-history" element={<DecisionHistory />} />
           <Route path="/decision-summary" element={<DecisionSummary />} />
+          <Route path="/plan-section" element={<PlanSection />} />
+          <Route path="/ground-section" element={<GroundSection />} />
+          <Route path="/decide-section" element={<DecideSection />} />
+          <Route path="/review-section" element={<ReviewSection />} />
+          <Route path="/account-section" element={<AccountSection />} />
           <Route path="/plan-my-day" element={<PlanMyDayStep1 />} />
           <Route path="/daily-plan-summary" element={<DailyPlanSummary />} />
           <Route path="/plan-meeting" element={<PlanMeeting />} />

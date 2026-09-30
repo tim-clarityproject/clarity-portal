@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect, useContext } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, User } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
@@ -16,9 +16,13 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
   const [journalSubmenuOpen, setJournalSubmenuOpen] = useState(false);
   const [planSubmenuOpen, setPlanSubmenuOpen] = useState(false);
   const [groundSubmenuOpen, setGroundSubmenuOpen] = useState(false);
+  const [missionExpanded, setMissionExpanded] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const headerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
+  const accountMenuRef = useRef(null);
+  const accountButtonRef = useRef(null);
 
   // On Welcome page, display mission immediately (no delay needed now that header is pre-sized)
   useEffect(() => {
@@ -48,7 +52,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Close menu if clicking anywhere except the hamburger button or menu
+      // Close hamburger menu if clicking anywhere except the hamburger button or menu
       if (
         menuOpen &&
         hamburgerRef.current &&
@@ -61,11 +65,22 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         setJournalSubmenuOpen(false);
         setGroundSubmenuOpen(false);
       }
+
+      // Close account menu if clicking anywhere except the button or menu
+      if (
+        accountMenuOpen &&
+        accountButtonRef.current &&
+        accountMenuRef.current &&
+        !accountButtonRef.current.contains(event.target) &&
+        !accountMenuRef.current.contains(event.target)
+      ) {
+        setAccountMenuOpen(false);
+      }
     };
 
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [menuOpen]);
+  }, [menuOpen, accountMenuOpen]);
 
   const handleMenuClick = (path) => {
     navigate(path, { state: location.state });
@@ -123,24 +138,127 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           left: auto;
           display: none;
         }
+        .mission-label-mobile {
+          display: none;
+        }
+        .mission-expansion-container {
+          display: none;
+        }
+        .logo-desktop {
+          display: block;
+        }
+        .logo-mobile-mark {
+          display: none !important;
+        }
+        .account-button-mobile {
+          display: none;
+        }
+        .account-menu-mobile {
+          display: none;
+        }
         @media (max-width: 768px) {
+          .header-container {
+            min-height: auto;
+            padding: 2px clamp(12px, 3vw, 20px);
+            background: #F08571;
+            border-radius: 16px 16px 0 0;
+          }
           .hamburger-button {
-            display: flex;
-            padding: 12px;
-            min-width: 44px;
-            min-height: 44px;
+            display: none !important;
           }
           .desktop-nav {
             display: none;
           }
           .menu-dropdown {
-            display: block;
-            width: calc(100% - 32px);
-            max-width: none;
-            left: 16px;
+            display: none !important;
           }
           .mission-container-mobile {
             display: none;
+          }
+          .mission-container > div:not(.mission-label-mobile) {
+            display: none !important;
+          }
+          .mission-label-mobile {
+            display: flex !important;
+            align-items: flex-start;
+            justify-content: center;
+            flex: 0;
+            min-width: fit-content;
+            gap: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            padding: 12px 20px 18px 20px;
+            background: white;
+            border: 2px solid #F08571;
+            border-radius: 12px;
+            margin: 8px;
+            width: fit-content;
+            max-width: calc(100% - 16px);
+            position: relative;
+          }
+          .mission-label-mobile::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #333;
+          }
+          .mission-expansion-container {
+            display: block;
+            position: fixed;
+            top: calc(var(--header-height, 70px));
+            left: 0;
+            right: 0;
+            width: 100%;
+            padding: 16px;
+            background: white;
+            border: 2px solid #F08571;
+            border-top: none;
+            border-radius: 0 0 16px 16px;
+            z-index: 1000;
+            box-sizing: border-box;
+            max-height: calc(100vh - var(--header-height, 70px) - 80px);
+            overflow-y: auto;
+          }
+          .mission-text-expanded {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+            text-align: center;
+          }
+          .logo-mobile-mark {
+            display: none !important;
+          }
+          .logo-desktop {
+            display: none !important;
+          }
+          .account-button-mobile {
+            display: none !important;
+          }
+          .account-menu-mobile {
+            display: block;
+            position: fixed;
+            top: 69px;
+            right: 0;
+            backgroundColor: 'white';
+            border: '1px solid #e5e5e5';
+            borderLeft: '1px solid #e5e5e5';
+            borderTop: 'none';
+            borderRight: 'none';
+            borderRadius: '0px';
+            boxShadow: 'inset -1px 0 0 rgba(0, 0, 0, 0.06)';
+            width: 'auto';
+            minWidth: '140px';
+            zIndex: 1000;
+            maxHeight: 'calc(100vh - 100px)';
+            overflowY: 'auto';
           }
         }
       `}</style>
@@ -216,13 +334,30 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               min-width: 0;
               animation: fadeInMission 0.8s ease-in-out;
               padding: 0 clamp(8px, 1.5vw, 16px);
+              flex-wrap: wrap;
             }
-            .mission-container > div {
+            .mission-container > div:not(.mission-label-mobile) {
               max-width: calc(100% - 90px);
+            }
+            @media (max-width: 768px) {
+              .mission-container {
+                min-width: auto;
+                flex: 0 0 auto;
+              }
+              .mission-container > div {
+                max-width: 100%;
+              }
             }
           `}</style>
           <button
-            onClick={() => navigate('/personal-operating-plan')}
+            onClick={() => {
+              const isMobile = window.innerWidth <= 768;
+              if (isMobile) {
+                setMissionExpanded(!missionExpanded);
+              } else {
+                navigate('/personal-operating-plan');
+              }
+            }}
             className="mission-container"
             style={{
               background: 'transparent',
@@ -231,6 +366,9 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               padding: 0,
             }}
           >
+            <div className="mission-label-mobile">
+              Your Mission
+            </div>
             <div style={{
               background: 'white',
               paddingTop: 'clamp(16px, 2.5vw, 20px)',
@@ -262,6 +400,13 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               </div>
             </div>
           </button>
+          {missionExpanded && (
+            <div className="mission-expansion-container">
+              <div className="mission-text-expanded">
+                {contextMission}
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -822,48 +967,37 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
         </div>
       )}
 
-      <div
+      {/* Desktop Logo Link only - hidden on mobile */}
+      <a
+        href="https://theclarityproject.co.uk/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="logo-desktop"
         onClick={() => setMenuOpen(false)}
         style={{
-          color: '#999',
-          fontSize: '13px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          cursor: 'pointer',
           position: 'absolute',
-          right: '16px',
-          minWidth: 0,
+          right: 'clamp(12px, 2vw, 16px)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          flexShrink: 0,
+          cursor: 'pointer',
+          transition: 'opacity 0.2s',
+          height: 'clamp(45px, 7vw, 60px)',
         }}
+        onMouseEnter={(e) => e.target.style.opacity = '1'}
+        onMouseLeave={(e) => e.target.style.opacity = '0.85'}
       >
-        <a
-          href="https://theclarityproject.co.uk/"
-          target="_blank"
-          rel="noopener noreferrer"
+        <img
+          src="/clarity-logo.png"
+          alt="The Clarity Project"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            flexShrink: 0,
-            cursor: 'pointer',
-            transition: 'opacity 0.2s',
-            height: 'clamp(45px, 7vw, 60px)',
+            height: '100%',
+            width: 'auto',
+            opacity: 0.9,
           }}
-          onMouseEnter={(e) => e.target.style.opacity = '1'}
-          onMouseLeave={(e) => e.target.style.opacity = '0.85'}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <img
-            src="/clarity-logo.png"
-            alt="The Clarity Project"
-            style={{
-              height: '100%',
-              width: 'auto',
-              display: 'block',
-              opacity: 0.9,
-            }}
-          />
-        </a>
-      </div>
+        />
+      </a>
+
     </div>
     </div>
   );

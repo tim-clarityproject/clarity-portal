@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { diag } from '../utils/diag';
+import BottomTabBar from './BottomTabBar';
 
 /**
  * Master auth guard - wraps ALL protected routes via React Router layout pattern.
@@ -68,5 +69,10 @@ export default function ProtectedLayout() {
   }
 
   // User authenticated - render the matched child route via Outlet
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <BottomTabBar />
+    </>
+  );
 }

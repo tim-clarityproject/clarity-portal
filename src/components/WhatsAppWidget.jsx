@@ -44,8 +44,13 @@ export default function WhatsAppWidget() {
           position: fixed;
           bottom: 32px;
           right: 24px;
-          z-index: 50;
+          z-index: 999;
           height: 40px;
+        }
+        @media (max-width: 768px) {
+          .whatsapp-widget {
+            display: none !important;
+          }
         }
         .whatsapp-button {
           height: 40px;

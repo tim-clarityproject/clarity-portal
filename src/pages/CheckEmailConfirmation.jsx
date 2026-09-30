@@ -44,7 +44,7 @@ export default function CheckEmailConfirmation() {
               e.target.style.backgroundColor = 'transparent';
             }}
           >
-            Sign Up with a Different Email
+            Sign up with a different email
           </button>
         </div>
       </div>
