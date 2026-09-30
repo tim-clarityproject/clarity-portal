@@ -99,7 +99,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{ height: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'row' }} className="mobile-responsive-row">
+    <div style={{ minHeight: 'min(100dvh, 100svh)', height: '100dvh', backgroundColor: 'white', display: 'flex', flexDirection: 'row' }} className="mobile-responsive-row">
       <style>{checkboxStyles}</style>
       {/* Left Column - Welcome */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px', backgroundColor: '#fafafa', borderRight: '1px solid #e5e5e5' }} className="mobile-responsive-column">
@@ -234,12 +234,13 @@ export default function Login() {
                       padding: '12px 16px',
                       border: '2px solid #e5e5e5',
                       borderRadius: '8px',
-                      fontSize: '14px',
+                      fontSize: '16px',
                       boxSizing: 'border-box',
                       outline: 'none',
                     }}
                     onFocus={(e) => e.target.style.borderColor = '#F08571'}
                     onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                    onPointerUp={(e) => e.currentTarget.focus()}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
@@ -256,12 +257,13 @@ export default function Login() {
                       padding: '12px 16px',
                       border: '2px solid #e5e5e5',
                       borderRadius: '8px',
-                      fontSize: '14px',
+                      fontSize: '16px',
                       boxSizing: 'border-box',
                       outline: 'none',
                     }}
                     onFocus={(e) => e.target.style.borderColor = '#F08571'}
                     onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                    onPointerUp={(e) => e.currentTarget.focus()}
                   />
                 </div>
               </div>
@@ -281,12 +283,13 @@ export default function Login() {
                   padding: '12px 16px',
                   border: '2px solid #e5e5e5',
                   borderRadius: '8px',
-                  fontSize: '14px',
+                  fontSize: '16px',
                   boxSizing: 'border-box',
                   outline: 'none',
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#F08571'}
                 onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                onPointerUp={(e) => e.currentTarget.focus()}
               />
             </div>
 
@@ -304,12 +307,13 @@ export default function Login() {
                   padding: '12px 16px',
                   border: '2px solid #e5e5e5',
                   borderRadius: '8px',
-                  fontSize: '14px',
+                  fontSize: '16px',
                   boxSizing: 'border-box',
                   outline: 'none',
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#F08571'}
                 onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                onPointerUp={(e) => e.currentTarget.focus()}
               />
             </div>
 
@@ -328,12 +332,13 @@ export default function Login() {
                     padding: '12px 16px',
                     border: '2px solid #e5e5e5',
                     borderRadius: '8px',
-                    fontSize: '14px',
+                    fontSize: '16px',
                     boxSizing: 'border-box',
                     outline: 'none',
                   }}
                   onFocus={(e) => e.target.style.borderColor = '#F08571'}
                   onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                  onPointerUp={(e) => e.currentTarget.focus()}
                 />
               </div>
             )}
