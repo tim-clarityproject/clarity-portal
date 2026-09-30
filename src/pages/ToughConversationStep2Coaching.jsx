@@ -70,7 +70,7 @@ export default function ToughConversationStep2Coaching() {
       };
       loadTitle();
     }
-  }, [isFreshStart, location.state?.decisionId, user]);
+  }, [isFreshStart, location.state?.decisionId, user?.id]);
 
   const cleanPhrase = (text, phrasesToRemove, lowercaseFirst = false) => {
     let cleaned = text.trim();
@@ -134,7 +134,7 @@ export default function ToughConversationStep2Coaching() {
     } else {
       handleCompleteConfirmed(currentTitle);
     }
-  }, [user, needsNaming, currentTitle]);
+  }, [user?.id, needsNaming, currentTitle]);
 
   const handleSaveAsDraftClick = useCallback(() => {
     if (!user) {
@@ -146,7 +146,7 @@ export default function ToughConversationStep2Coaching() {
     } else {
       handleSaveAsDraftConfirmed(currentTitle);
     }
-  }, [user, needsNaming, currentTitle]);
+  }, [user?.id, needsNaming, currentTitle]);
 
   const handleCompleteConfirmed = useCallback(async (decisionName) => {
     setShowNamingModal(false);
@@ -197,7 +197,7 @@ export default function ToughConversationStep2Coaching() {
       console.error('Error saving:', error);
       alert(`Failed to save: ${error.message || error}`);
     }
-  }, [user, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate]);
+  }, [user?.id, observation, impact, need, selectedQuestions, customQuestion, decisionId, navigate]);
 
   const handleSaveAsDraftConfirmed = useCallback(async (decisionName) => {
     setShowNamingModal(false);
@@ -239,7 +239,7 @@ export default function ToughConversationStep2Coaching() {
       console.error('Error saving draft:', error);
       alert(`Failed to save draft: ${error.message || error}`);
     }
-  }, [user, observation, impact, need, selectedQuestions, customQuestion, decisionId]);
+  }, [user?.id, observation, impact, need, selectedQuestions, customQuestion, decisionId]);
 
   const handleBack = useCallback(() => {
     navigate('/tough-conversation-step-1', {

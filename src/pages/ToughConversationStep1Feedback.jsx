@@ -104,7 +104,7 @@ export default function ToughConversationStep1Feedback() {
       console.error('Error saving draft:', error);
       alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
     }
-  }, [user, observation, impact, need, decisionId, navigate]);
+  }, [user?.id, observation, impact, need, decisionId, navigate]);
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>

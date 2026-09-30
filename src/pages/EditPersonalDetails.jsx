@@ -44,7 +44,7 @@ export default function EditPersonalDetails() {
     };
 
     fetchProfile();
-  }, [user]);
+  }, [user?.id]);
 
   const handleSaveProfile = async () => {
     if (!user) return;

@@ -91,7 +91,7 @@ export default function MyJournal() {
     if (user && isEditMode) {
       loadEntry(selectedDate);
     }
-  }, [selectedDate, user, isEditMode, reviewType]);
+  }, [selectedDate, user?.id, isEditMode, reviewType]);
 
   const loadEntry = async (date) => {
     if (!user) return;

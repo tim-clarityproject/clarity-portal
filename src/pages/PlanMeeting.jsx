@@ -84,7 +84,7 @@ export default function PlanMeeting() {
     if (decisionId && user) {
       loadMeeting();
     }
-  }, [decisionId, user]);
+  }, [decisionId, user?.id]);
 
   const loadMeeting = async () => {
     if (!user) return;

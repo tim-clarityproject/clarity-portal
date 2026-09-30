@@ -20,7 +20,7 @@ export default function InversionStep1Goal() {
     if (decisionId && user) {
       loadDecision();
     }
-  }, [decisionId, user]);
+  }, [decisionId, user?.id]);
 
   const loadDecision = async () => {
     if (!user) return;

@@ -60,7 +60,7 @@ export default function GrowStep4WillDo() {
       };
       loadTitle();
     }
-  }, [isEditMode, location.state?.decisionId, user]);
+  }, [isEditMode, location.state?.decisionId, user?.id]);
 
   const handleEditStart = (index, value) => {
     setEditingIndex(index);
