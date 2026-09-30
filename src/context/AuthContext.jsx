@@ -150,8 +150,9 @@ export function AuthProvider({ children }) {
           }
         }
       } else {
-        // No valid session - clear all cached user data
+        // No valid session - clear all cached user data and drafts
         localStorage.removeItem('clarity-user-data');
+        clearUserDrafts();
         setUser(null);
       }
     });
@@ -270,9 +271,32 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Helper: Clear draft autosave data on logout
+  const clearUserDrafts = () => {
+    try {
+      // Remove draft keys from sessionStorage
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith('clarity-') && key.includes('-draft-')) {
+          sessionStorage.removeItem(key);
+        }
+      }
+      // Remove draft keys from localStorage
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('clarity-') && key.includes('-draft-')) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (e) {
+      console.error('Error clearing drafts on logout:', e);
+    }
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
+      clearUserDrafts();
       await auth.signOut();
       sessionManager.clearSession();
       setUser(null);
