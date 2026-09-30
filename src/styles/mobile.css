@@ -1,5 +1,13 @@
 /* Mobile Responsive Styles - Only affects screens <= 768px width */
 
+@media (max-width: 768px) {
+  /* Fix full-height containers: use 100dvh (dynamic viewport) instead of 100vh on mobile */
+  div[style*="minHeight: '100vh'"],
+  [style*="min-height: 100vh"] {
+    min-height: 100dvh !important;
+  }
+}
+
 /* ====== Layout Classes ====== */
 
 /* Flex row layout - stack on mobile */

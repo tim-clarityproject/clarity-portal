@@ -20,6 +20,22 @@ const checkboxStyles = `
   }
 `;
 
+const loginColumnStyles = `
+  .login-column {
+    padding: 80px 32px;
+  }
+  @media (max-width: 768px) {
+    .login-column {
+      padding: 32px 16px;
+    }
+    .login-modal-content {
+      width: calc(100% - 32px);
+      margin-left: 16px;
+      margin-right: 16px;
+    }
+  }
+`;
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -95,10 +111,10 @@ export default function Login() {
 
   return (
     <div style={{ minHeight: '100dvh', backgroundColor: 'white', display: 'flex', flexDirection: 'row' }} className="mobile-responsive-row">
-      <style>{checkboxStyles}</style>
+      <style>{checkboxStyles + loginColumnStyles}</style>
 
       {/* Left Column - Welcome */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px', backgroundColor: '#fafafa', borderRight: '1px solid #e5e5e5' }} className="mobile-responsive-column">
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fafafa', borderRight: '1px solid #e5e5e5' }} className="login-column login-left-column mobile-responsive-column">
         <div style={{ width: '100%', maxWidth: '400px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '48px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>
             Welcome to The Clarity Portal
@@ -135,7 +151,7 @@ export default function Login() {
       </div>
 
       {/* Right Column - Login Form */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }} className="mobile-responsive-column">
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="login-column login-right-column mobile-responsive-column">
         <div style={{ width: '100%', maxWidth: '400px' }}>
           {/* Header */}
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
@@ -474,7 +490,7 @@ export default function Login() {
           padding: '20px',
           zIndex: 1000,
         }} onClick={() => setShowTermsModal(false)}>
-          <div style={{
+          <div className="login-modal-content" style={{
             backgroundColor: 'white',
             borderRadius: '12px',
             padding: '32px',
@@ -518,7 +534,7 @@ export default function Login() {
           padding: '20px',
           zIndex: 1000,
         }} onClick={() => setShowPrivacyModal(false)}>
-          <div style={{
+          <div className="login-modal-content" style={{
             backgroundColor: 'white',
             borderRadius: '12px',
             padding: '32px',
@@ -559,7 +575,7 @@ export default function Login() {
           padding: '20px',
           zIndex: 1000,
         }} onClick={() => setShowDataStorageModal(false)}>
-          <div style={{
+          <div className="login-modal-content" style={{
             backgroundColor: 'white',
             borderRadius: '12px',
             padding: '32px',
