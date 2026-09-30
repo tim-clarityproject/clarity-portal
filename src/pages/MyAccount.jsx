@@ -571,52 +571,37 @@ export default function MyAccount() {
             )}
           </div>
 
-          {/* Danger Zone */}
+          {/* Delete Account - moved to bottom, quiet style */}
           <div style={{
-            paddingTop: '24px',
-            borderTop: '2px solid #fee5de',
+            paddingTop: '48px',
+            borderTop: '1px solid #f0f0f0',
+            marginTop: '48px',
           }}>
-            <h2 style={{ ...designTokens.typography.h2, color: '#c0574c', margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-              Danger Zone
-            </h2>
-
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 0',
-            }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#c0574c', margin: 0, marginBottom: '4px' }}>
-                  Delete Account
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
-                  Permanently delete your account and all data
-                </p>
-              </div>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={isDeleting}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: 'transparent',
-                  border: '2px solid #c0574c',
-                  borderRadius: '6px',
-                  color: '#c0574c',
-                  fontWeight: '600',
-                  cursor: isDeleting ? 'not-allowed' : 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.2s',
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                  opacity: isDeleting ? 0.5 : 1,
-                }}
-                onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = 'rgba(192, 87, 76, 0.1)')}
-                onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '12px 0',
+                color: '#999',
+                fontSize: '13px',
+                fontWeight: '400',
+                cursor: isDeleting ? 'not-allowed' : 'pointer',
+                transition: 'color 0.2s',
+                textAlign: 'left',
+                opacity: isDeleting ? 0.5 : 1,
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.color = '#c0574c')}
+              onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.color = '#999')}
+              onFocus={(e) => e.currentTarget.style.outline = '2px solid #F08571'}
+              onBlur={(e) => e.currentTarget.style.outline = 'none'}
+            >
+              {isDeleting ? 'Deleting account...' : 'Delete my account'}
+            </button>
           </div>
         </div>
 
