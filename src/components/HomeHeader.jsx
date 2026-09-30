@@ -202,7 +202,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             font-size: 13px;
             font-weight: 600;
             color: #333;
-            padding: 12px 20px 18px 20px;
+            padding: 12px 20px 8px 20px;
             background: white;
             border: 2px solid #F08571;
             border-radius: 12px;
@@ -230,7 +230,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             left: 0;
             right: 0;
             width: 100%;
-            padding: 16px;
+            padding: 8px 16px 16px 16px;
             background: white;
             border: 2px solid #F08571;
             border-top: none;
@@ -239,6 +239,22 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             box-sizing: border-box;
             max-height: calc(100vh - var(--header-height, 56px) - 80px);
             overflow-y: auto;
+          }
+          @media (max-width: 768px) {
+            .mission-label-mobile.mission-expanded {
+              border-bottom: none;
+              border-radius: 12px 12px 0 0;
+            }
+            .mission-expansion-container {
+              margin: 0 8px;
+              width: calc(100% - 16px);
+              left: auto;
+              right: auto;
+              border: 2px solid #F08571;
+              border-top: 2px solid #F08571;
+              border-radius: 0 0 12px 12px;
+              padding-top: 8px;
+            }
           }
           .mission-text-expanded {
             font-size: 14px;
@@ -379,7 +395,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
               padding: 0,
             }}
           >
-            <div className="mission-label-mobile">
+            <div className={`mission-label-mobile${missionExpanded ? ' mission-expanded' : ''}`}>
               Your Mission
             </div>
             <div style={{
