@@ -13,6 +13,20 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Clarity" />
     <title>The Clarity Portal</title>
+    <script>
+      // Restore saved header height from localStorage before app renders
+      // This prevents layout shift by setting --header-height immediately
+      (function() {
+        try {
+          const savedHeight = localStorage.getItem('clarity-header-height');
+          if (savedHeight) {
+            document.documentElement.style.setProperty('--header-height', savedHeight);
+          }
+        } catch (e) {
+          // localStorage blocked, use CSS fallback (56px)
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

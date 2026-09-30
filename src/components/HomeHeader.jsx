@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useRef, useEffect, useContext } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useContext } from 'react';
 import { ChevronDown, User } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
@@ -30,11 +30,24 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
   }, []);
 
   // Measure actual header height and update CSS variable for dynamic spacing
-  useEffect(() => {
+  // Uses useLayoutEffect to measure BEFORE paint, preventing layout shift
+  useLayoutEffect(() => {
     const updateHeaderHeight = () => {
       if (headerRef.current) {
         const height = headerRef.current.offsetHeight;
-        document.documentElement.style.setProperty('--header-height', `${height}px`);
+        const newValue = `${height}px`;
+        const currentValue = document.documentElement.style.getPropertyValue('--header-height').trim();
+
+        // Only update if value changed by more than 1px to avoid unnecessary shifts
+        if (!currentValue || Math.abs(parseFloat(newValue) - parseFloat(currentValue)) > 1) {
+          document.documentElement.style.setProperty('--header-height', newValue);
+          // Save to localStorage for fast restore on next visit
+          try {
+            localStorage.setItem('clarity-header-height', newValue);
+          } catch (e) {
+            // localStorage blocked, ignore silently
+          }
+        }
       }
     };
 
@@ -213,7 +226,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
           .mission-expansion-container {
             display: block;
             position: fixed;
-            top: calc(var(--header-height, 80px));
+            top: calc(var(--header-height, 56px));
             left: 0;
             right: 0;
             width: 100%;
@@ -224,7 +237,7 @@ export default function HomeHeader({ delayMission = false, className = '' }) {
             border-radius: 0 0 16px 16px;
             z-index: 1000;
             box-sizing: border-box;
-            max-height: calc(100vh - var(--header-height, 80px) - 80px);
+            max-height: calc(100vh - var(--header-height, 56px) - 80px);
             overflow-y: auto;
           }
           .mission-text-expanded {

@@ -6,7 +6,7 @@
   div[style*="paddingTop: 'var(--header-height)'"],
   div[style*='paddingTop: "var(--header-height)"'],
   div[style*="paddingTop: var(--header-height)"] {
-    padding-top: calc(var(--header-height, 80px) + 16px) !important;
+    padding-top: calc(var(--header-height, 56px) + 16px) !important;
   }
 
   /* Fix full-height containers: use 100dvh (dynamic viewport) instead of 100vh on mobile */
@@ -56,21 +56,21 @@
   h1 {
     font-size: 28px !important;
     margin: 16px 0 !important;
-    scroll-margin-top: calc(var(--header-height, 80px) + 16px);
+    scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }
 
   /* Reduce h2 font size on mobile */
   h2 {
     font-size: 18px !important;
     margin: 12px 0 8px !important;
-    scroll-margin-top: calc(var(--header-height, 80px) + 16px);
+    scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }
 
   /* Reduce h3 font size on mobile */
   h3 {
     font-size: 16px !important;
     margin: 8px 0 4px !important;
-    scroll-margin-top: calc(var(--header-height, 80px) + 16px);
+    scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }
 
   /* Adjust paragraph line height */
