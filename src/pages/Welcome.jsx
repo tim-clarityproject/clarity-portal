@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
@@ -43,6 +43,8 @@ export default function Welcome() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
   const [showGreetingText, setShowGreetingText] = useState(false);
+  const [dropdownOpenUpward, setDropdownOpenUpward] = useState(false);
+  const dropdownButtonRef = useRef(null);
 
   // Show breathing guide greeting on Welcome page load (with 2-hour timer)
   useEffect(() => {
@@ -181,6 +183,40 @@ export default function Welcome() {
     return () => clearInterval(typeInterval);
   }, [firstName]);
 
+  // Handle dropdown positioning and closing on scroll
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const checkDropdownPosition = () => {
+      if (!dropdownButtonRef.current) return;
+
+      const button = dropdownButtonRef.current;
+      const rect = button.getBoundingClientRect();
+      const dropdownHeight = 240; // 5 rows x 48px
+      const tabBarHeight = 60;
+      const viewportHeight = window.innerHeight;
+
+      // Check if dropdown would go below tab bar on mobile
+      if (window.innerWidth <= 768) {
+        const spaceBelow = viewportHeight - rect.bottom - tabBarHeight;
+        if (spaceBelow < dropdownHeight) {
+          setDropdownOpenUpward(true);
+        } else {
+          setDropdownOpenUpward(false);
+        }
+      }
+    };
+
+    const handleScroll = () => {
+      setIsOpen(false);
+      setDropdownOpenUpward(false);
+    };
+
+    checkDropdownPosition();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isOpen]);
+
   const displayName = firstName || null;
   const problems = ALL_PROBLEMS;
 
@@ -231,6 +267,34 @@ export default function Welcome() {
 
   return (
     <div style={{ width: '100%', minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .welcome-dropdown-list {
+            max-height: calc(5 * 48px) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+          }
+          .welcome-dropdown-button {
+            min-height: 44px !important;
+            font-size: 16px !important;
+          }
+          .welcome-dropdown-option {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+            font-size: 16px !important;
+          }
+        }
+      `}</style>
+      {isOpen && (
+        <style>{`
+          @media (max-width: 768px) {
+            body {
+              overflow: hidden;
+            }
+          }
+        `}</style>
+      )}
       <HomeHeader delayMission={true} />
       <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
@@ -260,6 +324,8 @@ export default function Welcome() {
             }}
           >
                 <button
+                  ref={dropdownButtonRef}
+                  className="welcome-dropdown-button"
                   onClick={() => setIsOpen(!isOpen)}
                   style={{
                     width: '100%',
@@ -290,7 +356,21 @@ export default function Welcome() {
 
                 {isOpen && (
                   <div
-                    style={{
+                    className="welcome-dropdown-list"
+                    style={dropdownOpenUpward ? {
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      right: 0,
+                      backgroundColor: designTokens.colors.background.default,
+                      border: `2px solid ${designTokens.colors.primary}`,
+                      borderRadius: designTokens.borderRadius.lg,
+                      marginBottom: designTokens.spacing.sm,
+                      maxHeight: '400px',
+                      overflowY: 'auto',
+                      zIndex: 1000,
+                      boxShadow: designTokens.shadow.md,
+                    } : {
                       position: 'absolute',
                       top: '100%',
                       left: 0,
@@ -318,6 +398,7 @@ export default function Welcome() {
                             </>
                           )}
                           <button
+                            className="welcome-dropdown-option"
                             onClick={() => {
                               setIsOpen(false);
                               handleProblemSelect(problem);
