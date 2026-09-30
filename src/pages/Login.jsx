@@ -93,10 +93,6 @@ export default function Login() {
     }
   };
 
-  const handleOpenInBrowser = () => {
-    window.location.href = window.location.href;
-  };
-
   return (
     <div style={{ minHeight: '100dvh', backgroundColor: 'white', display: 'flex', flexDirection: 'row' }} className="mobile-responsive-row">
       <style>{checkboxStyles}</style>
@@ -141,38 +137,6 @@ export default function Login() {
       {/* Right Column - Login Form */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 32px' }} className="mobile-responsive-column">
         <div style={{ width: '100%', maxWidth: '400px' }}>
-          {/* Standalone fallback banner */}
-          {isStandalone() && (
-            <div style={{
-              marginBottom: '24px',
-              padding: '12px 16px',
-              backgroundColor: '#fff3cd',
-              borderRadius: '8px',
-              border: '1px solid #ffc107'
-            }}>
-              <p style={{ color: '#856404', fontSize: '13px', margin: 0, fontWeight: '500', marginBottom: '8px' }}>
-                Having keyboard issues?
-              </p>
-              <button
-                type="button"
-                onClick={handleOpenInBrowser}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#ffc107',
-                  border: 'none',
-                  borderRadius: '4px',
-                  color: '#333',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  width: '100%',
-                }}
-              >
-                Open in Safari to log in
-              </button>
-            </div>
-          )}
-
           {/* Header */}
           <div style={{ marginBottom: '32px', textAlign: 'center' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
