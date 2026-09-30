@@ -1,4 +1,14 @@
-:root {
+/* Respect prefers-reduced-motion - global fallback */
+@media (prefers-reduced-motion: reduce) {
+  .ui-root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+    --dur-slow: 0ms;
+  }
+}
+
+/* Scoped design system root - opt-in only, does not affect existing pages */
+.ui-root {
   /* Colours - Dark mode (default) */
   --bg: #000000;
   --surface: #0B0B0B;
@@ -70,26 +80,15 @@
   --dur-fast: 150ms;
   --dur: 250ms;
   --dur-slow: 400ms;
+
+  background: var(--bg);
+  color: var(--text);
+  color-scheme: dark;
+  font-family: var(--font-body);
 }
 
-/* Light theme */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #F7F4EE;
-    --surface: #FFFFFF;
-    --line: #E3DDD2;
-    --btn-line: #CFC8BA;
-    --text: #0B0B0B;
-    --text-2: #5F5F5C;
-    --placeholder: #8F8B84;
-    --coral-text: #C2412E;
-    --mint-text: #0B7F58;
-    --scrim: rgba(24, 20, 14, 0.3);
-  }
-}
-
-/* Light theme with explicit data-theme attribute */
-[data-theme="light"] {
+/* Light theme - inside .ui-root scope only */
+.ui-root[data-theme="light"] {
   --bg: #F7F4EE;
   --surface: #FFFFFF;
   --line: #E3DDD2;
@@ -100,25 +99,5 @@
   --coral-text: #C2412E;
   --mint-text: #0B7F58;
   --scrim: rgba(24, 20, 14, 0.3);
-}
-
-/* Respect prefers-reduced-motion */
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --dur-fast: 0ms;
-    --dur: 0ms;
-    --dur-slow: 0ms;
-  }
-}
-
-/* Scoped design system root - opt-in only, does not affect existing pages */
-.ui-root {
-  background: var(--bg);
-  color: var(--text);
-  color-scheme: dark;
-  font-family: var(--font-body);
-}
-
-.ui-root[data-theme="light"] {
   color-scheme: light;
 }
