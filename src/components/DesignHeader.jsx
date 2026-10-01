@@ -138,11 +138,12 @@ export default function DesignHeader({ className = '' }) {
           .mis-trigger {
             display: flex;
             width: 100%;
-            height: 36px;
+            height: 34px;
             align-items: center;
             justify-content: center;
             margin: 0;
-            padding: 0;
+            padding: 0 0 0 0.16em;
+            line-height: 1;
             border: none;
             background: transparent;
             cursor: pointer;
@@ -150,6 +151,18 @@ export default function DesignHeader({ className = '' }) {
             -webkit-appearance: none;
             font: inherit;
             color: inherit;
+          }
+          /* A global rule in src/styles/mobile.css, button:not(.breathe-button),
+             targets every <button> with !important padding/min-height/font-size
+             (specificity 0,1,1). It overrode the padding/height above, which
+             pushed the YOUR MISSION label visibly below centre. This selector
+             (two classes, specificity 0,2,0) beats it without touching the
+             global file. */
+          .design-mis .mis-trigger {
+            height: 34px !important;
+            min-height: 0 !important;
+            padding: 0 0 0 0.16em !important;
+            font-size: 11px !important;
           }
           .mis-trigger:focus-visible {
             outline: 2px solid var(--text);
@@ -161,9 +174,8 @@ export default function DesignHeader({ className = '' }) {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.16em;
-            line-height: 15px;
+            line-height: 1;
             color: var(--text);
-            padding-left: 0.16em;
           }
           .mis-panel-outer {
             display: grid;
