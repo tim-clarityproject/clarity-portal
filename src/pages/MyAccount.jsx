@@ -45,6 +45,11 @@ export default function MyAccount() {
     }
   }, [location.state?.openEditMission]);
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
   const handleDeleteAccount = async () => {
     if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
       return;
@@ -578,6 +583,57 @@ export default function MyAccount() {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Portal - About and Log Out, now that the desktop drawer no
+              longer has a phone equivalent to reach them from */}
+          <div style={{
+            paddingTop: '24px',
+            borderTop: '1px solid #e5e5e5',
+          }}>
+            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Portal
+            </h2>
+            <button
+              onClick={() => navigate('/about')}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                borderBottom: '1px solid #f0f0f0',
+                padding: '12px 0',
+                fontSize: '14px',
+                color: '#333',
+                cursor: 'pointer',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#F08571'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#333'}
+            >
+              About
+            </button>
+            <button
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                padding: '12px 0',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#F08571',
+                cursor: 'pointer',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              Log Out
+            </button>
           </div>
 
           {/* Delete Account - moved to bottom, quiet style */}
