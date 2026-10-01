@@ -124,7 +124,7 @@ export default function DesignHeader({ className = '' }) {
           }
           .design-header-desktop {
             display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             height: 79px;
             padding: 0 32px;
             align-items: center;
@@ -147,15 +147,17 @@ export default function DesignHeader({ className = '' }) {
           }
           .design-header-desktop .mission-pill-desktop {
             justify-self: center;
-            width: fit-content;
-            min-width: 380px;
-            max-width: calc(100% - 160px);
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            min-height: 50px;
+            padding: 0 30px;
+            width: max-content;
+            min-width: 300px;
+            max-width: calc(100vw - 200px);
             border: 1px solid var(--coral);
             border-radius: 999px;
             background: transparent;
-            padding: 0 24px;
-            display: flex;
-            align-items: center;
             cursor: pointer;
             transition: border-color var(--dur-fast) var(--ease);
           }
@@ -169,30 +171,25 @@ export default function DesignHeader({ className = '' }) {
           .design-header-desktop .mission-pill-text {
             font-family: var(--font-display);
             font-weight: 400;
-            font-size: var(--fs-label);
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.16em;
-            line-height: 1.3;
-            color: var(--text);
+            letter-spacing: 0.2em;
+            color: var(--coral);
             white-space: nowrap;
-            flex-shrink: 0;
-          }
-          .design-header-desktop .mission-divider {
-            width: 1px;
-            height: 16px;
-            background: var(--line);
-            margin: 0 16px;
+            padding-right: 20px;
+            border-right: 1px solid var(--line);
+            line-height: 50px;
             flex-shrink: 0;
           }
           .design-header-desktop .mission-statement {
             font-family: var(--font-body);
             font-size: 15px;
             color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            letter-spacing: 0;
+            text-transform: none;
+            line-height: 1.3;
+            white-space: normal;
             flex: 1;
-            min-width: 0;
             text-align: center;
           }
           .design-header-desktop .logo-mark-desktop {
@@ -274,7 +271,6 @@ export default function DesignHeader({ className = '' }) {
               onClick={handleDesktopPillClick}
             >
               <div className="mission-pill-text">YOUR MISSION</div>
-              <div className="mission-divider" />
               <div className="mission-statement">{mission}</div>
             </button>
           )}
