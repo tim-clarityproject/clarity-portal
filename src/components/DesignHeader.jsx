@@ -190,22 +190,38 @@ export default function DesignHeader({ className = '' }) {
             text-align: center;
             padding: 18px 4px 6px;
           }
-          .mis-edit-button {
+          /* A global rule in src/styles/mobile.css, button:not(.breathe-button),
+             targets every <button> with !important font-size/padding/min-height
+             (specificity 0,1,1). The plain .mis-edit-button class alone (0,1,0,
+             no !important) lost to it outright, so this link rendered at the
+             legacy 14px/12px-16px instead of the small, quiet 10px intended -
+             it was competing with the mission statement instead of sitting
+             under it. Scoped under .ui-root (0,2,0) with matching !important
+             to reliably beat the legacy rule. The 44px tap target is built
+             from invisible padding alone (text itself stays 10px); the 20px
+             gaps above/below are a true margin outside that padding, so they
+             measure as 20px regardless of the tap-area padding inside. */
+          .ui-root .mis-edit-button {
             display: block;
             width: 100%;
-            margin: 0;
+            margin: 20px 0 !important;
             border: none;
             background: transparent;
-            padding: 8px 0 16px;
-            padding-left: 0.2em;
+            padding: 17px 0 !important;
             font-family: var(--font-display);
             font-weight: 400;
-            font-size: 10px;
+            font-size: 10px !important;
+            line-height: 1;
             text-transform: uppercase;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.16em;
+            text-decoration: none;
             color: var(--coral);
             text-align: center;
             cursor: pointer;
+          }
+          .ui-root .mis-edit-button:hover,
+          .ui-root .mis-edit-button:active {
+            color: var(--coral-soft);
           }
           .design-header-line {
             margin: 18px 20px 0;
