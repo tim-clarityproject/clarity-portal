@@ -55,6 +55,13 @@ export default function DesignHeader({ className = '' }) {
     });
   };
 
+  // Desktop pill click: go to Mission section, do NOT open Edit Mission pop-up
+  const handleDesktopPillClick = () => {
+    navigate('/my-account', {
+      state: { ...location.state, scrollTo: 'mission-section' }
+    });
+  };
+
   const shouldShowPill = mission && showInHeader;
 
   return (
@@ -141,7 +148,6 @@ export default function DesignHeader({ className = '' }) {
           }
           .design-header-desktop .mission-pill-desktop {
             flex: 1;
-            max-width: 760px;
             min-width: 0;
             border: 1px solid var(--coral);
             border-radius: 999px;
@@ -150,6 +156,15 @@ export default function DesignHeader({ className = '' }) {
             display: flex;
             align-items: center;
             gap: 16px;
+            cursor: pointer;
+            transition: border-color var(--dur-fast) var(--ease);
+          }
+          .design-header-desktop .mission-pill-desktop:hover {
+            border-color: var(--coral-soft);
+          }
+          .design-header-desktop .mission-pill-desktop:focus-visible {
+            outline: 2px solid var(--coral);
+            outline-offset: 2px;
           }
           .design-header-desktop .mission-pill-text {
             font-family: var(--font-display);
@@ -177,9 +192,9 @@ export default function DesignHeader({ className = '' }) {
             flex: 1;
             min-width: 0;
           }
-          .design-header-desktop .logo-lockup {
-            height: 42px;
-            width: auto;
+          .design-header-desktop .logo-mark-desktop {
+            width: 34px;
+            height: 34px;
             flex-shrink: 0;
             margin-left: auto;
           }
@@ -250,17 +265,21 @@ export default function DesignHeader({ className = '' }) {
 
           {/* Mission pill */}
           {shouldShowPill && (
-            <div className="mission-pill-desktop">
+            <button
+              type="button"
+              className="mission-pill-desktop"
+              onClick={handleDesktopPillClick}
+            >
               <div className="mission-pill-text">YOUR MISSION</div>
               <div className="mission-divider" />
               <div className="mission-statement">{mission}</div>
-            </div>
+            </button>
           )}
 
-          {/* Logo lockup */}
+          {/* Logo mark */}
           <img
-            className="logo-lockup"
-            src="/brand/lockup-full_colour-on-dark.png"
+            className="logo-mark-desktop"
+            src="/brand/mark_colour-on-dark.png"
             alt="The Clarity Project"
           />
         </div>
