@@ -1,6 +1,33 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import PopupShell from './PopupShell';
+
+function Slider({ label, value, min, max, onChange }) {
+  const percent = ((value - min) / (max - min)) * 100;
+  return (
+    <div className="breathing-slider-block">
+      <div className="breathing-slider-head">
+        <span className="breathing-slider-label">{label}</span>
+        <span className="breathing-slider-value">{value} second{value !== 1 ? 's' : ''}</span>
+      </div>
+      <div className="breathing-slider-wrap">
+        <div className="breathing-slider-track" />
+        <div className="breathing-slider-fill" style={{ width: `${percent}%` }} />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => onChange(parseInt(e.target.value, 10))}
+          className="breathing-slider-input"
+          aria-label={label}
+        />
+      </div>
+      <div className="breathing-slider-range-note">{min} to {max} seconds</div>
+    </div>
+  );
+}
 
 export default function BreathingSettingsModal({ isOpen, onClose }) {
   const { user } = useContext(AuthContext);
@@ -14,7 +41,7 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
 
     const loadSettings = async () => {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('breathing_settings')
           .eq('id', user.id)
@@ -57,253 +84,175 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          padding: '32px',
-          maxWidth: '400px',
-          width: '90%',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        }}
-      >
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'black', marginBottom: '24px', margin: 0 }}>
-          Breathing Settings
-        </h2>
+    <PopupShell isOpen={isOpen} onClose={onClose} titleId="breathing-settings-title">
+      <style>{`
+        .breathing-slider-block {
+          margin-bottom: 24px;
+        }
 
-        <p style={{ fontSize: '13px', color: '#666', marginBottom: '24px' }}>
-          Customize your breathing cycle. Always: Inhale → Hold (optional) → Exhale → Repeat
-        </p>
+        .breathing-slider-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
 
-        {/* Inhale */}
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-            Inhale Duration: {inhale} second{inhale !== 1 ? 's' : ''}
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={inhale}
-            onChange={(e) => setInhale(parseInt(e.target.value))}
-            style={{
-              width: '100%',
-              height: '6px',
-              borderRadius: '3px',
-              backgroundColor: '#e5e5e5',
-              outline: 'none',
-              cursor: 'pointer',
-              accentColor: '#F08571',
-              WebkitAppearance: 'slider-horizontal',
-              appearance: 'slider-horizontal',
-              boxSizing: 'border-box',
-              padding: 0,
-              border: 'none',
-            }}
-          />
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            1-10 seconds
-          </div>
-        </div>
+        .breathing-slider-label {
+          font-family: var(--font-body);
+          font-weight: 500;
+          font-size: 15px;
+          color: var(--text);
+        }
 
-        {/* Exhale */}
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-            Exhale Duration: {exhale} second{exhale !== 1 ? 's' : ''}
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={exhale}
-            onChange={(e) => setExhale(parseInt(e.target.value))}
-            style={{
-              width: '100%',
-              height: '6px',
-              borderRadius: '3px',
-              backgroundColor: '#e5e5e5',
-              outline: 'none',
-              cursor: 'pointer',
-              accentColor: '#F08571',
-              WebkitAppearance: 'slider-horizontal',
-              appearance: 'slider-horizontal',
-              boxSizing: 'border-box',
-              padding: 0,
-              border: 'none',
-            }}
-          />
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            1-10 seconds
-          </div>
-        </div>
+        .breathing-slider-value {
+          font-family: var(--font-body);
+          font-size: 15px;
+          color: var(--text-2);
+        }
 
-        {/* Hold */}
-        <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '12px' }}>
-            Hold Duration
-          </label>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-            <button
-              onClick={() => setHold(0)}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                backgroundColor: hold === 0 ? '#F08571' : 'transparent',
-                color: hold === 0 ? 'white' : '#333',
-                border: `2px solid ${hold === 0 ? '#F08571' : '#e5e5e5'}`,
-                borderRadius: '8px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (hold !== 0) {
-                  e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#f9f9f9';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (hold !== 0) {
-                  e.target.style.borderColor = '#e5e5e5';
-                  e.target.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              No Hold
-            </button>
-            <button
-              onClick={() => setHold(1)}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                backgroundColor: hold > 0 ? '#F08571' : 'transparent',
-                color: hold > 0 ? 'white' : '#333',
-                border: `2px solid ${hold > 0 ? '#F08571' : '#e5e5e5'}`,
-                borderRadius: '8px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (hold === 0) {
-                  e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#f9f9f9';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (hold === 0) {
-                  e.target.style.borderColor = '#e5e5e5';
-                  e.target.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              With Hold
-            </button>
-          </div>
-          {hold > 0 && (
-            <>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#333', marginBottom: '8px' }}>
-                {hold} second{hold !== 1 ? 's' : ''}
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="4"
-                value={hold}
-                onChange={(e) => setHold(parseInt(e.target.value))}
-                style={{
-                  width: '100%',
-                  height: '6px',
-                  borderRadius: '3px',
-                  backgroundColor: '#e5e5e5',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  accentColor: '#F08571',
-                  WebkitAppearance: 'slider-horizontal',
-                  appearance: 'slider-horizontal',
-                  boxSizing: 'border-box',
-                  padding: 0,
-                  border: 'none',
-                }}
-              />
-              <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-                1-4 seconds
-              </div>
-            </>
-          )}
-        </div>
+        .breathing-slider-wrap {
+          position: relative;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          margin-top: 6px;
+        }
 
-        {/* Buttons */}
-        <div style={{ display: 'flex', gap: '12px' }}>
+        .breathing-slider-track {
+          position: absolute;
+          left: 0;
+          right: 0;
+          height: 2px;
+          border-radius: 1px;
+          background: var(--line);
+          pointer-events: none;
+        }
+
+        .breathing-slider-fill {
+          position: absolute;
+          left: 0;
+          height: 2px;
+          border-radius: 1px;
+          background: var(--coral);
+          pointer-events: none;
+        }
+
+        /* src/styles/mobile.css has input, select { min-height: 44px;
+           padding: 12px 16px !important; } at max-width: 768px. Padding
+           on a range input would distort the track/thumb geometry
+           entirely, so this needs its own !important to zero it out;
+           .breathing-slider-input (0,1,0) already outranks the bare
+           "input" selector (0,0,1) on specificity, but not on
+           !important. */
+        .breathing-slider-input {
+          position: relative;
+          width: 100%;
+          height: 44px;
+          margin: 0;
+          padding: 0 !important;
+          background: transparent;
+          appearance: none;
+          -webkit-appearance: none;
+          cursor: pointer;
+          z-index: 1;
+        }
+
+        .breathing-slider-input::-webkit-slider-runnable-track {
+          background: transparent;
+          height: 2px;
+        }
+
+        .breathing-slider-input::-webkit-slider-thumb {
+          appearance: none;
+          -webkit-appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: var(--coral);
+          cursor: pointer;
+          margin-top: -8px;
+        }
+
+        .breathing-slider-input::-moz-range-track {
+          background: transparent;
+          height: 2px;
+          border: none;
+        }
+
+        .breathing-slider-input::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: var(--coral);
+          border: none;
+          cursor: pointer;
+        }
+
+        .breathing-slider-range-note {
+          font-family: var(--font-body);
+          font-size: 12px;
+          color: var(--placeholder);
+          margin-top: 4px;
+        }
+
+        .breathing-hold-label {
+          font-family: var(--font-body);
+          font-weight: 500;
+          font-size: 15px;
+          color: var(--text);
+          margin-bottom: 12px;
+        }
+      `}</style>
+
+      <h2 id="breathing-settings-title" className="popup-title">
+        Breathing Settings
+      </h2>
+      <p className="popup-desc">
+        Customise your breathing cycle. Always: inhale, hold (optional), exhale, repeat.
+      </p>
+
+      <Slider label="Inhale duration" value={inhale} min={1} max={10} onChange={setInhale} />
+      <Slider label="Exhale duration" value={exhale} min={1} max={10} onChange={setExhale} />
+
+      <div style={{ marginBottom: hold > 0 ? '24px' : 0 }}>
+        <div className="breathing-hold-label">Hold duration</div>
+        <div className="ui-segmented" role="group" aria-label="Hold duration">
           <button
-            onClick={handleSave}
-            disabled={isSaving}
-            style={{
-              flex: 1,
-              padding: '12px 24px',
-              backgroundColor: '#F08571',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: '600',
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-              opacity: isSaving ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => !isSaving && (e.target.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => !isSaving && (e.target.style.backgroundColor = '#F08571')}
+            type="button"
+            className={`ui-segmented-option${hold === 0 ? ' active' : ''}`}
+            onClick={() => setHold(0)}
+            aria-pressed={hold === 0}
           >
-            {isSaving ? 'Saving...' : 'Save'}
+            No hold
           </button>
           <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: '12px 24px',
-              backgroundColor: 'transparent',
-              color: '#333',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
+            type="button"
+            className={`ui-segmented-option${hold > 0 ? ' active' : ''}`}
+            onClick={() => setHold(1)}
+            aria-pressed={hold > 0}
           >
-            Cancel
+            With hold
           </button>
         </div>
       </div>
-    </div>
+
+      {hold > 0 && (
+        <Slider label="Hold duration" value={hold} min={1} max={4} onChange={setHold} />
+      )}
+
+      <div className="popup-actions">
+        <button type="button" className="ui-btn-ghost" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="ui-btn-primary"
+          onClick={handleSave}
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+    </PopupShell>
   );
 }
