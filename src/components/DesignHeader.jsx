@@ -142,6 +142,7 @@ export default function DesignHeader({ className = '' }) {
           .design-header-desktop .mission-pill-desktop {
             flex: 1;
             max-width: 760px;
+            min-width: 0;
             border: 1px solid var(--coral);
             border-radius: 999px;
             background: transparent;
@@ -177,9 +178,10 @@ export default function DesignHeader({ className = '' }) {
             min-width: 0;
           }
           .design-header-desktop .logo-lockup {
-            height: 44px;
+            height: 40px;
             width: auto;
             flex-shrink: 0;
+            margin-left: auto;
           }
           .design-header-line-desktop {
             height: 1px;
@@ -258,7 +260,7 @@ export default function DesignHeader({ className = '' }) {
           {/* Logo lockup */}
           <img
             className="logo-lockup"
-            src="/brand/lockup-full_colour-on-dark.png"
+            src="/brand/lockup-full_colour-on-dark_trim.png"
             alt="The Clarity Project"
           />
         </div>
