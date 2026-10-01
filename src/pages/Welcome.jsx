@@ -1,14 +1,14 @@
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useContext, useEffect, useState, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { designTokens } from '../lib/designTokens';
 import DesignHeader from '../components/DesignHeader';
-import BreathingGuide from '../components/BreathingGuide';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
+// Unchanged from the old dropdown - same ids, titles, tools, categories,
+// same order. Nothing added, nothing removed.
 const ALL_PROBLEMS = [
   // Plan
   { id: 'personal-plan', title: 'I want to shape my personal operating plan', tools: ['personal-operating-plan'], status: null, category: 'Plan' },
@@ -31,57 +31,49 @@ const ALL_PROBLEMS = [
   { id: 'progress', title: 'I want to review my personal operating plan', tools: ['progress'], status: null, category: 'Review' },
 ];
 
+// Unchanged from the old page - same tool -> route mapping
+const ROUTE_MAP = {
+  'grow': '/grow-step-1',
+  'inversion': '/inversion-step-1',
+  'strategic-alignment': '/goal-setting',
+  'tough-conversation': '/tough-conversation-step-1',
+  'plan-day': '/plan-my-day',
+  'plan-meeting': '/plan-meeting',
+  'personal-operating-plan': '/personal-operating-plan',
+  'if-then-planning': '/if-then-planning',
+  'breathe': '/breathe',
+  'time-allocation-audit': '/stop-doing-audit',
+  'after-action': '/my-journal',
+  'progress': '/personal-operating-plan-review',
+  'weekly-momentum': '/my-journal',
+};
+
+function getRouteAndState(problem, currentLocationState) {
+  const tool = problem.tools[0];
+  const route = ROUTE_MAP[tool];
+  const state = { ...currentLocationState, problemTitle: problem.title };
+  if (tool === 'after-action') state.reviewType = 'after-action';
+  if (tool === 'progress') state.reviewType = 'progress';
+  if (tool === 'weekly-momentum') state.reviewType = 'weekly-momentum';
+  return { route, state };
+}
+
+function getGreetingWord() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Morning';
+  if (hour < 17) return 'Afternoon';
+  return 'Evening';
+}
+
 export default function Welcome() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const { clearFormData } = useContext(FormContext);
   const [firstName, setFirstName] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [displayedGreeting, setDisplayedGreeting] = useState('');
-  const [displayedQuestion, setDisplayedQuestion] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showBreathingGuide, setShowBreathingGuide] = useState(false);
-  const [showGreetingText, setShowGreetingText] = useState(false);
-  const [dropdownMaxHeight, setDropdownMaxHeight] = useState(240); // Default: 5 rows x 48px
-  const dropdownButtonRef = useRef(null);
-  const isScrollingProgrammaticallyRef = useRef(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
-  // Show breathing guide greeting on Welcome page load (with 2-hour timer)
-  useEffect(() => {
-    if (!user) return;
-
-    const checkBreathingGuideTimer = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('last_breathing_guide_shown')
-          .eq('id', user.id)
-          .single();
-
-        if (data) {
-          const lastBreathingTime = data.last_breathing_guide_shown ? new Date(data.last_breathing_guide_shown).getTime() : null;
-          const now = Date.now();
-          const twoHours = 2 * 60 * 60 * 1000;
-
-          if (!lastBreathingTime || now - lastBreathingTime > twoHours) {
-            // Breathing exercise dormant - disabled for now
-            // setShowBreathingGuide(true);
-            // setShowGreetingText(true);
-            await supabase
-              .from('profiles')
-              .update({ last_breathing_guide_shown: new Date().toISOString() })
-              .eq('id', user.id);
-          }
-        }
-      } catch (e) {
-        console.error('Error checking breathing guide timer:', e);
-      }
-    };
-
-    checkBreathingGuideTimer();
-  }, [user]);
-
+  // Same first-name source as the old page: cached localStorage first,
+  // then profiles.first_name from Supabase. No other database reads.
   useEffect(() => {
     if (!user) {
       setFirstName('');
@@ -90,16 +82,13 @@ export default function Welcome() {
 
     const loadUserName = async () => {
       try {
-        // First, verify session is still valid
         const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
         if (authError || !currentUser) {
-          // Session has expired - clear cached data
           localStorage.removeItem('clarity-user-data');
           setFirstName('');
           return;
         }
 
-        // Session is valid - try cached data first
         const cachedData = localStorage.getItem('clarity-user-data');
         if (cachedData) {
           const userData = JSON.parse(cachedData);
@@ -109,8 +98,7 @@ export default function Welcome() {
           }
         }
 
-        // No cached data, fetch from Supabase
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('first_name')
           .eq('id', user.id)
@@ -128,382 +116,332 @@ export default function Welcome() {
     loadUserName();
   }, [user]);
 
-  useEffect(() => {
-    setShowDropdown(false);
-    setDisplayedGreeting('');
-    setDisplayedQuestion('');
+  const greetingWord = getGreetingWord();
 
-    const timeGreeting = getTimeGreeting();
-    const namePart = displayName ? `, ${displayName}.` : '.';
-    const fullGreeting = timeGreeting + namePart;
-    const question = 'What are we working on?';
-
-    // Check if greeting animation has already played this session
-    let hasPlayedAnimation = false;
-    try {
-      hasPlayedAnimation = sessionStorage.getItem('clarity-portal-greeting-played') === 'true';
-    } catch (e) {
-      console.error('Error reading sessionStorage:', e);
-    }
-
-    // If animation already played, show text instantly
-    if (hasPlayedAnimation) {
-      setDisplayedGreeting(fullGreeting);
-      setDisplayedQuestion(question);
-      setTimeout(() => setShowDropdown(true), 200);
-      return;
-    }
-
-    // First time - run animation and mark it as played
-    let greetingIndex = 0;
-    let questionIndex = 0;
-    let isGreetingDone = false;
-
-    const typeInterval = setInterval(() => {
-      if (!isGreetingDone && greetingIndex < fullGreeting.length) {
-        setDisplayedGreeting(fullGreeting.substring(0, greetingIndex + 1));
-        greetingIndex++;
-      } else if (!isGreetingDone) {
-        isGreetingDone = true;
-      } else if (questionIndex < question.length) {
-        setDisplayedQuestion(question.substring(0, questionIndex + 1));
-        questionIndex++;
-      } else {
-        clearInterval(typeInterval);
-        // Mark animation as played for this session
-        try {
-          sessionStorage.setItem('clarity-portal-greeting-played', 'true');
-        } catch (e) {
-          console.error('Error writing to sessionStorage:', e);
-        }
-        // Show dropdown after all text types out
-        setTimeout(() => setShowDropdown(true), 200);
-      }
-    }, 40);
-
-    return () => clearInterval(typeInterval);
-  }, [firstName]);
-
-  // Handle dropdown positioning: scroll page if needed to fit below button
-  useEffect(() => {
-    if (!isOpen || window.innerWidth > 768) return;
-
-    const ensureDropdownFits = async () => {
-      if (!dropdownButtonRef.current) return;
-
-      // Get BottomTabBar height dynamically
-      const tabBar = document.querySelector('.bottom-tab-bar');
-      let tabBarHeight = 60;
-      if (tabBar) {
-        const tabBarRect = tabBar.getBoundingClientRect();
-        tabBarHeight = tabBarRect.height;
-      }
-      const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom') || '0') || 0;
-      const totalTabBarSpace = tabBarHeight + safeAreaBottom;
-
-      const button = dropdownButtonRef.current;
-      const rect = button.getBoundingClientRect();
-      const desiredDropdownHeight = 240; // 5 rows x 48px
-      const gap = 8; // margin between button and list
-      const minSpaceNeeded = desiredDropdownHeight + gap;
-
-      // Calculate how much space is available below the button
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom - totalTabBarSpace;
-
-      // If not enough space, scroll the page up to create space
-      if (spaceBelow < minSpaceNeeded) {
-        const scrollNeeded = minSpaceNeeded - spaceBelow + 16; // 16px buffer
-        isScrollingProgrammaticallyRef.current = true;
-
-        window.scrollBy({ top: scrollNeeded, behavior: 'smooth' });
-
-        // Wait for scroll to finish before clearing flag
-        // Use scrollend event if available, otherwise fallback to timeout
-        const handleScrollEnd = () => {
-          window.removeEventListener('scrollend', handleScrollEnd);
-          isScrollingProgrammaticallyRef.current = false;
-        };
-
-        if ('onscrollend' in window) {
-          window.addEventListener('scrollend', handleScrollEnd, { once: true });
-        } else {
-          setTimeout(() => {
-            isScrollingProgrammaticallyRef.current = false;
-          }, 350);
-        }
-      }
-
-      // After potential scroll, check again if full height fits
-      // This handles cases like landscape mode where space is limited even after scroll
-      setTimeout(() => {
-        if (!dropdownButtonRef.current) return;
-        const updatedRect = dropdownButtonRef.current.getBoundingClientRect();
-        const updatedSpaceBelow = viewportHeight - updatedRect.bottom - totalTabBarSpace;
-
-        if (updatedSpaceBelow < desiredDropdownHeight) {
-          // Not enough space - reduce dropdown height to fit
-          const availableHeight = Math.max(48, updatedSpaceBelow - gap); // At least 1 row (48px)
-          setDropdownMaxHeight(availableHeight);
-        } else {
-          // Plenty of space - use full 5 rows
-          setDropdownMaxHeight(desiredDropdownHeight);
-        }
-      }, 100);
-    };
-
-    ensureDropdownFits();
-  }, [isOpen]);
-
-  // Handle closing dropdown on scroll
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleScroll = () => {
-      // Ignore programmatic scroll triggered by our own scroll logic
-      if (isScrollingProgrammaticallyRef.current) return;
-      setIsOpen(false);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isOpen]);
-
-  const displayName = firstName || null;
-  const problems = ALL_PROBLEMS;
-
-  const getTimeGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour >= 22 || hour < 4) return "You're a night owl";
-    if (hour >= 4 && hour < 7) return 'Rise and shine';
-    if (hour >= 7 && hour < 12) return 'Morning';
-    if (hour >= 12 && hour < 17) return 'Afternoon';
-    if (hour >= 17 && hour < 22) return 'Evening';
-    return "You're a night owl";
-  };
-
-
-  const handleProblemSelect = (problem) => {
-    if (problem.status === 'coming-soon') return;
-
-    // Clear FormContext and localStorage when starting a fresh decision
+  const handleOptionClick = () => {
     clearFormData();
     clearProgress();
-
-    const tool = problem.tools[0];
-    const routeMap = {
-      'grow': '/grow-step-1',
-      'inversion': '/inversion-step-1',
-      'strategic-alignment': '/goal-setting',
-      'tough-conversation': '/tough-conversation-step-1',
-      'plan-day': '/plan-my-day',
-      'plan-meeting': '/plan-meeting',
-      'personal-operating-plan': '/personal-operating-plan',
-      'if-then-planning': '/if-then-planning',
-      'breathe': '/breathe',
-      'time-allocation-audit': '/stop-doing-audit',
-      'after-action': '/my-journal',
-      'progress': '/personal-operating-plan-review',
-      'weekly-momentum': '/my-journal',
-    };
-
-    const route = routeMap[tool];
-    if (route) {
-      const state = { ...location.state, problemTitle: problem.title };
-      if (tool === 'after-action') state.reviewType = 'after-action';
-      if (tool === 'progress') state.reviewType = 'progress';
-      if (tool === 'weekly-momentum') state.reviewType = 'weekly-momentum';
-      navigate(route, { state });
-    }
   };
 
+  const cardDefs = [
+    {
+      problemId: 'plan-day',
+      title: 'Plan my day',
+      description: 'Set your intentions and priorities',
+    },
+    {
+      problemId: 'after-action',
+      title: 'Review my day',
+      description: 'Reflect on what worked today',
+    },
+    {
+      problemId: 'personal-plan',
+      title: 'Refine my personal operating plan',
+      description: 'Sharpen how you work best',
+    },
+  ];
+
   return (
-    <div style={{ width: '100%', minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', margin: 0 }}>
+    <div className="ui-root home-root">
       <style>{`
+        .home-root {
+          width: 100%;
+          min-height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          background: var(--bg);
+        }
+
+        .home-content {
+          flex: 1;
+          width: 100%;
+          background: var(--bg);
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+
         @media (max-width: 768px) {
-          .welcome-dropdown-list {
-            max-height: calc(5 * 48px) !important;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-          }
-          .welcome-dropdown-button {
-            min-height: 44px !important;
-            font-size: 16px !important;
-          }
-          .welcome-dropdown-option {
-            min-height: 48px !important;
-            padding: 12px 16px !important;
-            font-size: 16px !important;
-          }
-          .welcome-main-content {
-            padding-bottom: calc(400px + 200px) !important;
+          .home-content {
+            min-height: calc(100dvh - var(--tabbar-height, 81px));
           }
         }
-      `}</style>
-      {isOpen && (
-        <style>{`
-          @media (max-width: 768px) {
-            body {
-              overflow: hidden;
-            }
+
+        /* src/styles/mobile.css has h1 { font-size: 28px !important;
+           margin: 16px 0 !important; } at max-width: 768px. It's a bare
+           element selector (specificity 0,0,1); .home-greeting (0,1,0)
+           already outranks it on specificity, but the legacy font-size
+           and margin are !important, so this rule needs matching
+           !important on those two properties plus an explicit margin: 0
+           to cancel the legacy 16px top/bottom margin entirely. */
+        .home-greeting {
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          line-height: 1.35;
+          color: var(--text);
+          text-align: center;
+          font-size: 26px !important;
+          margin: 0 !important;
+          padding-top: 34px;
+        }
+
+        @media (min-width: 769px) {
+          .home-greeting {
+            font-size: 32px !important;
+            padding-top: 48px;
           }
-        `}</style>
-      )}
+        }
+
+        .home-cards {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin: 30px 20px 0;
+        }
+
+        @media (min-width: 769px) {
+          .home-cards {
+            flex-direction: row;
+            gap: 16px;
+            margin: 48px auto 0;
+            max-width: 780px;
+            padding: 0 24px;
+          }
+        }
+
+        .home-card {
+          display: flex;
+          align-items: center;
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 14px 16px 13px;
+          text-decoration: none;
+          color: var(--text);
+          cursor: pointer;
+          transition: border-color var(--dur-fast) var(--ease);
+        }
+
+        .home-card:hover,
+        .home-card:focus-visible {
+          border-color: var(--coral);
+        }
+
+        .home-card:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: 2px;
+        }
+
+        @media (min-width: 769px) {
+          .home-card {
+            flex: 1;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: space-between;
+            padding: 22px 22px 24px;
+            min-height: 150px;
+          }
+        }
+
+        .home-card-text {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .home-card-title {
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          font-size: 12px;
+          letter-spacing: 0.14em;
+          line-height: 1.5;
+          color: var(--text);
+        }
+
+        .home-card-desc {
+          font-family: var(--font-body);
+          font-weight: 400;
+          font-size: 13px;
+          color: var(--text-2);
+          margin-top: 5px;
+          line-height: 1.4;
+        }
+
+        /* .ui-cross (components.css) also declares width/height: 20px at
+           the same 0,1,0 specificity as a single-class selector here, so
+           source order would decide the winner. Use .home-root .home-card-cross
+           (0,2,0) instead to guarantee this size wins regardless of order. */
+        .home-root .home-card-cross {
+          width: 22px;
+          height: 22px;
+          color: var(--coral);
+          flex-shrink: 0;
+          margin-left: 12px;
+        }
+
+        @media (min-width: 769px) {
+          .home-root .home-card-cross {
+            margin-left: 0;
+            align-self: flex-end;
+          }
+        }
+
+        .home-more-wrap {
+          display: flex;
+          justify-content: center;
+          margin-top: 22px;
+        }
+
+        @media (min-width: 769px) {
+          .home-more-wrap {
+            margin-top: 30px;
+          }
+        }
+
+        /* src/styles/mobile.css has button:not(.breathe-button) { padding:
+           12px 16px !important; font-size: 14px !important; } at
+           max-width: 768px. This selector (two classes, specificity
+           0,2,0, beats the legacy rule's 0,1,1) needs its own !important
+           on padding and font-size specifically, since the legacy rule
+           marks those two !important and specificity alone cannot beat
+           an !important declaration. */
+        .home-root .home-more-toggle {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: transparent;
+          border: none;
+          margin: 0;
+          padding: 8px 4px !important;
+          cursor: pointer;
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          font-size: 10px !important;
+          letter-spacing: 0.2em;
+          color: var(--text-2);
+        }
+
+        .home-more-toggle:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: 2px;
+          border-radius: 4px;
+        }
+
+        .home-root .home-more-cross {
+          width: 16px;
+          height: 16px;
+          color: var(--text-2);
+          flex-shrink: 0;
+          transition: transform var(--dur) var(--ease);
+        }
+
+        .home-root .home-more-cross.open {
+          transform: rotate(45deg);
+        }
+
+        .home-more-panel {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows var(--dur) var(--ease);
+        }
+
+        .home-more-panel.open {
+          grid-template-rows: 1fr;
+        }
+
+        .home-more-inner {
+          min-height: 0;
+          overflow: hidden;
+        }
+
+        .home-more-list {
+          max-width: 520px;
+          margin: 0 auto;
+          padding: 0 20px;
+        }
+
+        .home-more-row {
+          display: block;
+          padding: 12px 0;
+          border-bottom: 1px solid var(--line);
+          font-family: var(--font-body);
+          font-size: 15px;
+          color: var(--text);
+          text-decoration: none;
+        }
+      `}</style>
+
       <DesignHeader />
-      <BreathingGuide isOpen={showBreathingGuide} onClose={() => setShowBreathingGuide(false)} showGreeting={showGreetingText} firstName={firstName} />
 
-      {/* Main Content */}
-      <div className="welcome-main-content" style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 'clamp(40px, 8vw, 80px)', paddingBottom: 'clamp(20px, 5vw, 40px)', paddingLeft: 'clamp(16px, 5vw, 32px)', paddingRight: 'clamp(16px, 5vw, 32px)', marginBottom: '200px' }}>
-        <div style={{ width: '100%', maxWidth: '1000px' }}>
-          <EmailVerificationBanner />
-          <div style={{ marginBottom: '64px', marginTop: '32px', textAlign: 'center' }}>
-            <h1 className="welcome-h1" style={{ fontSize: 'clamp(36px, 8vw, 56px)', fontWeight: '700', color: 'black', marginBottom: '16px', lineHeight: '1.2' }}>
-              {displayedGreeting}
-              {displayedGreeting.length > 0 && displayedGreeting.length < (displayName ? `Morning, ${displayName}.` : 'Morning.').length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
-            </h1>
-            <h2 style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: '400', color: '#666', margin: 0, minHeight: '32px', lineHeight: '1.4' }}>
-              {displayedQuestion}
-              {displayedQuestion.length > 0 && displayedQuestion.length < 'What are we working on?'.length && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
-            </h2>
-          </div>
+      <div className="home-content">
+        <EmailVerificationBanner />
 
-          <div style={{ maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto', marginTop: '48px' }}>
-            {/* Problem selector dropdown */}
-            <div>
-              <div
-            style={{
-              position: 'relative',
-              opacity: showDropdown ? 1 : 0,
-              transition: 'opacity 0.5s ease-in-out',
-            }}
+        <h1 className="home-greeting">
+          {greetingWord},<br />
+          {firstName ? `${firstName}.` : '.'}
+        </h1>
+
+        <div className="home-cards">
+          {cardDefs.map((card) => {
+            const problem = ALL_PROBLEMS.find((p) => p.id === card.problemId);
+            const { route, state } = getRouteAndState(problem, location.state);
+            return (
+              <Link
+                key={card.problemId}
+                to={route}
+                state={state}
+                onClick={handleOptionClick}
+                className="home-card"
+              >
+                <div className="home-card-text">
+                  <div className="home-card-title">{card.title}</div>
+                  <div className="home-card-desc">{card.description}</div>
+                </div>
+                <span className="home-card-cross ui-cross" aria-hidden="true" />
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="home-more-wrap">
+          <button
+            type="button"
+            className="home-more-toggle"
+            onClick={() => setMoreOpen(!moreOpen)}
+            aria-expanded={moreOpen}
           >
-                <button
-                  ref={dropdownButtonRef}
-                  className="welcome-dropdown-button"
-                  onClick={() => setIsOpen(!isOpen)}
-                  style={{
-                    width: '100%',
-                    padding: `${designTokens.spacing.lg} ${designTokens.spacing.lg}`,
-                    backgroundColor: designTokens.colors.background.default,
-                    border: `2px solid ${designTokens.colors.border.medium}`,
-                    borderRadius: designTokens.borderRadius.lg,
-                    fontSize: '16px',
-                    fontWeight: '500',
-                    color: designTokens.colors.text.tertiary,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = designTokens.colors.primary;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = isOpen ? designTokens.colors.primary : designTokens.colors.border.medium;
-                  }}
-                >
-                  <span>Choose an option...</span>
-                  <span style={{ fontSize: '12px', opacity: 0.5 }}>▼</span>
-                </button>
+            <span className={`home-more-cross ui-cross${moreOpen ? ' open' : ''}`} aria-hidden="true" />
+            More options
+          </button>
+        </div>
 
-                {isOpen && (
-                  <div
-                    className="welcome-dropdown-list"
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      backgroundColor: designTokens.colors.background.default,
-                      border: `2px solid ${designTokens.colors.primary}`,
-                      borderRadius: designTokens.borderRadius.lg,
-                      marginTop: designTokens.spacing.sm,
-                      maxHeight: window.innerWidth <= 768 ? `${dropdownMaxHeight}px` : '400px',
-                      overflowY: 'auto',
-                      zIndex: 1000,
-                      boxShadow: designTokens.shadow.md,
+        <div className={`home-more-panel${moreOpen ? ' open' : ''}`}>
+          <div className="home-more-inner">
+            <div className="home-more-list">
+              {ALL_PROBLEMS.map((problem) => {
+                const { route, state } = getRouteAndState(problem, location.state);
+                return (
+                  <Link
+                    key={problem.id}
+                    to={route}
+                    state={state}
+                    onClick={() => {
+                      handleOptionClick();
+                      setMoreOpen(false);
                     }}
+                    className="home-more-row"
                   >
-                    {(() => {
-                      let lastCategory = null;
-                      return problems.map((problem, index) => (
-                        <div key={problem.id}>
-                          {problem.category && problem.category !== lastCategory && (
-                            <>
-                              {index > 0 && <div style={{ height: '1px', backgroundColor: '#f0f0f0' }} />}
-                              <div style={{ padding: '8px 16px', fontSize: '11px', fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', backgroundColor: '#fafafa' }}>
-                                {(lastCategory = problem.category)}
-                              </div>
-                            </>
-                          )}
-                          <button
-                            className="welcome-dropdown-option"
-                            onClick={() => {
-                              setIsOpen(false);
-                              handleProblemSelect(problem);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '14px 16px',
-                              backgroundColor: 'white',
-                              border: 'none',
-                              borderBottom: '1px solid #f0f0f0',
-                              textAlign: 'left',
-                              cursor: problem.status === 'coming-soon' ? 'not-allowed' : 'pointer',
-                              transition: 'all 0.2s',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '12px',
-                              color: problem.status === 'coming-soon' ? '#ccc' : '#333',
-                              fontSize: '14px',
-                            }}
-                            onMouseEnter={(e) => {
-                              if (problem.status !== 'coming-soon') {
-                                e.currentTarget.style.backgroundColor = '#f9f9f9';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (problem.status !== 'coming-soon') {
-                                e.currentTarget.style.backgroundColor = 'white';
-                              }
-                            }}
-                            disabled={problem.status === 'coming-soon'}
-                          >
-                            <span>{problem.title}</span>
-                            {problem.status === 'coming-soon' && (
-                              <span style={{ fontSize: '10px', color: '#ccc', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
-                                Coming soon
-                              </span>
-                            )}
-                          </button>
-                        </div>
-                      ));
-                    })()}
-                  </div>
-                )}
-              </div>
+                    {problem.title}
+                  </Link>
+                );
+              })}
             </div>
           </div>
-
         </div>
       </div>
-
-      {isOpen && (
-        <div
-          onClick={() => setIsOpen(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 999,
-          }}
-        />
-      )}
     </div>
   );
 }
