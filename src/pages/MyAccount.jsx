@@ -558,15 +558,6 @@ export default function MyAccount() {
           <div className="account-section-label">Portal</div>
           <div className="account-row">
             <div className="account-row-text">
-              <div className="account-row-title">About</div>
-              <div className="account-row-desc">Learn about The Clarity Project</div>
-            </div>
-            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/about')}>
-              Open
-            </button>
-          </div>
-          <div className="account-row">
-            <div className="account-row-text">
               <div className="account-row-title">Log out</div>
               <div className="account-row-desc">Sign out of this device</div>
             </div>
