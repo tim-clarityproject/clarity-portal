@@ -59,63 +59,121 @@ export default function EmailVerificationBanner() {
 
   if (!isVisible) return null;
 
+  const isError = message.startsWith('Failed');
+
   return (
-    <div style={{
-      backgroundColor: '#fffbf0',
-      border: '1px solid #ffe5cc',
-      borderRadius: '6px',
-      padding: '12px 16px',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '12px',
-      marginBottom: '16px',
-    }}>
-      <div style={{ flex: 1 }}>
-        <p style={{ fontSize: '13px', color: '#333', margin: '0 0 6px 0', fontWeight: '600' }}>
-          Verify your email
+    <div className="ev-banner">
+      <style>{`
+        .ev-banner {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+          background: var(--surface);
+          border: 1px solid var(--coral);
+          border-radius: var(--radius-card);
+          padding: 20px;
+          margin: 0 20px 24px;
+        }
+
+        @media (min-width: 769px) {
+          .ev-banner {
+            max-width: 620px;
+            margin: 0 auto 24px;
+          }
+        }
+
+        .ev-banner-text {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .ev-banner-label {
+          font-family: var(--font-display);
+          font-weight: 400;
+          font-size: var(--fs-button);
+          text-transform: uppercase;
+          letter-spacing: 0.16em;
+          color: var(--coral);
+          margin: 0 0 8px;
+        }
+
+        .ev-banner-message {
+          font-family: var(--font-body);
+          font-size: 15px;
+          line-height: 1.5;
+          color: var(--text-2);
+          margin: 0;
+        }
+
+        .ev-banner-message strong {
+          color: var(--text);
+          font-weight: 500;
+        }
+
+        .ev-banner-status {
+          font-family: var(--font-body);
+          font-size: 15px;
+          line-height: 1.5;
+          margin: 8px 0 0;
+        }
+
+        .ev-banner-status--success {
+          color: var(--mint-text);
+        }
+
+        .ev-banner-status--error {
+          color: var(--coral-soft);
+        }
+
+        .ev-banner-actions {
+          margin-top: 12px;
+        }
+
+        /* A global rule in src/styles/mobile.css, button:not(.breathe-button),
+           targets every <button> with !important padding/min-height/font-size
+           (specificity 0,1,1). A single class alone would not reliably beat
+           that, so the dismiss control is scoped under .ui-root (the banner
+           only ever renders inside a page that already carries that class)
+           for (0,2,0) specificity, with matching !important. */
+        .ui-root .ev-dismiss {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          width: 44px !important;
+          height: 44px;
+          min-height: 44px !important;
+          padding: 0 !important;
+          background: transparent;
+          border: none;
+          color: var(--text-2);
+          cursor: pointer;
+        }
+
+        .ui-root .ev-dismiss:hover,
+        .ui-root .ev-dismiss:focus-visible {
+          color: var(--text);
+        }
+      `}</style>
+
+      <div className="ev-banner-text">
+        <p className="ev-banner-label">Verify your email</p>
+        <p className="ev-banner-message">
+          We sent a verification link to <strong>{user?.email}</strong>. Click it to confirm your email.
         </p>
-        <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>
-          We sent a verification link to <strong>{user?.email}</strong>. Click it to confirm your email.{' '}
-          <button
-            onClick={handleResendEmail}
-            disabled={isLoading}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#F08571',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: '12px',
-              fontWeight: '600',
-              padding: '0',
-              textDecoration: 'underline',
-              opacity: isLoading ? 0.6 : 1,
-            }}
-          >
+        <div className="ev-banner-actions">
+          <button type="button" className="ui-btn-ghost" onClick={handleResendEmail} disabled={isLoading}>
             {isLoading ? 'Sending...' : 'Resend email'}
           </button>
-        </p>
+        </div>
         {message && (
-          <p style={{ fontSize: '12px', color: '#F08571', margin: '6px 0 0 0', fontWeight: '500' }}>
+          <p className={`ev-banner-status ${isError ? 'ev-banner-status--error' : 'ev-banner-status--success'}`}>
             {message}
           </p>
         )}
       </div>
-      <button
-        onClick={() => setIsVisible(false)}
-        style={{
-          backgroundColor: 'transparent',
-          border: 'none',
-          color: '#999',
-          cursor: 'pointer',
-          padding: '4px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-        title="Dismiss banner"
-      >
+      <button type="button" className="ev-dismiss" onClick={() => setIsVisible(false)} aria-label="Dismiss banner">
         <X size={18} />
       </button>
     </div>
