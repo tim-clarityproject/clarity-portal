@@ -1,4 +1,4 @@
-import { useContext, useState, useRef, useEffect } from 'react';
+import { useContext, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
 import DesktopMenuDropdown from './DesktopMenuDropdown';
@@ -9,10 +9,22 @@ export default function DesignHeader({ className = '' }) {
   const { mission, showInHeader } = useContext(MissionContext);
   const [expandedPanel, setExpandedPanel] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const panelRef = useRef(null);
-  const scrimRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const headerWrapperRef = useRef(null);
   const hamburgerRef = useRef(null);
   const menuRef = useRef(null);
+
+  // Measure the phone header (row + line) so the scrim can start exactly below it
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (headerWrapperRef.current) {
+        setHeaderHeight(headerWrapperRef.current.getBoundingClientRect().height);
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   // Close panel on Escape key
   useEffect(() => {
@@ -23,6 +35,17 @@ export default function DesignHeader({ className = '' }) {
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
+  }, [expandedPanel]);
+
+  // Stop the page behind from scrolling while the panel is open
+  useEffect(() => {
+    if (expandedPanel) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
   }, [expandedPanel]);
 
   // Close desktop menu when clicking outside it
@@ -74,6 +97,10 @@ export default function DesignHeader({ className = '' }) {
         }
 
         @media (max-width: 768px) {
+          .design-header-wrapper {
+            position: relative;
+            z-index: 1001;
+          }
           .design-header-phone {
             display: flex;
             padding: 24px 20px 0;
@@ -86,24 +113,102 @@ export default function DesignHeader({ className = '' }) {
             height: 30px;
             flex-shrink: 0;
           }
-          .design-header-phone .mission-pill {
+          .mis-slot {
             flex: 1;
+            position: relative;
+            height: 36px;
+          }
+          .design-mis {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
             border: 1px solid var(--coral);
             border-radius: 999px;
-            background: transparent;
-            padding: 11px 0 10px;
-            cursor: pointer;
-            text-align: center;
+            overflow: hidden;
+            background: var(--bg);
+            transition: border-radius var(--dur) var(--ease);
           }
-          .design-header-phone .mission-pill-text {
+          .design-mis.open {
+            border-radius: 26px;
+          }
+          .mis-trigger {
+            display: flex;
+            width: 100%;
+            height: 36px;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            font: inherit;
+            color: inherit;
+          }
+          .mis-trigger:focus-visible {
+            outline: 2px solid var(--text);
+            outline-offset: -4px;
+          }
+          .mis-trigger-text {
             font-family: var(--font-display);
             font-weight: 400;
-            font-size: var(--fs-label);
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.16em;
-            line-height: 1.3;
+            line-height: 15px;
             color: var(--text);
             padding-left: 0.16em;
+          }
+          .mis-panel-outer {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows var(--dur) var(--ease);
+          }
+          .mis-panel-outer.open {
+            grid-template-rows: 1fr;
+          }
+          .mis-panel-inner {
+            min-height: 0;
+            overflow: hidden;
+          }
+          .mis-panel-content {
+            border-top: 1px solid var(--line);
+            margin: 0 18px;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity var(--dur) var(--ease) 120ms, transform var(--dur) var(--ease) 120ms;
+          }
+          .mis-panel-outer.open .mis-panel-content {
+            opacity: 1;
+            transform: none;
+          }
+          .mis-statement {
+            font-family: var(--font-body);
+            font-size: 18px;
+            line-height: 1.5;
+            color: var(--text);
+            text-align: center;
+            padding: 18px 4px 6px;
+          }
+          .mis-edit-button {
+            display: block;
+            width: 100%;
+            margin: 0;
+            border: none;
+            background: transparent;
+            padding: 8px 0 16px;
+            padding-left: 0.2em;
+            font-family: var(--font-display);
+            font-weight: 400;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--coral);
+            text-align: center;
+            cursor: pointer;
           }
           .design-header-line {
             margin: 18px 20px 0;
@@ -213,20 +318,9 @@ export default function DesignHeader({ className = '' }) {
             opacity: 1;
           }
         }
-
-        @keyframes ui-panel-expand {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
       `}</style>
 
-      <div className="design-header-wrapper">
+      <div className="design-header-wrapper" ref={headerWrapperRef}>
         {/* PHONE HEADER */}
         <div className="design-header-phone">
           <img
@@ -235,14 +329,32 @@ export default function DesignHeader({ className = '' }) {
             alt="Clarity mark"
           />
           {shouldShowPill && (
-            <button
-              className="mission-pill"
-              onClick={() => setExpandedPanel(!expandedPanel)}
-              aria-expanded={expandedPanel}
-              style={{ border: 'none', cursor: 'pointer' }}
-            >
-              <div className="mission-pill-text">YOUR MISSION</div>
-            </button>
+            <div className="mis-slot">
+              <div className={`design-mis${expandedPanel ? ' open' : ''}`}>
+                <button
+                  type="button"
+                  className="mis-trigger"
+                  onClick={() => setExpandedPanel(!expandedPanel)}
+                  aria-expanded={expandedPanel}
+                >
+                  <span className="mis-trigger-text">YOUR MISSION</span>
+                </button>
+                <div className={`mis-panel-outer${expandedPanel ? ' open' : ''}`}>
+                  <div className="mis-panel-inner">
+                    <div className="mis-panel-content">
+                      <div className="mis-statement">{mission}</div>
+                      <button
+                        type="button"
+                        className="mis-edit-button"
+                        onClick={handleEditMission}
+                      >
+                        Edit mission
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
@@ -287,90 +399,21 @@ export default function DesignHeader({ className = '' }) {
         <div className="design-header-line-desktop" />
       </div>
 
-      {/* Phone expanded panel */}
+      {/* Full-screen scrim behind the open phone panel */}
       {expandedPanel && shouldShowPill && (
-        <>
-          {/* Scrim */}
-          <div
-            ref={scrimRef}
-            onClick={handleScrimClick}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'var(--scrim)',
-              zIndex: 999,
-              animation: 'ui-scrim-fade var(--dur) var(--ease) forwards',
-            }}
-          />
-
-          {/* Expanded panel */}
-          <div
-            ref={panelRef}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              background: 'var(--bg)',
-              border: '1px solid var(--coral)',
-              borderRadius: '26px',
-              padding: '16px',
-              zIndex: 1000,
-              marginTop: '100px',
-              marginLeft: '20px',
-              marginRight: '20px',
-              maxHeight: 'calc(100vh - 200px)',
-              overflow: 'auto',
-              animation: 'ui-panel-expand var(--dur) var(--ease) forwards',
-            }}
-          >
-            <div style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 400,
-              fontSize: '11px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.16em',
-              lineHeight: 1.3,
-              color: 'var(--text)',
-              marginBottom: '16px',
-              paddingLeft: '0.16em',
-            }}>
-              YOUR MISSION
-            </div>
-
-            <div style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: '16px',
-              color: 'var(--text)',
-              lineHeight: 1.5,
-              marginBottom: '16px',
-              wordWrap: 'break-word',
-            }}>
-              {mission}
-            </div>
-
-            <button
-              onClick={handleEditMission}
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '10px',
-                fontWeight: 400,
-                textTransform: 'uppercase',
-                letterSpacing: '0.2em',
-                color: 'var(--coral)',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            >
-              Edit mission
-            </button>
-          </div>
-        </>
+        <div
+          onClick={handleScrimClick}
+          style={{
+            position: 'fixed',
+            top: `${headerHeight}px`,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'var(--scrim)',
+            zIndex: 1000,
+            animation: 'ui-scrim-fade var(--dur) var(--ease) forwards',
+          }}
+        />
       )}
 
       {/* Existing desktop menu, opened by the hamburger above */}
