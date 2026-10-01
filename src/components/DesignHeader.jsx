@@ -178,7 +178,7 @@ export default function DesignHeader({ className = '' }) {
             min-width: 0;
           }
           .design-header-desktop .logo-lockup {
-            height: 40px;
+            height: 42px;
             width: auto;
             flex-shrink: 0;
             margin-left: auto;
@@ -260,7 +260,7 @@ export default function DesignHeader({ className = '' }) {
           {/* Logo lockup */}
           <img
             className="logo-lockup"
-            src="/brand/lockup-full_colour-on-dark_trim.png"
+            src="/brand/lockup-full_colour-on-dark.png"
             alt="The Clarity Project"
           />
         </div>
