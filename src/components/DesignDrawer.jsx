@@ -173,6 +173,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
   const drawerRef = useRef(null);
   const firstLinkRef = useRef(null);
   const closeTimeoutRef = useRef(null);
+  const wasOpenRef = useRef(false);
 
   // Keep mounted through the close animation, then unmount.
   useEffect(() => {
@@ -195,12 +196,21 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
   // flips true, so this effect would otherwise fire before that state
   // update has actually committed the drawer's DOM - firstLinkRef.current
   // would still be null at that point.
+  //
+  // wasOpenRef guards the close branch: without it, this effect also
+  // runs on initial mount (isOpen starts false, burgerRef.current is
+  // already attached), unconditionally calling burgerRef.current.focus()
+  // and stealing focus onto the burger on every page load even though
+  // the drawer was never opened. Only call focus() on the burger when
+  // the drawer was actually open on the previous render and has now
+  // closed.
   useEffect(() => {
     if (isOpen && shouldRender && firstLinkRef.current) {
       firstLinkRef.current.focus();
-    } else if (!isOpen && burgerRef?.current) {
+    } else if (!isOpen && wasOpenRef.current && burgerRef?.current) {
       burgerRef.current.focus();
     }
+    wasOpenRef.current = isOpen;
   }, [isOpen, shouldRender, burgerRef]);
 
   // Escape key closes.

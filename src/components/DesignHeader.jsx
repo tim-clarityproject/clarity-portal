@@ -245,11 +245,23 @@ export default function DesignHeader({ className = '' }) {
             justify-self: start;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
             gap: 4.5px;
+            min-width: 44px;
+            min-height: 44px;
             background: transparent;
             border: none;
             cursor: pointer;
             padding: 0;
+          }
+          .design-header-desktop .hamburger:focus-visible {
+            outline: 2px solid var(--coral);
+            outline-offset: 4px;
+            border-radius: 8px;
+          }
+          .design-header-desktop .hamburger:focus:not(:focus-visible) {
+            outline: none;
           }
           .design-header-desktop .hamburger-line {
             width: 22px;
@@ -278,6 +290,9 @@ export default function DesignHeader({ className = '' }) {
           .design-header-desktop .mission-pill-desktop:focus-visible {
             outline: 2px solid var(--coral);
             outline-offset: 2px;
+          }
+          .design-header-desktop .mission-pill-desktop:focus:not(:focus-visible) {
+            outline: none;
           }
           .design-header-desktop .mission-pill-text {
             font-family: var(--font-display);
