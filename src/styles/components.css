@@ -101,64 +101,80 @@
   background: var(--surface);
 }
 
-.ui-btn-primary {
+/* .ui-btn-primary and .ui-btn-ghost (below) are real <button> elements.
+   src/styles/mobile.css has button:not(.breathe-button) { padding: 12px
+   16px !important; font-size: 14px !important; } at max-width: 768px,
+   specificity (0,1,1). A single class alone (0,1,0) does NOT out-rank
+   that - and since both sides would then be !important, specificity
+   (not source order) breaks the tie, so the legacy rule would still
+   win even with !important on our side. Scoped under the ever-present
+   .ui-root ancestor (0,2,0) to reliably beat it regardless of load
+   order. Confirmed this was a real bug: before adding the .ui-root
+   ancestor, a mounted .ui-btn-ghost on a sub-768px viewport computed to
+   the legacy 14px, not our 10px. */
+.ui-root .ui-btn-primary {
   border-radius: var(--radius-pill);
   background: var(--coral);
   color: var(--on-coral);
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: var(--fs-button);
+  font-size: var(--fs-button) !important;
   text-transform: uppercase;
   letter-spacing: var(--ls-button);
-  padding: 16px 32px;
+  padding: 12px 28px 11px !important;
   min-height: var(--tap-min);
   border: none;
   cursor: pointer;
-  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+  transition: background var(--dur-fast) var(--ease);
 }
 
-.ui-btn-primary:hover {
-  transform: translateY(-1px);
+.ui-root .ui-btn-primary:hover,
+.ui-root .ui-btn-primary:focus-visible {
+  background: var(--coral-soft);
 }
 
-.ui-btn-primary:active {
-  opacity: 0.85;
-  transform: none;
+.ui-root .ui-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-.ui-btn-primary:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 3px;
-}
-
-.ui-btn-ghost {
+.ui-root .ui-btn-ghost {
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--text);
   border: 1px solid var(--btn-line);
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: var(--fs-button);
+  font-size: var(--fs-button) !important;
   text-transform: uppercase;
-  letter-spacing: var(--ls-button);
-  padding: 11px 22px;
+  letter-spacing: 0.2em;
+  padding: 11px 22px 10px !important;
   min-height: var(--tap-min);
+  white-space: nowrap;
   cursor: pointer;
-  transition: border-color var(--dur) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease);
 }
 
-.ui-btn-ghost:hover {
+.ui-root .ui-btn-ghost:hover,
+.ui-root .ui-btn-ghost:focus-visible {
   border-color: var(--coral);
 }
 
-.ui-btn-ghost:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 3px;
+.ui-root .ui-btn-ghost:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
 }
 
-.ui-btn-ghost--danger {
+.ui-root .ui-btn-ghost--danger {
   color: var(--coral-text);
   border-color: rgba(255, 111, 92, 0.45);
+}
+
+.ui-root .ui-btn-ghost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .ui-link-quiet {
@@ -232,35 +248,48 @@
   margin-top: var(--space-1);
 }
 
-.ui-switch {
+/* .ui-switch is a real <button>, scoped under .ui-root (0,2,0) for the
+   same reason as .ui-btn-ghost/.ui-btn-primary above - a bare
+   single-class selector cannot out-rank the legacy rule's 0,1,1 once
+   both sides are !important. The legacy padding !important would also
+   shift the button's padding edge inward, which the ::after knob is
+   positioned absolutely against (top/left measure from the padding
+   edge) - this would silently break the knob's alignment, not just
+   look odd. */
+.ui-root .ui-switch {
   width: 44px;
   height: 26px;
+  min-height: 26px;
+  padding: 0 !important;
+  font-size: 0 !important;
   border-radius: var(--radius-pill);
   background: var(--line);
-  border: none;
+  border: 1px solid var(--btn-line);
   cursor: pointer;
   position: relative;
-  transition: background var(--dur) var(--ease);
+  box-sizing: border-box;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
   flex-shrink: 0;
 }
 
-.ui-switch--on {
+.ui-root .ui-switch--on {
   background: var(--coral);
+  border-color: var(--coral);
 }
 
-.ui-switch::after {
+.ui-root .ui-switch::after {
   content: '';
   position: absolute;
   width: 20px;
   height: 20px;
   border-radius: 50%;
   background: var(--text-2);
-  top: 3px;
-  left: 3px;
+  top: 2px;
+  left: 2px;
   transition: transform var(--dur) var(--ease);
 }
 
-.ui-switch--on::after {
+.ui-root .ui-switch--on::after {
   background: #000000;
   transform: translateX(18px);
 }
@@ -269,30 +298,35 @@
   display: flex;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  padding: 4px;
+  padding: 3px;
   background: transparent;
   position: relative;
 }
 
-.ui-segmented-option {
+/* .ui-segmented-option is a real <button>, scoped under .ui-root
+   (0,2,0) for the same reason as the other button classes above. */
+.ui-root .ui-segmented-option {
   flex: 1;
-  padding: 8px 12px;
+  min-height: 0;
+  padding: 9px 0 8px !important;
   text-align: center;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 10px;
+  font-size: 10px !important;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--text-2);
   background: transparent;
   border: none;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   position: relative;
   z-index: 1;
   transition: color var(--dur-slow) var(--ease);
 }
 
-.ui-segmented-option.active {
+.ui-root .ui-segmented-option.active {
+  background: var(--coral);
   color: #000000;
 }
 

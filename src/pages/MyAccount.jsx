@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
-import { designTokens } from '../lib/designTokens';
 import DesignHeader from '../components/DesignHeader';
+import PageHeading from '../components/PageHeading';
 import BreathingSettingsModal from '../components/BreathingSettingsModal';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -302,382 +302,324 @@ export default function MyAccount() {
     }
   }, [location.hash]);
 
+  const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Your Name';
+
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root account-root">
+      <style>{`
+        .account-root {
+          width: 100%;
+          min-height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          background: var(--bg);
+        }
+
+        .account-content {
+          flex: 1;
+          width: 100%;
+          background: var(--bg);
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+          .account-content {
+            min-height: calc(100dvh - var(--tabbar-height, 81px));
+          }
+        }
+
+        .account-column {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0 20px;
+        }
+
+        @media (min-width: 769px) {
+          .account-column {
+            max-width: 620px;
+            margin: 0 auto;
+            padding: 44px 24px 40px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .account-column {
+            padding-top: 34px;
+            padding-bottom: 40px;
+          }
+        }
+
+        .account-section-label {
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          letter-spacing: 0.22em;
+          font-size: 11px;
+          color: var(--coral);
+          margin: 38px 0 6px;
+        }
+
+        .account-section-label--muted {
+          color: var(--text-2);
+        }
+
+        /* Archived Missions' label doubles as a toggle button.
+           src/styles/mobile.css has button:not(.breathe-button) {
+           padding: 12px 16px !important; font-size: 14px !important; }
+           at max-width: 768px. .account-root .account-archived-toggle
+           (0,2,0) already out-ranks that (0,1,1) on specificity, but
+           padding/font-size need matching !important regardless. */
+        .account-root .account-archived-toggle {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: transparent;
+          border: none;
+          margin: 38px 0 6px;
+          padding: 0 !important;
+          cursor: pointer;
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          letter-spacing: 0.22em;
+          font-size: 11px !important;
+          color: var(--coral);
+        }
+
+        .account-archived-count {
+          font-family: var(--font-body);
+          font-size: 13px;
+          letter-spacing: 0;
+          text-transform: none;
+          color: var(--text-2);
+        }
+
+        .account-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 20px;
+          padding: 20px 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .account-row-text {
+          min-width: 0;
+        }
+
+        .account-row-title {
+          font-family: var(--font-body);
+          font-weight: 500;
+          font-size: 16px;
+          color: var(--text);
+        }
+
+        .account-row-desc {
+          font-family: var(--font-body);
+          font-size: 14px;
+          color: var(--text-2);
+          margin-top: 4px;
+        }
+
+        .account-row-count {
+          font-family: var(--font-body);
+          font-size: 12px;
+          color: var(--placeholder);
+          margin-top: 6px;
+        }
+
+        .account-row-buttons {
+          display: flex;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .account-empty-line {
+          font-family: var(--font-body);
+          font-size: 14px;
+          color: var(--text-2);
+          padding: 18px 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .account-switch-row {
+          min-height: 44px;
+        }
+
+        .account-switch-control {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+
+        .account-switch-state-label {
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          font-size: 10px;
+          letter-spacing: 0.18em;
+          color: var(--text-2);
+        }
+
+        .account-danger-zone {
+          margin-top: 48px;
+        }
+      `}</style>
+
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: designTokens.layout.contentPadding }} className="page-container">
-        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '12px', marginBottom: designTokens.spacing.xl }}>
-          My Account
-        </h1>
+      <div className="account-content">
+        <div className="account-column">
+          <PageHeading pageKey="myAccount" title="My Account" />
 
-        <EmailVerificationBanner />
+          <EmailVerificationBanner />
 
-        {/* Settings Container */}
-        <div style={{ backgroundColor: 'white' }}>
-          {/* Profile Section */}
-          <div style={{
-            paddingBottom: '24px',
-            marginBottom: '32px',
-            borderBottom: '1px solid #e5e5e5',
-          }}>
-            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-              Profile
-            </h2>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 0',
-            }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  {firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Your Name'}
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
-                  {user?.email}
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/edit-profile')}
-                style={{
-                  ...designTokens.button.secondary,
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
-                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
-              >
-                Edit
-              </button>
+          {/* Profile */}
+          <div className="account-section-label">Profile</div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">{fullName}</div>
+              <div className="account-row-desc">{user?.email}</div>
             </div>
+            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/edit-profile')}>
+              Edit
+            </button>
           </div>
 
-          {/* Mission Section */}
-          <div id="mission-section" style={{
-            paddingBottom: '24px',
-            marginBottom: '32px',
-            borderBottom: '1px solid #e5e5e5',
-          }}>
-            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-              Your Mission
-            </h2>
-
-            {/* Mission Statement Setting */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              padding: '16px 0',
-              borderBottom: '1px solid #f0f0f0',
-              marginBottom: '16px',
-            }}>
-              <div style={{ flex: 1, maxWidth: '60%' }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  Mission Statement
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
-                  {personalGoal || 'No mission set yet'}
-                </p>
-                <p style={{ fontSize: '12px', color: '#bbb', margin: '6px 0 0 0' }}>
-                  {personalGoal.length}/{MAX_GOAL_LENGTH} characters
-                </p>
-              </div>
-              <button
-                onClick={() => setShowGoalModal(true)}
-                style={{
-                  ...designTokens.button.secondary,
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
-                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
-              >
-                Edit
-              </button>
+          {/* Mission */}
+          <div id="mission-section" className="account-section-label">Mission</div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Statement</div>
+              <div className="account-row-desc">{personalGoal || 'No mission set yet'}</div>
+              <div className="account-row-count">{personalGoal.length}/{MAX_GOAL_LENGTH} characters</div>
             </div>
-
-            {/* Show in Header Setting */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 0',
-            }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  Show in Header
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
-                  Display your mission in the page heading
-                </p>
-              </div>
-              <button
-                onClick={handleToggleGoalVisibility}
-                style={{
-                  ...designTokens.button.secondary,
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                  minWidth: '76px',
-                  textAlign: 'center',
-                  opacity: showGoalInHeader ? 1 : 0.6,
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
-                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
-              >
+            <button type="button" className="ui-btn-ghost" onClick={() => setShowGoalModal(true)}>
+              Edit
+            </button>
+          </div>
+          <div className="account-row account-switch-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Show in header</div>
+              <div className="account-row-desc">Display your mission in the page heading</div>
+            </div>
+            <div className="account-switch-control">
+              <span className="account-switch-state-label">
                 {showGoalInHeader ? 'Visible' : 'Hidden'}
-              </button>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showGoalInHeader}
+                aria-label="Show mission in header"
+                className={`ui-switch${showGoalInHeader ? ' ui-switch--on' : ''}`}
+                onClick={handleToggleGoalVisibility}
+              />
             </div>
           </div>
 
-          {/* Advanced Settings Section */}
-          <div id="breathing-settings" style={{
-            paddingBottom: '24px',
-            marginBottom: '32px',
-            borderBottom: '1px solid #e5e5e5',
-          }}>
-            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-              Advanced
-            </h2>
-
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 0',
-            }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  Breathing Settings
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
-                  Customize your breathing cycle duration
-                </p>
-              </div>
-              <button
-                onClick={() => setShowBreathingSettings(true)}
-                style={{
-                  ...designTokens.button.secondary,
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
-                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
-              >
-                Edit
-              </button>
+          {/* Advanced */}
+          <div className="account-section-label">Advanced</div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Breathing settings</div>
+              <div className="account-row-desc">Customise your breathing cycle duration</div>
             </div>
+            <button type="button" className="ui-btn-ghost" onClick={() => setShowBreathingSettings(true)}>
+              Edit
+            </button>
           </div>
 
           {/* Archived Missions */}
-          <div style={{
-            paddingTop: '24px',
-            borderTop: '1px solid #e5e5e5',
-          }}>
-            <button
-              onClick={() => setShowArchivedMissions(!showArchivedMissions)}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                padding: '0',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '16px',
-              }}
-            >
-              <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Archived Missions
-              </h2>
-              <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>
-                ({archivedMissions.length})
-              </span>
-            </button>
+          <button
+            type="button"
+            className="account-archived-toggle"
+            onClick={() => setShowArchivedMissions(!showArchivedMissions)}
+            aria-expanded={showArchivedMissions}
+          >
+            Archived missions
+            <span className="account-archived-count">({archivedMissions.length})</span>
+          </button>
 
-            {showArchivedMissions && (
-              <div>
-                {loadingArchivedMissions ? (
-                  <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Loading archived missions...</p>
-                ) : archivedMissions.length === 0 ? (
-                  <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>No archived missions</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {archivedMissions.map((mission) => (
-                      <div key={mission.id} style={{
-                        ...designTokens.card,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow = designTokens.shadow.md;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = designTokens.shadow.sm;
-                      }}
-                      >
-                        <div style={{ flex: 1 }}>
-                          <p style={{ ...designTokens.typography.button, color: designTokens.colors.text.primary, margin: 0, marginBottom: designTokens.spacing.sm }}>
-                            {mission.title}
-                          </p>
-                          <p style={{ ...designTokens.typography.caption, color: designTokens.colors.text.tertiary, margin: 0 }}>
-                            Archived {new Date(mission.archived_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
-                          <button
-                            onClick={() => handleRestoreMission(mission.id)}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: 'white',
-                              border: '1px solid #e5e5e5',
-                              borderRadius: '4px',
-                              color: '#F08571',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              transition: 'all 0.2s',
-                              whiteSpace: 'nowrap',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = '#f9f9f9';
-                              e.target.style.borderColor = '#F08571';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = 'white';
-                              e.target.style.borderColor = '#e5e5e5';
-                            }}
-                          >
-                            Restore
-                          </button>
-                          <button
-                            onClick={() => handleDeleteArchivedMission(mission.id)}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: 'white',
-                              border: '1px solid #e5e5e5',
-                              borderRadius: '4px',
-                              color: '#c0574c',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              transition: 'all 0.2s',
-                              whiteSpace: 'nowrap',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = 'rgba(192, 87, 76, 0.1)';
-                              e.target.style.borderColor = '#c0574c';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = 'white';
-                              e.target.style.borderColor = '#e5e5e5';
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+          {showArchivedMissions && (
+            loadingArchivedMissions ? (
+              <div className="account-empty-line">Loading archived missions...</div>
+            ) : archivedMissions.length === 0 ? (
+              <div className="account-empty-line">No archived missions</div>
+            ) : (
+              archivedMissions.map((mission) => (
+                <div key={mission.id} className="account-row">
+                  <div className="account-row-text">
+                    <div className="account-row-title">{mission.title}</div>
+                    <div className="account-row-desc">
+                      Archived {new Date(mission.archived_at).toLocaleDateString()}
+                    </div>
                   </div>
-                )}
+                  <div className="account-row-buttons">
+                    <button type="button" className="ui-btn-ghost" onClick={() => handleRestoreMission(mission.id)}>
+                      Restore
+                    </button>
+                    <button type="button" className="ui-btn-ghost ui-btn-ghost--danger" onClick={() => handleDeleteArchivedMission(mission.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )
+          )}
+
+          {/* Portal */}
+          <div className="account-section-label">Portal</div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">About</div>
+              <div className="account-row-desc">Learn about The Clarity Project</div>
+            </div>
+            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/about')}>
+              Open
+            </button>
+          </div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Log out</div>
+              <div className="account-row-desc">Sign out of this device</div>
+            </div>
+            <button type="button" className="ui-btn-ghost" onClick={handleLogout}>
+              Log out
+            </button>
+          </div>
+
+          {/* Danger zone */}
+          <div className="account-danger-zone">
+            <div className="account-section-label account-section-label--muted">Danger zone</div>
+            <div className="account-row">
+              <div className="account-row-text">
+                <div className="account-row-title">Delete account</div>
+                <div className="account-row-desc">Permanently delete your account and all data</div>
               </div>
-            )}
-          </div>
-
-          {/* Portal - About and Log Out, now that the desktop drawer no
-              longer has a phone equivalent to reach them from */}
-          <div style={{
-            paddingTop: '24px',
-            borderTop: '1px solid #e5e5e5',
-          }}>
-            <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Portal
-            </h2>
-            <button
-              onClick={() => navigate('/about')}
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                background: 'none',
-                border: 'none',
-                borderBottom: '1px solid #f0f0f0',
-                padding: '12px 0',
-                fontSize: '14px',
-                color: '#333',
-                cursor: 'pointer',
-                minHeight: '44px',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#F08571'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#333'}
-            >
-              About
-            </button>
-            <button
-              onClick={handleLogout}
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                background: 'none',
-                border: 'none',
-                padding: '12px 0',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#F08571',
-                cursor: 'pointer',
-                minHeight: '44px',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              Log Out
-            </button>
-          </div>
-
-          {/* Delete Account - moved to bottom, quiet style */}
-          <div style={{
-            paddingTop: '48px',
-            borderTop: '1px solid #f0f0f0',
-            marginTop: '48px',
-          }}>
-            <button
-              onClick={handleDeleteAccount}
-              disabled={isDeleting}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '12px 0',
-                color: '#999',
-                fontSize: '13px',
-                fontWeight: '400',
-                cursor: isDeleting ? 'not-allowed' : 'pointer',
-                transition: 'color 0.2s',
-                textAlign: 'left',
-                opacity: isDeleting ? 0.5 : 1,
-                minHeight: '44px',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-              onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.color = '#c0574c')}
-              onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.color = '#999')}
-              onFocus={(e) => e.currentTarget.style.outline = '2px solid #F08571'}
-              onBlur={(e) => e.currentTarget.style.outline = 'none'}
-            >
-              {isDeleting ? 'Deleting account...' : 'Delete my account'}
-            </button>
+              <button
+                type="button"
+                className="ui-btn-ghost ui-btn-ghost--danger"
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
-
-        <BreathingSettingsModal isOpen={showBreathingSettings} onClose={() => setShowBreathingSettings(false)} />
-        <PersonalGoalModal
-          isOpen={showGoalModal}
-          onClose={() => setShowGoalModal(false)}
-          currentGoal={personalGoal}
-          onGoalSaved={(newGoal) => setPersonalGoal(newGoal)}
-        />
       </div>
+
+      <BreathingSettingsModal isOpen={showBreathingSettings} onClose={() => setShowBreathingSettings(false)} />
+      <PersonalGoalModal
+        isOpen={showGoalModal}
+        onClose={() => setShowGoalModal(false)}
+        currentGoal={personalGoal}
+        onGoalSaved={(newGoal) => setPersonalGoal(newGoal)}
+      />
     </div>
   );
 }
