@@ -55,11 +55,9 @@ export default function DesignHeader({ className = '' }) {
     });
   };
 
-  // Desktop pill click: go to Mission section, do NOT open Edit Mission pop-up
+  // Desktop pill click: go to Personal Operating Plan, no pop-up
   const handleDesktopPillClick = () => {
-    navigate('/my-account', {
-      state: { ...location.state, scrollTo: 'mission-section' }
-    });
+    navigate('/personal-operating-plan');
   };
 
   const shouldShowPill = mission && showInHeader;
@@ -125,14 +123,15 @@ export default function DesignHeader({ className = '' }) {
             display: none;
           }
           .design-header-desktop {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             height: 79px;
             padding: 0 32px;
             align-items: center;
-            gap: 24px;
             background: var(--bg);
           }
           .design-header-desktop .hamburger {
+            justify-self: start;
             display: flex;
             flex-direction: column;
             gap: 4.5px;
@@ -147,15 +146,16 @@ export default function DesignHeader({ className = '' }) {
             background: var(--coral);
           }
           .design-header-desktop .mission-pill-desktop {
-            flex: 1;
-            min-width: 0;
+            justify-self: center;
+            width: fit-content;
+            min-width: 380px;
+            max-width: calc(100% - 160px);
             border: 1px solid var(--coral);
             border-radius: 999px;
             background: transparent;
-            padding: 11px 16px 10px;
+            padding: 0 24px;
             display: flex;
             align-items: center;
-            gap: 16px;
             cursor: pointer;
             transition: border-color var(--dur-fast) var(--ease);
           }
@@ -181,6 +181,8 @@ export default function DesignHeader({ className = '' }) {
             width: 1px;
             height: 16px;
             background: var(--line);
+            margin: 0 16px;
+            flex-shrink: 0;
           }
           .design-header-desktop .mission-statement {
             font-family: var(--font-body);
@@ -191,12 +193,13 @@ export default function DesignHeader({ className = '' }) {
             text-overflow: ellipsis;
             flex: 1;
             min-width: 0;
+            text-align: center;
           }
           .design-header-desktop .logo-mark-desktop {
+            justify-self: end;
             width: 34px;
             height: 34px;
             flex-shrink: 0;
-            margin-left: auto;
           }
           .design-header-line-desktop {
             height: 1px;
