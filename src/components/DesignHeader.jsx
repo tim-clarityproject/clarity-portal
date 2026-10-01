@@ -1,4 +1,5 @@
 import { useContext, useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
 import DesktopMenuDropdown from './DesktopMenuDropdown';
@@ -99,7 +100,7 @@ export default function DesignHeader({ className = '' }) {
         @media (max-width: 768px) {
           .design-header-wrapper {
             position: relative;
-            z-index: 1001;
+            z-index: 5002;
           }
           .design-header-phone {
             display: flex;
@@ -123,6 +124,7 @@ export default function DesignHeader({ className = '' }) {
             top: 0;
             left: 0;
             right: 0;
+            height: 36px;
             border: 1px solid var(--coral);
             border-radius: 999px;
             overflow: hidden;
@@ -130,6 +132,7 @@ export default function DesignHeader({ className = '' }) {
             transition: border-radius var(--dur) var(--ease);
           }
           .design-mis.open {
+            height: auto;
             border-radius: 26px;
           }
           .mis-trigger {
@@ -217,6 +220,15 @@ export default function DesignHeader({ className = '' }) {
           }
           .design-header-desktop {
             display: none;
+          }
+          .design-scrim {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--scrim);
+            z-index: 5001;
+            animation: ui-scrim-fade var(--dur) var(--ease) forwards;
           }
         }
 
@@ -399,21 +411,24 @@ export default function DesignHeader({ className = '' }) {
         <div className="design-header-line-desktop" />
       </div>
 
-      {/* Full-screen scrim behind the open phone panel */}
-      {expandedPanel && shouldShowPill && (
-        <div
-          onClick={handleScrimClick}
-          style={{
-            position: 'fixed',
-            top: `${headerHeight}px`,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'var(--scrim)',
-            zIndex: 1000,
-            animation: 'ui-scrim-fade var(--dur) var(--ease) forwards',
-          }}
-        />
+      {/* Full-screen scrim behind the open phone panel - portaled to document.body
+          so no ancestor (padding, transform, overflow, stacking context) can
+          constrain its position: fixed edges. Position/size come from the
+          .design-scrim class (not inline style) because a pre-existing global
+          rule in src/styles/mobile.css - div[style*="position: fixed"] { left:
+          16px !important; right: 16px !important; ... } - matches and overrides
+          ANY div with "position: fixed" literally inside its inline style
+          attribute. Using a class avoids that match entirely without touching
+          the global file. */}
+      {expandedPanel && shouldShowPill && createPortal(
+        <div className="ui-root">
+          <div
+            className="design-scrim"
+            onClick={handleScrimClick}
+            style={{ top: `${headerHeight}px` }}
+          />
+        </div>,
+        document.body
       )}
 
       {/* Existing desktop menu, opened by the hamburger above */}
