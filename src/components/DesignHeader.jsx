@@ -2,7 +2,7 @@ import { useContext, useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
-import DesktopMenuDropdown from './DesktopMenuDropdown';
+import DesignDrawer from './DesignDrawer';
 
 export default function DesignHeader({ className = '' }) {
   const navigate = useNavigate();
@@ -13,7 +13,6 @@ export default function DesignHeader({ className = '' }) {
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerWrapperRef = useRef(null);
   const hamburgerRef = useRef(null);
-  const menuRef = useRef(null);
 
   // Measure the phone header (row + line) so the scrim can start exactly below it
   useLayoutEffect(() => {
@@ -48,23 +47,6 @@ export default function DesignHeader({ className = '' }) {
       };
     }
   }, [expandedPanel]);
-
-  // Close desktop menu when clicking outside it
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        menuOpen &&
-        hamburgerRef.current &&
-        menuRef.current &&
-        !hamburgerRef.current.contains(event.target) &&
-        !menuRef.current.contains(event.target)
-      ) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [menuOpen]);
 
   // Close panel when clicking scrim
   const handleScrimClick = () => {
@@ -387,12 +369,14 @@ export default function DesignHeader({ className = '' }) {
 
         {/* DESKTOP HEADER */}
         <div className="design-header-desktop">
-          {/* Hamburger - opens the existing desktop menu */}
+          {/* Hamburger - opens the desktop drawer */}
           <button
             ref={hamburgerRef}
+            type="button"
             className="hamburger"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-expanded={menuOpen}
+            aria-controls="design-drawer"
           >
             <div className="hamburger-line" />
             <div className="hamburger-line" />
@@ -443,11 +427,12 @@ export default function DesignHeader({ className = '' }) {
         document.body
       )}
 
-      {/* Existing desktop menu, opened by the hamburger above */}
-      <DesktopMenuDropdown
+      {/* Desktop navigation drawer, opened by the hamburger above */}
+      <DesignDrawer
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
-        menuRef={menuRef}
+        headerHeight={headerHeight}
+        burgerRef={hamburgerRef}
       />
     </div>
   );
