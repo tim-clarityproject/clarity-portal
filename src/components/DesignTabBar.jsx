@@ -85,9 +85,9 @@ const TABS = [
   {
     id: 'account',
     label: 'Account',
-    path: '/account-section',
+    path: '/my-account',
     Icon: AccountIcon,
-    sectionRoutes: ['/my-account', '/edit-profile', '/account-section'],
+    sectionRoutes: ['/my-account', '/edit-profile', '/account-section', '/about'],
   },
 ];
 

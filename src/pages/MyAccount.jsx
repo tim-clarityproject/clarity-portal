@@ -450,6 +450,19 @@ export default function MyAccount() {
         .account-danger-zone {
           margin-top: 48px;
         }
+
+        /* About row: phone only. Desktop reaches About via the menu
+           drawer, so this row would be a duplicate there - hidden at
+           769px+ and shown only at 768px and below. */
+        .account-row--phone-only {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .account-row--phone-only {
+            display: flex;
+          }
+        }
       `}</style>
 
       <DesignHeader />
@@ -556,6 +569,15 @@ export default function MyAccount() {
 
           {/* Portal */}
           <div className="account-section-label">Portal</div>
+          <div className="account-row account-row--phone-only">
+            <div className="account-row-text">
+              <div className="account-row-title">About</div>
+              <div className="account-row-desc">Learn about The Clarity Project</div>
+            </div>
+            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/about')}>
+              Open
+            </button>
+          </div>
           <div className="account-row">
             <div className="account-row-text">
               <div className="account-row-title">Log out</div>
