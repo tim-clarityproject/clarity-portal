@@ -1,12 +1,3 @@
-/* Respect prefers-reduced-motion - global fallback */
-@media (prefers-reduced-motion: reduce) {
-  .ui-root {
-    --dur-fast: 0ms;
-    --dur: 0ms;
-    --dur-slow: 0ms;
-  }
-}
-
 /* Scoped design system root - opt-in only, does not affect existing pages */
 .ui-root {
   /* Colours - Dark mode (default) */
@@ -100,4 +91,17 @@
   --mint-text: #0B7F58;
   --scrim: rgba(24, 20, 14, 0.3);
   color-scheme: light;
+}
+
+/* Respect prefers-reduced-motion. Must come AFTER the base .ui-root rule
+   above (same selector, same specificity) so it wins by source order
+   when the media query matches - previously this block was first in the
+   file, so the base rule's --dur: 250ms always overwrote it regardless
+   of the user's reduced-motion setting. */
+@media (prefers-reduced-motion: reduce) {
+  .ui-root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+    --dur-slow: 0ms;
+  }
 }
