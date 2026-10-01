@@ -13,11 +13,10 @@ export default function MyAccount() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isLoading } = useContext(AuthContext);
-  const { refetchMission } = useContext(MissionContext);
+  const { showInHeader, updateShowInHeader, refetchMission } = useContext(MissionContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [personalGoal, setPersonalGoal] = useState('');
-  const [showGoalInHeader, setShowGoalInHeader] = useState(true);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBreathingSettings, setShowBreathingSettings] = useState(false);
@@ -149,7 +148,7 @@ export default function MyAccount() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('first_name, last_name, personal_goal, show_mission_in_header')
+          .select('first_name, last_name, personal_goal')
           .eq('id', user.id)
           .single();
 
@@ -157,10 +156,6 @@ export default function MyAccount() {
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
           setPersonalGoal(profile.personal_goal || '');
-
-          if (profile.show_mission_in_header !== null && profile.show_mission_in_header !== undefined) {
-            setShowGoalInHeader(profile.show_mission_in_header);
-          }
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -247,22 +242,22 @@ export default function MyAccount() {
     }
   };
 
-  // Re-fetch goal when modal closes (to show updated value immediately)
+  // Re-fetch goal when modal closes (to show updated value immediately).
+  // show_mission_in_header is no longer read here: it lives in
+  // MissionContext (showInHeader), the same shared source of truth the
+  // header pill reads from.
   useEffect(() => {
     if (!showGoalModal && user) {
       const refetchGoal = async () => {
         try {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('personal_goal, show_mission_in_header')
+            .select('personal_goal')
             .eq('id', user.id)
             .single();
 
           if (profile) {
             setPersonalGoal(profile.personal_goal || '');
-            if (profile.show_mission_in_header !== null && profile.show_mission_in_header !== undefined) {
-              setShowGoalInHeader(profile.show_mission_in_header);
-            }
           }
         } catch (error) {
           console.error('Error refetching goal:', error);
@@ -273,20 +268,8 @@ export default function MyAccount() {
     }
   }, [showGoalModal, user]);
 
-  const handleToggleGoalVisibility = async () => {
-    const newVisibility = !showGoalInHeader;
-    setShowGoalInHeader(newVisibility);
-
-    if (user) {
-      try {
-        await supabase
-          .from('profiles')
-          .update({ show_mission_in_header: newVisibility })
-          .eq('id', user.id);
-      } catch (error) {
-        console.error('Error updating visibility preference:', error);
-      }
-    }
+  const handleToggleGoalVisibility = () => {
+    updateShowInHeader(!showInHeader);
   };
 
   // Handle hash-based scrolling to sections
@@ -508,14 +491,14 @@ export default function MyAccount() {
             </div>
             <div className="account-switch-control">
               <span className="account-switch-state-label">
-                {showGoalInHeader ? 'Visible' : 'Hidden'}
+                {showInHeader ? 'Visible' : 'Hidden'}
               </span>
               <button
                 type="button"
                 role="switch"
-                aria-checked={showGoalInHeader}
+                aria-checked={showInHeader}
                 aria-label="Show mission in header"
-                className={`ui-switch${showGoalInHeader ? ' ui-switch--on' : ''}`}
+                className={`ui-switch${showInHeader ? ' ui-switch--on' : ''}`}
                 onClick={handleToggleGoalVisibility}
               />
             </div>
