@@ -1,5 +1,31 @@
 /* UI Components - all unused for now, to be applied page by page */
 
+/* The one deliberate global rule in this file. src/index.css sets the
+   html element's background to white via :root { --bg: #fff; background:
+   var(--bg); } - the old light design's canvas colour. Every protected
+   page now has the new dark header and/or tab bar (both wrapped in
+   .ui-root) mounted on it, old pages included, via ProtectedLayout. On
+   phone that white html background was showing through on rubber-band
+   overscroll (pulling past the top or bottom) and in the body
+   padding-bottom gap reserved for the fixed tab bar. This selector only
+   fires when a .ui-root element actually exists in the page - i.e. only
+   on the new dark app shell - so public pages (Login, Terms, Privacy)
+   that never render .ui-root are completely unaffected, and it never
+   touches src/index.css or src/styles/mobile.css. Old page CONTENT is
+   untouched; only the canvas behind/around it turns black.
+   overscroll-behavior-y removes the rubber-band stretch itself where
+   the browser supports it (not supported everywhere, hence the
+   background-color fix above still being needed as the real fix). */
+html:has(.ui-root),
+html:has(.ui-root) body,
+html:has(.ui-root) #root {
+  background-color: #000;
+}
+
+html:has(.ui-root) {
+  overscroll-behavior-y: none;
+}
+
 .ui-overline {
   font-family: var(--font-display);
   font-weight: 400;
