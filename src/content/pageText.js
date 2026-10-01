@@ -3,7 +3,7 @@ export const pageText = {
   welcome: { overline: '', subtitle: '' },
   about: { overline: '', subtitle: '' },
   myAccount: { overline: '', subtitle: '' },
-  editPersonalDetails: { overline: '', subtitle: '' },
+  editPersonalDetails: { overline: '', subtitle: 'Update your personal information.' },
 
   // Onboarding pages
   onboardingMission: { overline: '', subtitle: '' },
