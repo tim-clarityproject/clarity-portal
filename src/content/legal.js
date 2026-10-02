@@ -2,9 +2,6 @@
 // data-storage-notice_1.md (verified by size + md5 before import).
 // Wording is copied exactly as supplied - do not edit, shorten or
 // reword it. This revision has no square-bracketed placeholders left.
-// See LEGAL_DRAFT_NOTICE.
-
-export const LEGAL_DRAFT_NOTICE = 'Draft for review. Not yet final.';
 
 export const legalDocuments = {
   terms: {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { legalDocuments, legalDocumentOrder, LEGAL_DRAFT_NOTICE } from '../../content/legal';
+import { legalDocuments, legalDocumentOrder } from '../../content/legal';
 import { AuthPrimaryButton, AuthGhostButton } from './AuthButton';
 import LegalDocBody from '../legal/LegalDocBody';
 
@@ -248,20 +248,6 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           margin: 0 0 12px;
         }
 
-        .reading-popup-draft-notice {
-          font-family: var(--font-display);
-          font-weight: 400;
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: var(--coral);
-          background: color-mix(in srgb, var(--coral) 14%, transparent);
-          border: 1px solid var(--coral);
-          border-radius: 6px;
-          padding: var(--space-1) var(--space-2);
-          margin: 0 0 16px;
-        }
-
         /* src/styles/mobile.css has h4 { font-size: 15px !important;
            margin: 8px 0 4px !important; } at max-width: 768px. Scoped
            under .ui-root with matching !important, same reason as the
@@ -369,7 +355,6 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
         >
           <h3 className="reading-popup-doc-heading">{doc.title}</h3>
           <p className="reading-popup-doc-meta">{doc.lastUpdated}</p>
-          <p className="reading-popup-draft-notice">{LEGAL_DRAFT_NOTICE}</p>
           <LegalDocBody blocks={doc.blocks} classNames={DOC_CLASS_NAMES} />
         </div>
 

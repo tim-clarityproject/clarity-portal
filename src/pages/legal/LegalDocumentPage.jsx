@@ -1,5 +1,5 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { legalDocuments, LEGAL_DRAFT_NOTICE } from '../../content/legal';
+import { legalDocuments } from '../../content/legal';
 import LegalDocBody from '../../components/legal/LegalDocBody';
 
 // Standalone, publicly reachable pages for the same three documents the
@@ -123,21 +123,6 @@ export default function LegalDocumentPage() {
           margin: 0 0 var(--space-3);
         }
 
-        .legal-page-draft-notice {
-          display: inline-block;
-          font-family: var(--font-display);
-          font-weight: 400;
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: var(--coral);
-          background: color-mix(in srgb, var(--coral) 14%, transparent);
-          border: 1px solid var(--coral);
-          border-radius: 6px;
-          padding: var(--space-1) var(--space-2);
-          margin: 0 0 var(--space-4);
-        }
-
         .ui-root .legal-page-doc-subheading {
           font-family: var(--font-body);
           font-weight: 700;
@@ -185,7 +170,6 @@ export default function LegalDocumentPage() {
         <div className="legal-page-column">
           <h1 className="legal-page-title">{doc.title}</h1>
           <p className="legal-page-meta">{doc.lastUpdated}</p>
-          <p className="legal-page-draft-notice">{LEGAL_DRAFT_NOTICE}</p>
           <LegalDocBody blocks={doc.blocks} classNames={PAGE_CLASS_NAMES} />
         </div>
       </div>
