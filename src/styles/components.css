@@ -1201,3 +1201,166 @@ html:has(.ui-root) {
   text-transform: uppercase;
   color: var(--placeholder);
 }
+
+/* ============================================================
+   Shared footer Discard/Back links (src/components/ui/DiscardLink.jsx).
+   Real <button> elements - scoped under .ui-root (0,2,0) to beat
+   src/styles/mobile.css's button:not(.breathe-button) (0,1,1,
+   !important) on font-size/padding, same pattern as .ui-btn-ghost above.
+   ============================================================ */
+.ui-root .ui-discard-link,
+.ui-root .ui-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap-min);
+  padding: 0 !important;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-button) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  transition: color var(--dur-slow) var(--ease);
+}
+
+.ui-root .ui-discard-link {
+  color: var(--placeholder);
+}
+
+.ui-root .ui-back-link {
+  color: var(--text-2);
+}
+
+.ui-root .ui-discard-link:hover,
+.ui-root .ui-discard-link:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .ui-back-link:hover,
+.ui-root .ui-back-link:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .ui-discard-link:focus-visible,
+.ui-root .ui-back-link:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.ui-discard-link-icon,
+.ui-back-link-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+.ui-root .ui-discard-link:hover .ui-discard-link-icon,
+.ui-root .ui-discard-link:focus-visible .ui-discard-link-icon,
+.ui-root .ui-back-link:hover .ui-back-link-icon,
+.ui-root .ui-back-link:focus-visible .ui-back-link-icon {
+  opacity: 1;
+}
+
+.ui-discard-link-label {
+  background-image: linear-gradient(var(--coral), var(--coral));
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  padding-bottom: 3px;
+  transition: background-size var(--dur-slow) var(--ease);
+}
+
+.ui-root .ui-discard-link:hover .ui-discard-link-label,
+.ui-root .ui-discard-link:focus-visible .ui-discard-link-label {
+  background-size: 100% 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ui-discard-link,
+  .ui-root .ui-back-link,
+  .ui-discard-link-icon,
+  .ui-back-link-icon,
+  .ui-discard-link-label {
+    transition: none !important;
+  }
+}
+
+.ui-discard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.ui-discard-footer-left {
+  display: flex;
+}
+
+/* ============================================================
+   Discard confirm dialog buttons (src/components/ui/DiscardDialog.jsx).
+   Real <button> elements - same .ui-root (0,2,0) mobile-legacy-beating
+   pattern as above. Sizes/letter-spacing (48px min-height, 0.16em) are
+   deliberately different from .ui-btn-primary/.ui-btn-ghost (44px,
+   0.24em) per this task's spec, so new classes rather than reusing
+   those. rgba(255,111,92,*) alpha values have no existing token,
+   hardcoded the same way .ui-btn-ghost--danger already does above.
+   ============================================================ */
+.ui-root .discard-dialog-keep {
+  border-radius: var(--radius-pill);
+  background: var(--coral);
+  color: var(--on-coral);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding: 0 28px !important;
+  min-height: 48px;
+  border: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.ui-root .discard-dialog-keep:hover,
+.ui-root .discard-dialog-keep:focus-visible {
+  background: var(--coral-soft);
+}
+
+.ui-root .discard-dialog-keep:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.ui-root .discard-dialog-discard {
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--coral-text);
+  border: 1px solid rgba(255, 111, 92, 0.35);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-button) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding: 0 24px !important;
+  min-height: 48px;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .discard-dialog-discard:hover,
+.ui-root .discard-dialog-discard:focus-visible {
+  border-color: var(--coral);
+  background: rgba(255, 111, 92, 0.07);
+}
+
+.ui-root .discard-dialog-discard:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
