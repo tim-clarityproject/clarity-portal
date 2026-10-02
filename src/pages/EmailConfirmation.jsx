@@ -176,7 +176,7 @@ export default function EmailConfirmation() {
                 You've already confirmed your email. Log in to your account now to access The Clarity Portal.
               </p>
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/auth/login')}
                 style={{
                   padding: '12px 24px',
                   backgroundColor: '#F08571',

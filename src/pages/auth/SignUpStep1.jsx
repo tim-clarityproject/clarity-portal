@@ -46,7 +46,7 @@ export default function SignUpStep1() {
             label="First name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Tim"
+            placeholder="John"
             error={firstNameError}
             shakeToken={shakeToken}
             autoComplete="given-name"
@@ -55,7 +55,7 @@ export default function SignUpStep1() {
             label="Last name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            placeholder="Dutton"
+            placeholder="Doe"
             error={lastNameError}
             shakeToken={shakeToken}
             autoComplete="family-name"

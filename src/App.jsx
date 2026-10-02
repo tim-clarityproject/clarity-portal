@@ -10,7 +10,6 @@ import './lib/debugStorage'; // Make debugging utilities available
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BreathButton from './components/BreathButton';
 import ProtectedLayout from './components/ProtectedLayout';
-import Login from './pages/Login';
 import Welcome from './pages/Welcome';
 import About from './pages/About';
 import MyAccount from './pages/MyAccount';
@@ -190,9 +189,14 @@ function AppContent() {
     <>
       <ErrorBoundary>
         <Routes>
-          {/* PUBLIC ROUTES - No auth required */}
-          <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
+          {/* PUBLIC ROUTES - No auth required. "/" and "/login" used to
+              render the old Login page unconditionally. They now gate on
+              auth state instead: a logged-out visitor goes to the new
+              Welcome-flow log in screen, a logged-in visitor goes straight
+              to Home. The old Login page (src/pages/Login.jsx) is kept in
+              the codebase but is no longer routed to from here. */}
+          <Route path="/" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/auth/login" replace />} />
+        <Route path="/login" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/auth/login" replace />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/check-email-confirmation" element={<CheckEmailConfirmation />} />

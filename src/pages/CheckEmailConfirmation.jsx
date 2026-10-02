@@ -7,7 +7,7 @@ export default function CheckEmailConfirmation() {
 
   const handleStartOver = () => {
     localStorage.removeItem('pendingSignupName');
-    navigate('/login', { state: { signup: true } });
+    navigate('/auth/sign-up');
   };
 
   return (

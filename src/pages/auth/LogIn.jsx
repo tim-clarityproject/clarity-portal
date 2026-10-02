@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { sessionManager } from '../../lib/sessionManager';
+import { dataSyncManager } from '../../lib/dataSyncManager';
 import AuthShell from '../../components/auth/AuthShell';
 import { AuthTextField, AuthPasswordField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton, AuthTextLink } from '../../components/auth/AuthButton';
@@ -62,6 +64,23 @@ export default function LogIn() {
       });
 
       if (!signInError) {
+        // Replicates the two steps AuthContext.login() does after a
+        // successful signInWithPassword, which this screen otherwise skips
+        // by calling supabase.auth.signInWithPassword() directly (see the
+        // file-level comment above for why it can't call login() itself).
+        // Wrapped separately so a caching failure here can't stop a
+        // successful sign-in from reaching Welcome back.
+        try {
+          const session = await sessionManager.getSession();
+          if (session?.user) {
+            sessionManager.saveSessionMetadata(session);
+            const userData = await dataSyncManager.loadUserData(session.user.id);
+            localStorage.setItem('clarity-user-data', JSON.stringify(userData));
+          }
+        } catch (cacheErr) {
+          console.error('[LogIn] Error saving session metadata / pre-caching user data:', cacheErr);
+        }
+
         navigate('/auth/welcome-back');
         return;
       }
