@@ -594,3 +594,610 @@ html:has(.ui-root) {
 .ui-cross--open.open {
   transform: rotate(45deg);
 }
+
+/* ============================================================
+   Pre-login Welcome flow buttons (src/pages/auth/*,
+   src/components/auth/AuthButton.jsx). Deliberately a different,
+   larger size than .ui-btn-primary/.ui-btn-ghost above (Nekst 11px,
+   ~52px tall vs the existing Nekst 10px, ~49px) per the approved
+   mock-up for these screens - the existing built buttons elsewhere in
+   the app are untouched.
+
+   src/styles/mobile.css has button:not(.breathe-button) { min-height:
+   44px; padding: 12px 16px !important; font-size: 14px !important; }
+   at max-width: 768px (0,1,1 specificity, !important). Scoped under
+   .ui-root (0,2,0) with matching !important on font-size/padding, the
+   same proven pattern as .ui-btn-ghost above. ============================================================ */
+.ui-root .auth-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px !important;
+  margin-top: 22px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: #000;
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 11px !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0 24px !important;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-btn-primary:hover {
+  background: var(--coral-soft);
+}
+
+.ui-root .auth-btn-primary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.ui-root .auth-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-root .auth-btn-primary.loading {
+  pointer-events: none;
+}
+
+.auth-btn-spinner {
+  width: 18px;
+  height: 18px;
+  background-color: #000;
+  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  animation: auth-btn-spin var(--dur-slow) linear infinite;
+}
+
+@keyframes auth-btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ui-root .auth-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px !important;
+  padding: 0 24px !important;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--btn-line);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px !important;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-btn-ghost:hover {
+  border-color: var(--coral);
+}
+
+.ui-root .auth-btn-ghost:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .auth-btn-ghost:disabled {
+  color: var(--placeholder);
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+
+.ui-root .auth-text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: 13px !important;
+  color: var(--text-2);
+  background: transparent;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-text-link:hover,
+.ui-root .auth-text-link:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .auth-text-link:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .auth-btn-spinner {
+    animation: none !important;
+  }
+}
+
+/* ============================================================
+   Pre-login Welcome flow fields (src/components/auth/AuthField.jsx).
+
+   src/styles/mobile.css has select, input { min-height: 44px; padding:
+   12px 16px !important; } at max-width: 768px (0,1,0 bare-tag
+   specificity, !important on padding only - min-height is not
+   !important there). .ui-root .auth-input (0,2,0) already out-ranks
+   the bare "input" selector on specificity for min-height, and padding
+   below carries its own !important to beat the legacy !important
+   regardless. ============================================================ */
+.auth-field {
+  margin-top: 16px;
+}
+
+.auth-field:first-child {
+  margin-top: 0;
+}
+
+.auth-field-label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 10px;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.auth-field-label.focused {
+  color: var(--coral);
+}
+
+.auth-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.auth-field-label-row .auth-field-label {
+  margin-bottom: 0;
+}
+
+.ui-root .auth-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 52px !important;
+  padding: 0 16px !important;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-input::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .auth-input:focus {
+  outline: none;
+  border-color: var(--coral);
+}
+
+.ui-root .auth-input.error {
+  border-color: var(--coral-soft);
+}
+
+.auth-field-error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--coral-soft);
+  margin: 8px 0 0;
+}
+
+.auth-password-wrap {
+  position: relative;
+}
+
+.auth-password-wrap .auth-input-password {
+  padding-right: 64px !important;
+}
+
+.ui-root .auth-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 44px;
+  min-height: 44px !important;
+  padding: 0 12px !important;
+  background: transparent;
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px !important;
+  letter-spacing: 0.16em;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.ui-root .auth-password-toggle:hover,
+.ui-root .auth-password-toggle:focus-visible {
+  color: var(--text);
+}
+
+.shake {
+  animation: auth-shake 420ms ease;
+}
+
+@keyframes auth-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shake {
+    animation: none !important;
+  }
+}
+
+.auth-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.auth-or-divider span:not(.auth-or-label) {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.auth-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-field-row .auth-field {
+  margin-top: 0;
+}
+
+@media (min-width: 769px) {
+  .auth-field-row {
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .auth-field-row .auth-field {
+    flex: 1;
+  }
+}
+
+.auth-strength {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.auth-strength-seg {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.auth-strength-seg.filled {
+  background: var(--coral);
+}
+
+.auth-strength-hint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--placeholder);
+  margin: 8px 0 0;
+}
+
+.auth-terms-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.ui-root .auth-checkbox {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  min-height: 44px !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-checkbox::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--btn-line);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  box-sizing: border-box;
+}
+
+.auth-checkbox.checked::before {
+  background: var(--coral);
+  border-color: var(--coral);
+}
+
+.auth-checkbox.error::before {
+  border-color: var(--coral-soft);
+}
+
+.auth-checkbox-tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+}
+
+.auth-checkbox.checked .auth-checkbox-tick {
+  opacity: 1;
+}
+
+.auth-checkbox-tick path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+}
+
+.auth-checkbox.checked .auth-checkbox-tick path {
+  animation: auth-tick-draw 400ms var(--ease) forwards;
+}
+
+@keyframes auth-tick-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.auth-terms-text {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-2);
+  margin: 0;
+  padding-top: 10px;
+}
+
+.ui-root .auth-terms-link {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--btn-line);
+  padding: 0 !important;
+  min-height: 0 !important;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-terms-link:hover,
+.ui-root .auth-terms-link:focus-visible {
+  border-bottom-color: var(--coral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-checkbox-tick path {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+}
+
+.auth-envelope {
+  margin-bottom: 8px;
+}
+
+.auth-envelope-body,
+.auth-envelope-flap {
+  fill: none;
+  stroke: var(--coral);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.auth-envelope-body {
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  animation: auth-envelope-draw 1.4s var(--ease) forwards;
+}
+
+.auth-envelope-flap {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: auth-envelope-draw 1.4s var(--ease) 700ms forwards;
+}
+
+@keyframes auth-envelope-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.auth-tip {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--placeholder);
+  text-align: center;
+  margin: 24px 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .auth-envelope-body,
+  .ui-root .auth-envelope-flap {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+.auth-confirmed-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mint-text);
+  margin-bottom: 20px;
+}
+
+.auth-confirmed-tick {
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  animation: auth-tick-draw-16 400ms var(--ease) 200ms forwards;
+}
+
+@keyframes auth-tick-draw-16 {
+  to { stroke-dashoffset: 0; }
+}
+
+.auth-mission-card {
+  width: fit-content;
+  min-width: min(100%, 300px);
+  max-width: 100%;
+  margin: 0 auto 24px;
+  box-sizing: border-box;
+  border: 1px solid var(--coral);
+  border-radius: 28px;
+  padding: 16px 22px 20px;
+  text-align: center;
+}
+
+.auth-mission-card-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--coral);
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.auth-mission-card-text {
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 769px) {
+  .auth-mission-card-text {
+    font-size: 20px;
+  }
+}
+
+.auth-mission-card-placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .auth-mission-textarea {
+  min-height: 96px !important;
+  max-height: 150px;
+  padding: 14px 16px !important;
+  line-height: 1.5;
+  resize: none;
+  overflow: hidden;
+  font-family: var(--font-body);
+}
+
+.auth-mission-counter-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--placeholder);
+  margin-top: 8px;
+}
+
+.auth-mission-counter-row .at-limit {
+  color: var(--coral-soft);
+}
+
+.auth-spark-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--placeholder);
+  margin: 24px 0 12px;
+}
+
+.auth-example-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ui-root .auth-example-pill {
+  min-height: 44px !important;
+  padding: 0 16px !important;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 13px !important;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-example-pill:hover,
+.ui-root .auth-example-pill:focus-visible {
+  color: var(--text);
+  border-color: var(--btn-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-confirmed-tick {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+}
+
+.auth-or-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--placeholder);
+}
