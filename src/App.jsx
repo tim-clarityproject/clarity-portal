@@ -79,6 +79,7 @@ import AuthCheckYourEmail from './pages/auth/CheckYourEmail';
 import AuthMission from './pages/auth/Mission';
 import AuthFinished from './pages/auth/Finished';
 import AuthWelcomeBack from './pages/auth/WelcomeBack';
+import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -183,7 +184,7 @@ function AppContent() {
     '/auth/mission',
     '/auth/finished',
     '/auth/welcome-back'
-  ].includes(location.pathname);
+  ].includes(location.pathname) || location.pathname.startsWith('/legal/');
 
   return (
     <>
@@ -217,6 +218,12 @@ function AppContent() {
         <Route path="/auth/mission" element={<AuthMission />} />
         <Route path="/auth/finished" element={<AuthFinished />} />
         <Route path="/auth/welcome-back" element={<AuthWelcomeBack />} />
+
+        {/* Standalone, publicly reachable versions of the same three
+            documents the sign-up reading pop-up shows, linked from the
+            foot of the log in / sign up screens - see
+            src/pages/legal/LegalDocumentPage.jsx. */}
+        <Route path="/legal/:doc" element={<LegalDocumentPage />} />
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>

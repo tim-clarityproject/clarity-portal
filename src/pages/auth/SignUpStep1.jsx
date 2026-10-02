@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AuthShell from '../../components/auth/AuthShell';
 import { AuthTextField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
+import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 
 export default function SignUpStep1() {
   const navigate = useNavigate();
@@ -66,6 +67,10 @@ export default function SignUpStep1() {
           Continue
         </AuthPrimaryButton>
       </form>
+
+      <div style={{ marginTop: '24px' }}>
+        <LegalFooterLinks />
+      </div>
     </AuthShell>
   );
 }

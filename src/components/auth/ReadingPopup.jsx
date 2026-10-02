@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { legalDocuments, legalDocumentOrder } from '../../content/legal';
+import { legalDocuments, legalDocumentOrder, LEGAL_DRAFT_NOTICE } from '../../content/legal';
 import { AuthPrimaryButton, AuthGhostButton } from './AuthButton';
+import LegalDocBody from '../legal/LegalDocBody';
+
+const DOC_CLASS_NAMES = {
+  heading: 'reading-popup-doc-subheading',
+  paragraph: 'reading-popup-doc-para',
+  list: 'reading-popup-doc-list',
+  listItem: 'reading-popup-doc-li',
+  link: 'reading-popup-doc-link',
+};
 
 // A second, independent pop-up shell for the "BEFORE YOU JOIN" reading
 // pop-up on sign-up step 2. Deliberately a SEPARATE component from
@@ -229,7 +238,40 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           font-weight: 500;
           font-size: 17px !important;
           color: var(--text);
-          margin: 0 0 12px !important;
+          margin: 0 0 4px !important;
+        }
+
+        .reading-popup-doc-meta {
+          font-family: var(--font-body);
+          font-size: 13px;
+          color: var(--text-2);
+          margin: 0 0 12px;
+        }
+
+        .reading-popup-draft-notice {
+          font-family: var(--font-display);
+          font-weight: 400;
+          font-size: 10px;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--coral);
+          background: color-mix(in srgb, var(--coral) 14%, transparent);
+          border: 1px solid var(--coral);
+          border-radius: 6px;
+          padding: var(--space-1) var(--space-2);
+          margin: 0 0 16px;
+        }
+
+        /* src/styles/mobile.css has h4 { font-size: 15px !important;
+           margin: 8px 0 4px !important; } at max-width: 768px. Scoped
+           under .ui-root with matching !important, same reason as the
+           h1/h2/h3 fixes elsewhere in this file. */
+        .ui-root .reading-popup-doc-subheading {
+          font-family: var(--font-body);
+          font-weight: 700;
+          font-size: 15px !important;
+          color: var(--text);
+          margin: 20px 0 8px !important;
         }
 
         .reading-popup-doc-para {
@@ -238,6 +280,29 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           line-height: 1.55;
           color: var(--text-2);
           margin: 0 0 14px;
+        }
+
+        /* index.css imports Tailwind, whose preflight reset sets
+           list-style: none (and zeroes margin/padding) on every ul/ol in
+           the app. Restored explicitly here, same as the h1/h2/h3/button
+           overrides elsewhere in this file for src/styles/mobile.css's
+           legacy global rules. */
+        .reading-popup-doc-list {
+          list-style: disc;
+          margin: 0 0 14px;
+          padding-left: 20px;
+        }
+
+        .reading-popup-doc-li {
+          font-family: var(--font-body);
+          font-size: 15px;
+          line-height: 1.55;
+          color: var(--text-2);
+          margin: 0 0 8px;
+        }
+
+        .reading-popup-doc-link {
+          color: var(--coral);
         }
 
         .reading-popup-footer {
@@ -302,10 +367,10 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           id={`reading-panel-${activeTab}`}
           aria-labelledby={`reading-tab-${activeTab}`}
         >
-          <h3 className="reading-popup-doc-heading">{doc.heading}</h3>
-          {doc.paragraphs.map((p, i) => (
-            <p key={i} className="reading-popup-doc-para">{p}</p>
-          ))}
+          <h3 className="reading-popup-doc-heading">{doc.title}</h3>
+          <p className="reading-popup-doc-meta">{doc.lastUpdated}</p>
+          <p className="reading-popup-draft-notice">{LEGAL_DRAFT_NOTICE}</p>
+          <LegalDocBody blocks={doc.blocks} classNames={DOC_CLASS_NAMES} />
         </div>
 
         <div className="reading-popup-footer">

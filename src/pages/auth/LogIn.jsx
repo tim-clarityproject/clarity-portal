@@ -6,6 +6,7 @@ import { dataSyncManager } from '../../lib/dataSyncManager';
 import AuthShell from '../../components/auth/AuthShell';
 import { AuthTextField, AuthPasswordField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton, AuthTextLink } from '../../components/auth/AuthButton';
+import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 
 // New Welcome-flow log in screen. Calls supabase.auth.signInWithPassword()
 // directly - the same underlying Supabase call AuthContext.login() makes -
@@ -163,6 +164,10 @@ export default function LogIn() {
 
       <div style={{ textAlign: 'center' }}>
         <AuthTextLink to="/auth/sign-up">New here? Create your account</AuthTextLink>
+      </div>
+
+      <div style={{ marginTop: '24px' }}>
+        <LegalFooterLinks align="center" />
       </div>
     </AuthShell>
   );
