@@ -73,6 +73,13 @@ import GroundSection from './pages/GroundSection';
 import DecideSection from './pages/DecideSection';
 import ReviewSection from './pages/ReviewSection';
 import AccountSection from './pages/AccountSection';
+import AuthLogIn from './pages/auth/LogIn';
+import AuthSignUpStep1 from './pages/auth/SignUpStep1';
+import AuthSignUpStep2 from './pages/auth/SignUpStep2';
+import AuthCheckYourEmail from './pages/auth/CheckYourEmail';
+import AuthMission from './pages/auth/Mission';
+import AuthFinished from './pages/auth/Finished';
+import AuthWelcomeBack from './pages/auth/WelcomeBack';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -123,15 +130,27 @@ function AppContent() {
     }
   }, [location.pathname, location.search, location.hash, navigate]);
 
-  // Handle post-signup redirect to mission page
+  // Handle post-signup redirect to mission page. Retargeted from the old
+  // /onboarding-mission to /auth/mission (the new Welcome-flow mission
+  // step) - src/pages/auth/Mission.jsx sets the same justConfirmedEmail
+  // flag itself (so AuthContext's own profile-upsert logic, which reads
+  // this flag, is unaffected), and is also the direct emailRedirectTo
+  // target, so in the normal case this effect and Mission.jsx's own
+  // navigation agree on the same destination.
   useEffect(() => {
     if (isLoading || !user) return;
 
-    // Check if user just confirmed their email (new signup flow)
+    // Check if user just confirmed their email (new signup flow). Guards
+    // on the whole /auth/ namespace, not just /auth/mission: AuthContext's
+    // own onAuthStateChange listener (which reads this same flag to decide
+    // terms_accepted) can finish its async profile upsert well after
+    // Mission.jsx has already saved the mission and moved the user on to
+    // /auth/finished - a narrower guard let this effect fire late and
+    // yank the user back to the mission screen after they'd already left it.
     const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
-    if (justConfirmedEmail && !location.pathname.includes('onboarding-mission')) {
+    if (justConfirmedEmail && !location.pathname.startsWith('/auth/')) {
       console.log('[App] New signup confirmed, redirecting to mission page');
-      navigate('/onboarding-mission', { replace: true });
+      navigate('/auth/mission', { replace: true });
       localStorage.removeItem('justConfirmedEmail');
     }
   }, [user, isLoading, location.pathname, navigate]);
@@ -157,7 +176,14 @@ function AppContent() {
     '/mission-progress-review',
     '/terms-of-service',
     '/privacy-policy',
-    '/data-storage-notice'
+    '/data-storage-notice',
+    '/auth/login',
+    '/auth/sign-up',
+    '/auth/sign-up/account',
+    '/auth/check-email',
+    '/auth/mission',
+    '/auth/finished',
+    '/auth/welcome-back'
   ].includes(location.pathname);
 
   return (
@@ -173,6 +199,20 @@ function AppContent() {
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/data-storage-notice" element={<DataStorageNotice />} />
+
+        {/* NEW WELCOME FLOW - public routes (log in, sign up, check email,
+            mission, finished, welcome back). Deliberately NOT nested under
+            ProtectedLayout even where a session exists (Mission, Finished,
+            Welcome back) - these screens must never show the header pill,
+            drawer or tab bar that ProtectedLayout always renders. Each
+            page that needs a session checks AuthContext itself. */}
+        <Route path="/auth/login" element={<AuthLogIn />} />
+        <Route path="/auth/sign-up" element={<AuthSignUpStep1 />} />
+        <Route path="/auth/sign-up/account" element={<AuthSignUpStep2 />} />
+        <Route path="/auth/check-email" element={<AuthCheckYourEmail />} />
+        <Route path="/auth/mission" element={<AuthMission />} />
+        <Route path="/auth/finished" element={<AuthFinished />} />
+        <Route path="/auth/welcome-back" element={<AuthWelcomeBack />} />
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>
