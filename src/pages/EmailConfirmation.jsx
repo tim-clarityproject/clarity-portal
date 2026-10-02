@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from 'react';
+import { useEffect, useContext, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -10,8 +10,29 @@ export default function EmailConfirmation() {
   const { setUser } = useContext(AuthContext);
   const [status, setStatus] = useState('confirming'); // 'confirming', 'success', 'error'
   const [message, setMessage] = useState('');
+  const hasProcessedCodeRef = useRef(false);
 
   useEffect(() => {
+    // StrictMode (dev) mounts, unmounts and remounts every component once -
+    // this guard means the code exchange / session poll below only ever
+    // runs its logic once per real visit, not twice.
+    if (hasProcessedCodeRef.current) return;
+    hasProcessedCodeRef.current = true;
+
+    const succeed = () => {
+      // Strip the one-time code/token out of the address bar now that it
+      // has done its job, so a refresh never re-processes an already-used
+      // code. Done with the raw History API, not react-router's navigate,
+      // so this is a pure URL cleanup with no route transition.
+      window.history.replaceState(null, '', '/email-confirmation');
+      localStorage.removeItem('pendingSignupName');
+      setStatus('success');
+      setMessage('Email confirmed! Redirecting to your mission...');
+      setTimeout(() => {
+        navigate('/onboarding-mission');
+      }, 1000);
+    };
+
     const handleEmailConfirmation = async () => {
       try {
         // Check for error parameters in URL (from Supabase if something went wrong)
@@ -25,6 +46,18 @@ export default function EmailConfirmation() {
               ? 'The confirmation link has expired. Please sign up again.'
               : error || 'Email confirmation failed. Please try signing up again.'
           );
+          return;
+        }
+
+        // If a valid session already exists right now - either this
+        // person was already logged in, or the code in this URL was
+        // already exchanged for a session (e.g. this effect is running
+        // again after a refresh) - skip straight to the success path
+        // instead of showing "Confirming..." or an "already confirmed"
+        // error over a session that is actually valid.
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        if (existingSession?.user) {
+          succeed();
           return;
         }
 
@@ -74,6 +107,17 @@ export default function EmailConfirmation() {
         subscription?.unsubscribe();
 
         if (sessionError || !detectedUser) {
+          // One more direct check before giving up - covers a session
+          // that arrived via an event this listener did not treat as
+          // SIGNED_IN (e.g. INITIAL_SESSION on some timings). Only show
+          // the dead-end "already confirmed" error if there really is no
+          // session now.
+          const { data: { session: lateSession } } = await supabase.auth.getSession();
+          if (lateSession?.user) {
+            succeed();
+            return;
+          }
+
           console.error('[EmailConfirmation] Session error or timeout:', sessionError);
           setStatus('error');
           setMessage(
@@ -89,20 +133,7 @@ export default function EmailConfirmation() {
         // 2. Read justConfirmedEmail flag from localStorage
         // 3. Do the profile UPSERT with names from user_metadata and terms_accepted=true
         // 4. Call loadUserData to sync other tables
-
-        // Clean up old localStorage name storage (no longer needed)
-        localStorage.removeItem('pendingSignupName');
-
-        setStatus('success');
-        setMessage('Email confirmed! Redirecting to your mission...');
-
-        // Redirect to the mission/purpose onboarding page after a brief delay
-        // This is CRITICAL for new users to set their mission
-        // The justConfirmedEmail flag is already set
-        // The user should now be authenticated in AuthContext via the onAuthStateChange listener
-        setTimeout(() => {
-          navigate('/onboarding-mission');
-        }, 1000);
+        succeed();
       } catch (err) {
         console.error('Email confirmation exception:', err);
         setStatus('error');

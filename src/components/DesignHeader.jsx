@@ -1,6 +1,6 @@
 import { useContext, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
 import DesignDrawer from './DesignDrawer';
 
@@ -334,8 +334,19 @@ export default function DesignHeader({ className = '' }) {
             flex: 1;
             text-align: center;
           }
-          .design-header-desktop .logo-mark-desktop {
+          .design-header-desktop .logo-mark-link {
             justify-self: end;
+            display: flex;
+            border-radius: 8px;
+          }
+          .design-header-desktop .logo-mark-link:focus-visible {
+            outline: 2px solid var(--coral);
+            outline-offset: 4px;
+          }
+          .design-header-desktop .logo-mark-link:focus:not(:focus-visible) {
+            outline: none;
+          }
+          .design-header-desktop .logo-mark-desktop {
             width: 34px;
             height: 34px;
             flex-shrink: 0;
@@ -426,12 +437,14 @@ export default function DesignHeader({ className = '' }) {
             </button>
           )}
 
-          {/* Logo mark */}
-          <img
-            className="logo-mark-desktop"
-            src="/brand/mark_colour-on-dark.png"
-            alt="The Clarity Project"
-          />
+          {/* Logo mark - links to Home */}
+          <Link to="/welcome" className="logo-mark-link" aria-label="Home">
+            <img
+              className="logo-mark-desktop"
+              src="/brand/mark_colour-on-dark.png"
+              alt="The Clarity Project"
+            />
+          </Link>
         </div>
 
         {/* Desktop header line */}
