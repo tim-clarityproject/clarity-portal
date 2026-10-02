@@ -1,8 +1,8 @@
-// Source: terms-of-service.md, privacy-policy.md, data-storage-notice.md
-// (verified by size + md5 before import). Wording is copied exactly as
-// supplied - do not edit, shorten or reword it, and do not resolve the
-// square-bracketed placeholders below; they are intentionally left as-is
-// pending legal review. See LEGAL_DRAFT_NOTICE.
+// Source: terms-of-service_2.md, privacy-policy_2.md,
+// data-storage-notice_1.md (verified by size + md5 before import).
+// Wording is copied exactly as supplied - do not edit, shorten or
+// reword it. This revision has no square-bracketed placeholders left.
+// See LEGAL_DRAFT_NOTICE.
 
 export const LEGAL_DRAFT_NOTICE = 'Draft for review. Not yet final.';
 
@@ -79,7 +79,7 @@ export const legalDocuments = {
           "we are not liable for any loss that was not a reasonably foreseeable result of our breach, or that you could have avoided by taking reasonable steps;",
           "we are not liable for loss of profit, revenue, business, goodwill or anticipated savings, or for any indirect or consequential loss, to the extent the law allows this exclusion;",
           "we are not responsible for decisions you make or actions you take in reliance on the Portal, or for loss of or damage to data caused by events outside our reasonable control or by your own actions; and",
-          "our total liability to you arising out of or in connection with the Portal, whether in contract, tort (including negligence), breach of statutory duty or otherwise, is limited to [\u00a3100] or, if greater, the total fees you paid us in the 12 months before the claim arose.",
+          "our total liability to you arising out of or in connection with the Portal, whether in contract, tort (including negligence), breach of statutory duty or otherwise, is limited to \u00a3100 or, if greater, the total fees you paid us in the 12 months before the claim arose.",
         ],
       },
       { type: 'paragraph', text: "If you are using the Portal for business purposes, you also agree that we are not liable to you for any loss arising from your use of the Portal for those purposes beyond the limits above." },
@@ -175,13 +175,14 @@ export const legalDocuments = {
       {
         type: 'list',
         items: [
-          "**Your account and content** are kept while your account is open. When you delete your account, your data is permanently deleted from our live systems straight away or within [30] days, and remains in encrypted backups until they are overwritten, which is normally within [35] days.",
-          "**Records of your agreement to our terms** and security logs may be kept for up to [6] years after your account closes where we need them to deal with legal claims or protect our service.",
+          "**Your account and content** are kept while your account is open. When you delete your account, your data is permanently deleted from our live systems straight away, and remains in encrypted backups only until they are overwritten.",
+          "**Records of your agreement to our terms** and security logs may be kept for up to 6 years after your account closes where we need them to deal with legal claims or protect our service.",
           "**Emails to us** are kept for as long as needed to deal with your query and for a reasonable period afterwards.",
         ],
       },
       { type: 'heading', text: "8. Cookies and similar technologies" },
-      { type: 'paragraph', text: "We use only the cookies and browser storage that are strictly necessary to run the Portal, for example to keep you logged in securely, to remember your session and to remember settings such as your preferred theme. These do not need your consent under UK law. We do not use advertising or tracking cookies, and we do not use analytics cookies [CONFIRM]. If we ever add anything that needs your consent, we will ask you first and update this policy. You can clear or block cookies and site storage in your browser settings, but the Portal may then stop working properly." },
+      { type: 'paragraph', text: "We use only the cookies and browser storage that are strictly necessary to run the Portal, for example to keep you logged in securely, to remember your session and to remember settings such as your preferred theme. These do not need your consent under UK law. We do not use advertising or tracking cookies, and we do not use analytics cookies. If we ever add anything that needs your consent, we will ask you first and update this policy. You can clear or block cookies and site storage in your browser settings, but the Portal may then stop working properly." },
+      { type: 'paragraph', text: "The chat button in the Portal opens WhatsApp or iMessage with a ready-written message to us. If you choose to send it, that message is handled by WhatsApp or Apple under their own terms and privacy policies, not through the Portal." },
       { type: 'heading', text: "9. Keeping your data secure" },
       { type: 'paragraph', text: "We use appropriate technical and organisational measures to protect your data, including encryption of data while it travels between your device and the Portal, encryption at rest by our database provider, access controls, and secure development and deployment practices. No system is completely secure, so we cannot guarantee absolute security, and you share responsibility for it: please use a strong, unique password and keep it private. If a data breach is likely to put you at risk, we will tell you and the Information Commissioner's Office (ICO) as the law requires. More detail is in our Data Storage Notice." },
       { type: 'heading', text: "10. Your rights" },
@@ -231,12 +232,12 @@ export const legalDocuments = {
           "**Technical data:** your IP address, approximate location and time zone, and basic log information (see the Privacy Policy).",
         ],
       },
-      { type: 'paragraph', text: "We do not store payment card details in the Portal. [CONFIRM if this changes]" },
+      { type: 'paragraph', text: "We do not store payment card details in the Portal." },
       { type: 'heading', text: "2. Where it is stored" },
       {
         type: 'list',
         items: [
-          "**Supabase** hosts our database and authentication. Your account and content are stored there, in a data centre in [REGION, e.g. London, UK / Frankfurt, Germany] [CONFIRM].",
+          "**Supabase** hosts our database and authentication. Your account and content are stored there on secure cloud servers. Where your data is processed outside the UK, we rely on the safeguards described in our Privacy Policy.",
           "**Vercel** hosts the Portal website that you use in your browser. It delivers the Portal to you but your saved content lives in the database, not on the website servers.",
           "**Resend** sends our emails (for example confirmation and password-reset emails) and holds the delivery details of those emails for a limited time.",
           "**ipapi.co** is sent your IP address so that it can return your approximate location and time zone. We do not use it to store your content.",
@@ -250,7 +251,7 @@ export const legalDocuments = {
         items: [
           "**In transit:** all traffic between your device and the Portal is encrypted using HTTPS.",
           "**At rest:** our database provider encrypts stored data.",
-          "**Access control:** your content is tied to your account, and the Portal is built so that you can only read and change your own content [CONFIRM row-level security is enabled on every table that holds user content]. You must log in to see it.",
+          "**Access control:** your content is tied to your account, and the Portal is built so that you can only read and change your own content. You must log in to see it.",
           "**Limited staff access:** only a small number of authorised people can reach our systems, only where needed to run, secure, fix or support the Portal, and only with security controls in place. We do not browse your journal, reflections or plans. We will only look at your content if you ask us to help with a fault and agree, or if the law or a court requires us to.",
           "**Passwords:** we never store your password in readable form.",
           "**Providers:** we choose reputable providers and have agreements with them requiring them to keep your data secure and use it only on our instructions.",
@@ -263,12 +264,12 @@ export const legalDocuments = {
         items: [
           "We do not sell your data.",
           "We do not use your plans, reflections or journal to show you advertising or share them with advertisers.",
-          "We do not use your content to train artificial intelligence models [CONFIRM, and update if any AI feature is added].",
+          "We do not use your content to train artificial intelligence models.",
           "We do not share your content with other Portal users.",
         ],
       },
       { type: 'heading', text: "5. Backups and how long we keep things" },
-      { type: 'paragraph', text: "We take regular backups so we can restore the Portal if something goes wrong. Backups are encrypted and kept for [35] days before being overwritten." },
+      { type: 'paragraph', text: "We take regular backups so we can restore the Portal if something goes wrong. Backups are encrypted and kept for a limited period and then overwritten." },
       { type: 'paragraph', text: "While your account is open, we keep your data so that you can use it. If you delete something inside the Portal (for example a plan), it is removed from the live Portal straight away but may remain in backups until they are overwritten." },
       { type: 'heading', text: "6. Deleting your data" },
       { type: 'paragraph', text: "You are in control:" },
@@ -276,7 +277,7 @@ export const legalDocuments = {
         type: 'list',
         items: [
           "**Delete an item:** you can delete individual plans, decisions and entries inside the Portal.",
-          "**Delete your account:** go to My Account and choose Delete account. This permanently deletes your account and all of your content from our live systems [immediately / within 30 days]. It cannot be undone, so please keep a copy of anything you want first. Copies in encrypted backups are overwritten within the backup period above and are not used for anything in the meantime.",
+          "**Delete your account:** go to My Account and choose Delete account. This permanently deletes your account and all of your content from our live systems straight away. It cannot be undone, so please keep a copy of anything you want first. Copies in encrypted backups are overwritten within the backup period above and are not used for anything in the meantime.",
           "**Records we may keep:** we may keep a minimal record that you accepted our terms, and security logs, for a limited period where we need them to deal with legal claims or protect the Portal, as explained in the Privacy Policy.",
           "**By request:** you can also ask us to delete your data, or to give you a copy of it, by emailing tim@theclarityproject.co.uk.",
         ],
