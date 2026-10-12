@@ -88,7 +88,7 @@ export default function LogIn() {
 
   return (
     <AuthShell
-      topBar="mark"
+      topBar="none"
       align="center"
       logo
       headline="WELCOME BACK."
