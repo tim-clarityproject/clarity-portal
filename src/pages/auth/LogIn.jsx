@@ -26,17 +26,6 @@ import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 // exactly; a successful sign-in still flows into AuthContext normally,
 // because its onAuthStateChange listener (already subscribed app-wide)
 // picks up the same SIGNED_IN event regardless of what triggered it.
-//
-// "Forgot password?" - there is no existing forgot-password flow
-// anywhere in this codebase (confirmed by searching the repo before
-// building this). Rather than invent a new multi-screen reset flow
-// that wasn't specified anywhere in this task's screen list, this
-// wires the link directly to Supabase's own
-// supabase.auth.resetPasswordForEmail(), which is the standard,
-// already-available building block - and shows a small inline
-// confirmation in this same screen's style. See the final summary for
-// the one thing this does NOT include: a page to actually set a new
-// password after clicking the reset email's link.
 export default function LogIn() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -44,8 +33,6 @@ export default function LogIn() {
   const [error, setError] = useState('');
   const [shakeToken, setShakeToken] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resetMessage, setResetMessage] = useState('');
-  const [resetSending, setResetSending] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,23 +86,6 @@ export default function LogIn() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      setResetMessage('Enter your email above first.');
-      return;
-    }
-    setResetSending(true);
-    setResetMessage('');
-    try {
-      await supabase.auth.resetPasswordForEmail(email.trim());
-    } catch (err) {
-      // Deliberately don't reveal whether the email exists.
-    } finally {
-      setResetSending(false);
-      setResetMessage('If an account exists for that email, a reset link has been sent.');
-    }
-  };
-
   return (
     <AuthShell
       topBar="mark"
@@ -138,9 +108,7 @@ export default function LogIn() {
         <AuthPasswordField
           label="Password"
           labelExtra={
-            <AuthTextLink type="button" onClick={handleForgotPassword}>
-              {resetSending ? 'Sending…' : 'Forgot password?'}
-            </AuthTextLink>
+            <AuthTextLink to="/forgot-password">Forgot password?</AuthTextLink>
           }
           autoComplete="current-password"
           value={password}
@@ -148,8 +116,7 @@ export default function LogIn() {
           placeholder="Your password"
         />
 
-        {resetMessage && <p className="auth-field-error" style={{ color: 'var(--text-2)' }}>{resetMessage}</p>}
-        {error && <p className="auth-field-error" data-testid="login-error">{error}</p>}
+        {error && <p className="auth-field-error" role="alert" data-testid="login-error">{error}</p>}
 
         <AuthPrimaryButton type="submit" loading={isSubmitting}>
           Log In

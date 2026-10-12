@@ -7,11 +7,21 @@ import { Link } from 'react-router-dom';
 // already-built .ui-btn-primary / .ui-btn-ghost (Nekst 10px, ~49px
 // tall), so these are new classes, not a resize of the existing ones.
 // The existing built buttons elsewhere in the app are untouched.
-export function AuthPrimaryButton({ children, loading, disabled, type = 'button', ...props }) {
+// className is destructured out of each ...props spread below, rather
+// than left in it, because AuthShell's per-screen stagger animation
+// clones every direct child with its own className ("auth-rise ...") -
+// spreading that straight into the button/link after the component's
+// own class name would silently replace auth-btn-primary/auth-btn-ghost/
+// auth-text-link outright (object spread overrides earlier keys), not
+// merge with it. Confirmed this was already happening to Mission.jsx's
+// "Log In" button (an AuthPrimaryButton used as a direct AuthShell
+// child, same shape as this task's screens 4/5) before this fix - it
+// rendered as plain unstyled text, not a coral pill.
+export function AuthPrimaryButton({ children, loading, disabled, type = 'button', className = '', ...props }) {
   return (
     <button
       type={type}
-      className={`auth-btn-primary${loading ? ' loading' : ''}`}
+      className={`auth-btn-primary${loading ? ' loading' : ''} ${className}`.trim()}
       disabled={disabled || loading}
       {...props}
     >
@@ -20,31 +30,31 @@ export function AuthPrimaryButton({ children, loading, disabled, type = 'button'
   );
 }
 
-export function AuthGhostButton({ children, to, ...props }) {
+export function AuthGhostButton({ children, to, className = '', ...props }) {
   if (to) {
     return (
-      <Link to={to} className="auth-btn-ghost" {...props}>
+      <Link to={to} className={`auth-btn-ghost ${className}`.trim()} {...props}>
         {children}
       </Link>
     );
   }
   return (
-    <button type="button" className="auth-btn-ghost" {...props}>
+    <button type="button" className={`auth-btn-ghost ${className}`.trim()} {...props}>
       {children}
     </button>
   );
 }
 
-export function AuthTextLink({ children, to, ...props }) {
+export function AuthTextLink({ children, to, className = '', ...props }) {
   if (to) {
     return (
-      <Link to={to} className="auth-text-link" {...props}>
+      <Link to={to} className={`auth-text-link ${className}`.trim()} {...props}>
         {children}
       </Link>
     );
   }
   return (
-    <button type="button" className="auth-text-link" {...props}>
+    <button type="button" className={`auth-text-link ${className}`.trim()} {...props}>
       {children}
     </button>
   );

@@ -79,6 +79,9 @@ import AuthCheckYourEmail from './pages/auth/CheckYourEmail';
 import AuthMission from './pages/auth/Mission';
 import AuthFinished from './pages/auth/Finished';
 import AuthWelcomeBack from './pages/auth/WelcomeBack';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ForgotPasswordCheckEmail from './pages/auth/ForgotPasswordCheckEmail';
+import ResetPassword from './pages/auth/ResetPassword';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 
 function AppContent() {
@@ -183,7 +186,10 @@ function AppContent() {
     '/auth/check-email',
     '/auth/mission',
     '/auth/finished',
-    '/auth/welcome-back'
+    '/auth/welcome-back',
+    '/forgot-password',
+    '/forgot-password/check-email',
+    '/auth/reset-password'
   ].includes(location.pathname) || location.pathname.startsWith('/legal/');
 
   return (
@@ -218,6 +224,14 @@ function AppContent() {
         <Route path="/auth/mission" element={<AuthMission />} />
         <Route path="/auth/finished" element={<AuthFinished />} />
         <Route path="/auth/welcome-back" element={<AuthWelcomeBack />} />
+
+        {/* Password reset journey - also public, same reasoning as the
+            block above. /auth/reset-password is reached from the emailed
+            link and must work with no existing session, so it cannot be
+            nested under ProtectedLayout either. */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/forgot-password/check-email" element={<ForgotPasswordCheckEmail />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
 
         {/* Standalone, publicly reachable versions of the same three
             documents the sign-up reading pop-up shows, linked from the

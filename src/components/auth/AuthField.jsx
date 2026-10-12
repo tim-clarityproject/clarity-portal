@@ -56,7 +56,7 @@ export function AuthTextField({
         {...inputProps}
       />
       {error && (
-        <p id={`${fieldId}-error`} className="auth-field-error">{error}</p>
+        <p id={`${fieldId}-error`} className="auth-field-error" role="alert">{error}</p>
       )}
     </div>
   );
@@ -71,13 +71,29 @@ export function AuthPasswordField({
   error,
   shakeToken,
   id,
+  // Optional controlled show/hide, so one toggle can drive two fields at
+  // once (e.g. "New password" + "Confirm new password" on the reset-
+  // password screen). Omit both and each field keeps its own internal
+  // state exactly as before - every existing caller (LogIn, SignUpStep2)
+  // is unaffected.
+  visible: controlledVisible,
+  onToggleVisible,
   ...inputProps
 }) {
   const autoId = useId();
   const fieldId = id || autoId;
   const shaking = useShake(shakeToken ?? error);
   const [focused, setFocused] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [internalVisible, setInternalVisible] = useState(false);
+  const isControlled = controlledVisible !== undefined;
+  const visible = isControlled ? controlledVisible : internalVisible;
+  const toggleVisible = () => {
+    if (isControlled) {
+      onToggleVisible?.(!visible);
+    } else {
+      setInternalVisible((v) => !v);
+    }
+  };
 
   return (
     <div className="auth-field">
@@ -105,13 +121,13 @@ export function AuthPasswordField({
           type="button"
           className="auth-password-toggle"
           aria-pressed={visible}
-          onClick={() => setVisible((v) => !v)}
+          onClick={toggleVisible}
         >
           {visible ? 'HIDE' : 'SHOW'}
         </button>
       </div>
       {error && (
-        <p id={`${fieldId}-error`} className="auth-field-error">{error}</p>
+        <p id={`${fieldId}-error`} className="auth-field-error" role="alert">{error}</p>
       )}
     </div>
   );

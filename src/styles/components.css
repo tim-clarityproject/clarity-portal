@@ -1364,3 +1364,40 @@ html:has(.ui-root) {
   outline: 2px solid var(--coral);
   outline-offset: 2px;
 }
+
+/* ============================================================
+   Clock icon (src/pages/auth/ResetPassword.jsx "link expired" screen).
+   No clock icon exists anywhere in the Welcome flow to reuse, so this is
+   new - built in the exact same visual recipe as the envelope icon
+   above (same stroke width/colour/round caps, same draw-in mechanic via
+   stroke-dasharray/dashoffset animating to 0), just a different shape.
+   ============================================================ */
+.auth-clock-face {
+  fill: none;
+  stroke: var(--coral);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 201;
+  stroke-dashoffset: 201;
+  animation: auth-envelope-draw 1.4s var(--ease) forwards;
+}
+
+.auth-clock-hands {
+  fill: none;
+  stroke: var(--coral);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: auth-envelope-draw 1.4s var(--ease) 700ms forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .auth-clock-face,
+  .ui-root .auth-clock-hands {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}

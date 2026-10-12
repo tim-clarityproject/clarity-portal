@@ -6,7 +6,7 @@ import { AuthGhostButton, AuthTextLink } from '../../components/auth/AuthButton'
 
 const RESEND_SECONDS = 30;
 
-function EnvelopeIcon() {
+export function EnvelopeIcon() {
   return (
     <svg
       className="auth-envelope"
