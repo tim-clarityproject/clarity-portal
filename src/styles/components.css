@@ -1592,7 +1592,11 @@ html:has(.ui-root) {
   outline-offset: 3px;
 }
 
-.ui-root .discard-dialog-discard {
+/* .dng (DeleteDialog.jsx's danger button, "class dng" per the brief)
+   shares this exact recipe rather than duplicating it - same coral-
+   tinted ghost pill as the approved Discard pop-up. */
+.ui-root .discard-dialog-discard,
+.ui-root .dng {
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--coral-text);
@@ -1609,12 +1613,15 @@ html:has(.ui-root) {
 }
 
 .ui-root .discard-dialog-discard:hover,
-.ui-root .discard-dialog-discard:focus-visible {
+.ui-root .discard-dialog-discard:focus-visible,
+.ui-root .dng:hover,
+.ui-root .dng:focus-visible {
   border-color: var(--coral);
   background: rgba(255, 111, 92, 0.07);
 }
 
-.ui-root .discard-dialog-discard:focus-visible {
+.ui-root .discard-dialog-discard:focus-visible,
+.ui-root .dng:focus-visible {
   outline: 2px solid var(--coral);
   outline-offset: 2px;
 }
