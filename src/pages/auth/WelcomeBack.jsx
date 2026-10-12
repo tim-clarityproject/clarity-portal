@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import { MissionContext } from '../../context/MissionContext';
 import { supabase } from '../../lib/supabase';
 import AuthShell from '../../components/auth/AuthShell';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
@@ -19,6 +20,7 @@ function getGreetingWord() {
 export default function WelcomeBack() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const { mission } = useContext(MissionContext);
   const [firstName, setFirstName] = useState('');
   const [nameLoaded, setNameLoaded] = useState(false);
 
@@ -88,8 +90,14 @@ export default function WelcomeBack() {
       align="center"
       logo
       headline={headline}
-      sub="Let's make it a good one."
     >
+      {mission && (
+        <div className="auth-mission-card" style={{ marginTop: '26px', animationDelay: '1500ms' }}>
+          <div className="auth-mission-card-label">Your Mission</div>
+          <div className="auth-mission-card-text">{mission}</div>
+        </div>
+      )}
+
       <div style={{ animationDelay: '1700ms' }}>
         <AuthPrimaryButton onClick={() => navigate('/welcome')}>
           Continue

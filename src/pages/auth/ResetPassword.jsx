@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import AuthShell from '../../components/auth/AuthShell';
-import { AuthPasswordField, useShake } from '../../components/auth/AuthField';
+import { AuthPasswordField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 
 const NEW_PASSWORD_FIELD_ID = 'reset-password-new';
@@ -17,9 +17,9 @@ function passwordStrength(pw) {
   return score;
 }
 
-function ClockIcon() {
+export function ClockIcon() {
   return (
-    <svg width="84" height="84" viewBox="0 0 84 84" aria-hidden="true">
+    <svg className="auth-envelope" width="84" height="84" viewBox="0 0 84 84" aria-hidden="true">
       <circle cx="42" cy="42" r="32" className="auth-clock-face" />
       <path d="M42 24v18l14 8" className="auth-clock-hands" />
     </svg>
@@ -31,9 +31,18 @@ function ClockIcon() {
 // how src/pages/auth/Mission.jsx already handles several distinct
 // outcomes of a single emailed link (checking/expired/needs-login/
 // already-confirmed/ready) under one route rather than separate ones.
-function Centered({ topBar = 'back', headline, sub, children }) {
+function Centered({ topBar = 'back', beforeHeadline, headline, sub, children }) {
   return (
-    <AuthShell topBar={topBar} backTo="/auth/login" backLabel="← Log in" align="center" headline={headline} sub={sub}>
+    <AuthShell
+      topBar={topBar}
+      backTo="/auth/login"
+      backLabel="← Log in"
+      align="center"
+      columnClassName="cc"
+      beforeHeadline={beforeHeadline}
+      headline={headline}
+      sub={sub}
+    >
       {children}
     </AuthShell>
   );
@@ -171,13 +180,10 @@ export default function ResetPassword() {
   if (status === 'expired') {
     return (
       <Centered
+        beforeHeadline={<ClockIcon />}
         headline="THIS LINK HAS EXPIRED."
         sub="Reset links work once, for one hour. Request a new one and we will send it straight away."
       >
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <ClockIcon />
-        </div>
-
         <AuthPrimaryButton onClick={() => navigate('/forgot-password')}>
           Send me a new link
         </AuthPrimaryButton>
@@ -189,16 +195,17 @@ export default function ResetPassword() {
     return (
       <Centered
         topBar="none"
+        beforeHeadline={(
+          <div className="auth-confirmed-row">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3 8.5l3.2 3.2L13 4.5" fill="none" stroke="var(--mint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="auth-confirmed-tick" />
+            </svg>
+            <span>Password updated</span>
+          </div>
+        )}
         headline="YOU ARE ALL SET."
         sub="Your new password is saved. Log in to continue."
       >
-        <div className="auth-confirmed-row">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M3 8.5l3.2 3.2L13 4.5" fill="none" stroke="var(--mint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="auth-confirmed-tick" />
-          </svg>
-          <span>Password updated</span>
-        </div>
-
         <AuthPrimaryButton onClick={() => navigate('/auth/login')}>
           Log In
         </AuthPrimaryButton>

@@ -55,6 +55,8 @@ export default function ForgotPasswordCheckEmail() {
       backTo="/auth/login"
       backLabel="← Log in"
       align="center"
+      columnClassName="cc"
+      beforeHeadline={<EnvelopeIcon />}
       headline="CHECK YOUR EMAIL."
       sub={
         <>
@@ -62,11 +64,7 @@ export default function ForgotPasswordCheckEmail() {
         </>
       }
     >
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <EnvelopeIcon />
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+      <div className="auth-stack">
         <AuthGhostButton
           onClick={handleResend}
           disabled={secondsLeft > 0 || resending}
@@ -74,7 +72,7 @@ export default function ForgotPasswordCheckEmail() {
           {buttonLabel}
         </AuthGhostButton>
 
-        <AuthTextLink to="/forgot-password">Use a different email</AuthTextLink>
+        <AuthTextLink to="/forgot-password" style={{ justifyContent: 'center' }}>Use a different email</AuthTextLink>
       </div>
 
       <p className="auth-tip">

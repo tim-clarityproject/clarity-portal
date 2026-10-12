@@ -4,10 +4,12 @@ import { AuthContext } from '../../context/AuthContext';
 import { MissionContext } from '../../context/MissionContext';
 import { supabase } from '../../lib/supabase';
 import AuthShell from '../../components/auth/AuthShell';
-import { AuthPrimaryButton, AuthGhostButton } from '../../components/auth/AuthButton';
+import { AuthPrimaryButton, AuthTextLink } from '../../components/auth/AuthButton';
 import { useShake } from '../../components/auth/AuthField';
+import { ClockIcon } from './ResetPassword';
 
 const MAX_MISSION_LENGTH = 70;
+const IDEAS_PER_GROUP = 3;
 
 const EXAMPLE_MISSIONS = [
   'Build a team that wins when it matters most.',
@@ -38,9 +40,18 @@ const EXAMPLE_MISSIONS = [
 //   d) already confirmed: no error params, no fresh SIGNED_IN event, but
 //      the browser already has a valid session (e.g. still logged in
 //      from before) -> "you are already confirmed" screen
-function LinkState({ icon, headline, sub, children }) {
+function LinkState({ beforeHeadline, columnClassName, headline, sub, children }) {
   return (
-    <AuthShell topBar="back" backTo="/auth/login" backLabel="← Log in" align="center" headline={headline} sub={sub}>
+    <AuthShell
+      topBar="back"
+      backTo="/auth/login"
+      backLabel="← Log in"
+      align="center"
+      columnClassName={columnClassName}
+      beforeHeadline={beforeHeadline}
+      headline={headline}
+      sub={sub}
+    >
       {children}
     </AuthShell>
   );
@@ -58,9 +69,27 @@ export default function Mission() {
   const [shakeToken, setShakeToken] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [checkedExistingMission, setCheckedExistingMission] = useState(false);
+  const [ideaGroup, setIdeaGroup] = useState(0);
+  const [saveBarHeight, setSaveBarHeight] = useState(0);
   const textareaRef = useRef(null);
+  const saveBarRef = useRef(null);
   const hasProcessedCodeRef = useRef(false);
-  const textareaShaking = useShake(shakeToken);
+  const cardShaking = useShake(shakeToken);
+
+  // The save bar is position:fixed (see the CSS comment on
+  // .auth-sticky-save for why not sticky), so it no longer occupies
+  // space in the form's normal flow - this measures its real rendered
+  // height and reserves that much padding at the foot of the form so
+  // scrolled content (the last idea pill, the "Show other ideas" link)
+  // never ends up hidden behind it, on any screen size.
+  useEffect(() => {
+    const measure = () => {
+      if (saveBarRef.current) setSaveBarHeight(saveBarRef.current.getBoundingClientRect().height);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   useEffect(() => {
     // StrictMode (dev) mounts, runs this effect, cleans it up, then runs
@@ -198,13 +227,19 @@ export default function Mission() {
   useEffect(() => {
     if (!textareaRef.current) return;
     textareaRef.current.style.height = 'auto';
-    const next = Math.min(Math.max(textareaRef.current.scrollHeight, 96), 150);
+    const next = Math.min(Math.max(textareaRef.current.scrollHeight, 30), 150);
     textareaRef.current.style.height = `${next}px`;
   }, [missionValue]);
 
   const handleExampleClick = (text) => {
     setMissionValue(text.slice(0, MAX_MISSION_LENGTH));
     setMissionError('');
+    textareaRef.current?.focus();
+  };
+
+  const handleShowOtherIdeas = () => {
+    const groupCount = Math.ceil(EXAMPLE_MISSIONS.length / IDEAS_PER_GROUP);
+    setIdeaGroup((g) => (g + 1) % groupCount);
   };
 
   const handleSave = async (e) => {
@@ -236,7 +271,9 @@ export default function Mission() {
   };
 
   const atLimit = missionValue.length >= MAX_MISSION_LENGTH;
-  const firstName = user?.user_metadata?.first_name || '';
+  const visibleIdeas = Array.from({ length: IDEAS_PER_GROUP }, (_, i) => {
+    return EXAMPLE_MISSIONS[(ideaGroup * IDEAS_PER_GROUP + i) % EXAMPLE_MISSIONS.length];
+  });
 
   if (linkStatus === 'checking') {
     return (
@@ -248,8 +285,16 @@ export default function Mission() {
 
   if (linkStatus === 'expired') {
     return (
-      <LinkState headline="THAT LINK HAS EXPIRED." sub="Confirmation links only work for a little while. Send a new one from the sign-up screen.">
-        <AuthGhostButton to="/auth/sign-up/account">Back to sign up</AuthGhostButton>
+      <LinkState
+        columnClassName="cc"
+        beforeHeadline={<ClockIcon />}
+        headline="THAT LINK HAS EXPIRED."
+        sub="Confirmation links only work for a little while. Go back to sign up and we will send you a fresh one."
+      >
+        <AuthPrimaryButton onClick={() => navigate('/auth/sign-up/account')}>Back to sign up</AuthPrimaryButton>
+        <AuthTextLink className="quiet" onClick={() => navigate('/auth/login')} style={{ justifyContent: 'center', width: '100%' }}>
+          Already confirmed? Log in
+        </AuthTextLink>
       </LinkState>
     );
   }
@@ -283,48 +328,46 @@ export default function Mission() {
       step={3}
       topBar="none"
       align="center"
-      headline="WHAT IS YOUR MISSION?"
-      sub="One sentence about what you are here to do. It stays with you at the top of every page."
-    >
-      <div className="auth-confirmed-row">
-        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M3 8.5l3.2 3.2L13 4.5" fill="none" stroke="var(--mint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="auth-confirmed-tick" />
-        </svg>
-        <span>Email Confirmed</span>
-      </div>
-
-      <div className="auth-mission-card">
-        <div className="auth-mission-card-label">Your Mission</div>
-        <div className="auth-mission-card-text">
-          {missionValue.trim() ? missionValue : <span className="auth-mission-card-placeholder">It will appear here as you type.</span>}
+      columnClassName="mc"
+      beforeHeadline={(
+        <div className="auth-confirmed-row">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M3 8.5l3.2 3.2L13 4.5" fill="none" stroke="var(--mint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="auth-confirmed-tick" />
+          </svg>
+          <span>Email Confirmed</span>
         </div>
-      </div>
-
-      <form onSubmit={handleSave} noValidate>
-        <div className="auth-field">
-          <label htmlFor="mission-textarea" className="auth-field-label">Your Mission</label>
+      )}
+      headline="WHAT IS YOUR MISSION?"
+      sub="One sentence about what you are here to do."
+    >
+      <form onSubmit={handleSave} noValidate style={{ paddingBottom: saveBarHeight ? `${saveBarHeight + 28}px` : undefined }}>
+        <div className={`auth-mission-card auth-mission-card--input${missionError ? ' error' : ''}${cardShaking ? ' shake' : ''}`}>
+          <label htmlFor="mission-textarea" className="auth-mission-card-label">Your Mission</label>
           <textarea
             id="mission-textarea"
             ref={textareaRef}
-            className={`auth-input auth-mission-textarea${missionError ? ' error' : ''}${textareaShaking ? ' shake' : ''}`}
+            className="auth-mission-card-input"
             value={missionValue}
             onChange={(e) => {
               setMissionValue(e.target.value.slice(0, MAX_MISSION_LENGTH));
               if (missionError) setMissionError('');
             }}
-            placeholder="Type here"
+            placeholder="Type your mission here"
             maxLength={MAX_MISSION_LENGTH}
+            rows={1}
+            aria-label="Your mission"
           />
-          <div className="auth-mission-counter-row">
-            <span>Short and clear works best.</span>
-            <span className={atLimit ? 'at-limit' : ''}>{missionValue.length}/{MAX_MISSION_LENGTH}</span>
-          </div>
-          {missionError && <p className="auth-field-error">{missionError}</p>}
         </div>
+
+        <div className="auth-mission-counter-row">
+          <span className={atLimit ? 'at-limit' : ''}>{missionValue.length}/{MAX_MISSION_LENGTH}</span>
+        </div>
+
+        {missionError && <p className="auth-field-error auth-mission-error" role="alert">{missionError}</p>}
 
         <p className="auth-spark-label">Need a spark?</p>
         <div className="auth-example-pills">
-          {EXAMPLE_MISSIONS.map((text) => (
+          {visibleIdeas.map((text) => (
             <button
               key={text}
               type="button"
@@ -335,10 +378,15 @@ export default function Mission() {
             </button>
           ))}
         </div>
+        <div className="auth-more-ideas-wrap">
+          <AuthTextLink type="button" onClick={handleShowOtherIdeas}>Show other ideas</AuthTextLink>
+        </div>
 
-        <AuthPrimaryButton type="submit" loading={isSaving}>
-          Save My Mission
-        </AuthPrimaryButton>
+        <div className="auth-sticky-save" ref={saveBarRef}>
+          <AuthPrimaryButton type="submit" loading={isSaving}>
+            Save my mission
+          </AuthPrimaryButton>
+        </div>
       </form>
     </AuthShell>
   );

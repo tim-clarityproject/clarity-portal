@@ -15,6 +15,8 @@ export default function AuthShell({
   backLabel = '<- Back',
   align = 'center', // 'left' | 'center'
   logo = false,
+  beforeHeadline, // optional node (envelope/clock/confirmed-tick-row) rendered above the headline, same slot logo uses
+  columnClassName = '', // extra class(es) on .auth-column, e.g. the mock-up's "cc" (centred check-email/expired pages) or "mc" (mission)
   headline,
   sub,
   children,
@@ -168,13 +170,20 @@ export default function AuthShell({
         .auth-column {
           width: 100%;
           max-width: 420px;
-          margin: 0 auto;
+          margin: 0 auto auto;
           box-sizing: border-box;
           padding: 28px 20px 32px;
         }
 
         @media (min-width: 769px) {
           .auth-column {
+            /* Mock-up's ".col1{margin:auto}" - vertically centres the
+               content on desktop (degrades to top-aligned once content
+               is taller than the viewport, so long forms like Mission
+               still start from the top, not mid-way down). Phone keeps
+               margin: 0 auto auto (top-aligned) per the mock-up's own
+               ".p .col1{margin:0 auto auto}". */
+            margin: auto;
             padding: 24px 32px 40px;
           }
         }
@@ -313,10 +322,15 @@ export default function AuthShell({
       )}
 
       <div className="auth-content">
-        <div className={`auth-column align-${align}`}>
+        <div className={`auth-column align-${align} ${columnClassName}`.trim()}>
           {logo && (
             <div className="auth-rise" style={{ marginBottom: '28px', animationDelay: '0ms' }}>
               <BigLogo />
+            </div>
+          )}
+          {beforeHeadline && (
+            <div className="auth-rise" style={{ animationDelay: '0ms' }}>
+              {beforeHeadline}
             </div>
           )}
           {headline && (

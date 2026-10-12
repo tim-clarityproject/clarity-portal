@@ -67,6 +67,8 @@ export default function CheckYourEmail() {
       backTo="/auth/login"
       backLabel="← Log in"
       align="center"
+      columnClassName="cc"
+      beforeHeadline={<EnvelopeIcon />}
       headline="CHECK YOUR EMAIL."
       sub={
         <>
@@ -74,11 +76,7 @@ export default function CheckYourEmail() {
         </>
       }
     >
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <EnvelopeIcon />
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+      <div className="auth-stack">
         <AuthGhostButton
           onClick={handleResend}
           disabled={secondsLeft > 0 || resending}
@@ -88,7 +86,7 @@ export default function CheckYourEmail() {
 
         {resendMessage && <p className="auth-field-error" style={{ color: 'var(--text-2)' }}>{resendMessage}</p>}
 
-        <AuthTextLink onClick={handleDifferentEmail}>Use a different email</AuthTextLink>
+        <AuthTextLink onClick={handleDifferentEmail} style={{ justifyContent: 'center' }}>Use a different email</AuthTextLink>
       </div>
 
       <p className="auth-tip">

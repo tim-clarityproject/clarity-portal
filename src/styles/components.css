@@ -614,7 +614,7 @@ html:has(.ui-root) {
   justify-content: center;
   width: 100%;
   min-height: 52px !important;
-  margin-top: 22px;
+  margin-top: 32px;
   border-radius: 999px;
   background: var(--coral);
   color: #000;
@@ -736,12 +736,44 @@ html:has(.ui-root) {
    the bare "input" selector on specificity for min-height, and padding
    below carries its own !important to beat the legacy !important
    regardless. ============================================================ */
+/* Spacing standard (mock-ups claude/mockups/welcome-flow.html v9 and
+   reset-password.html v4, read-only from ~/Downloads - "polish" section):
+   26px between fields, 12px label-to-field, 40px intro-line-to-first-
+   field (.auth-sub + .auth-field below), 32px last-field-to-button (26px
+   when a .auth-row2 sits between). None of these exact px values has a
+   --space-* token (space-3=16, space-4=24 - neither is 26/12/40/32), so
+   hard-coded here per instruction, matching the mock-ups exactly. */
+/* Every field label is left-aligned regardless of the column's own
+   align-center (only the heading block above - logo, headline, rule,
+   intro line - is ever centred). Explains the Log in bug this task
+   flagged: Email's label inherited text-align:center from the column
+   and rendered centred, while Password's label happened to look
+   left-aligned only because its wrapping .auth-field-label-row is a
+   flex row (default justify-content:flex-start positions the label at
+   the row's start regardless of the inherited text-align) - two
+   different fields silently out of sync. Mock-up's own rule:
+   ".fld,.fld label,.err,.hint{text-align:left}". */
+.auth-field,
+.auth-field-label,
+.auth-field-error,
+.auth-strength-hint {
+  text-align: left;
+}
+
 .auth-field {
-  margin-top: 16px;
+  margin-top: 26px;
 }
 
 .auth-field:first-child {
   margin-top: 0;
+}
+
+/* Every field sits inside a <form>, not as a direct sibling of
+   .auth-sub, so the first field/field-row needs targeting one level
+   down rather than a plain adjacent-sibling selector. */
+.auth-sub + form .auth-field:first-child,
+.auth-sub + form .auth-field-row:first-child {
+  margin-top: 40px;
 }
 
 .auth-field-label {
@@ -752,7 +784,7 @@ html:has(.ui-root) {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-2);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   transition: color var(--dur-fast) var(--ease);
 }
 
@@ -764,7 +796,7 @@ html:has(.ui-root) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .auth-field-label-row .auth-field-label {
@@ -857,7 +889,7 @@ html:has(.ui-root) {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 24px 0;
+  margin: 30px 0 6px;
 }
 
 .auth-or-divider span:not(.auth-or-label) {
@@ -866,25 +898,67 @@ html:has(.ui-root) {
   background: var(--line);
 }
 
+/* Name step (SignUpStep1.jsx): stacked on phone - each field already
+   gets the standard 26px top margin from .auth-field above, except the
+   first, via the existing :first-child rule, so phone needs no extra
+   CSS here. Side by side on desktop, 14px gap (mock-up ".nm2"), margin
+   zeroed since they're no longer stacked. */
 .auth-field-row {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.auth-field-row .auth-field {
-  margin-top: 0;
 }
 
 @media (min-width: 769px) {
   .auth-field-row {
     flex-direction: row;
-    gap: 12px;
+    gap: 14px;
   }
 
   .auth-field-row .auth-field {
     flex: 1;
+    margin-top: 0;
   }
+}
+
+/* "Forgot password?" row (Log in) - sits below the password field, not
+   beside its label. 8px below the field, 26px above the button
+   (overriding the standalone .auth-btn-primary's 32px - mock-up
+   ".row2"/".row2 + .btn"). */
+.auth-row2 {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.ui-root .auth-row2 + .auth-btn-primary {
+  margin-top: 26px;
+}
+
+/* Resend button + "Use a different email" stack (check-email screens). */
+.auth-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+/* Log in screen: Terms/Privacy/Data Storage links, well below the
+   "New here?" link (mock-up's ".legal{margin-top:40px}",
+   ".p .legal{margin-top:34px}"). */
+.auth-legal-footer-spacing {
+  margin-top: 34px;
+}
+
+@media (min-width: 769px) {
+  .auth-legal-footer-spacing {
+    margin-top: 40px;
+  }
+}
+
+.auth-stack .auth-btn-primary,
+.auth-stack .auth-btn-ghost {
+  margin: 0;
 }
 
 .auth-strength {
@@ -916,7 +990,7 @@ html:has(.ui-root) {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-top: 22px;
+  margin-top: 30px;
 }
 
 .ui-root .auth-checkbox {
@@ -1019,6 +1093,76 @@ html:has(.ui-root) {
 
 .auth-envelope {
   margin-bottom: 8px;
+}
+
+/* Centred "proper desktop page" screens (mock-up's ".cc"): CheckYourEmail,
+   ForgotPasswordCheckEmail, and the expired states of Mission and
+   ResetPassword. Passed as AuthShell's columnClassName="cc". None of
+   these px values has a --space-* token, hard-coded to match the
+   mock-up exactly (mobile-first; see the mock-up's own .p/.d split). */
+.auth-column.cc {
+  max-width: 460px;
+}
+
+.cc .auth-envelope {
+  width: 76px;
+  height: 76px;
+  margin-bottom: 28px;
+}
+
+@media (min-width: 769px) {
+  .cc .auth-envelope {
+    width: 96px;
+    height: 96px;
+    margin-bottom: 36px;
+  }
+}
+
+.cc .auth-rule {
+  margin-top: 26px;
+}
+
+.cc .auth-sub {
+  margin: 22px auto 0;
+  max-width: 390px;
+  line-height: 1.65;
+}
+
+.cc .auth-btn-primary {
+  margin: 34px auto 0;
+  max-width: 300px;
+}
+
+@media (min-width: 769px) {
+  .cc .auth-btn-primary {
+    margin-top: 40px;
+  }
+}
+
+.cc .auth-stack {
+  margin: 36px auto 0;
+  max-width: 300px;
+  gap: 14px;
+}
+
+@media (min-width: 769px) {
+  .cc .auth-stack {
+    margin-top: 44px;
+  }
+}
+
+.cc .auth-tip {
+  margin: 38px auto 0;
+  max-width: 340px;
+  line-height: 1.6;
+}
+
+.cc .auth-confirmed-row {
+  margin-bottom: 30px;
+}
+
+.cc .auth-text-link.quiet {
+  margin-top: 14px;
 }
 
 .auth-envelope-body,
@@ -1128,27 +1272,69 @@ html:has(.ui-root) {
   color: var(--placeholder);
 }
 
-.ui-root .auth-mission-textarea {
-  min-height: 96px !important;
-  max-height: 150px;
-  padding: 14px 16px !important;
-  line-height: 1.5;
+/* Mission page (/auth/mission): one coral-outlined card IS the input -
+   no separate preview card, no separate text box. Modifier on the same
+   .auth-mission-card used by Finished.jsx/WelcomeBack.jsx (unchanged,
+   static-display use there); only this variant turns it into a live
+   textarea. */
+.auth-mission-card--input {
+  width: 100%;
+  min-width: 0;
+  margin: 30px auto 0;
+  padding: 14px 22px 16px;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.auth-mission-card--input.error {
+  border-color: var(--coral-soft);
+}
+
+.auth-mission-card--input:focus-within .auth-mission-card-label {
+  color: var(--coral-soft);
+}
+
+.ui-root .auth-mission-card-input {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.45;
+  text-align: center;
   resize: none;
   overflow: hidden;
-  font-family: var(--font-body);
+  padding: 0;
+  min-height: 30px;
+}
+
+@media (min-width: 769px) {
+  .ui-root .auth-mission-card-input {
+    font-size: 20px;
+  }
+}
+
+.ui-root .auth-mission-card-input::placeholder {
+  color: var(--placeholder);
 }
 
 .auth-mission-counter-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   font-family: var(--font-body);
   font-size: 13px;
   color: var(--placeholder);
-  margin-top: 8px;
+  margin-top: 14px;
 }
 
 .auth-mission-counter-row .at-limit {
   color: var(--coral-soft);
+}
+
+.auth-mission-error {
+  text-align: center;
 }
 
 .auth-spark-label {
@@ -1158,24 +1344,30 @@ html:has(.ui-root) {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--placeholder);
-  margin: 24px 0 12px;
+  text-align: center;
+  margin: 30px 0 12px;
 }
 
 .auth-example-pills {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
 }
 
 .ui-root .auth-example-pill {
   min-height: 44px !important;
-  padding: 0 16px !important;
-  border-radius: 999px;
+  height: auto;
+  padding: 11px 18px !important;
+  border-radius: 22px;
   border: 1px solid var(--line);
   background: transparent;
   font-family: var(--font-body);
   font-size: 13px !important;
+  line-height: 1.4;
   color: var(--text-2);
+  text-align: center;
+  justify-content: center;
   cursor: pointer;
   transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
@@ -1184,6 +1376,68 @@ html:has(.ui-root) {
 .ui-root .auth-example-pill:focus-visible {
   color: var(--text);
   border-color: var(--btn-line);
+}
+
+.auth-more-ideas-wrap {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Mission column (AuthShell columnClassName="mc"): centred, narrower
+   heading, tighter gaps above the card than the generic .cc screens. */
+.auth-column.mc {
+  max-width: 440px;
+}
+
+@media (min-width: 769px) {
+  .auth-column.mc {
+    max-width: 520px;
+  }
+
+  .auth-column.mc .auth-headline {
+    font-size: 26px !important;
+  }
+}
+
+.mc .auth-confirmed-row {
+  margin-bottom: 20px;
+}
+
+.mc .auth-rule {
+  margin-top: 20px;
+}
+
+.mc .auth-sub {
+  margin-top: 16px;
+}
+
+/* Save my mission: always-visible bar pinned to the bottom of the
+   screen, respecting the phone safe area. position:fixed, not sticky -
+   confirmed by isolated repro that src/index.css's global
+   `html, body { overflow-x: hidden }` (untouchable per CLAUDE.md rule
+   17 - never a global rule on html/body) forces overflow-y to compute
+   as "auto" too (an auto-promotion the CSS Overflow spec requires when
+   one axis is non-visible and the other isn't), and that alone breaks
+   position:sticky against the viewport in this Chromium build - the
+   element just scrolls with the page instead of sticking. Verified
+   fixed sidesteps it entirely in the same reduced test case. Mission.jsx
+   measures this bar's real height and pads the form by that amount so
+   scrolled content never sits behind it. */
+.auth-sticky-save {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px 20px max(24px, calc(16px + env(safe-area-inset-bottom)));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  z-index: 10;
+}
+
+.auth-sticky-save .auth-btn-primary {
+  margin: 0 auto;
+  max-width: 420px;
 }
 
 @media (prefers-reduced-motion: reduce) {

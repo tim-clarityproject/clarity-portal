@@ -59,7 +59,7 @@ export default function ForgotPassword() {
       topBar="back"
       backTo="/auth/login"
       backLabel="← Log in"
-      align="center"
+      align="left"
       headline="FORGOT YOUR PASSWORD?"
       sub="Enter your email and we will send you a link to set a new one."
     >

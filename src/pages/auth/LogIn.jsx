@@ -107,9 +107,6 @@ export default function LogIn() {
 
         <AuthPasswordField
           label="Password"
-          labelExtra={
-            <AuthTextLink to="/forgot-password">Forgot password?</AuthTextLink>
-          }
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -117,6 +114,10 @@ export default function LogIn() {
         />
 
         {error && <p className="auth-field-error" role="alert" data-testid="login-error">{error}</p>}
+
+        <div className="auth-row2">
+          <AuthTextLink to="/forgot-password">Forgot password?</AuthTextLink>
+        </div>
 
         <AuthPrimaryButton type="submit" loading={isSubmitting}>
           Log In
@@ -133,7 +134,7 @@ export default function LogIn() {
         <AuthTextLink to="/auth/sign-up">New here? Create your account</AuthTextLink>
       </div>
 
-      <div style={{ marginTop: '24px' }}>
+      <div className="auth-legal-footer-spacing">
         <LegalFooterLinks align="center" />
       </div>
     </AuthShell>
