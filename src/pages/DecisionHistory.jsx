@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
@@ -36,6 +36,7 @@ const EDIT_ROUTE = {
 
 export default function DecisionHistory() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useContext(AuthContext);
   const [decisions, setDecisions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +48,17 @@ export default function DecisionHistory() {
     if (user) loadDecisions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  // A Discard on any Inversion/Tough conversation/Stop doing audit step
+  // lands here with a one-shot toast - show it once, then clear the
+  // router state so refreshing/going back doesn't repeat it.
+  useEffect(() => {
+    if (location.state?.toast) {
+      showToast(location.state.toast);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadDecisions = async () => {
     setError(null);

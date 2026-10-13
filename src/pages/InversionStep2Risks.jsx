@@ -115,7 +115,7 @@ export default function InversionStep2Risks() {
 
   const handleDiscard = () => {
     setDiscardOpen(false);
-    navigate('/decision-history');
+    navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 
   const goContinue = () => {

@@ -51,7 +51,7 @@ export const pageText = {
 
   // Inversion steps
   inversionStep1Goal: { overline: 'Plan', subtitle: '' },
-  inversionStep2Fuckups: { overline: 'Plan', subtitle: '' },
+  inversionStep2Risks: { overline: 'Plan', subtitle: '' },
   inversionStep3Plan: { overline: 'Plan', subtitle: '' },
   inversionThinkingSummary: { overline: 'Plan', subtitle: '' },
 

@@ -169,7 +169,7 @@ export default function ToughConversationStep2Coaching() {
 
   const handleDiscard = () => {
     setDiscardOpen(false);
-    navigate('/decision-history');
+    navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 
   const actionButtons = (

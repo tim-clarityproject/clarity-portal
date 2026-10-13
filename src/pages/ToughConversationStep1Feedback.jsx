@@ -110,7 +110,7 @@ export default function ToughConversationStep1Feedback() {
 
   const handleDiscard = () => {
     setDiscardOpen(false);
-    navigate('/decision-history');
+    navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 
   const goContinue = () => {

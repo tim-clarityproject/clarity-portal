@@ -130,7 +130,7 @@ export default function InversionStep1Goal() {
 
   const handleDiscard = () => {
     setDiscardOpen(false);
-    navigate('/decision-history');
+    navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 
   const canContinue = goal.trim().length > 0;

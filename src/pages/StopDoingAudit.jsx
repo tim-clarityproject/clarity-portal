@@ -209,7 +209,7 @@ export default function StopDoingAudit() {
 
   const handleDiscard = () => {
     setDiscardOpen(false);
-    navigate('/decision-history');
+    navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 
   const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '16px 20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };

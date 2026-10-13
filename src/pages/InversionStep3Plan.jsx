@@ -116,7 +116,7 @@ export default function InversionStep3Plan() {
 
   const handleDiscard = () => {
     setDiscardOpen(false);
-    navigate('/decision-history');
+    navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 
   const goToStep = (path) => {
