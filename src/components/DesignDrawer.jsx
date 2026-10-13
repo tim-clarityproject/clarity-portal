@@ -6,13 +6,37 @@ import { supabase } from '../lib/supabase';
 
 // Plan now absorbs the old Decide section. Each sub-link lists the extra
 // routes that count as "current" for it (its own child/summary/step pages).
+//
+// Prompt 7c: Decision Tools/My Decisions removed from this list (reached
+// via All Planning Tools and My Plans/My decisions now). Every decision
+// tool's own step/summary pages (GROW, Inversion, Tough conversation,
+// Stop doing audit, plus /decision-history and /decision-summary) now
+// highlight My Plans, since there is no longer a single "Decision Tools"
+// item for them to belong to - see build summary point 6. /decision-tools
+// itself (the hub, reached FROM All Planning Tools) highlights that.
+//
+// "My Personal Operating Plan"'s childRoutes are carried over unchanged
+// from the old drawer - they are actually the Strategic Alignment tool's
+// pages (goal-setting, risks-assessment, etc.), not Personal Operating
+// Plan's own pages. That mismatch pre-dates this prompt; flagged in the
+// build summary rather than silently changed, since fixing it wasn't asked.
 const SECTIONS = [
   {
     id: 'plan',
     label: 'Plan',
     links: [
       {
-        label: 'Personal Operating Plan',
+        label: "Today's Intentions",
+        to: '/plan-my-day',
+        childRoutes: ['/daily-plan-summary'],
+      },
+      {
+        label: 'A Meeting',
+        to: '/plan-meeting',
+        childRoutes: ['/meeting-summary'],
+      },
+      {
+        label: 'My Personal Operating Plan',
         to: '/personal-operating-plan',
         childRoutes: [
           '/personal-operating-plan-summary',
@@ -28,25 +52,16 @@ const SECTIONS = [
         ],
       },
       {
-        label: 'Daily Intentions',
-        to: '/plan-my-day',
-        childRoutes: ['/daily-plan-summary'],
-      },
-      {
-        label: 'Meeting Planner',
-        to: '/plan-meeting',
-        childRoutes: ['/meeting-summary'],
+        label: 'All Planning Tools',
+        to: '/planning-tools',
+        childRoutes: ['/decision-tools'],
       },
       {
         label: 'My Plans',
         to: '/my-plans',
-        childRoutes: [],
-      },
-      {
-        label: 'Decision Tools',
-        to: '/decision-tools',
         childRoutes: [
           '/decide-section',
+          '/decision-history',
           '/decision-summary',
           '/grow-step-1',
           '/grow-step-2',
@@ -60,12 +75,9 @@ const SECTIONS = [
           '/tough-conversation-step-1',
           '/tough-conversation-step-2',
           '/tough-conversation-summary',
+          '/stop-doing-audit',
+          '/stop-doing-audit-summary',
         ],
-      },
-      {
-        label: 'My Decisions',
-        to: '/decision-history',
-        childRoutes: [],
       },
     ],
   },
@@ -74,9 +86,14 @@ const SECTIONS = [
     label: 'Ground',
     links: [
       {
-        label: 'If-Then Planning',
+        label: 'Scenario Planning',
         to: '/if-then-planning',
         childRoutes: ['/if-then-planning-summary'],
+      },
+      {
+        label: 'Daily Pages',
+        to: '/my-journal',
+        childRoutes: [],
       },
       {
         label: 'Breathe',
@@ -89,6 +106,13 @@ const SECTIONS = [
     id: 'review',
     label: 'Review',
     links: [
+      {
+        label: 'My Day',
+        to: '/my-journal',
+        state: { reviewType: 'after-action' },
+        matchState: 'after-action',
+        childRoutes: [],
+      },
       {
         label: 'After-Action Review',
         to: '/my-journal',
@@ -126,11 +150,6 @@ const SECTIONS = [
         childRoutes: ['/edit-profile'],
       },
       {
-        label: 'About',
-        to: '/about',
-        childRoutes: [],
-      },
-      {
         label: 'Log Out',
         isLogout: true,
       },
@@ -139,6 +158,7 @@ const SECTIONS = [
 ];
 
 function findOpenSection(pathname, locationState) {
+  if (pathname === '/about') return null;
   for (const section of SECTIONS) {
     for (const link of section.links) {
       if (link.isLogout) continue;
@@ -316,8 +336,41 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           border-bottom: 1px solid var(--line);
         }
 
-        .design-drawer-group--account {
+        .design-drawer-group--about-push {
           margin-top: auto;
+        }
+
+        /* Quiet link just above My Account (prompt 7c): DM Sans, smaller,
+           t2 colour, white on hover/current, same left padding as the
+           other top-level items, no uppercase Nekst heading, no expand
+           mark, no current coral bar - deliberately less prominent than
+           the group buttons around it. */
+        .design-drawer .drawer-about-link {
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+          font-family: var(--font-body);
+          font-weight: 400;
+          font-size: 14px !important;
+          color: var(--text-2);
+          padding: 14px 28px !important;
+          min-height: 44px;
+          text-decoration: none;
+          cursor: pointer;
+          background: transparent;
+          border: none;
+          text-align: left;
+          transition: color var(--dur-fast) var(--ease);
+        }
+
+        .design-drawer .drawer-about-link:hover,
+        .design-drawer .drawer-about-link.current {
+          color: var(--text);
+        }
+
+        .design-drawer .drawer-about-link:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: -2px;
         }
 
         .design-drawer .drawer-top-link {
@@ -582,7 +635,18 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           })}
         </div>
 
-        <div className="design-drawer-group design-drawer-group--account">
+        <div className="design-drawer-group--about-push">
+          <Link
+            to="/about"
+            className={`drawer-about-link${location.pathname === '/about' ? ' current' : ''}`}
+            onClick={onClose}
+            tabIndex={isOpen ? 0 : -1}
+          >
+            About The Clarity Portal
+          </Link>
+        </div>
+
+        <div className="design-drawer-group">
           {SECTIONS.filter((s) => s.id === 'account').map((section) => {
             const isSectionOpen = openSection === section.id;
             const sectionHasCurrent = section.links.some((l) =>
