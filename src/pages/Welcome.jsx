@@ -872,6 +872,39 @@ export default function Welcome() {
           outline: 2px solid var(--text);
           outline-offset: 3px;
         }
+
+        /* Phone-only (prompt 7g): quiet link to About, matching the
+           de-emphasised About link already in the burger drawer
+           (prompt 7c) - DM Sans, small, t2, no uppercase Nekst, no box. */
+        .home-about-link {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .home-about-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: var(--tap-min);
+            margin-top: var(--space-5);
+            font-family: var(--font-body);
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--text-2);
+            text-decoration: none;
+            transition: color var(--dur-fast) var(--ease);
+          }
+        }
+
+        .home-root .home-about-link:hover,
+        .home-root .home-about-link:focus-visible {
+          color: var(--text);
+        }
+
+        .home-root .home-about-link:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: 2px;
+        }
       `}</style>
 
       <DesignHeader />
@@ -1027,6 +1060,8 @@ export default function Welcome() {
                 <BreathingOrb />
               </div>
             </div>
+
+            <Link to="/about" className="home-about-link">About The Clarity Portal</Link>
           </div>
         </div>
       </div>
