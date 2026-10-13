@@ -84,6 +84,24 @@ export const formatReviewDate = (dateStr) => {
   return `${weekday} ${day}${ordinal} ${month}, ${year}`;
 };
 
+// "Friday 2nd October" - weekday, ordinal day, full month, no year (the
+// small coral date label above a review's title - prompt 8). Takes a
+// Date (already run through parseDbTimestamp by the caller) or a
+// "YYYY-MM-DD" local date key.
+export const formatReviewDayLabel = (value) => {
+  const date = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T00:00:00`)
+    : value;
+  const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' });
+  const month = date.toLocaleDateString('en-GB', { month: 'long' });
+  const day = date.getDate();
+  let ordinal = 'th';
+  if (day % 10 === 1 && day !== 11) ordinal = 'st';
+  else if (day % 10 === 2 && day !== 12) ordinal = 'nd';
+  else if (day % 10 === 3 && day !== 13) ordinal = 'rd';
+  return `${weekday} ${day}${ordinal} ${month}`;
+};
+
 // Plain UK date, no time (e.g. "13 October 2026") - for summary pages'
 // "Created <date>" line (prompt 7).
 export const formatUkDate = (dateStr) => {

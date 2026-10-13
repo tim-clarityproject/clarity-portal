@@ -4,7 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { parseDbTimestamp } from '../lib/dateFormatter';
+import { parseDbTimestamp, getLocalDateKey } from '../lib/dateFormatter';
+import { loadPlanReviews, findPlanReview } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BreathingOrb from '../components/ui/BreathingOrb';
@@ -134,6 +135,7 @@ export default function Welcome() {
   const { clearFormData } = useContext(FormContext);
   const [firstName, setFirstName] = useState('');
   const [recentPlans, setRecentPlans] = useState([]);
+  const [recentPlanReviews, setRecentPlanReviews] = useState([]);
   const [plansLoaded, setPlansLoaded] = useState(false);
 
   // Same first-name source as before: cached localStorage first, then
@@ -207,6 +209,15 @@ export default function Welcome() {
           } else {
             setRecentPlans(data || []);
           }
+        }
+        // Prompt 8: which of these already have a finished review, so the
+        // link can say "View review" - fails gracefully (just no "View
+        // review" state) until migration 013 has been run.
+        try {
+          const planReviews = await loadPlanReviews(user.id);
+          if (!cancelled) setRecentPlanReviews(planReviews);
+        } catch (reviewErr) {
+          console.error('Error loading plan reviews (migration 013 may not be run yet):', reviewErr);
         }
       } catch (err) {
         if (!cancelled) console.error('Error loading recent plans:', err);
@@ -612,6 +623,7 @@ export default function Welcome() {
           color: var(--coral-text);
           text-decoration: none;
           flex-shrink: 0;
+          cursor: pointer;
         }
 
         .home-plans-empty {
@@ -795,6 +807,17 @@ export default function Welcome() {
                 <div className="home-plans-list">
                   {recentPlans.map((plan) => {
                     const openPlan = () => navigate(PLAN_REVIEW_ROUTE[plan.tool_type], { state: { decisionId: plan.id } });
+                    const dateKey = getLocalDateKey(parseDbTimestamp(plan.created_at));
+                    const existingReview = findPlanReview(recentPlanReviews, { planKind: plan.tool_type, planId: plan.id, dateKey });
+                    const reviewed = Boolean(existingReview && !existingReview.data.draft);
+                    const openReview = (e) => {
+                      e.stopPropagation();
+                      if (reviewed) {
+                        navigate('/review-plan-summary', { state: { entryId: existingReview.id, planKind: plan.tool_type, plan } });
+                      } else {
+                        navigate('/review-plan', { state: { planKind: plan.tool_type, plan } });
+                      }
+                    };
                     return (
                       <div className="home-plan-row" key={plan.id}>
                         <div
@@ -813,14 +836,9 @@ export default function Welcome() {
                             <div className="home-plan-title">{getPlanTitle(plan)}</div>
                             <div className="home-plan-meta">{getPlanMeta(plan)}</div>
                           </div>
-                          <Link
-                            to={PLAN_REVIEW_ROUTE[plan.tool_type]}
-                            state={{ decisionId: plan.id }}
-                            className="home-plan-review"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Review
-                          </Link>
+                          <button type="button" className="home-plan-review" onClick={openReview}>
+                            {reviewed ? 'View review' : 'Review'}
+                          </button>
                         </div>
                       </div>
                     );

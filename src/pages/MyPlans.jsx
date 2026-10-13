@@ -4,11 +4,16 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { parseDbTimestamp, getLocalDateKey, formatReviewDate } from '../lib/dateFormatter';
+import { loadPlanReviews, findPlanReview } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+
+// Plan types with a "Review this plan" page (prompt 8). GROW and Stop
+// doing audit have no review target yet - see build summary point 4.
+const REVIEWABLE_TYPES = new Set(['daily_plan', 'plan_meeting', 'if_then_planning', 'tough-conversation']);
 
 // "Combined history" tool types (mock: plan-section.html, S.plans) -
 // a curated subset of `decisions` rows, not every decision tool_type
@@ -71,6 +76,7 @@ export default function MyPlans() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [plans, setPlans] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -92,6 +98,16 @@ export default function MyPlans() {
         .order('created_at', { ascending: false });
       if (fetchError) throw fetchError;
       setPlans(data || []);
+      // Reviews live in journal_entries (prompt 8) under a review_type
+      // the live database may not allow yet (see migration
+      // 013_add_plan_review_type.sql) - fails gracefully, rows just
+      // show no review state until it has been run.
+      try {
+        setReviews(await loadPlanReviews(user.id));
+      } catch (reviewErr) {
+        console.error('[MyPlans] review lookup failed (migration 013 may not be run yet):', reviewErr);
+        setReviews([]);
+      }
     } catch (err) {
       console.error('[MyPlans] load failed:', err);
       setError({ message: 'Could not load your plans.', onRetry: loadPlans });
@@ -100,14 +116,26 @@ export default function MyPlans() {
     }
   };
 
-  const rows = useMemo(() => plans.map((d) => ({
-    id: d.id,
-    title: rowTitle(d),
-    typeLabel: TYPE_LABEL[d.tool_type] || d.tool_type,
-    date: d.created_at,
-    isDraft: Boolean(d.draft || d.status === 'draft'),
-    raw: d,
-  })), [plans]);
+  const rows = useMemo(() => plans.map((d) => {
+    const isDraft = Boolean(d.draft || d.status === 'draft');
+    const reviewable = REVIEWABLE_TYPES.has(d.tool_type) && !isDraft;
+    let review = null;
+    if (reviewable) {
+      const dateKey = getLocalDateKey(parseDbTimestamp(d.created_at));
+      review = findPlanReview(reviews, { planKind: d.tool_type, planId: d.id, dateKey });
+    }
+    return {
+      id: d.id,
+      title: rowTitle(d),
+      typeLabel: TYPE_LABEL[d.tool_type] || d.tool_type,
+      date: d.created_at,
+      isDraft,
+      canReview: reviewable,
+      reviewed: Boolean(review && !review.data.draft),
+      reviewEntryId: review?.id || null,
+      raw: d,
+    };
+  }), [plans, reviews]);
 
   const openRow = (row) => {
     const route = SUMMARY_ROUTE[row.raw.tool_type] || '/decision-summary';
@@ -117,6 +145,14 @@ export default function MyPlans() {
   const editRow = (row) => {
     const route = EDIT_ROUTE[row.raw.tool_type] || '/plan-section';
     navigate(route, { state: { decisionId: row.id, ...row.raw.form_data, problemTitle: row.raw.title } });
+  };
+
+  const reviewRow = (row) => {
+    if (row.reviewed) {
+      navigate('/review-plan-summary', { state: { entryId: row.reviewEntryId, planKind: row.raw.tool_type, plan: row.raw } });
+    } else {
+      navigate('/review-plan', { state: { planKind: row.raw.tool_type, plan: row.raw } });
+    }
   };
 
   const confirmDelete = async () => {
@@ -157,6 +193,7 @@ export default function MyPlans() {
             error={error}
             onOpen={openRow}
             onEdit={editRow}
+            onReview={reviewRow}
             onDelete={(row) => setDeleteTarget(row)}
           />
         )}

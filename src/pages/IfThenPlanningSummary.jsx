@@ -2,6 +2,8 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
+import { loadPlanReviews, findPlanReview } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
@@ -15,6 +17,7 @@ export default function IfThenPlanningSummary() {
 
   const [planning, setPlanning] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviewEntryId, setReviewEntryId] = useState(null);
   const { message, showToast } = useToast();
 
   useEffect(() => {
@@ -25,6 +28,23 @@ export default function IfThenPlanningSummary() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decisionId, user?.id]);
+
+  useEffect(() => {
+    if (!planning || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const reviews = await loadPlanReviews(user.id);
+        if (cancelled) return;
+        const dateKey = getLocalDateKey(parseDbTimestamp(planning.created_at));
+        const existing = findPlanReview(reviews, { planKind: 'if_then_planning', planId: planning.id, dateKey });
+        if (existing && !existing.data.draft) setReviewEntryId(existing.id);
+      } catch (error) {
+        console.error('[IfThenPlanningSummary] review check failed:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [planning, user?.id]);
 
   useEffect(() => {
     if (location.state?.toast) {
@@ -121,6 +141,17 @@ export default function IfThenPlanningSummary() {
           <button
             type="button"
             className="ui-btn-primary"
+            onClick={() => (
+              reviewEntryId
+                ? navigate('/review-plan-summary', { state: { entryId: reviewEntryId, planKind: 'if_then_planning', plan: planning } })
+                : navigate('/review-plan', { state: { planKind: 'if_then_planning', plan: planning } })
+            )}
+          >
+            {reviewEntryId ? 'View my review' : 'Review this plan'}
+          </button>
+          <button
+            type="button"
+            className="ui-btn-ghost"
             onClick={() => navigate('/if-then-planning', { state: { decisionId: planning.id } })}
           >
             Edit

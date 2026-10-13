@@ -3,13 +3,14 @@ import { useContext } from 'react';
 import DesignHeader from '../components/DesignHeader';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { findTodaysDailyPlan } from '../lib/planReview';
 
-// Same routes Home's review links use today (prompts 8/10 will re-point
-// them). "Review my day" and "Review a situation" both lead to
-// /my-journal with reviewType 'after-action' - that overlap already
-// exists on Home today (see build summary point 6), not invented here.
+// "Review my day" now opens the prompt 8 review page for today's daily
+// plan (separated from "Review a situation", which still opens the
+// existing after-action journal flow - they used to land in the same
+// place, see build summary point 6).
 const CARDS = [
-  { title: 'Review my day', description: 'Reflect on what worked today.', route: '/my-journal', state: { reviewType: 'after-action' } },
+  { title: 'Review my day', description: 'Reflect on what worked today.', needsTodaysPlan: true },
   { title: 'Weekly momentum check-in', description: 'Look back on your week and set up the next.', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
   { title: 'Review a situation', description: 'Learn from something that has happened.', route: '/my-journal', state: { reviewType: 'after-action' } },
   { title: 'Review my personal operating plan', description: 'Check it still fits how you work.', route: '/personal-operating-plan-review', needsMissionLookup: true },
@@ -33,6 +34,16 @@ export default function ReviewSection() {
   const { user } = useContext(AuthContext);
 
   const openCard = async (card) => {
+    if (card.needsTodaysPlan) {
+      try {
+        const plan = await findTodaysDailyPlan(user?.id);
+        navigate('/review-plan', { state: { planKind: 'daily_plan', plan } });
+      } catch (err) {
+        console.error('[ReviewSection] today\'s plan lookup failed:', err);
+        navigate('/review-plan', { state: { planKind: 'daily_plan', plan: null } });
+      }
+      return;
+    }
     if (!card.needsMissionLookup) {
       navigate(card.route, { state: card.state });
       return;

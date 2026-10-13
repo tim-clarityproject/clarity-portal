@@ -48,14 +48,6 @@ function ChevronDownIcon() {
   );
 }
 
-function CheckIcon() {
-  return (
-    <svg className="hlist-check" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m5 12.5 4.5 4.5L19 7.5" />
-    </svg>
-  );
-}
-
 // "1 Oct, 9:40pm" - UK, device local time (no explicit timeZone, so it
 // naturally follows the device's own BST/GMT offset). en-GB's AM/PM
 // comes back as " am"/" pm" (lower-case, space-separated) - the space
@@ -387,6 +379,7 @@ export default function HistoryList({
                     <span className="hlist-row-title">
                       {row.title}
                       {row.isDraft && <span className="hlist-draft-tag">Draft</span>}
+                      {row.reviewed && <span className="hlist-reviewed-tag">Reviewed</span>}
                     </span>
                     <span className="hlist-row-meta">
                       <b>{row.typeLabel}</b>
@@ -396,14 +389,13 @@ export default function HistoryList({
                     </span>
                   </button>
                   <div className="hlist-row-controls">
-                    {onReview && (
+                    {onReview && row.canReview !== false && (
                       <button
                         type="button"
                         className={`hlist-review-btn${row.reviewed ? ' done' : ''}`}
                         onClick={(e) => { e.stopPropagation(); onReview(row); }}
                       >
-                        {row.reviewed && <CheckIcon />}
-                        {row.reviewed ? 'Reviewed' : 'Review'}
+                        {row.reviewed ? 'View review' : 'Review'}
                       </button>
                     )}
                     {row.isDraft ? (
@@ -886,6 +878,21 @@ const HLIST_CSS = `
   letter-spacing: 0.14em;
   font-size: 10px;
   color: var(--coral-text);
+  vertical-align: middle;
+}
+
+.hlist-reviewed-tag {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 1px 8px;
+  border: 1px solid var(--mint);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  color: var(--mint-text);
   vertical-align: middle;
 }
 

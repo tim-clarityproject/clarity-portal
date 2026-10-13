@@ -2,11 +2,12 @@ import { useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
+import { loadPlanReviews, findPlanReview } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { parseDbTimestamp } from '../lib/dateFormatter';
 
 // Headings repeat the four questions word for word - see
 // PlanMyDayStep1.jsx's QUESTIONS. Two of these were previously shortened
@@ -43,6 +44,7 @@ export default function DailyPlanSummary() {
   const decisionId = location.state?.decisionId;
   const [plan, setPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviewEntryId, setReviewEntryId] = useState(null);
   const { message, showToast } = useToast();
 
   useEffect(() => {
@@ -53,6 +55,23 @@ export default function DailyPlanSummary() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decisionId, user?.id]);
+
+  useEffect(() => {
+    if (!plan || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const reviews = await loadPlanReviews(user.id);
+        if (cancelled) return;
+        const dateKey = getLocalDateKey(parseDbTimestamp(plan.created_at));
+        const existing = findPlanReview(reviews, { planKind: 'daily_plan', planId: plan.id, dateKey });
+        if (existing && !existing.data.draft) setReviewEntryId(existing.id);
+      } catch (error) {
+        console.error('[DailyPlanSummary] review check failed:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [plan, user?.id]);
 
   // Fires the toast carried from Finish on PlanMyDayStep1.jsx, then
   // drops it from history state so it doesn't reappear on back/forward.
@@ -141,9 +160,13 @@ export default function DailyPlanSummary() {
           <button
             type="button"
             className="ui-btn-primary"
-            onClick={() => navigate('/my-journal', { state: { reviewType: 'after-action' } })}
+            onClick={() => (
+              reviewEntryId
+                ? navigate('/review-plan-summary', { state: { entryId: reviewEntryId, planKind: 'daily_plan', plan } })
+                : navigate('/review-plan', { state: { planKind: 'daily_plan', plan } })
+            )}
           >
-            Review my day
+            {reviewEntryId ? 'View my review' : 'Review my day'}
           </button>
           <button
             type="button"

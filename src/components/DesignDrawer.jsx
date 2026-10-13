@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { findTodaysDailyPlan } from '../lib/planReview';
 
 // Plan now absorbs the old Decide section. Each sub-link lists the extra
 // routes that count as "current" for it (its own child/summary/step pages).
@@ -108,10 +109,9 @@ const SECTIONS = [
     links: [
       {
         label: 'Review My Day',
-        to: '/my-journal',
-        state: { reviewType: 'after-action' },
-        matchState: 'after-action',
-        childRoutes: [],
+        to: '/review-plan',
+        isTodaysPlanLookup: true,
+        childRoutes: ['/review-plan-summary'],
       },
       {
         label: 'After-Action Review',
@@ -297,6 +297,18 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
     } catch (err) {
       console.error('Error fetching mission:', err);
       onClose();
+    }
+  };
+
+  const handleReviewMyDayClick = async (e) => {
+    e.preventDefault();
+    onClose();
+    try {
+      const plan = await findTodaysDailyPlan(user?.id);
+      navigate('/review-plan', { state: { planKind: 'daily_plan', plan } });
+    } catch (err) {
+      console.error('[DesignDrawer] today\'s plan lookup failed:', err);
+      navigate('/review-plan', { state: { planKind: 'daily_plan', plan: null } });
     }
   };
 
@@ -631,6 +643,20 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
                                 to={link.to}
                                 className={`drawer-sub-link${current ? ' current' : ''}`}
                                 onClick={handleMissionReviewClick}
+                                tabIndex={isOpen ? 0 : -1}
+                              >
+                                {link.label}
+                              </Link>
+                            </li>
+                          );
+                        }
+                        if (link.isTodaysPlanLookup) {
+                          return (
+                            <li key={link.label}>
+                              <Link
+                                to={link.to}
+                                className={`drawer-sub-link${current ? ' current' : ''}`}
+                                onClick={handleReviewMyDayClick}
                                 tabIndex={isOpen ? 0 : -1}
                               >
                                 {link.label}

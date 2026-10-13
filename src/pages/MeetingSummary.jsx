@@ -2,6 +2,8 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
+import { loadPlanReviews, findPlanReview } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
@@ -33,6 +35,7 @@ export default function MeetingSummary() {
 
   const [meeting, setMeeting] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviewEntryId, setReviewEntryId] = useState(null);
   const { message, showToast } = useToast();
 
   useEffect(() => {
@@ -43,6 +46,23 @@ export default function MeetingSummary() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decisionId, user?.id]);
+
+  useEffect(() => {
+    if (!meeting || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const reviews = await loadPlanReviews(user.id);
+        if (cancelled) return;
+        const dateKey = getLocalDateKey(parseDbTimestamp(meeting.created_at));
+        const existing = findPlanReview(reviews, { planKind: 'plan_meeting', planId: meeting.id, dateKey });
+        if (existing && !existing.data.draft) setReviewEntryId(existing.id);
+      } catch (error) {
+        console.error('[MeetingSummary] review check failed:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [meeting, user?.id]);
 
   useEffect(() => {
     if (location.state?.toast) {
@@ -221,11 +241,19 @@ export default function MeetingSummary() {
         )}
 
         <div className="plan-actions no-print">
-          <button type="button" className="ui-btn-primary" onClick={() => navigate('/plan-meeting', { state: { decisionId: meeting.id } })}>
-            Edit
+          <button
+            type="button"
+            className="ui-btn-primary"
+            onClick={() => (
+              reviewEntryId
+                ? navigate('/review-plan-summary', { state: { entryId: reviewEntryId, planKind: 'plan_meeting', plan: meeting } })
+                : navigate('/review-plan', { state: { planKind: 'plan_meeting', plan: meeting } })
+            )}
+          >
+            {reviewEntryId ? 'View my review' : 'Review this meeting'}
           </button>
-          <button type="button" className="ui-btn-ghost" onClick={() => window.print()}>
-            Download PDF
+          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/plan-meeting', { state: { decisionId: meeting.id } })}>
+            Edit
           </button>
         </div>
       </div>

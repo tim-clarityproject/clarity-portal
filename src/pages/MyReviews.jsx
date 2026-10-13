@@ -255,6 +255,8 @@ export default function MyReviews() {
                   onClick={() => {
                     if (isMissionProgress) {
                       navigate('/mission-progress-review', { state: { reviewId: entry.id } });
+                    } else if (entry.review_type === 'plan-review') {
+                      navigate('/review-plan-summary', { state: { entryId: entry.id } });
                     } else {
                       navigate('/review-summary', { state: { selectedDate: entry.entry_date, reviewType: entry.review_type } });
                     }
@@ -295,7 +297,7 @@ export default function MyReviews() {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {isMissionProgress ? 'POP Review' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Weekly Momentum Check-in')}
+                      {isMissionProgress ? 'POP Review' : entry.review_type === 'after-action' ? 'After-Action Review' : entry.review_type === 'plan-review' ? 'Plan review' : 'Weekly Momentum Check-in'}
                     </span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: '60px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -304,7 +306,11 @@ export default function MyReviews() {
                       {!isMissionProgress && (
                         <>
                           <button
-                            onClick={() => navigate('/my-journal', { state: { selectedDate: entry.entry_date, reviewType: entry.review_type, entryId: entry.id } })}
+                            onClick={() => (
+                              entry.review_type === 'plan-review'
+                                ? navigate('/review-plan-summary', { state: { entryId: entry.id } })
+                                : navigate('/my-journal', { state: { selectedDate: entry.entry_date, reviewType: entry.review_type, entryId: entry.id } })
+                            )}
                             title="Edit review"
                             style={{
                               padding: '8px',
