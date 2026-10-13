@@ -96,6 +96,24 @@ export default function DesignHeader({ className = '' }) {
             height: 30px;
             flex-shrink: 0;
           }
+          /* 44px tap target without shifting the visible mark or the
+             rest of the phone header's layout - the extra 7px of hit
+             area on each side is pulled back out of flow by the
+             matching negative margin (prompt 7h). */
+          .logo-mark-link-phone {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            margin: -7px;
+            flex-shrink: 0;
+            border-radius: 8px;
+          }
+          .logo-mark-link-phone:focus-visible {
+            outline: 2px solid var(--coral);
+            outline-offset: 2px;
+          }
           .mis-slot {
             flex: 1;
             position: relative;
@@ -371,11 +389,13 @@ export default function DesignHeader({ className = '' }) {
       <div className="design-header-wrapper" ref={headerWrapperRef}>
         {/* PHONE HEADER */}
         <div className="design-header-phone">
-          <img
-            className="logo-mark"
-            src="/brand/mark_colour-on-dark.png"
-            alt="Clarity mark"
-          />
+          <Link to="/welcome" className="logo-mark-link-phone" aria-label="Home">
+            <img
+              className="logo-mark"
+              src="/brand/mark_colour-on-dark.png"
+              alt=""
+            />
+          </Link>
           {shouldShowPill && (
             <div className="mis-slot">
               <div className={`design-mis${expandedPanel ? ' open' : ''}`}>

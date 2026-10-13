@@ -106,6 +106,23 @@ export default function AuthShell({
           animation: auth-mark-in var(--dur-slow) var(--ease) forwards;
         }
 
+        /* 44px tap target without shifting the visible mark (prompt 7h) -
+           same technique as DesignHeader's phone logo. */
+        .auth-mark-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          margin: -8px;
+          border-radius: 8px;
+        }
+
+        .auth-mark-link:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: 2px;
+        }
+
         @keyframes auth-mark-in {
           from { opacity: 0; transform: scale(0.86); }
           to { opacity: 1; transform: scale(1); }
@@ -297,7 +314,13 @@ export default function AuthShell({
 
       <div className="auth-topbar">
         {topBar === 'mark' && (
-          <img className="auth-mark" src="/brand/mark_colour-on-dark.png" alt="The Clarity Project" />
+          // Pre-login: no signed-in Home to return to, so this goes back
+          // to the sign-in start (prompt 7h) - not currently reached by
+          // any page (none pass topBar="mark" today), fixed for when one
+          // does rather than leaving a second dead copy of the mark.
+          <Link to="/auth/login" className="auth-mark-link" aria-label="Home">
+            <img className="auth-mark" src="/brand/mark_colour-on-dark.png" alt="" />
+          </Link>
         )}
         {topBar === 'back' && (
           backTo ? (
