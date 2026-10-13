@@ -190,7 +190,8 @@ function AppContent() {
     '/auth/welcome-back',
     '/forgot-password',
     '/forgot-password/check-email',
-    '/auth/reset-password'
+    '/auth/reset-password',
+    '/breathe'
   ].includes(location.pathname) || location.pathname.startsWith('/legal/');
 
   return (
