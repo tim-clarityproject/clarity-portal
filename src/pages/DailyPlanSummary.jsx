@@ -3,7 +3,37 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
-import { summaryStyles } from '../styles/summaryStyles';
+import { BackLink } from '../components/ui/DiscardLink';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+
+// Headings repeat the four questions word for word - see
+// PlanMyDayStep1.jsx's QUESTIONS. Two of these were previously shortened
+// here ("Top Priority", "What don't you want to do?"); field names
+// (gratitude/topPriority/showUp/notDo) are unchanged, so older plans
+// saved under the old headings still load and display correctly.
+const QUESTIONS = [
+  { key: 'gratitude', label: 'What are you grateful for today?' },
+  { key: 'topPriority', label: 'What are your top priorities today?' },
+  { key: 'showUp', label: "What's within your control today?" },
+  { key: 'notDo', label: 'What do you not want to do today?' },
+];
+
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// "Friday 2nd Oct, 2026" - en-US only for the month abbreviation (en-GB's
+// Intl data gives "Sept", 4 letters; the approved examples use "Sep").
+function formatPlanDate(isoString) {
+  const date = new Date(isoString);
+  const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' });
+  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  const year = date.getFullYear();
+  return `${weekday} ${ordinal(date.getDate())} ${month}, ${year}`;
+}
 
 export default function DailyPlanSummary() {
   const navigate = useNavigate();
@@ -12,16 +42,29 @@ export default function DailyPlanSummary() {
   const decisionId = location.state?.decisionId;
   const [plan, setPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { message, showToast } = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
       loadPlan();
+    } else {
+      setIsLoading(false);
     }
-  }, [decisionId, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decisionId, user?.id]);
+
+  // Fires the toast carried from Finish on PlanMyDayStep1.jsx, then
+  // drops it from history state so it doesn't reappear on back/forward.
+  useEffect(() => {
+    if (location.state?.toast) {
+      showToast(location.state.toast);
+      navigate(location.pathname, { replace: true, state: { decisionId } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadPlan = async () => {
     try {
-      console.log('[DailyPlanSummary] loadPlan: fetching decisionId =', decisionId, 'user =', user.id);
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
@@ -29,44 +72,21 @@ export default function DailyPlanSummary() {
         .eq('user_id', user.id)
         .single();
 
-      if (error) {
-        console.error('[DailyPlanSummary] Query error:', error);
-        throw error;
-      }
-
-      if (data) {
-        console.log('[DailyPlanSummary] Plan loaded successfully:', data.id);
-        setPlan(data);
-      } else {
-        console.warn('[DailyPlanSummary] No data returned for decisionId', decisionId);
-      }
+      if (error) throw error;
+      if (data) setPlan(data);
     } catch (error) {
-      console.error('[DailyPlanSummary] Error loading plan:', error.message);
+      console.error('[DailyPlanSummary] load failed:', error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatDailyPlanDate = (isoString) => {
-    const date = new Date(isoString);
-    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-    const ordinal = (n) => {
-      const s = ['th', 'st', 'nd', 'rd'];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
-    };
-    return `${weekday} ${ordinal(day)} ${month}, ${year}`;
-  };
-
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="ui-root">
         <DesignHeader />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }} className="page-container">
-          <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
+        <div className="plan-page">
+          <p className="ui-subtitle">Loading...</p>
         </div>
       </div>
     );
@@ -74,168 +94,67 @@ export default function DailyPlanSummary() {
 
   if (!plan) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="ui-root">
         <DesignHeader />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }} className="page-container">
-          <p style={{ color: '#999', fontSize: '14px' }}>Plan not found</p>
-          <button
-            onClick={() => navigate('/plan-my-day')}
-            style={{
-              marginTop: '16px',
-              padding: '12px 24px',
-              backgroundColor: '#F08571',
-              color: 'white',
-              fontWeight: '600',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-            }}
-          >
-            Create a Plan
-          </button>
+        <div className="plan-page">
+          <p className="ui-subtitle">Plan not found.</p>
+          <div className="plan-actions">
+            <button type="button" className="ui-btn-primary" onClick={() => navigate('/plan-my-day')}>
+              Plan my day
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   const formData = plan.form_data || {};
+  const answered = QUESTIONS.filter((q) => formData[q.key] && formData[q.key].trim());
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <style>{`
-        .page-container {
-          padding: 64px 32px;
-          padding-bottom: 120px;
-        }
-        @media (max-width: 768px) {
-          .page-container {
-            padding: 32px 16px;
-            padding-bottom: 120px;
-          }
-        }
-      `}</style>
+      <div className="plan-page">
+        <div className="plan-back-row">
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to my plans" />
+        </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }} className="page-container">
-        {/* Back Button */}
-        <div style={summaryStyles.backButtonContainer}>
+        <div className="plan-summary-head">
+          <span className="plan-overline">Daily intentions</span>
+          <div className="ui-title">{formatPlanDate(plan.created_at)}</div>
+        </div>
+
+        {answered.length > 0 && (
+          <div className="plan-sum">
+            {answered.map((q) => (
+              <div className="plan-sum-row" key={q.key}>
+                <div className="plan-sum-label">{q.label}</div>
+                <p className="plan-sum-value">{formData[q.key]}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="plan-actions">
           <button
-            onClick={() => navigate('/my-plans')}
-            style={{
-              ...summaryStyles.backButton,
-              marginBottom: 0,
-            }}
+            type="button"
+            className="ui-btn-primary"
+            onClick={() => navigate('/my-journal', { state: { reviewType: 'after-action' } })}
           >
-            ← Back to Daily Plans
+            Review my day
+          </button>
+          <button
+            type="button"
+            className="ui-btn-ghost"
+            onClick={() => navigate('/plan-my-day', { state: { decisionId: plan.id } })}
+          >
+            Edit
           </button>
         </div>
-
-        {/* Title and Tag */}
-        <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-          <h1 style={{ ...summaryStyles.mainTitle, flex: 1 }}>
-            {formatDailyPlanDate(plan.created_at)}
-          </h1>
-          <span style={{
-            backgroundColor: '#F08571',
-            color: 'white',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: '600',
-            whiteSpace: 'nowrap',
-          }}>
-            Daily Intentions
-          </span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
-          {formData.gratitude && (
-            <div style={summaryStyles.section}>
-              <h2 style={summaryStyles.sectionHeading}>
-                What are you grateful for today?
-              </h2>
-              <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
-                {formData.gratitude}
-              </p>
-            </div>
-          )}
-
-          {formData.topPriority && (
-            <div style={summaryStyles.section}>
-              <h2 style={summaryStyles.sectionHeading}>
-                Top Priority
-              </h2>
-              <p style={summaryStyles.contentText}>
-                {formData.topPriority}
-              </p>
-            </div>
-          )}
-
-          {formData.showUp && (
-            <div style={summaryStyles.section}>
-              <h2 style={summaryStyles.sectionHeading}>
-                What's within your control today?
-              </h2>
-              <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
-                {formData.showUp}
-              </p>
-            </div>
-          )}
-
-          {formData.notDo && (
-            <div style={summaryStyles.section}>
-              <h2 style={summaryStyles.sectionHeading}>
-                What don't you want to do?
-              </h2>
-              <p style={{ ...summaryStyles.contentText, whiteSpace: 'pre-wrap' }}>
-                {formData.notDo}
-              </p>
-            </div>
-          )}
-        </div>
-
       </div>
 
-      {/* Fixed bottom bar for making new decisions */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid #e5e5e5',
-        padding: '16px 32px',
-        display: 'flex',
-        justifyContent: 'center',
-        zIndex: 10,
-      }}>
-        <button
-          onClick={() => navigate('/decision-tools')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: 'transparent',
-            border: '2px solid #e5e5e5',
-            color: '#333',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: '600',
-            borderRadius: '6px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#f9f9f9';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#e5e5e5';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          + Make another decision
-        </button>
-      </div>
+      <Toast message={message} />
     </div>
   );
 }
