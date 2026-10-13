@@ -3150,6 +3150,276 @@ span.tc-editable:focus-visible {
   line-height: 1.5;
 }
 
+/* ---- Plan hub / Review hub (prompt 7b): same card, 3-across row,
+   trailing static crosshair mark, text nudges 6px on hover ---- */
+
+.dt-cards--three {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 769px) {
+  .dt-cards--three {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .dt-cards--three .dt-card {
+    min-height: 150px;
+  }
+}
+
+.ui-root .dt-card--row {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.dt-card-text {
+  display: block;
+  min-width: 0;
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .dt-card:hover .dt-card-text,
+.ui-root .dt-card:focus-visible .dt-card-text {
+  transform: translateX(6px);
+}
+
+.dt-card-mark {
+  color: var(--coral);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---- "Your history" card: My Plans / My reviews ---- */
+
+.ui-root .hub-history-card {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .hub-history-card:hover,
+.ui-root .hub-history-card:focus-visible {
+  border-color: var(--btn-line);
+}
+
+.ui-root .hub-history-card:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.hub-history-card-title {
+  display: block;
+  font-size: 17px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.hub-history-card-desc {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.hub-history-card-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke var(--dur-fast) var(--ease);
+}
+
+.ui-root .hub-history-card:hover .hub-history-card-icon,
+.ui-root .hub-history-card:focus-visible .hub-history-card-icon {
+  stroke: var(--text);
+}
+
+/* ---- All planning tools: grouped navigational row list ---- */
+
+.ptl-group {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: var(--coral-text);
+  margin: var(--space-6) 0 6px;
+}
+
+.ptl-group:first-of-type {
+  margin-top: 0;
+}
+
+.ptl-list {
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-root .ptl-row {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  position: relative;
+  cursor: pointer;
+  padding: 18px 8px 18px var(--space-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+  min-height: 56px;
+  transition: color var(--dur) var(--ease);
+}
+
+.ptl-list .ptl-row:last-child {
+  border-bottom: 0;
+}
+
+.ptl-row::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  background: var(--coral);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .ptl-row:hover,
+.ui-root .ptl-row:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .ptl-row:hover::before,
+.ui-root .ptl-row:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.ui-root .ptl-row:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.ptl-row-title {
+  display: block;
+  font-size: 18px;
+  line-height: 1.3;
+  color: inherit;
+}
+
+.ptl-row-desc {
+  display: block;
+  font-size: 14px;
+  color: var(--placeholder);
+  margin-top: 4px;
+  line-height: 1.4;
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .ptl-row:hover .ptl-row-desc,
+.ui-root .ptl-row:focus-visible .ptl-row-desc {
+  color: var(--text-2);
+}
+
+.ptl-row-mark {
+  flex-shrink: 0;
+  color: var(--coral);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+@media (max-width: 768px) {
+  .ptl-row-mark {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ui-root .ptl-row:hover .ptl-row-mark,
+.ui-root .ptl-row:focus-visible .ptl-row-mark {
+  opacity: 1;
+  transform: none;
+}
+
+.ui-root .ptl-row--locked {
+  cursor: default;
+  color: var(--placeholder);
+}
+
+.ui-root .ptl-row--locked .ptl-row-desc {
+  color: var(--placeholder);
+  opacity: 0.8;
+}
+
+.ui-root .ptl-row--locked:hover {
+  color: var(--placeholder);
+}
+
+.ui-root .ptl-row--locked:hover::before {
+  transform: scaleY(0);
+}
+
+.ui-root .ptl-row--locked:hover .ptl-row-desc {
+  color: var(--placeholder);
+  opacity: 0.8;
+}
+
+.ptl-lock-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  white-space: nowrap;
+}
+
+.ptl-lock-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-card-text,
+  .hub-history-card,
+  .hub-history-card-icon,
+  .ptl-row,
+  .ptl-row::before,
+  .ptl-row-desc,
+  .ptl-row-mark {
+    transition: none !important;
+  }
+}
+
 .dt-soon {
   margin-top: var(--space-6);
 }

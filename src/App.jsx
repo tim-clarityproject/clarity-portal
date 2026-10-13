@@ -68,6 +68,7 @@ import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
 import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
 import PlanSection from './pages/PlanSection';
+import PlanningTools from './pages/PlanningTools';
 import GroundSection from './pages/GroundSection';
 import DecideSection from './pages/DecideSection';
 import ReviewSection from './pages/ReviewSection';
@@ -269,6 +270,7 @@ function AppContent() {
           <Route path="/decision-history" element={<DecisionHistory />} />
           <Route path="/decision-summary" element={<DecisionSummary />} />
           <Route path="/plan-section" element={<PlanSection />} />
+          <Route path="/planning-tools" element={<PlanningTools />} />
           <Route path="/ground-section" element={<GroundSection />} />
           <Route path="/decide-section" element={<DecideSection />} />
           <Route path="/review-section" element={<ReviewSection />} />

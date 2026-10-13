@@ -32,6 +32,7 @@ const TABS = [
     Icon: PlanIcon,
     sectionRoutes: [
       '/plan-section',
+      '/planning-tools',
       '/personal-operating-plan',
       '/personal-operating-plan-summary',
       '/personal-operating-plan-edit',

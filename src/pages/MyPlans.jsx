@@ -152,7 +152,7 @@ export default function MyPlans() {
             rows={rows}
             filters={FILTERS}
             subFilters={SUB_FILTERS}
-            newButton={{ label: 'New plan', onClick: () => navigate('/plan-section') }}
+            newButton={{ label: 'New plan', onClick: () => navigate('/planning-tools') }}
             emptyText="No plans yet."
             error={error}
             onOpen={openRow}
