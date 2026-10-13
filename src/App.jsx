@@ -67,7 +67,10 @@ import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
 import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
 import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
-import PersonalOperatingPlanVersions from './pages/PersonalOperatingPlanVersions';
+import PersonalOperatingPlanHistory from './pages/PersonalOperatingPlanHistory';
+import PersonalOperatingPlanHistoryVersion from './pages/PersonalOperatingPlanHistoryVersion';
+import PersonalOperatingPlanArchived from './pages/PersonalOperatingPlanArchived';
+import PersonalOperatingPlanArchivedOne from './pages/PersonalOperatingPlanArchivedOne';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
 import PlanSection from './pages/PlanSection';
 import PlanningTools from './pages/PlanningTools';
@@ -179,7 +182,8 @@ function AppContent() {
     '/onboarding-mission',
     '/personal-operating-plan-edit',
     '/personal-operating-plan-review',
-    '/personal-operating-plan-versions',
+    '/personal-operating-plan-history',
+    '/personal-operating-plan-archived',
     '/mission-progress-review',
     '/terms-of-service',
     '/privacy-policy',
@@ -195,7 +199,10 @@ function AppContent() {
     '/forgot-password/check-email',
     '/auth/reset-password',
     '/breathe'
-  ].includes(location.pathname) || location.pathname.startsWith('/legal/');
+  ].includes(location.pathname)
+    || location.pathname.startsWith('/legal/')
+    || location.pathname.startsWith('/personal-operating-plan-history/')
+    || location.pathname.startsWith('/personal-operating-plan-archived/');
 
   return (
     <>
@@ -252,7 +259,10 @@ function AppContent() {
           <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
           <Route path="/personal-operating-plan-edit" element={<PersonalOperatingPlanEdit />} />
           <Route path="/personal-operating-plan-review" element={<PersonalOperatingPlanReview />} />
-          <Route path="/personal-operating-plan-versions" element={<PersonalOperatingPlanVersions />} />
+          <Route path="/personal-operating-plan-history" element={<PersonalOperatingPlanHistory />} />
+          <Route path="/personal-operating-plan-history/:version" element={<PersonalOperatingPlanHistoryVersion />} />
+          <Route path="/personal-operating-plan-archived" element={<PersonalOperatingPlanArchived />} />
+          <Route path="/personal-operating-plan-archived/:missionId" element={<PersonalOperatingPlanArchivedOne />} />
           <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
           <Route path="/my-account" element={<MyAccount />} />
           <Route path="/goal-setting" element={<GoalSetting />} />

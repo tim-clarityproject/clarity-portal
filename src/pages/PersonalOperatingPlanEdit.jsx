@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { buildSnapshot, diffSnapshots, formatVersion, loadLatestVersion, recordVersionAfterSave } from '../lib/missionPlan';
+import { LIMITS, formatVersion, loadLatestVersion, previewNextVersion, recordVersionAfterSave, validatePlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
@@ -37,6 +37,7 @@ export default function PersonalOperatingPlanEdit() {
   const [isLoading, setIsLoading] = useState(!isNew);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [fieldError, setFieldError] = useState(null); // { field, message }
   const [discardOpen, setDiscardOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // { kind: 'strategy'|'tactic', sIndex, tIndex }
   const [draftRestored, setDraftRestored] = useState(false);
@@ -148,14 +149,10 @@ export default function PersonalOperatingPlanEdit() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missionTitle, strategies, isLoading, pendingDraft]);
 
-  const nextSnapshot = useMemo(() => buildSnapshot(missionTitle, strategies), [missionTitle, strategies]);
-  const bump = useMemo(() => diffSnapshots(baselineVersion?.snapshot || null, nextSnapshot), [baselineVersion, nextSnapshot]);
-  const previewVersion = useMemo(() => {
-    if (!baselineVersion) return formatVersion(1, 0);
-    if (!bump) return formatVersion(baselineVersion.version_major, baselineVersion.version_minor);
-    if (bump === 'major') return formatVersion(baselineVersion.version_major + 1, 0);
-    return formatVersion(baselineVersion.version_major, baselineVersion.version_minor + 1);
-  }, [baselineVersion, bump]);
+  const preview = useMemo(() => previewNextVersion(baselineVersion, missionTitle, strategies), [baselineVersion, missionTitle, strategies]);
+  const previewLine = preview.changeType
+    ? `Saving creates ${formatVersion(preview.major, preview.minor)}.`
+    : 'No changes to save yet.';
 
   const addStrategy = () => {
     setStrategies([...strategies, { id: tempId(), name: '', description: '', tactics: [], isNew: true }]);
@@ -200,10 +197,13 @@ export default function PersonalOperatingPlanEdit() {
   };
 
   const savePlan = async () => {
-    if (!missionTitle.trim()) {
-      setSaveError('Your mission statement is required.');
+    const problem = validatePlan(missionTitle, strategies);
+    if (problem) {
+      setFieldError(problem);
+      setSaveError('');
       return;
     }
+    setFieldError(null);
     setSaveError('');
     setIsSaving(true);
     try {
@@ -290,10 +290,10 @@ export default function PersonalOperatingPlanEdit() {
 
       try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
 
-      let toast = 'Plan saved.';
+      let toast = 'Plan saved. Nothing changed.';
       try {
         const result = await recordVersionAfterSave({ userId: user.id, missionId: currentMissionId, title: missionTitle, strategies: savedStrategies });
-        toast = result.created ? `Saved as ${formatVersion(result.major, result.minor)}.` : 'Plan saved.';
+        toast = result.created ? `Saved as ${formatVersion(result.major, result.minor)}.` : 'Plan saved. Nothing changed.';
       } catch (error) {
         console.error('[PlanEdit] version save failed:', error);
         toast = 'Plan saved, but your version history could not be updated.';
@@ -338,7 +338,7 @@ export default function PersonalOperatingPlanEdit() {
       <div className="plan-page plan-page--form">
         <div className="plan-header">
           <div className="ui-title">{isNew ? 'Create your plan' : 'Edit your plan'}</div>
-          <p className="ui-subtitle">Saving creates {previewVersion}.</p>
+          <p className="ui-subtitle">{previewLine}</p>
         </div>
 
         {pendingDraft && !draftDismissed && (
@@ -353,7 +353,8 @@ export default function PersonalOperatingPlanEdit() {
 
         <div className="plan-field">
           <label htmlFor="pop-title">Your mission statement</label>
-          <AutoGrowTextarea id="pop-title" className="plan-input" placeholder="Define your mission in clear, compelling language..." value={missionTitle} onChange={setMissionTitle} />
+          <AutoGrowTextarea id="pop-title" className="plan-input" placeholder="Define your mission in clear, compelling language..." value={missionTitle} onChange={setMissionTitle} maxLength={LIMITS.mission} />
+          {fieldError?.field === 'mission' && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
         </div>
 
         <div className="plan-label-row">
@@ -364,8 +365,9 @@ export default function PersonalOperatingPlanEdit() {
           <div className="pop-strategy" key={strategy.id}>
             <div className="pop-strategy-top">
               <div className="pop-strategy-fields">
-                <AutoGrowTextarea singleLine className="plan-input" placeholder="Strategy name" aria-label={`Strategy ${sIndex + 1} name`} value={strategy.name} onChange={(v) => updateStrategy(sIndex, 'name', v)} />
-                <AutoGrowTextarea className="plan-input" placeholder="Why does this matter? How does it support your mission?" aria-label={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} />
+                <AutoGrowTextarea singleLine className="plan-input" placeholder="Strategy name" aria-label={`Strategy ${sIndex + 1} name`} value={strategy.name} onChange={(v) => updateStrategy(sIndex, 'name', v)} maxLength={LIMITS.strategyName} />
+                <AutoGrowTextarea className="plan-input" placeholder="Why does this matter? How does it support your mission?" aria-label={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} maxLength={LIMITS.strategyDescription} />
+                {fieldError?.field === `strategy-${sIndex}` && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
               </div>
               <button type="button" className="plan-bin-btn" aria-label={`Remove strategy ${sIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'strategy', sIndex })}>
                 <BinIcon />
@@ -374,29 +376,32 @@ export default function PersonalOperatingPlanEdit() {
 
             <div className="pop-tactics">
               {strategy.tactics.map((tactic, tIndex) => (
-                <div className="pop-tactic-row" key={tactic.id}>
-                  <AutoGrowTextarea singleLine className="plan-input" placeholder="What's the specific action?" aria-label={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} />
-                  <div>
-                    <select className="plan-input" value={tactic.type} onChange={(e) => updateTactic(sIndex, tIndex, 'type', e.target.value)} aria-label={`Tactic ${tIndex + 1} type`}>
-                      <option value="tickable">Tickable</option>
-                      <option value="measurable">Measurable</option>
-                    </select>
-                    {tactic.type === 'measurable' && (
-                      <div className="pop-tactic-measure" style={{ marginTop: 'var(--space-2)' }}>
-                        <div>
-                          <label className="pop-tactic-label">Target</label>
-                          <input type="number" className="plan-input" value={tactic.target_value || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'target_value', e.target.value ? parseFloat(e.target.value) : null)} />
+                <div key={tactic.id}>
+                  <div className="pop-tactic-row">
+                    <AutoGrowTextarea singleLine className="plan-input" placeholder="What's the specific action?" aria-label={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} maxLength={LIMITS.tacticAction} />
+                    <div>
+                      <select className="plan-input" value={tactic.type} onChange={(e) => updateTactic(sIndex, tIndex, 'type', e.target.value)} aria-label={`Tactic ${tIndex + 1} type`}>
+                        <option value="tickable">Tickable</option>
+                        <option value="measurable">Measurable</option>
+                      </select>
+                      {tactic.type === 'measurable' && (
+                        <div className="pop-tactic-measure" style={{ marginTop: 'var(--space-2)' }}>
+                          <div>
+                            <label className="pop-tactic-label">Target</label>
+                            <input type="number" className="plan-input" min="0" max="999999999999" value={tactic.target_value ?? ''} onChange={(e) => updateTactic(sIndex, tIndex, 'target_value', e.target.value ? parseFloat(e.target.value) : null)} />
+                          </div>
+                          <div>
+                            <label className="pop-tactic-label">Unit</label>
+                            <input type="text" className="plan-input" maxLength={LIMITS.unit} value={tactic.unit || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'unit', e.target.value)} />
+                          </div>
                         </div>
-                        <div>
-                          <label className="pop-tactic-label">Unit</label>
-                          <input type="text" className="plan-input" value={tactic.unit || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'unit', e.target.value)} />
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <button type="button" className="plan-bin-btn" aria-label={`Remove tactic ${tIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'tactic', sIndex, tIndex })}>
+                      <BinIcon />
+                    </button>
                   </div>
-                  <button type="button" className="plan-bin-btn" aria-label={`Remove tactic ${tIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'tactic', sIndex, tIndex })}>
-                    <BinIcon />
-                  </button>
+                  {fieldError?.field === `tactic-${sIndex}-${tIndex}` && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
                 </div>
               ))}
               <button type="button" className="plan-add-btn" onClick={() => addTactic(sIndex)}>

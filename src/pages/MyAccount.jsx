@@ -13,7 +13,7 @@ export default function MyAccount() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isLoading } = useContext(AuthContext);
-  const { showInHeader, updateShowInHeader, refetchMission } = useContext(MissionContext);
+  const { showInHeader, updateShowInHeader } = useContext(MissionContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [personalGoal, setPersonalGoal] = useState('');
@@ -21,8 +21,7 @@ export default function MyAccount() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showBreathingSettings, setShowBreathingSettings] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [archivedMissions, setArchivedMissions] = useState([]);
-  const [showArchivedMissions, setShowArchivedMissions] = useState(false);
+  const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
 
   // Handle scrolling to sections when navigated with state.scrollTo
@@ -43,15 +42,6 @@ export default function MyAccount() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [location.state?.openEditMission]);
-
-  // Opened from the Personal Operating Plan page's "Archived plans"
-  // link (prompt 9) - expand the section so the list is visible
-  // immediately instead of requiring a second click.
-  useEffect(() => {
-    if (location.state?.openArchived) {
-      setShowArchivedMissions(true);
-    }
-  }, [location.state?.openArchived]);
 
   const handleLogout = async () => {
     await logout();
@@ -176,80 +166,28 @@ export default function MyAccount() {
     fetchUserData();
   }, [user?.id]);
 
-  // Load archived missions on component mount to prevent stale count
+  // Archived plans now have their own dedicated page (prompt 9 spec:
+  // "NOT in profile settings") - this only keeps a live count for the
+  // redirect row below, not the restore/delete UI that used to live
+  // here.
   useEffect(() => {
-    if (user) {
-      loadArchivedMissions();
-    }
+    if (!user) return;
+    (async () => {
+      setLoadingArchivedMissions(true);
+      try {
+        const { count } = await supabase
+          .from('missions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .not('archived_at', 'is', null);
+        setArchivedMissionsCount(count || 0);
+      } catch (error) {
+        console.error('Error loading archived missions count:', error);
+      } finally {
+        setLoadingArchivedMissions(false);
+      }
+    })();
   }, [user?.id]);
-
-  // Reload when section is expanded (in case new archives happened)
-  useEffect(() => {
-    if (showArchivedMissions && user) {
-      loadArchivedMissions();
-    }
-  }, [showArchivedMissions, user]);
-
-  const loadArchivedMissions = async () => {
-    setLoadingArchivedMissions(true);
-    try {
-      const { data } = await supabase
-        .from('missions')
-        .select('*')
-        .eq('user_id', user.id)
-        .not('archived_at', 'is', null)
-        .order('archived_at', { ascending: false });
-
-      setArchivedMissions(data || []);
-    } catch (error) {
-      console.error('Error loading archived missions:', error);
-    } finally {
-      setLoadingArchivedMissions(false);
-    }
-  };
-
-  const handleRestoreMission = async (missionId) => {
-    try {
-      await supabase
-        .from('missions')
-        .update({ archived_at: null })
-        .eq('id', missionId)
-        .eq('user_id', user.id);
-
-      // Immediately refetch mission in MissionContext to update header
-      await refetchMission();
-
-      loadArchivedMissions();
-    } catch (error) {
-      console.error('Error restoring mission:', error);
-      alert('Failed to restore mission');
-    }
-  };
-
-  const handleDeleteArchivedMission = async (missionId) => {
-    const confirmed = window.confirm(
-      'Permanently delete this archived mission? This cannot be undone. All reviews will be lost.'
-    );
-    if (!confirmed) return;
-
-    const doubleConfirm = window.confirm(
-      'Are you absolutely sure? This is permanent and cannot be recovered.'
-    );
-    if (!doubleConfirm) return;
-
-    try {
-      await supabase
-        .from('missions')
-        .delete()
-        .eq('id', missionId)
-        .eq('user_id', user.id);
-
-      loadArchivedMissions();
-    } catch (error) {
-      console.error('Error deleting mission:', error);
-      alert('Failed to delete mission');
-    }
-  };
 
   // Re-fetch goal when modal closes (to show updated value immediately).
   // show_mission_in_header is no longer read here: it lives in
@@ -357,36 +295,6 @@ export default function MyAccount() {
           color: var(--text-2);
         }
 
-        /* Archived Missions' label doubles as a toggle button.
-           src/styles/mobile.css has button:not(.breathe-button) {
-           padding: 12px 16px !important; font-size: 14px !important; }
-           at max-width: 768px. .account-root .account-archived-toggle
-           (0,2,0) already out-ranks that (0,1,1) on specificity, but
-           padding/font-size need matching !important regardless. */
-        .account-root .account-archived-toggle {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: transparent;
-          border: none;
-          margin: 38px 0 6px;
-          padding: 0 !important;
-          cursor: pointer;
-          font-family: var(--font-display);
-          font-weight: 400;
-          text-transform: uppercase;
-          letter-spacing: 0.22em;
-          font-size: 11px !important;
-          color: var(--coral);
-        }
-
-        .account-archived-count {
-          font-family: var(--font-body);
-          font-size: 13px;
-          letter-spacing: 0;
-          text-transform: none;
-          color: var(--text-2);
-        }
 
         .account-row {
           display: flex;
@@ -538,43 +446,21 @@ export default function MyAccount() {
             </button>
           </div>
 
-          {/* Archived Missions */}
-          <button
-            type="button"
-            className="account-archived-toggle"
-            onClick={() => setShowArchivedMissions(!showArchivedMissions)}
-            aria-expanded={showArchivedMissions}
-          >
-            Archived missions
-            <span className="account-archived-count">({archivedMissions.length})</span>
-          </button>
-
-          {showArchivedMissions && (
-            loadingArchivedMissions ? (
-              <div className="account-empty-line">Loading archived missions...</div>
-            ) : archivedMissions.length === 0 ? (
-              <div className="account-empty-line">No archived missions</div>
-            ) : (
-              archivedMissions.map((mission) => (
-                <div key={mission.id} className="account-row">
-                  <div className="account-row-text">
-                    <div className="account-row-title">{mission.title}</div>
-                    <div className="account-row-desc">
-                      Archived {new Date(mission.archived_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="account-row-buttons">
-                    <button type="button" className="ui-btn-ghost" onClick={() => handleRestoreMission(mission.id)}>
-                      Restore
-                    </button>
-                    <button type="button" className="ui-btn-ghost ui-btn-ghost--danger" onClick={() => handleDeleteArchivedMission(mission.id)}>
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))
-            )
-          )}
+          {/* Archived missions: redirects to the dedicated Archived
+              plans page (prompt 9 spec - restore/view live there now,
+              not in profile settings). */}
+          <div className="account-section-label">Archived missions</div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Archived plans</div>
+              <div className="account-row-desc">
+                {loadingArchivedMissions ? 'Loading...' : `${archivedMissionsCount} archived`}
+              </div>
+            </div>
+            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/personal-operating-plan-archived')}>
+              Open
+            </button>
+          </div>
 
           {/* Portal */}
           <div className="account-section-label">Portal</div>

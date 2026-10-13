@@ -84,7 +84,7 @@ export default function MissionProgressReviewDetail() {
     try {
       await deleteReview(user.id, review.id);
       setDeleteOpen(false);
-      navigate('/my-reviews', { state: { toast: 'Deleted.' } });
+      navigate('/my-reviews', { state: { toast: 'Review deleted.' } });
     } catch (error) {
       console.error('[MissionProgressReviewDetail] delete failed:', error);
       setDeleteOpen(false);
@@ -130,8 +130,8 @@ export default function MissionProgressReviewDetail() {
 
         <div className="pop-links-row">
           {version && (
-            <button type="button" className="plan-link-btn" onClick={() => navigate('/personal-operating-plan-versions', { state: { missionId: review.mission_id } })}>
-              Version reviewed: {formatVersion(version.version_major, version.version_minor)}
+            <button type="button" className="plan-link-btn" onClick={() => navigate(`/personal-operating-plan-history/${version.major}.${version.minor}`, { state: { missionId: review.mission_id } })}>
+              Version reviewed: {formatVersion(version.major, version.minor)}
             </button>
           )}
           <button type="button" className="plan-link-btn" onClick={handleExportPDF}>Download PDF</button>

@@ -37,7 +37,8 @@ const SECTIONS = [
         childRoutes: [
           '/personal-operating-plan-edit',
           '/personal-operating-plan-review',
-          '/personal-operating-plan-versions',
+          '/personal-operating-plan-history',
+          '/personal-operating-plan-archived',
           '/mission-progress-review',
         ],
       },

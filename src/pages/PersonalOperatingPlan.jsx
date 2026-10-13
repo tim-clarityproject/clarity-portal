@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { formatVersion, loadLatestVersion } from '../lib/missionPlan';
+import { archivePlan, countArchivedMissions, formatVersion, loadLatestVersion } from '../lib/missionPlan';
 import { generateMissionProgressPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -110,12 +110,7 @@ export default function PersonalOperatingPlan() {
         }
       }
 
-      const { count } = await supabase
-        .from('missions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .not('archived_at', 'is', null);
-      setArchivedCount(count || 0);
+      setArchivedCount(await countArchivedMissions(user.id));
     } catch (error) {
       console.error('[PersonalOperatingPlan] load failed:', error);
     } finally {
@@ -126,13 +121,18 @@ export default function PersonalOperatingPlan() {
   const handleArchive = async () => {
     setIsArchiving(true);
     try {
-      await supabase
-        .from('missions')
-        .update({ archived_at: new Date().toISOString() })
-        .eq('id', mission.id)
-        .eq('user_id', user.id);
+      await archivePlan({ userId: user.id, missionId: mission.id });
       setArchiveOpen(false);
-      navigate('/personal-operating-plan-edit', { state: { isNew: true } });
+      // Already on /personal-operating-plan - reload in place (the
+      // same empty-state branch below renders once mission is cleared)
+      // rather than navigating to the same path, which React Router
+      // would not remount.
+      setMission(null);
+      setStrategies([]);
+      setTactics({});
+      setVersion(null);
+      setArchivedCount(await countArchivedMissions(user.id));
+      showToast('Plan archived. Find it in Archived plans.');
     } catch (error) {
       console.error('[PersonalOperatingPlan] archive failed:', error);
       setArchiveOpen(false);
@@ -185,7 +185,7 @@ export default function PersonalOperatingPlan() {
           </div>
           {archivedCount > 0 && (
             <div className="pop-links-row">
-              <button type="button" className="plan-link-btn" onClick={() => navigate('/my-account', { state: { scrollTo: 'mission-section', openArchived: true } })}>
+              <button type="button" className="plan-link-btn" onClick={() => navigate('/personal-operating-plan-archived')}>
                 Archived plans · {archivedCount}
               </button>
             </div>
@@ -232,12 +232,14 @@ export default function PersonalOperatingPlan() {
         </div>
 
         <div className="pop-links-row">
-          <button type="button" className="plan-link-btn" onClick={() => navigate('/personal-operating-plan-versions', { state: { missionId: mission.id } })}>
-            Version history{version ? ` · ${formatVersion(version.version_major, version.version_minor)}` : ''}
+          <button type="button" className="plan-link-btn" onClick={() => navigate('/personal-operating-plan-history', { state: { missionId: mission.id } })}>
+            Version history{version ? ` · ${formatVersion(version.major, version.minor)}` : ''}
           </button>
-          <button type="button" className="plan-link-btn" onClick={() => navigate('/my-account', { state: { scrollTo: 'mission-section', openArchived: true } })}>
-            Archived plans · {archivedCount}
-          </button>
+          {archivedCount > 0 && (
+            <button type="button" className="plan-link-btn" onClick={() => navigate('/personal-operating-plan-archived')}>
+              Archived plans · {archivedCount}
+            </button>
+          )}
           <button type="button" className="plan-link-btn" onClick={handleDownloadPDF}>
             Download PDF
           </button>
@@ -250,7 +252,7 @@ export default function PersonalOperatingPlan() {
       <ConfirmDialog
         open={archiveOpen}
         title="Archive this plan?"
-        message="It will move to your archived missions in My Account, where you can restore it any time. Nothing is deleted."
+        message="It moves to Archived plans, where you can open it or restore it any time. Its versions and reviews are kept."
         confirmLabel={isArchiving ? 'Archiving...' : 'Archive'}
         onCancel={() => setArchiveOpen(false)}
         onConfirm={handleArchive}

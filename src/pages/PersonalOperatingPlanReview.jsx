@@ -3,12 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
-import { loadLatestVersion, loadDraftReview, loadReview, saveReview } from '../lib/missionPlan';
+import { LIMITS, loadLatestVersion, loadDraftReview, loadReview, saveReview, deleteReview } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function PersonalOperatingPlanReview() {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ export default function PersonalOperatingPlanReview() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
+  const { message, showToast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -195,7 +198,7 @@ export default function PersonalOperatingPlanReview() {
         navigate('/mission-progress-review', { state: { reviewId: savedId, toast: 'Review saved.' } });
       } else {
         setExistingReviewId(savedId);
-        navigate('/personal-operating-plan', { state: { toast: 'Draft saved. Find it from Review plan to carry on.' } });
+        showToast('Draft saved.');
       }
     } catch (error) {
       console.error('[PlanReview] save failed:', error);
@@ -205,8 +208,17 @@ export default function PersonalOperatingPlanReview() {
     }
   };
 
-  const handleDiscard = () => {
+  const handleDiscard = async () => {
     setDiscardOpen(false);
+    // Discard only ever removes a DRAFT row (an existing final review
+    // being edited must never be deleted by walking away from it).
+    if (existingReviewId && continuingDraftDate) {
+      try {
+        await deleteReview(user.id, existingReviewId);
+      } catch (error) {
+        console.error('[PlanReview] draft delete on discard failed:', error);
+      }
+    }
     navigate('/personal-operating-plan');
   };
 
@@ -290,7 +302,7 @@ export default function PersonalOperatingPlanReview() {
                   </div>
                 )}
 
-                <AutoGrowTextarea className="plan-input" placeholder="Add a reflection or comment (optional)" value={reviewData[tactic.id]?.note || ''} onChange={(v) => updateReview(tactic.id, 'note', v)} />
+                <AutoGrowTextarea className="plan-input" placeholder="Add a reflection or comment (optional)" value={reviewData[tactic.id]?.note || ''} onChange={(v) => updateReview(tactic.id, 'note', v)} maxLength={LIMITS.reviewNote} />
               </div>
             ))}
           </div>
@@ -314,6 +326,7 @@ export default function PersonalOperatingPlanReview() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
+      <Toast message={message} />
     </div>
   );
 }
