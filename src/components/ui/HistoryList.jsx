@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
+import { parseDbTimestamp } from '../../lib/dateFormatter';
 
 // Shared history list - used (later, by prompts 6-10) by My Plans, My
 // Reviews and My Journals. Driven only by props: no data fetching, no
@@ -60,7 +61,7 @@ function CheckIcon() {
 // comes back as " am"/" pm" (lower-case, space-separated) - the space
 // is stripped so it reads "9:40pm", not "9:40 pm".
 function formatRowDate(value) {
-  const date = new Date(value);
+  const date = parseDbTimestamp(value);
   if (Number.isNaN(date.getTime())) return '';
   const day = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   const time = date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '');
@@ -68,7 +69,7 @@ function formatRowDate(value) {
 }
 
 function formatMonthHeading(value) {
-  const date = new Date(value);
+  const date = parseDbTimestamp(value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 }
@@ -226,8 +227,8 @@ export default function HistoryList({
     rowMatchesFilter(r, activeFilterDef) && (!activeSubFilterDef || rowMatchesFilter(r, activeSubFilterDef))
   ));
   const sorted = [...filtered].sort((a, b) => {
-    const da = new Date(a.date).getTime();
-    const db = new Date(b.date).getTime();
+    const da = parseDbTimestamp(a.date).getTime();
+    const db = parseDbTimestamp(b.date).getTime();
     return sortOrder === 'new' ? db - da : da - db;
   });
   const visible = sorted.slice(0, visibleCount);
@@ -1029,24 +1030,33 @@ const HLIST_CSS = `
   stroke-linejoin: round;
 }
 
-/* Phone: title+meta on their own line, Review/Edit/Delete on the line
-   below (brief: "second line for Review, Edit and Delete") - a flex
-   wrap rather than a fixed-column grid, since Continue/Review are text
-   buttons of varying width, not just two 44px icon buttons. */
+/* Phone (prompt 7f): same row, title/date on the left and the
+   controls on the right, same line as desktop - not stacked under the
+   title. The text wraps instead of truncating (a long title/date grows
+   the row rather than forcing it onto its own line above the
+   controls); the controls keep flex-shrink: 0 so they never squash. */
 @media (max-width: 768px) {
   .hlist-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     padding-bottom: 4px;
   }
   .hlist-row::before { display: none; }
   .ui-root .hlist-row-main {
-    padding: 14px 8px 4px 16px !important;
+    padding: 14px 8px 14px 16px !important;
+  }
+  .hlist-row-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+  .hlist-row-meta {
+    flex-wrap: wrap;
+    white-space: normal;
   }
   .hlist-row-controls {
-    justify-content: flex-start;
-    padding: 0 0 4px 12px;
+    flex-shrink: 0;
+    padding-top: 14px;
   }
 }
 
