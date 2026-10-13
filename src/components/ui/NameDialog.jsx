@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import AutoGrowTextarea from './AutoGrowTextarea';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -64,7 +65,7 @@ export default function NameDialog({
       }
       if (e.key === 'Tab' && dialogRef.current) {
         const focusables = Array.from(
-          dialogRef.current.querySelectorAll('input, button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')
+          dialogRef.current.querySelectorAll('input, textarea, button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')
         );
         if (focusables.length === 0) return;
         const first = focusables[0];
@@ -155,7 +156,8 @@ export default function NameDialog({
           width: 100%;
           box-sizing: border-box;
           min-height: 48px;
-          padding: 0 16px !important;
+          padding: 13px 16px !important;
+          line-height: 1.4;
           background: var(--bg);
           border: 1px solid var(--line);
           border-radius: var(--radius-input);
@@ -163,7 +165,7 @@ export default function NameDialog({
           font-family: var(--font-body);
           font-size: 16px;
           outline: none;
-          transition: border-color var(--dur) var(--ease);
+          transition: height var(--dur) var(--ease), border-color var(--dur) var(--ease);
         }
 
         .ui-root .name-dialog-input.error {
@@ -240,17 +242,24 @@ export default function NameDialog({
         <p className="name-dialog-message">{message}</p>
 
         <form onSubmit={handleConfirm} noValidate>
-          <input
+          <AutoGrowTextarea
             ref={inputRef}
-            type="text"
+            singleLine
             className={`name-dialog-input${error ? ' error' : ''}`}
             value={name}
             maxLength={MAX_NAME_LENGTH}
             aria-label="Name"
             aria-invalid={error ? 'true' : undefined}
-            onChange={(e) => {
-              setName(e.target.value);
+            onChange={(next) => {
+              setName(next);
               if (error) setError('');
+            }}
+            onKeyDown={(e) => {
+              // A single-line <input> inside a <form> submits on Enter
+              // natively; AutoGrowTextarea's singleLine mode blocks the
+              // newline a <textarea> would otherwise insert, so this
+              // keeps that same Enter-to-save behaviour explicitly.
+              if (e.key === 'Enter') handleConfirm(e);
             }}
           />
           <p className="name-dialog-counter">{name.length}/{MAX_NAME_LENGTH}</p>

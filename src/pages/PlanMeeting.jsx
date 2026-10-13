@@ -4,11 +4,11 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 import pageText from '../content/pageText';
 
 const SECTION_OPTIONS = [
@@ -59,10 +59,6 @@ export default function PlanMeeting() {
   const { message, showToast } = useToast();
 
   const menuRef = useRef(null);
-  const refContext = useRef(null);
-  const refPreReads = useRef(null);
-  useAutoExpandTextarea(refContext, meetingContext);
-  useAutoExpandTextarea(refPreReads, preReads);
 
   useEffect(() => {
     if (!decisionId || !user) return;
@@ -236,12 +232,12 @@ export default function PlanMeeting() {
 
         <div className="plan-field">
           <label htmlFor="meeting-title">Meeting title</label>
-          <input id="meeting-title" className="plan-input" placeholder="Type here" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <AutoGrowTextarea id="meeting-title" singleLine className="plan-input" placeholder="Type here" value={title} onChange={setTitle} />
         </div>
 
         <div className="plan-field">
           <label htmlFor="meeting-chair">Chair</label>
-          <input id="meeting-chair" className="plan-input" placeholder="Type here" value={chair} onChange={(e) => setChair(e.target.value)} />
+          <AutoGrowTextarea id="meeting-chair" singleLine className="plan-input" placeholder="Type here" value={chair} onChange={setChair} />
         </div>
 
         <div className="plan-field-row">
@@ -266,13 +262,12 @@ export default function PlanMeeting() {
               <label htmlFor="meeting-context">Meeting context</label>
               <button type="button" className="plan-link-btn" onClick={() => removeSection('context')}>Remove</button>
             </div>
-            <textarea
+            <AutoGrowTextarea
               id="meeting-context"
-              ref={refContext}
               className="plan-input"
               placeholder="Type here"
               value={meetingContext}
-              onChange={(e) => setMeetingContext(e.target.value)}
+              onChange={setMeetingContext}
             />
           </div>
         )}
@@ -283,13 +278,12 @@ export default function PlanMeeting() {
               <label htmlFor="meeting-prereads">Attendee preparation</label>
               <button type="button" className="plan-link-btn" onClick={() => removeSection('pre-reads')}>Remove</button>
             </div>
-            <textarea
+            <AutoGrowTextarea
               id="meeting-prereads"
-              ref={refPreReads}
               className="plan-input"
               placeholder="Type here"
               value={preReads}
-              onChange={(e) => setPreReads(e.target.value)}
+              onChange={setPreReads}
             />
           </div>
         )}
@@ -331,12 +325,13 @@ export default function PlanMeeting() {
         {objectives.map((obj, index) => (
           <div className="plan-obj-row" key={obj.id}>
             <span className="plan-obj-num">{index + 1}.</span>
-            <input
+            <AutoGrowTextarea
+              singleLine
               className="plan-input"
               placeholder="Type here"
               aria-label={`Objective ${index + 1}`}
               value={obj.text}
-              onChange={(e) => changeObjective(obj.id, e.target.value)}
+              onChange={(v) => changeObjective(obj.id, v)}
             />
             <button
               type="button"
@@ -370,15 +365,15 @@ export default function PlanMeeting() {
           <div className="plan-ag-row" key={item.id}>
             <div className="plan-ag-field plan-ag-field--item">
               <label>Item</label>
-              <input className="plan-input" placeholder="Type here" value={item.item} onChange={(e) => changeAgendaItem(item.id, 'item', e.target.value)} />
+              <AutoGrowTextarea singleLine className="plan-input" placeholder="Type here" value={item.item} onChange={(v) => changeAgendaItem(item.id, 'item', v)} />
             </div>
             <div className="plan-ag-field plan-ag-field--aim">
               <label>Aim</label>
-              <input className="plan-input" placeholder="Type here" value={item.aim} onChange={(e) => changeAgendaItem(item.id, 'aim', e.target.value)} />
+              <AutoGrowTextarea singleLine className="plan-input" placeholder="Type here" value={item.aim} onChange={(v) => changeAgendaItem(item.id, 'aim', v)} />
             </div>
             <div className="plan-ag-field">
               <label>Lead</label>
-              <input className="plan-input" placeholder="Type here" value={item.lead} onChange={(e) => changeAgendaItem(item.id, 'lead', e.target.value)} />
+              <AutoGrowTextarea singleLine className="plan-input" placeholder="Type here" value={item.lead} onChange={(v) => changeAgendaItem(item.id, 'lead', v)} />
             </div>
             <div className="plan-ag-field">
               <label>Length (min)</label>

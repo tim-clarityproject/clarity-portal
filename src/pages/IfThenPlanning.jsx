@@ -1,16 +1,16 @@
-import { useState, useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
@@ -46,10 +46,12 @@ export default function IfThenPlanning() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
+  // Each If.../Then I will pair should stay the same height as each
+  // other (the shorter one stretching to match) - the two boxes report
+  // their own natural height here, and the larger of the pair is fed
+  // back down as a forced minimum.
+  const [pairHeights, setPairHeights] = useState({});
   const { message, showToast } = useToast();
-
-  const refSituation = useRef(null);
-  useAutoExpandTextarea(refSituation, situation);
 
   useEffect(() => {
     if (!decisionId || !user) return;
@@ -170,51 +172,61 @@ export default function IfThenPlanning() {
 
         <div className="plan-field">
           <label htmlFor="ift-situation">Which situation are you concerned about?</label>
-          <textarea
+          <AutoGrowTextarea
             id="ift-situation"
-            ref={refSituation}
             className="plan-input"
             placeholder="Type here"
             value={situation}
-            onChange={(e) => setSituation(e.target.value)}
+            onChange={setSituation}
           />
         </div>
 
-        {items.map((item, index) => (
-          <div className="plan-sc-row" key={item.id}>
-            <div className="plan-sc-pair">
-              <div>
-                <label htmlFor={`ift-if-${item.id}`}>If...</label>
-                <input
-                  id={`ift-if-${item.id}`}
-                  className="plan-input"
-                  placeholder="Type here"
-                  value={item.ifCondition}
-                  onChange={(e) => changeItem(item.id, 'ifCondition', e.target.value)}
-                />
+        {items.map((item, index) => {
+          const ifKey = `${item.id}-if`;
+          const thenKey = `${item.id}-then`;
+          const pairMax = Math.max(pairHeights[ifKey] || 0, pairHeights[thenKey] || 0) || undefined;
+          return (
+            <div className="plan-sc-row" key={item.id}>
+              <div className="plan-sc-pair">
+                <div>
+                  <label htmlFor={`ift-if-${item.id}`}>If...</label>
+                  <AutoGrowTextarea
+                    id={`ift-if-${item.id}`}
+                    singleLine
+                    className="plan-input"
+                    placeholder="Type here"
+                    value={item.ifCondition}
+                    onChange={(v) => changeItem(item.id, 'ifCondition', v)}
+                    minPixelHeight={pairMax}
+                    onHeightChange={(h) => setPairHeights((prev) => (prev[ifKey] === h ? prev : { ...prev, [ifKey]: h }))}
+                  />
+                </div>
+                <div>
+                  <label htmlFor={`ift-then-${item.id}`}>Then I will</label>
+                  <AutoGrowTextarea
+                    id={`ift-then-${item.id}`}
+                    singleLine
+                    className="plan-input"
+                    placeholder="Type here"
+                    value={item.thenAction}
+                    onChange={(v) => changeItem(item.id, 'thenAction', v)}
+                    minPixelHeight={pairMax}
+                    onHeightChange={(h) => setPairHeights((prev) => (prev[thenKey] === h ? prev : { ...prev, [thenKey]: h }))}
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor={`ift-then-${item.id}`}>Then I will</label>
-                <input
-                  id={`ift-then-${item.id}`}
-                  className="plan-input"
-                  placeholder="Type here"
-                  value={item.thenAction}
-                  onChange={(e) => changeItem(item.id, 'thenAction', e.target.value)}
-                />
-              </div>
+              <button
+                type="button"
+                className="plan-bin-btn"
+                aria-label={`Remove scenario ${index + 1}`}
+                disabled={items.length === 1}
+                onClick={() => removeItem(item.id)}
+              >
+                <BinIcon />
+              </button>
             </div>
-            <button
-              type="button"
-              className="plan-bin-btn"
-              aria-label={`Remove scenario ${index + 1}`}
-              disabled={items.length === 1}
-              onClick={() => removeItem(item.id)}
-            >
-              <BinIcon />
-            </button>
-          </div>
-        ))}
+          );
+        })}
         <button type="button" className="plan-add-btn" onClick={addItem}>
           <span className="ui-cross ui-cross--sm" aria-hidden="true" />
           Add scenario

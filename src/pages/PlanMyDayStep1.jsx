@@ -1,15 +1,15 @@
-import { useState, useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
 import pageText from '../content/pageText';
 
 // Worded exactly per the approved mock-up - topPriority/showUp/notDo are
@@ -58,27 +58,12 @@ export default function PlanMyDayStep1() {
   const [discardOpen, setDiscardOpen] = useState(false);
   const { message, showToast } = useToast();
 
-  const refGratitude = useRef(null);
-  const refTopPriority = useRef(null);
-  const refShowUp = useRef(null);
-  const refNotDo = useRef(null);
-  useAutoExpandTextarea(refGratitude, gratitude);
-  useAutoExpandTextarea(refTopPriority, topPriority);
-  useAutoExpandTextarea(refShowUp, showUp);
-  useAutoExpandTextarea(refNotDo, notDo);
-
   const values = { gratitude, topPriority, showUp, notDo };
   const setters = {
     gratitude: setGratitude,
     topPriority: setTopPriority,
     showUp: setShowUp,
     notDo: setNotDo,
-  };
-  const refs = {
-    gratitude: refGratitude,
-    topPriority: refTopPriority,
-    showUp: refShowUp,
-    notDo: refNotDo,
   };
 
   // Loads an existing plan (edit, or resuming a draft) by id - the real
@@ -214,13 +199,12 @@ export default function PlanMyDayStep1() {
               </div>
               <div>
                 <label className="plan-dq-label" htmlFor={`dq-${q.key}`}>{q.label}</label>
-                <textarea
+                <AutoGrowTextarea
                   id={`dq-${q.key}`}
-                  ref={refs[q.key]}
                   className="plan-dq-textarea"
                   value={values[q.key]}
                   placeholder="Type here"
-                  onChange={(e) => setters[q.key](e.target.value)}
+                  onChange={(v) => setters[q.key](v)}
                 />
               </div>
             </div>

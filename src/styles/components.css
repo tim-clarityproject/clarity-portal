@@ -127,6 +127,32 @@ html:has(.ui-root) {
   background: var(--surface);
 }
 
+/* ============================================================
+   AutoGrowTextarea (src/components/ui/AutoGrowTextarea.jsx) - CLAUDE.md
+   rule 18: every free-text field grows to show all of its text, no
+   scrolling inside the box. This class carries only the BEHAVIOUR every
+   use shares (no scrollbar, no drag handle, height transitions instead
+   of jumping) - the look (border, background, padding, font) comes from
+   whichever skin class is passed alongside it (.plan-input,
+   .plan-dq-textarea, .name-dialog-input, ...), each of which must
+   include `height` in its own transition list - a second `transition`
+   declared here would just overwrite theirs, not merge with it, since
+   it is a shorthand property.
+   ============================================================ */
+.ui-autogrow {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .ui-autogrow {
+    scroll-margin-bottom: calc(var(--action-bar-height, 96px) + var(--space-3));
+  }
+}
+
 /* .ui-btn-primary and .ui-btn-ghost (below) are real <button> elements.
    src/styles/mobile.css has button:not(.breathe-button) { padding: 12px
    16px !important; font-size: 14px !important; } at max-width: 768px,
@@ -1795,17 +1821,8 @@ html:has(.ui-root) {
   line-height: 1.6;
   padding: 10px 0 14px !important;
   min-height: 58px;
-  max-height: 240px;
-  overflow-y: auto;
-  resize: none;
   outline: none;
-  transition: border-color var(--dur) var(--ease);
-}
-
-@media (min-width: 769px) {
-  .ui-root .plan-dq-textarea {
-    max-height: 260px;
-  }
+  transition: height var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .ui-root .plan-dq-textarea::placeholder {
@@ -1866,7 +1883,7 @@ html:has(.ui-root) {
   padding: 0 14px !important;
   min-height: var(--tap-min);
   outline: none;
-  transition: border-color var(--dur) var(--ease);
+  transition: height var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .ui-root .plan-input::placeholder {
@@ -1877,18 +1894,16 @@ html:has(.ui-root) {
   border-color: var(--coral);
 }
 
+/* A <textarea> does not vertically centre its text the way <input>
+   does, so it needs real top/bottom padding to look the same at rest
+   (rule 18 - every free-text field is now a textarea via
+   AutoGrowTextarea, growing with no max-height; .ui-autogrow supplies
+   resize:none/overflow:hidden/the behaviour, this just fixes the
+   padding). Plain <input type=date/time/number> elements sharing
+   .plan-input are untouched by this textarea-only selector. */
 .ui-root textarea.plan-input {
-  resize: none;
-  overflow-y: auto;
-  min-height: 72px;
-  padding: 14px !important;
-  max-height: 240px;
-}
-
-@media (min-width: 769px) {
-  .ui-root textarea.plan-input {
-    max-height: 260px;
-  }
+  padding: 11px 14px !important;
+  line-height: 1.4;
 }
 
 .plan-endline {
@@ -2082,7 +2097,10 @@ html:has(.ui-root) {
 .plan-obj-row {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 44px;
-  align-items: center;
+  /* start, not center: when an objective wraps to several lines the
+     number and bin icon stay level with the FIRST line, not the
+     vertical middle of the now-taller row (rule 18). */
+  align-items: start;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
 }
@@ -2092,6 +2110,7 @@ html:has(.ui-root) {
   font-weight: 400;
   font-size: 12px;
   color: var(--placeholder);
+  padding-top: 11px;
 }
 
 .ui-root .plan-bin-btn {
@@ -2158,7 +2177,10 @@ html:has(.ui-root) {
 }
 
 .plan-ag-row {
-  align-items: center;
+  /* start, not center: Item/Aim grow with their text, so the Length
+     box and bin icon stay level with the row's FIRST line instead of
+     re-centering every keystroke (rule 18). */
+  align-items: start;
   margin-bottom: var(--space-2);
 }
 
@@ -2321,6 +2343,14 @@ html:has(.ui-root) {
   margin-bottom: var(--space-2);
 }
 
+/* Meeting title / If-Then plan name is user-typed and can be a single
+   long unbroken word - wrap it rather than letting it run off the
+   page (scoped here, not on the shared .ui-title, to stay inside this
+   job's six pages). */
+.plan-summary-head .ui-title {
+  overflow-wrap: anywhere;
+}
+
 .plan-sum {
   display: grid;
   grid-template-columns: 200px minmax(0, 1fr);
@@ -2361,6 +2391,7 @@ html:has(.ui-root) {
   font-size: 18px;
   line-height: 1.6;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 768px) {
@@ -2413,6 +2444,7 @@ html:has(.ui-root) {
 .plan-facts span {
   font-size: var(--fs-body);
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .plan-olist {
@@ -2420,6 +2452,7 @@ html:has(.ui-root) {
   padding-left: var(--space-5);
   color: var(--text);
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .plan-olist li {
@@ -2453,6 +2486,7 @@ html:has(.ui-root) {
   padding: var(--space-2) var(--space-2) var(--space-2) 0;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 .plan-table td:last-child,
@@ -2489,6 +2523,7 @@ html:has(.ui-root) {
   margin: 0 0 var(--space-2);
   color: var(--text);
   font-size: var(--fs-body);
+  overflow-wrap: anywhere;
 }
 
 .plan-pair2 p:last-child {
