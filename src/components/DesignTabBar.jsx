@@ -104,16 +104,31 @@ export default function DesignTabBar() {
   // gets hidden, matching how the old bar reserved space via body padding -
   // but measured dynamically (via --tabbar-height) instead of a hardcoded
   // guess, so it stays correct even if content wraps to a second line.
+  // A ResizeObserver (not just mount + window resize) also catches the
+  // web font finishing loading - a prompt-4e audit found the same gap
+  // on Mission.jsx's save bar and fixed it the same way there.
   useLayoutEffect(() => {
+    const el = navRef.current;
+    if (!el) return undefined;
+
     const measure = () => {
-      if (navRef.current) {
-        const height = navRef.current.getBoundingClientRect().height;
-        document.documentElement.style.setProperty('--tabbar-height', `${height}px`);
-      }
+      document.documentElement.style.setProperty('--tabbar-height', `${el.getBoundingClientRect().height}px`);
     };
     measure();
+
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    document.fonts?.ready?.then(measure);
+
+    let observer;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(measure);
+      observer.observe(el);
+    }
+
+    return () => {
+      window.removeEventListener('resize', measure);
+      observer?.disconnect();
+    };
   }, []);
 
   return (

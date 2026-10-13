@@ -11,19 +11,39 @@ import { useLayoutEffect, useRef } from 'react';
 // all) into --tabbar-height, so adding the inset again here would double it.
 // Rendered in-tree (not a portal) inside the page's own .ui-root, so unlike
 // Toast/DiscardDialog it needs no .ui-root wrapper of its own.
+//
+// Measured with a ResizeObserver, not just on mount + window resize -
+// this bar is rendered unconditionally (no async gate like Mission.jsx
+// had), so a plain one-shot measure on mount is safe here, but its
+// rendered height can still change later without the window itself
+// resizing (the web font finishing loading, or button text wrapping
+// differently) - a ResizeObserver catches that; a prompt-4e audit found
+// and fixed the same one-shot gap on Mission.jsx's save bar.
 export default function PhoneActionBar({ children }) {
   const barRef = useRef(null);
 
   useLayoutEffect(() => {
+    const el = barRef.current;
+    if (!el) return undefined;
+
     const measure = () => {
-      if (barRef.current) {
-        const height = barRef.current.getBoundingClientRect().height;
-        document.documentElement.style.setProperty('--action-bar-height', `${height}px`);
-      }
+      document.documentElement.style.setProperty('--action-bar-height', `${el.getBoundingClientRect().height}px`);
     };
     measure();
+
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    document.fonts?.ready?.then(measure);
+
+    let observer;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(measure);
+      observer.observe(el);
+    }
+
+    return () => {
+      window.removeEventListener('resize', measure);
+      observer?.disconnect();
+    };
   }, []);
 
   return (

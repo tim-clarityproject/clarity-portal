@@ -1,4 +1,5 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useContext, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { MissionContext } from '../../context/MissionContext';
@@ -72,7 +73,8 @@ export default function Mission() {
   const [ideaGroup, setIdeaGroup] = useState(0);
   const [saveBarHeight, setSaveBarHeight] = useState(0);
   const textareaRef = useRef(null);
-  const saveBarRef = useRef(null);
+  const saveBarElRef = useRef(null);
+  const saveBarObserverRef = useRef(null);
   const hasProcessedCodeRef = useRef(false);
   const cardShaking = useShake(shakeToken);
 
@@ -82,24 +84,45 @@ export default function Mission() {
   // height and reserves that much padding at the foot of the form so
   // scrolled content (the last idea pill, the "Show other ideas" link)
   // never ends up hidden behind it, on any screen size.
-  //
-  // `linkStatus` is a dependency, not just an initial-mount effect:
-  // every hook in this component runs unconditionally before the
-  // linkStatus-based early returns below, so on first mount
-  // (linkStatus still 'checking') the form - and saveBarRef - do not
-  // exist in the DOM yet. Without re-running once linkStatus reaches
-  // 'ready', saveBarRef.current was always null, saveBarHeight stayed
-  // 0 forever, and paddingBottom below evaluated to `undefined` - the
-  // actual cause of the sparks list being hidden behind the bar with
-  // no way to scroll past it.
+  const measureSaveBar = useCallback(() => {
+    if (saveBarElRef.current) {
+      setSaveBarHeight(saveBarElRef.current.getBoundingClientRect().height);
+    }
+  }, []);
+
+  // A callback ref, not a plain useRef + effect-with-a-dependency-array:
+  // the real save bar only mounts once BOTH linkStatus is 'ready' AND
+  // the existing-mission check below has resolved - a dependency array
+  // was guessing which state change to watch for, and the one here
+  // before this fix (just [linkStatus]) missed the second gate, so
+  // saveBarElRef.current was still null every time it ran. React calls
+  // a callback ref with the real node the moment it exists however
+  // that came to be, and with null when it is removed, so this is
+  // always attached to whatever is actually in the DOM - no dependency
+  // array to get wrong, and it cleans up its own ResizeObserver on
+  // every detach, including final unmount.
+  const setSaveBarRef = useCallback((node) => {
+    saveBarObserverRef.current?.disconnect();
+    saveBarObserverRef.current = null;
+    saveBarElRef.current = node;
+    if (!node) return;
+    measureSaveBar();
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(measureSaveBar);
+      observer.observe(node);
+      saveBarObserverRef.current = observer;
+    }
+  }, [measureSaveBar]);
+
+  useLayoutEffect(() => {
+    measureSaveBar();
+  }, [measureSaveBar]);
+
   useEffect(() => {
-    const measure = () => {
-      if (saveBarRef.current) setSaveBarHeight(saveBarRef.current.getBoundingClientRect().height);
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [linkStatus]);
+    window.addEventListener('resize', measureSaveBar);
+    document.fonts?.ready?.then(measureSaveBar);
+    return () => window.removeEventListener('resize', measureSaveBar);
+  }, [measureSaveBar]);
 
   useEffect(() => {
     // StrictMode (dev) mounts, runs this effect, cleans it up, then runs
@@ -334,6 +357,7 @@ export default function Mission() {
   }
 
   return (
+    <>
     <AuthShell
       step={3}
       topBar="none"
@@ -350,7 +374,7 @@ export default function Mission() {
       headline="WHAT IS YOUR MISSION?"
       sub="One sentence about what you are here to do."
     >
-      <form onSubmit={handleSave} noValidate style={{ paddingBottom: saveBarHeight ? `${saveBarHeight + 16}px` : undefined }}>
+      <form id="mission-form" onSubmit={handleSave} noValidate style={{ paddingBottom: saveBarHeight ? `${saveBarHeight + 16}px` : undefined }}>
         <div className={`auth-mission-card auth-mission-card--input${missionError ? ' error' : ''}${cardShaking ? ' shake' : ''}`}>
           <label htmlFor="mission-textarea" className="auth-mission-card-label">Your Mission</label>
           <textarea
@@ -391,13 +415,32 @@ export default function Mission() {
         <div className="auth-more-ideas-wrap">
           <AuthTextLink type="button" onClick={handleShowOtherIdeas}>Show other ideas</AuthTextLink>
         </div>
-
-        <div className="auth-sticky-save" ref={saveBarRef}>
-          <AuthPrimaryButton type="submit" loading={isSaving}>
+      </form>
+    </AuthShell>
+    {/* Portaled to document.body (CLAUDE.md rule 17: a .ui-root of its
+        own), not rendered inside the form above - the form picks up
+        .auth-rise's entrance animation (opacity + translateY) from
+        AuthShell's auto-wrapping, and an animated `transform` on an
+        ancestor makes that ancestor the containing block for any
+        position:fixed descendant for the animation's duration. With
+        the save bar nested inside the form, "bottom:0" resolved
+        against the FORM's own box instead of the viewport while that
+        animation was active, leaving it floating well above the
+        window's true bottom edge. Portaling it out removes it from
+        that ancestor chain entirely, regardless of what AuthShell's
+        shared entrance animation does. The submit button keeps working
+        via the `form` attribute, which submits by form id regardless
+        of DOM position. */}
+    {createPortal(
+      <div className="ui-root">
+        <div className="auth-sticky-save" ref={setSaveBarRef}>
+          <AuthPrimaryButton type="submit" form="mission-form" loading={isSaving}>
             Save my mission
           </AuthPrimaryButton>
         </div>
-      </form>
-    </AuthShell>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }
