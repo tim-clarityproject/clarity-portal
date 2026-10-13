@@ -1,688 +1,277 @@
-import { useState, useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { clearProgress } from '../lib/saveProgress';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
-import { formatReviewDate, getLocalDateKey } from '../lib/dateFormatter';
-import SaveDiscardButtons from '../components/SaveDiscardButtons';
-import NamingModal from '../components/NamingModal';
-import SavedConfirmation from '../components/SavedConfirmation';
+import { getLocalDateKey, formatDateAndTime } from '../lib/dateFormatter';
+import {
+  AFTER_ACTION_QUESTIONS, WEEKLY_QUESTIONS, RATINGS,
+  weeklyTitle, afterActionTitle, validateReview,
+  loadReviewByEntryId, loadWeeklyDraftFor, saveReview,
+} from '../lib/reviewTool';
 import DesignHeader from '../components/DesignHeader';
+import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
+import { DiscardLink } from '../components/ui/DiscardLink';
+import DiscardDialog from '../components/ui/DiscardDialog';
+import NameDialog from '../components/ui/NameDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function MyJournal() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const reviewType = location.state?.reviewType || 'after-action';
-  const [selectedDate, setSelectedDate] = useState(location.state?.selectedDate || getLocalDateKey(new Date()));
-  const [content, setContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const reviewType = location.state?.reviewType === 'weekly-momentum' ? 'weekly-momentum' : 'after-action';
+  const stateEntryId = location.state?.entryId || null;
+
+  const [entryId, setEntryId] = useState(stateEntryId);
+  const [existingStatus, setExistingStatus] = useState(null); // 'draft' | 'final' | null (new)
+  const [dateKey, setDateKey] = useState(getLocalDateKey(new Date()));
+  const [answers, setAnswers] = useState({ q1: '', q2: '', q3: '', q4: '' });
+  const [ratings, setRatings] = useState({ momentum: null, intentionality: null, communication: null, performanceUnderPressure: null });
+  const [continuingDraftDate, setContinuingDraftDate] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const isEditMode = !!location.state?.selectedDate;
+  const [saveError, setSaveError] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const { message, showToast } = useToast();
 
-  const [q1, setQ1] = useState('');
-  const [q2, setQ2] = useState('');
-  const [q3, setQ3] = useState('');
-  const [q4, setQ4] = useState('');
-  const [reviewTitle, setReviewTitle] = useState('');
-  const [momentum, setMomentum] = useState(1);
-  const [intentionality, setIntentionality] = useState(1);
-  const [communication, setCommunication] = useState(1);
-  const [performanceUnderPressure, setPerformanceUnderPressure] = useState(1);
-  const [showNamingModal, setShowNamingModal] = useState(false);
-  const [currentTitle, setCurrentTitle] = useState('');
-
-  const refQ1 = useAutoExpandTextarea(q1);
-  const refQ2 = useAutoExpandTextarea(q2);
-  const refQ3 = useAutoExpandTextarea(q3);
-  const refQ4 = useAutoExpandTextarea(q4);
-
-  const afterActionQuestions = [
-    { id: 'q1', label: 'What did you plan to do?', value: q1, setter: setQ1 },
-    { id: 'q2', label: 'What actually happened?', value: q2, setter: setQ2 },
-    { id: 'q3', label: 'Why was there a difference?', value: q3, setter: setQ3 },
-    { id: 'q4', label: 'What can you learn from this?', value: q4, setter: setQ4 },
-  ];
-
-  const progressQuestions = [
-    { id: 'q1', label: "What's been going well?", value: q1, setter: setQ1 },
-    { id: 'q2', label: 'What have you learned recently?', value: q2, setter: setQ2 },
-    { id: 'q3', label: 'What next steps will expand your performance potential?', value: q3, setter: setQ3 },
-  ];
-
-  const weeklyMomentumQuestions = [
-    { id: 'q1', label: 'What moved forward this week?', value: q1, setter: setQ1 },
-    { id: 'q2', label: 'What did you do better this week?', value: q2, setter: setQ2 },
-    { id: 'q3', label: 'What are your priorities for next week?', value: q3, setter: setQ3 },
-  ];
-
-  let questions = [];
-  let pageTitle = '';
-  if (reviewType === 'progress') {
-    questions = progressQuestions;
-    pageTitle = 'Progress Review';
-  } else if (reviewType === 'weekly-momentum') {
-    questions = weeklyMomentumQuestions;
-    pageTitle = 'Weekly Momentum Check-in';
-  } else {
-    questions = afterActionQuestions;
-    pageTitle = 'After-Action Review';
-  }
-
-  // Clear form when review type changes
-  useEffect(() => {
-    if (!isEditMode) {
-      setQ1('');
-      setQ2('');
-      setQ3('');
-      setQ4('');
-      setReviewTitle('');
-      setMomentum(1);
-      setIntentionality(1);
-      setCommunication(1);
-      setPerformanceUnderPressure(1);
-    }
-  }, [reviewType, isEditMode]);
+  const questions = reviewType === 'weekly-momentum' ? WEEKLY_QUESTIONS : AFTER_ACTION_QUESTIONS;
+  const pageTitle = reviewType === 'weekly-momentum' ? 'Weekly Momentum Check-in' : 'After-Action Review';
+  const dateLabel = reviewType === 'weekly-momentum' ? 'Week ending' : 'When was it?';
 
   useEffect(() => {
-    if (user && isEditMode) {
-      loadEntry(selectedDate);
-    }
-  }, [selectedDate, user?.id, isEditMode, reviewType]);
-
-  const loadEntry = async (date) => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      const entryId = location.state?.entryId;
-      let query = supabase
-        .from('journal_entries')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (entryId) {
-        query = query.eq('id', entryId);
-      } else {
-        query = query.eq('entry_date', date).eq('review_type', reviewType);
-      }
-
-      const { data, error } = await query;
-
-      if (data && data.length > 0) {
-        setCurrentTitle(data[0].title || '');
-        setReviewTitle(data[0].title || '');
-        try {
-          const parsed = JSON.parse(data[0].content);
-          setQ1(parsed.q1 || '');
-          setQ2(parsed.q2 || '');
-          setQ3(parsed.q3 || '');
-          setQ4(parsed.q4 || '');
-          if (parsed.momentum) setMomentum(parsed.momentum);
-          if (parsed.intentionality) setIntentionality(parsed.intentionality);
-          if (parsed.communication) setCommunication(parsed.communication);
-          if (parsed.performanceUnderPressure) setPerformanceUnderPressure(parsed.performanceUnderPressure);
-        } catch (e) {
-          setQ1('');
-          setQ2('');
-          setQ3('');
-          setQ4('');
-          setMomentum(1);
-          setIntentionality(1);
-          setCommunication(1);
-          setPerformanceUnderPressure(1);
+    let cancelled = false;
+    (async () => {
+      if (!user) return;
+      try {
+        if (stateEntryId) {
+          const row = await loadReviewByEntryId(user.id, stateEntryId);
+          if (cancelled) return;
+          const parsed = JSON.parse(row.content || '{}');
+          setAnswers({ q1: parsed.q1 || '', q2: parsed.q2 || '', q3: parsed.q3 || '', q4: parsed.q4 || '' });
+          setRatings({
+            momentum: parsed.momentum || null,
+            intentionality: parsed.intentionality || null,
+            communication: parsed.communication || null,
+            performanceUnderPressure: parsed.performanceUnderPressure || null,
+          });
+          setDateKey(row.entry_date);
+          setExistingStatus(row.status || 'final');
+        } else if (reviewType === 'weekly-momentum') {
+          const draft = await loadWeeklyDraftFor(user.id, dateKey);
+          if (cancelled) return;
+          if (draft) {
+            const parsed = JSON.parse(draft.content || '{}');
+            setAnswers({ q1: parsed.q1 || '', q2: parsed.q2 || '', q3: parsed.q3 || '', q4: '' });
+            setRatings({
+              momentum: parsed.momentum || null,
+              intentionality: parsed.intentionality || null,
+              communication: parsed.communication || null,
+              performanceUnderPressure: parsed.performanceUnderPressure || null,
+            });
+            setEntryId(draft.id);
+            setExistingStatus('draft');
+            setContinuingDraftDate(formatDateAndTime(draft.updated_at || draft.created_at));
+          }
         }
-      } else {
-        setCurrentTitle('');
-        setReviewTitle('');
-        setQ1('');
-        setQ2('');
-        setQ3('');
-        setQ4('');
+      } catch (error) {
+        console.error('[MyJournal] load failed:', error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-    } catch (err) {
-      setQ1('');
-      setQ2('');
-      setQ3('');
-      setQ4('');
-    } finally {
-      setIsLoading(false);
-    }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, stateEntryId, reviewType]);
+
+  const updateAnswer = (key, value) => setAnswers((prev) => ({ ...prev, [key]: value }));
+  const updateRating = (key, value) => setRatings((prev) => ({ ...prev, [key]: value }));
+
+  const persist = async ({ title, status }) => {
+    const savedId = await saveReview({
+      userId: user.id,
+      entryId,
+      reviewType,
+      dateKey,
+      title,
+      content: reviewType === 'weekly-momentum' ? { ...answers, ...ratings } : { ...answers },
+      status,
+    });
+    setEntryId(savedId);
+    return savedId;
   };
 
-  const needsNaming = reviewType !== 'after-action' && !currentTitle;
-
-  const handleSaveClick = () => {
-    if (!user) {
-      alert('Please log in to save reviews');
-      return;
-    }
-    if (reviewType === 'after-action') {
-      if (!reviewTitle.trim()) {
-        alert('Please enter what you are reviewing');
-        return;
-      }
-      handleSaveConfirmed(reviewTitle);
-    } else if (reviewType === 'weekly-momentum') {
-      // Generate date-based title for weekly momentum reviews
-      const dateTitle = formatReviewDate(selectedDate);
-      handleSaveConfirmed(dateTitle);
-    } else if (needsNaming) {
-      setShowNamingModal(true);
-    } else {
-      handleSaveConfirmed(currentTitle);
-    }
-  };
-
-  const handleSaveConfirmed = async (reviewName) => {
-    setShowNamingModal(false);
+  const handleFinishConfirmed = async (title) => {
+    setNameDialogOpen(false);
+    setSaveError('');
     setIsSaving(true);
     try {
-      let entryContent;
-      if (reviewType === 'progress') {
-        entryContent = JSON.stringify({ q1, q2, q3, reviewType });
-      } else if (reviewType === 'weekly-momentum') {
-        entryContent = JSON.stringify({ q1, q2, q3, momentum, intentionality, communication, performanceUnderPressure, reviewType });
-      } else {
-        entryContent = JSON.stringify({ q1, q2, q3, q4, reviewType });
-      }
-
-      const existingEntryId = location.state?.entryId;
-      let savedEntryId = existingEntryId;
-
-      if (existingEntryId && isEditMode) {
-        // Update existing entry if editing
-        const { error: updateError, count } = await supabase
-          .from('journal_entries')
-          .update({ content: entryContent, title: reviewName, updated_at: new Date().toISOString() })
-          .eq('id', existingEntryId)
-          .select('id', { count: 'exact' });
-
-        if (updateError) {
-          console.error('Error updating entry:', updateError);
-          throw updateError;
-        }
-
-        if (count === 0) {
-          throw new Error('Failed to update review: entry not found or no changes made');
-        }
-      } else {
-        // Always insert new entry (allow multiple reviews per day)
-        const { data: insertedData, error: insertError } = await supabase
-          .from('journal_entries')
-          .insert([{
-            user_id: user.id,
-            entry_date: selectedDate,
-            content: entryContent,
-            title: reviewName,
-            review_type: reviewType,
-            created_at: new Date().toISOString(),
-          }])
-          .select();
-
-        if (insertError) {
-          console.error('Error inserting entry:', insertError);
-          throw insertError;
-        }
-
-        if (!insertedData || insertedData.length === 0) {
-          throw new Error('Failed to retrieve saved review ID');
-        }
-
-        savedEntryId = insertedData[0].id;
-      }
-
-      setCurrentTitle(reviewName);
-      clearProgress();
-      setSaved(true);
-      setTimeout(() => {
-        navigate('/review-summary', { state: { selectedDate, reviewType, entryId: savedEntryId } });
-      }, 1000);
+      const savedId = await persist({ title, status: 'final' });
+      navigate('/review-summary', { state: { entryId: savedId, reviewType, toast: 'Review saved.' } });
     } catch (error) {
-      console.error('Error saving review:', error);
-      alert(`Failed to save review: ${error?.message || 'Unknown error'}`);
+      console.error('[MyJournal] save failed:', error);
+      setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };
-  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
-  const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
+  const handleFinish = () => {
+    const problem = validateReview({ reviewType, answers, ratings });
+    if (problem) {
+      setSaveError(problem);
+      return;
+    }
+    setSaveError('');
+    if (reviewType === 'weekly-momentum') {
+      handleFinishConfirmed(weeklyTitle(dateKey));
+    } else {
+      setNameDialogOpen(true);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    const hasContent = Object.values(answers).some((v) => v.trim()) || Object.values(ratings).some((v) => v);
+    if (!hasContent) {
+      showToast('Write something first.');
+      return;
+    }
+    setSaveError('');
+    setIsSaving(true);
+    try {
+      const title = reviewType === 'weekly-momentum' ? weeklyTitle(dateKey) : afterActionTitle('');
+      await persist({ title, status: 'draft' });
+      setExistingStatus('draft');
+      showToast('Draft saved.');
+    } catch (error) {
+      console.error('[MyJournal] draft save failed:', error);
+      setSaveError('Could not save - please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDiscard = () => {
+    setDiscardOpen(false);
+    navigate('/review-section', { state: { toast: 'Discarded.' } });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+      </div>
+    );
+  }
+
+  const canDraft = existingStatus !== 'final';
+
+  const actionButtons = (
+    <>
+      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleFinish}>Finish</button>
+      {canDraft && (
+        <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</button>
+      )}
+    </>
+  );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
-      <style>{`
-        .rating-slider {
-          appearance: none;
-          -webkit-appearance: none;
-          width: 100%;
-          height: 6px;
-          border-radius: 3px;
-          background: #e5e5e5;
-          outline: none;
-          cursor: pointer;
-          background: linear-gradient(to right, #F08571 0%, #F08571 var(--value), #e5e5e5 var(--value), #e5e5e5 100%);
-        }
-        .rating-slider::-webkit-slider-thumb {
-          appearance: none;
-          -webkit-appearance: none;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #F08571;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        .rating-slider::-moz-range-thumb {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #F08571;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        .rating-slider::-moz-range-track {
-          background: transparent;
-          border: none;
-        }
-        .rating-slider::-moz-range-progress {
-          background: #F08571;
-          height: 6px;
-          border-radius: 3px;
-        }
-        .rating-tick-marks {
-          display: flex;
-          justify-content: space-between;
-          padding: 0 9px;
-          margin-top: 4px;
-          margin-bottom: 8px;
-          pointer-events: none;
-        }
-        .rating-tick {
-          width: 2px;
-          height: 8px;
-          background: #ccc;
-          position: relative;
-        }
-        .rating-labels {
-          display: flex;
-          justify-content: space-between;
-          font-size: '11px';
-          color: '#999';
-          margin-top: 4px;
-        }
-      `}</style>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>{pageTitle}</h1>
-
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
-          </div>
+      <div className="plan-page plan-page--form">
+        <div className="plan-header">
+          <span className="plan-overline">Review</span>
+          <div className="ui-title">{pageTitle}</div>
         </div>
 
-        <div style={sectionStyle}>
-          <label style={labelStyle}>
-            Select date:
-          </label>
+        {continuingDraftDate && (
+          <div className="pop-draft-banner">
+            <span>Continuing your draft from {continuingDraftDate}.</span>
+          </div>
+        )}
+
+        <div className="plan-field">
+          <label htmlFor="review-date">{dateLabel}</label>
           <input
+            id="review-date"
             type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            className="plan-input"
+            value={dateKey}
             max={getLocalDateKey(new Date())}
-            style={inputStyle}
+            onChange={(e) => setDateKey(e.target.value)}
           />
         </div>
 
-        {reviewType === 'weekly-momentum' && (
-          <div style={sectionStyle}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '24px' }}>
-              Rate your week (1-5)
-            </h2>
-
-            <div style={{ marginBottom: '28px' }}>
-              <div style={{ marginBottom: '8px' }}>
-                <label style={{...labelStyle, margin: 0, display: 'inline' }}>Momentum:</label>
-                <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>How much did things move forward this week?</span>
+        {reviewType === 'weekly-momentum' && RATINGS.map((r) => (
+          <div className="rate-row" key={r.key}>
+            <div className="rate-head">
+              <div>
+                <span className="rate-label">{r.label}</span>
+                <span className="rate-help">{r.help}</span>
               </div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    step="1"
-                    value={momentum}
-                    onChange={(e) => {
-                      setMomentum(parseInt(e.target.value));
-                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                    }}
-                    onInput={(e) => {
-                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                    }}
-                    className="rating-slider"
-                    style={{ '--value': `${((momentum - 1) / 4) * 100}%` }}
-                  />
-                  <div className="rating-tick-marks">
-                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="rating-tick" />)}
-                  </div>
-                  <div className="rating-labels" style={{ fontSize: '11px', color: '#999' }}>
-                    <span>Low</span>
-                    <span>High</span>
-                  </div>
-                </div>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '35px', textAlign: 'center' }}>
-                  {momentum}
-                </span>
-              </div>
+              {ratings[r.key] && <span className="rate-score">{ratings[r.key]} of 5</span>}
             </div>
-
-            <div style={{ marginBottom: '28px' }}>
-              <div style={{ marginBottom: '8px' }}>
-                <label style={{...labelStyle, margin: 0, display: 'inline' }}>Intentionality:</label>
-                <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>How clear was your focus on your priorities this week?</span>
-              </div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    step="1"
-                    value={intentionality}
-                    onChange={(e) => {
-                      setIntentionality(parseInt(e.target.value));
-                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                    }}
-                    onInput={(e) => {
-                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                    }}
-                    className="rating-slider"
-                    style={{ '--value': `${((intentionality - 1) / 4) * 100}%` }}
-                  />
-                  <div className="rating-tick-marks">
-                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="rating-tick" />)}
-                  </div>
-                  <div className="rating-labels" style={{ fontSize: '11px', color: '#999' }}>
-                    <span>Low</span>
-                    <span>High</span>
-                  </div>
-                </div>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '35px', textAlign: 'center' }}>
-                  {intentionality}
-                </span>
-              </div>
+            <div className="rate-scale" role="group" aria-label={r.label}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className="rate-seg"
+                  aria-pressed={ratings[r.key] === n}
+                  onClick={() => updateRating(r.key, n)}
+                >
+                  {n}
+                </button>
+              ))}
             </div>
+            <div className="rate-scale-labels"><span>Low</span><span>High</span></div>
+          </div>
+        ))}
 
-            <div style={{ marginBottom: '28px' }}>
-              <div style={{ marginBottom: '8px' }}>
-                <label style={{...labelStyle, margin: 0, display: 'inline' }}>Communication:</label>
-                <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>How well did you communicate with those you lead or work with this week?</span>
-              </div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    step="1"
-                    value={communication}
-                    onChange={(e) => {
-                      setCommunication(parseInt(e.target.value));
-                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                    }}
-                    onInput={(e) => {
-                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                    }}
-                    className="rating-slider"
-                    style={{ '--value': `${((communication - 1) / 4) * 100}%` }}
-                  />
-                  <div className="rating-tick-marks">
-                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="rating-tick" />)}
-                  </div>
-                  <div className="rating-labels" style={{ fontSize: '11px', color: '#999' }}>
-                    <span>Low</span>
-                    <span>High</span>
-                  </div>
-                </div>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '35px', textAlign: 'center' }}>
-                  {communication}
-                </span>
-              </div>
+        {questions.map((q, index) => (
+          <div className={`plan-dq${answers[q.key].trim() ? ' on' : ''}`} key={q.key}>
+            <div className="plan-dq-num">
+              {String(index + 1).padStart(2, '0')}
+              <svg className="plan-dq-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
             </div>
-
             <div>
-              <div style={{ marginBottom: '8px' }}>
-                <label style={{...labelStyle, margin: 0, display: 'inline' }}>Performance Under Pressure:</label>
-                <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>How well did you perform under pressure this week?</span>
-              </div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    step="1"
-                    value={performanceUnderPressure}
-                    onChange={(e) => {
-                      setPerformanceUnderPressure(parseInt(e.target.value));
-                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                    }}
-                    onInput={(e) => {
-                      const percent = ((parseInt(e.target.value) - 1) / 4) * 100;
-                      e.target.style.background = `linear-gradient(to right, #F08571 0%, #F08571 ${percent}%, #e5e5e5 ${percent}%, #e5e5e5 100%)`;
-                    }}
-                    className="rating-slider"
-                    style={{ '--value': `${((performanceUnderPressure - 1) / 4) * 100}%` }}
-                  />
-                  <div className="rating-tick-marks">
-                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="rating-tick" />)}
-                  </div>
-                  <div className="rating-labels" style={{ fontSize: '11px', color: '#999' }}>
-                    <span>Low</span>
-                    <span>High</span>
-                  </div>
-                </div>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#F08571', minWidth: '35px', textAlign: 'center' }}>
-                  {performanceUnderPressure}
-                </span>
-              </div>
+              <label className="plan-dq-label" htmlFor={`rt-${q.key}`}>{q.label}</label>
+              <AutoGrowTextarea id={`rt-${q.key}`} className="plan-dq-textarea" placeholder="Type here" value={answers[q.key]} onChange={(v) => updateAnswer(q.key, v)} />
             </div>
           </div>
-        )}
+        ))}
 
-        {reviewType === 'after-action' && (
-          <div style={sectionStyle}>
-            <label style={labelStyle}>
-              What are you reviewing?
-            </label>
-            <input
-              type="text"
-              value={reviewTitle}
-              onChange={(e) => setReviewTitle(e.target.value)}
-              placeholder="Type here"
-              style={inputStyle}
-            />
-          </div>
-        )}
+        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 
-        {questions.map((q) => {
-          const textareaRef = q.id === 'q1' ? refQ1 : q.id === 'q2' ? refQ2 : q.id === 'q3' ? refQ3 : refQ4;
-          return (
-          <div key={q.id} style={sectionStyle}>
-            <label style={labelStyle}>
-              {q.label}
-            </label>
-            <textarea
-              ref={textareaRef}
-              value={q.value}
-              onChange={(e) => q.setter(e.target.value)}
-              disabled={isLoading}
-              placeholder="Type here"
-              style={{
-                width: '100%',
-                minHeight: '100px',
-                padding: '10px 12px',
-                border: '1px solid #e5e5e5',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-                outline: 'none',
-                resize: 'none',
-                opacity: isLoading ? 0.6 : 1,
-                cursor: isLoading ? 'not-allowed' : 'text',
-              }}
-              onFocus={(e) => !isLoading && (e.target.style.borderColor = '#F08571')}
-              onBlur={(e) => !isLoading && (e.target.style.borderColor = '#e5e5e5')}
-            />
-          </div>
-          );
-        })}
+        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
 
-      </div>
-
-      {/* Fixed bottom bar */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid #e5e5e5',
-        padding: '12px 32px',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '12px',
-        zIndex: 10,
-      }}>
-        {saved && (
-          <div style={{ textAlign: 'center', color: '#5ECCC0', fontSize: '14px', fontWeight: '600', position: 'absolute', left: '32px' }}>
-            ✓ {pageTitle} saved
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
-            onClick={() => {
-              if (window.confirm(`Delete this ${pageTitle}? It will be lost forever.`)) {
-                navigate('/my-reviews');
-              }
-            }}
-            title={`Delete ${pageTitle}`}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'transparent',
-              color: '#F08571',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            <Trash2 size={18} />
-          </button>
-
-          <button
-            onClick={() => {
-              const hasContent = q1.trim() || q2.trim() || q3.trim() || q4.trim();
-              if (hasContent) {
-                if (reviewType === 'after-action') {
-                  if (reviewTitle.trim()) {
-                    handleSaveConfirmed(reviewTitle);
-                  } else {
-                    alert('Please enter what you are reviewing');
-                  }
-                } else if (reviewType === 'weekly-momentum') {
-                  // Generate date-based title for weekly momentum reviews
-                  const dateTitle = formatReviewDate(selectedDate);
-                  handleSaveConfirmed(dateTitle);
-                } else if (needsNaming) {
-                  setShowNamingModal(true);
-                } else {
-                  handleSaveConfirmed(currentTitle);
-                }
-              }
-            }}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: 'transparent',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              color: '#333',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            Save as Draft
-          </button>
-
-          <button
-            onClick={handleSaveClick}
-            disabled={isSaving}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#F08571',
-              color: 'white',
-              fontWeight: '600',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              fontSize: '13px',
-              transition: 'all 0.2s',
-              opacity: isSaving ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (!isSaving) e.currentTarget.style.backgroundColor = '#e07560';
-            }}
-            onMouseLeave={(e) => {
-              if (!isSaving) e.currentTarget.style.backgroundColor = '#F08571';
-            }}
-          >
-            {isSaving ? 'Finishing...' : 'Finish'}
-          </button>
+        <div className="plan-discard-row">
+          <DiscardLink onClick={() => setDiscardOpen(true)} />
         </div>
       </div>
 
-      <NamingModal
-        isOpen={showNamingModal}
-        itemType="review"
-        onConfirm={handleSaveConfirmed}
-        onCancel={() => setShowNamingModal(false)}
+      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+
+      <NameDialog
+        open={nameDialogOpen}
+        title="Name this review"
+        message="Say what you're reviewing, or leave it blank."
+        suggestedName=""
+        onConfirm={(name) => handleFinishConfirmed(afterActionTitle(name))}
+        onCancel={() => setNameDialogOpen(false)}
       />
 
-      <SavedConfirmation
-        isVisible={saved}
-        onDismiss={() => setSaved(false)}
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard this review?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
       />
+      <Toast message={message} />
     </div>
   );
 }

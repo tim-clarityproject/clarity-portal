@@ -21,18 +21,14 @@ import ProjectList from './pages/ProjectList';
 import ProjectMatrix from './pages/ProjectMatrix';
 import ProjectProgress from './pages/ProjectProgress';
 import ProjectScatter from './pages/ProjectScatter';
-import Dashboard from './pages/Dashboard';
-import Results from './pages/Results';
 import MyJournal from './pages/MyJournal';
 import DailyJournal from './pages/DailyJournal';
 import DailyJournals from './pages/DailyJournals';
 import DailyJournalRead from './pages/DailyJournalRead';
-import JournalLog from './pages/JournalLog';
 import MyReviews from './pages/MyReviews';
 import ReviewSummary from './pages/ReviewSummary';
 import ReviewPlan from './pages/ReviewPlan';
 import ReviewPlanSummary from './pages/ReviewPlanSummary';
-import WeeklyMomentumReviewSummary from './pages/WeeklyMomentumReviewSummary';
 import DecisionTools from './pages/DecisionTools';
 import DecisionHistory from './pages/DecisionHistory';
 import DecisionSummary from './pages/DecisionSummary';
@@ -276,18 +272,14 @@ function AppContent() {
           <Route path="/project-matrix" element={<ProjectMatrix />} />
           <Route path="/project-progress" element={<ProjectProgress />} />
           <Route path="/project-scatter" element={<ProjectScatter />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/results" element={<Results />} />
           <Route path="/my-journal" element={<MyJournal />} />
           <Route path="/daily-journal" element={<DailyJournal />} />
           <Route path="/daily-journals" element={<DailyJournals />} />
           <Route path="/daily-journals/:date" element={<DailyJournalRead />} />
-          <Route path="/journal-log" element={<JournalLog />} />
           <Route path="/my-reviews" element={<MyReviews />} />
           <Route path="/review-summary" element={<ReviewSummary />} />
           <Route path="/review-plan" element={<ReviewPlan />} />
           <Route path="/review-plan-summary" element={<ReviewPlanSummary />} />
-          <Route path="/weekly-momentum-review-summary" element={<WeeklyMomentumReviewSummary />} />
           <Route path="/decision-tools" element={<DecisionTools />} />
           <Route path="/decision-history" element={<DecisionHistory />} />
           <Route path="/decision-summary" element={<DecisionSummary />} />

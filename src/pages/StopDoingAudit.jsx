@@ -1,207 +1,183 @@
-import { useState, useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
-import DeleteDialog from '../components/ui/DeleteDialog';
+import { DiscardLink } from '../components/ui/DiscardLink';
+import DiscardDialog from '../components/ui/DiscardDialog';
+import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+
+const ACTIONS = ['Stop', 'Automate', 'Delegate', 'Defer'];
+const MAX_ACTIVITY = 80;
+const MAX_LONG = 2000;
+
+function BinIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8h6.8l.6-8M6.8 7v3.5M9.2 7v3.5" />
+    </svg>
+  );
+}
+
+let tempIdCounter = 0;
+function tempId() {
+  tempIdCounter += 1;
+  return Date.now() * 1000 + tempIdCounter;
+}
 
 export default function StopDoingAudit() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const decisionId = location.state?.decisionId;
+  const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
 
-  const [items, setItems] = useState([{ id: 1, activity: '', timePerWeek: '', action: '' }]);
-  const [nextId, setNextId] = useState(2);
+  const [items, setItems] = useState([{ id: tempId(), activity: '', timePerWeek: '', action: null }]);
   const [firstAction, setFirstAction] = useState('');
   const [actionHow, setActionHow] = useState('');
   const [timeUse, setTimeUse] = useState('');
+  const [isLoading, setIsLoading] = useState(Boolean(location.state?.decisionId));
   const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [firstActionError, setFirstActionError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
-  const isEditMode = Boolean(decisionId);
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
   const { message, showToast } = useToast();
 
   useEffect(() => {
-    if (decisionId && user) {
-      // Load existing audit from Supabase when editing
-      loadAudit();
-    } else if (!decisionId && user) {
-      // On fresh page load (no decisionId), ensure all fields are blank
-      // This prevents showing stale form data from browser history
-      setItems([{ id: 1, activity: '', timePerWeek: '', action: '' }]);
-      setNextId(2);
-      setFirstAction('');
-      setActionHow('');
-      setTimeUse('');
+    if (!decisionId || !user) {
+      setIsLoading(false);
+      return;
     }
-  }, [decisionId, user?.id]);
-
-  const loadAudit = async () => {
-    if (!user) return;
-    try {
+    let cancelled = false;
+    (async () => {
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
         .eq('id', decisionId)
         .eq('user_id', user.id)
         .single();
-
-      if (data && data.form_data) {
-        const formData = data.form_data;
-        if (formData.items && formData.items.length > 0) {
-          setItems(formData.items);
-          const maxId = Math.max(...formData.items.map(item => item.id || 0));
-          setNextId(maxId + 1);
-        }
+      if (cancelled) return;
+      if (error) {
+        console.error('[StopDoingAudit] load failed:', error);
+        setIsLoading(false);
+        return;
+      }
+      const formData = data?.form_data || {};
+      if (formData.items?.length) {
+        setItems(formData.items);
+        // Back-compat: old rows stored firstAction as the activity TEXT,
+        // not its id - map it across once, on read.
         if (formData.firstAction) {
-          setFirstAction(formData.firstAction);
-        }
-        if (formData.actionHow) {
-          setActionHow(formData.actionHow);
-        }
-        if (formData.timeUse) {
-          setTimeUse(formData.timeUse);
+          const byId = formData.items.some((i) => i.id === formData.firstAction);
+          if (byId) {
+            setFirstAction(formData.firstAction);
+          } else {
+            const match = formData.items.find((i) => i.activity === formData.firstAction);
+            setFirstAction(match ? match.id : '');
+          }
         }
       }
-    } catch (error) {
-      console.error('Error loading audit:', error);
+      setActionHow(formData.actionHow || '');
+      setTimeUse(formData.timeUse || '');
+      setIsLoading(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decisionId, user?.id]);
+
+  const addItem = () => {
+    if (items.length >= 5) return;
+    setItems([...items, { id: tempId(), activity: '', timePerWeek: '', action: null }]);
+  };
+
+  const removeItem = (id) => {
+    if (items.length <= 1) return;
+    setItems(items.filter((item) => item.id !== id));
+    if (firstAction === id) setFirstAction('');
+  };
+
+  const updateItem = (id, field, value) => {
+    setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+  };
+
+  const totalHours = items.reduce((sum, item) => sum + (parseInt(item.timePerWeek, 10) || 0), 0);
+  const namedItems = items.filter((item) => item.activity.trim());
+  const firstActionItem = items.find((item) => item.id === firstAction);
+
+  const persist = async (name, status) => {
+    const formData = { items, firstAction, actionHow, timeUse };
+    const payload = {
+      form_data: formData,
+      title: name,
+      status,
+      updated_at: new Date().toISOString(),
+    };
+    if (decisionId) {
+      const { data, error } = await supabase
+        .from('decisions')
+        .update(payload)
+        .eq('id', decisionId)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Could not find this audit to update.');
+      return decisionId;
     }
+    const { data, error } = await supabase
+      .from('decisions')
+      .insert({ user_id: user.id, tool_type: 'stop_doing_audit', ...payload })
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Save did not return an audit.');
+    return data[0].id;
   };
 
-  const handleAddItem = () => {
-    setItems([...items, { id: nextId, activity: '', timePerWeek: '', action: '' }]);
-    setNextId(nextId + 1);
-  };
-
-  const handleRemoveItem = (id) => {
-    if (items.length > 1) {
-      setItems(items.filter(item => item.id !== id));
-    }
-  };
-
-  const handleItemChange = (id, field, value) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const getTotalTime = () => {
-    return items.reduce((total, item) => {
-      const time = parseFloat(item.timePerWeek) || 0;
-      return total + time;
-    }, 0);
-  };
-
-  const handleSave = async () => {
-    if (!user) return;
-
+  const handleFinishConfirmed = async (name) => {
+    setNameDialogOpen(false);
     setIsSaving(true);
+    setSaveError('');
     try {
-      const formData = { items, firstAction, actionHow, timeUse };
-      let savedId = decisionId;
-
-      if (isEditMode && decisionId) {
-        console.log('[StopDoingAudit] handleSave: decisionId =', decisionId, '-> branch: UPDATE');
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            form_data: formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        console.log('[StopDoingAudit] UPDATE result: rows affected =', data?.length, 'error =', error);
-        if (error) throw error;
-        if (!data || data.length === 0) {
-          throw new Error('Failed to update audit - no rows affected');
-        }
-      } else {
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert({
-            user_id: user.id,
-            tool_type: 'stop_doing_audit',
-            title: 'Reclaiming My Time',
-            form_data: formData,
-            status: 'completed',
-          })
-          .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) {
-          throw new Error('Failed to save audit - no rows returned');
-        }
-        savedId = data[0].id;
-      }
-
-      setIsSaved(true);
+      const savedId = await persist(name, 'completed');
+      setDecisionId(savedId);
       clearProgress();
-      setTimeout(() => {
-        navigate('/stop-doing-audit-summary', { state: { decisionId: savedId } });
-      }, 1500);
+      navigate('/stop-doing-audit-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
     } catch (error) {
-      console.error('Error saving audit:', error);
+      console.error('[StopDoingAudit] save failed:', error);
       setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleFinish = () => {
+    setFirstActionError('');
+    if (namedItems.length === 0) {
+      setSaveError('Name at least one activity first.');
+      return;
+    }
+    if (firstActionItem && !firstActionItem.action) {
+      setFirstActionError('Choose what you will do about it');
+      return;
+    }
+    setSaveError('');
+    setNameDialogOpen(true);
+  };
+
   const handleSaveDraft = async () => {
-    if (!user) return;
-
     setIsSaving(true);
+    setSaveError('');
     try {
-      const formData = { items, firstAction, actionHow, timeUse };
-
-      if (decisionId) {
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            form_data: formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) {
-          throw new Error('Failed to update draft - no rows affected');
-        }
-      } else {
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert({
-            user_id: user.id,
-            tool_type: 'stop_doing_audit',
-            title: 'Reclaiming My Time',
-            form_data: formData,
-            status: 'draft',
-          })
-          .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) {
-          throw new Error('Failed to save draft - no rows returned');
-        }
-      }
-
+      const savedId = await persist('Reclaiming my time', 'draft');
+      setDecisionId(savedId);
       showToast('Draft saved.');
     } catch (error) {
-      console.error('Error saving draft:', error);
-      setSaveError('Could not save draft - please try again.');
+      console.error('[StopDoingAudit] draft save failed:', error);
+      setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -209,367 +185,157 @@ export default function StopDoingAudit() {
 
   const handleDiscard = () => {
     setDiscardOpen(false);
-    navigate('/decision-history', { state: { toast: 'Discarded.' } });
+    navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
-  const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '16px 20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };
-  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
-  const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
-  const textareaStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box', minHeight: '80px', resize: 'none', overflow: 'hidden', textTransform: 'none' };
+  if (isLoading) {
+    return (
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+      </div>
+    );
+  }
 
-  const totalTime = getTotalTime();
+  const actionButtons = (
+    <>
+      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleFinish}>Finish</button>
+      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</button>
+    </>
+  );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
-          Time Allocation Audit
-        </h1>
-        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
-          Identify time-sink activities and reclaim your time
-        </p>
-
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+      <div className="plan-page plan-page--form">
+        <div className="plan-header">
+          <span className="plan-overline">Plan</span>
+          <div className="ui-title">Time Allocation Audit</div>
+          <p className="ui-subtitle">Identify time-sink activities and reclaim your time.</p>
         </div>
 
-        <div style={sectionStyle}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px', justifyContent: 'space-between' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: 0 }}>
-              Which tasks and activities are stealing your time?
-            </h2>
-            <span style={{ fontSize: '12px', fontWeight: '500', color: '#666', whiteSpace: 'nowrap' }}>Estimated time lost</span>
-          </div>
+        <div className="plan-label-row">
+          <span className="ui-section-heading">Which tasks and activities are stealing your time?</span>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-            {items.map((item, index) => (
-              <div key={item.id} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: '#333', minWidth: '24px' }}>
-                  {index + 1}.
-                </span>
-                <AutoGrowTextarea
-                  singleLine
-                  placeholder="Type here"
-                  value={item.activity}
-                  onChange={(v) => handleItemChange(item.id, 'activity', v)}
-                  autoComplete="off"
-                  style={{ ...inputStyle, flex: 1 }}
-                />
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="number"
-                    placeholder="Type here"
-                    min="0"
-                    value={item.timePerWeek}
-                    onChange={(e) => handleItemChange(item.id, 'timePerWeek', e.target.value)}
-                    style={{ width: '70px', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', textAlign: 'center' }}
-                  />
-                  <span style={{ fontSize: '13px', color: '#999', minWidth: '28px' }}>hrs/wk</span>
-                  <button
-                    onClick={() => handleRemoveItem(item.id)}
-                    disabled={items.length === 1}
-                    style={{
-                      padding: '6px 8px',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      color: items.length === 1 ? '#ddd' : '#F08571',
-                      cursor: items.length === 1 ? 'not-allowed' : 'pointer',
-                      transition: 'color 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+        {items.map((item, index) => (
+          <div className="tsa-row" key={item.id}>
+            <span className="tsa-num">{index + 1}.</span>
+            <AutoGrowTextarea
+              singleLine
+              className="plan-input"
+              placeholder="Type here"
+              aria-label={`Activity ${index + 1}`}
+              value={item.activity}
+              onChange={(v) => updateItem(item.id, 'activity', v)}
+              maxLength={MAX_ACTIVITY}
+            />
+            <div className="tsa-stepper">
+              <button type="button" className="tsa-stepper-btn" aria-label="Fewer hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.max(0, (parseInt(item.timePerWeek, 10) || 0) - 1)))}>−</button>
+              <input
+                type="number"
+                min="0"
+                max="999"
+                inputMode="numeric"
+                placeholder="0"
+                value={item.timePerWeek}
+                onChange={(e) => updateItem(item.id, 'timePerWeek', e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
+              />
+              <button type="button" className="tsa-stepper-btn" aria-label="More hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.min(999, (parseInt(item.timePerWeek, 10) || 0) + 1)))}>+</button>
+              <span className="tsa-hrs-label">hrs/wk</span>
+            </div>
+            <button type="button" className="plan-bin-btn" aria-label={`Remove activity ${index + 1}`} disabled={items.length <= 1} onClick={() => removeItem(item.id)}>
+              <BinIcon />
+            </button>
+          </div>
+        ))}
+        {items.length < 5 && (
+          <button type="button" className="plan-add-btn" onClick={addItem}>
+            <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+            Add activity
+          </button>
+        )}
+
+        <div className="tsa-total">
+          <span>Total time to reclaim</span>
+          <b>{totalHours} hours/week</b>
+        </div>
+
+        {namedItems.length > 0 && (
+          <>
+            <div className="plan-label-row">
+              <span className="ui-section-heading">What will you do for each activity?</span>
+            </div>
+            {namedItems.map((item) => (
+              <div className="tsa-activity-block" key={item.id}>
+                <p className="tsa-activity-name">{item.activity}</p>
+                <div className="tsa-pills" role="group" aria-label={`Action for ${item.activity}`}>
+                  {ACTIONS.map((action) => (
+                    <button
+                      key={action}
+                      type="button"
+                      className="tsa-pill"
+                      aria-pressed={item.action === action}
+                      onClick={() => updateItem(item.id, 'action', action)}
+                    >
+                      {action}
+                    </button>
+                  ))}
                 </div>
               </div>
             ))}
-            {items.length < 5 && (
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: '#333', minWidth: '24px' }}>
-                </span>
-                <button
-                  onClick={handleAddItem}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
-                    backgroundColor: 'transparent',
-                    border: '1px solid #e5e5e5',
-                    borderRadius: '6px',
-                    color: '#333',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    transition: 'all 0.2s',
-                    width: 'fit-content',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#F08571';
-                    e.currentTarget.style.backgroundColor = '#f9f9f9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#e5e5e5';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <Plus size={14} />
-                  Add activity
-                </button>
-              </div>
-            )}
-          </div>
 
-          <div style={{
-            padding: '12px 16px',
-            backgroundColor: '#f9f9f9',
-            borderRadius: '6px',
-            border: '1px solid #e5e5e5',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <span style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>Total time to reclaim:</span>
-            <span style={{ fontSize: '18px', fontWeight: '600', color: '#F08571' }}>{totalTime} hours/week</span>
-          </div>
+            <div className="plan-field">
+              <label htmlFor="tsa-first">Which one will you take action on first?</label>
+              <select id="tsa-first" className="plan-input" value={firstAction} onChange={(e) => { setFirstAction(e.target.value); setFirstActionError(''); }}>
+                <option value="">Choose an activity...</option>
+                {namedItems.map((item) => (
+                  <option key={item.id} value={item.id}>{item.activity} ({item.action || 'no action selected'})</option>
+                ))}
+              </select>
+              {firstActionItem && <p className="tsa-saves">Saves {parseInt(firstActionItem.timePerWeek, 10) || 0} hrs/wk</p>}
+              {firstActionError && <p className="plan-save-error" role="alert">{firstActionError}</p>}
+            </div>
+
+            <div className="plan-field">
+              <label htmlFor="tsa-how">How specifically will you take action on this?</label>
+              <AutoGrowTextarea id="tsa-how" className="plan-input" placeholder="Type here" value={actionHow} onChange={setActionHow} maxLength={MAX_LONG} />
+            </div>
+
+            <div className="plan-field">
+              <label htmlFor="tsa-use">What will you do with the time instead?</label>
+              <AutoGrowTextarea id="tsa-use" className="plan-input" placeholder="Type here" value={timeUse} onChange={setTimeUse} maxLength={MAX_LONG} />
+            </div>
+          </>
+        )}
+
+        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
+
+        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
+
+        <div className="plan-discard-row">
+          <DiscardLink onClick={() => setDiscardOpen(true)} />
         </div>
-
-        <div style={sectionStyle}>
-          <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '20px' }}>
-            What will you do for each activity?
-          </h2>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {items.map((item) => (
-              item.activity && (
-                <div key={item.id} style={{ paddingBottom: '20px', borderBottom: '1px solid #e5e5e5' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '12px' }}>
-                    {item.activity}
-                  </h3>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {['Stop', 'Automate', 'Delegate', 'Defer'].map((action) => (
-                      <button
-                        key={action}
-                        onClick={() => handleItemChange(item.id, 'action', action)}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: item.action === action ? '#F08571' : 'white',
-                          color: item.action === action ? 'white' : '#333',
-                          border: `2px solid ${item.action === action ? '#F08571' : '#e5e5e5'}`,
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (item.action !== action) {
-                            e.currentTarget.style.borderColor = '#F08571';
-                            e.currentTarget.style.backgroundColor = '#f9f9f9';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (item.action !== action) {
-                            e.currentTarget.style.borderColor = '#e5e5e5';
-                            e.currentTarget.style.backgroundColor = 'white';
-                          }
-                        }}
-                      >
-                        {action}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )
-            ))}
-          </div>
-        </div>
-
-        <div style={sectionStyle}>
-          <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
-            Which one will you take action on first?
-          </h2>
-          <label style={labelStyle}>Select the activity you'll address this week</label>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <select
-              value={firstAction}
-              onChange={(e) => setFirstAction(e.target.value)}
-              autoComplete="off"
-              style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
-            >
-              <option value="">Choose an activity...</option>
-              {items.map((item) => (
-                item.activity && (
-                  <option key={item.id} value={item.activity}>
-                    {item.activity} ({item.action || 'no action selected'})
-                  </option>
-                )
-              ))}
-            </select>
-            {firstAction && (
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#F08571', whiteSpace: 'nowrap' }}>
-                Saves {items.find(item => item.activity === firstAction)?.timePerWeek || 0} hrs/wk
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div style={sectionStyle}>
-          <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
-            How specifically will you take action on this?
-          </h2>
-          <label style={labelStyle}>Describe your specific approach or steps</label>
-          <AutoGrowTextarea
-            placeholder="Type here"
-            value={actionHow}
-            onChange={setActionHow}
-            autoComplete="off"
-            autoCapitalize="off"
-            style={{ ...textareaStyle, marginBottom: 0 }}
-          />
-        </div>
-
-        <div style={sectionStyle}>
-          <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
-            What will you do with the time instead?
-          </h2>
-          <label style={labelStyle}>How will you use the hours you reclaim?</label>
-          <AutoGrowTextarea
-            placeholder="Type here"
-            value={timeUse}
-            onChange={setTimeUse}
-            autoComplete="off"
-            autoCapitalize="off"
-            style={{ ...textareaStyle, marginBottom: 0 }}
-          />
-        </div>
-
-        {saveError && <p style={{ color: '#F08571', fontSize: '13px', marginTop: '4px' }} role="alert">{saveError}</p>}
       </div>
 
-      <style>{`
-        .sda-bottom-bar { display: flex; }
-        @media (max-width: 768px) {
-          .sda-bottom-bar { display: none; }
-        }
-      `}</style>
+      <PhoneActionBar>{actionButtons}</PhoneActionBar>
 
-      {/* Desktop fixed bottom bar */}
-      <div className="sda-bottom-bar" style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid #e5e5e5',
-        padding: '12px 32px',
-        justifyContent: 'center',
-        gap: '12px',
-        zIndex: 10,
-      }}>
-        <button
-          onClick={() => setDiscardOpen(true)}
-          title="Discard audit"
-          style={{
-            padding: '8px 12px',
-            backgroundColor: 'transparent',
-            color: '#F08571',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        >
-          <Trash2 size={18} />
-        </button>
-
-        <button
-          onClick={handleSaveDraft}
-          disabled={isSaving}
-          style={{
-            padding: '10px 16px',
-            backgroundColor: 'transparent',
-            border: '1px solid #e5e5e5',
-            borderRadius: '6px',
-            color: '#333',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: '500',
-            transition: 'all 0.2s',
-            opacity: isSaving ? 0.7 : 1,
-          }}
-          onMouseEnter={(e) => {
-            if (!isSaving) {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isSaving) {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }
-          }}
-        >
-          Save as Draft
-        </button>
-
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#F08571',
-            color: 'white',
-            fontWeight: '600',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: isSaving ? 'not-allowed' : 'pointer',
-            fontSize: '13px',
-            transition: 'all 0.2s',
-            opacity: isSaving ? 0.7 : 1,
-          }}
-          onMouseEnter={(e) => {
-            if (!isSaving) e.currentTarget.style.backgroundColor = '#e07560';
-          }}
-          onMouseLeave={(e) => {
-            if (!isSaving) e.currentTarget.style.backgroundColor = '#F08571';
-          }}
-        >
-          {isSaved ? 'Finished' : 'Finish'}
-        </button>
-      </div>
-
-      {/* Phone: shared fixed action bar (CLAUDE.md rule - reuse, do not duplicate) */}
-      <div className="ui-root">
-        <PhoneActionBar>
-          <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleSave}>
-            {isSaved ? 'Finished' : 'Finish'}
-          </button>
-          <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>
-            Save as draft
-          </button>
-        </PhoneActionBar>
-      </div>
-
-      <SavedConfirmation
-        isVisible={isSaved}
-        onDismiss={() => setIsSaved(false)}
+      <NameDialog
+        open={nameDialogOpen}
+        title="Name this audit"
+        message="Give it a name so you can find it in My plans."
+        suggestedName="Reclaiming my time"
+        onConfirm={handleFinishConfirmed}
+        onCancel={() => setNameDialogOpen(false)}
       />
 
-      <DeleteDialog
-        open={discardOpen}
+      <DiscardDialog
+        isOpen={discardOpen}
         title="Discard this audit?"
-        body="Anything you have not saved will be lost."
-        onConfirm={handleDiscard}
-        onCancel={() => setDiscardOpen(false)}
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
       />
       <Toast message={message} />
     </div>

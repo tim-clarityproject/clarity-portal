@@ -126,7 +126,7 @@ const SECTIONS = [
       {
         label: 'My Reviews',
         to: '/my-reviews',
-        childRoutes: ['/review-summary', '/weekly-momentum-review-summary', '/journal-log'],
+        childRoutes: ['/review-summary'],
       },
     ],
   },

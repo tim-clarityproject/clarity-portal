@@ -44,7 +44,12 @@ export default function MyReviews() {
 
         if (error) throw error;
         if (data) {
-          setEntries(data);
+          // Drafts are not listed in My Reviews (prompt 10b) - filtered
+          // client-side so this degrades gracefully before migration
+          // 016 (journal_entries.status) has been run: e.status is then
+          // simply undefined, which is never 'draft', so every row
+          // still shows exactly as it did before.
+          setEntries(data.filter((e) => e.status !== 'draft'));
         }
       }
     } catch (error) {

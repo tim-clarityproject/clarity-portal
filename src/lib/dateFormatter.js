@@ -115,6 +115,15 @@ export const formatPlainDayLabel = (value) => {
   return `${weekday} ${date.getDate()} ${month}`;
 };
 
+// "29 Sep" - day + short month, no year, no weekday (Weekly Momentum
+// Check-in's generated title: "Weekly momentum check-in, week of 29
+// Sep" - prompt 10b). Takes a "YYYY-MM-DD" local date key.
+export const formatWeekOf = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(`${dateStr}T00:00:00`);
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+};
+
 // Plain UK date, no time (e.g. "13 October 2026") - for summary pages'
 // "Created <date>" line (prompt 7).
 export const formatUkDate = (dateStr) => {

@@ -79,10 +79,8 @@ const TABS = [
     sectionRoutes: [
       '/review-section',
       '/my-journal',
-      '/journal-log',
       '/my-reviews',
       '/review-summary',
-      '/weekly-momentum-review-summary',
       '/mission-progress-review',
     ],
   },

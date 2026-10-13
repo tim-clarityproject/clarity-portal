@@ -307,3 +307,166 @@ export const generateJournalPDF = (journal) => {
       document.body.removeChild(element);
     });
 };
+
+const REVIEW_TAG = {
+  'after-action': 'After-Action Review',
+  'weekly-momentum': 'Weekly Momentum Check-in',
+  progress: 'Progress Review',
+};
+
+const REVIEW_QUESTIONS = {
+  'after-action': [
+    { key: 'q1', label: 'What did you plan to do?' },
+    { key: 'q2', label: 'What actually happened?' },
+    { key: 'q3', label: 'Why was there a difference?' },
+    { key: 'q4', label: 'What can you learn from this?' },
+  ],
+  'weekly-momentum': [
+    { key: 'q1', label: 'What moved forward this week?' },
+    { key: 'q2', label: 'What did you do better this week?' },
+    { key: 'q3', label: 'What are your priorities for next week?' },
+  ],
+  progress: [
+    { key: 'q1', label: "What's been going well?" },
+    { key: 'q2', label: 'What have you learned recently?' },
+    { key: 'q3', label: 'What next steps will expand your performance potential?' },
+  ],
+};
+
+const REVIEW_RATINGS = [
+  { key: 'momentum', label: 'Momentum' },
+  { key: 'intentionality', label: 'Intentionality' },
+  { key: 'communication', label: 'Communication' },
+  { key: 'performanceUnderPressure', label: 'Performance under pressure' },
+];
+
+// After-action review / Weekly Momentum Check-in PDF (prompt 10b).
+export const generateReviewPDF = (review, data) => {
+  const reviewType = review.review_type || 'after-action';
+  const reviewDate = new Date(review.entry_date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const printStyles = `
+    <style>
+      @page { size: A4; margin: 15mm 20mm; }
+      * { box-sizing: border-box; orphans: 3; widows: 3; }
+      body { margin: 0; padding: 0; background: white; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11pt; line-height: 1.5; }
+      .pdf-header { border-bottom: 2px solid #F08571; padding-bottom: 16px; margin-bottom: 24px; }
+      .pdf-header h1 { font-size: 24pt; font-weight: 700; margin: 0 0 8px 0; color: #333; }
+      .pdf-header-meta { font-size: 10pt; color: #999; margin: 0; }
+      .pdf-section { margin-bottom: 18px; page-break-inside: avoid; }
+      .pdf-section h2 { font-size: 11pt; font-weight: 700; color: #333; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+      .pdf-section p { font-size: 11pt; color: #333; margin: 0; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+  `;
+
+  let html = printStyles + `
+    <div class="pdf-document">
+      <div class="pdf-header">
+        <h1>${escapeHtml(review.title || REVIEW_TAG[reviewType])}</h1>
+        <p class="pdf-header-meta">${REVIEW_TAG[reviewType] || ''} &mdash; ${reviewDate}</p>
+      </div>
+  `;
+
+  if (reviewType === 'weekly-momentum') {
+    REVIEW_RATINGS.forEach((r) => {
+      html += `<div class="pdf-section"><h2>${escapeHtml(r.label)}</h2><p>${data[r.key] || 0} / 5</p></div>`;
+    });
+  }
+
+  (REVIEW_QUESTIONS[reviewType] || REVIEW_QUESTIONS['after-action']).forEach((q) => {
+    if (data[q.key]) {
+      html += `<div class="pdf-section"><h2>${escapeHtml(q.label)}</h2><p>${escapeHtml(data[q.key])}</p></div>`;
+    }
+  });
+
+  html += '</div>';
+
+  const element = document.createElement('div');
+  element.innerHTML = html;
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  const opt = {
+    margin: [15, 20, 15, 20],
+    filename: `${(review.title || 'Review').replace(/\s+/g, '-')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4', compress: true },
+  };
+
+  html2pdf()
+    .set(opt)
+    .from(element)
+    .save()
+    .then(() => {
+      document.body.removeChild(element);
+    });
+};
+
+// Time Allocation Audit PDF (prompt 10b) - replaces window.print().
+export const generateTimeAuditPDF = (audit) => {
+  const data = audit.form_data || {};
+  const items = data.items || [];
+  const totalHours = items.reduce((sum, item) => sum + (parseFloat(item.timePerWeek) || 0), 0);
+  const firstActionItem = items.find((item) => item.id === data.firstAction || item.activity === data.firstAction);
+
+  const printStyles = `
+    <style>
+      @page { size: A4; margin: 15mm 20mm; }
+      * { box-sizing: border-box; orphans: 3; widows: 3; }
+      body { margin: 0; padding: 0; background: white; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11pt; line-height: 1.5; }
+      .pdf-header { border-bottom: 2px solid #F08571; padding-bottom: 16px; margin-bottom: 24px; }
+      .pdf-header h1 { font-size: 24pt; font-weight: 700; margin: 0 0 8px 0; color: #333; }
+      .pdf-header-meta { font-size: 10pt; color: #999; margin: 0; }
+      .pdf-section { margin-bottom: 18px; page-break-inside: avoid; }
+      .pdf-section h2 { font-size: 11pt; font-weight: 700; color: #333; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+      .pdf-section p { font-size: 11pt; color: #333; margin: 0 0 4px; white-space: pre-wrap; word-wrap: break-word; }
+      .pdf-item { font-size: 11pt; margin: 0 0 4px; }
+    </style>
+  `;
+
+  let html = printStyles + `
+    <div class="pdf-document">
+      <div class="pdf-header">
+        <h1>${escapeHtml(audit.title || 'Time Allocation Audit')}</h1>
+        <p class="pdf-header-meta">${totalHours} hours a week to reclaim</p>
+      </div>
+      <div class="pdf-section">
+        <h2>Time-sink activities</h2>
+        ${items.map((item) => `<p class="pdf-item">${escapeHtml(item.activity)} &mdash; ${item.action || 'No action chosen'} &mdash; ${parseFloat(item.timePerWeek) || 0}h/week</p>`).join('')}
+      </div>
+  `;
+
+  if (firstActionItem) {
+    html += `<div class="pdf-section"><h2>Taking action first</h2><p>${escapeHtml(firstActionItem.activity)} (${firstActionItem.action || 'No action chosen'})</p></div>`;
+  }
+  if (data.actionHow) {
+    html += `<div class="pdf-section"><h2>How specifically</h2><p>${escapeHtml(data.actionHow)}</p></div>`;
+  }
+  if (data.timeUse) {
+    html += `<div class="pdf-section"><h2>What you will do with the time instead</h2><p>${escapeHtml(data.timeUse)}</p></div>`;
+  }
+
+  html += '</div>';
+
+  const element = document.createElement('div');
+  element.innerHTML = html;
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  const opt = {
+    margin: [15, 20, 15, 20],
+    filename: `${(audit.title || 'Time-Audit').replace(/\s+/g, '-')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4', compress: true },
+  };
+
+  html2pdf()
+    .set(opt)
+    .from(element)
+    .save()
+    .then(() => {
+      document.body.removeChild(element);
+    });
+};

@@ -3970,3 +3970,271 @@ span.tc-editable:focus-visible {
   font-size: var(--fs-small);
   color: var(--text-2);
 }
+
+/* ============================================================
+   After-action review / Weekly Momentum Check-in (prompt 10b) - the
+   five-segment rating scale replacing the old <input type=range> slider.
+   ============================================================ */
+
+.rate-row {
+  margin-bottom: var(--space-5);
+}
+
+.rate-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.rate-label {
+  font-size: 16px;
+  color: var(--text);
+}
+
+.rate-help {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.rate-score {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  color: var(--coral-text);
+  white-space: nowrap;
+}
+
+.rate-scale {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.ui-root .rate-seg {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  min-height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: 15px;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.ui-root .rate-seg:last-child {
+  border-right: 0;
+}
+
+.ui-root .rate-seg:hover {
+  color: var(--text);
+}
+
+.ui-root .rate-seg[aria-pressed="true"] {
+  background: var(--coral);
+  color: var(--on-coral);
+}
+
+.ui-root .rate-seg:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+}
+
+.rate-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  color: var(--placeholder);
+}
+
+/* Read-only five-dot rating (summary pages) */
+.rate-dots {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rate-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--btn-line);
+  background: transparent;
+}
+
+.rate-dot--on {
+  background: var(--coral);
+  border-color: var(--coral);
+}
+
+.rate-dots-score {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+/* ============================================================
+   Time Allocation Audit (prompt 10b)
+   ============================================================ */
+
+.tsa-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 150px 44px;
+  align-items: start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .tsa-row {
+    grid-template-columns: 1fr;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    background: var(--surface);
+    margin-bottom: var(--space-3);
+  }
+}
+
+.tsa-num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--placeholder);
+  padding-top: 11px;
+}
+
+.tsa-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ui-root .tsa-stepper-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font-size: 18px;
+  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.ui-root .tsa-stepper-btn:hover,
+.ui-root .tsa-stepper-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--btn-line);
+}
+
+.ui-root .tsa-stepper input {
+  width: 48px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  min-height: var(--tap-min);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.ui-root .tsa-stepper input::-webkit-inner-spin-button,
+.ui-root .tsa-stepper input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tsa-hrs-label {
+  font-size: 12px;
+  color: var(--placeholder);
+}
+
+.tsa-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  margin: var(--space-3) 0 var(--space-5);
+  font-size: var(--fs-body-sub);
+  color: var(--text);
+}
+
+.tsa-total b {
+  color: var(--coral-text);
+  font-weight: 500;
+}
+
+.tsa-activity-block {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.tsa-activity-name {
+  font-size: 16px;
+  color: var(--text);
+  margin: 0 0 var(--space-2);
+}
+
+.tsa-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ui-root .tsa-pill {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.ui-root .tsa-pill:hover {
+  border-color: var(--btn-line);
+  color: var(--text);
+}
+
+.ui-root .tsa-pill[aria-pressed="true"] {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--on-coral);
+}
+
+.tsa-saves {
+  font-size: var(--fs-small);
+  color: var(--coral-text);
+  white-space: nowrap;
+}
