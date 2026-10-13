@@ -1,66 +1,65 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
-import { designTokens } from '../lib/designTokens';
 
-const GROUND_ITEMS = [
-  { id: 'if-then', title: 'If-Then Planning', description: 'Prepare for uncertain situations with contingency plans', route: '/if-then-planning' },
-  { id: 'breathe', title: 'Breathe', description: 'Calm your nervous system and ground yourself', route: '/breathe' },
+const CARDS = [
+  { title: 'Scenario Planning', description: 'Get clear on what you will do in different scenarios.', route: '/if-then-planning' },
+  { title: 'Daily Pages', description: 'Write down what is on your mind.', route: '/my-journal' },
+  { title: 'Breathe', description: 'Calm your nervous system and ground yourself.', route: '/breathe' },
 ];
+
+function CrossMark() {
+  return <span className="dt-card-mark ui-cross ui-cross--sm" aria-hidden="true" />;
+}
+
+function ClockIcon() {
+  return (
+    <svg className="hub-history-card-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}
 
 export default function GroundSection() {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleGroundSelect = (route) => {
-    navigate(route, { state: { ...location.state } });
-  };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '0' }}>Ground</h1>
+      <div className="plan-page">
+        <div className="plan-header">
+          <div className="ui-title">Ground</div>
+          <p className="ui-subtitle">Steady yourself before you act.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '0' }}>
-          {GROUND_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleGroundSelect(item.route)}
-              style={{
-                padding: '20px',
-                backgroundColor: 'white',
-                border: '2px solid #e5e5e5',
-                borderRadius: '12px',
-                color: '#333',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '16px',
-                transition: 'all 0.2s',
-                textAlign: 'left',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                minHeight: '140px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#F08571';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(240, 133, 113, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#e5e5e5';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>{item.title}</div>
-                <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>{item.description}</div>
-              </div>
+        <div className="dt-cards dt-cards--three">
+          {CARDS.map((card) => (
+            <button key={card.title} type="button" className="dt-card dt-card--row" onClick={() => navigate(card.route)}>
+              <span className="dt-card-text">
+                <span className="dt-card-title">{card.title}</span>
+                <span className="dt-card-desc">{card.description}</span>
+              </span>
+              <CrossMark />
             </button>
           ))}
         </div>
+
+        <p className="dt-soon-label" style={{ marginTop: 'var(--space-6)' }}>Your history</p>
+        <button type="button" className="hub-history-card" onClick={() => navigate('/breathing-sessions-summary')}>
+          <span>
+            <span className="hub-history-card-title">Breathing Sessions</span>
+            <span className="hub-history-card-desc">Every breathing session you have finished.</span>
+          </span>
+          <ClockIcon />
+        </button>
+        <button type="button" className="hub-history-card" onClick={() => navigate('/journal-log')}>
+          <span>
+            <span className="hub-history-card-title">My Journals</span>
+            <span className="hub-history-card-desc">Your daily journals, saved and in progress.</span>
+          </span>
+          <ClockIcon />
+        </button>
       </div>
     </div>
   );
