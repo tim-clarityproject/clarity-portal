@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
@@ -6,7 +6,11 @@ import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
+import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
+import DeleteDialog from '../components/ui/DeleteDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function StopDoingAudit() {
   const navigate = useNavigate();
@@ -21,13 +25,10 @@ export default function StopDoingAudit() {
   const [timeUse, setTimeUse] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
   const isEditMode = Boolean(decisionId);
-  const refFirstAction = useRef(null);
-  const refActionHow = useRef(null);
-  const refTimeUse = useRef(null);
-  useAutoExpandTextarea(refFirstAction, firstAction);
-  useAutoExpandTextarea(refActionHow, actionHow);
-  useAutoExpandTextarea(refTimeUse, timeUse);
+  const { message, showToast } = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
@@ -151,7 +152,7 @@ export default function StopDoingAudit() {
       }, 1500);
     } catch (error) {
       console.error('Error saving audit:', error);
-      alert(`Failed to save audit: ${error?.message || 'Unknown error'}`);
+      setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -197,22 +198,18 @@ export default function StopDoingAudit() {
         }
       }
 
-      setIsSaved(true);
+      showToast('Draft saved.');
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
+      setSaveError('Could not save draft - please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Discard this audit?')) {
-      setItems([{ id: 1, activity: '', timePerWeek: '', action: '' }]);
-      setNextId(2);
-      setTimeUse('');
-      navigate('/decision-tools');
-    }
+  const handleDiscard = () => {
+    setDiscardOpen(false);
+    navigate('/decision-history');
   };
 
   const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '16px 20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };
@@ -252,11 +249,11 @@ export default function StopDoingAudit() {
                 <span style={{ fontSize: '14px', fontWeight: '600', color: '#333', minWidth: '24px' }}>
                   {index + 1}.
                 </span>
-                <input
-                  type="text"
+                <AutoGrowTextarea
+                  singleLine
                   placeholder="Type here"
                   value={item.activity}
-                  onChange={(e) => handleItemChange(item.id, 'activity', e.target.value)}
+                  onChange={(v) => handleItemChange(item.id, 'activity', v)}
                   autoComplete="off"
                   style={{ ...inputStyle, flex: 1 }}
                 />
@@ -425,11 +422,10 @@ export default function StopDoingAudit() {
             How specifically will you take action on this?
           </h2>
           <label style={labelStyle}>Describe your specific approach or steps</label>
-          <textarea
-            ref={refActionHow}
+          <AutoGrowTextarea
             placeholder="Type here"
             value={actionHow}
-            onChange={(e) => setActionHow(e.target.value)}
+            onChange={setActionHow}
             autoComplete="off"
             autoCapitalize="off"
             style={{ ...textareaStyle, marginBottom: 0 }}
@@ -441,20 +437,28 @@ export default function StopDoingAudit() {
             What will you do with the time instead?
           </h2>
           <label style={labelStyle}>How will you use the hours you reclaim?</label>
-          <textarea
-            ref={refTimeUse}
+          <AutoGrowTextarea
             placeholder="Type here"
             value={timeUse}
-            onChange={(e) => setTimeUse(e.target.value)}
+            onChange={setTimeUse}
             autoComplete="off"
             autoCapitalize="off"
             style={{ ...textareaStyle, marginBottom: 0 }}
           />
         </div>
+
+        {saveError && <p style={{ color: '#F08571', fontSize: '13px', marginTop: '4px' }} role="alert">{saveError}</p>}
       </div>
 
-      {/* Fixed bottom bar */}
-      <div style={{
+      <style>{`
+        .sda-bottom-bar { display: flex; }
+        @media (max-width: 768px) {
+          .sda-bottom-bar { display: none; }
+        }
+      `}</style>
+
+      {/* Desktop fixed bottom bar */}
+      <div className="sda-bottom-bar" style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
@@ -462,14 +466,13 @@ export default function StopDoingAudit() {
         backgroundColor: '#fafafa',
         borderTop: '1px solid #e5e5e5',
         padding: '12px 32px',
-        display: 'flex',
         justifyContent: 'center',
         gap: '12px',
         zIndex: 10,
       }}>
         <button
-          onClick={handleDelete}
-          title="Delete audit"
+          onClick={() => setDiscardOpen(true)}
+          title="Discard audit"
           style={{
             padding: '8px 12px',
             backgroundColor: 'transparent',
@@ -544,10 +547,31 @@ export default function StopDoingAudit() {
         </button>
       </div>
 
+      {/* Phone: shared fixed action bar (CLAUDE.md rule - reuse, do not duplicate) */}
+      <div className="ui-root">
+        <PhoneActionBar>
+          <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleSave}>
+            {isSaved ? 'Finished' : 'Finish'}
+          </button>
+          <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>
+            Save as draft
+          </button>
+        </PhoneActionBar>
+      </div>
+
       <SavedConfirmation
         isVisible={isSaved}
         onDismiss={() => setIsSaved(false)}
       />
+
+      <DeleteDialog
+        open={discardOpen}
+        title="Discard this audit?"
+        body="Anything you have not saved will be lost."
+        onConfirm={handleDiscard}
+        onCancel={() => setDiscardOpen(false)}
+      />
+      <Toast message={message} />
     </div>
   );
 }
