@@ -1,38 +1,76 @@
-import { useState, useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { formatDateAndTime } from '../lib/dateFormatter';
-import { designTokens } from '../lib/designTokens';
+import { formatVersion, loadLatestVersion } from '../lib/missionPlan';
+import { generateMissionProgressPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+
+function CheckIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
+}
+
+function TacticRow({ tactic }) {
+  if (tactic.type === 'tickable') {
+    return (
+      <div className="pop-view-tactic">
+        <span className={`pop-tick${tactic.is_done ? ' pop-tick--done' : ''}`} aria-hidden="true"><CheckIcon /></span>
+        <div>
+          <div className="pop-view-tactic-text">{tactic.action}</div>
+          {tactic.last_reviewed_at && (
+            <div className="pop-view-tactic-reviewed">Last reviewed {new Date(tactic.last_reviewed_at).toLocaleDateString('en-GB')}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="pop-view-tactic">
+      <div>
+        <div className="pop-view-tactic-text">{tactic.action}</div>
+        <div className="pop-view-tactic-progress">{tactic.current_value ?? 0} / {tactic.target_value ?? '—'} {tactic.unit || ''}</div>
+        {tactic.last_reviewed_at && (
+          <div className="pop-view-tactic-reviewed">Last reviewed {new Date(tactic.last_reviewed_at).toLocaleDateString('en-GB')}</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function PersonalOperatingPlan() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isLoading: authLoading } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   const [mission, setMission] = useState(null);
   const [strategies, setStrategies] = useState([]);
   const [tactics, setTactics] = useState({});
-  const [expandedStrategies, setExpandedStrategies] = useState({});
+  const [version, setVersion] = useState(null);
+  const [archivedCount, setArchivedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const { message, showToast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      loadPlan();
+    if (user) loadPlan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (location.state?.toast) {
+      showToast(location.state.toast);
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadPlan = async () => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // Load user's mission
-      const { data: missionData, error: missionError } = await supabase
+      const { data: missionData } = await supabase
         .from('missions')
         .select('*')
         .eq('user_id', user.id)
@@ -44,7 +82,6 @@ export default function PersonalOperatingPlan() {
       if (missionData) {
         setMission(missionData);
 
-        // Load strategies for this mission
         const { data: strategiesData } = await supabase
           .from('strategies')
           .select('*')
@@ -53,8 +90,6 @@ export default function PersonalOperatingPlan() {
 
         if (strategiesData) {
           setStrategies(strategiesData);
-
-          // Load tactics for each strategy
           const tacticsByStrategy = {};
           for (const strategy of strategiesData) {
             const { data: tacticsData } = await supabase
@@ -62,308 +97,165 @@ export default function PersonalOperatingPlan() {
               .select('*')
               .eq('strategy_id', strategy.id)
               .order('sort_order', { ascending: true });
-
             tacticsByStrategy[strategy.id] = tacticsData || [];
           }
           setTactics(tacticsByStrategy);
+        }
 
-          // Expand all strategies by default for full visibility
-          if (strategiesData.length > 0) {
-            const allExpanded = {};
-            strategiesData.forEach(s => {
-              allExpanded[s.id] = true;
-            });
-            setExpandedStrategies(allExpanded);
-          }
+        try {
+          const latest = await loadLatestVersion(missionData.id);
+          setVersion(latest);
+        } catch (error) {
+          console.error('[PersonalOperatingPlan] version lookup failed:', error);
         }
       }
+
+      const { count } = await supabase
+        .from('missions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('archived_at', 'is', null);
+      setArchivedCount(count || 0);
     } catch (error) {
-      console.error('Error loading plan:', error);
+      console.error('[PersonalOperatingPlan] load failed:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleStrategy = (strategyId) => {
-    setExpandedStrategies(prev => ({
-      ...prev,
-      [strategyId]: !prev[strategyId]
-    }));
-  };
-
-  const handleArchiveMission = async () => {
-    const confirmed = window.confirm(
-      'Archive this mission? It will be moved to your archived missions, but you can restore it anytime. All reviews will be preserved.'
-    );
-    if (!confirmed) return;
-
-    const doubleConfirm = window.confirm(
-      'Are you sure? This cannot be undone immediately (but you can restore it later). Your mission data is safe.'
-    );
-    if (!doubleConfirm) return;
-
+  const handleArchive = async () => {
+    setIsArchiving(true);
     try {
       await supabase
         .from('missions')
         .update({ archived_at: new Date().toISOString() })
         .eq('id', mission.id)
         .eq('user_id', user.id);
-
+      setArchiveOpen(false);
       navigate('/personal-operating-plan-edit', { state: { isNew: true } });
     } catch (error) {
-      console.error('Error archiving mission:', error);
-      alert('Failed to archive mission');
+      console.error('[PersonalOperatingPlan] archive failed:', error);
+      setArchiveOpen(false);
+      showToast('Could not archive this plan - please try again.');
+    } finally {
+      setIsArchiving(false);
     }
   };
 
-  const getTacticDisplay = (tactic) => {
-    const tacticText = tactic.name || tactic.action || 'Untitled tactic';
-
-    if (tactic.is_done !== undefined) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '16px', lineHeight: '1', color: '#999' }}>•</span>
-          <span style={{ fontSize: '13px', color: '#333' }}>{tacticText}</span>
-        </div>
-      );
-    } else if (tactic.target_value !== undefined) {
-      return (
-        <div>
-          <div style={{ fontSize: '13px', color: '#333', marginBottom: '4px' }}>{tacticText}</div>
-          <div style={{ fontSize: '12px', color: '#999' }}>
-            {tactic.current_value || '0'} / {tactic.target_value} {tactic.unit || ''}
-          </div>
-        </div>
-      );
-    }
-    return <span style={{ fontSize: '13px', color: '#333' }}>{tacticText}</span>;
+  const handleDownloadPDF = () => {
+    if (!mission) return;
+    generateMissionProgressPDF({
+      created_at: new Date().toISOString(),
+      review_data: {
+        mission_title: mission.title,
+        strategies: strategies.map((s) => ({
+          ...s,
+          tactics: (tactics[s.id] || []).map((t) => ({
+            ...t,
+            reviewed_is_done: t.is_done,
+            reviewed_value: t.current_value,
+          })),
+        })),
+      },
+    });
   };
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="ui-root">
         <DesignHeader />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
-        </div>
+        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
       </div>
     );
   }
 
   if (!mission) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="ui-root">
         <DesignHeader />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', textAlign: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px', marginBottom: '24px' }}>No personal operating plan yet</p>
-          <button
-            onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}
-            style={{
-              padding: '14px 24px',
-              backgroundColor: '#F08571',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-          >
-            Create Your Plan
-          </button>
+        <div className="plan-page">
+          <div className="plan-header">
+            <div className="ui-title">Your personal operating plan</div>
+            <p className="ui-subtitle">No plan yet. Define your mission, strategies and tactics.</p>
+          </div>
+          <div className="plan-actions">
+            <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}>
+              Create your plan
+            </button>
+          </div>
+          {archivedCount > 0 && (
+            <div className="pop-links-row">
+              <button type="button" className="plan-link-btn" onClick={() => navigate('/my-account', { state: { scrollTo: 'mission-section', openArchived: true } })}>
+                Archived plans · {archivedCount}
+              </button>
+            </div>
+          )}
         </div>
+        <Toast message={message} />
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <style>{`
-        .pop-page-container {
-          padding: 64px 32px;
-        }
-        @media (max-width: 768px) {
-          .pop-page-container {
-            padding: 32px 16px;
-          }
-        }
-      `}</style>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="pop-page-container">
-
-        {/* Page Title */}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '8px' }}>
-          Your Personal Operating Plan
-        </h1>
-
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '100%', backgroundColor: designTokens.colors.primary, transition: 'width 0.3s ease' }} />
+      <div className="plan-page">
+        <div className="plan-header">
+          <div className="ui-title">Your personal operating plan</div>
+          <p className="ui-subtitle">{mission.title}</p>
         </div>
 
-        {/* STRATEGIES SECTION - Premium Cards */}
-        <div style={{ marginBottom: '48px' }}>
-          {strategies.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px solid #e5e5e5' }}>
-              <p style={{ color: '#999', fontSize: '14px', margin: 0 }}>No strategies yet</p>
+        {strategies.length === 0 ? (
+          <p className="pop-empty">No strategies yet.</p>
+        ) : (
+          strategies.map((strategy) => (
+            <div className="pop-view-strategy" key={strategy.id}>
+              <h3 className="pop-view-strategy-name">{strategy.name}</h3>
+              {strategy.description && <p className="pop-view-strategy-desc">{strategy.description}</p>}
+              {(tactics[strategy.id] || []).length === 0 ? (
+                <p className="pop-empty" style={{ padding: 0 }}>No tactics yet.</p>
+              ) : (
+                (tactics[strategy.id] || []).map((tactic) => <TacticRow tactic={tactic} key={tactic.id} />)
+              )}
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {strategies.map(strategy => (
-                <div
-                  key={strategy.id}
-                  style={{
-                    backgroundColor: designTokens.colors.background.default,
-                    border: `1px solid ${designTokens.colors.border.medium}`,
-                    borderRadius: designTokens.borderRadius.lg,
-                    borderLeft: `4px solid ${designTokens.colors.primary}`,
-                    overflow: 'hidden',
-                    boxShadow: designTokens.shadow.sm,
-                    transition: 'all 0.2s',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = designTokens.shadow.md;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = designTokens.shadow.sm;
-                  }}
-                >
-                  <button
-                    onClick={() => toggleStrategy(strategy.id)}
-                    style={{
-                      width: '100%',
-                      padding: designTokens.spacing.lg,
-                      backgroundColor: designTokens.colors.background.default,
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      transition: 'background-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = designTokens.colors.background.secondary}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = designTokens.colors.background.default}
-                  >
-                    <div style={{ textAlign: 'left', flex: 1 }}>
-                      <h3 style={{ ...designTokens.typography.h3, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.sm} 0` }}>
-                        {strategy.name}
-                      </h3>
-                      {strategy.description && (
-                        <p style={{ ...designTokens.typography.bodySm, color: designTokens.colors.text.secondary, margin: 0 }}>
-                          {strategy.description}
-                        </p>
-                      )}
-                    </div>
-                    <ChevronDown
-                      size={20}
-                      style={{
-                        color: '#999',
-                        transform: expandedStrategies[strategy.id] ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                        flexShrink: 0,
-                        marginLeft: '16px',
-                        marginTop: '2px',
-                      }}
-                    />
-                  </button>
+          ))
+        )}
 
-                  {/* TACTICS - Premium Details */}
-                  {expandedStrategies[strategy.id] && (
-                    <div style={{ padding: '20px', backgroundColor: 'white', borderTop: '1px solid #f0f0f0' }}>
-                      {tactics[strategy.id]?.length === 0 ? (
-                        <p style={{ color: '#999', fontSize: '13px', margin: 0 }}>No tactics yet</p>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          {tactics[strategy.id]?.map((tactic, index) => (
-                            <div
-                              key={tactic.id}
-                              style={{
-                                paddingBottom: index < tactics[strategy.id].length - 1 ? '16px' : '0',
-                                borderBottom: index < tactics[strategy.id].length - 1 ? '1px solid #f0f0f0' : 'none',
-                              }}
-                            >
-                              <div style={{ marginBottom: '6px' }}>
-                                {getTacticDisplay(tactic)}
-                              </div>
-                              {tactic.last_reviewed_at && (
-                                <div style={{ fontSize: '11px', color: '#bbb', marginTop: '4px' }}>
-                                  Last reviewed: {formatDateAndTime(tactic.last_reviewed_at)}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ACTION BUTTONS - Premium Styling */}
-        <div style={{ display: 'flex', gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.xl }}>
-          <button
-            onClick={() => navigate('/personal-operating-plan-edit', { state: { missionId: mission.id } })}
-            style={{
-              flex: 1,
-              ...designTokens.button.secondary,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = designTokens.colors.primary;
-              e.currentTarget.style.backgroundColor = designTokens.colors.background.secondary;
-              e.currentTarget.style.color = designTokens.colors.primary;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = designTokens.colors.border.medium;
-              e.currentTarget.style.backgroundColor = designTokens.colors.background.default;
-              e.currentTarget.style.color = designTokens.colors.text.primary;
-            }}
-          >
-            Edit Plan
+        <div className="plan-actions">
+          <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: mission.id } })}>
+            Review plan
           </button>
-          <button
-            onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: mission.id } })}
-            style={{
-              flex: 1,
-              ...designTokens.button.primary,
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = designTokens.button.primary.hoverBackgroundColor}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = designTokens.colors.primary}
-          >
-            Review Plan
+          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/personal-operating-plan-edit', { state: { missionId: mission.id } })}>
+            Edit plan
           </button>
         </div>
 
-        {/* ARCHIVE BUTTON - Tertiary Action */}
-        <div style={{ paddingTop: designTokens.spacing.lg, borderTop: `1px solid ${designTokens.colors.border.medium}` }}>
-          <button
-            onClick={handleArchiveMission}
-            style={{
-              ...designTokens.button.tertiary,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#d32f2f';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = designTokens.colors.text.tertiary;
-            }}
-            title="Archived missions and their reviews are stored in your Profile settings."
-          >
-            Archive Mission
+        <div className="pop-links-row">
+          <button type="button" className="plan-link-btn" onClick={() => navigate('/personal-operating-plan-versions', { state: { missionId: mission.id } })}>
+            Version history{version ? ` · ${formatVersion(version.version_major, version.version_minor)}` : ''}
           </button>
-          <p style={{ ...designTokens.typography.caption, color: designTokens.colors.text.disabled, margin: `${designTokens.spacing.sm} 0 0 0` }}>
-            Archived missions and their reviews are stored in your Profile settings.
-          </p>
+          <button type="button" className="plan-link-btn" onClick={() => navigate('/my-account', { state: { scrollTo: 'mission-section', openArchived: true } })}>
+            Archived plans · {archivedCount}
+          </button>
+          <button type="button" className="plan-link-btn" onClick={handleDownloadPDF}>
+            Download PDF
+          </button>
+          <button type="button" className="plan-link-btn" onClick={() => setArchiveOpen(true)}>
+            Archive this plan
+          </button>
         </div>
-
       </div>
+
+      <ConfirmDialog
+        open={archiveOpen}
+        title="Archive this plan?"
+        message="It will move to your archived missions in My Account, where you can restore it any time. Nothing is deleted."
+        confirmLabel={isArchiving ? 'Archiving...' : 'Archive'}
+        onCancel={() => setArchiveOpen(false)}
+        onConfirm={handleArchive}
+      />
+      <Toast message={message} />
     </div>
   );
 }

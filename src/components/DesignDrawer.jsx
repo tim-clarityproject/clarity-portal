@@ -16,11 +16,6 @@ import { findTodaysDailyPlan } from '../lib/planReview';
 // item for them to belong to - see build summary point 6. /decision-tools
 // itself (the hub, reached FROM All Planning Tools) highlights that.
 //
-// "My Personal Operating Plan"'s childRoutes are carried over unchanged
-// from the old drawer - they are actually the Strategic Alignment tool's
-// pages (goal-setting, risks-assessment, etc.), not Personal Operating
-// Plan's own pages. That mismatch pre-dates this prompt; flagged in the
-// build summary rather than silently changed, since fixing it wasn't asked.
 const SECTIONS = [
   {
     id: 'plan',
@@ -40,16 +35,10 @@ const SECTIONS = [
         label: 'My Personal Operating Plan',
         to: '/personal-operating-plan',
         childRoutes: [
-          '/personal-operating-plan-summary',
           '/personal-operating-plan-edit',
-          '/goal-setting',
-          '/risks-assessment',
-          '/critical-success-factors',
-          '/strategies',
-          '/project-list',
-          '/project-matrix',
-          '/project-progress',
-          '/project-scatter',
+          '/personal-operating-plan-review',
+          '/personal-operating-plan-versions',
+          '/mission-progress-review',
         ],
       },
       {

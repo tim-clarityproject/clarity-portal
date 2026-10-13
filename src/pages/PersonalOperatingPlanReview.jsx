@@ -1,436 +1,319 @@
-import { useState, useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { designTokens } from '../lib/designTokens';
+import { formatDateAndTime } from '../lib/dateFormatter';
+import { loadLatestVersion, loadDraftReview, loadReview, saveReview } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
+import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
+import { DiscardLink } from '../components/ui/DiscardLink';
+import DiscardDialog from '../components/ui/DiscardDialog';
 
 export default function PersonalOperatingPlanReview() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const missionId = location.state?.missionId;
+  const stateMissionId = location.state?.missionId || null;
+  const reviewId = location.state?.reviewId || null;
 
   const [mission, setMission] = useState(null);
   const [strategies, setStrategies] = useState([]);
   const [reviewData, setReviewData] = useState({});
   const [expandedStrategies, setExpandedStrategies] = useState({});
+  const [existingReviewId, setExistingReviewId] = useState(reviewId);
+  const [latestVersion, setLatestVersion] = useState(null);
+  const [continuingDraftDate, setContinuingDraftDate] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [draftRestored, setDraftRestored] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
 
-  // Load plan only once on mount (missionId in dependency array, NOT user)
   useEffect(() => {
-    if (missionId && user) {
-      loadPlan();
-    }
-  }, [missionId]); // FIXED: removed user from dependency - user reference changes on token refresh
-
-  // Autosave draft to sessionStorage when form changes
-  useEffect(() => {
-    if (!missionId || !hasUnsavedChanges) return;
-
-    const timeout = setTimeout(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user) return;
       try {
-        const draft = {
-          reviewData,
-          expandedStrategies,
-          timestamp: Date.now()
-        };
-        sessionStorage.setItem(`clarity-preview-draft-${missionId}`, JSON.stringify(draft));
-      } catch (e) {
-        console.error('Error saving draft:', e);
-      }
-    }, 1000); // Debounce saves by 1 second
+        // Self-resolving: a missionId in router state is used when
+        // present, but a direct visit (refresh, bookmark) falls back to
+        // the user's current non-archived mission instead of hanging on
+        // a blank screen forever (prompt 9 fix for the old dead end).
+        let missionRow = null;
+        if (stateMissionId) {
+          const { data } = await supabase
+            .from('missions')
+            .select('*')
+            .eq('id', stateMissionId)
+            .eq('user_id', user.id)
+            .is('archived_at', null)
+            .single();
+          missionRow = data || null;
+        } else {
+          const { data } = await supabase
+            .from('missions')
+            .select('*')
+            .eq('user_id', user.id)
+            .is('archived_at', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          missionRow = data || null;
+        }
 
-    return () => clearTimeout(timeout);
-  }, [reviewData, expandedStrategies, missionId, hasUnsavedChanges]);
-
-  // Warn on unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  // Restore draft if one exists
-  useEffect(() => {
-    if (draftRestored || !missionId) return;
-
-    try {
-      const draft = sessionStorage.getItem(`clarity-preview-draft-${missionId}`);
-      if (draft) {
-        const { reviewData: draftReviewData, expandedStrategies: draftExpanded } = JSON.parse(draft);
-        setReviewData(draftReviewData);
-        setExpandedStrategies(draftExpanded);
-        setDraftRestored(true);
-        setHasUnsavedChanges(true);
-        console.log('[PlanReview] Draft restored from sessionStorage');
-      }
-    } catch (e) {
-      console.error('Error restoring draft:', e);
-    }
-  }, [missionId, draftRestored]);
-
-  const loadPlan = async () => {
-    try {
-      const { data: mission } = await supabase
-        .from('missions')
-        .select('*')
-        .eq('id', missionId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (mission) {
-        setMission(mission);
+        if (cancelled) return;
+        if (!missionRow) {
+          setIsLoading(false);
+          return;
+        }
+        setMission(missionRow);
 
         const { data: strategiesData } = await supabase
           .from('strategies')
           .select('*')
-          .eq('mission_id', missionId)
+          .eq('mission_id', missionRow.id)
           .order('sort_order', { ascending: true });
 
-        if (strategiesData) {
-          const strategiesWithTactics = await Promise.all(
-            strategiesData.map(async (strategy) => {
-              const { data: tactics } = await supabase
-                .from('tactics')
-                .select('*')
-                .eq('strategy_id', strategy.id)
-                .order('sort_order', { ascending: true });
+        const withTactics = await Promise.all(
+          (strategiesData || []).map(async (strategy) => {
+            const { data: tactics } = await supabase
+              .from('tactics')
+              .select('*')
+              .eq('strategy_id', strategy.id)
+              .order('sort_order', { ascending: true });
+            return { ...strategy, tactics: tactics || [] };
+          })
+        );
+        if (cancelled) return;
+        setStrategies(withTactics);
 
-              return {
-                ...strategy,
-                tactics: tactics || []
-              };
-            })
-          );
-          setStrategies(strategiesWithTactics);
-
-          // Initialize review data
-          const initial = {};
-          strategiesWithTactics.forEach(strategy => {
-            strategy.tactics.forEach(tactic => {
-              initial[tactic.id] = {
-                isDone: tactic.is_done || false,
-                value: tactic.current_value || '',
-                note: ''
-              };
-            });
+        const initial = {};
+        withTactics.forEach((strategy) => {
+          strategy.tactics.forEach((tactic) => {
+            initial[tactic.id] = { isDone: tactic.is_done || false, value: tactic.current_value ?? '', note: '' };
           });
-          setReviewData(initial);
+        });
 
-          if (strategiesWithTactics.length > 0) {
-            setExpandedStrategies({ [strategiesWithTactics[0].id]: true });
+        if (withTactics.length > 0) setExpandedStrategies({ [withTactics[0].id]: true });
+
+        try {
+          const latest = await loadLatestVersion(missionRow.id);
+          if (!cancelled) setLatestVersion(latest);
+        } catch (error) {
+          console.error('[PlanReview] version lookup failed:', error);
+        }
+
+        if (reviewId) {
+          try {
+            const review = await loadReview(user.id, reviewId);
+            if (!cancelled && review?.review_data?.tactics) {
+              Object.assign(initial, review.review_data.tactics);
+              setExistingReviewId(review.id);
+            }
+          } catch (error) {
+            console.error('[PlanReview] load existing review failed:', error);
+          }
+        } else {
+          try {
+            const draft = await loadDraftReview(user.id, missionRow.id);
+            if (!cancelled && draft) {
+              if (draft.review_data?.tactics) Object.assign(initial, draft.review_data.tactics);
+              setExistingReviewId(draft.id);
+              setContinuingDraftDate(formatDateAndTime(draft.updated_at || draft.created_at));
+            }
+          } catch (error) {
+            console.error('[PlanReview] draft lookup failed:', error);
           }
         }
+
+        if (!cancelled) setReviewData(initial);
+      } catch (error) {
+        console.error('[PlanReview] load failed:', error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading plan:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, stateMissionId, reviewId]);
 
   const toggleStrategy = (strategyId) => {
-    setExpandedStrategies(prev => ({
-      ...prev,
-      [strategyId]: !prev[strategyId]
-    }));
-    setHasUnsavedChanges(true);
+    setExpandedStrategies((prev) => ({ ...prev, [strategyId]: !prev[strategyId] }));
   };
 
   const updateReview = (tacticId, field, value) => {
-    setReviewData(prev => ({
-      ...prev,
-      [tacticId]: {
-        ...prev[tacticId],
-        [field]: value
-      }
-    }));
-    setHasUnsavedChanges(true);
+    setReviewData((prev) => ({ ...prev, [tacticId]: { ...prev[tacticId], [field]: value } }));
   };
 
-  const submitReview = async () => {
+  const submit = async (draft) => {
+    setSaveError('');
     setIsSubmitting(true);
     try {
-      // Create mission_progress review
-      const snapshotData = {
-        mission_id: missionId,
+      const reviewPayload = {
+        mission_id: mission.id,
         mission_title: mission.title,
-        strategies: strategies.map(strategy => ({
+        tactics: reviewData,
+        strategies: strategies.map((strategy) => ({
           id: strategy.id,
           name: strategy.name,
           description: strategy.description,
-          tactics: strategy.tactics.map(tactic => ({
+          tactics: strategy.tactics.map((tactic) => ({
             id: tactic.id,
             action: tactic.action,
             type: tactic.type,
             target_value: tactic.target_value,
             unit: tactic.unit,
-            current_value: tactic.current_value,
-            is_done: tactic.is_done,
-            // Reviewed data
-            reviewed_is_done: tactic.type === 'tickable' ? reviewData[tactic.id].isDone : null,
-            reviewed_value: tactic.type === 'measurable' ? reviewData[tactic.id].value : null,
-            reviewed_note: reviewData[tactic.id].note || null,
-            review_date: new Date().toISOString()
-          }))
-        }))
+            reviewed_is_done: tactic.type === 'tickable' ? Boolean(reviewData[tactic.id]?.isDone) : null,
+            reviewed_value: tactic.type === 'measurable' ? (reviewData[tactic.id]?.value ?? null) : null,
+            reviewed_note: reviewData[tactic.id]?.note || null,
+          })),
+        })),
       };
 
-      const { error } = await supabase
-        .from('mission_progress_reviews')
-        .insert([{
-          mission_id: missionId,
-          user_id: user.id,
-          review_data: snapshotData
-        }]);
+      const savedId = await saveReview({
+        userId: user.id,
+        missionId: mission.id,
+        planVersionId: latestVersion?.id || null,
+        reviewData: reviewPayload,
+        status: draft ? 'draft' : 'final',
+        existingId: existingReviewId,
+      });
 
-      if (error) throw error;
-
-      // Update last_reviewed_at on tactics
-      for (const strategy of strategies) {
-        for (const tactic of strategy.tactics) {
-          await supabase
-            .from('tactics')
-            .update({ last_reviewed_at: new Date().toISOString() })
-            .eq('id', tactic.id);
+      if (!draft) {
+        // Write reviewed progress back onto the live plan, so the main
+        // plan view reflects it (prompt 9 fix: tick state was computed
+        // but never actually written anywhere before).
+        for (const strategy of strategies) {
+          for (const tactic of strategy.tactics) {
+            const r = reviewData[tactic.id];
+            if (!r) continue;
+            const update = { last_reviewed_at: new Date().toISOString() };
+            if (tactic.type === 'tickable') update.is_done = Boolean(r.isDone);
+            if (tactic.type === 'measurable' && r.value !== '') update.current_value = r.value;
+            await supabase.from('tactics').update(update).eq('id', tactic.id);
+          }
         }
+        navigate('/mission-progress-review', { state: { reviewId: savedId, toast: 'Review saved.' } });
+      } else {
+        setExistingReviewId(savedId);
+        navigate('/personal-operating-plan', { state: { toast: 'Draft saved. Find it from Review plan to carry on.' } });
       }
-
-      // Clear draft on successful submit
-      try {
-        sessionStorage.removeItem(`clarity-preview-draft-${missionId}`);
-      } catch (e) {
-        console.error('Error clearing draft:', e);
-      }
-      setHasUnsavedChanges(false);
-      navigate('/personal-operating-plan');
     } catch (error) {
-      console.error('Error submitting review:', error);
-      alert('Failed to submit review');
+      console.error('[PlanReview] save failed:', error);
+      setSaveError('Could not save - please try again. (This may need a database change the site owner has not run yet.)');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleDiscard = () => {
+    setDiscardOpen(false);
+    navigate('/personal-operating-plan');
+  };
+
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#999' }}>Loading...</p>
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
       </div>
     );
   }
 
   if (!mission) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="ui-root">
         <DesignHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
-          <p style={{ color: '#999' }}>Plan not found</p>
+        <div className="plan-page">
+          <div className="plan-header">
+            <div className="ui-title">Review your plan</div>
+            <p className="ui-subtitle">You do not have a personal operating plan yet.</p>
+          </div>
+          <div className="plan-actions">
+            <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}>
+              Create your plan
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
+  const actionButtons = (
+    <>
+      <button type="button" className="ui-btn-primary" disabled={isSubmitting} onClick={() => submit(false)}>Finish</button>
+      <button type="button" className="ui-btn-ghost" disabled={isSubmitting} onClick={() => submit(true)}>Save as draft</button>
+    </>
+  );
+
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 32px' }} className="page-container">
-
-        {/* Page Title */}
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '8px' }}>
-          Personal Operating Plan Review
-        </h1>
-
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '100%', backgroundColor: designTokens.colors.primary, transition: 'width 0.3s ease' }} />
+      <div className="plan-page plan-page--form">
+        <div className="plan-header">
+          <div className="ui-title">Review your plan</div>
+          <p className="ui-subtitle">{mission.title}</p>
         </div>
 
-        {/* Strategies Section */}
-        {strategies.map(strategy => (
-          <div key={strategy.id} style={{ marginBottom: '16px', border: '1px solid #e5e5e5', borderRadius: '8px', overflow: 'hidden' }}>
-            <button
-              onClick={() => toggleStrategy(strategy.id)}
-              style={{
-                width: '100%',
-                padding: '16px',
-                backgroundColor: '#fafafa',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                transition: 'background-color 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
-            >
-              <div style={{ textAlign: 'left' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#333', margin: '0 0 4px 0' }}>
-                  {strategy.name}
-                </h3>
-                {strategy.description && (
-                  <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
-                    {strategy.description}
-                  </p>
-                )}
-              </div>
-              <ChevronDown
-                size={20}
-                style={{
-                  color: '#999',
-                  transform: expandedStrategies[strategy.id] ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s',
-                  flexShrink: 0,
-                  marginLeft: '16px'
-                }}
-              />
+        {continuingDraftDate && (
+          <div className="pop-draft-banner">
+            <span>Continuing your draft from {continuingDraftDate}.</span>
+          </div>
+        )}
+
+        {strategies.map((strategy) => (
+          <div className="pop-view-strategy" key={strategy.id}>
+            <button type="button" className="plan-link-btn" onClick={() => toggleStrategy(strategy.id)} style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+              <span>
+                <span className="pop-view-strategy-name" style={{ display: 'block' }}>{strategy.name}</span>
+                {strategy.description && <span className="pop-view-strategy-desc" style={{ display: 'block' }}>{strategy.description}</span>}
+              </span>
+              <span className={`ui-cross ui-cross--sm ui-cross--open${expandedStrategies[strategy.id] ? ' open' : ''}`} aria-hidden="true" />
             </button>
 
-            {/* Tactics Review */}
-            {expandedStrategies[strategy.id] && (
-              <div style={{ padding: '16px', backgroundColor: 'white', borderTop: '1px solid #e5e5e5' }}>
-                {strategy.tactics.map((tactic, index) => (
-                  <div key={tactic.id} style={{ marginBottom: index < strategy.tactics.length - 1 ? '24px' : '0', paddingBottom: index < strategy.tactics.length - 1 ? '24px' : '0', borderBottom: index < strategy.tactics.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                    <p style={{ fontSize: '13px', fontWeight: '600', color: '#333', margin: '0 0 12px 0' }}>
-                      {tactic.action}
-                    </p>
+            {expandedStrategies[strategy.id] && strategy.tactics.map((tactic) => (
+              <div key={tactic.id} style={{ marginTop: 'var(--space-4)' }}>
+                <p className="pop-view-tactic-text" style={{ marginBottom: 'var(--space-2)' }}>{tactic.action}</p>
 
-                    {tactic.type === 'tickable' ? (
-                      // Tickable review
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                        <input
-                          type="checkbox"
-                          checked={reviewData[tactic.id]?.isDone || false}
-                          onChange={(e) => updateReview(tactic.id, 'isDone', e.target.checked)}
-                          style={{
-                            width: '16px',
-                            height: '16px',
-                            cursor: 'pointer',
-                            accentColor: '#F08571',
-                            appearance: 'none',
-                            WebkitAppearance: 'none',
-                            border: '2px solid #ccc',
-                            borderRadius: '3px',
-                            backgroundColor: reviewData[tactic.id]?.isDone ? '#F08571' : 'white',
-                          }}
-                        />
-                        <label style={{ cursor: 'pointer', fontSize: '11px', color: '#666' }}>Mark as done</label>
-                      </div>
-                    ) : (
-                      // Measurable review
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{ display: 'block', fontSize: '12px', color: '#999', marginBottom: '6px' }}>
-                          Current value ({tactic.unit})
-                        </label>
-                        <input
-                          type="number"
-                          value={reviewData[tactic.id]?.value || ''}
-                          onChange={(e) => updateReview(tactic.id, 'value', e.target.value ? parseFloat(e.target.value) : '')}
-                          placeholder={`Target: ${tactic.target_value} ${tactic.unit}`}
-                          style={{
-                            width: '100%',
-                            padding: '8px',
-                            fontSize: '13px',
-                            border: '1px solid #e5e5e5',
-                            borderRadius: '4px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
-                        <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-                          Target: {tactic.target_value} {tactic.unit}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Note */}
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: '#999', marginBottom: '6px' }}>
-                        Note (optional)
-                      </label>
-                      <textarea
-                        value={reviewData[tactic.id]?.note || ''}
-                        onChange={(e) => updateReview(tactic.id, 'note', e.target.value)}
-                        placeholder="Add a reflection or comment..."
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          fontSize: '13px',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '4px',
-                          minHeight: '60px',
-                          boxSizing: 'border-box',
-                          fontFamily: 'inherit',
-                          resize: 'vertical'
-                        }}
-                      />
-                    </div>
+                {tactic.type === 'tickable' ? (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', marginBottom: 'var(--space-2)' }}>
+                    <span className={`pop-tick${reviewData[tactic.id]?.isDone ? ' pop-tick--done' : ''}`} aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+                    </span>
+                    <input type="checkbox" checked={Boolean(reviewData[tactic.id]?.isDone)} onChange={(e) => updateReview(tactic.id, 'isDone', e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }} />
+                    Mark as done
+                  </label>
+                ) : (
+                  <div className="plan-field">
+                    <label>Current value ({tactic.unit}) · target {tactic.target_value} {tactic.unit}</label>
+                    <input type="number" className="plan-input" value={reviewData[tactic.id]?.value ?? ''} onChange={(e) => updateReview(tactic.id, 'value', e.target.value ? parseFloat(e.target.value) : '')} />
                   </div>
-                ))}
+                )}
+
+                <AutoGrowTextarea className="plan-input" placeholder="Add a reflection or comment (optional)" value={reviewData[tactic.id]?.note || ''} onChange={(v) => updateReview(tactic.id, 'note', v)} />
               </div>
-            )}
+            ))}
           </div>
         ))}
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
-          <button
-            onClick={() => navigate('/personal-operating-plan')}
-            style={{
-              flex: 1,
-              padding: '10px 20px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              color: '#333',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'white';
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={submitReview}
-            disabled={isSubmitting}
-            style={{
-              flex: 1,
-              padding: '10px 20px',
-              backgroundColor: isSubmitting ? '#ccc' : '#F08571',
-              border: 'none',
-              borderRadius: '6px',
-              color: 'white',
-              fontWeight: '600',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => !isSubmitting && (e.target.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => !isSubmitting && (e.target.style.backgroundColor = '#F08571')}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Review'}
-          </button>
+        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
+
+        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
+
+        <div className="plan-discard-row">
+          <DiscardLink onClick={() => setDiscardOpen(true)} />
         </div>
       </div>
+
+      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard this review?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
+      />
     </div>
   );
 }

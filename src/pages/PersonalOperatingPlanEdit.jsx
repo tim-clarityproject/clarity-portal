@@ -1,860 +1,443 @@
-import { useState, useContext, useEffect } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Trash2, GripVertical } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { designTokens } from '../lib/designTokens';
-import SavedConfirmation from '../components/SavedConfirmation';
-import InfoModal from '../components/InfoModal';
+import { buildSnapshot, diffSnapshots, formatVersion, loadLatestVersion, recordVersionAfterSave } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
+import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import { DiscardLink } from '../components/ui/DiscardLink';
+import DiscardDialog from '../components/ui/DiscardDialog';
+
+function BinIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8h6.8l.6-8M6.8 7v3.5M9.2 7v3.5" />
+    </svg>
+  );
+}
+
+let tempIdCounter = 0;
+function tempId() {
+  tempIdCounter += 1;
+  return `temp-${Date.now()}-${tempIdCounter}`;
+}
 
 export default function PersonalOperatingPlanEdit() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const missionId = location.state?.missionId;
-  const isNew = location.state?.isNew || false;
+  const missionId = location.state?.missionId || null;
+  const isNew = location.state?.isNew || !missionId;
 
   const [missionTitle, setMissionTitle] = useState('');
   const [strategies, setStrategies] = useState([]);
-  const [isSaving, setIsSaving] = useState(false);
+  const [baselineVersion, setBaselineVersion] = useState(null);
   const [isLoading, setIsLoading] = useState(!isNew);
-  const [saved, setSaved] = useState(false);
-  const [openModal, setOpenModal] = useState(null); // 'strategy' or 'tactic'
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { kind: 'strategy'|'tactic', sIndex, tIndex }
   const [draftRestored, setDraftRestored] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [draftDismissed, setDraftDismissed] = useState(false);
 
-  // Load plan only once on mount (missionId in dependency array, NOT user)
+  const draftKey = missionId ? `clarity-pplan-draft-${missionId}` : 'clarity-pplan-draft-new';
+
   useEffect(() => {
-    if (missionId && user) {
-      loadPlan();
-    }
-  }, [missionId]); // FIXED: removed user from dependency - user reference changes on token refresh
-
-  // Autosave draft to sessionStorage when form changes
-  useEffect(() => {
-    if (!missionId || !hasUnsavedChanges) return;
-
-    const timeout = setTimeout(() => {
+    let cancelled = false;
+    (async () => {
+      if (!missionId || !user) {
+        setIsLoading(false);
+        return;
+      }
       try {
-        const draft = {
-          missionTitle,
-          strategies,
-          timestamp: Date.now()
-        };
-        sessionStorage.setItem(`clarity-pplan-draft-${missionId}`, JSON.stringify(draft));
-      } catch (e) {
-        console.error('Error saving draft:', e);
-      }
-    }, 1000); // Debounce saves by 1 second
-
-    return () => clearTimeout(timeout);
-  }, [missionTitle, strategies, missionId, hasUnsavedChanges]);
-
-  // Warn on unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  // Restore draft if one exists
-  useEffect(() => {
-    if (draftRestored || !missionId) return;
-
-    try {
-      const draft = sessionStorage.getItem(`clarity-pplan-draft-${missionId}`);
-      if (draft) {
-        const { missionTitle: draftTitle, strategies: draftStrategies } = JSON.parse(draft);
-        setMissionTitle(draftTitle);
-        setStrategies(draftStrategies);
-        setDraftRestored(true);
-        setHasUnsavedChanges(true);
-        console.log('[PlanEdit] Draft restored from sessionStorage');
-      }
-    } catch (e) {
-      console.error('Error restoring draft:', e);
-    }
-  }, [missionId, draftRestored]);
-
-  const loadPlan = async () => {
-    try {
-      const { data: mission } = await supabase
-        .from('missions')
-        .select('*')
-        .eq('id', missionId)
-        .eq('user_id', user.id)
-        .is('archived_at', null)
-        .single();
-
-      if (mission) {
-        setMissionTitle(mission.title);
-
-        const { data: strategiesData } = await supabase
-          .from('strategies')
+        const { data: mission } = await supabase
+          .from('missions')
           .select('*')
-          .eq('mission_id', missionId)
-          .order('sort_order', { ascending: true });
+          .eq('id', missionId)
+          .eq('user_id', user.id)
+          .is('archived_at', null)
+          .single();
 
-        if (strategiesData) {
-          const strategiesWithTactics = await Promise.all(
-            strategiesData.map(async (strategy) => {
-              const { data: tactics } = await supabase
-                .from('tactics')
-                .select('*')
-                .eq('strategy_id', strategy.id)
-                .order('sort_order', { ascending: true });
+        if (cancelled) return;
 
-              return {
-                ...strategy,
-                tactics: tactics || []
-              };
-            })
-          );
-          setStrategies(strategiesWithTactics);
+        if (mission) {
+          setMissionTitle(mission.title);
+
+          const { data: strategiesData } = await supabase
+            .from('strategies')
+            .select('*')
+            .eq('mission_id', missionId)
+            .order('sort_order', { ascending: true });
+
+          if (strategiesData) {
+            const withTactics = await Promise.all(
+              strategiesData.map(async (strategy) => {
+                const { data: tactics } = await supabase
+                  .from('tactics')
+                  .select('*')
+                  .eq('strategy_id', strategy.id)
+                  .order('sort_order', { ascending: true });
+                return { ...strategy, tactics: tactics || [] };
+              })
+            );
+            if (!cancelled) setStrategies(withTactics);
+          }
         }
+
+        try {
+          const latest = await loadLatestVersion(missionId);
+          if (!cancelled) setBaselineVersion(latest);
+        } catch (error) {
+          console.error('[PlanEdit] version lookup failed:', error);
+        }
+      } catch (error) {
+        console.error('[PlanEdit] load failed:', error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missionId, user?.id]);
+
+  // Draft restore is visible (prompt 9 fixes the old silent restore):
+  // the banner below names the date and offers "Discard them" instead
+  // of quietly swapping in sessionStorage content.
+  const [pendingDraft, setPendingDraft] = useState(null);
+  useEffect(() => {
+    if (isLoading || draftRestored) return;
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        setPendingDraft(draft);
       }
     } catch (error) {
-      console.error('Error loading plan:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('[PlanEdit] draft read failed:', error);
     }
+    setDraftRestored(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, draftRestored]);
+
+  const applyDraft = () => {
+    if (!pendingDraft) return;
+    setMissionTitle(pendingDraft.missionTitle || '');
+    setStrategies(pendingDraft.strategies || []);
+    setPendingDraft(null);
   };
 
+  const discardDraft = () => {
+    try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+    setPendingDraft(null);
+    setDraftDismissed(true);
+  };
+
+  // Autosave to sessionStorage (debounced) while editing.
+  useEffect(() => {
+    if (isLoading || pendingDraft) return;
+    const timeout = setTimeout(() => {
+      try {
+        sessionStorage.setItem(draftKey, JSON.stringify({ missionTitle, strategies, timestamp: Date.now() }));
+      } catch (error) {
+        console.error('[PlanEdit] draft save failed:', error);
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missionTitle, strategies, isLoading, pendingDraft]);
+
+  const nextSnapshot = useMemo(() => buildSnapshot(missionTitle, strategies), [missionTitle, strategies]);
+  const bump = useMemo(() => diffSnapshots(baselineVersion?.snapshot || null, nextSnapshot), [baselineVersion, nextSnapshot]);
+  const previewVersion = useMemo(() => {
+    if (!baselineVersion) return formatVersion(1, 0);
+    if (!bump) return formatVersion(baselineVersion.version_major, baselineVersion.version_minor);
+    if (bump === 'major') return formatVersion(baselineVersion.version_major + 1, 0);
+    return formatVersion(baselineVersion.version_major, baselineVersion.version_minor + 1);
+  }, [baselineVersion, bump]);
+
   const addStrategy = () => {
-    const newStrategy = {
-      id: `temp-${Date.now()}`,
-      name: 'New Strategy',
-      description: '',
-      sort_order: strategies.length,
-      tactics: [],
-      isNew: true
-    };
-    setStrategies([...strategies, newStrategy]);
-    setHasUnsavedChanges(true);
+    setStrategies([...strategies, { id: tempId(), name: '', description: '', tactics: [], isNew: true }]);
   };
 
   const updateStrategy = (index, field, value) => {
     const updated = [...strategies];
-    updated[index][field] = value;
+    updated[index] = { ...updated[index], [field]: value };
     setStrategies(updated);
-    setHasUnsavedChanges(true);
   };
 
-  const deleteStrategy = (index) => {
-    if (window.confirm('Delete this strategy and all its tactics?')) {
-      setStrategies(strategies.filter((_, i) => i !== index));
-      setHasUnsavedChanges(true);
-    }
+  const confirmDeleteStrategy = () => {
+    setStrategies(strategies.filter((_, i) => i !== deleteTarget.sIndex));
+    setDeleteTarget(null);
   };
 
-  const moveStrategy = (index, direction) => {
+  const addTactic = (sIndex) => {
     const updated = [...strategies];
-    if (direction === 'up' && index > 0) {
-      [updated[index], updated[index - 1]] = [updated[index - 1], updated[index]];
-    } else if (direction === 'down' && index < updated.length - 1) {
-      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    }
+    updated[sIndex] = {
+      ...updated[sIndex],
+      tactics: [...updated[sIndex].tactics, { id: tempId(), action: '', type: 'tickable', is_done: false, isNew: true }],
+    };
     setStrategies(updated);
-    setHasUnsavedChanges(true);
   };
 
-  const addTactic = (strategyIndex) => {
+  const updateTactic = (sIndex, tIndex, field, value) => {
     const updated = [...strategies];
-    updated[strategyIndex].tactics.push({
-      id: `temp-${Date.now()}`,
-      action: 'New tactic',
-      type: 'tickable',
-      sort_order: updated[strategyIndex].tactics.length,
-      isNew: true
-    });
+    const tactics = [...updated[sIndex].tactics];
+    tactics[tIndex] = { ...tactics[tIndex], [field]: value };
+    updated[sIndex] = { ...updated[sIndex], tactics };
     setStrategies(updated);
-    setHasUnsavedChanges(true);
   };
 
-  const updateTactic = (strategyIndex, tacticIndex, field, value) => {
+  const confirmDeleteTactic = () => {
     const updated = [...strategies];
-    updated[strategyIndex].tactics[tacticIndex][field] = value;
+    updated[deleteTarget.sIndex] = {
+      ...updated[deleteTarget.sIndex],
+      tactics: updated[deleteTarget.sIndex].tactics.filter((_, i) => i !== deleteTarget.tIndex),
+    };
     setStrategies(updated);
-    setHasUnsavedChanges(true);
-  };
-
-  const deleteTactic = (strategyIndex, tacticIndex) => {
-    if (window.confirm('Delete this tactic?')) {
-      const updated = [...strategies];
-      updated[strategyIndex].tactics = updated[strategyIndex].tactics.filter((_, i) => i !== tacticIndex);
-      setStrategies(updated);
-      setHasUnsavedChanges(true);
-    }
+    setDeleteTarget(null);
   };
 
   const savePlan = async () => {
     if (!missionTitle.trim()) {
-      alert('Mission title is required');
+      setSaveError('Your mission statement is required.');
       return;
     }
-
+    setSaveError('');
     setIsSaving(true);
     try {
       let currentMissionId = missionId;
 
-      // Create or update mission
       if (isNew || !currentMissionId) {
         const { data: mission, error } = await supabase
           .from('missions')
-          .insert([{
-            user_id: user.id,
-            title: missionTitle
-          }])
+          .insert([{ user_id: user.id, title: missionTitle }])
           .select()
           .single();
-
         if (error) throw error;
         currentMissionId = mission.id;
       } else {
-        await supabase
-          .from('missions')
-          .update({ title: missionTitle })
-          .eq('id', currentMissionId);
+        const { error } = await supabase.from('missions').update({ title: missionTitle }).eq('id', currentMissionId);
+        if (error) throw error;
       }
 
-      // Sync mission title to profiles.personal_goal for consistency
-      await supabase
-        .from('profiles')
-        .update({ personal_goal: missionTitle })
-        .eq('id', user.id);
+      await supabase.from('profiles').update({ personal_goal: missionTitle }).eq('id', user.id);
 
-      // Delete removed strategies and their tactics
-      // Load all existing strategies for this mission
-      const { data: existingStrategies } = await supabase
-        .from('strategies')
-        .select('id')
-        .eq('mission_id', currentMissionId);
-
-      // Delete strategies that are no longer in the current list
-      if (existingStrategies) {
-        for (const existingStrategy of existingStrategies) {
-          const stillExists = strategies.some(s => s.id === existingStrategy.id);
-          if (!stillExists) {
-            // Deleting the strategy will cascade delete tactics if foreign key is set up
-            const { error: deleteError } = await supabase
-              .from('strategies')
-              .delete()
-              .eq('id', existingStrategy.id);
-            if (deleteError) {
-              console.error('Error deleting strategy:', deleteError);
-              throw deleteError;
-            }
-          }
+      const { data: existingStrategies } = await supabase.from('strategies').select('id').eq('mission_id', currentMissionId);
+      for (const existing of existingStrategies || []) {
+        if (!strategies.some((s) => s.id === existing.id)) {
+          const { error } = await supabase.from('strategies').delete().eq('id', existing.id);
+          if (error) throw error;
         }
       }
 
-      // Upsert strategies
+      const savedStrategies = [];
       for (let sIndex = 0; sIndex < strategies.length; sIndex++) {
         const strategy = strategies[sIndex];
+        let strategyId = strategy.id;
 
         if (strategy.isNew) {
-          const { data: newStrategy, error } = await supabase
+          const { data: created, error } = await supabase
             .from('strategies')
-            .insert([{
-              mission_id: currentMissionId,
-              name: strategy.name,
-              description: strategy.description,
-              sort_order: sIndex
-            }])
+            .insert([{ mission_id: currentMissionId, name: strategy.name, description: strategy.description, sort_order: sIndex }])
             .select()
             .single();
-
           if (error) throw error;
-          strategies[sIndex].id = newStrategy.id;
+          strategyId = created.id;
         } else {
-          await supabase
+          const { error } = await supabase
             .from('strategies')
-            .update({
-              name: strategy.name,
-              description: strategy.description,
-              sort_order: sIndex
-            })
-            .eq('id', strategy.id);
+            .update({ name: strategy.name, description: strategy.description, sort_order: sIndex })
+            .eq('id', strategyId);
+          if (error) throw error;
         }
 
-        // Delete tactics that were removed from this strategy
-        const { data: existingTactics } = await supabase
-          .from('tactics')
-          .select('id')
-          .eq('strategy_id', strategies[sIndex].id);
-
-        if (existingTactics) {
-          for (const existingTactic of existingTactics) {
-            const tacticStillExists = strategy.tactics.some(t => t.id === existingTactic.id);
-            if (!tacticStillExists) {
-              const { error: deleteError } = await supabase
-                .from('tactics')
-                .delete()
-                .eq('id', existingTactic.id);
-              if (deleteError) {
-                console.error('Error deleting tactic:', deleteError);
-                throw deleteError;
-              }
-            }
+        const { data: existingTactics } = await supabase.from('tactics').select('id').eq('strategy_id', strategyId);
+        for (const existing of existingTactics || []) {
+          if (!strategy.tactics.some((t) => t.id === existing.id)) {
+            const { error } = await supabase.from('tactics').delete().eq('id', existing.id);
+            if (error) throw error;
           }
         }
 
-        // Upsert tactics
+        const savedTactics = [];
         for (let tIndex = 0; tIndex < strategy.tactics.length; tIndex++) {
           const tactic = strategy.tactics[tIndex];
-
+          const payload = {
+            action: tactic.action,
+            type: tactic.type,
+            target_value: tactic.type === 'measurable' ? (tactic.target_value || null) : null,
+            unit: tactic.type === 'measurable' ? (tactic.unit || null) : null,
+            sort_order: tIndex,
+          };
           if (tactic.isNew) {
-            const { data: newTactic, error: tacticError } = await supabase.from('tactics').insert([{
-              strategy_id: strategies[sIndex].id,
-              action: tactic.action,
-              type: tactic.type,
-              target_value: tactic.type === 'measurable' ? tactic.target_value : null,
-              unit: tactic.type === 'measurable' ? tactic.unit : null,
-              current_value: tactic.type === 'measurable' ? tactic.current_value : null,
-              is_done: tactic.type === 'tickable' ? false : null,
-              sort_order: tIndex
-            }])
-            .select()
-            .single();
-
-            if (tacticError) {
-              console.error('Error inserting tactic:', tacticError);
-              throw tacticError;
-            }
-            // Update the local tactic with the new ID from database
-            strategies[sIndex].tactics[tIndex].id = newTactic.id;
-            strategies[sIndex].tactics[tIndex].isNew = false;
-          } else {
-            const { error: updateError } = await supabase
+            const { data: created, error } = await supabase
               .from('tactics')
-              .update({
-                action: tactic.action,
-                type: tactic.type,
-                target_value: tactic.type === 'measurable' ? tactic.target_value : null,
-                unit: tactic.type === 'measurable' ? tactic.unit : null,
-                current_value: tactic.type === 'measurable' ? tactic.current_value : null,
-                sort_order: tIndex
-              })
-              .eq('id', tactic.id);
-
-            if (updateError) {
-              console.error('Error updating tactic:', updateError);
-              throw updateError;
-            }
+              .insert([{ strategy_id: strategyId, ...payload, current_value: null, is_done: tactic.type === 'tickable' ? false : null }])
+              .select()
+              .single();
+            if (error) throw error;
+            savedTactics.push(created);
+          } else {
+            const { error } = await supabase.from('tactics').update(payload).eq('id', tactic.id);
+            if (error) throw error;
+            savedTactics.push({ ...tactic, ...payload });
           }
         }
+        savedStrategies.push({ ...strategy, id: strategyId, tactics: savedTactics });
       }
 
-      // Clear draft on successful save
+      try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+
+      let toast = 'Plan saved.';
       try {
-        sessionStorage.removeItem(`clarity-pplan-draft-${currentMissionId}`);
-      } catch (e) {
-        console.error('Error clearing draft:', e);
+        const result = await recordVersionAfterSave({ userId: user.id, missionId: currentMissionId, title: missionTitle, strategies: savedStrategies });
+        toast = result.created ? `Saved as ${formatVersion(result.major, result.minor)}.` : 'Plan saved.';
+      } catch (error) {
+        console.error('[PlanEdit] version save failed:', error);
+        toast = 'Plan saved, but your version history could not be updated.';
       }
-      setHasUnsavedChanges(false);
-      setSaved(true);
-      setTimeout(() => {
-        navigate('/personal-operating-plan');
-      }, 1500);
+
+      navigate('/personal-operating-plan', { state: { toast } });
     } catch (error) {
-      console.error('Error saving plan:', error);
-      alert('Failed to save plan');
+      console.error('[PlanEdit] save failed:', error);
+      setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleDiscard = () => {
+    setDiscardOpen(false);
+    try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+    navigate(missionId ? '/personal-operating-plan' : '/plan-section');
+  };
+
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#999' }}>Loading...</p>
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
       </div>
     );
   }
 
+  const actionButtons = (
+    <>
+      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={savePlan}>
+        {isSaving ? 'Saving...' : 'Save plan'}
+      </button>
+    </>
+  );
+
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <style>{`
-        .edit-page-container {
-          padding: 64px 32px;
-        }
-        @media (max-width: 768px) {
-          .edit-page-container {
-            padding: 32px 16px;
-          }
-        }
-        input[type="text"]:focus,
-        textarea:focus,
-        select:focus {
-          outline: none;
-          border-color: #F08571;
-          box-shadow: 0 0 0 3px rgba(240, 133, 113, 0.1);
-        }
-      `}</style>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }} className="edit-page-container">
-
-        {/* PAGE TITLE */}
-        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '0', marginBottom: designTokens.spacing.xl, paddingBottom: designTokens.spacing.lg, borderBottom: `2px solid ${designTokens.colors.primary}` }}>
-          Shape Your Personal Operating Plan
-        </h1>
-
-        {/* MISSION STATEMENT SECTION */}
-        <div style={{ marginBottom: '48px' }}>
-          <label style={{ display: 'block', fontSize: '11px', color: '#999', margin: '0 0 12px 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Your Mission Statement
-          </label>
-          <textarea
-            value={missionTitle}
-            onChange={(e) => {
-              setMissionTitle(e.target.value);
-              setHasUnsavedChanges(true);
-            }}
-            placeholder="Define your mission in clear, compelling language..."
-            style={{
-              width: '100%',
-              padding: '16px',
-              fontSize: '16px',
-              fontWeight: '500',
-              border: '1px solid #e5e5e5',
-              borderRadius: '8px',
-              fontFamily: 'inherit',
-              boxSizing: 'border-box',
-              minHeight: '100px',
-              lineHeight: '1.6',
-              resize: 'vertical',
-              transition: 'border-color 0.2s, box-shadow 0.2s'
-            }}
-          />
-          <p style={{ fontSize: '12px', color: '#999', margin: '8px 0 0 0' }}>This is the anchor for everything below.</p>
+      <div className="plan-page plan-page--form">
+        <div className="plan-header">
+          <div className="ui-title">{isNew ? 'Create your plan' : 'Edit your plan'}</div>
+          <p className="ui-subtitle">Saving creates {previewVersion}.</p>
         </div>
 
-        {/* STRATEGIES SECTION */}
-        <div style={{ marginBottom: '48px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid #e5e5e5' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#333', margin: 0 }}>
-              Your Strategies
-            </h2>
-            <button
-              onClick={() => setOpenModal('strategy')}
-              style={{
-                padding: '6px 12px',
-                backgroundColor: '#f0f0f0',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: '600',
-                color: '#666',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#e5e5e5';
-                e.currentTarget.style.color = '#333';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
-                e.currentTarget.style.color = '#666';
-              }}
-              title="Learn about strategies"
-            >
-              What is a strategy?
-            </button>
+        {pendingDraft && !draftDismissed && (
+          <div className="pop-draft-banner">
+            <span>We kept your unsaved changes from earlier.</span>
+            <span style={{ display: 'flex', gap: 'var(--space-3)' }}>
+              <button type="button" className="plan-link-btn" onClick={applyDraft}>Use them</button>
+              <button type="button" className="plan-link-btn" onClick={discardDraft}>Discard them</button>
+            </span>
           </div>
+        )}
 
-          {strategies.length === 0 ? (
-            <div style={{ padding: '32px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px dashed #e5e5e5', textAlign: 'center' }}>
-              <p style={{ color: '#999', fontSize: '14px', margin: 0 }}>No strategies yet. Add one to get started.</p>
+        <div className="plan-field">
+          <label htmlFor="pop-title">Your mission statement</label>
+          <AutoGrowTextarea id="pop-title" className="plan-input" placeholder="Define your mission in clear, compelling language..." value={missionTitle} onChange={setMissionTitle} />
+        </div>
+
+        <div className="plan-label-row">
+          <span className="ui-section-heading">Strategies</span>
+        </div>
+
+        {strategies.map((strategy, sIndex) => (
+          <div className="pop-strategy" key={strategy.id}>
+            <div className="pop-strategy-top">
+              <div className="pop-strategy-fields">
+                <AutoGrowTextarea singleLine className="plan-input" placeholder="Strategy name" aria-label={`Strategy ${sIndex + 1} name`} value={strategy.name} onChange={(v) => updateStrategy(sIndex, 'name', v)} />
+                <AutoGrowTextarea className="plan-input" placeholder="Why does this matter? How does it support your mission?" aria-label={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} />
+              </div>
+              <button type="button" className="plan-bin-btn" aria-label={`Remove strategy ${sIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'strategy', sIndex })}>
+                <BinIcon />
+              </button>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
-              {strategies.map((strategy, sIndex) => (
-                <div
-                  key={strategy.id}
-                  style={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e5e5',
-                    borderRadius: '8px',
-                    borderLeft: '4px solid #F08571',
-                    padding: '20px',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)'}
-                  onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)'}
-                >
-                  {/* Strategy Header with Controls */}
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', gap: '4px', opacity: 0.5 }}>
-                      <GripVertical size={16} style={{ color: '#999' }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <input
-                        type="text"
-                        value={strategy.name}
-                        onChange={(e) => updateStrategy(sIndex, 'name', e.target.value)}
-                        placeholder="Strategy name"
-                        style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          border: '1px solid #e5e5e5',
-                          borderRadius: '6px',
-                          fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                          transition: 'border-color 0.2s, box-shadow 0.2s'
-                        }}
-                      />
-                    </div>
-                    <button
-                      onClick={() => deleteStrategy(sIndex)}
-                      style={{
-                        padding: '8px 10px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        color: '#F08571',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#fff0ee';
-                        e.currentTarget.style.color = '#e07560';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#F08571';
-                      }}
-                      title="Delete strategy"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
 
-                  {/* Strategy Description */}
-                  <textarea
-                    value={strategy.description || ''}
-                    onChange={(e) => updateStrategy(sIndex, 'description', e.target.value)}
-                    placeholder="Why does this matter? How does it support your mission?"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      fontSize: '13px',
-                      border: '1px solid #e5e5e5',
-                      borderRadius: '6px',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box',
-                      minHeight: '70px',
-                      color: '#666',
-                      marginBottom: '16px',
-                      resize: 'vertical',
-                      transition: 'border-color 0.2s, box-shadow 0.2s'
-                    }}
-                  />
-
-                  {/* TACTICS SECTION */}
-                  <div style={{ paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Tactics
-                      </p>
-                      <button
-                        onClick={() => setOpenModal('tactic')}
-                        style={{
-                          padding: '4px 10px',
-                          backgroundColor: '#f0f0f0',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: '600',
-                          color: '#666',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          whiteSpace: 'nowrap',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#e5e5e5';
-                          e.currentTarget.style.color = '#333';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f0f0f0';
-                          e.currentTarget.style.color = '#666';
-                        }}
-                        title="Learn about tactics"
-                      >
-                        What is a tactic?
-                      </button>
-                    </div>
-
-                    {strategy.tactics.length === 0 ? (
-                      <p style={{ fontSize: '13px', color: '#999', margin: '0 0 12px 0', fontStyle: 'italic' }}>No tactics yet. Add one below.</p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
-                        {strategy.tactics.map((tactic, tIndex) => (
-                          <div
-                            key={tactic.id}
-                            style={{
-                              display: 'flex',
-                              gap: '8px',
-                              padding: '12px',
-                              backgroundColor: '#fafafa',
-                              borderRadius: '6px',
-                              alignItems: 'flex-start',
-                              border: '1px solid #f0f0f0',
-                            }}
-                          >
-                            <div style={{ display: 'flex', opacity: 0.3, paddingTop: '6px' }}>
-                              <GripVertical size={14} style={{ color: '#999' }} />
-                            </div>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <input
-                                type="text"
-                                value={tactic.action}
-                                onChange={(e) => updateTactic(sIndex, tIndex, 'action', e.target.value)}
-                                placeholder="What's the specific action?"
-                                style={{
-                                  padding: '8px 10px',
-                                  fontSize: '13px',
-                                  border: '1px solid #e5e5e5',
-                                  borderRadius: '4px',
-                                  fontFamily: 'inherit',
-                                  boxSizing: 'border-box',
-                                  transition: 'border-color 0.2s'
-                                }}
-                              />
-                              <select
-                                value={tactic.type}
-                                onChange={(e) => updateTactic(sIndex, tIndex, 'type', e.target.value)}
-                                style={{
-                                  padding: '6px 10px',
-                                  fontSize: '12px',
-                                  border: '1px solid #e5e5e5',
-                                  borderRadius: '4px',
-                                  backgroundColor: 'white',
-                                  color: '#666',
-                                  boxSizing: 'border-box',
-                                  transition: 'border-color 0.2s'
-                                }}
-                              >
-                                <option value="tickable">Tickable (Done/Not Done)</option>
-                                <option value="measurable">Measurable (Value/Target)</option>
-                              </select>
-                              {tactic.type === 'measurable' && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                  <input
-                                    type="number"
-                                    value={tactic.target_value || ''}
-                                    onChange={(e) => updateTactic(sIndex, tIndex, 'target_value', e.target.value ? parseFloat(e.target.value) : null)}
-                                    placeholder="Target"
-                                    style={{
-                                      padding: '6px 10px',
-                                      fontSize: '12px',
-                                      border: '1px solid #e5e5e5',
-                                      borderRadius: '4px',
-                                      boxSizing: 'border-box'
-                                    }}
-                                  />
-                                  <input
-                                    type="text"
-                                    value={tactic.unit || ''}
-                                    onChange={(e) => updateTactic(sIndex, tIndex, 'unit', e.target.value)}
-                                    placeholder="Unit (e.g., reps)"
-                                    style={{
-                                      padding: '6px 10px',
-                                      fontSize: '12px',
-                                      border: '1px solid #e5e5e5',
-                                      borderRadius: '4px',
-                                      boxSizing: 'border-box'
-                                    }}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => deleteTactic(sIndex, tIndex)}
-                              style={{
-                                padding: '6px 8px',
-                                backgroundColor: 'transparent',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                color: '#F08571',
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                marginTop: '2px'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#fff0ee';
-                                e.currentTarget.style.color = '#e07560';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                                e.currentTarget.style.color = '#F08571';
-                              }}
-                              title="Delete tactic"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        ))}
+            <div className="pop-tactics">
+              {strategy.tactics.map((tactic, tIndex) => (
+                <div className="pop-tactic-row" key={tactic.id}>
+                  <AutoGrowTextarea singleLine className="plan-input" placeholder="What's the specific action?" aria-label={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} />
+                  <div>
+                    <select className="plan-input" value={tactic.type} onChange={(e) => updateTactic(sIndex, tIndex, 'type', e.target.value)} aria-label={`Tactic ${tIndex + 1} type`}>
+                      <option value="tickable">Tickable</option>
+                      <option value="measurable">Measurable</option>
+                    </select>
+                    {tactic.type === 'measurable' && (
+                      <div className="pop-tactic-measure" style={{ marginTop: 'var(--space-2)' }}>
+                        <div>
+                          <label className="pop-tactic-label">Target</label>
+                          <input type="number" className="plan-input" value={tactic.target_value || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'target_value', e.target.value ? parseFloat(e.target.value) : null)} />
+                        </div>
+                        <div>
+                          <label className="pop-tactic-label">Unit</label>
+                          <input type="text" className="plan-input" value={tactic.unit || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'unit', e.target.value)} />
+                        </div>
                       </div>
                     )}
-
-                    {/* Add Tactic Button */}
-                    <button
-                      onClick={() => addTactic(sIndex)}
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        backgroundColor: 'white',
-                        border: '1px dashed #e5e5e5',
-                        borderRadius: '4px',
-                        color: '#999',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f9f9f9';
-                        e.currentTarget.style.borderColor = '#F08571';
-                        e.currentTarget.style.color = '#F08571';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'white';
-                        e.currentTarget.style.borderColor = '#e5e5e5';
-                        e.currentTarget.style.color = '#999';
-                      }}
-                    >
-                      + Add tactic
-                    </button>
                   </div>
+                  <button type="button" className="plan-bin-btn" aria-label={`Remove tactic ${tIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'tactic', sIndex, tIndex })}>
+                    <BinIcon />
+                  </button>
                 </div>
               ))}
+              <button type="button" className="plan-add-btn" onClick={() => addTactic(sIndex)}>
+                <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+                Add tactic
+              </button>
             </div>
-          )}
+          </div>
+        ))}
 
-          {/* Add Strategy Button */}
-          <button
-            onClick={addStrategy}
-            style={{
-              width: '100%',
-              padding: '14px 24px',
-              backgroundColor: 'white',
-              border: '2px dashed #e5e5e5',
-              borderRadius: '8px',
-              color: '#666',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.color = '#F08571';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'white';
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.color = '#666';
-            }}
-          >
-            + Add Strategy
-          </button>
+        <button type="button" className="plan-add-btn" onClick={addStrategy}>
+          <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+          Add strategy
+        </button>
+
+        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
+
+        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
+
+        <div className="plan-discard-row">
+          <DiscardLink onClick={() => setDiscardOpen(true)} />
         </div>
-
-        {/* ACTION BUTTONS */}
-        <div style={{ display: 'flex', gap: '12px', paddingTop: '24px', borderTop: '1px solid #e5e5e5' }}>
-          <button
-            onClick={() => navigate('/personal-operating-plan')}
-            style={{
-              flex: 1,
-              padding: '14px 24px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              color: '#333',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-              e.currentTarget.style.color = '#F08571';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'white';
-              e.currentTarget.style.color = '#333';
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={savePlan}
-            disabled={isSaving}
-            style={{
-              flex: 1,
-              padding: '14px 24px',
-              backgroundColor: isSaving ? '#ccc' : '#F08571',
-              border: 'none',
-              borderRadius: '8px',
-              color: 'white',
-              fontWeight: '600',
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (!isSaving) {
-                e.currentTarget.style.backgroundColor = '#e07560';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isSaving) {
-                e.currentTarget.style.backgroundColor = '#F08571';
-              }
-            }}
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-
       </div>
 
-      <SavedConfirmation
-        isVisible={saved}
-        onDismiss={() => setSaved(false)}
-      />
+      <PhoneActionBar>{actionButtons}</PhoneActionBar>
 
-      <InfoModal
-        isOpen={openModal === 'strategy'}
-        onClose={() => setOpenModal(null)}
-        title="What is a Strategy?"
-        content="A strategy is the big-picture approach you take to achieve your mission. It's your overall direction — how you'll tackle things in a consistent, thoughtful way. Unlike tactics (which happen day-to-day), your strategies don't change frequently. They're the foundation that guides your daily actions."
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard these changes?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
       />
-
-      <InfoModal
-        isOpen={openModal === 'tactic'}
-        onClose={() => setOpenModal(null)}
-        title="What is a Tactic?"
-        content="A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do — the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy."
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={deleteTarget?.kind === 'strategy' ? 'Delete this strategy?' : 'Delete this tactic?'}
+        message={deleteTarget?.kind === 'strategy' ? 'This also removes all of its tactics. This takes effect when you save.' : 'This takes effect when you save.'}
+        confirmLabel="Delete"
+        confirmClassName="dng"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteTarget?.kind === 'strategy' ? confirmDeleteStrategy : confirmDeleteTactic}
       />
     </div>
   );

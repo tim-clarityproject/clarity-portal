@@ -34,7 +34,7 @@ const TABS = [
       '/plan-section',
       '/planning-tools',
       '/personal-operating-plan',
-      '/personal-operating-plan-summary',
+      '/personal-operating-plan-versions',
       '/personal-operating-plan-edit',
       '/personal-operating-plan-review',
       '/goal-setting',

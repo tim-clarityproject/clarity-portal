@@ -3572,3 +3572,229 @@ span.tc-editable:focus-visible {
   border-bottom: 1px solid var(--line);
   margin-bottom: var(--space-5);
 }
+
+/* ============================================================
+   Personal operating plan (prompt 9)
+   ============================================================ */
+
+.pop-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+/* ---- Read-only plan view: strategy cards + tactic tick/progress ---- */
+
+.pop-view-strategy {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--coral);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.pop-view-strategy-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
+  margin: 0 0 var(--space-1);
+}
+
+.pop-view-strategy-desc {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  margin: 0 0 var(--space-3);
+}
+
+.pop-view-tactic {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--line);
+}
+
+.pop-view-tactic:first-child {
+  border-top: none;
+}
+
+.pop-tick {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--btn-line);
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.pop-tick svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.pop-tick--done {
+  border-color: var(--mint);
+}
+
+.pop-tick--done svg {
+  opacity: 1;
+}
+
+.pop-view-tactic-text {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.pop-view-tactic-progress {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.pop-view-tactic-reviewed {
+  font-size: 11px;
+  color: var(--placeholder);
+  margin-top: 2px;
+}
+
+.pop-empty {
+  padding: var(--space-5) 0;
+  color: var(--text-2);
+  font-size: var(--fs-body-sub);
+}
+
+/* ---- Edit plan: strategy/tactic editing ---- */
+
+.pop-strategy {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--surface);
+}
+
+.pop-strategy-top {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.pop-strategy-top .plan-input {
+  font-weight: 500;
+}
+
+.pop-strategy-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pop-tactics {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.pop-tactic-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 150px 44px;
+  gap: var(--space-2);
+  align-items: start;
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .pop-tactic-row {
+    grid-template-columns: 1fr;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    background: var(--bg);
+    margin-bottom: var(--space-3);
+  }
+}
+
+.ui-root select.plan-input {
+  padding: 0 14px !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.pop-tactic-measure {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.pop-tactic-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: var(--space-1);
+}
+
+/* ---- Version history / archived plans ---- */
+
+.pop-version-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.pop-version-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.pop-version-date {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.pop-version-current {
+  font-size: 11px;
+  color: var(--mint-text);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-left: var(--space-2);
+}
+
+.pop-draft-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}

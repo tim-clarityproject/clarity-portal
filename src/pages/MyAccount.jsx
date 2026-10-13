@@ -44,6 +44,15 @@ export default function MyAccount() {
     }
   }, [location.state?.openEditMission]);
 
+  // Opened from the Personal Operating Plan page's "Archived plans"
+  // link (prompt 9) - expand the section so the list is visible
+  // immediately instead of requiring a second click.
+  useEffect(() => {
+    if (location.state?.openArchived) {
+      setShowArchivedMissions(true);
+    }
+  }, [location.state?.openArchived]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/');

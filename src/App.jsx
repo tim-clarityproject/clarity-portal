@@ -65,9 +65,9 @@ import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
-import PersonalOperatingPlanSummary from './pages/PersonalOperatingPlanSummary';
 import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
 import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
+import PersonalOperatingPlanVersions from './pages/PersonalOperatingPlanVersions';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
 import PlanSection from './pages/PlanSection';
 import PlanningTools from './pages/PlanningTools';
@@ -179,6 +179,7 @@ function AppContent() {
     '/onboarding-mission',
     '/personal-operating-plan-edit',
     '/personal-operating-plan-review',
+    '/personal-operating-plan-versions',
     '/mission-progress-review',
     '/terms-of-service',
     '/privacy-policy',
@@ -249,9 +250,9 @@ function AppContent() {
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/onboarding-mission" element={<OnboardingMission />} />
           <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
-          <Route path="/personal-operating-plan-summary" element={<PersonalOperatingPlanSummary />} />
           <Route path="/personal-operating-plan-edit" element={<PersonalOperatingPlanEdit />} />
           <Route path="/personal-operating-plan-review" element={<PersonalOperatingPlanReview />} />
+          <Route path="/personal-operating-plan-versions" element={<PersonalOperatingPlanVersions />} />
           <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
           <Route path="/my-account" element={<MyAccount />} />
           <Route path="/goal-setting" element={<GoalSetting />} />
