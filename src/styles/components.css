@@ -2463,9 +2463,16 @@ html:has(.ui-root) {
   overflow-x: auto;
 }
 
+/* table-layout:fixed + the <colgroup> widths in MeetingSummary.jsx
+   (Item ~24%, Aim ~44%, Lead ~20%, Min ~12%) stop a long unbroken Aim
+   from stretching its column and squeezing ITEM/LEAD down to nothing -
+   that squeeze was what forced the heading letters to stack
+   (I/T/E/M) once a column got narrower than one letter. Columns now
+   stay fixed; rows simply get taller (overflow-wrap below). */
 .plan-table {
   color: var(--text);
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--fs-body-sub);
 }
@@ -2480,6 +2487,9 @@ html:has(.ui-root) {
   text-align: left;
   padding: 0 var(--space-2) var(--space-2) 0;
   border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .plan-table td {
@@ -2501,6 +2511,60 @@ html:has(.ui-root) {
   text-align: right;
   font-size: var(--fs-small);
   color: var(--text-2);
+}
+
+/* Phone: the table becomes stacked cards (label above value, a thin
+   line between rows) - a narrower breakpoint than the rest of these
+   pages' usual 768px, because even the fixed desktop column widths
+   above get too cramped for four columns much below 600px. Differs
+   from the approved mock-up, which only showed the desktop table -
+   see the build summary. */
+@media (max-width: 600px) {
+  .plan-table,
+  .plan-table thead,
+  .plan-table tbody,
+  .plan-table th,
+  .plan-table td,
+  .plan-table tr {
+    display: block;
+    width: auto;
+  }
+
+  .plan-table thead {
+    display: none;
+  }
+
+  .plan-table tr {
+    border-bottom: 1px solid var(--line);
+    padding: var(--space-3) 0;
+  }
+
+  .plan-table tr:first-child {
+    border-top: 1px solid var(--line);
+  }
+
+  .plan-table td {
+    padding: 0 0 var(--space-2);
+    border-bottom: 0;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .plan-table td:last-child {
+    padding-bottom: 0;
+  }
+
+  .plan-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 10px;
+    color: var(--placeholder);
+    margin-bottom: var(--space-1);
+  }
 }
 
 .plan-pair2 {

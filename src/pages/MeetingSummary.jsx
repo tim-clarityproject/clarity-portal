@@ -193,16 +193,22 @@ export default function MeetingSummary() {
               <div className="plan-sum-value">
                 <div className="plan-table-wrap">
                   <table className="plan-table">
+                    <colgroup>
+                      <col style={{ width: '24%' }} />
+                      <col style={{ width: '44%' }} />
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '12%' }} />
+                    </colgroup>
                     <thead>
                       <tr><th>Item</th><th>Aim</th><th>Lead</th><th>Min</th></tr>
                     </thead>
                     <tbody>
                       {agenda.map((r) => (
                         <tr key={r.id}>
-                          <td>{r.item}</td>
-                          <td>{r.aim}</td>
-                          <td>{r.lead}</td>
-                          <td>{r.length}</td>
+                          <td data-label="Item">{r.item}</td>
+                          <td data-label="Aim">{r.aim}</td>
+                          <td data-label="Lead">{r.lead}</td>
+                          <td data-label="Min">{r.length}</td>
                         </tr>
                       ))}
                     </tbody>
