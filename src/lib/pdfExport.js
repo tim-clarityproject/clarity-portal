@@ -470,3 +470,62 @@ export const generateTimeAuditPDF = (audit) => {
       document.body.removeChild(element);
     });
 };
+
+const BREATHING_LABELS = { sigh: 'Physiological Sigh', vagal: 'Vagal Breathing', box: 'Box Breathing' };
+
+// Breathing Sessions PDF (prompt 11).
+export const generateBreathingSessionsPDF = (sessions) => {
+  const totalSeconds = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const totalHours = Math.floor(totalSeconds / 3600);
+  const totalMins = Math.floor((totalSeconds % 3600) / 60);
+
+  const printStyles = `
+    <style>
+      @page { size: A4; margin: 15mm 20mm; }
+      * { box-sizing: border-box; orphans: 3; widows: 3; }
+      body { margin: 0; padding: 0; background: white; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11pt; line-height: 1.5; }
+      .pdf-header { border-bottom: 2px solid #F08571; padding-bottom: 16px; margin-bottom: 24px; }
+      .pdf-header h1 { font-size: 24pt; font-weight: 700; margin: 0 0 8px 0; color: #333; }
+      .pdf-header-meta { font-size: 10pt; color: #999; margin: 0; }
+      .pdf-item { font-size: 11pt; margin: 0 0 6px; padding-bottom: 6px; border-bottom: 1px solid #e5e5e5; }
+    </style>
+  `;
+
+  const rows = sessions.map((s) => {
+    const date = new Date(s.date);
+    const label = BREATHING_LABELS[s.breathing_mode] || s.breathing_mode;
+    const length = s.duration ? `${Math.floor(s.duration / 60)}m ${s.duration % 60}s` : '';
+    return `<p class="pdf-item">${escapeHtml(label)} &mdash; ${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}${length ? ` &mdash; ${length}` : ''}</p>`;
+  }).join('');
+
+  const html = printStyles + `
+    <div class="pdf-document">
+      <div class="pdf-header">
+        <h1>Breathing Sessions</h1>
+        <p class="pdf-header-meta">${sessions.length} session${sessions.length === 1 ? '' : 's'} &mdash; ${totalHours}h ${totalMins}m total</p>
+      </div>
+      ${rows}
+    </div>
+  `;
+
+  const element = document.createElement('div');
+  element.innerHTML = html;
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  const opt = {
+    margin: [15, 20, 15, 20],
+    filename: 'Breathing-Sessions.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4', compress: true },
+  };
+
+  html2pdf()
+    .set(opt)
+    .from(element)
+    .save()
+    .then(() => {
+      document.body.removeChild(element);
+    });
+};

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import BreathingGuide from './BreathingGuide';
+import BreathingQuickOpen from './BreathingQuickOpen';
 
 export default function BreathButton() {
   const [showBreathing, setShowBreathing] = useState(false);
@@ -101,7 +101,7 @@ export default function BreathButton() {
         </button>
       </div>
 
-      <BreathingGuide isOpen={showBreathing} onClose={() => setShowBreathing(false)} />
+      <BreathingQuickOpen isOpen={showBreathing} onClose={() => setShowBreathing(false)} />
     </>
   );
 }

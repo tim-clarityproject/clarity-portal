@@ -65,9 +65,18 @@ export default function BreathingSettingsModal({ isOpen, onClose }) {
     if (!user) return;
 
     setIsSaving(true);
-    const settings = { inhale, hold, exhale };
 
     try {
+      // Merge, not overwrite - breathing_settings also holds a
+      // "technique" key (prompt 11's sigh/vagal/box preference), which
+      // a plain overwrite here would silently wipe out.
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('breathing_settings')
+        .eq('id', user.id)
+        .single();
+      const settings = { ...(existing?.breathing_settings || {}), inhale, hold, exhale };
+
       const { error } = await supabase
         .from('profiles')
         .update({ breathing_settings: settings })

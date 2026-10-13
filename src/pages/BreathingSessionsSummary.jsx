@@ -1,213 +1,149 @@
-import { useState, useContext, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { formatDateWithOrdinal } from '../lib/dateFormatter';
+import { parseDbTimestamp } from '../lib/dateFormatter';
+import { TECHNIQUES, loadBreathingSessions, deleteBreathingSession, formatSessionLength } from '../lib/breathing';
+import { generateBreathingSessionsPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
-import BackArrow from '../components/BackArrow';
+import { BackLink } from '../components/ui/DiscardLink';
+import DeleteDialog from '../components/ui/DeleteDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+
+function formatMonthHeading(value) {
+  const date = parseDbTimestamp(value);
+  return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+function formatRowDate(value) {
+  const date = parseDbTimestamp(value);
+  const day = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const time = date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '');
+  return `${day}, ${time}`;
+}
 
 export default function BreathingSessionsSummary() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useContext(AuthContext);
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { message, showToast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      loadSessions();
-    }
-  }, [user]);
-
-  const loadSessions = async () => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
-
+  const load = async () => {
     try {
-      const { data, error } = await supabase
-        .from('breathing_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('session_date', { ascending: false })
-        .limit(30);
-
-      if (error) {
-        console.error('Error loading sessions:', error);
-        setIsLoading(false);
-        return;
-      }
-
-      setSessions(data || []);
-    } catch (err) {
-      console.error('Error loading sessions:', err);
+      const data = await loadBreathingSessions(user.id);
+      setSessions(data);
+    } catch (error) {
+      console.error('[BreathingSessionsSummary] load failed:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getBreathingTypeLabel = (mode) => {
-    const labels = {
-      'box': 'Box Breathing',
-      'sigh': 'Sigh of Relief',
-      '478': '4-7-8 Breathing',
-      'alternate': 'Alternate Nostril'
-    };
-    return labels[mode] || mode;
+  useEffect(() => {
+    if (user) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const handleDelete = async () => {
+    const id = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      await deleteBreathingSession(user.id, id);
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      showToast('Session deleted.');
+    } catch (error) {
+      console.error('[BreathingSessionsSummary] delete failed:', error);
+      showToast('Could not delete - please try again.');
+    }
   };
 
-  const formatDuration = (seconds) => {
-    if (!seconds) return '-';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (mins === 0) return `${secs}s`;
-    return `${mins}m ${secs}s`;
-  };
-
-  const getTotalTime = () => {
-    return sessions.reduce((total, session) => total + (session.duration_seconds || 0), 0);
-  };
+  const totalSeconds = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const totalHours = Math.floor(totalSeconds / 3600);
+  const totalMins = Math.floor((totalSeconds % 3600) / 60);
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="ui-root">
         <DesignHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px' }}>Loading sessions...</p>
-        </div>
+        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
       </div>
     );
   }
 
+  let lastMonth = '';
+
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
-        <BackArrow />
+      <div className="plan-page">
+        <div className="plan-back-row"><BackLink onClick={() => navigate('/breathe')} label="Back to Breathe" /></div>
 
-        <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
-            Breathing Sessions
-          </h1>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-            Breathing History
-          </span>
+        <div className="plan-summary-head">
+          <span className="plan-overline">Ground</span>
+          <div className="ui-title">Breathing Sessions</div>
         </div>
 
-        {/* Summary Stats */}
-        {sessions.length > 0 && (
-          <div style={{ marginBottom: '24px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Summary
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div style={{ backgroundColor: '#f9f9f9', padding: '12px 16px', borderRadius: '6px', border: '1px solid #f0f0f0' }}>
-                <p style={{ fontSize: '12px', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Sessions
-                </p>
-                <p style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
-                  {sessions.length}
-                </p>
-              </div>
-              <div style={{ backgroundColor: '#f9f9f9', padding: '12px 16px', borderRadius: '6px', border: '1px solid #f0f0f0' }}>
-                <p style={{ fontSize: '12px', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Total Time
-                </p>
-                <p style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
-                  {Math.floor(getTotalTime() / 60)}m
-                </p>
-              </div>
+        {sessions.length === 0 ? (
+          <>
+            <p className="pop-empty">No sessions yet. Start a session and it will appear here.</p>
+            <div className="plan-actions">
+              <button type="button" className="ui-btn-primary" onClick={() => navigate('/breathe')}>Start breathing</button>
             </div>
-          </div>
-        )}
-
-        {/* Sessions List */}
-        {sessions.length > 0 ? (
-          <div style={{ marginBottom: '24px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Recent Sessions
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {sessions.map((session) => (
-                <div key={session.id} style={{ backgroundColor: '#f9f9f9', padding: '12px 16px', borderRadius: '6px', border: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <p style={{ fontSize: '13px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {getBreathingTypeLabel(session.breathing_mode)}
-                    </p>
-                    <p style={{ fontSize: '12px', color: '#999', margin: '4px 0 0 0' }}>
-                      {formatDateWithOrdinal(session.session_date)}
-                    </p>
-                  </div>
-                  <p style={{ fontSize: '13px', fontWeight: '600', color: '#F08571', margin: 0 }}>
-                    {formatDuration(session.duration_seconds)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          </>
         ) : (
-          <div style={{ marginBottom: '24px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
-              No breathing sessions recorded yet. Start a session to begin tracking your practice.
-            </p>
-          </div>
+          <>
+            <div className="tsa-total" style={{ marginBottom: 'var(--space-5)' }}>
+              <span>Sessions</span>
+              <b>{sessions.length}</b>
+            </div>
+            <div className="tsa-total" style={{ marginBottom: 'var(--space-5)' }}>
+              <span>Total time</span>
+              <b>{totalHours}h {totalMins}m</b>
+            </div>
+
+            {sessions.map((s) => {
+              const mm = formatMonthHeading(s.date);
+              const showMonth = mm !== lastMonth;
+              lastMonth = mm;
+              const length = formatSessionLength(s.duration);
+              return (
+                <div key={s.id}>
+                  {showMonth && <p className="hlist-month" style={{ marginTop: 'var(--space-4)' }}>{mm}</p>}
+                  <div className="pop-version-row">
+                    <span>
+                      <span className="pop-version-label">{TECHNIQUES[s.breathing_mode]?.label || s.breathing_mode}</span>
+                      <span className="pop-version-date" style={{ display: 'block' }}>{formatRowDate(s.date)}{length ? ` · ${length}` : ''}</span>
+                    </span>
+                    <button type="button" className="plan-bin-btn" aria-label="Delete session" onClick={() => setDeleteTarget(s.id)}>
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8h6.8l.6-8M6.8 7v3.5M9.2 7v3.5" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="plan-actions">
+              <button type="button" className="plan-link-btn" onClick={() => generateBreathingSessionsPDF(sessions)}>
+                Download PDF
+              </button>
+            </div>
+          </>
         )}
-
-        {/* Bottom Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap', paddingTop: '32px', borderTop: '1px solid #f0f0f0', justifyContent: 'flex-end' }} className="no-print">
-          <button
-            onClick={() => navigate('/welcome')}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#333',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'white';
-            }}
-          >
-            Back Home
-          </button>
-
-          <button
-            onClick={() => window.print()}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#333',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'white';
-            }}
-          >
-            Download PDF
-          </button>
-        </div>
       </div>
+
+      <DeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this session?"
+        body="This cannot be undone."
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <Toast message={message} />
     </div>
   );
 }

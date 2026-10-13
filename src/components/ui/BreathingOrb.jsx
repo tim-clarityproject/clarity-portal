@@ -5,9 +5,13 @@
 // still uses the old pre-design-system markup), so this is the first
 // implementation - built as a shared component so BreathingPage can
 // import it later instead of duplicating this CSS.
-export default function BreathingOrb() {
+// `size` (prompt 11): a fixed pixel size overriding the default cqw-
+// based auto-sizing, for contexts with no inline-size container to
+// clamp against (the Breathe page's resting shape, spec section 9) -
+// optional so Welcome.jsx's existing call site is unaffected.
+export default function BreathingOrb({ size } = {}) {
   return (
-    <div className="breathing-orb" aria-hidden="true">
+    <div className="breathing-orb" aria-hidden="true" style={size ? { '--s': `${size}px` } : undefined}>
       <style>{`
         .breathing-orb {
           --s: clamp(64px, 24cqw, 150px);

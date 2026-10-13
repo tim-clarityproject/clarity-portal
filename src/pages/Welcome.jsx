@@ -9,6 +9,7 @@ import { loadPlanReviews, findPlanReview } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BreathingOrb from '../components/ui/BreathingOrb';
+import BreathingQuickOpen from '../components/BreathingQuickOpen';
 
 // Three top tiles. Routes/tools unchanged from the old ROUTE_MAP - only
 // the on-page copy and layout changed. problemTitle is the string
@@ -137,6 +138,7 @@ export default function Welcome() {
   const [recentPlans, setRecentPlans] = useState([]);
   const [recentPlanReviews, setRecentPlanReviews] = useState([]);
   const [plansLoaded, setPlansLoaded] = useState(false);
+  const [showBreathingQuickOpen, setShowBreathingQuickOpen] = useState(false);
 
   // Same first-name source as before: cached localStorage first, then
   // profiles.first_name from Supabase. No other database reads changed.
@@ -856,10 +858,10 @@ export default function Welcome() {
                 <div className="home-ground-copy">
                   <p className="home-ground-title">Need a moment?</p>
                   <p className="home-ground-text">A short breathing reset, any time.</p>
-                  <Link to="/breathe" className="home-breathe-btn">
+                  <button type="button" className="home-breathe-btn" onClick={() => setShowBreathingQuickOpen(true)}>
                     <WaveIcon />
                     Breathe
-                  </Link>
+                  </button>
                 </div>
                 <BreathingOrb />
               </div>
@@ -869,6 +871,8 @@ export default function Welcome() {
           </div>
         </div>
       </div>
+
+      <BreathingQuickOpen isOpen={showBreathingQuickOpen} onClose={() => setShowBreathingQuickOpen(false)} />
     </div>
   );
 }
