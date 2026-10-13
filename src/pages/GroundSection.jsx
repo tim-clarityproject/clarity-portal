@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
 
 const CARDS = [
-  { title: 'Scenario Planning', description: 'Get clear on what you will do in different scenarios.', route: '/if-then-planning' },
-  { title: 'Daily Pages', description: 'Write down what is on your mind.', route: '/my-journal' },
   { title: 'Breathe', description: 'Calm your nervous system and ground yourself.', route: '/breathe' },
+  { title: 'Daily Pages', description: 'Write down what is on your mind.', route: '/my-journal' },
+  { title: 'Scenario Planning', description: 'Get clear on what you will do in different scenarios.', route: '/if-then-planning' },
 ];
 
 function CrossMark() {
