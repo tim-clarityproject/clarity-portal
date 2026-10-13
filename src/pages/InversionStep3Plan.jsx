@@ -24,7 +24,7 @@ function CheckIcon() {
 
 function suggestNameFrom(goal) {
   const trimmed = (goal || '').trim();
-  if (!trimmed) return 'New inversion thinking';
+  if (!trimmed) return 'New Pre-Mortem';
   return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
 }
 
@@ -49,6 +49,11 @@ export default function InversionStep3Plan() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
+  // Which card is highlighted (prompt 8b fix): tied to actual textarea
+  // focus, not to "first unanswered" - that data-derived version jumped
+  // the coral outline to the NEXT card the instant this one gained any
+  // text, while the user was still typing in it.
+  const [focusedIndex, setFocusedIndex] = useState(null);
   const { message, showToast } = useToast();
 
   const changeAnswer = (index, value) => {
@@ -61,7 +66,7 @@ export default function InversionStep3Plan() {
 
   const persist = async (draft, name) => {
     const payload = {
-      form_data: { goal, fuckups: risks, riskAnswers },
+      form_data: { goal, risks, riskAnswers },
       title: name,
       draft,
       status: draft ? 'draft' : 'completed',
@@ -175,7 +180,7 @@ export default function InversionStep3Plan() {
           {risks.map((risk, index) => {
             const answer = riskAnswers[index] || '';
             const isAnswered = answer.trim().length > 0;
-            const isNow = index === firstUnansweredIndex;
+            const isNow = index === focusedIndex;
             return (
               <div className={`inv-card${isNow ? ' now' : ''}${isAnswered ? ' ok' : ''}`} key={index}>
                 <div className="inv-card-row">
@@ -189,6 +194,8 @@ export default function InversionStep3Plan() {
                   aria-label={`What will you do about risk ${index + 1}?`}
                   value={answer}
                   onChange={(v) => changeAnswer(index, v)}
+                  onFocus={() => setFocusedIndex(index)}
+                  onBlur={() => setFocusedIndex((prev) => (prev === index ? null : prev))}
                 />
               </div>
             );
