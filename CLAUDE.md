@@ -43,3 +43,5 @@
 20. **Tables and grids must never squash.** Use fixed column widths, keep headings to one line, let cell text wrap (overflow-wrap: anywhere) and let rows grow to fit their content - never let a column crush its text or force a sideways scroll. Stack into cards under ~600px instead of shrinking a table.
 
 21. **No swear words anywhere.** Not in product text, not in file names, not in code comments, not in variable or component names. If one is ever found, rename/reword it immediately.
+
+22. **Mock-up files are the source of truth.** Before building or changing any page, open and read the actual mock-up file and spec in full. Never build from a summary or from memory. Copy markup, CSS values, wording and behaviour from the mock-up. If the built page differs, the mock-up wins. If something cannot match, stop and report it instead of simplifying. Every build summary must list the files read and any differences left.
