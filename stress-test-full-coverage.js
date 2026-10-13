@@ -16,7 +16,7 @@ const ALL_PAGES = [
 
   // Inversion workflow
   { name: 'Inversion Step 1: Goal', route: '/inversion-step-1', section: 'Inversion' },
-  { name: 'Inversion Step 2: Fuckups', route: '/inversion-step-2', section: 'Inversion' },
+  { name: 'Inversion Step 2: Risks', route: '/inversion-step-2', section: 'Inversion' },
   { name: 'Inversion Step 3: Plan', route: '/inversion-step-3', section: 'Inversion' },
 
   // Strategic Alignment workflow
