@@ -796,9 +796,18 @@ html:has(.ui-root) {
 
 /* Every field sits inside a <form>, not as a direct sibling of
    .auth-sub, so the first field/field-row needs targeting one level
-   down rather than a plain adjacent-sibling selector. */
-.auth-sub + form .auth-field:first-child,
-.auth-sub + form .auth-field-row:first-child {
+   down rather than a plain adjacent-sibling selector. The `>` (direct
+   child) matters on the first half: without it, ":first-child" also
+   matched the First name .auth-field nested one level deeper inside
+   .auth-field-row (SignUpStep1.jsx) - a second, independent
+   :first-child match, since it's the first child of ITS OWN parent
+   too. At (0,3,1) this rule's 40px beat ".auth-field-row .auth-field"
+   below's 0px (0,2,0) outright for First name, while Last name - not
+   a :first-child of anything - correctly kept the 0px, staggering the
+   pair by 40px. The row itself still gets the 40px via the second
+   half below, unchanged. */
+.auth-sub + form > .auth-field:first-child,
+.auth-sub + form > .auth-field-row:first-child {
   margin-top: 40px;
 }
 
@@ -1117,8 +1126,17 @@ html:has(.ui-root) {
   }
 }
 
+/* Shared icon (envelope: CheckYourEmail.jsx/ForgotPasswordCheckEmail.jsx;
+   clock: ResetPassword.jsx/Mission.jsx's ClockIcon, same class). An SVG
+   root renders as display:block by default, so the ancestor column's
+   text-align:center (.align-center) never centred it - margin:auto is
+   what actually does that for a block-level element of a fixed width.
+   Pre-existing since the icon was first built, not something prompts
+   6/6b touched (confirmed against commit 685b96e - this file had no
+   .auth-envelope diff at all in between). */
 .auth-envelope {
-  margin-bottom: 8px;
+  display: block;
+  margin: 0 auto 8px;
 }
 
 /* Centred "proper desktop page" screens (mock-up's ".cc"): CheckYourEmail,

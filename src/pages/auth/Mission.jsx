@@ -82,6 +82,16 @@ export default function Mission() {
   // height and reserves that much padding at the foot of the form so
   // scrolled content (the last idea pill, the "Show other ideas" link)
   // never ends up hidden behind it, on any screen size.
+  //
+  // `linkStatus` is a dependency, not just an initial-mount effect:
+  // every hook in this component runs unconditionally before the
+  // linkStatus-based early returns below, so on first mount
+  // (linkStatus still 'checking') the form - and saveBarRef - do not
+  // exist in the DOM yet. Without re-running once linkStatus reaches
+  // 'ready', saveBarRef.current was always null, saveBarHeight stayed
+  // 0 forever, and paddingBottom below evaluated to `undefined` - the
+  // actual cause of the sparks list being hidden behind the bar with
+  // no way to scroll past it.
   useEffect(() => {
     const measure = () => {
       if (saveBarRef.current) setSaveBarHeight(saveBarRef.current.getBoundingClientRect().height);
@@ -89,7 +99,7 @@ export default function Mission() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, []);
+  }, [linkStatus]);
 
   useEffect(() => {
     // StrictMode (dev) mounts, runs this effect, cleans it up, then runs
@@ -340,7 +350,7 @@ export default function Mission() {
       headline="WHAT IS YOUR MISSION?"
       sub="One sentence about what you are here to do."
     >
-      <form onSubmit={handleSave} noValidate style={{ paddingBottom: saveBarHeight ? `${saveBarHeight + 28}px` : undefined }}>
+      <form onSubmit={handleSave} noValidate style={{ paddingBottom: saveBarHeight ? `${saveBarHeight + 16}px` : undefined }}>
         <div className={`auth-mission-card auth-mission-card--input${missionError ? ' error' : ''}${cardShaking ? ' shake' : ''}`}>
           <label htmlFor="mission-textarea" className="auth-mission-card-label">Your Mission</label>
           <textarea
