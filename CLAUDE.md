@@ -39,3 +39,7 @@
 18. **Every text field the user types into must grow to show all of its text.** No hidden text, and no scrolling inside a text box. Use the shared AutoGrowTextarea component (src/components/ui) for every free-text field, short or long - no fixed single-line inputs for free text, and no max-height caps on text boxes. The page scrolls instead.
 
 19. **Database timestamps are UTC with no time-zone ending on the live database.** Always read a saved created_at/updated_at (or similar) through parseDbTimestamp (src/lib/dateFormatter.js) before turning it into a Date, formatting it, sorting it or comparing it - never new Date(value) directly. Never use toISOString().split('T')[0] to get "today"'s date; use getLocalDateKey instead, which is built from the device's own getFullYear/getMonth/getDate.
+
+20. **Tables and grids must never squash.** Use fixed column widths, keep headings to one line, let cell text wrap (overflow-wrap: anywhere) and let rows grow to fit their content - never let a column crush its text or force a sideways scroll. Stack into cards under ~600px instead of shrinking a table.
+
+21. **No swear words anywhere.** Not in product text, not in file names, not in code comments, not in variable or component names. If one is ever found, rename/reword it immediately.
