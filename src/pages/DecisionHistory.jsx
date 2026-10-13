@@ -16,7 +16,7 @@ const REVIEWABLE_TYPES = new Set(['inversion', 'tough-conversation']);
 
 const TYPE_LABEL = {
   grow: 'GROW',
-  inversion: 'Inversion thinking',
+  inversion: 'Pre-mortem',
   'tough-conversation': 'Tough conversation',
   'strategic-alignment': 'Strategic alignment',
   if_then_planning: 'If-Then plan',

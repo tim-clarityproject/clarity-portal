@@ -16,7 +16,7 @@ const MAX_NAME_LENGTH = 60;
 
 function suggestNameFrom(goal) {
   const trimmed = (goal || '').trim();
-  if (!trimmed) return 'New inversion thinking';
+  if (!trimmed) return 'New Pre-Mortem';
   return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
 }
 
@@ -60,7 +60,7 @@ export default function InversionStep1Goal() {
       if (data?.title) setCurrentTitle(data.title);
       const formData = data?.form_data || {};
       setGoal(formData.goal || data.title || '');
-      setRisks(formData.fuckups || []);
+      setRisks(formData.risks || formData.fuckups || []);
       setRiskAnswers(formData.riskAnswers || []);
       setLegacyPlan(formData.riskAnswers ? '' : (formData.plan || ''));
       setIsLoading(false);
@@ -81,7 +81,7 @@ export default function InversionStep1Goal() {
 
   const persistDraft = async (name) => {
     const payload = {
-      form_data: { goal, fuckups: risks, riskAnswers },
+      form_data: { goal, risks, riskAnswers },
       title: name,
       draft: true,
       status: 'draft',

@@ -48,7 +48,7 @@ export default function DataStorageNotice() {
           </p>
           <ul style={{ marginLeft: '20px', marginBottom: '16px' }}>
             <li><strong>Authentication Data:</strong> Email address, hashed password, and session tokens</li>
-            <li><strong>Decisions:</strong> GROW model decisions and Inversion model decisions with all associated form data</li>
+            <li><strong>Decisions:</strong> GROW model decisions and Pre-Mortem decisions with all associated form data</li>
             <li><strong>Reflections:</strong> Journal entries and reflections you create</li>
             <li><strong>Strategic Alignments:</strong> Team planning and alignment data</li>
             <li><strong>Account Metadata:</strong> Name, profile information, and preferences</li>

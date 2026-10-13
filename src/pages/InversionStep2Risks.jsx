@@ -24,7 +24,7 @@ function BinIcon() {
 
 function suggestNameFrom(goal) {
   const trimmed = (goal || '').trim();
-  if (!trimmed) return 'New inversion thinking';
+  if (!trimmed) return 'New Pre-Mortem';
   return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
 }
 
@@ -62,7 +62,7 @@ export default function InversionStep2Risks() {
 
   const persistDraft = async (name) => {
     const payload = {
-      form_data: { goal, fuckups: risks },
+      form_data: { goal, risks },
       title: name,
       draft: true,
       status: 'draft',

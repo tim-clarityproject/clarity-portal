@@ -70,7 +70,7 @@ export default function InversionThinkingSummary() {
   }
 
   const data = thinking.form_data || {};
-  const risks = data.fuckups || [];
+  const risks = data.risks || data.fuckups || [];
   const hasRiskAnswers = Array.isArray(data.riskAnswers) && data.riskAnswers.length === risks.length;
 
   return (
@@ -83,8 +83,8 @@ export default function InversionThinkingSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">Inversion thinking</span>
-          <div className="ui-title">{thinking.title || 'Inversion thinking'}</div>
+          <span className="plan-overline">Pre-Mortem</span>
+          <div className="ui-title">{thinking.title || 'Pre-Mortem'}</div>
           <p className="ui-subtitle">Created {formatUkDate(thinking.created_at)}</p>
         </div>
 
@@ -142,7 +142,7 @@ export default function InversionThinkingSummary() {
           <button
             type="button"
             className="ui-btn-primary"
-            onClick={() => navigate('/inversion-step-1', { state: { decisionId: thinking.id, goal: data.goal, risks: data.fuckups, riskAnswers: data.riskAnswers, legacyPlan: hasRiskAnswers ? '' : data.plan, problemTitle: thinking.title } })}
+            onClick={() => navigate('/inversion-step-1', { state: { decisionId: thinking.id, goal: data.goal, risks, riskAnswers: data.riskAnswers, legacyPlan: hasRiskAnswers ? '' : data.plan, problemTitle: thinking.title } })}
           >
             Edit
           </button>

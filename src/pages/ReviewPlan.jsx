@@ -77,7 +77,7 @@ function PanelBody({ planKind, plan }) {
     );
   }
   if (planKind === 'inversion') {
-    const risks = formData.fuckups || [];
+    const risks = formData.risks || formData.fuckups || [];
     const answers = formData.riskAnswers || [];
     return (
       <div className="rp-panel-body">

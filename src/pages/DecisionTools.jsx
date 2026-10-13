@@ -5,7 +5,7 @@ const LIVE_CARDS = [
   { id: 'tough-conversation', title: 'I need to give tough feedback', description: 'Create a script for giving feedback', route: '/tough-conversation-step-1' },
   { id: 'stop-doing', title: "I've got too many things to do", description: 'Reclaim hours by stopping or delegating time-sink activities', route: '/stop-doing-audit' },
   { id: 'if-then', title: "I'm feeling anxious about an uncertain situation", description: 'Prepare for uncertain situations with contingency plans', route: '/if-then-planning' },
-  { id: 'inversion', title: "I want to make sure something doesn't go wrong", description: 'Spot what could go wrong and plan to prevent it', route: '/inversion-step-1' },
+  { id: 'inversion', title: "I want to make sure something doesn't go wrong", description: 'Look at the risks before you start, then plan to prevent them.', route: '/inversion-step-1' },
   { id: 'personal-operating-plan', title: 'I want to shape my personal operating plan', description: 'Define your mission, strategies, and tactics', route: '/personal-operating-plan' },
 ];
 
