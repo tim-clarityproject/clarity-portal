@@ -381,7 +381,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           bottom: 11px;
           width: 2px;
           background: var(--coral);
-          opacity: 0.4;
+          opacity: 0;
         }
 
         .design-drawer .drawer-about-link.current::before {
