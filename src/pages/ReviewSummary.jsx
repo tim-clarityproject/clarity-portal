@@ -112,7 +112,7 @@ export default function ReviewSummary() {
   const isAfterAction = reviewType === 'after-action';
   const isProgressReview = reviewType === 'progress';
   const isWeeklyMomentum = reviewType === 'weekly-momentum';
-  const pageTitle = isAfterAction ? 'After-Action Review' : isProgressReview ? 'Progress Review' : 'Weekly Momentum Review';
+  const pageTitle = isAfterAction ? 'After-Action Review' : isProgressReview ? 'Progress Review' : 'Weekly Momentum Check-in';
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
@@ -182,7 +182,7 @@ export default function ReviewSummary() {
             {review.title || pageTitle}
           </h1>
           <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-            {isAfterAction ? 'After-Action Review' : isProgressReview ? 'Progress Review' : 'Weekly Momentum Review'}
+            {isAfterAction ? 'After-Action Review' : isProgressReview ? 'Progress Review' : 'Weekly Momentum Check-in'}
           </span>
         </div>
 

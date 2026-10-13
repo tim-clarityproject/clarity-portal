@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase';
 // exists on Home today (see build summary point 6), not invented here.
 const CARDS = [
   { title: 'Review my day', description: 'Reflect on what worked today.', route: '/my-journal', state: { reviewType: 'after-action' } },
-  { title: 'Weekly momentum review', description: 'Look back on your week and set up the next.', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
+  { title: 'Weekly momentum check-in', description: 'Look back on your week and set up the next.', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
   { title: 'Review a situation', description: 'Learn from something that has happened.', route: '/my-journal', state: { reviewType: 'after-action' } },
   { title: 'Review my personal operating plan', description: 'Check it still fits how you work.', route: '/personal-operating-plan-review', needsMissionLookup: true },
 ];

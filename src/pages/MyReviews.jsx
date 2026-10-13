@@ -170,7 +170,7 @@ export default function MyReviews() {
               }
             }}
           >
-            Weekly Momentum Reviews
+            Weekly Momentum Check-ins
           </button>
           <button
             onClick={() => setFilterType('after-action')}
@@ -247,7 +247,7 @@ export default function MyReviews() {
               const isMissionProgress = filterType === 'mission-progress' || !entry.review_type;
               const displayTitle = isMissionProgress
                 ? `Mission Review: ${entry.review_data?.mission_title || 'Untitled'}`
-                : (entry.title || (entry.review_type === 'after-action' ? 'After-Action Review' : entry.review_type === 'progress' ? 'Progress Review' : 'Weekly Momentum Review'));
+                : (entry.title || (entry.review_type === 'after-action' ? 'After-Action Review' : entry.review_type === 'progress' ? 'Progress Review' : 'Weekly Momentum Check-in'));
 
               return (
                 <button
@@ -295,7 +295,7 @@ export default function MyReviews() {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {isMissionProgress ? 'POP Review' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Weekly Momentum Review')}
+                      {isMissionProgress ? 'POP Review' : (entry.review_type === 'after-action' ? 'After-Action Review' : 'Weekly Momentum Check-in')}
                     </span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
                       <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: '60px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -402,7 +402,7 @@ export default function MyReviews() {
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
-          + Weekly Momentum Review
+          + Weekly Momentum Check-in
         </button>
         <button
           onClick={() => navigate('/my-journal', { state: { reviewType: 'after-action' } })}

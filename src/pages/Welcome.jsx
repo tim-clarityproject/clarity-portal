@@ -980,13 +980,13 @@ export default function Welcome() {
           {showWeeklyCard && (
             <Link
               to="/my-journal"
-              state={{ ...location.state, reviewType: 'weekly-momentum', problemTitle: 'Weekly momentum review' }}
+              state={{ ...location.state, reviewType: 'weekly-momentum', problemTitle: 'Weekly momentum check-in' }}
               onClick={handleOptionClick}
               className="home-weekly-card"
             >
               <span className="home-weekly-tag">Friday to Sunday</span>
               <div>
-                <p className="home-weekly-title">Weekly momentum review</p>
+                <p className="home-weekly-title">Weekly momentum check-in</p>
                 <p className="home-weekly-text">Look back on your week and set up the next.</p>
               </div>
               <span className="home-weekly-cross ui-cross" aria-hidden="true" />

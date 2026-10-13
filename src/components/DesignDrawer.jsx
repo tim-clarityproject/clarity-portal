@@ -26,12 +26,12 @@ const SECTIONS = [
     label: 'Plan',
     links: [
       {
-        label: "Today's Intentions",
+        label: 'Plan My Day',
         to: '/plan-my-day',
         childRoutes: ['/daily-plan-summary'],
       },
       {
-        label: 'A Meeting',
+        label: 'Plan a Meeting',
         to: '/plan-meeting',
         childRoutes: ['/meeting-summary'],
       },
@@ -86,9 +86,9 @@ const SECTIONS = [
     label: 'Ground',
     links: [
       {
-        label: 'Scenario Planning',
-        to: '/if-then-planning',
-        childRoutes: ['/if-then-planning-summary'],
+        label: 'Breathe',
+        to: '/breathe',
+        childRoutes: ['/breathing-sessions-summary'],
       },
       {
         label: 'Daily Pages',
@@ -96,9 +96,9 @@ const SECTIONS = [
         childRoutes: [],
       },
       {
-        label: 'Breathe',
-        to: '/breathe',
-        childRoutes: ['/breathing-sessions-summary'],
+        label: 'Scenario Planning',
+        to: '/if-then-planning',
+        childRoutes: ['/if-then-planning-summary'],
       },
     ],
   },
@@ -107,7 +107,7 @@ const SECTIONS = [
     label: 'Review',
     links: [
       {
-        label: 'My Day',
+        label: 'Review My Day',
         to: '/my-journal',
         state: { reviewType: 'after-action' },
         matchState: 'after-action',
@@ -121,7 +121,7 @@ const SECTIONS = [
         childRoutes: [],
       },
       {
-        label: 'Weekly Momentum Review',
+        label: 'Weekly Momentum Check-in',
         to: '/my-journal',
         state: { reviewType: 'weekly-momentum' },
         matchState: 'weekly-momentum',
@@ -157,9 +157,15 @@ const SECTIONS = [
   },
 ];
 
+// My Account always starts collapsed (prompt 7i) - its current-page
+// highlight (the coral bar on the My Account button/row) is a separate
+// check (isLinkCurrent, below) and still lights up on /my-account; it
+// just no longer auto-opens the group. Plan/Ground/Review auto-opening
+// on their own pages is unchanged/intentional.
 function findOpenSection(pathname, locationState) {
   if (pathname === '/about') return null;
   for (const section of SECTIONS) {
+    if (section.id === 'account') continue;
     for (const link of section.links) {
       if (link.isLogout) continue;
       if (link.to === pathname) {
@@ -340,20 +346,24 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           margin-top: auto;
         }
 
-        /* Quiet link just above My Account (prompt 7c): DM Sans, smaller,
-           t2 colour, white on hover/current, same left padding as the
-           other top-level items, no uppercase Nekst heading, no expand
-           mark, no current coral bar - deliberately less prominent than
-           the group buttons around it. */
+        /* Quiet link just above My Account (prompt 7c, restyled 7i):
+           same row shape as Home/Plan/Ground/Review (Nekst uppercase,
+           same size/spacing/padding/row height), but t2 colour instead
+           of white and a reduced-opacity coral edge instead of none -
+           belongs to the drawer, just quieter than the groups around
+           it. Full-strength edge when /about is the current page. */
         .design-drawer .drawer-about-link {
+          position: relative;
           display: block;
           width: 100%;
           box-sizing: border-box;
-          font-family: var(--font-body);
+          font-family: var(--font-display);
           font-weight: 400;
-          font-size: 14px !important;
+          text-transform: uppercase;
+          letter-spacing: 0.2em;
+          font-size: 11px !important;
           color: var(--text-2);
-          padding: 14px 28px !important;
+          padding: 17px 28px 16px !important;
           min-height: 44px;
           text-decoration: none;
           cursor: pointer;
@@ -361,6 +371,21 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           border: none;
           text-align: left;
           transition: color var(--dur-fast) var(--ease);
+        }
+
+        .design-drawer .drawer-about-link::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 11px;
+          bottom: 11px;
+          width: 2px;
+          background: var(--coral);
+          opacity: 0.4;
+        }
+
+        .design-drawer .drawer-about-link.current::before {
+          opacity: 1;
         }
 
         .design-drawer .drawer-about-link:hover,

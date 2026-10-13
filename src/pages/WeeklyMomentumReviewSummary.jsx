@@ -122,7 +122,7 @@ export default function WeeklyMomentumReviewSummary() {
         <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0 }}>
-              Weekly Momentum Review
+              Weekly Momentum Check-in
             </h1>
             <p style={{ fontSize: '13px', color: '#999', margin: '8px 0 0 0' }}>
               Week of {formatDateWithOrdinal(review.entry_date)}

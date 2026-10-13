@@ -66,7 +66,7 @@ export default function MyJournal() {
     pageTitle = 'Progress Review';
   } else if (reviewType === 'weekly-momentum') {
     questions = weeklyMomentumQuestions;
-    pageTitle = 'Weekly Momentum Review';
+    pageTitle = 'Weekly Momentum Check-in';
   } else {
     questions = afterActionQuestions;
     pageTitle = 'After-Action Review';
