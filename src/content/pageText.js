@@ -25,14 +25,14 @@ export const pageText = {
   strategies: { overline: 'Plan', subtitle: '' },
   criticalSuccessFactors: { overline: 'Plan', subtitle: '' },
   results: { overline: 'Plan', subtitle: '' },
-  planMyDayStep1: { overline: 'Plan', subtitle: '' },
+  planMyDayStep1: { overline: 'Plan', subtitle: 'Make sure your day aligns with your mission.' },
   dailyPlanSummary: { overline: 'Plan', subtitle: '' },
-  planMeeting: { overline: 'Plan', subtitle: '' },
+  planMeeting: { overline: 'Plan', subtitle: "Bad meetings kill team morale. Let's get it right." },
   meetingSummary: { overline: 'Plan', subtitle: '' },
   myPlans: { overline: 'Plan', subtitle: '' },
 
   // Ground section
-  ifThenPlanning: { overline: 'Ground', subtitle: '' },
+  ifThenPlanning: { overline: 'Ground', subtitle: "Let's tackle anxiety by getting clear on what you'll do in different scenarios." },
   ifThenPlanningSummary: { overline: 'Ground', subtitle: '' },
   breathingPage: { overline: 'Ground', subtitle: '' },
   breathingSessionsSummary: { overline: 'Ground', subtitle: '' },

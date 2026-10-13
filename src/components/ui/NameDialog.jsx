@@ -15,6 +15,8 @@ const MAX_NAME_LENGTH = 60;
 // children through it.
 export default function NameDialog({
   open,
+  title = 'Name this',
+  message = 'Give it a name so you can find it later.',
   suggestedName = '',
   onConfirm,
   onCancel,
@@ -234,8 +236,8 @@ export default function NameDialog({
         aria-labelledby={titleId}
         tabIndex={-1}
       >
-        <h2 id={titleId} className="name-dialog-title">Name this</h2>
-        <p className="name-dialog-message">Give it a name so you can find it later.</p>
+        <h2 id={titleId} className="name-dialog-title">{title}</h2>
+        <p className="name-dialog-message">{message}</p>
 
         <form onSubmit={handleConfirm} noValidate>
           <input

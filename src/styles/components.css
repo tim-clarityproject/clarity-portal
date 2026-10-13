@@ -1662,3 +1662,835 @@ html:has(.ui-root) {
     stroke-dashoffset: 0 !important;
   }
 }
+
+/* ============================================================
+   Planning tools: Daily intentions, Meeting planner, If-Then plan
+   (src/pages/PlanMyDayStep1.jsx, PlanMeeting.jsx, IfThenPlanning.jsx
+   and their three summaries). These pages do not use PageHeading - the
+   approved mock-up for this job has no section-name overline on any of
+   the three forms (Meeting planner/If-Then plan show no overline at
+   all; Daily intentions shows today's date in that slot instead), and
+   summaries show the tool name, not the section name. .plan-overline
+   covers both of those jobs with one visual recipe.
+   ============================================================ */
+
+.plan-page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-6) var(--page-x-phone) var(--space-6);
+  box-sizing: border-box;
+}
+
+@media (min-width: 769px) {
+  .plan-page {
+    padding: var(--space-6) var(--page-x-desktop) var(--space-7);
+  }
+}
+
+@media (max-width: 768px) {
+  .plan-page--form {
+    padding-bottom: calc(var(--action-bar-height, 96px) + var(--space-4));
+  }
+}
+
+.plan-overline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-overline);
+  color: var(--coral-text);
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.plan-header {
+  margin-bottom: var(--space-6);
+}
+
+.plan-header .ui-subtitle {
+  max-width: 46ch;
+}
+
+/* ---- Daily intentions: numbered questions on an open writing line ---- */
+
+.plan-dq {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .plan-dq {
+    display: block;
+  }
+}
+
+.plan-dq-num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-overline);
+  color: var(--placeholder);
+  padding-top: 9px;
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  transition: color var(--dur) var(--ease);
+}
+
+@media (max-width: 768px) {
+  .plan-dq-num {
+    padding: 0 0 var(--space-2);
+  }
+}
+
+.plan-dq.on .plan-dq-num {
+  color: var(--coral-text);
+}
+
+.plan-dq-check {
+  width: 13px;
+  height: 13px;
+  margin-top: 1px;
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.plan-dq.on .plan-dq-check {
+  opacity: 1;
+}
+
+.plan-dq-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--text);
+  margin: 0 0 var(--space-1);
+}
+
+@media (max-width: 768px) {
+  .plan-dq-label {
+    font-size: 19px;
+  }
+}
+
+.ui-root .plan-dq-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 18px !important;
+  line-height: 1.6;
+  padding: 10px 0 14px !important;
+  min-height: 58px;
+  max-height: 240px;
+  overflow-y: auto;
+  resize: none;
+  outline: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+@media (min-width: 769px) {
+  .ui-root .plan-dq-textarea {
+    max-height: 260px;
+  }
+}
+
+.ui-root .plan-dq-textarea::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .plan-dq-textarea:hover {
+  border-bottom-color: var(--btn-line);
+}
+
+.ui-root .plan-dq-textarea:focus {
+  border-bottom-color: var(--coral);
+  outline: none;
+}
+
+/* ---- Generic field rows (meeting title/chair/date/time etc) ---- */
+
+.plan-field {
+  margin-bottom: var(--space-4);
+}
+
+.plan-field label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: var(--space-2);
+}
+
+.plan-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .plan-field-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.ui-root .plan-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-input) !important;
+  line-height: 1.5;
+  padding: 0 14px !important;
+  min-height: var(--tap-min);
+  outline: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .plan-input::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .plan-input:focus {
+  border-color: var(--coral);
+}
+
+.ui-root textarea.plan-input {
+  resize: none;
+  overflow-y: auto;
+  min-height: 72px;
+  padding: 14px !important;
+  max-height: 240px;
+}
+
+@media (min-width: 769px) {
+  .ui-root textarea.plan-input {
+    max-height: 260px;
+  }
+}
+
+.plan-endline {
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.plan-endline b {
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-endline span {
+  color: var(--placeholder);
+  font-size: 12px;
+  margin-left: var(--space-2);
+}
+
+/* ---- Meeting context / Attendee preparation (removable sections) ---- */
+
+.plan-section {
+  border-left: 1px solid var(--line);
+  padding-left: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+
+.plan-section-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.plan-section-top label {
+  font-family: var(--font-body);
+  font-size: 18px;
+  color: var(--text);
+  margin: 0;
+}
+
+.ui-root .plan-link-btn {
+  all: unset;
+  cursor: pointer;
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  padding: 0 2px;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .plan-link-btn:hover,
+.ui-root .plan-link-btn:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .plan-link-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+/* ---- Add-section/objective/agenda/scenario pill buttons ---- */
+
+.ui-root .plan-add-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: var(--fs-button) !important;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .plan-add-btn:hover,
+.ui-root .plan-add-btn:focus-visible,
+.ui-root .plan-add-btn[aria-expanded="true"] {
+  color: var(--text);
+  border-color: var(--coral);
+}
+
+.ui-root .plan-add-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.plan-menu {
+  position: relative;
+  display: inline-block;
+  margin: var(--space-1) 0;
+}
+
+.plan-menu-list {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 6;
+  min-width: 240px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-1) 0;
+  overflow: hidden;
+}
+
+.ui-root .plan-menu-option {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 18px 0 22px !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  color: var(--text-2);
+  position: relative;
+}
+
+.ui-root .plan-menu-option::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background: var(--coral);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .plan-menu-option:hover,
+.ui-root .plan-menu-option:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .plan-menu-option:hover::before,
+.ui-root .plan-menu-option:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.ui-root .plan-menu-option:disabled {
+  color: var(--placeholder);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.ui-root .plan-menu-option:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+}
+
+/* ---- Objectives / section labels ---- */
+
+.plan-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: var(--space-5) 0 var(--space-3);
+}
+
+.plan-label-row .ui-section-heading {
+  margin-top: 0;
+}
+
+.plan-total-badge {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+}
+
+.plan-obj-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.plan-obj-num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--placeholder);
+}
+
+.ui-root .plan-bin-btn {
+  all: unset;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--placeholder);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .plan-bin-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ui-root .plan-bin-btn:hover,
+.ui-root .plan-bin-btn:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .plan-bin-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -4px;
+  border-radius: 8px;
+}
+
+.ui-root .plan-bin-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ---- Meeting agenda: table on desktop, stacked cards on phone ---- */
+
+.plan-ag-head,
+.plan-ag-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1.2fr) 80px 44px;
+  gap: var(--space-3);
+}
+
+.plan-ag-head {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  padding: 0 2px var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .plan-ag-head {
+    display: none;
+  }
+}
+
+.plan-ag-row {
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .plan-ag-row {
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    gap: var(--space-2);
+    background: var(--surface);
+    margin-bottom: var(--space-3);
+  }
+}
+
+.plan-ag-field label {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .plan-ag-field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: var(--space-1);
+  }
+
+  .plan-ag-field--item,
+  .plan-ag-field--aim {
+    grid-column: 1 / -1;
+  }
+
+  .plan-ag-row .plan-bin-btn {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-top: -4px;
+  }
+}
+
+.ui-root .plan-ag-row input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.ui-root .plan-ag-row input[type="number"]::-webkit-inner-spin-button,
+.ui-root .plan-ag-row input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ---- If-Then scenario pairs ---- */
+
+.plan-sc-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: var(--space-2);
+  align-items: start;
+  margin-bottom: var(--space-3);
+}
+
+.plan-sc-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .plan-sc-row {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    background: var(--surface);
+    grid-template-columns: 1fr;
+  }
+
+  .plan-sc-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-sc-row .plan-bin-btn {
+    justify-self: end;
+  }
+}
+
+.plan-sc-pair label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: var(--space-1);
+}
+
+/* ---- Shared action row + discard footer spacing ---- */
+
+.plan-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--space-5);
+}
+
+.plan-actions--desktop {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .plan-actions--desktop {
+    display: flex;
+  }
+}
+
+.plan-discard-row {
+  margin-top: var(--space-4);
+}
+
+.plan-save-error {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--coral-text);
+}
+
+/* ---- Phone fixed Finish/Save-as-draft bar (shared, prompts 6-11) ---- */
+
+.ui-phone-action-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .ui-phone-action-bar {
+    display: flex;
+    gap: var(--space-3);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--tabbar-height, 79px);
+    z-index: 1500;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    padding: var(--space-3) var(--page-x-phone);
+    box-sizing: border-box;
+  }
+
+  .ui-phone-action-bar .ui-btn-primary,
+  .ui-phone-action-bar .ui-btn-ghost {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ---- Summary pages: back link, tag, two-column Q&A, facts, tables ---- */
+
+.plan-back-row {
+  margin-bottom: var(--space-3);
+}
+
+.plan-summary-head {
+  margin-bottom: var(--space-2);
+}
+
+.plan-sum {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  margin-top: var(--space-5);
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  .plan-sum {
+    display: block;
+  }
+}
+
+.plan-sum-row {
+  display: contents;
+}
+
+.plan-sum-label {
+  grid-column: 1;
+  margin: 0;
+  padding: var(--space-5) var(--space-4) var(--space-5) 0;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  color: var(--text-2);
+  align-self: start;
+}
+
+.plan-sum-value {
+  grid-column: 2;
+  padding: var(--space-4) 0 var(--space-5) 4px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+  .plan-sum-label {
+    padding: var(--space-4) 0 var(--space-1);
+  }
+
+  .plan-sum-value {
+    padding: 0 0 var(--space-4);
+    border-top: 0;
+  }
+}
+
+.plan-sum-value--list {
+  padding-left: var(--space-5);
+  white-space: normal;
+}
+
+.plan-none {
+  color: var(--placeholder);
+}
+
+.plan-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: var(--space-3) 0;
+  margin: var(--space-1) 0;
+}
+
+@media (max-width: 768px) {
+  .plan-facts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.plan-facts b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  margin-bottom: var(--space-1);
+}
+
+.plan-facts span {
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+
+.plan-olist {
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.plan-olist li {
+  margin-bottom: var(--space-1);
+}
+
+.plan-table-wrap {
+  overflow-x: auto;
+}
+
+.plan-table {
+  color: var(--text);
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-body-sub);
+}
+
+.plan-table th {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  text-align: left;
+  padding: 0 var(--space-2) var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.plan-table td {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.plan-table td:last-child,
+.plan-table th:last-child {
+  text-align: right;
+  padding-right: 0;
+  white-space: nowrap;
+}
+
+.plan-table-total {
+  margin-top: var(--space-2);
+  text-align: right;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.plan-pair2 {
+  border-left: 1px solid var(--line);
+  padding: 2px 0 2px var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.plan-pair2 small {
+  display: block;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  margin: 0 0 var(--space-1);
+}
+
+.plan-pair2 p {
+  margin: 0 0 var(--space-2);
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+
+.plan-pair2 p:last-child {
+  margin-bottom: 0;
+}
