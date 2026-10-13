@@ -1,456 +1,253 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
-import NamingModal from '../components/NamingModal';
+import PhoneActionBar from '../components/ui/PhoneActionBar';
+import { DiscardLink } from '../components/ui/DiscardLink';
+import DiscardDialog from '../components/ui/DiscardDialog';
+import NameDialog from '../components/ui/NameDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
+import pageText from '../content/pageText';
+
+const MAX_NAME_LENGTH = 60;
+
+function BinIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8h6.8l.6-8M6.8 7v3.5M9.2 7v3.5" />
+    </svg>
+  );
+}
+
+// Smallest sensible suggestion: the start of the situation text, cut to
+// 60 characters (the old Save-as-draft named everything "If-Then
+// Planning (Draft)" with no way to change it - see build summary).
+function suggestNameFrom(situation) {
+  const trimmed = (situation || '').trim();
+  if (!trimmed) return 'New If-Then plan';
+  return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
+}
 
 export default function IfThenPlanning() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const decisionId = location.state?.decisionId;
+  const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
 
   const [situation, setSituation] = useState('');
   const [items, setItems] = useState([{ id: 1, ifCondition: '', thenAction: '' }]);
   const [nextId, setNextId] = useState(2);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [showNamingModal, setShowNamingModal] = useState(false);
   const [currentTitle, setCurrentTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
+  const { message, showToast } = useToast();
+
   const refSituation = useRef(null);
   useAutoExpandTextarea(refSituation, situation);
 
   useEffect(() => {
-    if (decisionId && user) {
-      loadPlanning();
-    }
-  }, [decisionId, user?.id]);
-
-  const loadPlanning = async () => {
-    if (!user) return;
-    try {
+    if (!decisionId || !user) return;
+    let cancelled = false;
+    (async () => {
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
         .eq('id', decisionId)
         .eq('user_id', user.id)
         .single();
-
-      if (data) {
-        if (data.title) setCurrentTitle(data.title);
-        if (data.form_data) {
-          const formData = data.form_data;
-          if (formData.situation) setSituation(formData.situation);
-          if (formData.items && formData.items.length > 0) {
-            setItems(formData.items);
-            const maxId = Math.max(...formData.items.map(item => item.id || 0));
-            setNextId(maxId + 1);
-          }
-        }
+      if (cancelled) return;
+      if (error) {
+        console.error('[IfThenPlanning] load failed:', error);
+        return;
       }
-    } catch (error) {
-      console.error('Error loading planning:', error);
-    }
-  };
+      if (data?.title) setCurrentTitle(data.title);
+      const formData = data?.form_data || {};
+      if (formData.situation) setSituation(formData.situation);
+      if (formData.items?.length) {
+        setItems(formData.items);
+        setNextId(Math.max(...formData.items.map((i) => i.id || 0)) + 1);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [decisionId, user?.id]);
 
-  const handleAddItem = () => {
+  const addItem = () => {
     setItems([...items, { id: nextId, ifCondition: '', thenAction: '' }]);
     setNextId(nextId + 1);
   };
-
-  const handleRemoveItem = (id) => {
-    if (items.length > 1) {
-      setItems(items.filter(item => item.id !== id));
-    }
+  const removeItem = (id) => {
+    if (items.length > 1) setItems(items.filter((i) => i.id !== id));
+  };
+  const changeItem = (id, field, value) => {
+    setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
   };
 
-  const handleItemChange = (id, field, value) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
+  const persist = async (draft, name) => {
+    const payload = {
+      form_data: { situation, items },
+      title: name,
+      draft,
+      status: draft ? 'draft' : 'completed',
+      updated_at: new Date().toISOString(),
+    };
 
-  const handleSave = () => {
     if (decisionId) {
-      // If editing existing decision, save with existing title from Supabase
-      handleNameConfirm(currentTitle || 'If-Then Planning');
-    } else {
-      // If new decision, show naming modal
-      setShowNamingModal(true);
+      const { data, error } = await supabase
+        .from('decisions')
+        .update(payload)
+        .eq('id', decisionId)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Could not find this plan to update.');
+      return decisionId;
     }
+
+    const { data, error } = await supabase
+      .from('decisions')
+      .insert({ user_id: user.id, tool_type: 'if_then_planning', ...payload })
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Save did not return a plan.');
+    return data[0].id;
   };
 
-  const handleNameConfirm = async (decidionName) => {
-    if (!user) return;
-
+  const handleNameConfirm = async (name) => {
+    if (!user || isSaving) return;
+    const mode = nameDialog;
+    setSaveError('');
     setIsSaving(true);
     try {
-      const formData = { situation, items };
-
-      let savedId = decisionId;
-      if (decisionId) {
-        console.log('[IfThenPlanning] Updating existing planning with decisionId:', decisionId);
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            title: decidionName,
-            form_data: formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        if (error) {
-          console.error('[IfThenPlanning] Update error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          console.error('[IfThenPlanning] SILENT FAILURE: UPDATE returned 0 rows for decisionId:', decisionId);
-          throw new Error('Failed to update planning - no rows affected');
-        }
-
-        console.log('[IfThenPlanning] Update successful, got data:', data);
-        savedId = data[0].id;
+      const savedId = await persist(mode === 'draft', name);
+      setCurrentTitle(name);
+      setNameDialog(null);
+      if (mode === 'draft') {
+        setDecisionId(savedId);
+        showToast(`Draft saved as ${name}.`);
       } else {
-        console.log('[IfThenPlanning] Creating new planning');
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert({
-            user_id: user.id,
-            tool_type: 'if_then_planning',
-            title: decidionName,
-            form_data: formData,
-            status: 'completed',
-          })
-          .select();
-
-        if (error) {
-          console.error('[IfThenPlanning] Insert error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          console.error('[IfThenPlanning] SILENT FAILURE: INSERT returned 0 rows');
-          throw new Error('Failed to create planning - no rows returned');
-        }
-
-        console.log('[IfThenPlanning] Insert successful, got data:', data);
-        savedId = data[0].id;
+        clearProgress();
+        navigate('/if-then-planning-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
       }
-
-      setIsSaved(true);
-      clearProgress();
-      setTimeout(() => {
-        navigate('/if-then-planning-summary', { state: { decisionId: savedId } });
-      }, 500);
     } catch (error) {
-      console.error('Error saving planning:', error);
-      alert(`Failed to save planning: ${error?.message || 'Unknown error'}`);
-    } finally {
-      setIsSaving(false);
-      setShowNamingModal(false);
-    }
-  };
-
-  const handleSaveDraft = async () => {
-    if (!user) return;
-
-    setIsSaving(true);
-    try {
-      const formData = { situation, items };
-
-      if (decisionId) {
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            form_data: formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        if (error) {
-          console.error('[IfThenPlanning] Draft update error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          throw new Error('Failed to update draft - no rows affected');
-        }
-      } else {
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert({
-            user_id: user.id,
-            tool_type: 'if_then_planning',
-            title: 'If-Then Planning (Draft)',
-            form_data: formData,
-          })
-          .select();
-
-        if (error) {
-          console.error('[IfThenPlanning] Draft insert error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          throw new Error('Failed to save draft - no rows returned');
-        }
-      }
-
-      setIsSaved(true);
-    } catch (error) {
-      console.error('Error saving draft:', error);
-      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
+      console.error('[IfThenPlanning] save failed:', error);
+      setNameDialog(null);
+      setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Discard this planning?')) {
-      setSituation('');
-      setItems([{ id: 1, ifCondition: '', thenAction: '' }]);
-      setNextId(2);
-      navigate('/decision-tools');
-    }
+  const handleDiscard = () => {
+    setDiscardOpen(false);
+    navigate('/my-plans');
   };
 
-  const sectionStyle = { marginBottom: '28px', backgroundColor: 'white', padding: '20px', borderRadius: '8px', borderLeft: '3px solid #F08571' };
-  const labelStyle = { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '8px' };
-  const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
+  const page = pageText.ifThenPlanning;
+  const suggestedName = currentTitle || suggestNameFrom(situation);
+
+  const actionButtons = (
+    <>
+      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={() => setNameDialog('finish')}>Finish</button>
+      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={() => setNameDialog('draft')}>Save as draft</button>
+    </>
+  );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
-          If-Then Planning
-        </h1>
-        <p style={{ fontSize: '14px', color: '#999', margin: 0, marginBottom: '32px' }}>
-          Anxiety can come from unclear demands. Let's define them.
-        </p>
-
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+      <div className="plan-page plan-page--form">
+        <div className="plan-header">
+          <div className="ui-title">If-Then plan</div>
+          <p className="ui-subtitle">{page.subtitle}</p>
         </div>
 
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Which situation are you concerned about?</label>
+        <div className="plan-field">
+          <label htmlFor="ift-situation">Which situation are you concerned about?</label>
           <textarea
+            id="ift-situation"
             ref={refSituation}
+            className="plan-input"
+            placeholder="Type here"
             value={situation}
             onChange={(e) => setSituation(e.target.value)}
-            placeholder="Type here"
-            style={{
-              width: '100%',
-              minHeight: '80px',
-              padding: '10px 12px',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontFamily: 'inherit',
-              boxSizing: 'border-box',
-              outline: 'none',
-              resize: 'none',
-              overflow: 'hidden',
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
           />
         </div>
 
-        <div style={sectionStyle}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '16px', marginBottom: '16px', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '0' }}>If this happens</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '0' }}>Then my response will be</div>
-            </div>
-            <div></div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-            {items.map((item, index) => (
-              <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '16px', alignItems: 'flex-start' }}>
+        {items.map((item, index) => (
+          <div className="plan-sc-row" key={item.id}>
+            <div className="plan-sc-pair">
+              <div>
+                <label htmlFor={`ift-if-${item.id}`}>If...</label>
                 <input
-                  type="text"
+                  id={`ift-if-${item.id}`}
+                  className="plan-input"
                   placeholder="Type here"
                   value={item.ifCondition}
-                  onChange={(e) => handleItemChange(item.id, 'ifCondition', e.target.value)}
-                  style={inputStyle}
+                  onChange={(e) => changeItem(item.id, 'ifCondition', e.target.value)}
                 />
+              </div>
+              <div>
+                <label htmlFor={`ift-then-${item.id}`}>Then I will</label>
                 <input
-                  type="text"
+                  id={`ift-then-${item.id}`}
+                  className="plan-input"
                   placeholder="Type here"
                   value={item.thenAction}
-                  onChange={(e) => handleItemChange(item.id, 'thenAction', e.target.value)}
-                  style={inputStyle}
+                  onChange={(e) => changeItem(item.id, 'thenAction', e.target.value)}
                 />
-                <button
-                  onClick={() => handleRemoveItem(item.id)}
-                  disabled={items.length === 1}
-                  style={{
-                    padding: '6px 8px',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    color: items.length === 1 ? '#ddd' : '#F08571',
-                    cursor: items.length === 1 ? 'not-allowed' : 'pointer',
-                    transition: 'color 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (items.length > 1) e.currentTarget.style.color = '#e07560';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (items.length > 1) e.currentTarget.style.color = '#F08571';
-                  }}
-                >
-                  <Trash2 size={16} />
-                </button>
               </div>
-            ))}
+            </div>
+            <button
+              type="button"
+              className="plan-bin-btn"
+              aria-label={`Remove scenario ${index + 1}`}
+              disabled={items.length === 1}
+              onClick={() => removeItem(item.id)}
+            >
+              <BinIcon />
+            </button>
           </div>
+        ))}
+        <button type="button" className="plan-add-btn" onClick={addItem}>
+          <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+          Add scenario
+        </button>
 
-          <button
-            onClick={handleAddItem}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 12px',
-              backgroundColor: 'transparent',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              color: '#333',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <Plus size={14} />
-            Add scenario
-          </button>
+        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
+
+        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
+
+        <div className="plan-discard-row">
+          <DiscardLink onClick={() => setDiscardOpen(true)} />
         </div>
       </div>
 
-      {/* Fixed bottom bar */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid #e5e5e5',
-        padding: '12px 32px',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '12px',
-        zIndex: 10,
-      }}>
-        <button
-          onClick={handleDelete}
-          title="Delete planning"
-          style={{
-            padding: '8px 12px',
-            backgroundColor: 'transparent',
-            color: '#F08571',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        >
-          <Trash2 size={18} />
-        </button>
+      <PhoneActionBar>{actionButtons}</PhoneActionBar>
 
-        <button
-          onClick={handleSaveDraft}
-          disabled={isSaving}
-          style={{
-            padding: '10px 16px',
-            backgroundColor: 'transparent',
-            border: '1px solid #e5e5e5',
-            borderRadius: '6px',
-            color: '#333',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: '500',
-            transition: 'all 0.2s',
-            opacity: isSaving ? 0.7 : 1,
-          }}
-          onMouseEnter={(e) => {
-            if (!isSaving) {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isSaving) {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }
-          }}
-        >
-          Save as Draft
-        </button>
-
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#F08571',
-            color: 'white',
-            fontWeight: '600',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: isSaving ? 'not-allowed' : 'pointer',
-            fontSize: '13px',
-            transition: 'all 0.2s',
-            opacity: isSaving ? 0.7 : 1,
-          }}
-          onMouseEnter={(e) => {
-            if (!isSaving) e.currentTarget.style.backgroundColor = '#e07560';
-          }}
-          onMouseLeave={(e) => {
-            if (!isSaving) e.currentTarget.style.backgroundColor = '#F08571';
-          }}
-        >
-          {isSaved ? 'Finished' : 'Finish'}
-        </button>
-      </div>
-
-      <NamingModal
-        isOpen={showNamingModal}
-        itemType="decision"
+      <NameDialog
+        open={nameDialog !== null}
+        title={nameDialog === 'draft' ? 'Name this draft' : 'Name this plan'}
+        message="Give it a name so you can find it in My plans."
+        suggestedName={suggestedName}
         onConfirm={handleNameConfirm}
-        onCancel={() => setShowNamingModal(false)}
-        defaultName=""
+        onCancel={() => setNameDialog(null)}
       />
+
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard this plan?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
+      />
+      <Toast message={message} />
     </div>
   );
 }
