@@ -3,7 +3,7 @@ import DesignHeader from '../components/DesignHeader';
 
 const CARDS = [
   { title: 'Breathe', description: 'Calm your nervous system and ground yourself.', route: '/breathe' },
-  { title: 'Daily Pages', description: 'Write down what is on your mind.', route: '/my-journal' },
+  { title: 'Daily Pages', description: 'Write down what is on your mind.', route: '/daily-journal' },
   { title: 'Scenario Planning', description: 'Get clear on what you will do in different scenarios.', route: '/if-then-planning' },
 ];
 
@@ -53,7 +53,7 @@ export default function GroundSection() {
           </span>
           <ClockIcon />
         </button>
-        <button type="button" className="hub-history-card" onClick={() => navigate('/journal-log')}>
+        <button type="button" className="hub-history-card" onClick={() => navigate('/daily-journals')}>
           <span>
             <span className="hub-history-card-title">My Journals</span>
             <span className="hub-history-card-desc">Your daily journals, saved and in progress.</span>

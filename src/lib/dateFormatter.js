@@ -102,6 +102,19 @@ export const formatReviewDayLabel = (value) => {
   return `${weekday} ${day}${ordinal} ${month}`;
 };
 
+// "Friday 2 October" - plain words, cardinal day (no ordinal), no
+// year (Daily Journal's date heading and its log rows - the spec is
+// explicit that this one uses plain words, not formatReviewDayLabel's
+// ordinal form). Takes a Date or a "YYYY-MM-DD" local date key.
+export const formatPlainDayLabel = (value) => {
+  const date = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T00:00:00`)
+    : value;
+  const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' });
+  const month = date.toLocaleDateString('en-GB', { month: 'long' });
+  return `${weekday} ${date.getDate()} ${month}`;
+};
+
 // Plain UK date, no time (e.g. "13 October 2026") - for summary pages'
 // "Created <date>" line (prompt 7).
 export const formatUkDate = (dateStr) => {

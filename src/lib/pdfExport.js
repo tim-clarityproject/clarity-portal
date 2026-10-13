@@ -239,3 +239,71 @@ const escapeHtml = (text) => {
   div.textContent = text;
   return div.innerHTML;
 };
+
+// Daily Journal PDF (prompt 10a). Prompt ("p") blocks are shown as a
+// quiet label, same as on screen - they are not counted in the word
+// total, matching the spec ("prompts are NOT counted in ... the PDF
+// word totals").
+export const generateJournalPDF = (journal) => {
+  const date = new Date(`${journal.journal_date}T00:00:00`);
+  const dateLabel = `${date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}, ${date.getFullYear()}`;
+  const words = (journal.body || [])
+    .filter((b) => b.t === 't')
+    .map((b) => b.v || '')
+    .join(' ')
+    .trim()
+    .match(/\S+/g);
+  const wordCount = words ? words.length : 0;
+
+  const printStyles = `
+    <style>
+      @page { size: A4; margin: 15mm 20mm; }
+      * { box-sizing: border-box; orphans: 3; widows: 3; }
+      body { margin: 0; padding: 0; background: white; color: #333; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11pt; line-height: 1.5; }
+      .pdf-header { border-bottom: 2px solid #F08571; padding-bottom: 16px; margin-bottom: 24px; }
+      .pdf-header h1 { font-size: 24pt; font-weight: 700; margin: 0 0 8px 0; color: #333; }
+      .pdf-header-meta { font-size: 10pt; color: #999; margin: 0; }
+      .pdf-prompt { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.5px; color: #F08571; margin: 18px 0 8px; }
+      .pdf-text { font-size: 11pt; white-space: pre-wrap; word-wrap: break-word; margin: 0 0 8px; }
+    </style>
+  `;
+
+  let html = printStyles + `
+    <div class="pdf-document">
+      <div class="pdf-header">
+        <h1>Daily Journal</h1>
+        <p class="pdf-header-meta">${escapeHtml(dateLabel)} &mdash; ${wordCount} word${wordCount === 1 ? '' : 's'}</p>
+      </div>
+  `;
+
+  (journal.body || []).forEach((b) => {
+    if (b.t === 'p') {
+      html += `<p class="pdf-prompt">${escapeHtml(b.v)}</p>`;
+    } else if (b.v) {
+      html += `<p class="pdf-text">${escapeHtml(b.v)}</p>`;
+    }
+  });
+
+  html += '</div>';
+
+  const element = document.createElement('div');
+  element.innerHTML = html;
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  const opt = {
+    margin: [15, 20, 15, 20],
+    filename: `Daily-Journal-${journal.journal_date}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4', compress: true },
+  };
+
+  html2pdf()
+    .set(opt)
+    .from(element)
+    .save()
+    .then(() => {
+      document.body.removeChild(element);
+    });
+};

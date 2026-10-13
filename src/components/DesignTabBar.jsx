@@ -19,6 +19,8 @@ const TABS = [
       '/ground-section',
       '/breathe',
       '/breathing-sessions-summary',
+      '/daily-journal',
+      '/daily-journals',
       '/if-then-planning',
       '/if-then-planning-summary',
       '/stop-doing-audit',

@@ -3798,3 +3798,175 @@ span.tc-editable:focus-visible {
   font-size: var(--fs-small);
   color: var(--text-2);
 }
+
+/* ============================================================
+   Daily Journal (prompt 10a) - a page that feels like paper: faint
+   ruled lines, no toolbar, grows with content (rule 18 via
+   AutoGrowTextarea's minPixelHeight). Date heading deliberately uses
+   the body font and is NOT uppercase, per the spec's own wording
+   ("the date in plain words in the body font") and the approved
+   mock - a departure from the usual Nekst-uppercase title rule for
+   this one page, not an oversight.
+   ============================================================ */
+
+.jrn-date {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+@media (min-width: 769px) {
+  .jrn-date {
+    font-size: 40px;
+  }
+}
+
+.jrn-date small {
+  font-size: 18px;
+  color: var(--text-2);
+  margin-left: var(--space-2);
+}
+
+.jrn-sub {
+  margin: var(--space-3) 0 var(--space-5);
+  max-width: 46ch;
+}
+
+.jrn-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-5);
+}
+
+.ui-root .jrn-prompt-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0 var(--space-3) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .jrn-prompt-btn:hover,
+.ui-root .jrn-prompt-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--btn-line);
+}
+
+.jrn-paper-wrap {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-top: var(--space-2);
+}
+
+.jrn-qrow {
+  box-sizing: border-box;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  font-size: 17px;
+  color: var(--coral-soft);
+  padding: var(--space-2) 0;
+}
+
+.jrn-qdash {
+  flex: none;
+  width: 18px;
+  height: 1px;
+  background: var(--coral);
+}
+
+.jrn-qtext {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .jrn-qremove {
+  all: unset;
+  cursor: pointer;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--placeholder);
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .jrn-qremove:hover,
+.ui-root .jrn-qremove:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .jrn-paper {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='40' viewBox='0 0 8 40' preserveAspectRatio='none'%3E%3Crect y='39' width='8' height='1' fill='%23262626'/%3E%3C/svg%3E");
+  background-size: 100% 40px;
+  background-attachment: local;
+  border: 0;
+  border-radius: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 19px !important;
+  line-height: 40px;
+  padding: 0 !important;
+  margin: 0;
+  outline: none;
+  caret-color: var(--coral);
+}
+
+:root[data-theme="light"] .ui-root .jrn-paper {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='40' viewBox='0 0 8 40' preserveAspectRatio='none'%3E%3Crect y='39' width='8' height='1' fill='%23E3DDD2'/%3E%3C/svg%3E");
+}
+
+.ui-root .jrn-paper.jrn-paper--read {
+  background-attachment: initial;
+}
+
+.jrn-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.jrn-meta .ok {
+  color: var(--mint-text);
+}
+
+.jrn-draft-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}

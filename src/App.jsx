@@ -24,6 +24,9 @@ import ProjectScatter from './pages/ProjectScatter';
 import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
 import MyJournal from './pages/MyJournal';
+import DailyJournal from './pages/DailyJournal';
+import DailyJournals from './pages/DailyJournals';
+import DailyJournalRead from './pages/DailyJournalRead';
 import JournalLog from './pages/JournalLog';
 import MyReviews from './pages/MyReviews';
 import ReviewSummary from './pages/ReviewSummary';
@@ -276,6 +279,9 @@ function AppContent() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/results" element={<Results />} />
           <Route path="/my-journal" element={<MyJournal />} />
+          <Route path="/daily-journal" element={<DailyJournal />} />
+          <Route path="/daily-journals" element={<DailyJournals />} />
+          <Route path="/daily-journals/:date" element={<DailyJournalRead />} />
           <Route path="/journal-log" element={<JournalLog />} />
           <Route path="/my-reviews" element={<MyReviews />} />
           <Route path="/review-summary" element={<ReviewSummary />} />
