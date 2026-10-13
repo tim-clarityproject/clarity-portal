@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
@@ -40,39 +40,6 @@ const TILES = [
     title: 'Refine my personal operating plan',
     description: 'Sharpen how you work best',
     route: '/personal-operating-plan',
-  },
-];
-
-// "More options" dropdown. Exactly the 8 items specified for this task,
-// grouped Plan / Ground / Review. Four phrases from the old flat list are
-// deliberately absent: "I need to provide my team direction", "I want to
-// shape my personal operating plan", "I want to make the most of today"
-// (all retired), and "I'm navigating a tricky decision" (GROW, held back
-// until after first release - see DecisionTools.jsx/PlanSection.jsx,
-// which still offer it elsewhere, status 'coming-soon').
-const DROPDOWN_GROUPS = [
-  {
-    label: 'Plan',
-    items: [
-      { title: 'I want to hold a high quality meeting', route: '/plan-meeting' },
-      { title: 'I need to give tough feedback', route: '/tough-conversation-step-1' },
-      { title: "I've got too many things to do", route: '/stop-doing-audit' },
-    ],
-  },
-  {
-    label: 'Ground',
-    items: [
-      { title: 'I need to take a moment to breathe', route: '/breathe' },
-      { title: "I'm feeling anxious about an uncertain situation", route: '/if-then-planning' },
-    ],
-  },
-  {
-    label: 'Review',
-    items: [
-      { title: 'I want to review my week', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
-      { title: 'I need to review a situation', route: '/my-journal', state: { reviewType: 'after-action' } },
-      { title: 'I want to review my personal operating plan', route: '/personal-operating-plan-review' },
-    ],
   },
 ];
 
@@ -151,25 +118,6 @@ function isWeekendReviewWindow() {
   return day === 5 || day === 6 || day === 0;
 }
 
-function ChevronIcon() {
-  return (
-    <svg
-      className="home-row-chevron"
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 2.5 9.5 7 5 11.5" />
-    </svg>
-  );
-}
-
 function WaveIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -185,10 +133,8 @@ export default function Welcome() {
   const { user } = useContext(AuthContext);
   const { clearFormData } = useContext(FormContext);
   const [firstName, setFirstName] = useState('');
-  const [moreOpen, setMoreOpen] = useState(false);
   const [recentPlans, setRecentPlans] = useState([]);
   const [plansLoaded, setPlansLoaded] = useState(false);
-  const moreWrapRef = useRef(null);
 
   // Same first-name source as before: cached localStorage first, then
   // profiles.first_name from Supabase. No other database reads changed.
@@ -272,27 +218,6 @@ export default function Welcome() {
     loadRecentPlans();
     return () => { cancelled = true; };
   }, [user]);
-
-  // Close "More options" on outside tap and on Escape.
-  useEffect(() => {
-    if (!moreOpen) return;
-
-    const handlePointerDown = (e) => {
-      if (moreWrapRef.current && !moreWrapRef.current.contains(e.target)) {
-        setMoreOpen(false);
-      }
-    };
-    const handleKey = (e) => {
-      if (e.key === 'Escape') setMoreOpen(false);
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    window.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      window.removeEventListener('keydown', handleKey);
-    };
-  }, [moreOpen]);
 
   const greetingWord = getGreetingWord();
   const showWeeklyCard = isWeekendReviewWindow();
@@ -460,145 +385,41 @@ export default function Welcome() {
           align-self: end;
         }
 
-        /* ---- More options ---- */
-        .home-more-wrap {
+        /* ---- All planning tools link (prompt 7j, replaces More options) ---- */
+        .home-root .home-all-tools-link {
           display: flex;
+          align-items: center;
           justify-content: center;
-          margin-top: 22px;
-        }
-
-        @media (min-width: 769px) {
-          .home-more-wrap {
-            margin-top: 30px;
-          }
-        }
-
-        /* src/styles/mobile.css: button:not(.breathe-button) { padding:
-           12px 16px !important; font-size: 14px !important; } - two
-           classes (0,2,0) beat its (0,1,1) on specificity, but both
-           overridden properties need matching !important too. */
-        .home-root .home-more-toggle {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: transparent;
-          border: none;
-          margin: 0;
-          padding: 8px 4px !important;
-          cursor: pointer;
-          font-family: var(--font-display);
-          font-weight: 400;
-          text-transform: uppercase;
-          font-size: 10px !important;
-          letter-spacing: 0.2em;
-          color: var(--text-2);
-        }
-
-        .home-more-toggle:focus-visible {
-          outline: 2px solid var(--coral);
-          outline-offset: 2px;
-          border-radius: 4px;
-        }
-
-        .home-root .home-more-cross {
-          width: 16px;
-          height: 16px;
-          color: var(--text-2);
-          flex-shrink: 0;
-          transition: transform var(--dur) var(--ease);
-        }
-
-        .home-root .home-more-cross.open {
-          transform: rotate(45deg);
-        }
-
-        .home-more-panel {
-          display: grid;
-          grid-template-rows: 0fr;
-          opacity: 0;
-          transition: grid-template-rows var(--dur) var(--ease), opacity var(--dur) var(--ease);
-        }
-
-        .home-more-panel.open {
-          grid-template-rows: 1fr;
-          opacity: 1;
-        }
-
-        .home-more-inner {
-          min-height: 0;
-          overflow: hidden;
-        }
-
-        .home-more-group {
-          margin-top: var(--space-4);
-        }
-
-        .home-more-group:first-child {
-          margin-top: var(--space-3);
-        }
-
-        .home-more-group-label {
-          font-family: var(--font-display);
-          font-weight: 400;
-          font-size: var(--fs-section);
-          text-transform: uppercase;
-          letter-spacing: var(--ls-section);
-          color: var(--coral-text);
-          margin-bottom: var(--space-2);
-        }
-
-        .home-more-row {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          min-height: 52px;
-          padding: 14px 8px 14px var(--space-4);
-          border-bottom: 1px solid var(--line);
+          gap: var(--space-2);
+          min-height: var(--tap-min);
+          margin: 22px auto 0;
           font-family: var(--font-body);
-          font-size: var(--fs-body);
+          font-weight: 400;
+          font-size: 15px;
           color: var(--text-2);
           text-decoration: none;
           transition: color var(--dur-fast) var(--ease);
         }
 
-        .home-more-row::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          width: 3px;
-          background: var(--coral);
-          opacity: 0;
-          transition: opacity var(--dur-fast) var(--ease);
+        @media (min-width: 769px) {
+          .home-root .home-all-tools-link {
+            margin-top: 30px;
+          }
         }
 
-        .home-more-row:hover,
-        .home-more-row:focus-visible {
+        .home-root .home-all-tools-link:hover,
+        .home-root .home-all-tools-link:focus-visible {
           color: var(--text);
         }
 
-        .home-more-row:hover::before,
-        .home-more-row:focus-visible::before {
-          opacity: 1;
-        }
-
-        .home-more-row:focus-visible {
+        .home-root .home-all-tools-link:focus-visible {
           outline: 2px solid var(--coral);
-          outline-offset: -2px;
+          outline-offset: 2px;
+          border-radius: 4px;
         }
 
-        .home-row-chevron {
+        .home-root .home-all-tools-mark {
           color: var(--coral);
-          flex-shrink: 0;
-          opacity: 0;
-          transition: opacity var(--dur-fast) var(--ease);
-        }
-
-        .home-more-row:hover .home-row-chevron,
-        .home-more-row:focus-visible .home-row-chevron {
-          opacity: 1;
         }
 
         /* ---- Weekly momentum card ---- */
@@ -937,45 +758,10 @@ export default function Welcome() {
             ))}
           </div>
 
-          <div className="home-more-wrap" ref={moreWrapRef}>
-            <div>
-              <button
-                type="button"
-                className="home-more-toggle"
-                onClick={() => setMoreOpen(!moreOpen)}
-                aria-expanded={moreOpen}
-                aria-controls="home-more-panel"
-              >
-                <span className={`home-more-cross ui-cross${moreOpen ? ' open' : ''}`} aria-hidden="true" />
-                More options
-              </button>
-
-              <div id="home-more-panel" className={`home-more-panel${moreOpen ? ' open' : ''}`}>
-                <div className="home-more-inner">
-                  {DROPDOWN_GROUPS.map((group) => (
-                    <div className="home-more-group" key={group.label}>
-                      <div className="home-more-group-label">{group.label}</div>
-                      {group.items.map((item) => (
-                        <Link
-                          key={item.title}
-                          to={item.route}
-                          state={{ ...location.state, ...item.state, problemTitle: item.title }}
-                          onClick={() => {
-                            handleOptionClick();
-                            setMoreOpen(false);
-                          }}
-                          className="home-more-row"
-                        >
-                          <span>{item.title}</span>
-                          <ChevronIcon />
-                        </Link>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <Link to="/planning-tools" className="home-all-tools-link" onClick={handleOptionClick}>
+            All planning tools
+            <span className="home-all-tools-mark ui-cross ui-cross--sm" aria-hidden="true" />
+          </Link>
 
           {showWeeklyCard && (
             <Link
