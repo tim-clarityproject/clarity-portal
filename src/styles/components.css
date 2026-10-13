@@ -3324,7 +3324,11 @@ span.tc-editable:focus-visible {
   display: block;
   font-size: 18px;
   line-height: 1.3;
-  color: inherit;
+  color: var(--text);
+}
+
+.ui-root .ptl-row--locked .ptl-row-title {
+  color: var(--placeholder);
 }
 
 .ptl-row-desc {
