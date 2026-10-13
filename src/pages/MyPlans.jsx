@@ -1,358 +1,175 @@
-import { useState, useContext, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Trash2, Edit } from 'lucide-react';
+import { useState, useContext, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { formatReviewDate, formatTimeOnly, formatDateTimeWithOrdinal, parseDbTimestamp, getLocalDateKey } from '../lib/dateFormatter';
+import { parseDbTimestamp, getLocalDateKey, formatReviewDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
+import HistoryList from '../components/ui/HistoryList';
+import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+
+// "Combined history" tool types (mock: plan-section.html, S.plans) -
+// a curated subset of `decisions` rows, not every decision tool_type
+// (Inversion and Strategic alignment stay My decisions-only, by design
+// of the approved mock's own DEC list).
+const COMBINED_TOOL_TYPES = ['daily_plan', 'plan_meeting', 'if_then_planning', 'stop_doing_audit', 'grow', 'tough-conversation'];
+
+const TYPE_LABEL = {
+  daily_plan: 'Daily plan',
+  plan_meeting: 'Meeting plan',
+  if_then_planning: 'If-Then plan',
+  stop_doing_audit: 'Time audit',
+  grow: 'GROW',
+  'tough-conversation': 'Tough feedback',
+};
+
+const DECISION_LABELS = ['If-Then plan', 'Time audit', 'GROW', 'Tough feedback'];
+
+const FILTERS = [
+  { id: 'Daily plan', label: 'Daily plans' },
+  { id: 'Meeting plan', label: 'Meetings' },
+  { id: 'dec', label: 'Decisions', match: (r) => DECISION_LABELS.includes(r.typeLabel) },
+];
+
+const SUB_FILTERS = {
+  dec: [
+    { id: 'If-Then plan', label: 'If-Then plan' },
+    { id: 'Time audit', label: 'Time audit' },
+    { id: 'GROW', label: 'GROW' },
+    { id: 'Tough feedback', label: 'Tough feedback' },
+  ],
+};
+
+const SUMMARY_ROUTE = {
+  daily_plan: '/daily-plan-summary',
+  plan_meeting: '/meeting-summary',
+  if_then_planning: '/if-then-planning-summary',
+  stop_doing_audit: '/stop-doing-audit-summary',
+  grow: '/decision-summary',
+  'tough-conversation': '/tough-conversation-summary',
+};
+
+const EDIT_ROUTE = {
+  daily_plan: '/plan-my-day',
+  plan_meeting: '/plan-meeting',
+  if_then_planning: '/if-then-planning',
+  stop_doing_audit: '/stop-doing-audit',
+  grow: '/grow-step-1',
+  'tough-conversation': '/tough-conversation-step-1',
+};
+
+function rowTitle(d) {
+  if (d.tool_type === 'daily_plan') {
+    return formatReviewDate(getLocalDateKey(parseDbTimestamp(d.created_at)));
+  }
+  return d.title || 'Untitled';
+}
 
 export default function MyPlans() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useContext(AuthContext);
   const [plans, setPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState('daily-plans'); // 'daily-plans' or 'meetings'
+  const [error, setError] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { message, showToast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      loadPlans();
-    }
-  }, [user]);
+    if (user) loadPlans();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const loadPlans = async () => {
-    if (!user) return;
+    setError(null);
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('decisions')
         .select('*')
         .eq('user_id', user.id)
-        .in('tool_type', ['daily_plan', 'plan_meeting'])
+        .in('tool_type', COMBINED_TOOL_TYPES)
         .order('created_at', { ascending: false });
-
-      if (data) {
-        setPlans(data);
-      }
-    } catch (error) {
-      console.error('Error loading plans:', error);
+      if (fetchError) throw fetchError;
+      setPlans(data || []);
+    } catch (err) {
+      console.error('[MyPlans] load failed:', err);
+      setError({ message: 'Could not load your plans.', onRetry: loadPlans });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatDailyPlanDateAndTime = (dateStr) => {
-    const date = parseDbTimestamp(dateStr);
-    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-    const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const ordinal = (n) => {
-      const s = ['th', 'st', 'nd', 'rd'];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
-    };
-    return `${weekday} ${ordinal(day)} ${month}, ${year} - ${time}`;
+  const rows = useMemo(() => plans.map((d) => ({
+    id: d.id,
+    title: rowTitle(d),
+    typeLabel: TYPE_LABEL[d.tool_type] || d.tool_type,
+    date: d.created_at,
+    isDraft: Boolean(d.draft || d.status === 'draft'),
+    raw: d,
+  })), [plans]);
+
+  const openRow = (row) => {
+    const route = SUMMARY_ROUTE[row.raw.tool_type] || '/decision-summary';
+    navigate(route, { state: { decisionId: row.id, ...row.raw } });
   };
 
-  const handleEdit = (plan, e) => {
-    e.stopPropagation();
-    const editPageMap = {
-      daily_plan: '/plan-my-day',
-      plan_meeting: '/plan-meeting',
-    };
-    const editPage = editPageMap[plan.tool_type] || '/plan-my-day';
-    const navState = { decisionId: plan.id, ...plan.form_data };
-    console.log('[MyPlans] handleEdit -> navigating to', editPage, 'with state:', navState);
-    navigate(editPage, { state: navState });
+  const editRow = (row) => {
+    const route = EDIT_ROUTE[row.raw.tool_type] || '/plan-section';
+    navigate(route, { state: { decisionId: row.id, ...row.raw.form_data, problemTitle: row.raw.title } });
   };
 
-  const handleDelete = async (planId, e) => {
-    e.stopPropagation();
-    if (!window.confirm('Delete this plan?')) return;
-
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
+    setDeleteTarget(null);
     try {
-      await supabase
-        .from('decisions')
-        .delete()
-        .eq('id', planId);
-      setPlans(plans.filter(p => p.id !== planId));
+      const { error: deleteError } = await supabase.from('decisions').delete().eq('id', id);
+      if (deleteError) throw deleteError;
+      setPlans((prev) => prev.filter((p) => p.id !== id));
       clearProgress();
-    } catch (error) {
-      console.error('Error deleting plan:', error);
-      alert('Failed to delete plan');
+      showDeletedToast(showToast);
+    } catch (err) {
+      console.error('[MyPlans] delete failed:', err);
+      showToast('Could not delete - please try again.');
     }
   };
 
-  const truncateContent = (content, length = 100) => {
-    if (!content) return '';
-    return content.length > length ? content.substring(0, length) + '...' : content;
-  };
-
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <div style={{ marginBottom: '48px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '16px' }}>My Plans</h1>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => setFilter('daily-plans')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: filter === 'daily-plans' ? '#F08571' : 'transparent',
-                border: `2px solid ${filter === 'daily-plans' ? '#F08571' : '#e5e5e5'}`,
-                borderRadius: '6px',
-                color: filter === 'daily-plans' ? 'white' : '#333',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (filter !== 'daily-plans') {
-                  e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#f9f9f9';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (filter !== 'daily-plans') {
-                  e.target.style.borderColor = '#e5e5e5';
-                  e.target.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              My Daily Intentions
-            </button>
-            <button
-              onClick={() => setFilter('meetings')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: filter === 'meetings' ? '#F08571' : 'transparent',
-                border: `2px solid ${filter === 'meetings' ? '#F08571' : '#e5e5e5'}`,
-                borderRadius: '6px',
-                color: filter === 'meetings' ? 'white' : '#333',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (filter !== 'meetings') {
-                  e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#f9f9f9';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (filter !== 'meetings') {
-                  e.target.style.borderColor = '#e5e5e5';
-                  e.target.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              My Meeting Plans
-            </button>
-          </div>
-        </div>
-
+      <div className="plan-page">
         {isLoading ? (
-          <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
-        ) : plans.length === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: '32px' }}>
-            <p style={{ color: '#999', fontSize: '14px', marginBottom: '16px' }}>No plans yet</p>
-            <button
-              onClick={() => {
-                const route = filter === 'meetings' ? '/plan-meeting' : '/plan-my-day';
-                navigate(route);
-              }}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#F08571',
-                color: 'white',
-                fontWeight: '600',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#e07560';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#F08571';
-              }}
-            >
-              Create a Plan
-            </button>
-          </div>
+          <>
+            <div className="ui-title">My Plans</div>
+            <p className="ui-subtitle">Loading...</p>
+          </>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {plans
-              .filter((plan) => {
-                if (filter === 'meetings') {
-                  return plan.tool_type === 'plan_meeting';
-                } else if (filter === 'daily-plans') {
-                  return plan.tool_type === 'daily_plan';
-                }
-                return true;
-              })
-              .map((plan) => (
-                <div
-                  key={plan.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    const route = plan.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/meeting-summary';
-                    navigate(route, { state: { decisionId: plan.id, ...plan } });
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      const route = plan.tool_type === 'daily_plan' ? '/daily-plan-summary' : '/meeting-summary';
-                      navigate(route, { state: { decisionId: plan.id, ...plan } });
-                    }
-                  }}
-                  style={{
-                    padding: '16px',
-                    backgroundColor: '#f9f9f9',
-                    border: '1px solid #e5e5e5',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: '70px',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f0f0f0';
-                    e.currentTarget.style.borderColor = '#F08571';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f9f9f9';
-                    e.currentTarget.style.borderColor = '#e5e5e5';
-                  }}
-                >
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '16px', width: '100%' }}>
-                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {plan.tool_type === 'daily_plan' ? formatReviewDate(getLocalDateKey(parseDbTimestamp(plan.created_at))) : plan.title || 'Meeting'}
-                    </p>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        color: 'white',
-                        backgroundColor: '#F08571',
-                        padding: '4px 12px',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {plan.tool_type === 'daily_plan' ? 'Daily Plan' : 'Meeting Plan'}
-                    </span>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
-                      <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: plan.tool_type === 'plan_meeting' ? '170px' : '60px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                        {plan.tool_type === 'plan_meeting'
-                          ? formatDateTimeWithOrdinal(plan.created_at)
-                          : formatTimeOnly(plan.created_at)
-                        }
-                      </p>
-                      <button
-                        onClick={(e) => handleEdit(plan, e)}
-                        title="Edit plan"
-                        style={{
-                          padding: '8px',
-                          backgroundColor: 'transparent',
-                          color: '#F08571',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          height: '34px',
-                          width: '34px',
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(plan.id, e)}
-                        title="Delete plan"
-                        style={{
-                          padding: '8px',
-                          backgroundColor: 'transparent',
-                          color: '#F08571',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          height: '34px',
-                          width: '34px',
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
+          <HistoryList
+            title="My Plans"
+            subLine="Every plan and decision you have made, in one history."
+            rows={rows}
+            filters={FILTERS}
+            subFilters={SUB_FILTERS}
+            newButton={{ label: 'New plan', onClick: () => navigate('/plan-section') }}
+            emptyText="No plans yet."
+            error={error}
+            onOpen={openRow}
+            onEdit={editRow}
+            onDelete={(row) => setDeleteTarget(row)}
+          />
         )}
       </div>
 
-      {/* Fixed bottom bar for creating new plans */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid #e5e5e5',
-        padding: '16px 32px',
-        display: 'flex',
-        justifyContent: 'center',
-        zIndex: 10,
-      }}>
-        <button
-          onClick={() => {
-            const route = filter === 'meetings' ? '/plan-meeting' : '/plan-my-day';
-            navigate(route);
-          }}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: 'transparent',
-            border: '2px solid #e5e5e5',
-            color: '#333',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: '600',
-            borderRadius: '6px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#f9f9f9';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#e5e5e5';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          + Create a Plan
-        </button>
-      </div>
+      <DeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this plan?"
+        body={deleteTarget ? `"${deleteTarget.title}" will be removed for good. This cannot be undone.` : ''}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <Toast message={message} />
     </div>
   );
 }

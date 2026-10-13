@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
@@ -181,6 +181,7 @@ function WaveIcon() {
 
 export default function Welcome() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const { clearFormData } = useContext(FormContext);
   const [firstName, setFirstName] = useState('');
@@ -735,7 +736,8 @@ export default function Welcome() {
           transition: opacity var(--dur-fast) var(--ease);
         }
 
-        .home-plan-row:hover::before {
+        .home-plan-row:hover::before,
+        .home-plan-row:focus-within::before {
           opacity: 1;
         }
 
@@ -744,6 +746,13 @@ export default function Welcome() {
           align-items: center;
           justify-content: space-between;
           gap: var(--space-3);
+          cursor: pointer;
+        }
+
+        .home-plan-row-main:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: -2px;
+          border-radius: 4px;
         }
 
         .home-plan-title {
@@ -755,8 +764,9 @@ export default function Welcome() {
           overflow-wrap: break-word;
         }
 
-        .home-plan-row:hover .home-plan-title {
-          color: var(--text);
+        .home-plan-row:hover .home-plan-title,
+        .home-plan-row:focus-within .home-plan-title {
+          color: var(--coral-soft);
         }
 
         .home-plan-meta {
@@ -964,23 +974,38 @@ export default function Welcome() {
                 <p className="home-plans-empty">Your recent plans will appear here.</p>
               ) : recentPlans.length > 0 ? (
                 <div className="home-plans-list">
-                  {recentPlans.map((plan) => (
-                    <div className="home-plan-row" key={plan.id}>
-                      <div className="home-plan-row-main">
-                        <div style={{ minWidth: 0 }}>
-                          <div className="home-plan-title">{getPlanTitle(plan)}</div>
-                          <div className="home-plan-meta">{getPlanMeta(plan)}</div>
-                        </div>
-                        <Link
-                          to={PLAN_REVIEW_ROUTE[plan.tool_type]}
-                          state={{ decisionId: plan.id }}
-                          className="home-plan-review"
+                  {recentPlans.map((plan) => {
+                    const openPlan = () => navigate(PLAN_REVIEW_ROUTE[plan.tool_type], { state: { decisionId: plan.id } });
+                    return (
+                      <div className="home-plan-row" key={plan.id}>
+                        <div
+                          className="home-plan-row-main"
+                          role="button"
+                          tabIndex={0}
+                          onClick={openPlan}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              openPlan();
+                            }
+                          }}
                         >
-                          Review
-                        </Link>
+                          <div style={{ minWidth: 0 }}>
+                            <div className="home-plan-title">{getPlanTitle(plan)}</div>
+                            <div className="home-plan-meta">{getPlanMeta(plan)}</div>
+                          </div>
+                          <Link
+                            to={PLAN_REVIEW_ROUTE[plan.tool_type]}
+                            state={{ decisionId: plan.id }}
+                            className="home-plan-review"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Review
+                          </Link>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : null}
             </div>

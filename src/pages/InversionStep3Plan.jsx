@@ -148,6 +148,10 @@ export default function InversionStep3Plan() {
           <span className="inv-stepper-label">Step 3 of 3</span>
         </div>
 
+        <div className="plan-back-row">
+          <BackLink onClick={() => goToStep('/inversion-step-2')} />
+        </div>
+
         <div className="plan-header">
           <div className="ui-title">So what will you do?</div>
           <p className="ui-subtitle">For each risk, write what you will do to stop it happening.</p>

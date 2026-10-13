@@ -61,7 +61,6 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
-import DevSharedPieces2 from './pages/DevSharedPieces2'; // TEMP - remove when prompts 6-10 wire the real pages
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
 import PersonalOperatingPlanSummary from './pages/PersonalOperatingPlanSummary';
@@ -299,7 +298,6 @@ function AppContent() {
           <Route path="/tough-conversation-summary" element={<ToughConversationSummary />} />
           <Route path="/edit-profile" element={<EditPersonalDetails />} />
           {/* TEMP - dev-only test route for Build Prompt 5, remove when prompts 6-10 wire the real pages */}
-          <Route path="/dev/shared-pieces-2" element={<DevSharedPieces2 />} />
         </Route>
 
           {/* Catch-all for unmatched routes */}

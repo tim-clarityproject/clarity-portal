@@ -42,8 +42,10 @@ export default function ToughConversationStep1Feedback() {
   const [observation, setObservation] = useState(location.state?.observation || '');
   const [impact, setImpact] = useState(location.state?.impact || '');
   const [need, setNeed] = useState(location.state?.need || '');
-  const [selectedQuestions, setSelectedQuestions] = useState(location.state?.selectedQuestions || []);
-  const [customQuestion, setCustomQuestion] = useState(location.state?.customQuestion || '');
+  // Passed straight through to step 2 unchanged - step 1 has no UI for
+  // these, so they are plain values here, not state.
+  const selectedQuestions = location.state?.selectedQuestions || [];
+  const customQuestion = location.state?.customQuestion || '';
   const [currentTitle, setCurrentTitle] = useState(location.state?.problemTitle || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');

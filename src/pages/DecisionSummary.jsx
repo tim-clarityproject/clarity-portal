@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import { summaryStyles } from '../styles/summaryStyles';
 
 // Types with their own dedicated, design-system summary page now - an
 // old bookmark/link that still points here gets sent on rather than
@@ -186,15 +185,6 @@ export default function DecisionSummary() {
 }
 
 function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProjectIdx, hoveredQuadrant, setHoveredQuadrant }) {
-  const SectionBlock = ({ title, content }) => (
-    <div style={{ ...summaryStyles.section, marginTop: '32px' }}>
-      <h2 style={summaryStyles.sectionHeading}>{title}</h2>
-      <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', fontSize: '13px', lineHeight: '1.6', color: '#666', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
-        {content || <span style={{ color: '#999', fontStyle: 'italic' }}>No content provided</span>}
-      </div>
-    </div>
-  );
-
   return (
     <>
       {formData.risks?.length > 0 && (

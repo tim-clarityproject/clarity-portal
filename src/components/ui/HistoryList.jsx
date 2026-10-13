@@ -7,12 +7,19 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 // dialogs/toasts around this component.
 //
 // Row -> filter matching convention (not specified by the brief's row
-// shape, which has no explicit filter/type id field): a filter's `id`
-// is matched against each row's own `typeLabel`, and the id 'all' always
-// matches every row. This keeps the row shape exactly as specified
-// (title, typeLabel, date, isDraft, version, meta) with no extra field
-// invented, at the cost of filter ids needing to equal a typeLabel
-// string exactly (see the dev test page for a worked example).
+// shape, which has no explicit filter/type id field): by default a
+// filter's `id` is matched against each row's own `typeLabel`, and the
+// id 'all' always matches every row. A filter may instead carry its own
+// `match(row)` predicate (prompt 7, My Plans: a grouped filter like
+// "Decisions" has no single typeLabel of its own) - this keeps every
+// pre-existing filter (plain {id,label}, matched by typeLabel) working
+// unchanged, it only opts in when a filter supplies `match`.
+//
+// `subFilters` (prompt 7, My Plans): an optional map of parent filter id
+// -> a second array of {id,label[,match]} filter defs, shown as a
+// second row of pills (desktop) / a second dropdown (phone) once that
+// parent filter is active - e.g. choosing "Decisions" reveals a second
+// level for If-Then/Time audit/GROW/Tough feedback.
 const DEFAULT_VISIBLE = 50;
 
 function PencilIcon() {
@@ -66,14 +73,15 @@ function formatMonthHeading(value) {
   return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 }
 
-function rowMatchesFilter(row, filterId) {
-  if (!filterId || filterId === 'all') return true;
-  return row.typeLabel === filterId;
+function rowMatchesFilter(row, filterDef) {
+  if (!filterDef || filterDef.id === 'all') return true;
+  if (filterDef.match) return filterDef.match(row);
+  return row.typeLabel === filterDef.id;
 }
 
-function countForFilter(rows, filterId) {
-  if (filterId === 'all') return rows.length;
-  return rows.filter((r) => rowMatchesFilter(r, filterId)).length;
+function countForFilter(rows, filterDef) {
+  if (filterDef.id === 'all') return rows.length;
+  return rows.filter((r) => rowMatchesFilter(r, filterDef)).length;
 }
 
 export default function HistoryList({
@@ -81,6 +89,7 @@ export default function HistoryList({
   subLine,
   rows = [],
   filters = [],
+  subFilters = {},
   newButton,
   emptyText = 'Nothing here yet.',
   error,
@@ -91,23 +100,38 @@ export default function HistoryList({
 }) {
   const allFilters = filters.length ? [{ id: 'all', label: 'All' }, ...filters] : [];
   const [activeFilter, setActiveFilter] = useState('all');
+  const [activeSubFilter, setActiveSubFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('new'); // 'new' | 'old'
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [subDropdownOpen, setSubDropdownOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE);
   const dropdownRef = useRef(null);
   const dropdownButtonRef = useRef(null);
   const optionRefs = useRef([]);
+  const subDropdownRef = useRef(null);
+  const subDropdownButtonRef = useRef(null);
+  const subOptionRefs = useRef([]);
 
-  // Close the phone filter dropdown on outside tap and Escape.
+  const activeSubFilterList = subFilters[activeFilter];
+  const allSubFilters = activeSubFilterList ? [{ id: 'all', label: 'All' }, ...activeSubFilterList] : null;
+
+  // Close the phone filter dropdown(s) on outside tap and Escape.
   useEffect(() => {
-    if (!dropdownOpen) return;
+    if (!dropdownOpen && !subDropdownOpen) return;
     const handlePointerDown = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      if (dropdownOpen && dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
+      }
+      if (subDropdownOpen && subDropdownRef.current && !subDropdownRef.current.contains(e.target)) {
+        setSubDropdownOpen(false);
       }
     };
     const handleKey = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key !== 'Escape') return;
+      if (subDropdownOpen) {
+        setSubDropdownOpen(false);
+        subDropdownButtonRef.current?.focus();
+      } else if (dropdownOpen) {
         setDropdownOpen(false);
         dropdownButtonRef.current?.focus();
       }
@@ -118,7 +142,7 @@ export default function HistoryList({
       document.removeEventListener('mousedown', handlePointerDown);
       window.removeEventListener('keydown', handleKey);
     };
-  }, [dropdownOpen]);
+  }, [dropdownOpen, subDropdownOpen]);
 
   const handleDropdownToggle = () => {
     setDropdownOpen((open) => !open);
@@ -126,8 +150,15 @@ export default function HistoryList({
 
   const handleOptionSelect = (filterId) => {
     setActiveFilter(filterId);
+    setActiveSubFilter('all');
     setDropdownOpen(false);
     dropdownButtonRef.current?.focus();
+  };
+
+  const handleSubOptionSelect = (filterId) => {
+    setActiveSubFilter(filterId);
+    setSubDropdownOpen(false);
+    subDropdownButtonRef.current?.focus();
   };
 
   const handleListboxKeyDown = (e, index) => {
@@ -145,6 +176,24 @@ export default function HistoryList({
     } else if (e.key === 'Escape') {
       setDropdownOpen(false);
       dropdownButtonRef.current?.focus();
+    }
+  };
+
+  const handleSubListboxKeyDown = (e, index) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = subOptionRefs.current[index + 1] || subOptionRefs.current[0];
+      next?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = subOptionRefs.current[index - 1] || subOptionRefs.current[subOptionRefs.current.length - 1];
+      prev?.focus();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleSubOptionSelect(allSubFilters[index].id);
+    } else if (e.key === 'Escape') {
+      setSubDropdownOpen(false);
+      subDropdownButtonRef.current?.focus();
     }
   };
 
@@ -170,7 +219,12 @@ export default function HistoryList({
     );
   }
 
-  const filtered = rows.filter((r) => rowMatchesFilter(r, activeFilter));
+  const activeFilterDef = allFilters.find((f) => f.id === activeFilter) || allFilters[0];
+  const activeSubFilterDef = allSubFilters?.find((f) => f.id === activeSubFilter) || allSubFilters?.[0];
+
+  const filtered = rows.filter((r) => (
+    rowMatchesFilter(r, activeFilterDef) && (!activeSubFilterDef || rowMatchesFilter(r, activeSubFilterDef))
+  ));
   const sorted = [...filtered].sort((a, b) => {
     const da = new Date(a.date).getTime();
     const db = new Date(b.date).getTime();
@@ -178,8 +232,6 @@ export default function HistoryList({
   });
   const visible = sorted.slice(0, visibleCount);
   const hasMore = sorted.length > visible.length;
-
-  const activeFilterDef = allFilters.find((f) => f.id === activeFilter) || allFilters[0];
 
   let lastMonth = '';
 
@@ -208,13 +260,30 @@ export default function HistoryList({
                 type="button"
                 className="hlist-seg-btn"
                 aria-pressed={activeFilter === f.id}
-                onClick={() => setActiveFilter(f.id)}
+                onClick={() => { setActiveFilter(f.id); setActiveSubFilter('all'); }}
               >
                 {f.label}
-                <i>{countForFilter(rows, f.id)}</i>
+                <i>{countForFilter(rows, f)}</i>
               </button>
             ))}
           </div>
+
+          {allSubFilters && (
+            <div className="hlist-seg hlist-seg--sub" role="group" aria-label="Filter by decision type">
+              {allSubFilters.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  className="hlist-seg-btn"
+                  aria-pressed={activeSubFilter === f.id}
+                  onClick={() => setActiveSubFilter(f.id)}
+                >
+                  {f.label}
+                  <i>{countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), f)}</i>
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="hlist-dropdown-wrap" ref={dropdownRef}>
             <button
@@ -227,7 +296,7 @@ export default function HistoryList({
             >
               <span>
                 {activeFilterDef?.label}
-                <i>{countForFilter(rows, activeFilter)}</i>
+                <i>{countForFilter(rows, activeFilterDef)}</i>
               </span>
               <ChevronDownIcon />
             </button>
@@ -245,12 +314,50 @@ export default function HistoryList({
                     onKeyDown={(e) => handleListboxKeyDown(e, i)}
                   >
                     {f.label}
-                    <i>{countForFilter(rows, f.id)}</i>
+                    <i>{countForFilter(rows, f)}</i>
                   </button>
                 ))}
               </div>
             )}
           </div>
+
+          {allSubFilters && (
+            <div className="hlist-dropdown-wrap hlist-dropdown-wrap--sub" ref={subDropdownRef}>
+              <button
+                type="button"
+                ref={subDropdownButtonRef}
+                className="hlist-dropdown-btn"
+                aria-expanded={subDropdownOpen}
+                aria-haspopup="listbox"
+                onClick={() => setSubDropdownOpen((open) => !open)}
+              >
+                <span>
+                  {activeSubFilterDef?.label}
+                  <i>{countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), activeSubFilterDef)}</i>
+                </span>
+                <ChevronDownIcon />
+              </button>
+              {subDropdownOpen && (
+                <div className="hlist-dropdown-list" role="listbox" aria-label="Filter by decision type">
+                  {allSubFilters.map((f, i) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      ref={(el) => { subOptionRefs.current[i] = el; }}
+                      role="option"
+                      aria-selected={activeSubFilter === f.id}
+                      className="hlist-dropdown-option"
+                      onClick={() => handleSubOptionSelect(f.id)}
+                      onKeyDown={(e) => handleSubListboxKeyDown(e, i)}
+                    >
+                      {f.label}
+                      <i>{countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), f)}</i>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 
@@ -434,6 +541,10 @@ const HLIST_CSS = `
   display: none;
 }
 
+.hlist-seg--sub {
+  margin-top: var(--space-2);
+}
+
 @media (min-width: 769px) {
   .hlist-seg {
     display: flex;
@@ -496,6 +607,10 @@ const HLIST_CSS = `
 /* Phone dropdown */
 .hlist-dropdown-wrap {
   position: relative;
+}
+
+.hlist-dropdown-wrap--sub {
+  margin-top: var(--space-2);
 }
 
 @media (min-width: 769px) {
