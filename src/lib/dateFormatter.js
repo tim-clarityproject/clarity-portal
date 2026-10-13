@@ -84,6 +84,14 @@ export const formatReviewDate = (dateStr) => {
   return `${weekday} ${day}${ordinal} ${month}, ${year}`;
 };
 
+// Plain UK date, no time (e.g. "13 October 2026") - for summary pages'
+// "Created <date>" line (prompt 7).
+export const formatUkDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = parseDbTimestamp(dateStr);
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
 // Format time only as 12-hour with am/pm (e.g. "03:14 PM")
 export const formatTimeOnly = (dateStr) => {
   if (!dateStr) return '';

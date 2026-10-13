@@ -1825,6 +1825,13 @@ html:has(.ui-root) {
   }
 }
 
+.plan-dq-help {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
 .ui-root .plan-dq-textarea {
   display: block;
   width: 100%;
@@ -2610,4 +2617,611 @@ html:has(.ui-root) {
 
 .plan-pair2 p:last-child {
   margin-bottom: 0;
+}
+
+/* ============================================================
+   Inversion thinking / Tough conversation (prompt 7)
+   ============================================================ */
+
+/* ---- Step marker: progress lines + "Step n of 3" ---- */
+
+.inv-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.inv-stepper-lines {
+  display: flex;
+  gap: 6px;
+}
+
+.inv-stepper-lines i {
+  display: block;
+  width: 30px;
+  height: 2px;
+  background: var(--line);
+  transition: background var(--dur) var(--ease);
+}
+
+.inv-stepper-lines i.on {
+  background: var(--coral);
+}
+
+.inv-stepper-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: var(--coral-text);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-stepper-lines i {
+    transition: none !important;
+  }
+}
+
+/* ---- Goal recap line with a Change link (step 3 / coaching step) ---- */
+
+.inv-recap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0 var(--space-4);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.inv-recap p {
+  margin: 0;
+  flex: 1 1 220px;
+  min-width: 0;
+  font-size: var(--fs-body-sub);
+  line-height: 1.5;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.inv-recap .plan-link-btn {
+  margin-left: auto;
+}
+
+/* ---- Risk mitigation cards (Inversion step 3) ---- */
+
+.inv-cards {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.inv-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.inv-card.now {
+  border-color: var(--coral);
+}
+
+.inv-card-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 24px;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.inv-card-num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--coral-text);
+}
+
+.inv-card-row p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.inv-card-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--btn-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  margin-top: 2px;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.inv-card-check svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--on-coral);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.inv-card.ok .inv-card-check {
+  background: var(--mint);
+  border-color: var(--mint);
+}
+
+.inv-card.ok .inv-card-check svg {
+  opacity: 1;
+}
+
+.ui-root .inv-card-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--btn-line);
+  border-radius: var(--radius-input);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  line-height: 1.55;
+  padding: 14px 16px !important;
+  min-height: 56px;
+  outline: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .inv-card-textarea:focus {
+  border-color: var(--coral);
+}
+
+.ui-root .inv-card-textarea::placeholder {
+  color: var(--placeholder);
+}
+
+/* ---- Summary: risk + what-you'll-do side by side ---- */
+
+.inv-sum-risk-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  .inv-sum-risk-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+}
+
+.inv-sum-risk-label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--coral-text);
+  margin-bottom: var(--space-1);
+}
+
+.inv-sum-risk-row p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* ---- Tough conversation: live script panel ---- */
+
+.tc-script {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: var(--space-2) 0 4px;
+  margin: var(--space-2) 0 var(--space-6);
+}
+
+.tc-script-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.tc-script-sent {
+  font-size: 20px;
+  line-height: 1.65;
+  padding: 6px 0 22px;
+  margin: 0;
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .tc-script-sent {
+    font-size: 18px;
+  }
+}
+
+.tc-blank {
+  color: var(--placeholder);
+}
+
+.tc-filled {
+  color: var(--coral-soft);
+}
+
+span.tc-editable {
+  cursor: pointer;
+  color: var(--coral-soft);
+  border-bottom: 1px dashed var(--btn-line);
+  transition: border-color var(--dur) var(--ease);
+}
+
+span.tc-editable.tc-blank {
+  color: var(--placeholder);
+}
+
+span.tc-editable:hover,
+span.tc-editable:focus-visible {
+  border-bottom-color: var(--coral);
+}
+
+span.tc-editable:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.ui-root .tc-copy-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+  flex-shrink: 0;
+}
+
+.ui-root .tc-copy-btn:hover,
+.ui-root .tc-copy-btn:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .tc-copy-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .tc-copy-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tc-edit-row {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.tc-edit-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.ui-root .tc-edit-save,
+.ui-root .tc-edit-cancel {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 0 var(--space-3) !important;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ui-root .tc-edit-save {
+  background: var(--coral);
+  color: var(--on-coral);
+}
+
+.ui-root .tc-edit-cancel {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--btn-line);
+}
+
+.ui-root .tc-edit-save:focus-visible,
+.ui-root .tc-edit-cancel:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+/* ---- Coaching questions: tick rows (mint = chosen) ---- */
+
+.tc-ck-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: 0 0 var(--space-1);
+}
+
+.tc-ck-count {
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.tc-ck-help {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.tc-ck-list {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.ui-root .tc-ck {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) !important;
+  border-radius: var(--radius-input);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .tc-ck:hover {
+  background: var(--surface);
+}
+
+.ui-root .tc-ck:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.tc-ck-box {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  margin-top: 1px;
+  border: 1px solid var(--btn-line);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+.tc-ck-box svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--on-coral);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.tc-ck[aria-checked="true"] .tc-ck-box {
+  background: var(--mint);
+  border-color: var(--mint);
+}
+
+.tc-ck[aria-checked="true"] .tc-ck-box svg {
+  opacity: 1;
+}
+
+.tc-ck-text {
+  font-size: var(--fs-body-sub);
+  line-height: 1.5;
+  color: var(--text);
+  padding-top: 2px;
+}
+
+/* ---- Decision tools hub (prompt 7) ---- */
+
+.dt-hrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.dt-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .dt-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ui-root .dt-card {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .dt-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 3px;
+  background: var(--coral);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .dt-card:hover,
+.ui-root .dt-card:focus-visible {
+  border-color: var(--btn-line);
+}
+
+.ui-root .dt-card:hover::before,
+.ui-root .dt-card:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.ui-root .dt-card:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.dt-card-title {
+  display: block;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.dt-card-desc {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.dt-soon {
+  margin-top: var(--space-6);
+}
+
+.dt-soon-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: var(--coral-text);
+  margin: 0 0 14px;
+}
+
+.dt-soon-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--space-5);
+}
+
+@media (max-width: 768px) {
+  .dt-soon-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dt-soon-item {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--placeholder);
+  font-size: var(--fs-body-sub);
+  line-height: 1.4;
+}
+
+.dt-soon-lock {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 3px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dt-soon-item small {
+  display: block;
+  font-size: 13px;
+  color: var(--placeholder);
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-card,
+  .dt-card::before {
+    transition: none !important;
+  }
+
+  .inv-card,
+  .inv-card-check,
+  .inv-card-check svg,
+  .inv-card-textarea,
+  span.tc-editable,
+  .tc-copy-btn,
+  .tc-ck,
+  .tc-ck-box,
+  .tc-ck-box svg {
+    transition: none !important;
+  }
 }

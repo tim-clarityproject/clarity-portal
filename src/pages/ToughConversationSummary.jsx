@@ -2,8 +2,12 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { formatUkDate } from '../lib/dateFormatter';
+import { COACHING_QUESTIONS } from '../content/coachingQuestions';
 import DesignHeader from '../components/DesignHeader';
-import BackArrow from '../components/BackArrow';
+import { BackLink } from '../components/ui/DiscardLink';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function ToughConversationSummary() {
   const navigate = useNavigate();
@@ -11,16 +15,28 @@ export default function ToughConversationSummary() {
   const { user } = useContext(AuthContext);
   const [conversation, setConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
   const decisionId = location.state?.decisionId;
+  const { message, showToast } = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
       loadConversation();
+    } else {
+      setIsLoading(false);
     }
-  }, [decisionId, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decisionId, user?.id]);
+
+  useEffect(() => {
+    if (location.state?.toast) {
+      showToast(location.state.toast);
+      navigate(location.pathname, { replace: true, state: { decisionId } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadConversation = async () => {
-    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('decisions')
@@ -28,184 +44,103 @@ export default function ToughConversationSummary() {
         .eq('id', decisionId)
         .eq('user_id', user.id)
         .single();
-
-      if (data) {
-        setConversation(data);
-      }
+      if (error) throw error;
+      if (data) setConversation(data);
     } catch (error) {
-      console.error('Error loading conversation:', error);
+      console.error('[ToughConversationSummary] load failed:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEdit = () => {
-    navigate('/tough-conversation-step-1', { state: { decisionId, ...conversation.form_data } });
-  };
-
-  const handleDownloadPDF = () => {
-    window.print();
-  };
-
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="ui-root">
         <DesignHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px' }}>Loading conversation...</p>
-        </div>
+        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
       </div>
     );
   }
 
   if (!conversation) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div className="ui-root">
         <DesignHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px' }}>Conversation not found</p>
-        </div>
+        <div className="plan-page"><p className="ui-subtitle">Decision not found.</p></div>
       </div>
     );
   }
 
   const data = conversation.form_data || {};
+  const chosenQuestions = (data.selectedQuestions || []).map((i) => COACHING_QUESTIONS[i]).filter(Boolean);
+
+  const copyScript = () => {
+    const scriptText = `I've noticed ${data.observation}. The impact of that is ${data.impact}. So, what I need from you is ${data.need}.`;
+    navigator.clipboard?.writeText(scriptText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
-        <BackArrow />
-
-        <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
-            {conversation.title || 'Tough Conversation'}
-          </h1>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-            Tough Conversation
-          </span>
+      <div className="plan-page">
+        <div className="plan-back-row">
+          <BackLink onClick={() => navigate('/decision-history')} label="Back to my decisions" />
         </div>
 
-        {/* Observation Section */}
-        {data.observation && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Observation
-            </h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {data.observation}
-            </p>
-          </div>
-        )}
+        <div className="plan-summary-head">
+          <span className="plan-overline">Tough conversation</span>
+          <div className="ui-title">{conversation.title || 'Tough conversation'}</div>
+          <p className="ui-subtitle">Created {formatUkDate(conversation.created_at)}</p>
+        </div>
 
-        {/* Impact Section */}
-        {data.impact && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Impact
-            </h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {data.impact}
-            </p>
-          </div>
-        )}
+        <div className="tc-script">
+          <p className="tc-script-sent">
+            I've noticed <span className="tc-filled">{data.observation || '—'}</span>. The impact of that is{' '}
+            <span className="tc-filled">{data.impact || '—'}</span>. So, what I need from you is{' '}
+            <span className="tc-filled">{data.need || '—'}</span>.
+          </p>
+        </div>
 
-        {/* Need Section */}
-        {data.need && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              What You Need
-            </h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {data.need}
-            </p>
-          </div>
-        )}
-
-        {/* Coaching Questions Section */}
-        {data.selectedQuestions && data.selectedQuestions.length > 0 && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Coaching Questions
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {data.selectedQuestions.map((question, index) => (
-                <div key={index} style={{ backgroundColor: '#f9f9f9', padding: '12px 16px', borderRadius: '6px', border: '1px solid #f0f0f0' }}>
-                  <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0 }}>
-                    {question}
-                  </p>
-                </div>
-              ))}
+        <div className="plan-sum">
+          <div className="plan-sum-row">
+            <p className="plan-sum-label">Coaching questions</p>
+            <div className="plan-sum-value plan-sum-value--list">
+              {chosenQuestions.length > 0 ? (
+                <ul style={{ margin: 0, padding: 0, listStylePosition: 'inside' }}>
+                  {chosenQuestions.map((q, i) => <li key={i}>{q}</li>)}
+                </ul>
+              ) : (
+                <span className="plan-none">No coaching questions chosen.</span>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Custom Question Section */}
-        {data.customQuestion && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Your Question
-            </h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {data.customQuestion}
-            </p>
-          </div>
-        )}
+          {data.customQuestion && (
+            <div className="plan-sum-row">
+              <p className="plan-sum-label">Your own question</p>
+              <p className="plan-sum-value">{data.customQuestion}</p>
+            </div>
+          )}
+        </div>
 
-        {/* Bottom Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap', paddingTop: '32px', borderTop: '1px solid #f0f0f0', justifyContent: 'space-between' }} className="no-print">
-          <button
-            onClick={handleEdit}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#333',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'white';
-            }}
-          >
-            Edit Conversation
+        <div className="plan-actions">
+          <button type="button" className="ui-btn-primary" onClick={copyScript}>
+            {copied ? 'Copied' : 'Copy script'}
           </button>
-
           <button
-            onClick={handleDownloadPDF}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#333',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'white';
-            }}
+            type="button"
+            className="ui-btn-ghost"
+            onClick={() => navigate('/tough-conversation-step-1', { state: { decisionId: conversation.id, ...data, problemTitle: conversation.title } })}
           >
-            Download PDF
+            Edit
           </button>
         </div>
       </div>
+
+      <Toast message={message} />
     </div>
   );
 }

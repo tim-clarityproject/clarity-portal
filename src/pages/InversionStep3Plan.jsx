@@ -1,390 +1,224 @@
-import { useState, useContext, useEffect } from 'react';
+import { useMemo, useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import NamingModal from '../components/NamingModal';
-import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
+import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
+import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
+import DiscardDialog from '../components/ui/DiscardDialog';
+import NameDialog from '../components/ui/NameDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+
+const MAX_NAME_LENGTH = 60;
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+function suggestNameFrom(goal) {
+  const trimmed = (goal || '').trim();
+  if (!trimmed) return 'New inversion thinking';
+  return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
+}
 
 export default function InversionStep3Plan() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const decisionId = location.state?.decisionId;
+  const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
+  const goal = location.state?.goal || '';
+  const risks = useMemo(() => (location.state?.risks || []).filter((r) => r.trim()), [location.state?.risks]);
 
-  const [goal, setGoal] = useState(location.state?.goal || '');
-  const [plan, setPlan] = useState(location.state?.plan || '');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [showNamingModal, setShowNamingModal] = useState(false);
+  // riskAnswers carried forward only makes sense when it is already the
+  // same length/order as risks (same session) - an old-shaped decision
+  // with no riskAnswers (or a stale length after risks were edited in
+  // step 2) starts every card blank rather than guessing a mapping.
+  const incomingAnswers = location.state?.riskAnswers;
+  const [riskAnswers, setRiskAnswers] = useState(
+    incomingAnswers?.length === risks.length ? incomingAnswers : risks.map(() => '')
+  );
   const [currentTitle, setCurrentTitle] = useState(location.state?.problemTitle || '');
-  const fuckups = location.state?.fuckups || [];
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
+  const { message, showToast } = useToast();
 
-  const needsNaming = !currentTitle || currentTitle.match(/^\w{3},\s\w{3}\s\d{1,2},\s\d{4}$/);
-
-  const handleSaveClick = () => {
-    if (!plan.trim() || !goal.trim()) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    if (!user) {
-      alert('Please log in to save decisions');
-      return;
-    }
-
-    if (needsNaming) {
-      setShowNamingModal(true);
-    } else {
-      handleSaveConfirmed(currentTitle);
-    }
+  const changeAnswer = (index, value) => {
+    setRiskAnswers((prev) => prev.map((a, i) => (i === index ? value : a)));
   };
 
-  const handleSaveConfirmed = async (decisionName) => {
-    setShowNamingModal(false);
+  const firstUnansweredIndex = riskAnswers.findIndex((a) => !a.trim());
+  const allAnswered = firstUnansweredIndex === -1 && risks.length > 0;
+  const suggestedName = currentTitle || suggestNameFrom(goal);
+
+  const persist = async (draft, name) => {
+    const payload = {
+      form_data: { goal, fuckups: risks, riskAnswers },
+      title: name,
+      draft,
+      status: draft ? 'draft' : 'completed',
+      updated_at: new Date().toISOString(),
+    };
+    if (decisionId) {
+      const { data, error } = await supabase
+        .from('decisions')
+        .update(payload)
+        .eq('id', decisionId)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Could not find this entry to update.');
+      return decisionId;
+    }
+    const { data, error } = await supabase
+      .from('decisions')
+      .insert({ user_id: user.id, tool_type: 'inversion', ...payload })
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Save did not return an entry.');
+    return data[0].id;
+  };
+
+  const handleNameConfirm = async (name) => {
+    if (!user || isSaving) return;
+    const mode = nameDialog;
+    setSaveError('');
     setIsSaving(true);
     try {
-      const formDataComplete = {
-        goal,
-        fuckups,
-        plan,
-      };
-
-      let finalDecisionId = decisionId;
-
-      if (decisionId) {
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            form_data: formDataComplete,
-            title: decisionName,
-            status: 'completed',
-            draft: false,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) throw new Error('Failed to update - no rows affected');
+      const savedId = await persist(mode === 'draft', name);
+      setCurrentTitle(name);
+      setNameDialog(null);
+      if (mode === 'draft') {
+        setDecisionId(savedId);
+        clearProgress();
+        showToast(`Draft saved as ${name}.`);
+        navigate('/decision-history');
       } else {
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert([{
-            user_id: user.id,
-            tool_type: 'inversion',
-            title: decisionName,
-            form_data: formDataComplete,
-            status: 'completed',
-            draft: false
-          }])
-          .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) throw new Error('Failed to save - no rows returned');
-        finalDecisionId = data[0].id;
+        clearProgress();
+        navigate('/inversion-thinking-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
       }
-
-      setCurrentTitle(decisionName);
-      clearProgress();
-      setSaved(true);
-      setTimeout(() => {
-        navigate('/inversion-thinking-summary', { state: { decisionId: finalDecisionId } });
-      }, 1500);
     } catch (error) {
-      console.error('Error saving decision:', error);
-      alert(`Failed to save: ${error?.message || 'Unknown error'}`);
+      console.error('[InversionStep3Plan] save failed:', error);
+      setNameDialog(null);
+      setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleSaveDraft = async () => {
-    if (!user) {
-      alert('Please log in to save decisions');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const formDataComplete = {
-        goal,
-        fuckups,
-        plan,
-      };
-
-      const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-      const title = currentTitle || dateTitle;
-
-      if (decisionId) {
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            form_data: formDataComplete,
-            status: 'draft',
-            draft: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) throw new Error('Failed to update draft - no rows affected');
-      } else {
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert([{
-            user_id: user.id,
-            tool_type: 'inversion',
-            title,
-            form_data: formDataComplete,
-            status: 'draft',
-            draft: true
-          }])
-          .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) throw new Error('Failed to save draft - no rows returned');
-      }
-
-      clearProgress();
-      alert('Saved as draft');
-      navigate('/decision-history');
-    } catch (error) {
-      console.error('Error saving draft:', error);
-      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleDiscard = () => {
+    setDiscardOpen(false);
+    navigate('/decision-history');
   };
 
-  const handleBack = () => {
-    navigate('/inversion-step-2', { state: { decisionId, goal, fuckups, problemTitle: currentTitle } });
+  const goToStep = (path) => {
+    navigate(path, { state: { decisionId, goal, risks, riskAnswers, problemTitle: currentTitle } });
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Discard this entry?')) {
-      setGoal('');
-      setPlan('');
-      clearProgress();
-      navigate('/decision-tools');
-    }
-  };
+  const actionButtons = (
+    <>
+      <button type="button" className="ui-btn-primary" disabled={!allAnswered || isSaving} onClick={() => setNameDialog('finish')}>
+        Finish
+      </button>
+      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={() => setNameDialog('draft')}>
+        Save as draft
+      </button>
+    </>
+  );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root">
       <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              color: '#333',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
-        </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>So what will you do?</h1>
-
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
-        </div>
-
-        {/* Goal Section */}
-        <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '12px' }}>
-            Goal (you can revise)
-          </label>
-          <textarea
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            style={{
-              width: '100%',
-              minHeight: '100px',
-              padding: '16px',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              boxSizing: 'border-box',
-              outline: 'none',
-              resize: 'none',
-              marginBottom: '24px',
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-          />
-        </div>
-
-        {/* Fuckups Section */}
-        <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '12px' }}>
-            Ways this could go wrong
-          </label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {fuckups.map((fuckup, index) => (
-              <div
-                key={index}
-                style={{
-                  padding: '12px 16px',
-                  backgroundColor: '#f9f9f9',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  color: '#666',
-                }}
-              >
-                {fuckup}
-              </div>
-            ))}
+      <div className="plan-page plan-page--form">
+        <div className="inv-stepper">
+          <div className="inv-stepper-lines" aria-hidden="true">
+            <i className="on" />
+            <i className="on" />
+            <i className="on" />
           </div>
+          <span className="inv-stepper-label">Step 3 of 3</span>
         </div>
 
-        {/* Plan Section */}
-        <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '12px' }}>
-            Your plan to mitigate these risks
-          </label>
-          <textarea
-            value={plan}
-            onChange={(e) => setPlan(e.target.value)}
-            placeholder="Type here"
-            style={{
-              width: '100%',
-              minHeight: '300px',
-              padding: '16px',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              boxSizing: 'border-box',
-              outline: 'none',
-              resize: 'none',
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-          />
+        <div className="plan-header">
+          <div className="ui-title">So what will you do?</div>
+          <p className="ui-subtitle">For each risk, write what you will do to stop it happening.</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginTop: '32px', flexWrap: 'wrap' }}>
-          <button
-            onClick={handleBack}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              color: '#333',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            Back
-          </button>
-
-          <button
-            onClick={handleDelete}
-            title="Delete this entry"
-            style={{
-              padding: '12px',
-              backgroundColor: 'transparent',
-              color: '#F08571',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            ×
-          </button>
-
-          <button
-            onClick={handleSaveDraft}
-            disabled={isSaving}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: 'transparent',
-              color: '#F08571',
-              fontWeight: '600',
-              border: '2px solid #F08571',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-              opacity: isSaving ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#f9f9f9')}
-            onMouseLeave={(e) => !isSaving && (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            Save as Draft
-          </button>
-
-          <button
-            onClick={handleSaveClick}
-            disabled={!(plan.trim() && goal.trim()) || isSaving}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: (!(plan.trim() && goal.trim()) || isSaving) ? '#ccc' : '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: (!(plan.trim() && goal.trim()) || isSaving) ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => (!(plan.trim() && goal.trim()) || isSaving) || (e.currentTarget.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => (!(plan.trim() && goal.trim()) || isSaving) || (e.currentTarget.style.backgroundColor = '#F08571')}
-          >
-            {isSaving ? 'Saving...' : 'Finish'}
+        <div className="inv-recap">
+          <p>{goal}</p>
+          <button type="button" className="plan-link-btn" onClick={() => goToStep('/inversion-step-1')}>
+            Change
           </button>
         </div>
 
-        <NamingModal
-          isOpen={showNamingModal}
-          itemType="decision"
-          onConfirm={handleSaveConfirmed}
-          onCancel={() => setShowNamingModal(false)}
-        />
+        <div className="plan-section-top" style={{ marginBottom: 'var(--space-2)' }}>
+          <span className="ui-section-heading">Risks</span>
+          <button type="button" className="plan-link-btn" onClick={() => goToStep('/inversion-step-2')}>
+            Change risks
+          </button>
+        </div>
+
+        <div className="inv-cards">
+          {risks.map((risk, index) => {
+            const answer = riskAnswers[index] || '';
+            const isAnswered = answer.trim().length > 0;
+            const isNow = index === firstUnansweredIndex;
+            return (
+              <div className={`inv-card${isNow ? ' now' : ''}${isAnswered ? ' ok' : ''}`} key={index}>
+                <div className="inv-card-row">
+                  <span className="inv-card-num">{String(index + 1).padStart(2, '0')}</span>
+                  <p>{risk}</p>
+                  <span className="inv-card-check" aria-hidden="true"><CheckIcon /></span>
+                </div>
+                <AutoGrowTextarea
+                  className="inv-card-textarea"
+                  placeholder="Type here"
+                  aria-label={`What will you do about risk ${index + 1}?`}
+                  value={answer}
+                  onChange={(v) => changeAnswer(index, v)}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
+
+        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
+
+        <div className="plan-discard-row">
+          <DiscardLink onClick={() => setDiscardOpen(true)} />
+        </div>
       </div>
 
-      <SavedConfirmation
-        isVisible={saved}
-        onDismiss={() => setSaved(false)}
+      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+
+      <NameDialog
+        open={nameDialog !== null}
+        title={nameDialog === 'draft' ? 'Name this draft' : 'Name this decision'}
+        message="Give it a name so you can find it in My decisions."
+        suggestedName={suggestedName}
+        onConfirm={handleNameConfirm}
+        onCancel={() => setNameDialog(null)}
       />
+
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard this entry?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
+      />
+      <Toast message={message} />
     </div>
   );
 }
