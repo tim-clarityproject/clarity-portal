@@ -1,3 +1,32 @@
+// The live `decisions`/`journal_entries` created_at/updated_at columns
+// are "timestamp without time zone" holding a UTC clock reading (the
+// repo's migration files say timestamptz, but the live database does
+// not match them - confirmed from the live data, not just the SQL
+// files). Supabase therefore returns a string like
+// "2026-10-13T09:02:56.213858" with no Z or +hh:mm ending. `new
+// Date(...)` on a string with no ending reads it as the DEVICE'S
+// local time, not UTC - a plan saved at 10:02 BST comes back out as
+// "09:02 local", an hour behind. Every read of a saved timestamp
+// should go through this first. Already-correct values (a trailing Z,
+// a +hh:mm/-hh:mm offset, or an actual Date instance - e.g. once the
+// column type is ever fixed to timestamptz) are returned unchanged.
+export const parseDbTimestamp = (value) => {
+  if (value instanceof Date) return value;
+  if (typeof value !== 'string') return new Date(value);
+  if (/(Z|[+-]\d{2}:?\d{2})$/.test(value)) return new Date(value);
+  return new Date(`${value.replace(' ', 'T')}Z`);
+};
+
+// "2026-10-13" from the device's own local date, never from
+// toISOString() (which is UTC - between midnight and 1am BST that
+// gives yesterday's date).
+export const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const formatDateWithOrdinal = (dateStr) => {
   const date = new Date(dateStr + 'T00:00:00');
   const day = date.getDate();
@@ -16,7 +45,7 @@ export const formatDateWithOrdinal = (dateStr) => {
 
 export const formatDateAndTime = (dateStr) => {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+  const date = parseDbTimestamp(dateStr);
   const day = date.getDate();
   const month = date.toLocaleDateString('en-US', { month: 'long' });
   const year = date.getFullYear();
@@ -58,7 +87,7 @@ export const formatReviewDate = (dateStr) => {
 // Format time only as 12-hour with am/pm (e.g. "03:14 PM")
 export const formatTimeOnly = (dateStr) => {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+  const date = parseDbTimestamp(dateStr);
   const hours = date.getHours();
   const minutes = date.getMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -69,7 +98,7 @@ export const formatTimeOnly = (dateStr) => {
 // Format date and time with ordinal suffix on day (e.g. "Sep 24th, 2026, 02:08 PM")
 export const formatDateTimeWithOrdinal = (dateStr) => {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+  const date = parseDbTimestamp(dateStr);
   const day = date.getDate();
   const month = date.toLocaleDateString('en-US', { month: 'short' });
   const year = date.getFullYear();

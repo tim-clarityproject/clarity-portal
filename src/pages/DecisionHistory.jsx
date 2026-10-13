@@ -4,7 +4,7 @@ import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { formatDateWithOrdinal, formatDateTimeWithOrdinal } from '../lib/dateFormatter';
+import { formatDateWithOrdinal, formatDateTimeWithOrdinal, parseDbTimestamp } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import BackArrow from '../components/BackArrow';
 
@@ -41,12 +41,12 @@ export default function DecisionHistory() {
   };
 
   const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
+    const date = parseDbTimestamp(dateStr);
     return date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const formatDailyPlanDate = (dateStr) => {
-    const date = new Date(dateStr);
+    const date = parseDbTimestamp(dateStr);
     const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
     const day = date.getDate();
     const month = date.toLocaleDateString('en-US', { month: 'short' });
@@ -60,7 +60,7 @@ export default function DecisionHistory() {
   };
 
   const formatDailyPlanDateAndTime = (dateStr) => {
-    const date = new Date(dateStr);
+    const date = parseDbTimestamp(dateStr);
     const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
     const day = date.getDate();
     const month = date.toLocaleDateString('en-US', { month: 'short' });
@@ -76,7 +76,7 @@ export default function DecisionHistory() {
 
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
-    const date = new Date(timeStr);
+    const date = parseDbTimestamp(timeStr);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -97,7 +97,7 @@ export default function DecisionHistory() {
 
   const formatDateAndTime = (timeStr) => {
     if (!timeStr) return '';
-    const date = new Date(timeStr);
+    const date = parseDbTimestamp(timeStr);
     const dateStr = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     const timeStr_ = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     return `${dateStr} ${timeStr_}`;

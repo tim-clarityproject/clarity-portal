@@ -4,7 +4,7 @@ import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { formatReviewDate, formatTimeOnly, formatDateTimeWithOrdinal } from '../lib/dateFormatter';
+import { formatReviewDate, formatTimeOnly, formatDateTimeWithOrdinal, parseDbTimestamp, getLocalDateKey } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 
 export default function MyPlans() {
@@ -42,7 +42,7 @@ export default function MyPlans() {
   };
 
   const formatDailyPlanDateAndTime = (dateStr) => {
-    const date = new Date(dateStr);
+    const date = parseDbTimestamp(dateStr);
     const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
     const day = date.getDate();
     const month = date.toLocaleDateString('en-US', { month: 'short' });
@@ -238,7 +238,7 @@ export default function MyPlans() {
                 >
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '16px', width: '100%' }}>
                     <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                      {plan.tool_type === 'daily_plan' ? formatReviewDate(plan.created_at.split('T')[0]) : plan.title || 'Meeting'}
+                      {plan.tool_type === 'daily_plan' ? formatReviewDate(getLocalDateKey(parseDbTimestamp(plan.created_at))) : plan.title || 'Meeting'}
                     </p>
                     <span
                       style={{

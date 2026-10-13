@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
-import { formatReviewDate } from '../lib/dateFormatter';
+import { formatReviewDate, getLocalDateKey } from '../lib/dateFormatter';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import SavedConfirmation from '../components/SavedConfirmation';
@@ -16,7 +16,7 @@ export default function MyJournal() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const reviewType = location.state?.reviewType || 'after-action';
-  const [selectedDate, setSelectedDate] = useState(location.state?.selectedDate || new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(location.state?.selectedDate || getLocalDateKey(new Date()));
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -335,7 +335,7 @@ export default function MyJournal() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
+            max={getLocalDateKey(new Date())}
             style={inputStyle}
           />
         </div>

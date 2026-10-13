@@ -6,6 +6,7 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { parseDbTimestamp } from '../lib/dateFormatter';
 
 // Headings repeat the four questions word for word - see
 // PlanMyDayStep1.jsx's QUESTIONS. Two of these were previously shortened
@@ -28,7 +29,7 @@ function ordinal(n) {
 // "Friday 2nd Oct, 2026" - en-US only for the month abbreviation (en-GB's
 // Intl data gives "Sept", 4 letters; the approved examples use "Sep").
 function formatPlanDate(isoString) {
-  const date = new Date(isoString);
+  const date = parseDbTimestamp(isoString);
   const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' });
   const month = date.toLocaleDateString('en-US', { month: 'short' });
   const year = date.getFullYear();

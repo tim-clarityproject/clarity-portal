@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
+import { parseDbTimestamp } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BreathingOrb from '../components/ui/BreathingOrb';
@@ -95,7 +96,7 @@ function ordinal(n) {
 
 // "Thursday 1st Oct" - daily plans are titled by date, not a user title.
 function formatDailyPlanTitle(dateStr) {
-  const date = new Date(dateStr);
+  const date = parseDbTimestamp(dateStr);
   const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' });
   const day = date.getDate();
   // en-US (not en-GB) for the month abbreviation specifically - en-GB's
@@ -107,7 +108,7 @@ function formatDailyPlanTitle(dateStr) {
 
 // "8:15am"
 function formatTimeOnly(dateStr) {
-  const date = new Date(dateStr);
+  const date = parseDbTimestamp(dateStr);
   const hours = date.getHours();
   const minutes = date.getMinutes();
   const ampm = hours >= 12 ? 'pm' : 'am';
@@ -117,7 +118,7 @@ function formatTimeOnly(dateStr) {
 
 // "29 Sep, 9:30am" - UK day-before-month order, device local time.
 function formatDateAndTime(dateStr) {
-  const date = new Date(dateStr);
+  const date = parseDbTimestamp(dateStr);
   const day = date.getDate();
   const month = date.toLocaleDateString('en-US', { month: 'short' });
   return `${day} ${month}, ${formatTimeOnly(dateStr)}`;

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { parseDbTimestamp } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 
 export default function JournalLog() {
@@ -44,7 +45,7 @@ export default function JournalLog() {
 
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
-    const date = new Date(timeStr);
+    const date = parseDbTimestamp(timeStr);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 

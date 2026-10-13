@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { parseDbTimestamp } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 
 export default function MyReviews() {
@@ -54,13 +55,13 @@ export default function MyReviews() {
   };
 
   const formatDateTime = (dateTimeStr) => {
-    const date = new Date(dateTimeStr);
+    const date = parseDbTimestamp(dateTimeStr);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) + ' ' +
            date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   const formatTimeOnly = (dateTimeStr) => {
-    const date = new Date(dateTimeStr);
+    const date = parseDbTimestamp(dateTimeStr);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
