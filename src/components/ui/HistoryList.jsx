@@ -40,6 +40,14 @@ function ChevronDownIcon() {
   );
 }
 
+function CheckIcon() {
+  return (
+    <svg className="hlist-check" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
 // "1 Oct, 9:40pm" - UK, device local time (no explicit timeZone, so it
 // naturally follows the device's own BST/GMT offset). en-GB's AM/PM
 // comes back as " am"/" pm" (lower-case, space-separated) - the space
@@ -79,6 +87,7 @@ export default function HistoryList({
   onOpen,
   onEdit,
   onDelete,
+  onReview,
 }) {
   const allFilters = filters.length ? [{ id: 'all', label: 'All' }, ...filters] : [];
   const [activeFilter, setActiveFilter] = useState('all');
@@ -276,25 +285,46 @@ export default function HistoryList({
                       <span>{formatRowDate(row.date)}</span>
                       {row.version && <span>{row.version}</span>}
                       {row.meta && <span>{row.meta}</span>}
-                      {row.isDraft && <span className="hlist-continue">Continue</span>}
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    className="hlist-icon-btn"
-                    aria-label={`Edit ${row.title}`}
-                    onClick={(e) => { e.stopPropagation(); onEdit?.(row); }}
-                  >
-                    <PencilIcon />
-                  </button>
-                  <button
-                    type="button"
-                    className="hlist-icon-btn hlist-icon-btn--del"
-                    aria-label={`Delete ${row.title}`}
-                    onClick={(e) => { e.stopPropagation(); onDelete?.(row); }}
-                  >
-                    <BinIcon />
-                  </button>
+                  <div className="hlist-row-controls">
+                    {onReview && (
+                      <button
+                        type="button"
+                        className={`hlist-review-btn${row.reviewed ? ' done' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); onReview(row); }}
+                      >
+                        {row.reviewed && <CheckIcon />}
+                        {row.reviewed ? 'Reviewed' : 'Review'}
+                      </button>
+                    )}
+                    {row.isDraft ? (
+                      <button
+                        type="button"
+                        className="hlist-continue-btn"
+                        onClick={(e) => { e.stopPropagation(); onEdit?.(row); }}
+                      >
+                        Continue
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="hlist-icon-btn"
+                        aria-label={`Edit ${row.title}`}
+                        onClick={(e) => { e.stopPropagation(); onEdit?.(row); }}
+                      >
+                        <PencilIcon />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="hlist-icon-btn hlist-icon-btn--del"
+                      aria-label={`Delete ${row.title}`}
+                      onClick={(e) => { e.stopPropagation(); onDelete?.(row); }}
+                    >
+                      <BinIcon />
+                    </button>
+                  </div>
                 </div>
               </Fragment>
             );
@@ -743,13 +773,82 @@ const HLIST_CSS = `
   vertical-align: middle;
 }
 
-.hlist-continue {
+.hlist-row-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.ui-root .hlist-continue-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2) !important;
   color: var(--coral-text);
   font-family: var(--font-display);
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 10px;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .hlist-continue-btn:hover,
+.ui-root .hlist-continue-btn:focus-visible {
+  color: var(--coral-soft);
+}
+
+.ui-root .hlist-continue-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ui-root .hlist-review-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .hlist-review-btn:hover,
+.ui-root .hlist-review-btn:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .hlist-review-btn.done {
+  color: var(--mint-text);
+}
+
+.ui-root .hlist-review-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.hlist-check {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .hlist-row-meta {
@@ -815,18 +914,24 @@ const HLIST_CSS = `
   stroke-linejoin: round;
 }
 
-/* Phone: title+meta on their own line, actions below */
+/* Phone: title+meta on their own line, Review/Edit/Delete on the line
+   below (brief: "second line for Review, Edit and Delete") - a flex
+   wrap rather than a fixed-column grid, since Continue/Review are text
+   buttons of varying width, not just two 44px icon buttons. */
 @media (max-width: 768px) {
   .hlist-row {
-    display: grid;
-    grid-template-columns: 1fr 44px 44px;
-    align-items: center;
-    padding-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding-bottom: 4px;
   }
   .hlist-row::before { display: none; }
   .ui-root .hlist-row-main {
-    grid-column: 1 / -1;
-    padding: 14px 8px 12px 16px !important;
+    padding: 14px 8px 4px 16px !important;
+  }
+  .hlist-row-controls {
+    justify-content: flex-start;
+    padding: 0 0 4px 12px;
   }
 }
 
