@@ -16,9 +16,12 @@ import { supabase } from './supabase';
 // from/to (patch 3, areas B-D): each phase's progress value at its
 // start and end (0 = fully settled/empty, 1 = fully swelled/full) -
 // the mock-up's own a/b, read verbatim from its T object. The box's
-// final "Hold" is from:0,to:0 (b is not < a, so the mock-up's own
-// ex/isEnding flag is false there and the colour chases back towards
-// coral even on this empty hold) - copied exactly, not "corrected".
+// two "Hold" phases are flat (from===to), so phaseAt()'s dir is -1 for
+// both - a hold doesn't push the colour chase anywhere itself, it
+// keeps heading wherever the breath before it was going (patch 3B
+// area D; patch 3's own isEnding flag couldn't represent this and
+// chased both holds back towards coral, a bug that patch 3 had
+// mistaken for an intentional mock-up quirk).
 export const TECHNIQUES = {
   sigh: {
     key: 'sigh',
