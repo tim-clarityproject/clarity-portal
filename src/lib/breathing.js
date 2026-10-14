@@ -109,22 +109,22 @@ export function mixColorTokens(varA, varB, t) {
 // the same quiet, calm tone.
 export const GUIDANCE = {
   sigh: [
-    { label: 'Inhale', text: 'Breathe in through your nose until your lungs feel full.' },
+    { label: 'Inhale', text: 'Take a deep breath in through your nose until your lungs feel full.' },
     { label: 'Top up', text: 'Without exhaling, take a quick second "top-up" breath through your nose.' },
     { label: 'Exhale', text: 'Release a long, slow exhale through your mouth.' },
     { label: 'Repeat', text: 'Repeat for as many cycles as you like.' },
   ],
   vagal: [
-    { label: 'Inhale', text: 'Breathe in slowly through your nose for 4 seconds.' },
-    { label: 'Exhale', text: 'Breathe out slowly through your mouth for 6 seconds.' },
-    { label: 'Release', text: 'Let your shoulders and jaw soften a little more with every breath.' },
-    { label: 'Continue', text: 'Repeat for as many cycles as you like.' },
+    { label: 'Inhale', text: 'Breathe in slowly through your nose for four seconds.' },
+    { label: 'Exhale', text: 'Breathe out gently through softly pursed lips for six seconds.' },
+    { label: 'Release', text: 'Keep your shoulders and jaw loose.' },
+    { label: 'Continue', text: 'Continue for a few minutes.' },
   ],
   box: [
-    { label: 'Inhale', text: 'Breathe in through your nose for 4 seconds.' },
-    { label: 'Hold', text: 'Hold your breath gently for 4 seconds.' },
-    { label: 'Exhale', text: 'Breathe out through your mouth for 4 seconds.' },
-    { label: 'Hold', text: 'Hold again for 4 seconds, then begin the next cycle.' },
+    { label: 'Inhale', text: 'Breathe in for four counts.' },
+    { label: 'Hold', text: 'Hold gently for four counts.' },
+    { label: 'Exhale', text: 'Breathe out for four counts.' },
+    { label: 'Hold', text: 'Hold again for four counts, then repeat.' },
   ],
 };
 

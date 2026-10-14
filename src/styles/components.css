@@ -4541,38 +4541,33 @@ span.tc-editable:focus-visible {
 
 .breathe-guidance {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-5);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
   max-width: 760px;
   margin-bottom: var(--space-6);
-  text-align: left;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 @media (max-width: 768px) {
   .breathe-guidance {
     grid-template-columns: 1fr;
-    gap: 0;
   }
 }
 
 .breathe-guidance-col {
-  padding-left: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-4);
+}
+
+.breathe-guidance-col + .breathe-guidance-col {
   border-left: 1px solid var(--line);
 }
 
 @media (max-width: 768px) {
-  .breathe-guidance-col {
+  .breathe-guidance-col + .breathe-guidance-col {
     border-left: none;
     border-top: 1px solid var(--line);
-    padding-left: 0;
-    padding-top: var(--space-3);
-    margin-top: var(--space-3);
-  }
-  .breathe-guidance-col:first-child {
-    border-top: none;
-    margin-top: 0;
-    padding-top: 0;
   }
 }
 
@@ -4592,7 +4587,7 @@ span.tc-editable:focus-visible {
   width: 20px;
   height: 2px;
   background: var(--coral);
-  margin-bottom: var(--space-2);
+  margin: 0 auto var(--space-2);
 }
 
 .breathe-guidance-text {
