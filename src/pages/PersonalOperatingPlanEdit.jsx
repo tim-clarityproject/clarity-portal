@@ -454,7 +454,7 @@ export default function PersonalOperatingPlanEdit() {
                         <>
                           <div className="pop-tactic-field">
                             <label className="pop-tactic-label">Target</label>
-                            <div className="tsa-stepper">
+                            <div className="tsa-stepper pop-target-stepper">
                               <button type="button" className="tsa-stepper-btn" aria-label="Decrease target" onClick={() => {
                                 const current = Number(tactic.target_value) || 0;
                                 const next = Math.max(0, current - stepBy(current));

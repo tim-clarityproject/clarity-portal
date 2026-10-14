@@ -3804,6 +3804,27 @@ span.tc-editable:focus-visible {
   flex: none;
 }
 
+/* Target stepper input, phone only: src/styles/mobile.css forces
+   padding: 12px 16px !important onto every input/select at
+   max-width: 768px. .tsa-stepper input (unlike .pop-unit-input, which
+   inherits .plan-input's own 0 14px !important, and unlike
+   .pop-tactic-toggle-btn, which sets its own 0 16px !important) has no
+   padding of its own, so that blanket rule was the only one that
+   applied - eating 32px of horizontal space the ch-based inline width
+   (set in the JSX from the current digit count) never accounted for,
+   since on desktop this input has near-zero padding and the full ch
+   width goes to the digits. Reclaiming that space here is enough on
+   its own; nothing else needed changing.
+   Scoped to .pop-target-stepper (not the bare .tsa-stepper the Time
+   Audit tool also uses) so that page's hours stepper is untouched,
+   and wrapped in the same max-width: 768px breakpoint mobile.css
+   uses, so desktop is untouched too. */
+@media (max-width: 768px) {
+  .ui-root .pop-target-stepper input {
+    padding: 0 4px !important;
+  }
+}
+
 /* "Saving creates Version X.Y" beside the Save button (mock-up's
    .nvp), not as the page subtitle. */
 .pop-save-preview {
