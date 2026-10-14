@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { TECHNIQUES, cycleDuration } from '../../lib/breathing';
+import { TECHNIQUES, cycleDuration, phaseAt, mixColorTokens } from '../../lib/breathing';
 
-function useReducedMotion() {
+export function useReducedMotion() {
   const [reduced, setReduced] = useState(() => (
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   ));
@@ -41,6 +41,58 @@ function useCycleClock(technique, active) {
   }, [active, technique]);
 
   return elapsedMs;
+}
+
+// Active-session phase label, countdown, elapsed timer and the
+// phase label's own colour (mock-up's #phase/#count/#timer,
+// breathing-tool.html:~95/122-125 and breathing-and-about.html's
+// stt()/loop() - identical formulas in both). A separate rAF loop and
+// colour-chase (cm) from RingVisual/BoxVisual's own (deliberately not
+// shared state - each starts its own cm at 0 when a session starts and
+// ticks via requestAnimationFrame, so in practice they stay in
+// lock-step; there is no shared-state risk to the existing ring/box
+// code). elapsedSeconds counts up for the whole session (never wraps
+// per cycle), unlike the shape's own cycle clock.
+export function useBreathingPhase(technique, active) {
+  const reducedMotion = useReducedMotion();
+  const driven = active && !reducedMotion;
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [color, setColor] = useState('var(--coral)');
+  const startRef = useRef(null);
+  const cmRef = useRef(0);
+
+  useEffect(() => {
+    if (!driven) {
+      setElapsedMs(0);
+      cmRef.current = 0;
+      setColor('var(--coral)');
+      return undefined;
+    }
+    startRef.current = Date.now();
+    let raf;
+    const tick = () => {
+      const ms = Date.now() - startRef.current;
+      setElapsedMs(ms);
+      const cycleMs = ms % (cycleDuration(technique) * 1000);
+      const { isEnding } = phaseAt(technique, cycleMs);
+      cmRef.current += ((isEnding ? 1 : 0) - cmRef.current) * 0.06;
+      setColor(mixColorTokens('--coral', '--mint', cmRef.current));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [driven, technique]);
+
+  const cycleMs = elapsedMs % (cycleDuration(technique) * 1000);
+  const { phaseIndex, remainingMs } = phaseAt(technique, cycleMs);
+  const phases = TECHNIQUES[technique].phases;
+
+  return {
+    phaseLabel: phases[phaseIndex].phaseLabel,
+    countdown: Math.max(1, Math.ceil(remainingMs / 1000 - 0.001)),
+    elapsedSeconds: Math.floor(elapsedMs / 1000),
+    color,
+  };
 }
 
 function RingVisual({ technique, active, size }) {

@@ -8,9 +8,13 @@ import {
   loadLatestBreathingSession, formatSessionLength,
 } from '../lib/breathing';
 import DesignHeader from '../components/DesignHeader';
-import BreathingVisual from '../components/ui/BreathingVisual';
+import BreathingVisual, { useBreathingPhase } from '../components/ui/BreathingVisual';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+
+function pad2(n) {
+  return n < 10 ? `0${n}` : `${n}`;
+}
 
 function useShapeSize() {
   const [size, setSize] = useState(() => (typeof window !== 'undefined' && window.innerWidth <= 768 ? 170 : 150));
@@ -65,6 +69,7 @@ export default function BreathingPage() {
   const sessionStartRef = useRef(null);
   const shapeSize = useShapeSize();
   const { message, showToast } = useToast();
+  const { phaseLabel, countdown, elapsedSeconds, color: phaseColor } = useBreathingPhase(technique, sessionActive);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,6 +152,14 @@ export default function BreathingPage() {
         <div className="breathe-shape-wrap">
           <BreathingVisual technique={technique} active={sessionActive} size={shapeSize} />
         </div>
+
+        {sessionActive && (
+          <div className="breathe-session-info">
+            <div className="breathe-phase" aria-live="polite" style={{ color: phaseColor }}>{phaseLabel}</div>
+            <div className="breathe-count">{countdown}</div>
+            <div className="breathe-timer">{Math.floor(elapsedSeconds / 60)}:{pad2(elapsedSeconds % 60)}</div>
+          </div>
+        )}
 
         <div className="breathe-technique-select" role="group" aria-label="Breathing technique">
           {TECHNIQUE_ORDER.map((key) => (

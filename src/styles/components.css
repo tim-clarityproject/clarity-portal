@@ -4425,6 +4425,47 @@ span.tc-editable:focus-visible {
   margin: var(--space-5) 0 var(--space-6);
 }
 
+/* Active-session phase/count/timer (patch 3, area B) - the mock-up's
+   .ph2/.cnt/.tm, breathing-and-about.html:524-526 (its main Breathe
+   page values; the quick-open pop-up's own smaller .bp .cnt override
+   is matched separately in BreathingQuickOpen.jsx). Sits directly
+   under the shape, in the same position as the mock-up's sessHtml(). */
+.breathe-session-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: calc(-1 * var(--space-6) + var(--space-2));
+  margin-bottom: var(--space-3);
+}
+
+.breathe-phase {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.36em;
+  padding-left: 0.36em;
+  font-size: 12px;
+  min-height: 18px;
+}
+
+.breathe-count {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 1;
+  margin-top: var(--space-2);
+  min-height: 56px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.breathe-timer {
+  font-size: 13px;
+  color: var(--placeholder);
+  margin-top: var(--space-3);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Breathe's own technique selector (patch 3, area A): the shared
    .ui-segmented-option has zero horizontal padding (9px 0 8px), built
    for short two-word labels elsewhere (BreathingSettingsModal's "No

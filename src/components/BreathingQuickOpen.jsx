@@ -6,7 +6,11 @@ import {
   TECHNIQUES, TECHNIQUE_ORDER, MIN_SESSION_SECONDS,
   loadBreathingPreference, saveBreathingPreference, saveBreathingSession,
 } from '../lib/breathing';
-import BreathingVisual from './ui/BreathingVisual';
+import BreathingVisual, { useBreathingPhase } from './ui/BreathingVisual';
+
+function pad2(n) {
+  return n < 10 ? `0${n}` : `${n}`;
+}
 
 // Quick-open breathing pop-up (prompt 11) - replaces BreathingGuide.jsx.
 // Shared by the floating Breathe button and the Home "Need a moment?"
@@ -24,6 +28,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
   const closeTimeoutRef = useRef(null);
   const previousFocusRef = useRef(null);
   const titleId = 'breathing-quick-open-title';
+  const { phaseLabel, countdown, elapsedSeconds, color: phaseColor } = useBreathingPhase(technique, sessionActive);
 
   useEffect(() => {
     if (isOpen) {
@@ -139,6 +144,8 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
         .bqo-actions { display: flex; gap: var(--space-3); width: 100%; margin-top: var(--space-4); }
         .bqo-actions .ui-btn-primary, .bqo-actions .ui-btn-ghost { flex: 1; }
         .bqo-links { display: flex; gap: var(--space-4); margin-top: var(--space-4); }
+        .bqo-session-info { margin-top: var(--space-3); }
+        .bqo-count { font-size: 44px; min-height: 44px; }
       `}</style>
 
       <div className="bqo-scrim" onClick={handleClose} aria-hidden="true" />
@@ -148,6 +155,14 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
         <h2 id={titleId} className="plan-overline" style={{ marginBottom: 'var(--space-4)' }}>{TECHNIQUES[technique].label}</h2>
 
         <BreathingVisual technique={technique} active={sessionActive} size={150} />
+
+        {sessionActive && (
+          <div className="breathe-session-info bqo-session-info">
+            <div className="breathe-phase" aria-live="polite" style={{ color: phaseColor }}>{phaseLabel}</div>
+            <div className="breathe-count bqo-count">{countdown}</div>
+            <div className="breathe-timer">{Math.floor(elapsedSeconds / 60)}:{pad2(elapsedSeconds % 60)}</div>
+          </div>
+        )}
 
         <div className="bqo-select" role="group" aria-label="Breathing technique">
           {TECHNIQUE_ORDER.map((key) => (
