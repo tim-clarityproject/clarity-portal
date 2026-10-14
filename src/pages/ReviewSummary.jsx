@@ -4,7 +4,6 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import { questionsFor, RATINGS, deleteReview } from '../lib/reviewTool';
-import { generateReviewPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -167,9 +166,6 @@ export default function ReviewSummary() {
               Edit review
             </button>
           )}
-          <button type="button" className="plan-link-btn" onClick={() => generateReviewPDF(review, data)}>
-            Download PDF
-          </button>
           <button type="button" className="ui-btn-ghost ui-btn-ghost--danger" onClick={() => setDeleteOpen(true)}>
             Delete review
           </button>

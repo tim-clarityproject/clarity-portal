@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { parseDbTimestamp } from '../lib/dateFormatter';
 import { TECHNIQUES, loadBreathingSessions, deleteBreathingSession, formatSessionLength } from '../lib/breathing';
-import { generateBreathingSessionsPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -126,12 +125,6 @@ export default function BreathingSessionsSummary() {
                 </div>
               );
             })}
-
-            <div className="plan-actions">
-              <button type="button" className="plan-link-btn" onClick={() => generateBreathingSessionsPDF(sessions)}>
-                Download PDF
-              </button>
-            </div>
           </>
         )}
       </div>

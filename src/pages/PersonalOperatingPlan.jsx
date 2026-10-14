@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { archivePlan, countArchivedMissions, formatVersion, loadLatestVersion } from '../lib/missionPlan';
-import { generateMissionProgressPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
@@ -142,24 +141,6 @@ export default function PersonalOperatingPlan() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    if (!mission) return;
-    generateMissionProgressPDF({
-      created_at: new Date().toISOString(),
-      review_data: {
-        mission_title: mission.title,
-        strategies: strategies.map((s) => ({
-          ...s,
-          tactics: (tactics[s.id] || []).map((t) => ({
-            ...t,
-            reviewed_is_done: t.is_done,
-            reviewed_value: t.current_value,
-          })),
-        })),
-      },
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="ui-root">
@@ -240,9 +221,6 @@ export default function PersonalOperatingPlan() {
               Archived plans · {archivedCount}
             </button>
           )}
-          <button type="button" className="plan-link-btn" onClick={handleDownloadPDF}>
-            Download PDF
-          </button>
           <button type="button" className="plan-link-btn" onClick={() => setArchiveOpen(true)}>
             Archive this plan
           </button>

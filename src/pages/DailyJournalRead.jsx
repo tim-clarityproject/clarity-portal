@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { formatPlainDayLabel } from '../lib/dateFormatter';
 import { loadJournalByDate, deleteJournal, wordCount } from '../lib/dailyJournal';
-import { generateJournalPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -96,9 +95,6 @@ export default function DailyJournalRead() {
         <div className="plan-actions">
           <button type="button" className="ui-btn-ghost" onClick={() => navigate('/daily-journal', { state: { date: journal.journal_date } })}>
             Edit journal
-          </button>
-          <button type="button" className="plan-link-btn" onClick={() => generateJournalPDF(journal)}>
-            Download PDF
           </button>
         </div>
 

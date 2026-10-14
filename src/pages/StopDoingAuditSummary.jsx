@@ -2,7 +2,6 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { generateTimeAuditPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -141,9 +140,6 @@ export default function StopDoingAuditSummary() {
         <div className="plan-actions">
           <button type="button" className="ui-btn-ghost" onClick={() => navigate('/stop-doing-audit', { state: { decisionId: audit.id } })}>
             Edit audit
-          </button>
-          <button type="button" className="plan-link-btn" onClick={() => generateTimeAuditPDF(audit)}>
-            Download PDF
           </button>
           <button type="button" className="ui-btn-ghost ui-btn-ghost--danger" onClick={() => setDeleteOpen(true)}>
             Delete audit

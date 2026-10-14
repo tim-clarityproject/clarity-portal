@@ -83,8 +83,8 @@ const SECTIONS = [
       },
       {
         label: 'Daily Pages',
-        to: '/daily-journals',
-        childRoutes: ['/daily-journal'],
+        to: '/daily-journal',
+        childRoutes: ['/daily-journals'],
       },
       {
         label: 'Scenario Planning',
