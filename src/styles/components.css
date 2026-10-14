@@ -4425,10 +4425,77 @@ span.tc-editable:focus-visible {
   margin: var(--space-5) 0 var(--space-6);
 }
 
+/* Breathe's own technique selector (patch 3, area A): the shared
+   .ui-segmented-option has zero horizontal padding (9px 0 8px), built
+   for short two-word labels elsewhere (BreathingSettingsModal's "No
+   hold"/"With hold") - reused here for three much longer uppercase
+   labels, it left them touching the pill edge. Scoped classes instead
+   of changing .ui-segmented-option, which other screens still rely on
+   as-is. Matches the mock-up's own .tq/.tq button exactly: 3px group
+   padding, 6px 8px button padding, 44px min-height, stacked to one
+   column on phone (grid-template-columns: 1fr) rather than squeezed
+   into three. max-width raised from 420px to 760px to match the
+   mock-up's own (unconstrained) width and this page's guidance row
+   below it. */
 .breathe-technique-select {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
   margin: 0 auto var(--space-6);
   width: 100%;
-  max-width: 420px;
+  max-width: 760px;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+}
+
+@media (max-width: 768px) {
+  .breathe-technique-select {
+    grid-template-columns: 1fr;
+    border-radius: 20px;
+  }
+}
+
+.ui-root .breathe-technique-option {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  padding: 6px 8px;
+  border-radius: var(--radius-pill);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .breathe-technique-option:hover {
+  color: var(--text);
+}
+
+.ui-root .breathe-technique-option.active {
+  background: var(--coral);
+  color: #000000;
+}
+
+.ui-root .breathe-technique-option:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .ui-root .breathe-technique-option {
+    border-radius: 16px;
+  }
 }
 
 .breathe-guidance {

@@ -148,12 +148,12 @@ export default function BreathingPage() {
           <BreathingVisual technique={technique} active={sessionActive} size={shapeSize} />
         </div>
 
-        <div className="ui-segmented breathe-technique-select" role="group" aria-label="Breathing technique">
+        <div className="breathe-technique-select" role="group" aria-label="Breathing technique">
           {TECHNIQUE_ORDER.map((key) => (
             <button
               key={key}
               type="button"
-              className={`ui-segmented-option${technique === key ? ' active' : ''}`}
+              className={`breathe-technique-option breathe-button${technique === key ? ' active' : ''}`}
               aria-pressed={technique === key}
               onClick={() => handleSwitchTechnique(key)}
             >
