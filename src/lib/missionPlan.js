@@ -28,6 +28,43 @@ export function formatVersion(major, minor) {
   return `Version ${major}.${minor}`;
 }
 
+// "3 strategies, 9 tactics" (mock-up's own counts()) - shown on every
+// version-history row and every archived-plan row.
+export function formatPlanCounts(snapshot) {
+  const strategies = snapshot?.strategies || [];
+  const tacticCount = strategies.reduce((sum, s) => sum + (s.tactics || []).length, 0);
+  return `${strategies.length} strateg${strategies.length === 1 ? 'y' : 'ies'} · ${tacticCount} tactic${tacticCount === 1 ? '' : 's'}`;
+}
+
+// Plain-English restatement of change_type (mock-up's version-history
+// "kind" line: "Main update" / "Smaller update" / "Restored" / "Start").
+export const CHANGE_KIND_LABEL = {
+  major: 'Main update',
+  minor: 'Smaller update',
+  restore: 'Restored',
+  start: 'Start',
+};
+
+// Most recent 'final' review's date per plan_version_id, for the
+// version-history row's "Reviewed <date>" line (mock-up: a version is
+// only ever shown as reviewed if a review was actually saved against
+// it - not every version has one).
+export async function loadReviewedVersionDates(missionId) {
+  const { data, error } = await supabase
+    .from('mission_progress_reviews')
+    .select('plan_version_id, created_at')
+    .eq('mission_id', missionId)
+    .eq('status', 'final')
+    .not('plan_version_id', 'is', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  const dates = {};
+  for (const row of data || []) {
+    if (!dates[row.plan_version_id]) dates[row.plan_version_id] = row.created_at;
+  }
+  return dates;
+}
+
 // No DB ids inside a snapshot - restoring an old version always
 // creates brand new strategy/tactic rows (see restorePlanFromVersion).
 export function buildSnapshot(title, strategies) {

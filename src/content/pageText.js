@@ -14,7 +14,9 @@ export const pageText = {
   // Plan section
   personalOperatingPlan: { overline: 'Plan', subtitle: 'Your mission, the strategies that serve it and what you do every day.' },
   personalOperatingPlanEdit: { overline: 'Plan', subtitle: 'Your mission is the anchor. Strategies are how you pursue it. Tactics are what you do every day.' },
-  personalOperatingPlanReview: { overline: 'Plan', subtitle: '' },
+  personalOperatingPlanHistory: { overline: 'Plan', subtitle: 'Every time you save a change, a copy is kept. Look back at any earlier Version of your plan, or restore it.' },
+  personalOperatingPlanArchived: { overline: 'Plan', subtitle: 'Plans you have archived. Open one to read it, or restore it as your current plan. Their Versions and reviews are kept.' },
+  personalOperatingPlanReview: { overline: 'Plan', subtitle: 'Tick what you have done and update your numbers.' },
   personalOperatingPlanSummary: { overline: 'Plan', subtitle: '' },
   goalSetting: { overline: 'Plan', subtitle: '' },
   risksAssessment: { overline: 'Plan', subtitle: '' },

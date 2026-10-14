@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { formatVersion, loadLatestVersion, restoreArchivedPlan } from '../lib/missionPlan';
+import { loadLatestVersion, restoreArchivedPlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -134,11 +134,13 @@ export default function PersonalOperatingPlanArchivedOne() {
         <div className="plan-summary-head">
           <span className="plan-overline">Archived</span>
           <div className="ui-title">{mission.title}</div>
-          <p className="ui-subtitle">
-            Archived {new Date(mission.archived_at).toLocaleDateString('en-GB')}
-            {version ? ` · ${formatVersion(version.major, version.minor)}` : ''}
-          </p>
+          <p className="ui-subtitle">Archived {new Date(mission.archived_at).toLocaleDateString('en-GB')}</p>
         </div>
+
+        <p className="pop-version-date">
+          {version ? `Last Version: ${version.major}.${version.minor}. ` : ''}
+          You can read this plan but not change it.
+        </p>
 
         {strategies.length === 0 ? (
           <p className="pop-empty">No strategies.</p>
@@ -175,8 +177,8 @@ export default function PersonalOperatingPlanArchivedOne() {
         open={restoreOpen}
         title="Restore this plan?"
         message={hasLivePlan
-          ? 'It becomes your current plan. Your current plan moves to Archived plans, with its versions and reviews.'
-          : 'It becomes your current plan again, with its versions and reviews.'}
+          ? 'It becomes your current plan. Your current plan moves to Archived plans, with its Versions and reviews.'
+          : 'It becomes your current plan again, with its Versions and reviews.'}
         confirmLabel={isRestoring ? 'Restoring...' : 'Restore'}
         onCancel={() => setRestoreOpen(false)}
         onConfirm={handleRestore}

@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { formatDateAndTime } from '../lib/dateFormatter';
+import { formatShortDate } from '../lib/dateFormatter';
 import { formatVersion, loadVersions, restorePlanFromVersion } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
@@ -124,9 +124,16 @@ export default function PersonalOperatingPlanHistoryVersion() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-history', { state: { missionId } })} label="Back to version history" /></div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">{version.change_note}</span>
+          <span className="plan-overline">{formatShortDate(version.created_at)}</span>
           <div className="ui-title">{formatVersion(version.major, version.minor)}</div>
-          <p className="ui-subtitle">{formatDateAndTime(version.created_at)}</p>
+          <p className="ui-subtitle">{version.change_note}</p>
+        </div>
+
+        <p className="pop-version-date">{isCurrent ? 'This is your current plan.' : 'This is an older Version. You can read it but not change it.'}</p>
+
+        <div className="pop-mission-card">
+          <span className="ui-section-heading" style={{ marginTop: 0 }}>Your mission</span>
+          <p className="pop-mission-text">{version.snapshot.mission?.title}</p>
         </div>
 
         {(version.snapshot.strategies || []).map((strategy, si) => (
@@ -152,7 +159,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
         {!isCurrent && (
           <div className="plan-actions">
             <button type="button" className="ui-btn-primary" onClick={() => setRestoreOpen(true)}>
-              Restore this version
+              Restore this Version
             </button>
           </div>
         )}
@@ -161,7 +168,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
       <ConfirmDialog
         open={restoreOpen}
         title={`Restore ${formatVersion(version.major, version.minor)}?`}
-        message="Your current strategies and tactics will be replaced with this version's content. This itself becomes a new version, so nothing is lost."
+        message={`Your current plan stays in your history. ${formatVersion(version.major, version.minor)} is copied forward as a new main Version, so nothing is lost.`}
         confirmLabel={isRestoring ? 'Restoring...' : 'Restore'}
         onCancel={() => setRestoreOpen(false)}
         onConfirm={handleRestore}

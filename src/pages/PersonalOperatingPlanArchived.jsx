@@ -2,8 +2,9 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { formatVersion, loadArchivedMissions, restoreArchivedPlan } from '../lib/missionPlan';
+import { formatPlanCounts, formatVersion, loadArchivedMissions, restoreArchivedPlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
+import PageHeading from '../components/PageHeading';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
@@ -63,23 +64,21 @@ export default function PersonalOperatingPlanArchived() {
       <div className="plan-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan')} label="Back to your plan" /></div>
 
-        <div className="plan-summary-head">
-          <span className="plan-overline">Plan</span>
-          <div className="ui-title">Archived plans</div>
-        </div>
+        <PageHeading pageKey="personalOperatingPlanArchived" title="Archived plans" />
 
         {isLoading ? (
           <p className="ui-subtitle">Loading...</p>
         ) : missions.length === 0 ? (
-          <p className="pop-empty">No archived plans yet.</p>
+          <p className="pop-empty">Nothing archived yet. When you archive a plan it will be kept here.</p>
         ) : (
           missions.map((mission) => (
             <div className="pop-version-row" key={mission.id}>
               <span>
                 <span className="pop-version-label">{mission.title}</span>
+                <span className="pop-version-date" style={{ display: 'block' }}>Archived {new Date(mission.archived_at).toLocaleDateString('en-GB')}</span>
                 <span className="pop-version-date" style={{ display: 'block' }}>
-                  Archived {new Date(mission.archived_at).toLocaleDateString('en-GB')}
-                  {mission.latestVersion ? ` · ${formatVersion(mission.latestVersion.major, mission.latestVersion.minor)}` : ''}
+                  {mission.latestVersion ? `${formatVersion(mission.latestVersion.major, mission.latestVersion.minor)} · ` : ''}
+                  {formatPlanCounts(mission.latestVersion?.snapshot)}
                   {' · '}{mission.reviewCount} review{mission.reviewCount === 1 ? '' : 's'}
                 </span>
               </span>
@@ -100,8 +99,8 @@ export default function PersonalOperatingPlanArchived() {
         open={Boolean(restoreTarget)}
         title="Restore this plan?"
         message={hasLivePlan
-          ? 'It becomes your current plan. Your current plan moves to Archived plans, with its versions and reviews.'
-          : 'It becomes your current plan again, with its versions and reviews.'}
+          ? 'It becomes your current plan. Your current plan moves to Archived plans, with its Versions and reviews.'
+          : 'It becomes your current plan again, with its Versions and reviews.'}
         confirmLabel={isRestoring ? 'Restoring...' : 'Restore'}
         onCancel={() => setRestoreTarget(null)}
         onConfirm={handleRestore}
