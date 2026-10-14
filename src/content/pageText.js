@@ -12,7 +12,7 @@ export const pageText = {
   authCallback: { overline: '', subtitle: '' },
 
   // Plan section
-  personalOperatingPlan: { overline: 'Plan', subtitle: '' },
+  personalOperatingPlan: { overline: 'Plan', subtitle: 'Your mission, the strategies that serve it and what you do every day.' },
   personalOperatingPlanEdit: { overline: 'Plan', subtitle: '' },
   personalOperatingPlanReview: { overline: 'Plan', subtitle: '' },
   personalOperatingPlanSummary: { overline: 'Plan', subtitle: '' },

@@ -3784,6 +3784,64 @@ span.tc-editable:focus-visible {
   margin-left: var(--space-2);
 }
 
+/* ---- Mission recap card (plan view / old version / archived plan) ---- */
+
+.pop-mission-card {
+  border-top: 1px solid var(--line);
+  padding: var(--space-4) 0 var(--space-5);
+}
+
+.pop-mission-text {
+  margin: var(--space-2) 0 0;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+/* ---- Collapsible strategy header (plan view) ---- */
+
+.ui-root .pop-strategy-header {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+}
+
+.pop-strategy-header:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.pop-strategy-number {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--coral-text);
+  flex-shrink: 0;
+}
+
+.pop-strategy-header .pop-view-strategy-name {
+  flex: 1;
+  margin: 0;
+}
+
+.pop-strategy-header .ui-cross {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.pop-last-reviewed {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  margin: var(--space-4) 0 0;
+}
+
 .pop-draft-banner {
   display: flex;
   justify-content: space-between;

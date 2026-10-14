@@ -16,9 +16,11 @@ export default function PageHeading({ pageKey, title }) {
         const tWordBase = tWord.replace(/s$/, '');
 
         if (tWordBase.startsWith(oWordBase) && oWordBase.length > 0) {
-          // Repetition detected, hide overline
+          // Repetition detected (rule 7: "the overline names the section
+          // only... never repeat a word from the title") - hide only the
+          // overline. The subtitle is independent page copy, not part of
+          // the repetition the rule is guarding against.
           overline = '';
-          subtitle = '';
           break;
         }
       }

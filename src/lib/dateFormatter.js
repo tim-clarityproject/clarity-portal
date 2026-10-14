@@ -132,6 +132,15 @@ export const formatUkDate = (dateStr) => {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
+// "Fri 2 Oct 2026" - short weekday, cardinal day, short month, year, no
+// time (Personal Operating Plan's version history/archived-plan rows -
+// prompt 9 fidelity patch, matching the approved mock-up exactly).
+export const formatShortDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = parseDbTimestamp(dateStr);
+  return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 // Format time only as 12-hour with am/pm (e.g. "03:14 PM")
 export const formatTimeOnly = (dateStr) => {
   if (!dateStr) return '';
