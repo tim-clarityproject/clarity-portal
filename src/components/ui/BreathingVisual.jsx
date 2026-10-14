@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { TECHNIQUES, cycleDuration, phaseAt, mixColorTokens } from '../../lib/breathing';
 
 export function useReducedMotion() {
@@ -14,33 +14,48 @@ export function useReducedMotion() {
   return reduced;
 }
 
-// Drives a single number - milliseconds elapsed into the current cycle
-// - off which every visual (ring scale/colour/rotation, box dot/ticks)
-// is derived. One rAF loop shared by both shapes instead of each
-// re-deriving phase/countdown bookkeeping separately (the old code's
-// three separate copies of this logic, each with its own small
-// timing differences, is exactly the bug the spec asked to fix).
-function useCycleClock(technique, active) {
+// Drives the ring/box shapes: raw milliseconds elapsed since the
+// session started (never wrapped to the cycle length here - echo-ring
+// lookback (area C) needs to look back past a cycle boundary, so each
+// consumer wraps it with phaseAt() itself) plus the shared coral<->mint
+// colour chase (mock-up's cm += ((ex?1:0)-cm)*.06 - breathing-tool.html
+// and breathing-and-about.html, identical). One rAF loop shared by
+// both shapes instead of each re-deriving phase bookkeeping separately
+// (the old code's three separate copies of this logic, each with its
+// own small timing differences, is exactly the bug the spec asked to
+// fix). Deliberately a separate instance from useBreathingPhase's own
+// clock+chase (see that hook's comment) - not shared state, no risk
+// to the active-session text matching this exactly frame-for-frame,
+// just in step in practice.
+function useCycleAnimation(technique, active) {
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [color, setColor] = useState('var(--coral)');
   const startRef = useRef(null);
+  const cmRef = useRef(0);
 
   useEffect(() => {
     if (!active) {
       setElapsedMs(0);
+      cmRef.current = 0;
+      setColor('var(--coral)');
       return undefined;
     }
     startRef.current = Date.now();
     const totalMs = cycleDuration(technique) * 1000;
     let raf;
     const tick = () => {
-      setElapsedMs((Date.now() - startRef.current) % totalMs);
+      const ms = Date.now() - startRef.current;
+      setElapsedMs(ms);
+      const { isEnding } = phaseAt(technique, ((ms % totalMs) + totalMs) % totalMs);
+      cmRef.current += ((isEnding ? 1 : 0) - cmRef.current) * 0.06;
+      setColor(mixColorTokens('--coral', '--mint', cmRef.current));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [active, technique]);
 
-  return elapsedMs;
+  return { elapsedMs, color };
 }
 
 // Active-session phase label, countdown, elapsed timer and the
@@ -95,48 +110,53 @@ export function useBreathingPhase(technique, active) {
   };
 }
 
+// Mock-up's guide-circle radius (breathing-tool.html/breathing-and-
+// about.html's r(s)=56+94*s, against a 150-radius guide) - min/max
+// ratio 56/150 (~.373), echoes at +9/+18/+27 beyond their own
+// (time-lagged) radius, opacity .36/i.
+const MAX_R = 150;
+const MIN_R = 56;
+const ECHO_LAG_MS = 420;
+
+// Mock-up's main orb fill-opacity (.07) applied to whatever the
+// current blended colour is, since that colour is now a resolved
+// rgb(...) string (mixColorTokens), not a CSS variable reference.
+function colorToFill(rgbString) {
+  return rgbString.replace('rgb(', 'rgba(').replace(/\)$/, ', 0.07)');
+}
+
 function RingVisual({ technique, active, size }) {
   const reducedMotion = useReducedMotion();
   const driven = active && !reducedMotion;
-  const elapsedMs = useCycleClock(technique, driven);
-  const phases = TECHNIQUES[technique].phases;
-  const coralTotal = phases.filter((p) => p.color === 'coral').reduce((s, p) => s + p.seconds * 1000, 0);
-  const mintTotal = phases.filter((p) => p.color === 'mint').reduce((s, p) => s + p.seconds * 1000, 0);
+  const { elapsedMs, color } = useCycleAnimation(technique, driven);
+  const totalMs = cycleDuration(technique) * 1000;
+  const cycleMs = elapsedMs % totalMs;
+  const { s } = phaseAt(technique, cycleMs);
 
-  let frac = 0;
-  let color = 'coral';
-  if (driven) {
-    if (elapsedMs < coralTotal) {
-      frac = elapsedMs / coralTotal;
-      color = 'coral';
-    } else {
-      frac = 1 - (elapsedMs - coralTotal) / mintTotal;
-      color = 'mint';
-    }
-  }
+  const mainScale = (driven ? MIN_R + (MAX_R - MIN_R) * s : MIN_R) / MAX_R;
+  const rotation = driven ? s * 45 : 0;
 
-  const MIN_SCALE = 0.62;
-  const MAX_SCALE = 1;
-  const scale = MIN_SCALE + frac * (MAX_SCALE - MIN_SCALE);
-  const rotation = frac * 45;
+  // Time-lagged replays of the main ring's own state (mock-up's
+  // stt(tech,cycle,tm-i*.42)) - each echo shows where the ring was
+  // ~0.42s/0.84s/1.26s ago, not a copy of its current size.
+  const echoScales = [1, 2, 3].map((i) => {
+    if (!driven) return mainScale;
+    const lagMs = Math.max(elapsedMs - i * ECHO_LAG_MS, 0) % totalMs;
+    const lag = phaseAt(technique, lagMs);
+    return (MIN_R + (MAX_R - MIN_R) * lag.s + i * 9) / MAX_R;
+  });
 
   return (
     <div className="breathing-visual breathing-visual--ring" style={{ '--s': `${size}px` }} aria-hidden="true">
       <style>{`
         .breathing-visual--ring { width: var(--s); height: var(--s); position: relative; flex-shrink: 0; }
         .bv-ring-guide, .bv-ring-echo, .bv-ring-main {
-          position: absolute; top: 50%; left: 50%; border-radius: 50%;
-          box-sizing: border-box; transform: translate(-50%, -50%) scale(var(--scale, 1));
+          position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
+          border-radius: 50%; box-sizing: border-box; transform: translate(-50%, -50%) scale(var(--scale, 1));
         }
-        .bv-ring-guide { width: 100%; height: 100%; border: 1px solid var(--line); transform: translate(-50%, -50%); }
-        .bv-ring-echo { border: 1px solid var(--ring-color); transition: border-color 0.4s linear; }
-        .bv-ring-echo--1 { width: 148%; height: 148%; opacity: 0.1; }
-        .bv-ring-echo--2 { width: 130%; height: 130%; opacity: 0.16; }
-        .bv-ring-echo--3 { width: 114%; height: 114%; opacity: 0.3; }
-        .bv-ring-main {
-          width: 100%; height: 100%; border: 1.6px solid var(--ring-color);
-          background: var(--ring-fill); transition: border-color 0.4s linear, background-color 0.4s linear;
-        }
+        .bv-ring-guide { border: 1px solid var(--line); }
+        .bv-ring-echo { border: 1px solid var(--ring-color); }
+        .bv-ring-main { border: 1.6px solid var(--ring-color); background: var(--ring-fill); }
         .bv-ring-cross.ui-cross {
           position: absolute; top: 50%; left: 50%;
           transform: translate(-50%, -50%) rotate(var(--rotate, 0deg));
@@ -145,15 +165,19 @@ function RingVisual({ technique, active, size }) {
         }
       `}</style>
       <div className="bv-ring-guide" />
-      <div className="bv-ring-echo bv-ring-echo--1" style={{ '--scale': scale, '--ring-color': `var(--${color})` }} />
-      <div className="bv-ring-echo bv-ring-echo--2" style={{ '--scale': scale, '--ring-color': `var(--${color})` }} />
-      <div className="bv-ring-echo bv-ring-echo--3" style={{ '--scale': scale, '--ring-color': `var(--${color})` }} />
+      {echoScales.map((echoScale, idx) => (
+        <div
+          key={idx}
+          className="bv-ring-echo"
+          style={{ '--scale': echoScale, '--ring-color': color, opacity: 0.36 / (idx + 1) }}
+        />
+      ))}
       <div
         className="bv-ring-main"
         style={{
-          '--scale': scale,
-          '--ring-color': `var(--${color})`,
-          '--ring-fill': color === 'coral' ? 'rgba(255, 111, 92, 0.08)' : 'rgba(95, 239, 187, 0.08)',
+          '--scale': mainScale,
+          '--ring-color': color,
+          '--ring-fill': driven ? colorToFill(color) : 'rgba(255, 111, 92, 0.07)',
         }}
       />
       <span className="bv-ring-cross ui-cross" style={{ '--rotate': `${rotation}deg` }} />
@@ -161,72 +185,90 @@ function RingVisual({ technique, active, size }) {
   );
 }
 
-function cornerPoint(cx, cy, r, angleDeg) {
-  const rad = (angleDeg * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-}
-
-// Clockwise from top-left: TL(225deg) -> TR(315deg) -> BR(45deg) ->
-// BL(135deg) -> back to TL (spec section 7). Each corner point is the
-// middle of that corner's rounded arc, not the sharp virtual corner.
-function boxCorners(size, radius) {
-  return [
-    cornerPoint(radius, radius, radius, 225),
-    cornerPoint(size - radius, radius, radius, 315),
-    cornerPoint(size - radius, size - radius, radius, 45),
-    cornerPoint(radius, size - radius, radius, 135),
-  ];
-}
+// Mock-up's own rounded-square path (breathing-and-about.html's BOXD),
+// native to a -120..120 box with 76-radius corners, each corner split
+// into two 45-degree arcs at the BOXC "tick" points - kept at native
+// scale and only ever stretched by the <g> transform below, so the
+// dot's getPointAtLength() lookup is pixel-identical to the mock's.
+const BOXD = 'M-97.74 -97.74A76 76 0 0 1 -44 -120L44 -120A76 76 0 0 1 97.74 -97.74'
+  + 'A76 76 0 0 1 120 -44L120 44A76 76 0 0 1 97.74 97.74A76 76 0 0 1 44 120'
+  + 'L-44 120A76 76 0 0 1 -97.74 97.74A76 76 0 0 1 -120 44L-120 -44'
+  + 'A76 76 0 0 1 -97.74 -97.74Z';
+const BOXC = [[-97.74, -97.74], [97.74, -97.74], [97.74, 97.74], [-97.74, 97.74]];
+const BOX_TICK_ANGLES = [225, 315, 45, 135];
 
 function BoxVisual({ technique, active, size }) {
   const reducedMotion = useReducedMotion();
   const driven = active && !reducedMotion;
-  const elapsedMs = useCycleClock(technique, driven);
-  const phases = TECHNIQUES[technique].phases;
+  const { elapsedMs, color } = useCycleAnimation(technique, driven);
+  const totalMs = cycleDuration(technique) * 1000;
+  const cycleMs = elapsedMs % totalMs;
+  const { s } = phaseAt(technique, cycleMs);
+  // Mock's own prog = (tm % cycle) / cycle - fraction of the WHOLE
+  // cycle travelled, not just the current side (the four phases are
+  // equal-length here, so this lines up with the side boundaries).
+  const prog = driven ? cycleMs / totalMs : 0;
 
-  const boxSize = size * 0.8;
-  const radius = boxSize * 0.18;
-  const pad = (size - boxSize) / 2;
-  const corners = boxCorners(boxSize, radius).map((c) => ({ x: c.x + pad, y: c.y + pad }));
+  const pathRef = useRef(null);
+  const dotRef = useRef(null);
+  const [pathLen, setPathLen] = useState(0);
 
-  let sideIndex = 0;
-  let sideProgress = 0;
-  if (driven) {
-    const perPhaseMs = phases[0].seconds * 1000;
-    sideIndex = Math.min(3, Math.floor(elapsedMs / perPhaseMs));
-    sideProgress = (elapsedMs % perPhaseMs) / perPhaseMs;
-  }
+  // Native box is 240 wide (-120..120); scale it to fill 80% of `size`,
+  // same proportion the guide square already used.
+  const boxScale = (size * 0.8) / 240;
+  const half = size / 2;
+  const innerScale = 0.22 + 0.74 * s;
 
-  const from = corners[sideIndex];
-  const to = corners[(sideIndex + 1) % 4];
-  const dot = driven ? { x: from.x + (to.x - from.x) * sideProgress, y: from.y + (to.y - from.y) * sideProgress } : corners[0];
-  const currentColor = driven ? phases[sideIndex].color : 'coral';
+  // Measured once the path is in the DOM (mock's own els.len = ...
+  // getTotalLength()) rather than hand-computed, so it can never drift
+  // from BOXD above.
+  useLayoutEffect(() => {
+    if (pathRef.current) setPathLen(pathRef.current.getTotalLength());
+  }, [boxScale]);
 
-  const tickAngles = [225, 315, 45, 135];
+  useLayoutEffect(() => {
+    const path = pathRef.current;
+    const dot = dotRef.current;
+    if (!path || !dot || !pathLen) return;
+    const { x, y } = path.getPointAtLength(prog * pathLen);
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+  }, [prog, pathLen]);
 
   return (
     <div className="breathing-visual breathing-visual--box" style={{ '--s': `${size}px` }} aria-hidden="true">
       <style>{`
         .breathing-visual--box { width: var(--s); height: var(--s); position: relative; flex-shrink: 0; }
-        .bv-box-dot { transition: fill 0.3s linear; }
-        .bv-box-tick { transition: stroke 0.3s linear; }
       `}</style>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <rect x={pad} y={pad} width={boxSize} height={boxSize} rx={radius} ry={radius} fill="none" stroke="var(--line)" strokeWidth="1.5" />
-        {corners.map((c, i) => {
-          const angle = (tickAngles[i] * Math.PI) / 180;
-          const lit = driven && i <= sideIndex;
-          const x1 = c.x - 6 * Math.cos(angle);
-          const y1 = c.y - 6 * Math.sin(angle);
-          const x2 = c.x + 6 * Math.cos(angle);
-          const y2 = c.y + 6 * Math.sin(angle);
-          return (
-            <line key={i} className="bv-box-tick" x1={x1} y1={y1} x2={x2} y2={y2} stroke={lit ? 'var(--coral)' : 'var(--line)'} strokeWidth="2" strokeLinecap="round" />
-          );
-        })}
-        {driven && (
-          <circle className="bv-box-dot" cx={dot.x} cy={dot.y} r="5" fill={`var(--${currentColor})`} />
-        )}
+      <svg width={size} height={size} viewBox={`${-half} ${-half} ${size} ${size}`}>
+        <g transform={`scale(${boxScale})`}>
+          <rect x="-120" y="-120" width="240" height="240" rx="76" ry="76" fill="none" stroke="var(--line)" strokeWidth={1.5 / boxScale} />
+          <rect
+            x="-120" y="-120" width="240" height="240" rx="76" ry="76"
+            fill={color} fillOpacity="0.08" transform={`scale(${innerScale})`}
+          />
+          {BOXC.map((c, i) => {
+            const angle = (BOX_TICK_ANGLES[i] * Math.PI) / 180;
+            const lit = driven && prog >= i / 4;
+            const x1 = c[0] - 6 * Math.cos(angle);
+            const y1 = c[1] - 6 * Math.sin(angle);
+            const x2 = c[0] + 6 * Math.cos(angle);
+            const y2 = c[1] + 6 * Math.sin(angle);
+            return (
+              <line
+                key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                stroke={lit ? 'var(--coral)' : 'var(--btn-line)'}
+                strokeWidth={2 / boxScale} strokeLinecap="round"
+              />
+            );
+          })}
+          <path
+            ref={pathRef} d={BOXD} fill="none" stroke={color}
+            strokeWidth={1.8 / boxScale} strokeLinecap="round"
+            strokeDasharray={pathLen ? `${prog * pathLen} ${pathLen}` : undefined}
+          />
+          {driven && <circle ref={dotRef} r={5.5 / boxScale} fill={color} cx="-97.74" cy="-97.74" />}
+        </g>
       </svg>
     </div>
   );
