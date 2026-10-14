@@ -4505,6 +4505,7 @@ span.tc-editable:focus-visible {
   min-height: var(--tap-min);
   padding: 6px 8px;
   border-radius: var(--radius-pill);
+  border: 1px solid transparent;
   text-align: center;
   display: flex;
   align-items: center;
@@ -4516,16 +4517,23 @@ span.tc-editable:focus-visible {
   font-size: 10px;
   line-height: 1.35;
   color: var(--text-2);
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .ui-root .breathe-technique-option:hover {
   color: var(--text);
 }
 
+/* Dark lifted capsule (patch 3B area B) - no coral anywhere in the
+   selector, so Start breathing stays the only coral block on the
+   page. The mock's selected fill is --sel:#1A1A1A, which has no
+   matching token in tokens.css; --surface (#0B0B0B) is the nearest
+   existing one, so that's what this uses (flagged to Tim as
+   instructed rather than adding a new token). */
 .ui-root .breathe-technique-option.active {
-  background: var(--coral);
-  color: #000000;
+  background: var(--surface);
+  border-color: var(--btn-line);
+  color: var(--text);
 }
 
 .ui-root .breathe-technique-option:focus-visible {
