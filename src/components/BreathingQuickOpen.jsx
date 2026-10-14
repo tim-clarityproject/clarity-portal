@@ -20,8 +20,20 @@ function pad2(n) {
 // where the guide circle happens to sit. Header row is 36px tall (the
 // close button, taller than the title text) sitting var(--space-3)
 // (16px) from the card top, plus var(--space-3) (16px) clear space
-// below it, as asked: 16 + 36 + 16 = 68.
-const DIAL_PT = 68;
+// below it: 16 + 36 + 16 = 68, then +2 (patch 3E area A) so the header
+// clearance stays at 18px or more even when useDialSize's new exact
+// bottom-clearance reservation leaves zero spare centring slack to
+// round it up by itself (patch 3d's own 68 only reliably cleared 16px
+// once that slack was gone).
+const DIAL_PT = 70;
+
+// Clear space below Done (patch 3E area A) - var(--space-4). Patch 3d
+// left this entirely to whatever centring slack happened to be left
+// over once the (unexplained) "-28" in the old size formula was
+// subtracted - on desktop that slack worked out to about 2px, so Done
+// sat right on the pop-up's bottom edge. Now reserved explicitly, the
+// same way as DIAL_PT above.
+const DIAL_BOTTOM_CLEARANCE = 24;
 
 // Quick-open breathing pop-up (prompt 11, redesigned patch 3B area E) -
 // replaces BreathingGuide.jsx. Shared by the floating Breathe button
@@ -44,7 +56,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
 
   const sessionHostRef = useRef(null);
   const sessionStackRef = useRef(null);
-  const dialSize = useDialSize(sessionHostRef, sessionStackRef, DIAL_PT, sessionActive);
+  const dialSize = useDialSize(sessionHostRef, sessionStackRef, DIAL_PT, DIAL_BOTTOM_CLEARANCE, sessionActive);
 
   useEffect(() => {
     if (isOpen) {
@@ -222,7 +234,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
         ) : (
           <>
             <div ref={sessionHostRef} className="bqo-session-host">
-              <div className="breathe-session-fg" style={{ paddingTop: DIAL_PT }}>
+              <div className="breathe-session-fg" style={{ paddingTop: DIAL_PT, paddingBottom: DIAL_BOTTOM_CLEARANCE }}>
                 <div className="breathe-session-field" style={{ width: dialSize, height: dialSize }}>
                   <BreathingVisual technique={technique} active size={dialSize} />
                 </div>

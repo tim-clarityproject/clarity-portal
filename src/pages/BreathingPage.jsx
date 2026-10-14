@@ -16,6 +16,9 @@ function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
 }
 
+// Clear space below Done, patch 3E area A - var(--space-4).
+const BOTTOM_CLEARANCE = 24;
+
 // Resting preview size - breathe-redesign.html's .prev (120px desktop)
 // / .p .prev (130px phone), not the session dial, which grows to fill
 // the screen once Start is pressed (useDialSize, area D/C).
@@ -78,7 +81,7 @@ export default function BreathingPage() {
 
   const sessionHostRef = useRef(null);
   const sessionStackRef = useRef(null);
-  const dialSize = useDialSize(sessionHostRef, sessionStackRef, 0, sessionActive);
+  const dialSize = useDialSize(sessionHostRef, sessionStackRef, 0, BOTTOM_CLEARANCE, sessionActive);
 
   useEffect(() => {
     let cancelled = false;
@@ -216,7 +219,7 @@ export default function BreathingPage() {
       )}
 
       <div ref={sessionHostRef} className={`breathe-session${sessionActive ? ' on' : ''}`} aria-hidden={!sessionActive}>
-        <div className="breathe-session-fg">
+        <div className="breathe-session-fg" style={{ paddingBottom: BOTTOM_CLEARANCE }}>
           <div className="breathe-session-field" style={{ width: dialSize, height: dialSize }}>
             <BreathingVisual technique={technique} active={sessionActive} size={dialSize} />
           </div>

@@ -14,13 +14,28 @@ export function useReducedMotion() {
   return reduced;
 }
 
-// The session dial's grow-to-fit size (breathe-redesign.html's own
-// setup(): D = clamp(200, min(hostW-24, hostH-pt-stackH-28, 560))).
-// `hostRef` is the full available area (the session overlay itself),
-// `stackRef` the phase/count/timer/Done stack below the dial, `pt` any
-// reserved top padding (the quick-open pop-up's floating header).
-// Recalculates on resize via ResizeObserver, exactly as specified.
-export function useDialSize(hostRef, stackRef, pt, active) {
+// The gap between the dial and the phase/count/timer/Done stack below
+// it - .breathe-session-info's own margin-top: var(--space-4). Kept as
+// a named constant here (rather than measured) since it's a fixed CSS
+// rule, not something that varies by content; if that rule's margin
+// ever changes, this needs to change with it.
+const DIAL_STACK_GAP = 24;
+
+// The session dial's grow-to-fit size (originally breathe-redesign.
+// html's own setup(): D = clamp(200, min(hostW-24, hostH-pt-stackH-28,
+// 560)) - patch 3E area A replaces the mock's own unexplained "-28"
+// with two explicit, named reservations: `pt` (space for the pop-up's
+// floating header above the dial) and `bottomClearance` (space below
+// the Done button) - both now physically applied as real padding on
+// the flex column that centres the dial+stack group (see
+// .breathe-session-fg's inline paddingTop/paddingBottom in
+// BreathingPage.jsx/BreathingQuickOpen.jsx), not just subtracted from
+// the size budget and left to incidental centring slack - that was
+// patch 3d's bug: a few px of leftover slack doesn't reliably add up
+// to a guaranteed minimum gap. `hostRef` is the full available area
+// (the session overlay itself), `stackRef` the stack. Recalculates on
+// resize via ResizeObserver.
+export function useDialSize(hostRef, stackRef, pt, bottomClearance, active) {
   const [size, setSize] = useState(200);
   useLayoutEffect(() => {
     if (!active) return undefined;
@@ -30,7 +45,7 @@ export function useDialSize(hostRef, stackRef, pt, active) {
     const recalc = () => {
       const w = host.clientWidth;
       const h = host.clientHeight;
-      const d = Math.max(200, Math.min(w - 24, h - pt - stack.offsetHeight - 28, 560));
+      const d = Math.max(200, Math.min(w - 24, h - pt - bottomClearance - DIAL_STACK_GAP - stack.offsetHeight, 560));
       setSize(Math.round(d));
     };
     recalc();
@@ -38,7 +53,7 @@ export function useDialSize(hostRef, stackRef, pt, active) {
     ro.observe(host);
     ro.observe(stack);
     return () => ro.disconnect();
-  }, [active, hostRef, stackRef, pt]);
+  }, [active, hostRef, stackRef, pt, bottomClearance]);
   return size;
 }
 
