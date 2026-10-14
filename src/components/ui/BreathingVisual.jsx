@@ -14,6 +14,34 @@ export function useReducedMotion() {
   return reduced;
 }
 
+// The session dial's grow-to-fit size (breathe-redesign.html's own
+// setup(): D = clamp(200, min(hostW-24, hostH-pt-stackH-28, 560))).
+// `hostRef` is the full available area (the session overlay itself),
+// `stackRef` the phase/count/timer/Done stack below the dial, `pt` any
+// reserved top padding (the quick-open pop-up's floating header).
+// Recalculates on resize via ResizeObserver, exactly as specified.
+export function useDialSize(hostRef, stackRef, pt, active) {
+  const [size, setSize] = useState(200);
+  useLayoutEffect(() => {
+    if (!active) return undefined;
+    const host = hostRef.current;
+    const stack = stackRef.current;
+    if (!host || !stack) return undefined;
+    const recalc = () => {
+      const w = host.clientWidth;
+      const h = host.clientHeight;
+      const d = Math.max(200, Math.min(w - 24, h - pt - stack.offsetHeight - 28, 560));
+      setSize(Math.round(d));
+    };
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    ro.observe(host);
+    ro.observe(stack);
+    return () => ro.disconnect();
+  }, [active, hostRef, stackRef, pt]);
+  return size;
+}
+
 // The engine clock (breathe-redesign.html's own engine()/frame()): runs
 // for as long as `active` is true, full stop. Reduced motion does NOT
 // stop this - the mock only turns off the crosshair rotation and the

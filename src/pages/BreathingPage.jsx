@@ -8,7 +8,7 @@ import {
   loadLatestBreathingSession, formatSessionLength,
 } from '../lib/breathing';
 import DesignHeader from '../components/DesignHeader';
-import BreathingVisual, { useBreathingPhase } from '../components/ui/BreathingVisual';
+import BreathingVisual, { useBreathingPhase, useDialSize } from '../components/ui/BreathingVisual';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 
@@ -16,10 +16,13 @@ function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
 }
 
+// Resting preview size - breathe-redesign.html's .prev (120px desktop)
+// / .p .prev (130px phone), not the session dial, which grows to fill
+// the screen once Start is pressed (useDialSize, area D/C).
 function useShapeSize() {
-  const [size, setSize] = useState(() => (typeof window !== 'undefined' && window.innerWidth <= 768 ? 170 : 150));
+  const [size, setSize] = useState(() => (typeof window !== 'undefined' && window.innerWidth <= 768 ? 130 : 120));
   useEffect(() => {
-    const onResize = () => setSize(window.innerWidth <= 768 ? 170 : 150);
+    const onResize = () => setSize(window.innerWidth <= 768 ? 130 : 120);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -28,7 +31,9 @@ function useShapeSize() {
 
 // Fixed bottom bar on BOTH desktop and phone (unlike PhoneActionBar,
 // which is phone-only) - spec section 9: Start breathing must always
-// be visible, including on a ~700px-tall desktop window.
+// be visible, including on a ~700px-tall desktop window. Hidden
+// entirely during a session (patch 3B area C) - Done lives inside the
+// full-screen session view instead.
 function StartBar({ children }) {
   const barRef = useRef(null);
   useLayoutEffect(() => {
@@ -70,6 +75,10 @@ export default function BreathingPage() {
   const shapeSize = useShapeSize();
   const { message, showToast } = useToast();
   const { phaseLabel, countdown, elapsedSeconds, color: phaseColor } = useBreathingPhase(technique, sessionActive);
+
+  const sessionHostRef = useRef(null);
+  const sessionStackRef = useRef(null);
+  const dialSize = useDialSize(sessionHostRef, sessionStackRef, 0, sessionActive);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +136,17 @@ export default function BreathingPage() {
     }
   };
 
+  // Escape ends a session, same as the mock-up's el._esc.
+  useEffect(() => {
+    if (!sessionActive) return undefined;
+    const handleKey = (e) => {
+      if (e.key === 'Escape') handleDone();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionActive]);
+
   if (isLoading) {
     return (
       <div className="ui-root">
@@ -143,65 +163,71 @@ export default function BreathingPage() {
       <DesignHeader />
 
       <div className="plan-page breathe-page">
-        <div className="plan-header">
-          <span className="plan-overline">Ground</span>
-          <div className="ui-title">Breathe</div>
-          <p className="ui-subtitle">Choose a technique, then settle in and begin.</p>
-        </div>
-
-        <div className="breathe-shape-wrap">
-          <BreathingVisual technique={technique} active={sessionActive} size={shapeSize} />
-        </div>
-
-        {sessionActive && (
-          <div className="breathe-session-info">
-            <div className="breathe-phase" aria-live="polite" style={{ color: phaseColor }}>{phaseLabel}</div>
-            <div className="breathe-count">{countdown}</div>
-            <div className="breathe-timer">{Math.floor(elapsedSeconds / 60)}:{pad2(elapsedSeconds % 60)}</div>
+        <div className={`breathe-resting${sessionActive ? ' hidden' : ''}`} aria-hidden={sessionActive}>
+          <div className="plan-header">
+            <span className="plan-overline">Ground</span>
+            <div className="ui-title">Breathe</div>
+            <p className="ui-subtitle">Choose a technique, then settle in and begin.</p>
           </div>
-        )}
 
-        <div className="breathe-technique-select" role="group" aria-label="Breathing technique">
-          {TECHNIQUE_ORDER.map((key) => (
-            <button
-              key={key}
-              type="button"
-              className={`breathe-technique-option breathe-button${technique === key ? ' active' : ''}`}
-              aria-pressed={technique === key}
-              onClick={() => handleSwitchTechnique(key)}
-            >
-              {TECHNIQUES[key].label}
+          <div className="breathe-shape-wrap">
+            <BreathingVisual technique={technique} active={false} size={shapeSize} />
+          </div>
+
+          <div className="breathe-technique-select" role="group" aria-label="Breathing technique">
+            {TECHNIQUE_ORDER.map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={`breathe-technique-option breathe-button${technique === key ? ' active' : ''}`}
+                aria-pressed={technique === key}
+                onClick={() => handleSwitchTechnique(key)}
+              >
+                {TECHNIQUES[key].label}
+              </button>
+            ))}
+          </div>
+
+          <div className="breathe-guidance">
+            {guidance.map((g) => (
+              <div className="breathe-guidance-col" key={g.label}>
+                <span className="breathe-guidance-label">{g.label}</span>
+                <span className="breathe-guidance-rule" aria-hidden="true" />
+                <p className="breathe-guidance-text">{g.text}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="breathe-meta-row">
+            <span className="breathe-meta-item">
+              {lastSession ? `Last session: ${TECHNIQUES[lastSession.breathing_mode]?.label || lastSession.breathing_mode}, ${formatSessionLength(lastSession.duration) || '—'}` : 'No sessions yet'}
+            </span>
+            <button type="button" className="breathe-meta-item breathe-meta-link" onClick={() => navigate('/breathing-sessions-summary')}>
+              Breathing Sessions{sessionCount !== null ? ` · ${sessionCount}` : ''}
             </button>
-          ))}
-        </div>
-
-        <div className="breathe-guidance">
-          {guidance.map((g) => (
-            <div className="breathe-guidance-col" key={g.label}>
-              <span className="breathe-guidance-label">{g.label}</span>
-              <span className="breathe-guidance-rule" aria-hidden="true" />
-              <p className="breathe-guidance-text">{g.text}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="breathe-meta-row">
-          <span className="breathe-meta-item">
-            {lastSession ? `Last session: ${TECHNIQUES[lastSession.breathing_mode]?.label || lastSession.breathing_mode}, ${formatSessionLength(lastSession.duration) || '—'}` : 'No sessions yet'}
-          </span>
-          <button type="button" className="breathe-meta-item breathe-meta-link" onClick={() => navigate('/breathing-sessions-summary')}>
-            Breathing Sessions{sessionCount !== null ? ` · ${sessionCount}` : ''}
-          </button>
+          </div>
         </div>
       </div>
 
-      <StartBar>
-        {sessionActive ? (
-          <button type="button" className="ui-btn-primary" onClick={handleDone}>Done</button>
-        ) : (
+      {!sessionActive && (
+        <StartBar>
           <button type="button" className="ui-btn-primary" onClick={handleStart}>Start breathing</button>
-        )}
-      </StartBar>
+        </StartBar>
+      )}
+
+      <div ref={sessionHostRef} className={`breathe-session${sessionActive ? ' on' : ''}`} aria-hidden={!sessionActive}>
+        <div className="breathe-session-fg">
+          <div className="breathe-session-field" style={{ width: dialSize, height: dialSize }}>
+            <BreathingVisual technique={technique} active={sessionActive} size={dialSize} />
+          </div>
+          <div ref={sessionStackRef} className="breathe-session-info">
+            <div className="breathe-phase" aria-live="polite" style={{ color: phaseColor }}>{phaseLabel}</div>
+            <div className="breathe-count">{countdown}</div>
+            <div className="breathe-timer">{Math.floor(elapsedSeconds / 60)}:{pad2(elapsedSeconds % 60)}</div>
+            <button type="button" className="ui-btn-ghost breathe-session-done" onClick={handleDone}>Done</button>
+          </div>
+        </div>
+      </div>
       <Toast message={message} />
     </div>
   );

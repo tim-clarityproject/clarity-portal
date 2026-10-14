@@ -4419,23 +4419,71 @@ span.tc-editable:focus-visible {
   align-items: center;
 }
 
+/* Resting content (instructions, selector, guidance, meta row) fades
+   out when a session starts and the full-screen session view (below)
+   fades in over it - patch 3B area C, breathe-redesign.html's own
+   .main.running .scroll{opacity:0;pointer-events:none;
+   transform:translateY(6px)}. .35s in the mock; --dur-slow (400ms) is
+   the nearest token. */
+.breathe-resting {
+  transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
+}
+
+.breathe-resting.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+}
+
 .breathe-shape-wrap {
   display: flex;
   justify-content: center;
   margin: var(--space-5) 0 var(--space-6);
 }
 
-/* Active-session phase/count/timer (patch 3, area B) - the mock-up's
-   .ph2/.cnt/.tm, breathing-and-about.html:524-526 (its main Breathe
-   page values; the quick-open pop-up's own smaller .bp .cnt override
-   is matched separately in BreathingQuickOpen.jsx). Sits directly
-   under the shape, in the same position as the mock-up's sessHtml(). */
+/* Full-screen session view (patch 3B area C) - breathe-redesign.html's
+   .sess: a fixed overlay, above the header and the (now-hidden) start
+   bar, that fades in once Start is pressed and contains nothing but
+   the growing dial and the phase/count/timer/Done stack. .5s in the
+   mock; --dur-slow (400ms) is the nearest token. */
+.breathe-session {
+  position: fixed;
+  inset: 0;
+  z-index: 5200;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+.breathe-session.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.breathe-session-fg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.breathe-session-field {
+  flex: none;
+}
+
 .breathe-session-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: calc(-1 * var(--space-6) + var(--space-2));
-  margin-bottom: var(--space-3);
+  flex: none;
+  margin-top: var(--space-4);
+}
+
+.breathe-session-done {
+  margin-top: var(--space-4);
 }
 
 .breathe-phase {
