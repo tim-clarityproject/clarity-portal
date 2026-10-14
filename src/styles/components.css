@@ -3802,6 +3802,7 @@ span.tc-editable:focus-visible {
 /* ---- Mission recap card (plan view / old version / archived plan) ---- */
 
 .pop-mission-card {
+  margin-top: var(--space-5);
   border-top: 1px solid var(--line);
   padding: var(--space-4) 0 var(--space-5);
 }
