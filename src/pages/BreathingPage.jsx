@@ -231,7 +231,7 @@ export default function BreathingPage() {
           </div>
         </div>
       </div>
-      <Toast message={message} />
+      <Toast message={message} clearBarVar="--breathe-bar-height" />
     </div>
   );
 }

@@ -5,8 +5,20 @@ import { createPortal } from 'react-dom';
 // DesignTabBar's fixed bar (1999) and below PopupShell/DiscardDialog's
 // scrim+card (5101/5102), so a toast fired from inside a dialog still
 // reads on top of the tab bar without covering the dialog.
-export default function Toast({ message }) {
+//
+// `clearBarVar` (patch 3E area B): the name of a CSS variable holding
+// the height of a page's OWN pinned action bar (e.g. BreathingPage's
+// "--breathe-bar-height", measured by its StartBar), for pages whose
+// bar sits ABOVE the default 32px/tabbar position this component
+// already clears - without it, nothing changes, so every other page
+// using this shared toast is unaffected. When given, the toast adds
+// that bar's height (plus the safe-area inset on desktop, where the
+// bar sits flush with no inset handling of its own - on phone the tab
+// bar the page's own bar already sits above already bakes its inset
+// in, so it is not added twice) on top of a 16px gap (var(--space-3)).
+export default function Toast({ message, clearBarVar }) {
   if (!message) return null;
+  const style = clearBarVar ? { '--toast-clear-bar': `var(${clearBarVar}, 0px)` } : undefined;
 
   return createPortal(
     <div className="ui-root">
@@ -36,6 +48,16 @@ export default function Toast({ message }) {
           }
         }
 
+        .ui-toast.ui-toast--clear-bar {
+          bottom: calc(var(--toast-clear-bar, 0px) + env(safe-area-inset-bottom) + var(--space-3));
+        }
+
+        @media (max-width: 768px) {
+          .ui-toast.ui-toast--clear-bar {
+            bottom: calc(var(--toast-clear-bar, 0px) + var(--tabbar-height, 79px) + var(--space-3));
+          }
+        }
+
         @keyframes ui-toast-in {
           from { opacity: 0; transform: translateX(-50%) translateY(8px); }
           to { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -47,7 +69,7 @@ export default function Toast({ message }) {
           }
         }
       `}</style>
-      <div className="ui-toast" role="status">{message}</div>
+      <div className={`ui-toast${clearBarVar ? ' ui-toast--clear-bar' : ''}`} style={style} role="status">{message}</div>
     </div>,
     document.body
   );
