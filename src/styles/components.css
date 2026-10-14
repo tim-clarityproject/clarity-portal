@@ -3851,6 +3851,10 @@ span.tc-editable:focus-visible {
   flex-shrink: 0;
 }
 
+.ui-root .pop-note-btn.has {
+  color: var(--coral-text);
+}
+
 .pop-last-reviewed {
   font-size: var(--fs-small);
   color: var(--text-2);

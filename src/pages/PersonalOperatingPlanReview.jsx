@@ -5,12 +5,21 @@ import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
 import { LIMITS, loadLatestVersion, loadDraftReview, loadReview, saveReview, deleteReview } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
+import PageHeading from '../components/PageHeading';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
-import { DiscardLink } from '../components/ui/DiscardLink';
+import { BackLink, DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+
+function NoteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.5 5.5h15v10h-7l-4.5 3.5v-3.5h-3.5z" />
+    </svg>
+  );
+}
 
 export default function PersonalOperatingPlanReview() {
   const navigate = useNavigate();
@@ -23,6 +32,7 @@ export default function PersonalOperatingPlanReview() {
   const [strategies, setStrategies] = useState([]);
   const [reviewData, setReviewData] = useState({});
   const [expandedStrategies, setExpandedStrategies] = useState({});
+  const [openNotes, setOpenNotes] = useState({});
   const [existingReviewId, setExistingReviewId] = useState(reviewId);
   const [latestVersion, setLatestVersion] = useState(null);
   const [continuingDraftDate, setContinuingDraftDate] = useState(null);
@@ -128,7 +138,14 @@ export default function PersonalOperatingPlanReview() {
           }
         }
 
-        if (!cancelled) setReviewData(initial);
+        if (!cancelled) {
+          setReviewData(initial);
+          const notesAlreadyOpen = {};
+          Object.entries(initial).forEach(([tacticId, r]) => {
+            if (r.note && r.note.trim()) notesAlreadyOpen[tacticId] = true;
+          });
+          setOpenNotes(notesAlreadyOpen);
+        }
       } catch (error) {
         console.error('[PlanReview] load failed:', error);
       } finally {
@@ -252,7 +269,7 @@ export default function PersonalOperatingPlanReview() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSubmitting} onClick={() => submit(false)}>Finish</button>
+      <button type="button" className="ui-btn-primary" disabled={isSubmitting} onClick={() => submit(false)}>Finish review</button>
       <button type="button" className="ui-btn-ghost" disabled={isSubmitting} onClick={() => submit(true)}>Save as draft</button>
     </>
   );
@@ -262,10 +279,7 @@ export default function PersonalOperatingPlanReview() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        <div className="plan-header">
-          <div className="ui-title">Review your plan</div>
-          <p className="ui-subtitle">{mission.title}</p>
-        </div>
+        <PageHeading pageKey="personalOperatingPlanReview" title="Review your plan" />
 
         {continuingDraftDate && (
           <div className="pop-draft-banner">
@@ -283,28 +297,47 @@ export default function PersonalOperatingPlanReview() {
               <span className={`ui-cross ui-cross--sm ui-cross--open${expandedStrategies[strategy.id] ? ' open' : ''}`} aria-hidden="true" />
             </button>
 
-            {expandedStrategies[strategy.id] && strategy.tactics.map((tactic) => (
-              <div key={tactic.id} style={{ marginTop: 'var(--space-4)' }}>
-                <p className="pop-view-tactic-text" style={{ marginBottom: 'var(--space-2)' }}>{tactic.action}</p>
-
-                {tactic.type === 'tickable' ? (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', marginBottom: 'var(--space-2)' }}>
-                    <span className={`pop-tick${reviewData[tactic.id]?.isDone ? ' pop-tick--done' : ''}`} aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
-                    </span>
-                    <input type="checkbox" checked={Boolean(reviewData[tactic.id]?.isDone)} onChange={(e) => updateReview(tactic.id, 'isDone', e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }} />
-                    Mark as done
-                  </label>
-                ) : (
-                  <div className="plan-field">
-                    <label>Current value ({tactic.unit}) · target {tactic.target_value} {tactic.unit}</label>
-                    <input type="number" className="plan-input" value={reviewData[tactic.id]?.value ?? ''} onChange={(e) => updateReview(tactic.id, 'value', e.target.value ? parseFloat(e.target.value) : '')} />
+            {expandedStrategies[strategy.id] && strategy.tactics.map((tactic) => {
+              const hasNote = Boolean(reviewData[tactic.id]?.note?.trim());
+              const noteIsOpen = Boolean(openNotes[tactic.id]) || hasNote;
+              return (
+                <div key={tactic.id} style={{ marginTop: 'var(--space-4)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    {tactic.type === 'tickable' ? (
+                      <label style={{ display: 'flex', alignItems: 'center', flex: 1, gap: 'var(--space-2)', cursor: 'pointer' }}>
+                        <span className={`pop-tick${reviewData[tactic.id]?.isDone ? ' pop-tick--done' : ''}`} aria-hidden="true">
+                          <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+                        </span>
+                        <input type="checkbox" checked={Boolean(reviewData[tactic.id]?.isDone)} onChange={(e) => updateReview(tactic.id, 'isDone', e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }} />
+                        {tactic.action}
+                      </label>
+                    ) : (
+                      <p className="pop-view-tactic-text" style={{ flex: 1, margin: 0 }}>{tactic.action}</p>
+                    )}
+                    <button
+                      type="button"
+                      className={`plan-bin-btn pop-note-btn${hasNote ? ' has' : ''}`}
+                      aria-label={hasNote ? 'Edit note' : 'Add a note'}
+                      title={hasNote ? 'Edit note' : 'Add a note'}
+                      onClick={() => setOpenNotes((prev) => ({ ...prev, [tactic.id]: true }))}
+                    >
+                      <NoteIcon />
+                    </button>
                   </div>
-                )}
 
-                <AutoGrowTextarea className="plan-input" placeholder="Add a reflection or comment (optional)" value={reviewData[tactic.id]?.note || ''} onChange={(v) => updateReview(tactic.id, 'note', v)} maxLength={LIMITS.reviewNote} />
-              </div>
-            ))}
+                  {tactic.type === 'measurable' && (
+                    <div className="plan-field" style={{ marginTop: 'var(--space-2)' }}>
+                      <label>Current value ({tactic.unit}) · target {tactic.target_value} {tactic.unit}</label>
+                      <input type="number" className="plan-input" value={reviewData[tactic.id]?.value ?? ''} onChange={(e) => updateReview(tactic.id, 'value', e.target.value ? parseFloat(e.target.value) : '')} />
+                    </div>
+                  )}
+
+                  {noteIsOpen && (
+                    <AutoGrowTextarea className="plan-input" style={{ marginTop: 'var(--space-2)' }} placeholder="Add a reflection or comment..." value={reviewData[tactic.id]?.note || ''} onChange={(v) => updateReview(tactic.id, 'note', v)} maxLength={LIMITS.reviewNote} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         ))}
 
@@ -312,7 +345,8 @@ export default function PersonalOperatingPlanReview() {
 
         <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
 
-        <div className="plan-discard-row">
+        <div className="plan-discard-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <BackLink onClick={() => navigate('/personal-operating-plan')} label="Back to my plan" />
           <DiscardLink onClick={() => setDiscardOpen(true)} />
         </div>
       </div>
