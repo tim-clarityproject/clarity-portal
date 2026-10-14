@@ -8,6 +8,7 @@ import PageHeading from '../components/PageHeading';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
+import SavingOverlay from '../components/ui/SavingOverlay';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 
@@ -229,53 +230,89 @@ export default function PersonalOperatingPlanEdit() {
           .single();
         if (error) throw error;
         currentMissionId = mission.id;
+        await supabase.from('profiles').update({ personal_goal: missionTitle }).eq('id', user.id);
       } else {
-        const { error } = await supabase.from('missions').update({ title: missionTitle }).eq('id', currentMissionId);
+        const [{ error: missionError }] = await Promise.all([
+          supabase.from('missions').update({ title: missionTitle }).eq('id', currentMissionId),
+          supabase.from('profiles').update({ personal_goal: missionTitle }).eq('id', user.id),
+        ]);
+        if (missionError) throw missionError;
+      }
+
+      // Batched instead of one request per strategy/tactic (the old
+      // code awaited a separate insert/update/delete for every single
+      // row, one at a time - for a plan with, say, 4 strategies and 10
+      // tactics that was 25-30+ sequential round trips, each one
+      // waiting for the last to finish before starting). Deletes are
+      // one .in(...) call per table; existing rows are one .upsert(...)
+      // call per table (PostgREST only SETs the columns actually
+      // included in the payload, so current_value/is_done - never part
+      // of this payload - are left untouched, exactly like the old
+      // per-row .update() did); only genuinely new rows still need
+      // individual handling, and even those are one batched .insert()
+      // per table. Net effect: total requests for strategies+tactics
+      // drops from O(rows) to a small constant (at most ~6 calls)
+      // regardless of plan size - same rows saved, same columns
+      // touched, just far fewer trips.
+      const { data: existingStrategyRows } = await supabase.from('strategies').select('id').eq('mission_id', currentMissionId);
+      const keepStrategyIds = new Set(strategies.filter((s) => !s.isNew).map((s) => s.id));
+      const strategyIdsToDelete = (existingStrategyRows || []).map((r) => r.id).filter((id) => !keepStrategyIds.has(id));
+      if (strategyIdsToDelete.length) {
+        const { error } = await supabase.from('strategies').delete().in('id', strategyIdsToDelete);
         if (error) throw error;
       }
 
-      await supabase.from('profiles').update({ personal_goal: missionTitle }).eq('id', user.id);
-
-      const { data: existingStrategies } = await supabase.from('strategies').select('id').eq('mission_id', currentMissionId);
-      for (const existing of existingStrategies || []) {
-        if (!strategies.some((s) => s.id === existing.id)) {
-          const { error } = await supabase.from('strategies').delete().eq('id', existing.id);
-          if (error) throw error;
+      const existingStrategyPayloads = [];
+      const newStrategyPayloads = [];
+      strategies.forEach((strategy, sIndex) => {
+        if (strategy.isNew) {
+          newStrategyPayloads.push({ mission_id: currentMissionId, name: strategy.name, description: strategy.description, sort_order: sIndex });
+        } else {
+          existingStrategyPayloads.push({ id: strategy.id, mission_id: currentMissionId, name: strategy.name, description: strategy.description, sort_order: sIndex });
         }
+      });
+
+      if (existingStrategyPayloads.length) {
+        const { error } = await supabase.from('strategies').upsert(existingStrategyPayloads, { onConflict: 'id' });
+        if (error) throw error;
       }
 
-      const savedStrategies = [];
-      for (let sIndex = 0; sIndex < strategies.length; sIndex++) {
-        const strategy = strategies[sIndex];
-        let strategyId = strategy.id;
+      // sort_order is unique per strategy (the array index), so it is
+      // used to match each created row back to its local temp id -
+      // safer than assuming the insert response preserves input order.
+      let createdStrategyRows = [];
+      if (newStrategyPayloads.length) {
+        const { data, error } = await supabase.from('strategies').insert(newStrategyPayloads).select();
+        if (error) throw error;
+        createdStrategyRows = data || [];
+      }
+      const sortOrderToNewStrategyId = {};
+      createdStrategyRows.forEach((row) => { sortOrderToNewStrategyId[row.sort_order] = row.id; });
 
-        if (strategy.isNew) {
-          const { data: created, error } = await supabase
-            .from('strategies')
-            .insert([{ mission_id: currentMissionId, name: strategy.name, description: strategy.description, sort_order: sIndex }])
-            .select()
-            .single();
-          if (error) throw error;
-          strategyId = created.id;
-        } else {
-          const { error } = await supabase
-            .from('strategies')
-            .update({ name: strategy.name, description: strategy.description, sort_order: sIndex })
-            .eq('id', strategyId);
-          if (error) throw error;
-        }
+      const resolvedStrategyId = {};
+      strategies.forEach((strategy, sIndex) => {
+        resolvedStrategyId[strategy.id] = strategy.isNew ? sortOrderToNewStrategyId[sIndex] : strategy.id;
+      });
+      const allStrategyIds = Object.values(resolvedStrategyId);
 
-        const { data: existingTactics } = await supabase.from('tactics').select('id').eq('strategy_id', strategyId);
-        for (const existing of existingTactics || []) {
-          if (!strategy.tactics.some((t) => t.id === existing.id)) {
-            const { error } = await supabase.from('tactics').delete().eq('id', existing.id);
-            if (error) throw error;
-          }
-        }
+      const { data: existingTacticRows } = allStrategyIds.length
+        ? await supabase.from('tactics').select('id').in('strategy_id', allStrategyIds)
+        : { data: [] };
+      const keepTacticIds = new Set();
+      strategies.forEach((strategy) => {
+        strategy.tactics.forEach((tactic) => { if (!tactic.isNew) keepTacticIds.add(tactic.id); });
+      });
+      const tacticIdsToDelete = (existingTacticRows || []).map((r) => r.id).filter((id) => !keepTacticIds.has(id));
+      if (tacticIdsToDelete.length) {
+        const { error } = await supabase.from('tactics').delete().in('id', tacticIdsToDelete);
+        if (error) throw error;
+      }
 
-        const savedTactics = [];
-        for (let tIndex = 0; tIndex < strategy.tactics.length; tIndex++) {
-          const tactic = strategy.tactics[tIndex];
+      const existingTacticPayloads = [];
+      const newTacticPayloads = [];
+      const savedStrategies = strategies.map((strategy) => {
+        const strategyId = resolvedStrategyId[strategy.id];
+        const savedTactics = strategy.tactics.map((tactic, tIndex) => {
           const payload = {
             action: tactic.action,
             type: tactic.type,
@@ -284,20 +321,22 @@ export default function PersonalOperatingPlanEdit() {
             sort_order: tIndex,
           };
           if (tactic.isNew) {
-            const { data: created, error } = await supabase
-              .from('tactics')
-              .insert([{ strategy_id: strategyId, ...payload, current_value: null, is_done: tactic.type === 'tickable' ? false : null }])
-              .select()
-              .single();
-            if (error) throw error;
-            savedTactics.push(created);
+            newTacticPayloads.push({ strategy_id: strategyId, ...payload, current_value: null, is_done: tactic.type === 'tickable' ? false : null });
           } else {
-            const { error } = await supabase.from('tactics').update(payload).eq('id', tactic.id);
-            if (error) throw error;
-            savedTactics.push({ ...tactic, ...payload });
+            existingTacticPayloads.push({ id: tactic.id, strategy_id: strategyId, ...payload });
           }
-        }
-        savedStrategies.push({ ...strategy, id: strategyId, tactics: savedTactics });
+          return { ...tactic, ...payload };
+        });
+        return { ...strategy, id: strategyId, tactics: savedTactics };
+      });
+
+      if (existingTacticPayloads.length) {
+        const { error } = await supabase.from('tactics').upsert(existingTacticPayloads, { onConflict: 'id' });
+        if (error) throw error;
+      }
+      if (newTacticPayloads.length) {
+        const { error } = await supabase.from('tactics').insert(newTacticPayloads);
+        if (error) throw error;
       }
 
       try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
@@ -498,6 +537,7 @@ export default function PersonalOperatingPlanEdit() {
         onCancel={() => setInfoOpen(null)}
         onConfirm={() => setInfoOpen(null)}
       />
+      <SavingOverlay isOpen={isSaving} message="Saving your plan" />
     </div>
   );
 }
