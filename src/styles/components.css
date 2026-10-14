@@ -4415,8 +4415,20 @@ span.tc-editable:focus-visible {
   padding-bottom: calc(var(--breathe-bar-height, 88px) + var(--space-5));
 }
 
-.breathe-page .plan-header {
-  align-items: center;
+/* .plan-header isn't display:flex, so align-items here was a no-op -
+   .breathe-resting (the flex item centred by .breathe-page above) is
+   centred as a whole box, but .plan-header and its children are then
+   plain block descendants inside it, not flex items themselves, so
+   .ui-title/.plan-overline (no max-width - their box already spans
+   .plan-header's full width, so text-align: center alone correctly
+   centres them) stay fine, but .ui-subtitle's own max-width: 46ch (set
+   generically in .plan-header .ui-subtitle above, for every other,
+   left-aligned .plan-page) narrows its box without ever centring that
+   narrower box - it was sitting flush left, with only its own text
+   centred inside it (patch 3D area C). */
+.breathe-page .ui-subtitle {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Resting content (instructions, selector, guidance, meta row) fades
