@@ -3711,50 +3711,97 @@ span.tc-editable:focus-visible {
   border-top: 1px solid var(--line);
 }
 
-.pop-tactic-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) 150px 44px;
+/* Tactic editor: action text + delete bin on one row, then a second,
+   full-width row for the tracking-type toggle and (when Measure is
+   chosen) the Target stepper and Unit field - matching the mock-up's
+   own .te/.row2 layout. The old version squeezed toggle+stepper+unit
+   into a fixed 150px grid column (half that again for Target/Unit),
+   which is what made them look cramped and cut off (rule 20). */
+.pop-tactic-editor {
+  border-top: 1px solid var(--line);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.pop-tactic-editor:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.pop-tactic-action-row {
+  display: flex;
+  align-items: flex-start;
   gap: var(--space-2);
-  align-items: start;
-  margin-bottom: var(--space-2);
 }
 
-@media (max-width: 768px) {
-  .pop-tactic-row {
-    grid-template-columns: 1fr;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-card);
-    padding: var(--space-3);
-    background: var(--bg);
-    margin-bottom: var(--space-3);
-  }
+.pop-tactic-action-row .plan-input {
+  flex: 1;
+  min-width: 0;
 }
 
-.ui-root select.plan-input {
-  padding: 0 14px !important;
-  -webkit-appearance: none;
-  appearance: none;
+.pop-tactic-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 
-.pop-tactic-measure {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
+.ui-root .pop-tactic-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--btn-line);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+}
+
+.ui-root .pop-tactic-toggle-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0 16px !important;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .pop-tactic-toggle-btn.active {
+  background: var(--coral);
+  color: #000000;
+}
+
+.ui-root .pop-tactic-toggle-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.pop-tactic-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .pop-tactic-label {
   display: block;
   font-size: 12px;
   color: var(--text-2);
-  margin-bottom: var(--space-1);
 }
 
-/* Target-value stepper: same +/- shape as .tsa-stepper (Time Audit),
-   just a wider input - targets here run into the hundreds of
-   thousands (e.g. a revenue goal), not the 0-999 hours .tsa-stepper
-   was sized for. */
-.ui-root .pop-target-stepper input {
-  width: 110px;
+.ui-root .pop-unit-input {
+  width: auto;
+  min-width: 90px;
+  max-width: 160px;
+  flex: none;
 }
 
 /* "Saving creates Version X.Y" beside the Save button (mock-up's

@@ -390,30 +390,38 @@ export default function PersonalOperatingPlanEdit() {
                 <span className="pop-tactic-label" style={{ marginBottom: 0 }}>Tactics</span>
                 <button type="button" className="plan-link-btn" onClick={() => setInfoOpen('tactic')}>What is a tactic?</button>
               </div>
-              {strategy.tactics.map((tactic, tIndex) => (
-                <div key={tactic.id}>
-                  <div className="pop-tactic-row">
-                    <AutoGrowTextarea singleLine className="plan-input" placeholder="What's the specific action?" aria-label={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} maxLength={LIMITS.tacticAction} />
-                    <div>
-                      <div className="ui-segmented" role="group" aria-label={`Tactic ${tIndex + 1} tracking type`}>
-                        <button type="button" className={`ui-segmented-option${tactic.type === 'tickable' ? ' active' : ''}`} aria-pressed={tactic.type === 'tickable'} onClick={() => updateTactic(sIndex, tIndex, 'type', 'tickable')}>
+              {strategy.tactics.map((tactic, tIndex) => {
+                const targetWidth = `${Math.max(3, String(tactic.target_value ?? '').replace(/[^0-9]/g, '').length + 2)}ch`;
+                return (
+                  <div key={tactic.id} className="pop-tactic-editor">
+                    <div className="pop-tactic-action-row">
+                      <AutoGrowTextarea singleLine className="plan-input" placeholder="What's the specific action?" aria-label={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} maxLength={LIMITS.tacticAction} />
+                      <button type="button" className="plan-bin-btn" aria-label={`Remove tactic ${tIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'tactic', sIndex, tIndex })}>
+                        <BinIcon />
+                      </button>
+                    </div>
+
+                    <div className="pop-tactic-controls">
+                      <div className="pop-tactic-toggle" role="group" aria-label={`Tactic ${tIndex + 1} tracking type`}>
+                        <button type="button" className={`pop-tactic-toggle-btn${tactic.type === 'tickable' ? ' active' : ''}`} aria-pressed={tactic.type === 'tickable'} onClick={() => updateTactic(sIndex, tIndex, 'type', 'tickable')}>
                           Tick off
                         </button>
-                        <button type="button" className={`ui-segmented-option${tactic.type === 'measurable' ? ' active' : ''}`} aria-pressed={tactic.type === 'measurable'} onClick={() => updateTactic(sIndex, tIndex, 'type', 'measurable')}>
+                        <button type="button" className={`pop-tactic-toggle-btn${tactic.type === 'measurable' ? ' active' : ''}`} aria-pressed={tactic.type === 'measurable'} onClick={() => updateTactic(sIndex, tIndex, 'type', 'measurable')}>
                           Measure
                         </button>
                       </div>
+
                       {tactic.type === 'measurable' && (
-                        <div className="pop-tactic-measure" style={{ marginTop: 'var(--space-2)' }}>
-                          <div>
+                        <>
+                          <div className="pop-tactic-field">
                             <label className="pop-tactic-label">Target</label>
-                            <div className="tsa-stepper pop-target-stepper">
+                            <div className="tsa-stepper">
                               <button type="button" className="tsa-stepper-btn" aria-label="Decrease target" onClick={() => {
                                 const current = Number(tactic.target_value) || 0;
                                 const next = Math.max(0, current - stepBy(current));
                                 updateTactic(sIndex, tIndex, 'target_value', next);
                               }}>&minus;</button>
-                              <input type="number" inputMode="numeric" min="0" max="999999999999" value={tactic.target_value ?? ''} onChange={(e) => updateTactic(sIndex, tIndex, 'target_value', e.target.value ? parseFloat(e.target.value) : null)} />
+                              <input type="number" inputMode="numeric" min="0" max="999999999999" style={{ width: targetWidth }} value={tactic.target_value ?? ''} onChange={(e) => updateTactic(sIndex, tIndex, 'target_value', e.target.value ? parseFloat(e.target.value) : null)} />
                               <button type="button" className="tsa-stepper-btn" aria-label="Increase target" onClick={() => {
                                 const current = Number(tactic.target_value) || 0;
                                 const next = Math.min(999999999999, current + stepBy(current));
@@ -421,20 +429,17 @@ export default function PersonalOperatingPlanEdit() {
                               }}>+</button>
                             </div>
                           </div>
-                          <div>
+                          <div className="pop-tactic-field">
                             <label className="pop-tactic-label">Unit</label>
-                            <input type="text" className="plan-input" maxLength={LIMITS.unit} value={tactic.unit || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'unit', e.target.value)} />
+                            <input type="text" className="plan-input pop-unit-input" placeholder="£, hours..." maxLength={LIMITS.unit} value={tactic.unit || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'unit', e.target.value)} />
                           </div>
-                        </div>
+                        </>
                       )}
                     </div>
-                    <button type="button" className="plan-bin-btn" aria-label={`Remove tactic ${tIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'tactic', sIndex, tIndex })}>
-                      <BinIcon />
-                    </button>
+                    {fieldError?.field === `tactic-${sIndex}-${tIndex}` && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
                   </div>
-                  {fieldError?.field === `tactic-${sIndex}-${tIndex}` && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
-                </div>
-              ))}
+                );
+              })}
               <button type="button" className="plan-add-btn" onClick={() => addTactic(sIndex)}>
                 <span className="ui-cross ui-cross--sm" aria-hidden="true" />
                 Add tactic
