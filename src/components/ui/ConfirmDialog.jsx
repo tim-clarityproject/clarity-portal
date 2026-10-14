@@ -91,6 +91,59 @@ export default function ConfirmDialog({
 
   return createPortal(
     <div className="ui-root">
+      <style>{`
+        .delete-dialog-scrim {
+          position: fixed;
+          inset: 0;
+          background: var(--scrim);
+          z-index: 5101;
+          opacity: ${open ? 1 : 0};
+          transition: opacity var(--dur) var(--ease);
+        }
+
+        .delete-dialog-card {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          width: 100%;
+          max-width: 420px;
+          box-sizing: border-box;
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: var(--radius-card);
+          padding: var(--space-4);
+          z-index: 5102;
+          opacity: ${open ? 1 : 0};
+          transform: translate(-50%, -50%) translateY(${open ? '0' : '8px'});
+          transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+        }
+
+        .delete-dialog-title {
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          font-size: 14px;
+          color: var(--text);
+          margin: 0 0 var(--space-2);
+        }
+
+        .delete-dialog-message {
+          font-family: var(--font-body);
+          font-size: 14px;
+          line-height: 1.5;
+          color: var(--text-2);
+          margin: 0 0 18px;
+        }
+
+        .delete-dialog-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+        }
+      `}</style>
+
       <div className="delete-dialog-scrim" onClick={onCancel} aria-hidden="true" />
       <div
         ref={dialogRef}
