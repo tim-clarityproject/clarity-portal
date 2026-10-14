@@ -191,6 +191,38 @@ function RingVisual({ technique, active, size }) {
   );
 }
 
+// The 45-degree midpoint of each rounded corner (120 minus 76 times
+// (1 minus the square root of one half) - the mock's own rrPath()
+// formula, L=240, rr=76). A plain <rect rx="76"> converts to a path
+// that starts partway along the top edge (SVG2's own basic-shape
+// equivalent, M x+rx,y ...), not at this point - patch 3D area A's
+// fix is this hand-built path instead, starting exactly here so every
+// quarter of its length lines up with a 4-second phase boundary.
+const BOX_CORNER = 120 - 76 * (1 - Math.SQRT1_2);
+
+// Clockwise from the top-left corner point: half of the TL curve, top
+// edge, TR curve, right edge, BR curve, bottom edge, BL curve, left
+// edge, the other half of the TL curve (closing back to the start).
+const BOXD = `M${-BOX_CORNER} ${-BOX_CORNER}`
+  + `A76 76 0 0 1 -44 -120 L44 -120 A76 76 0 0 1 ${BOX_CORNER} ${-BOX_CORNER}`
+  + `A76 76 0 0 1 120 -44 L120 44 A76 76 0 0 1 ${BOX_CORNER} ${BOX_CORNER}`
+  + `A76 76 0 0 1 44 120 L-44 120 A76 76 0 0 1 ${-BOX_CORNER} ${BOX_CORNER}`
+  + `A76 76 0 0 1 -120 44 L-120 -44 A76 76 0 0 1 ${-BOX_CORNER} ${-BOX_CORNER}Z`;
+
+// Corner marker lines (area A): one through each corner point, 0.9 to
+// 1.1 times its own coordinate along the diagonal, turning coral hard
+// (no fade) once the dot has passed it. With four equal 4-second
+// phases the dot reaches top-right/bottom-right/bottom-left exactly at
+// 25/50/75% of the cycle; top-left is both the start and end point, so
+// its own marker uses 98.5% rather than 100% (prog wraps to 0 exactly
+// at the cycle boundary and would never actually reach a literal 1).
+const BOX_TICKS = [
+  { point: [BOX_CORNER, -BOX_CORNER], at: 0.25 },
+  { point: [BOX_CORNER, BOX_CORNER], at: 0.5 },
+  { point: [-BOX_CORNER, BOX_CORNER], at: 0.75 },
+  { point: [-BOX_CORNER, -BOX_CORNER], at: 0.985 },
+];
+
 function BoxVisual({ technique, active, size }) {
   const reducedMotion = useReducedMotion();
   const { elapsedMs, color } = useCycleAnimation(technique, active);
@@ -201,9 +233,6 @@ function BoxVisual({ technique, active, size }) {
   const rotation = active && !reducedMotion ? s * 45 : 0;
   const innerScale = 0.22 + 0.74 * (active ? s : 0);
 
-  // The progress outline is the guide rect itself (mock's own
-  // approach - getTotalLength()/getPointAtLength() work directly on an
-  // SVG basic shape), not a hand-authored path string.
   const progRef = useRef(null);
   const dotRef = useRef(null);
   const [pathLen, setPathLen] = useState(0);
@@ -239,12 +268,20 @@ function BoxVisual({ technique, active, size }) {
           x="-120" y="-120" width="240" height="240" rx="76"
           fill={color} fillOpacity="0.08" transform={`scale(${innerScale})`}
         />
-        <rect
-          ref={progRef} x="-120" y="-120" width="240" height="240" rx="76"
+        {BOX_TICKS.map(({ point: [px, py], at }, idx) => (
+          <line
+            key={idx}
+            x1={px * 0.9} y1={py * 0.9} x2={px * 1.1} y2={py * 1.1}
+            stroke={prog >= at ? 'var(--coral)' : 'var(--btn-line)'}
+            strokeWidth="1.6" strokeLinecap="round"
+          />
+        ))}
+        <path
+          ref={progRef} d={BOXD}
           fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round"
           strokeDasharray={pathLen ? `${prog * pathLen} ${pathLen}` : undefined}
         />
-        {active && <circle ref={dotRef} r="5.5" fill={color} cx="-120" cy="0" />}
+        {active && <circle ref={dotRef} r="5.5" fill={color} cx={-BOX_CORNER} cy={-BOX_CORNER} />}
       </svg>
       <span className="bv-mark ui-cross" style={{ '--rotate': `${rotation}deg` }} />
     </div>
