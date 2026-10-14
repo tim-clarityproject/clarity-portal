@@ -13,7 +13,7 @@ export const pageText = {
 
   // Plan section
   personalOperatingPlan: { overline: 'Plan', subtitle: 'Your mission, the strategies that serve it and what you do every day.' },
-  personalOperatingPlanEdit: { overline: 'Plan', subtitle: '' },
+  personalOperatingPlanEdit: { overline: 'Plan', subtitle: 'Your mission is the anchor. Strategies are how you pursue it. Tactics are what you do every day.' },
   personalOperatingPlanReview: { overline: 'Plan', subtitle: '' },
   personalOperatingPlanSummary: { overline: 'Plan', subtitle: '' },
   goalSetting: { overline: 'Plan', subtitle: '' },

@@ -15,6 +15,7 @@ export default function ConfirmDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   confirmClassName = 'ui-btn-primary',
+  hideCancel = false,
   onConfirm,
   onCancel,
 }) {
@@ -102,7 +103,7 @@ export default function ConfirmDialog({
         <h2 id={titleId} className="delete-dialog-title">{title}</h2>
         <p className="delete-dialog-message">{message}</p>
         <div className="delete-dialog-actions">
-          <button type="button" className="discard-dialog-keep" onClick={onCancel}>{cancelLabel}</button>
+          {!hideCancel && <button type="button" className="discard-dialog-keep" onClick={onCancel}>{cancelLabel}</button>}
           <button type="button" className={confirmClassName} onClick={onConfirm}>{confirmLabel}</button>
         </div>
       </div>

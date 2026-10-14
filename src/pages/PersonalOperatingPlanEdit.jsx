@@ -4,11 +4,15 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { LIMITS, formatVersion, loadLatestVersion, previewNextVersion, recordVersionAfterSave, validatePlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
+import PageHeading from '../components/PageHeading';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
+
+const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your mission. It's your overall direction - how you'll tackle things in a consistent, thoughtful way. Unlike tactics (which happen day-to-day), your strategies don't change frequently. They're the foundation that guides your daily actions.";
+const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do - the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
 
 function BinIcon() {
   return (
@@ -22,6 +26,13 @@ let tempIdCounter = 0;
 function tempId() {
   tempIdCounter += 1;
   return `temp-${Date.now()}-${tempIdCounter}`;
+}
+
+// Bigger steps for bigger numbers (mock-up's own stepBy()) - a target
+// of 100,000 would take forever to reach one at a time.
+function stepBy(value) {
+  const n = Math.max(1, Math.abs(value));
+  return Math.max(1, 10 ** (Math.floor(Math.log10(n)) - 1));
 }
 
 export default function PersonalOperatingPlanEdit() {
@@ -39,6 +50,7 @@ export default function PersonalOperatingPlanEdit() {
   const [saveError, setSaveError] = useState('');
   const [fieldError, setFieldError] = useState(null); // { field, message }
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(null); // 'strategy' | 'tactic' | null
   const [deleteTarget, setDeleteTarget] = useState(null); // { kind: 'strategy'|'tactic', sIndex, tIndex }
   const [draftRestored, setDraftRestored] = useState(false);
   const [draftDismissed, setDraftDismissed] = useState(false);
@@ -328,6 +340,7 @@ export default function PersonalOperatingPlanEdit() {
       <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={savePlan}>
         {isSaving ? 'Saving...' : 'Save plan'}
       </button>
+      <span className="pop-save-preview">{previewLine}</span>
     </>
   );
 
@@ -336,10 +349,7 @@ export default function PersonalOperatingPlanEdit() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        <div className="plan-header">
-          <div className="ui-title">{isNew ? 'Create your plan' : 'Edit your plan'}</div>
-          <p className="ui-subtitle">{previewLine}</p>
-        </div>
+        <PageHeading pageKey="personalOperatingPlanEdit" title="Shape your personal operating plan" />
 
         {pendingDraft && !draftDismissed && (
           <div className="pop-draft-banner">
@@ -359,6 +369,7 @@ export default function PersonalOperatingPlanEdit() {
 
         <div className="plan-label-row">
           <span className="ui-section-heading">Strategies</span>
+          <button type="button" className="plan-link-btn" onClick={() => setInfoOpen('strategy')}>What is a strategy?</button>
         </div>
 
         {strategies.map((strategy, sIndex) => (
@@ -375,20 +386,40 @@ export default function PersonalOperatingPlanEdit() {
             </div>
 
             <div className="pop-tactics">
+              <div className="plan-label-row" style={{ marginTop: 0 }}>
+                <span className="pop-tactic-label" style={{ marginBottom: 0 }}>Tactics</span>
+                <button type="button" className="plan-link-btn" onClick={() => setInfoOpen('tactic')}>What is a tactic?</button>
+              </div>
               {strategy.tactics.map((tactic, tIndex) => (
                 <div key={tactic.id}>
                   <div className="pop-tactic-row">
                     <AutoGrowTextarea singleLine className="plan-input" placeholder="What's the specific action?" aria-label={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} maxLength={LIMITS.tacticAction} />
                     <div>
-                      <select className="plan-input" value={tactic.type} onChange={(e) => updateTactic(sIndex, tIndex, 'type', e.target.value)} aria-label={`Tactic ${tIndex + 1} type`}>
-                        <option value="tickable">Tickable</option>
-                        <option value="measurable">Measurable</option>
-                      </select>
+                      <div className="ui-segmented" role="group" aria-label={`Tactic ${tIndex + 1} tracking type`}>
+                        <button type="button" className={`ui-segmented-option${tactic.type === 'tickable' ? ' active' : ''}`} aria-pressed={tactic.type === 'tickable'} onClick={() => updateTactic(sIndex, tIndex, 'type', 'tickable')}>
+                          Tick off
+                        </button>
+                        <button type="button" className={`ui-segmented-option${tactic.type === 'measurable' ? ' active' : ''}`} aria-pressed={tactic.type === 'measurable'} onClick={() => updateTactic(sIndex, tIndex, 'type', 'measurable')}>
+                          Measure
+                        </button>
+                      </div>
                       {tactic.type === 'measurable' && (
                         <div className="pop-tactic-measure" style={{ marginTop: 'var(--space-2)' }}>
                           <div>
                             <label className="pop-tactic-label">Target</label>
-                            <input type="number" className="plan-input" min="0" max="999999999999" value={tactic.target_value ?? ''} onChange={(e) => updateTactic(sIndex, tIndex, 'target_value', e.target.value ? parseFloat(e.target.value) : null)} />
+                            <div className="tsa-stepper pop-target-stepper">
+                              <button type="button" className="tsa-stepper-btn" aria-label="Decrease target" onClick={() => {
+                                const current = Number(tactic.target_value) || 0;
+                                const next = Math.max(0, current - stepBy(current));
+                                updateTactic(sIndex, tIndex, 'target_value', next);
+                              }}>&minus;</button>
+                              <input type="number" inputMode="numeric" min="0" max="999999999999" value={tactic.target_value ?? ''} onChange={(e) => updateTactic(sIndex, tIndex, 'target_value', e.target.value ? parseFloat(e.target.value) : null)} />
+                              <button type="button" className="tsa-stepper-btn" aria-label="Increase target" onClick={() => {
+                                const current = Number(tactic.target_value) || 0;
+                                const next = Math.min(999999999999, current + stepBy(current));
+                                updateTactic(sIndex, tIndex, 'target_value', next);
+                              }}>+</button>
+                            </div>
                           </div>
                           <div>
                             <label className="pop-tactic-label">Unit</label>
@@ -430,7 +461,7 @@ export default function PersonalOperatingPlanEdit() {
 
       <DiscardDialog
         isOpen={discardOpen}
-        title="Discard these changes?"
+        title="Discard your changes?"
         message="Anything you have not saved will be lost."
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
@@ -438,11 +469,29 @@ export default function PersonalOperatingPlanEdit() {
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title={deleteTarget?.kind === 'strategy' ? 'Delete this strategy?' : 'Delete this tactic?'}
-        message={deleteTarget?.kind === 'strategy' ? 'This also removes all of its tactics. This takes effect when you save.' : 'This takes effect when you save.'}
+        message={deleteTarget?.kind === 'strategy' ? 'Its tactics will be deleted with it.' : 'This takes effect when you save.'}
         confirmLabel="Delete"
         confirmClassName="dng"
         onCancel={() => setDeleteTarget(null)}
         onConfirm={deleteTarget?.kind === 'strategy' ? confirmDeleteStrategy : confirmDeleteTactic}
+      />
+      <ConfirmDialog
+        open={infoOpen === 'strategy'}
+        title="What is a strategy?"
+        message={STRATEGY_INFO}
+        confirmLabel="Got it"
+        hideCancel
+        onCancel={() => setInfoOpen(null)}
+        onConfirm={() => setInfoOpen(null)}
+      />
+      <ConfirmDialog
+        open={infoOpen === 'tactic'}
+        title="What is a tactic?"
+        message={TACTIC_INFO}
+        confirmLabel="Got it"
+        hideCancel
+        onCancel={() => setInfoOpen(null)}
+        onConfirm={() => setInfoOpen(null)}
       />
     </div>
   );

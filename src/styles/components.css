@@ -3749,6 +3749,21 @@ span.tc-editable:focus-visible {
   margin-bottom: var(--space-1);
 }
 
+/* Target-value stepper: same +/- shape as .tsa-stepper (Time Audit),
+   just a wider input - targets here run into the hundreds of
+   thousands (e.g. a revenue goal), not the 0-999 hours .tsa-stepper
+   was sized for. */
+.ui-root .pop-target-stepper input {
+  width: 110px;
+}
+
+/* "Saving creates Version X.Y" beside the Save button (mock-up's
+   .nvp), not as the page subtitle. */
+.pop-save-preview {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
 /* ---- Version history / archived plans ---- */
 
 .pop-version-row {
