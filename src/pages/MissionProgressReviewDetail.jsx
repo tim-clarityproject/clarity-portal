@@ -2,12 +2,11 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { formatDateAndTime } from '../lib/dateFormatter';
+import { formatShortDate } from '../lib/dateFormatter';
 import { formatVersion, deleteReview } from '../lib/missionPlan';
-import { generateMissionProgressPDF } from '../lib/pdfExport';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import ConfirmDialog from '../components/ui/ConfirmDialog';
+import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 
@@ -71,15 +70,6 @@ export default function MissionProgressReviewDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleExportPDF = () => {
-    try {
-      generateMissionProgressPDF(review);
-    } catch (error) {
-      console.error('[MissionProgressReviewDetail] PDF export failed:', error);
-      showToast('Could not create the PDF - please try again.');
-    }
-  };
-
   const handleDelete = async () => {
     try {
       await deleteReview(user.id, review.id);
@@ -124,18 +114,16 @@ export default function MissionProgressReviewDetail() {
 
         <div className="plan-summary-head">
           <span className="plan-overline">Plan review</span>
-          <div className="ui-title">{data.mission_title}</div>
-          <p className="ui-subtitle">Reviewed on {formatDateAndTime(review.created_at)}</p>
+          <div className="ui-title">Plan review, {formatShortDate(review.created_at)}</div>
         </div>
 
-        <div className="pop-links-row">
-          {version && (
+        {version && (
+          <div className="pop-links-row">
             <button type="button" className="plan-link-btn" onClick={() => navigate(`/personal-operating-plan-history/${version.major}.${version.minor}`, { state: { missionId: review.mission_id } })}>
               Version reviewed: {formatVersion(version.major, version.minor)}
             </button>
-          )}
-          <button type="button" className="plan-link-btn" onClick={handleExportPDF}>Download PDF</button>
-        </div>
+          </div>
+        )}
 
         {(data.strategies || []).map((strategy, si) => (
           <div className="pop-view-strategy" key={strategy.id || si}>
@@ -162,20 +150,21 @@ export default function MissionProgressReviewDetail() {
           <button type="button" className="ui-btn-ghost" onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: review.mission_id, reviewId: review.id } })}>
             Edit review
           </button>
+        </div>
+
+        <div className="plan-discard-row" style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button type="button" className="ui-btn-ghost ui-btn-ghost--danger" onClick={() => setDeleteOpen(true)}>
             Delete review
           </button>
         </div>
       </div>
 
-      <ConfirmDialog
+      <DeleteDialog
         open={deleteOpen}
         title="Delete this review?"
-        message="This cannot be undone."
-        confirmLabel="Delete"
-        confirmClassName="dng"
-        onCancel={() => setDeleteOpen(false)}
+        body="It will be deleted for good and removed from My Reviews. Your plan and its Versions are not affected."
         onConfirm={handleDelete}
+        onCancel={() => setDeleteOpen(false)}
       />
       <Toast message={message} />
     </div>
