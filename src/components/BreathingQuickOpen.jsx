@@ -12,6 +12,17 @@ function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
 }
 
+// Space to reserve above the dial for the running screen's floating
+// header (patch 3D area B). The echoes reach right out to the edge of
+// the dial's own square (up to 150+27=177 of the 180-unit half-frame -
+// effectively the whole square), not just to the 150-unit guide circle,
+// so this has to clear the WHOLE header row, not just leave room above
+// where the guide circle happens to sit. Header row is 36px tall (the
+// close button, taller than the title text) sitting var(--space-3)
+// (16px) from the card top, plus var(--space-3) (16px) clear space
+// below it, as asked: 16 + 36 + 16 = 68.
+const DIAL_PT = 68;
+
 // Quick-open breathing pop-up (prompt 11, redesigned patch 3B area E) -
 // replaces BreathingGuide.jsx. Shared by the floating Breathe button
 // and the Home "Need a moment?" panel. The shell (scrim/card, mount/
@@ -33,7 +44,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
 
   const sessionHostRef = useRef(null);
   const sessionStackRef = useRef(null);
-  const dialSize = useDialSize(sessionHostRef, sessionStackRef, 64, sessionActive);
+  const dialSize = useDialSize(sessionHostRef, sessionStackRef, DIAL_PT, sessionActive);
 
   useEffect(() => {
     if (isOpen) {
@@ -211,7 +222,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
         ) : (
           <>
             <div ref={sessionHostRef} className="bqo-session-host">
-              <div className="breathe-session-fg">
+              <div className="breathe-session-fg" style={{ paddingTop: DIAL_PT }}>
                 <div className="breathe-session-field" style={{ width: dialSize, height: dialSize }}>
                   <BreathingVisual technique={technique} active size={dialSize} />
                 </div>
