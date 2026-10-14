@@ -60,11 +60,16 @@ export function ease(p) {
   return (1 - Math.cos(Math.PI * p)) / 2;
 }
 
-// Where the breath is at a given point in the cycle (mock-up's st()/
-// stt()): which phase, the eased progress value s (0-1, drives ring/
-// box size), seconds remaining in this phase, ms remaining, and
-// whether this phase is "ending low" (to < from - drives the colour
-// chase target, exactly as the mock-up defines it).
+// Where the breath is at a given point in the cycle (breathe-redesign.
+// html's own stt()): which phase, the eased progress value s (0-1,
+// drives ring/box size), ms remaining in this phase, and this phase's
+// colour direction - dir:1 descending (chase mint, exhale-like), 0
+// rising (chase coral, inhale-like), -1 flat (a hold - mock's own
+// P.b<P.a?1:(P.b>P.a?0:-1)). A hold's -1 is deliberately not a valid
+// chase target: callers only update their persisted direction when
+// dir>=0, so a hold keeps whatever colour the breath before it was
+// heading towards (box's two holds: coral after inhale, mint after
+// exhale) rather than snapping back to neutral mid-hold.
 export function phaseAt(technique, cycleMs) {
   const phases = TECHNIQUES[technique].phases;
   let acc = 0;
@@ -73,16 +78,17 @@ export function phaseAt(technique, cycleMs) {
     if (cycleMs < acc + durMs || i === phases.length - 1) {
       const p = Math.min((cycleMs - acc) / durMs, 1);
       const phase = phases[i];
+      const dir = phase.to < phase.from ? 1 : (phase.to > phase.from ? 0 : -1);
       return {
         phaseIndex: i,
         s: phase.from + (phase.to - phase.from) * ease(p),
         remainingMs: durMs - (cycleMs - acc),
-        isEnding: phase.to < phase.from,
+        dir,
       };
     }
     acc += durMs;
   }
-  return { phaseIndex: 0, s: 0, remainingMs: 0, isEnding: false };
+  return { phaseIndex: 0, s: 0, remainingMs: 0, dir: 0 };
 }
 
 function hexToRgb(hex) {
