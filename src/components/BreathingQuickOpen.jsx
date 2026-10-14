@@ -119,7 +119,8 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
           opacity: ${isOpen ? 1 : 0}; transition: opacity var(--dur) var(--ease);
         }
         .bqo-card {
-          position: fixed; top: 50%; left: 50%; width: 100%; max-width: 360px;
+          position: fixed; top: 50%; left: 50%; width: 100%; max-width: 440px;
+          max-height: calc(100vh - var(--space-5) * 2); overflow-y: auto;
           box-sizing: border-box; background: var(--surface); border: 1px solid var(--line);
           border-radius: var(--radius-card); padding: var(--space-5); z-index: 5102;
           opacity: ${isOpen ? 1 : 0};
@@ -133,7 +134,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
           color: var(--text-2); font-size: 20px; border-radius: 50%;
         }
         .bqo-close:hover, .bqo-close:focus-visible { color: var(--text); }
-        .bqo-select { display: flex; gap: var(--space-2); margin: var(--space-4) 0; flex-wrap: wrap; justify-content: center; }
+        .bqo-select { display: flex; gap: var(--space-2); margin: 0 0 var(--space-3); flex-wrap: wrap; justify-content: center; }
         .ui-root .bqo-pill {
           all: unset; cursor: pointer; box-sizing: border-box; min-height: 36px;
           padding: 0 var(--space-3) !important; border: 1px solid var(--line); border-radius: var(--radius-pill);
@@ -143,7 +144,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
         .ui-root .bqo-pill[aria-pressed="true"] { border-color: var(--coral); }
         .bqo-actions { display: flex; gap: var(--space-3); width: 100%; margin-top: var(--space-4); }
         .bqo-actions .ui-btn-primary, .bqo-actions .ui-btn-ghost { flex: 1; }
-        .bqo-links { display: flex; gap: var(--space-4); margin-top: var(--space-4); }
+        .bqo-links { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-2); flex-wrap: wrap; }
         .bqo-session-info { margin-top: var(--space-3); }
         .bqo-count { font-size: 44px; min-height: 44px; }
       `}</style>
@@ -152,9 +153,9 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
 
       <div ref={dialogRef} className="bqo-card" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <button type="button" className="bqo-close" onClick={handleClose} aria-label="Close">×</button>
-        <h2 id={titleId} className="plan-overline" style={{ marginBottom: 'var(--space-4)' }}>{TECHNIQUES[technique].label}</h2>
+        <h2 id={titleId} className="plan-overline" style={{ marginBottom: 'var(--space-3)' }}>{TECHNIQUES[technique].label}</h2>
 
-        <BreathingVisual technique={technique} active={sessionActive} size={150} />
+        <BreathingVisual technique={technique} active={sessionActive} size={220} />
 
         {sessionActive && (
           <div className="breathe-session-info bqo-session-info">
