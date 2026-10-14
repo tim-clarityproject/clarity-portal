@@ -3869,6 +3869,24 @@ span.tc-editable:focus-visible {
 
 /* ---- Mission recap card (plan view / old version / archived plan) ---- */
 
+/* Review plan page only (patch 2d, fix 1): the mock-up's dhead has no
+   rule/divider under the title+subtitle at all, so PageHeading's
+   .ui-rule (a short coral underline, no margin-bottom of its own) is
+   hidden here rather than restyled - nothing to "separate", there is
+   no such element in the approved mock-up. The wrapper's own
+   margin-bottom stands in for the mock's .dhead margin-bottom
+   (44px desktop / 34px phone) - --space-6 (48px) comfortably clears
+   both and guarantees the required >=24px gap at any width, so the
+   first .pop-view-strategy card's coral left border/rounded corner
+   never touches anything above it. */
+.pop-review-heading {
+  margin-bottom: var(--space-6);
+}
+
+.pop-review-heading .ui-rule {
+  display: none;
+}
+
 .pop-mission-card {
   margin-top: var(--space-5);
   border-top: 1px solid var(--line);

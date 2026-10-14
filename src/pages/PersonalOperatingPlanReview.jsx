@@ -279,7 +279,16 @@ export default function PersonalOperatingPlanReview() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        <PageHeading pageKey="personalOperatingPlanReview" title="Review your plan" />
+        {/* personal-operating-plan.html's own S.rev screen has no step
+            indicator and no rule/divider under the header - .ui-rule
+            (PageHeading's short coral underline) was sitting flush on
+            top of the first .pop-view-strategy card below, clashing
+            with its coral left border and rounded corner. Scoped to
+            just this page's heading (not a global PageHeading/ui-rule
+            change) so nothing else using PageHeading is affected. */}
+        <div className="pop-review-heading">
+          <PageHeading pageKey="personalOperatingPlanReview" title="Review your plan" />
+        </div>
 
         {continuingDraftDate && (
           <div className="pop-draft-banner">
