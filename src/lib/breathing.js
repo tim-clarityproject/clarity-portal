@@ -103,8 +103,26 @@ function hexToRgb(hex) {
 // mix()/hex() - reads the actual computed --coral/--mint values via
 // getComputedStyle, same as the mock-up, rather than hard-coding hex
 // (rule 2): if the tokens ever change, this keeps following them.
+//
+// Patch 3C fix: this used to read getComputedStyle(document.
+// documentElement) - the <html> element. --coral/--mint are declared
+// on .ui-root (tokens.css), a div well below <html>, never on <html>
+// itself or :root, so getPropertyValue always returned '' there,
+// hexToRgb('') is [NaN,NaN,NaN], and every frame produced the literal
+// string "rgb(NaN,NaN,NaN)" - an invalid SVG paint value, so every
+// shape whose fill/stroke came from this function (the breathing
+// circle, its three echoes, the box's inner square and progress
+// outline/dot) painted as nothing. Only the guide circle (a plain,
+// literal stroke="var(--line)" written straight in JSX, resolved by
+// the normal CSS cascade/inheritance from its .ui-root ancestor) and
+// the centre mark (coloured via a CSS declaration, not this function)
+// were ever actually painted - exactly what was seen on the preview.
+// Reading from the nearest live .ui-root element instead resolves the
+// real values via inheritance, the same way the guide circle's own
+// var(--line) already does.
 export function mixColorTokens(varA, varB, t) {
-  const root = getComputedStyle(document.documentElement);
+  const scope = document.querySelector('.ui-root') || document.documentElement;
+  const root = getComputedStyle(scope);
   const a = hexToRgb(root.getPropertyValue(varA).trim());
   const b = hexToRgb(root.getPropertyValue(varB).trim());
   const mixed = a.map((v, i) => Math.round(v + (b[i] - v) * t));

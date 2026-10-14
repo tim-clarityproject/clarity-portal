@@ -54,7 +54,7 @@ export function useDialSize(hostRef, stackRef, pt, active) {
 // before it was going, rather than snapping back to neutral.
 function useCycleAnimation(technique, active) {
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [color, setColor] = useState('var(--coral)');
+  const [color, setColor] = useState(() => mixColorTokens('--coral', '--mint', 0));
   const startRef = useRef(null);
   const cmRef = useRef(0);
   const dirRef = useRef(0);
@@ -64,7 +64,7 @@ function useCycleAnimation(technique, active) {
       setElapsedMs(0);
       cmRef.current = 0;
       dirRef.current = 0;
-      setColor('var(--coral)');
+      setColor(mixColorTokens('--coral', '--mint', 0));
       return undefined;
     }
     startRef.current = Date.now();
@@ -95,7 +95,7 @@ function useCycleAnimation(technique, active) {
 // wraps per cycle), unlike the shape's own cycle clock.
 export function useBreathingPhase(technique, active) {
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [color, setColor] = useState('var(--coral)');
+  const [color, setColor] = useState(() => mixColorTokens('--coral', '--mint', 0));
   const startRef = useRef(null);
   const cmRef = useRef(0);
   const dirRef = useRef(0);
@@ -105,7 +105,7 @@ export function useBreathingPhase(technique, active) {
       setElapsedMs(0);
       cmRef.current = 0;
       dirRef.current = 0;
-      setColor('var(--coral)');
+      setColor(mixColorTokens('--coral', '--mint', 0));
       return undefined;
     }
     startRef.current = Date.now();
