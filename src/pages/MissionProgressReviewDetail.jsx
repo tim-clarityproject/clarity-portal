@@ -113,8 +113,12 @@ export default function MissionProgressReviewDetail() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-reviews')} label="Back to my reviews" /></div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">Plan review</span>
-          <div className="ui-title">Plan review, {formatShortDate(review.created_at)}</div>
+          {/* "POP review" (Personal Operating Plan review), Tim's
+              explicit wording (patch 2d) overriding my-reviews.html's
+              own "Plan review" - matches My Reviews' filter/row label
+              for this same review type. */}
+          <span className="plan-overline">POP review</span>
+          <div className="ui-title">POP review, {formatShortDate(review.created_at)}</div>
         </div>
 
         {version && (

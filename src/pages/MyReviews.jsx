@@ -25,11 +25,18 @@ const JOURNAL_ENTRY_META = {
   progress: { typeLabel: 'Progress review', source: 'after-action', fallback: 'Progress review' },
 };
 
+// "Plan" (filter id kept as-is - internal only, never shown) is
+// renamed to "POP review" on Tim's explicit instruction (patch 2d),
+// overriding my-reviews.html's own "Plan"/"Plan review" wording -
+// Personal Operating Plan reviews, not to be confused with the
+// Plan section/nav label elsewhere in the app, which is unrelated and
+// untouched. Order unchanged: All, Day, Weekly momentum, After-action,
+// POP review, Journals.
 const FILTERS = [
   { id: 'day', label: 'Day', match: (r) => r.source === 'day' },
   { id: 'weekly', label: 'Weekly momentum', match: (r) => r.source === 'weekly' },
   { id: 'after-action', label: 'After-action', match: (r) => r.source === 'after-action' },
-  { id: 'plan', label: 'Plan', match: (r) => r.source === 'plan' },
+  { id: 'plan', label: 'POP review', match: (r) => r.source === 'plan' },
   { id: 'journals', label: 'Journals', match: (r) => r.source === 'journal' },
 ];
 
@@ -91,7 +98,7 @@ export default function MyReviews() {
         built.push({
           id: r.id,
           title: r.review_data?.mission_title || 'Personal operating plan',
-          typeLabel: 'Plan',
+          typeLabel: 'POP review',
           source: 'plan',
           date: r.created_at,
           version: version ? formatVersion(version.major, version.minor) : null,
