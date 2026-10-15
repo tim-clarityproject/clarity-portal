@@ -1,4 +1,4 @@
-import { useContext, useEffect } from 'react';
+import { lazy, Suspense, useContext, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet, useNavigationType } from 'react-router-dom';
 import { diag } from './utils/diag';
 import { AuthProvider, AuthContext } from './context/AuthContext';
@@ -86,6 +86,15 @@ import ForgotPasswordCheckEmail from './pages/auth/ForgotPasswordCheckEmail';
 import ResetPassword from './pages/auth/ResetPassword';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
+import { loadWithReload } from './lib/loadWithReload';
+
+// Strategic Alignment Health Check: a standalone page for people with no
+// portal account. Lazy-loaded so none of it is in the portal's main bundle.
+const HealthCheck = lazy(() => loadWithReload(() => import('./pages/alignment/HealthCheck')));
+
+// The private link carries a secret token in the path: never write it into
+// the local diagnostics log.
+const redactHealthCheckToken = (pathname) => pathname.replace(/^(\/health-check\/).*/, '$1[token]');
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -100,7 +109,7 @@ function AppContent() {
       const navType = navEntry?.type || 'unknown';
       diag('APP_BOOT', {
         navType,
-        pathname: location.pathname,
+        pathname: redactHealthCheckToken(location.pathname),
         historyLength: window.history.length
       });
     } catch (e) {
@@ -111,7 +120,7 @@ function AppContent() {
   // Route change diagnostics
   useEffect(() => {
     diag('ROUTE_CHANGE', {
-      pathname: location.pathname,
+      pathname: redactHealthCheckToken(location.pathname),
       key: location.key,
       navType: navigationType,
       historyLength: window.history.length
@@ -154,7 +163,7 @@ function AppContent() {
     // /auth/finished - a narrower guard let this effect fire late and
     // yank the user back to the mission screen after they'd already left it.
     const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
-    if (justConfirmedEmail && !location.pathname.startsWith('/auth/')) {
+    if (justConfirmedEmail && !location.pathname.startsWith('/auth/') && !location.pathname.startsWith('/health-check/')) {
       console.log('[App] New signup confirmed, redirecting to mission page');
       navigate('/auth/mission', { replace: true });
       localStorage.removeItem('justConfirmedEmail');
@@ -196,6 +205,7 @@ function AppContent() {
     '/breathe'
   ].includes(location.pathname)
     || location.pathname.startsWith('/legal/')
+    || location.pathname.startsWith('/health-check/')
     || location.pathname.startsWith('/personal-operating-plan-history/')
     || location.pathname.startsWith('/personal-operating-plan-archived/');
 
@@ -246,6 +256,17 @@ function AppContent() {
             foot of the log in / sign up screens - see
             src/pages/legal/LegalDocumentPage.jsx. */}
         <Route path="/legal/:doc" element={<LegalDocumentPage />} />
+
+        {/* Strategic Alignment Health Check: public, no login, no redirects
+            for a logged-in portal user. Never nested under ProtectedLayout. */}
+        <Route
+          path="/health-check/:token"
+          element={(
+            <Suspense fallback={<div className="ui-root" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />}>
+              <HealthCheck />
+            </Suspense>
+          )}
+        />
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>

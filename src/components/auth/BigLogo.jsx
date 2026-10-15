@@ -17,16 +17,16 @@ export default function BigLogo() {
       <style>{`
         .auth-biglogo {
           position: relative;
-          width: 84px;
-          height: 84px;
+          width: var(--biglogo-size, 84px);
+          height: var(--biglogo-size, 84px);
           margin: 0 auto;
         }
 
         .auth-biglogo-ring {
           position: absolute;
           inset: 0;
-          width: 84px;
-          height: 84px;
+          width: 100%;
+          height: 100%;
           opacity: 0;
           animation: auth-ring-fade 700ms var(--ease) forwards;
         }

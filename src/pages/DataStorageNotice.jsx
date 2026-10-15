@@ -30,7 +30,7 @@ export default function DataStorageNotice() {
             Overview
           </h2>
           <p style={{ marginBottom: '16px' }}>
-            This Data Storage Notice explains how the Clarity Portal stores and manages your data. By using the Clarity Portal, you acknowledge that you understand and agree to the data storage practices outlined below.
+            This Data Storage Notice explains how The Clarity Portal stores and manages your data. By using The Clarity Portal, you acknowledge that you understand and agree to the data storage practices outlined below.
           </p>
 
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
@@ -72,7 +72,7 @@ export default function DataStorageNotice() {
             5. Session Management
           </h2>
           <p style={{ marginBottom: '16px' }}>
-            When you log in to the Clarity Portal, we create a secure session that lasts for up to 30 days. Your session is stored in your browser's local storage and synced with our servers. You can log out at any time to end your session immediately.
+            When you log in to The Clarity Portal, we create a secure session that lasts for up to 30 days. Your session is stored in your browser's local storage and synced with our servers. You can log out at any time to end your session immediately.
           </p>
 
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>
@@ -115,7 +115,7 @@ export default function DataStorageNotice() {
             10. Changes to This Notice
           </h2>
           <p style={{ marginBottom: '16px' }}>
-            We may update this Data Storage Notice from time to time. Changes will be effective immediately upon posting to the website. Your continued use of the Clarity Portal constitutes acceptance of any changes to this notice.
+            We may update this Data Storage Notice from time to time. Changes will be effective immediately upon posting to the website. Your continued use of The Clarity Portal constitutes acceptance of any changes to this notice.
           </p>
 
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>

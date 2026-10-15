@@ -24,6 +24,8 @@
 
 11. **Logo files in public/brand are used as supplied and never redrawn, recoloured, stretched or cropped.** The files are lockup-full_colour-on-dark.png (full logo with wordmark for desktop header), mark_colour-on-dark.png (emblem/mark for phone), and crosshair_white.png / crosshair_black.png (mask images for CSS masks).
 
+    The logo mark always includes its crosshair. Light backgrounds: Emblem Logo POSITIVE (black crosshair, `public/brand/logomark-positive.png`). Dark backgrounds: Emblem Logo NEGATIVE (white crosshair, `public/brand/logomark-negative.png`).
+
 12. **HOME suggestion rules.** The Home page shows three action cards (Plan my day, Review my day, Refine my personal operating plan) with no subheading. At most ONE card carries the "Suggested for now" tag, chosen by this order using the device's local time and whether the action has been finished (started but unfinished counts as not done): First, on Friday/Saturday/Sunday, if this week's Weekly Momentum Review is not done, an extra fourth card "Weekly momentum review" appears at the top, tagged. Otherwise before 4pm, if today's plan is not done, Plan my day is tagged. Otherwise from 4pm, if today's review is not done, Review my day is tagged. Otherwise, if the personal operating plan has not been refined in the last 7 days, Refine my personal operating plan is tagged. Otherwise no tag. Check the `journal_entries` table (entry_date field for reviews) and `decisions` table (tool_type: 'daily_plan' and created_at for today's plan) and missions table (updated_at).
 
 13. **The Account page sections, to be built in a later task, are: Profile, Mission (Statement and Show in header toggle), Appearance, Archived missions, and Danger zone.** Show in header is a switch (ui-switch). Delete is a quiet danger button (ui-btn-ghost--danger).
@@ -45,6 +47,8 @@
 21. **No swear words anywhere.** Not in product text, not in file names, not in code comments, not in variable or component names. If one is ever found, rename/reword it immediately.
 
 22. **Mock-up files are the source of truth.** Before building or changing any page, open and read the actual mock-up file and spec in full. Never build from a summary or from memory. Copy markup, CSS values, wording and behaviour from the mock-up. If the built page differs, the mock-up wins. If something cannot match, stop and report it instead of simplifying. Every build summary must list the files read and any differences left.
+
+23. **Wording and spelling: always write The Clarity Portal with a capital T on The, everywhere it is named.** Never "the Clarity Portal" or "a Clarity Portal account", even mid-sentence, in headings, buttons, legal text, emails, aria-labels, titles and toasts. Code identifiers, file names, CSS classes, URLs, environment variables and database values are not changed.
 
 ## List row guidelines
 

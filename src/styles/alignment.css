@@ -1,0 +1,1686 @@
+/* Strategic Alignment Health Check (src/pages/alignment). Imported only by the
+   lazy-loaded page, so none of this is in the portal's main bundle. Every rule
+   lives inside .ui-root and uses tokens only (tokens.css). The portal's shared
+   parts are reused (AuthShell, BigLogo, AuthTextField, AuthPrimaryButton,
+   AutoGrowTextarea, .ui-cross, .ui-saved, .auth-field-error); the classes
+   below are only what the mock-up needs that they do not already give.
+
+   src/styles/mobile.css puts padding / font-size / min-height with !important
+   on every <button> at 768px and under, so button rules here are scoped under
+   .ui-root and carry matching !important, the same pattern as .auth-btn-*. */
+
+/* ---- top bar: step label left, mark centred, save status right ---------- */
+.ui-root .al-bar {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.ui-root .al-step {
+  justify-self: start;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.ui-root .al-mark {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  border-radius: 8px;
+  --biglogo-size: 30px;
+}
+
+@media (min-width: 769px) {
+  .ui-root .al-mark {
+    --biglogo-size: 34px;
+  }
+}
+
+.ui-root .al-mark:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .al-save {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-button);
+  text-transform: uppercase;
+  color: var(--mint-text);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .al-save--on {
+  opacity: 1;
+}
+
+.ui-root .al-save--busy,
+.ui-root .al-save--error {
+  color: var(--text-2);
+}
+
+.ui-root .al-save svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- page column --------------------------------------------------------- */
+.ui-root .auth-column.al-col {
+  max-width: 520px;
+}
+
+.ui-root .auth-column.al-col .auth-sub {
+  margin-top: var(--space-3);
+  line-height: 1.6;
+}
+
+.ui-root .al-dur {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+}
+
+/* The email field starts 40px below the "about 15 minutes" line (the
+   mock-up's value; the portal's own .auth-sub + form rule does the same
+   but cannot match here because that line sits between them). */
+.ui-root .al-dur + form > .auth-field:first-child {
+  margin-top: 40px;
+}
+
+.ui-root .al-tag {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--coral-text);
+  margin-bottom: var(--space-3);
+}
+
+.ui-root .al-def {
+  margin: var(--space-4) 0 0;
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.ui-root .al-eg {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+}
+
+.ui-root .al-eg i {
+  font-style: normal;
+  color: var(--text-2);
+}
+
+.ui-root .al-body {
+  margin-top: var(--space-5);
+}
+
+/* The mock-up's Welcome column is 420px wide inside its padding (the portal's
+   default is 420px including it), so the email and code boxes match its width. */
+@media (min-width: 769px) {
+  .ui-root .auth-column.al-col-welcome {
+    max-width: 484px;
+  }
+}
+
+/* ---- access code: six boxes over one real input ---- */
+/* The mock-up's gap is 10px on desktop and 8px on phone. 8px is --space-2; 10px
+   has no token, so it is kept as a feature-scoped value rather than rounded. */
+.ui-root .al-otp {
+  --al-otp-gap: var(--space-2);
+  --al-otp-char: 20px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--al-otp-gap);
+  cursor: text;
+}
+
+@media (min-width: 769px) {
+  .ui-root .al-otp {
+    --al-otp-gap: 10px;
+    --al-otp-char: var(--fs-title-phone);
+  }
+}
+
+.ui-root .al-otp-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 54px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--al-otp-char);
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--text);
+  transition: border-color var(--dur) var(--ease);
+}
+
+@media (min-width: 769px) {
+  .ui-root .al-otp-box {
+    height: 60px;
+  }
+}
+
+.ui-root .al-otp-box--active {
+  border-color: var(--coral);
+}
+
+/* The thin blinking caret in the box where the next character goes. */
+.ui-root .al-otp-caret {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1px;
+  height: 24px;
+  margin-top: -12px;
+  background: var(--coral);
+  animation: al-caret calc(var(--dur-slow) * 2.75) steps(1) infinite;
+}
+
+@keyframes al-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .al-otp-caret {
+    animation: none;
+  }
+}
+
+/* The real input: laid over the boxes, invisible, 16px so phones do not zoom. */
+.ui-root .al-otp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 !important;
+  min-height: 0 !important;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: var(--fs-input) !important;
+  opacity: 0;
+  outline: none;
+  cursor: text;
+}
+
+/* ---- objective: borderless, large type, coral cursor ---------------------- */
+.ui-root .al-objective {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  resize: none;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-title-phone);
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  caret-color: var(--coral);
+  min-height: var(--space-5);
+}
+
+@media (min-width: 769px) {
+  .ui-root .al-objective {
+    font-size: var(--fs-title-desktop);
+  }
+}
+
+.ui-root .al-objective::placeholder {
+  color: var(--btn-line);
+}
+
+/* Long unbroken words in a project name wrap instead of running off. */
+.ui-root .al-col .auth-headline-word {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* ---- numbered rows (Critical Success Factors, projects) ------------------- */
+.ui-root .al-row {
+  display: grid;
+  grid-template-columns: var(--space-4) minmax(0, 1fr) var(--tap-min);
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.ui-root .al-row > b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  color: var(--placeholder);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .al-row:focus-within > b {
+  color: var(--coral-text);
+}
+
+.ui-root .al-row.al-row--done > b {
+  color: var(--mint-text);
+}
+
+/* The text box: the portal's input skin, as a growing textarea. */
+.ui-root .al-box {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 52px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  line-height: 1.4;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .al-box::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .al-box:hover {
+  border-color: var(--btn-line);
+}
+
+.ui-root .al-box:focus {
+  border-color: var(--coral);
+}
+
+.ui-root .al-icon {
+  all: unset;
+  cursor: pointer;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--btn-line);
+  border-radius: 8px;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .al-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ui-root .al-icon:hover,
+.ui-root .al-icon:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .al-icon:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -4px;
+}
+
+.ui-root .al-icon[disabled] {
+  visibility: hidden;
+}
+
+.ui-root .al-add {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  margin: var(--space-2) 0 0 var(--space-5);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .al-add .ui-cross {
+  width: 16px;
+  height: 16px;
+  color: var(--coral);
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+.ui-root .al-add:hover,
+.ui-root .al-add:focus-visible {
+  color: var(--text);
+  border-color: var(--coral);
+}
+
+.ui-root .al-add:hover .ui-cross {
+  transform: rotate(90deg);
+}
+
+.ui-root .al-add:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .al-count {
+  margin: var(--space-4) 0 0 var(--space-5);
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+}
+
+/* ---- contribution --------------------------------------------------------- */
+.ui-root .al-factor {
+  margin-top: var(--space-4);
+}
+
+.ui-root .al-factor-text {
+  display: grid;
+  grid-template-columns: var(--space-4) 1fr;
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-body);
+  color: var(--text);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .al-factor-text > b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  color: var(--placeholder);
+}
+
+/* A Critical Success Factor added after projects were rated: the screens
+   that come back for it mark it, and quieten the ones already rated. */
+.ui-root .al-factor--new .al-factor-text > b,
+.ui-root .al-factor--new .al-new {
+  color: var(--coral-text);
+}
+
+.ui-root .al-factor--old .al-factor-text {
+  color: var(--text-2);
+}
+
+.ui-root .al-new {
+  margin-left: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+}
+
+.ui-root .al-seg {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+}
+
+.ui-root .al-seg button {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: 50px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .al-seg button b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-small);
+  line-height: 1;
+  color: var(--text);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .al-seg button span {
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.ui-root .al-seg button:hover {
+  color: var(--text);
+}
+
+.ui-root .al-seg button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+.ui-root .al-seg button[aria-checked="true"] {
+  background: var(--coral);
+  color: var(--on-coral);
+}
+
+.ui-root .al-seg button[aria-checked="true"] b {
+  color: var(--on-coral);
+}
+
+.ui-root .al-score {
+  margin-top: var(--space-5);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.ui-root .al-score-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.ui-root .al-score-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .al-score-value {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  color: var(--text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-root .al-score-track {
+  height: 2px;
+  margin-top: var(--space-3);
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.ui-root .al-score-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--text);
+  transform-origin: left;
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+/* ---- five-point choices ---------------------------------------------------- */
+.ui-root .al-opts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-root .al-opt {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: var(--space-5) 1fr;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 var(--space-3) 0 var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .al-opt b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+}
+
+.ui-root .al-opt span {
+  font-size: var(--fs-body);
+  color: var(--text);
+  padding: var(--space-3) 0;
+}
+
+.ui-root .al-opt:hover {
+  border-color: var(--btn-line);
+}
+
+.ui-root .al-opt:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .al-opt[aria-checked="true"] {
+  border-color: var(--coral);
+}
+
+/* ---- footer: Back left, hint and Continue right ---------------------------- */
+.ui-root .al-foot {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  min-height: 84px;
+  padding: 0 var(--page-x-phone);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+@media (min-width: 769px) {
+  .ui-root .al-foot {
+    padding: 0 var(--page-x-desktop);
+  }
+}
+
+.ui-root .al-foot-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ui-root .al-back {
+  all: unset;
+  cursor: pointer;
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .al-back:hover {
+  color: var(--text);
+}
+
+.ui-root .al-back:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ui-root .al-hint {
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root .al-hint--on {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-hint {
+    display: none;
+  }
+}
+
+/* Continue in the footer: the shared coral pill, sized to its label. */
+.ui-root .al-foot .auth-btn-primary {
+  width: auto;
+  margin-top: 0;
+  padding: 0 var(--space-5) !important;
+  white-space: nowrap;
+}
+
+/* ---- notices ---------------------------------------------------------------- */
+.ui-root .al-note {
+  margin: var(--space-4) 0 0;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .al-save,
+  .ui-root .al-add .ui-cross,
+  .ui-root .al-score-fill {
+    transition: none;
+  }
+}
+
+/* ======================= One-pager ======================= */
+.ui-root .auth-column.al-col--wide {
+  max-width: calc(var(--content-max) * 1.5);
+}
+
+.ui-root .al-foot--wide {
+  max-width: calc(var(--content-max) * 1.5);
+}
+
+.ui-root .al-opd {
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+}
+
+.ui-root .al-faint {
+  color: var(--placeholder);
+}
+
+.ui-root .al-opobj {
+  margin-top: var(--space-5);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.ui-root .al-sect0,
+.ui-root .al-sect {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .al-sect {
+  margin-top: var(--space-6);
+}
+
+.ui-root .al-opobj + .al-sect {
+  margin-top: var(--space-5);
+}
+
+.ui-root .al-sect--first {
+  margin-top: 0;
+}
+
+.ui-root .al-opobj p {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-title-desktop);
+  line-height: 1.45;
+  color: var(--text);
+  max-width: 46ch;
+  text-wrap: balance;
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-opobj p {
+    font-size: var(--fs-title-phone);
+  }
+}
+
+.ui-root .al-csfg {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.ui-root .al-csfg .al-span {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-csfg {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-root .al-csfg .al-span {
+    grid-column: auto;
+  }
+}
+
+.ui-root .al-csfg > div {
+  display: grid;
+  grid-template-columns: var(--space-4) 1fr;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  padding: var(--space-3);
+  font-size: var(--fs-body-sub);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .al-csfg b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  color: var(--coral-text);
+  padding-top: 2px;
+}
+
+.ui-root .al-empty {
+  margin-top: var(--space-5);
+  font-size: var(--fs-body-sub);
+  color: var(--text-2);
+}
+
+.ui-root .al-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  min-width: 0;
+}
+
+.ui-root .al-chartp {
+  margin-top: var(--space-3);
+  background: var(--bg);
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-chartp {
+    padding: var(--space-3) var(--space-2) var(--space-2);
+  }
+}
+
+.ui-root .al-lhead {
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-3);
+}
+
+/* ---- chart ---- */
+.ui-root .al-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ui-root .al-chart svg text {
+  font-family: var(--font-body);
+}
+
+.ui-root .al-chart svg .al-axis-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+}
+
+.ui-root .al-pt {
+  cursor: default;
+  outline: none;
+}
+
+.ui-root .al-pt:focus-visible .al-core {
+  stroke-width: 2;
+}
+
+.ui-root .al-pt circle,
+.ui-root .al-pt text,
+.ui-root .al-lab {
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+.ui-root .al-pt .al-core,
+.ui-root .al-pt .al-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--dur-slow) var(--ease), opacity var(--dur-slow) var(--ease);
+}
+
+.ui-root .al-enter .al-pt .al-core {
+  animation: al-pop var(--dur-slow) var(--ease) both;
+  animation-delay: var(--d);
+}
+
+.ui-root .al-enter .al-pt .al-halo {
+  animation: al-pop var(--dur-slow) var(--ease) both;
+  animation-delay: calc(var(--d) + var(--dur-fast));
+}
+
+.ui-root .al-enter .al-pt text {
+  animation: al-fade var(--dur-slow) var(--ease) both;
+  animation-delay: calc(var(--d) + var(--dur));
+}
+
+.ui-root .al-enter .al-lab {
+  animation: al-fade var(--dur-slow) var(--ease) both;
+  animation-delay: var(--d);
+}
+
+.ui-root .al-enter .al-zone {
+  animation: al-fade var(--dur-slow) var(--ease) both;
+}
+
+.ui-root .al-enter .al-xl line {
+  stroke-dasharray: 800;
+  stroke-dashoffset: 800;
+  animation: al-draw var(--dur-slow) var(--ease) 0.1s forwards;
+}
+
+@keyframes al-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes al-pop {
+  from { opacity: 0; transform: scale(0.2); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes al-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ui-root .al-hlon .al-pt:not(.al-hl),
+.ui-root .al-hlon .al-lab:not(.al-hl) {
+  opacity: 0.28;
+}
+
+.ui-root .al-pt.al-hl .al-halo {
+  transform: scale(1.35);
+}
+
+.ui-root .al-pt.al-hl .al-core {
+  transform: scale(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .al-enter .al-pt .al-core,
+  .ui-root .al-enter .al-pt .al-halo,
+  .ui-root .al-enter .al-pt text,
+  .ui-root .al-enter .al-lab,
+  .ui-root .al-enter .al-zone,
+  .ui-root .al-enter .al-xl line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .ui-root .al-pt .al-core,
+  .ui-root .al-pt .al-halo {
+    transition: none;
+  }
+}
+
+/* ---- sort pills (the shared FilterPills with an arrow) ---- */
+.ui-root .al-dir {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+.ui-root .al-dir--up {
+  transform: rotate(180deg);
+}
+
+.ui-root .fpills-btn i .al-dir {
+  display: block;
+}
+
+.ui-root .al-hb {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  line-height: 1.4;
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--placeholder);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .al-hb:hover,
+.ui-root .al-hb--on {
+  color: var(--text);
+}
+
+.ui-root .al-hb:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+/* The arrow sits beside the heading without ever making it wrap. */
+.ui-root .al-hb .al-dir {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin: -5px 0 0 var(--space-2);
+  width: 10px;
+  height: 10px;
+  stroke: var(--coral);
+}
+
+/* ---- project table: adapts to the space it has, not the device ---- */
+.ui-root .al-rk {
+  container-type: inline-size;
+  container-name: alrk;
+  margin-top: var(--space-3);
+  padding-top: var(--space-1);
+  padding-bottom: var(--space-1);
+}
+
+.ui-root .al-rh {
+  display: none;
+}
+
+.ui-root .al-rr {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "rn nm nm" ". ci ci" ". cp cr";
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+  outline: none;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root .al-rr:last-child {
+  border-bottom: 0;
+}
+
+.ui-root .al-rk.al-hlon .al-rr:not(.al-hl) {
+  opacity: 0.45;
+}
+
+.ui-root .al-rn {
+  grid-area: rn;
+  width: var(--space-4);
+  height: var(--space-4);
+  border: 1px solid var(--text);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  color: var(--text);
+}
+
+.ui-root .al-rn--mi {
+  background: var(--mint);
+  border-color: var(--mint);
+  color: var(--on-coral);
+}
+
+.ui-root .al-rn--co {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--on-coral);
+}
+
+.ui-root .al-nm {
+  grid-area: nm;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--fs-body);
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.ui-root .al-c {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  align-self: start;
+}
+
+.ui-root .al-ci { grid-area: ci; }
+.ui-root .al-cp { grid-area: cp; }
+.ui-root .al-cr { grid-area: cr; }
+
+.ui-root .al-c small {
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--placeholder);
+  line-height: 1.35;
+  min-height: 2.7em;
+  display: flex;
+  align-items: flex-end;
+}
+
+.ui-root .al-ibar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 12px;
+}
+
+.ui-root .al-tr {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ui-root .al-tr i {
+  display: block;
+  height: 100%;
+  background: var(--text);
+}
+
+.ui-root .al-vv {
+  font-family: var(--font-display);
+  font-size: var(--fs-label);
+  color: var(--text);
+  white-space: nowrap;
+  min-width: 42px;
+  text-align: right;
+}
+
+.ui-root .al-segs,
+.ui-root .al-pips {
+  display: flex;
+  align-items: center;
+  min-height: 12px;
+}
+
+.ui-root .al-segs {
+  gap: var(--space-1);
+}
+
+.ui-root .al-segs i {
+  width: 15px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.ui-root .al-segs i.al-f {
+  background: var(--text);
+}
+
+.ui-root .al-pips {
+  gap: 6px;
+}
+
+.ui-root .al-pips i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--btn-line);
+}
+
+.ui-root .al-pips i.al-f {
+  background: var(--text-2);
+  border-color: var(--text-2);
+}
+
+@container alrk (min-width: 520px) {
+  .ui-root .al-rr {
+    grid-template-columns: 40px repeat(3, minmax(0, 1fr));
+    grid-template-areas: "rn nm nm nm" ". ci cp cr";
+    gap: var(--space-3) var(--space-4);
+  }
+
+  .ui-root .al-c small {
+    min-height: 0;
+  }
+}
+
+@container alrk (min-width: 760px) {
+  .ui-root .al-rh {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) minmax(150px, 190px) 110px 172px;
+    gap: 0 var(--space-4);
+    align-items: center;
+    padding: var(--space-3) 0 var(--space-3);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ui-root .al-rh > span {
+    font-family: var(--font-display);
+    font-size: var(--fs-tab);
+    letter-spacing: var(--ls-overline);
+    text-transform: uppercase;
+    color: var(--placeholder);
+  }
+
+  .ui-root .al-rh > .al-hb:nth-of-type(1),
+  .ui-root .al-rh > .al-hb:nth-of-type(2) {
+    justify-self: center;
+  }
+
+  .ui-root .al-rr {
+    grid-template-columns: 40px minmax(0, 1fr) minmax(150px, 190px) 110px 172px;
+    grid-template-areas: "rn nm ci cp cr";
+    gap: 0 var(--space-4);
+    padding: var(--space-3) 0;
+  }
+
+  .ui-root .al-c small {
+    display: none;
+  }
+
+  .ui-root .al-c {
+    align-self: center;
+  }
+
+  .ui-root .al-cp,
+  .ui-root .al-cr {
+    align-items: center;
+  }
+}
+
+/* ---- note + keep your results ---- */
+.ui-root .al-onepager .al-note {
+  margin-top: var(--space-4);
+  line-height: 1.65;
+  color: var(--placeholder);
+  max-width: 72ch;
+}
+
+.ui-root .al-keep {
+  margin-top: var(--space-6);
+}
+
+.ui-root .al-kgrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-kgrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ui-root .al-card {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-3);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .al-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--space-3);
+  bottom: var(--space-3);
+  width: 3px;
+  background: var(--coral);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .al-card:hover,
+.ui-root .al-card:focus-visible {
+  border-color: var(--btn-line);
+}
+
+.ui-root .al-card:hover::before,
+.ui-root .al-card:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.ui-root .al-card:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .al-card-name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.ui-root .al-card-name em {
+  font-style: normal;
+  margin-left: var(--space-2);
+  color: var(--placeholder);
+  font-size: var(--fs-tab);
+}
+
+.ui-root .al-card-desc {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.ui-root .al-card .ui-cross {
+  width: 20px;
+  height: 20px;
+  color: var(--coral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .al-card,
+  .ui-root .al-card::before,
+  .ui-root .al-dir,
+  .ui-root .al-rr {
+    transition: none;
+  }
+}
+
+/* ---- Edit links, clickable projects, tappable progress ---- */
+.ui-root .al-headrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ui-root .al-headrow--sect {
+  margin-top: var(--space-6);
+}
+
+.ui-root .al-opobj .al-headrow {
+  margin-bottom: 0;
+}
+
+.ui-root .al-lhead.al-headrow {
+  margin-bottom: var(--space-3);
+}
+
+.ui-root .al-edit {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .al-edit:hover,
+.ui-root .al-edit:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .al-edit:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ui-root .al-rr {
+  cursor: pointer;
+}
+
+.ui-root .al-rr:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+  border-radius: var(--radius-input);
+}
+
+/* Footer: Back and Back to results sit together on the left. */
+.ui-root .al-foot-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ui-root .al-back[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media print {
+  .ui-root .al-edit {
+    display: none;
+  }
+}
+
+/* ---- sort pills: separate outlined pills, as in the approved mock-up ---- */
+.ui-root .al-sorts {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: var(--space-3) 0 0;
+  padding-bottom: 2px;
+}
+
+.ui-root .al-sorts::-webkit-scrollbar {
+  display: none;
+}
+
+.ui-root .al-sort {
+  all: unset;
+  cursor: pointer;
+  flex: none;
+  box-sizing: border-box;
+  min-height: var(--tap-min) !important;
+  padding: 0 var(--space-3) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab) !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.ui-root .al-sort:hover {
+  color: var(--text);
+  border-color: var(--btn-line);
+}
+
+.ui-root .al-sort:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+/* The chosen pill is filled coral with black text, as in the approved mock-up
+   (the arrow takes the same colour). It follows the hover rule so it stays filled. */
+.ui-root .al-sort[aria-pressed="true"] {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--on-coral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .al-sort {
+    transition: none;
+  }
+}
+
+/* ---- Keep your results: PDF choices and card notes ---- */
+/* The wrapper IS the card box: the three in a row stretch to the tallest, and the
+   PDF choices and the "Sent to" note sit inside it, so the row grows together.
+   Content stays top-aligned; on phone (one column) each keeps its natural height. */
+.ui-root .al-cardwrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .al-cardwrap:hover,
+.ui-root .al-cardwrap:focus-within {
+  border-color: var(--btn-line);
+}
+
+.ui-root .al-cardwrap > .al-card {
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-card);
+  flex: 0 0 auto;
+}
+
+.ui-root .al-cardwrap > .al-pdfchoices,
+.ui-root .al-cardwrap > .al-cardnote {
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.ui-root .al-card[disabled] {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* ---- Light / Dark choice: one component for the footer button and the card ---- */
+.ui-root .al-cardwrap--pdf {
+  position: relative;
+}
+
+.ui-root .al-pdfmenu {
+  position: relative;
+  display: inline-flex;
+}
+
+.ui-root .al-pdfpop {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+  z-index: 30;
+  box-sizing: border-box;
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  animation: al-pop-up var(--dur) var(--ease) both;
+}
+
+.ui-root .al-pdftitle {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .al-pdfopts {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.ui-root .al-pdfopt {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 104px;
+  min-height: var(--tap-min);
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-input);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .al-pdfopt:hover,
+.ui-root .al-pdfopt:focus-visible {
+  border-color: var(--coral);
+}
+
+.ui-root .al-pdfopt:focus-visible {
+  outline: none;
+}
+
+.ui-root .al-thumb {
+  display: block;
+}
+
+.ui-root .al-pdfname {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .al-pdfnote {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.ui-root .al-pdfscrim {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: var(--scrim);
+  animation: al-fade var(--dur) var(--ease) both;
+}
+
+.ui-root .al-pdfsheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  box-sizing: border-box;
+  padding: var(--space-4) var(--page-x-phone) var(--space-3);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  animation: al-sheet-up var(--dur-slow) var(--ease) both;
+}
+
+.ui-root .al-pdfsheet .al-pdfopts {
+  gap: var(--space-2);
+}
+
+.ui-root .al-pdfsheet .al-pdfopt {
+  flex: 1;
+  min-height: 132px;
+  padding: var(--space-3) var(--space-2);
+}
+
+.ui-root .al-pdfcancel {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--tap-min);
+  margin-top: var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.ui-root .al-pdfcancel:hover,
+.ui-root .al-pdfcancel:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .al-pdfcancel:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+  border-radius: var(--radius-input);
+}
+
+@keyframes al-pop-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes al-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .al-pdfpop,
+  .ui-root .al-pdfsheet,
+  .ui-root .al-pdfscrim {
+    animation: none;
+  }
+}
+
+.ui-root .al-cardnote {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.ui-root .al-cardnote--done {
+  color: var(--mint-text);
+}
+
+.ui-root .al-privacy {
+  margin: var(--space-4) 0 0;
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  color: var(--text-2);
+  text-align: center;
+}
+
+@media print {
+  .ui-root .al-keep {
+    display: none;
+  }
+}

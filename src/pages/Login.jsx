@@ -505,13 +505,13 @@ export default function Login() {
             </div>
             <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#333' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>1. Acceptance of Terms</h3>
-              <p style={{ marginBottom: '16px' }}>By accessing and using the Clarity Portal, you accept and agree to be bound by the terms and provision of this agreement.</p>
+              <p style={{ marginBottom: '16px' }}>By accessing and using The Clarity Portal, you accept and agree to be bound by the terms and provision of this agreement.</p>
 
               <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>2. Use License</h3>
               <p style={{ marginBottom: '12px' }}>Permission is granted to temporarily download one copy of the materials for personal, non-commercial transitory viewing only.</p>
 
               <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>3. Disclaimer</h3>
-              <p style={{ marginBottom: '16px' }}>The materials on the Clarity Portal are provided "as is".</p>
+              <p style={{ marginBottom: '16px' }}>The materials on The Clarity Portal are provided "as is".</p>
 
               <p style={{ color: '#999', fontSize: '12px', marginTop: '20px' }}>Last updated: August 2026</p>
             </div>
@@ -590,7 +590,7 @@ export default function Login() {
             </div>
             <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#333' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>Overview</h3>
-              <p style={{ marginBottom: '16px' }}>This Data Storage Notice explains how the Clarity Portal stores and manages your data.</p>
+              <p style={{ marginBottom: '16px' }}>This Data Storage Notice explains how The Clarity Portal stores and manages your data.</p>
 
               <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '16px', marginBottom: '12px', color: 'black' }}>1. Data Storage Infrastructure</h3>
               <p style={{ marginBottom: '16px' }}>Your data is stored on Supabase, a secure, open-source backend platform.</p>

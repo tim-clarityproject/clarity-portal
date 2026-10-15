@@ -30,6 +30,7 @@ export function AuthTextField({
   error,
   shakeToken,
   id,
+  inputClassName = '', // extra class on the <input> (e.g. the access code's letter-spaced skin)
   ...inputProps
 }) {
   const autoId = useId();
@@ -50,7 +51,7 @@ export function AuthTextField({
         placeholder={placeholder}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`auth-input${error ? ' error' : ''}${shaking ? ' shake' : ''}`}
+        className={`auth-input${error ? ' error' : ''}${shaking ? ' shake' : ''}${inputClassName ? ` ${inputClassName}` : ''}`}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={error ? `${fieldId}-error` : undefined}
         {...inputProps}
