@@ -8,9 +8,15 @@
 // 4 factors, so the maximum is 4 x 3 = 12 and 7 / 12 x 100 = 58.33...
 //   strategicImportance({ a: 0, b: 2, c: 2, d: 3 }, ['a', 'b', 'c', 'd'])
 //     -> 58.333...   roundPct(...) -> 58
-// Most in need of attention = importance % x (5 - progress) / 4, so progress 1
-// keeps the full importance and progress 5 scores 0. For Data platform at
-// progress 1: 58.33 x 4 / 4 = 58.33; at progress 5: 0.
+// Most in need of attention = importance % x (5 - progress) / 4 x (resource + 3) / 8.
+// Progress 1 (Embryonic) keeps the full importance and progress 5 scores 0.
+// Resource multiplies it: 1 Minimal x0.5, 2 Low x0.625, 3 Moderate x0.75,
+// 4 High x0.875, 5 Very high x1. The score stays out of 100. Ties go to the
+// higher importance, then the higher resource.
+//   Data platform (58.33%, progress 1, resource 5):  58.33 x 4/4 x 8/8 = 58.33
+//   Leadership programme (41.67%, progress 2, resource 4): 41.67 x 3/4 x 7/8 = 27.34
+//   Same importance and progress, resource 5 vs 2 (e.g. 50%, progress 3):
+//     50 x 2/4 x 8/8 = 25.00 ranks above 50 x 2/4 x 5/8 = 15.63
 
 /** Highest contribution score for one factor. */
 export const MAX_CONTRIBUTION = 3;
@@ -32,20 +38,28 @@ export function roundPct(pct) {
   return Math.round(pct);
 }
 
+/** The resource multiplier: (resource + 3) / 8, so 1 -> 0.5 and 5 -> 1. */
+export function resourceFactor(resource) {
+  // An unrated resource counts as Moderate rather than hiding the project.
+  const r = resource == null ? 3 : resource;
+  return (r + 3) / 8;
+}
+
 /**
- * Most in need of attention: importance % x (5 - progress) / 4.
+ * Most in need of attention: importance % x (5 - progress) / 4 x (resource + 3) / 8.
  * @param {number} importancePct exact importance %
  * @param {number|null|undefined} progress 1..5, or unset
+ * @param {number|null|undefined} resource 1..5, or unset
  * @returns {number} -1 when progress is not set yet (sorts last)
  */
-export function attentionScore(importancePct, progress) {
+export function attentionScore(importancePct, progress, resource) {
   if (progress == null) return -1;
-  return (importancePct * (5 - progress)) / 4;
+  return ((importancePct * (5 - progress)) / 4) * resourceFactor(resource);
 }
 
 /**
  * Projects ranked most in need of attention first; ties go to the higher
- * importance.
+ * importance, then the higher resource.
  * @param {{id: string, text: string}[]} projects
  * @param {{id: string, text: string}[]} factors
  * @param {Object} ownerRatings ratings.owner: projectId -> {contrib, progress, resource}
@@ -63,8 +77,10 @@ export function rankProjects(projects, factors, ownerRatings) {
         importance,
         progress,
         resource: r.resource ?? null,
-        attention: attentionScore(importance, progress),
+        attention: attentionScore(importance, progress, r.resource),
       };
     })
-    .sort((a, b) => (b.attention - a.attention) || (b.importance - a.importance));
+    .sort((a, b) => (b.attention - a.attention)
+      || (b.importance - a.importance)
+      || ((b.resource ?? 0) - (a.resource ?? 0)));
 }

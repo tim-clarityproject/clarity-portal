@@ -578,7 +578,7 @@ export default function HealthCheck() {
     };
     if (step.screen === 'contrib') {
       const importance = strategicImportance(ownerRating.contrib, factors.map((f) => f.id));
-      const revisit = step.mode === 'revisit' && step.highlight.length > 0;
+      const revisit = step.mode !== 'full' && step.highlight.length > 0;
       body = [
         ...factors.map((f, i) => {
           const isNew = revisit && step.highlight.includes(f.id);
