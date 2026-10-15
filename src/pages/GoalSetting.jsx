@@ -70,7 +70,7 @@ export default function GoalSetting() {
             )}
           </div>
           <button
-            onClick={() => navigate('/my-decisions')}
+            onClick={() => navigate('/decision-history')}
             style={{
               padding: '10px 16px',
               backgroundColor: 'transparent',
