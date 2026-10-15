@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
-import { loadPlanReviews, findPlanReview } from '../lib/planReview';
+import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
@@ -38,7 +38,7 @@ export default function IfThenPlanningSummary() {
         if (cancelled) return;
         const dateKey = getLocalDateKey(parseDbTimestamp(planning.created_at));
         const existing = findPlanReview(reviews, { planKind: 'if_then_planning', planId: planning.id, dateKey });
-        if (existing && !existing.data.draft) setReviewEntryId(existing.id);
+        if (existing && !isPlanReviewDraft(existing)) setReviewEntryId(existing.id);
       } catch (error) {
         console.error('[IfThenPlanningSummary] review check failed:', error);
       }

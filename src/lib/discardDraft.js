@@ -40,13 +40,17 @@ export async function discardReviewDraft(userId, entryId) {
 }
 
 // Day reviews are the one case with no usable database-level draft
-// condition: their draft marker lives inside the content TEXT column
-// as JSON (see planReview.js), and a TEXT column cannot be filtered on
-// its JSON keys. review_type is the strongest guard available here, so
-// this can still never touch any other kind of review - the draft
-// check itself has to stay in ReviewPlan.jsx, reading the same flag the
-// page already parses. Fixing that properly means moving the marker
-// into the status column, which is a separate patch.
+// condition, and deliberately still are after patch D2.
+//
+// savePlanReview() now writes the status column, so NEW rows could be
+// guarded on status='draft' - but rows saved before that sit at the
+// column's DEFAULT 'final' even when their JSON says draft, so adding
+// that condition here would silently refuse to delete every legacy
+// draft. Their real marker is inside the content TEXT column as JSON,
+// which cannot be filtered on. So review_type stays the guard (this
+// can never touch another kind of review), and the draft decision
+// stays with the caller, which asks isPlanReviewDraft() - the one
+// helper that reads old and new rows correctly.
 export async function discardPlanReviewDraft(userId, entryId) {
   const { error } = await supabase
     .from('journal_entries')

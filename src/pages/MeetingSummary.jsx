@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
-import { loadPlanReviews, findPlanReview } from '../lib/planReview';
+import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
@@ -56,7 +56,7 @@ export default function MeetingSummary() {
         if (cancelled) return;
         const dateKey = getLocalDateKey(parseDbTimestamp(meeting.created_at));
         const existing = findPlanReview(reviews, { planKind: 'plan_meeting', planId: meeting.id, dateKey });
-        if (existing && !existing.data.draft) setReviewEntryId(existing.id);
+        if (existing && !isPlanReviewDraft(existing)) setReviewEntryId(existing.id);
       } catch (error) {
         console.error('[MeetingSummary] review check failed:', error);
       }

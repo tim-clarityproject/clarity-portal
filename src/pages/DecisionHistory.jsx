@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
-import { loadPlanReviews, findPlanReview } from '../lib/planReview';
+import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
@@ -105,7 +105,7 @@ export default function DecisionHistory() {
       date: d.created_at,
       isDraft,
       canReview: reviewable,
-      reviewed: Boolean(review && !review.data.draft),
+      reviewed: Boolean(review && !isPlanReviewDraft(review)),
       reviewEntryId: review?.id || null,
       raw: d,
     };

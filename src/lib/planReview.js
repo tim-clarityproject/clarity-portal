@@ -22,6 +22,22 @@ function parseContent(row) {
   }
 }
 
+// The one place that decides whether a plan-review row is a draft
+// (patch D2 area A). savePlanReview() now writes the status column as
+// well as the JSON flag, but rows saved before that only ever got the
+// column's own DEFAULT 'final' - their real state is in the JSON. So a
+// row counts as a draft if EITHER marker says so, which reads old and
+// new rows correctly with no migration and no backfill.
+//
+// Takes either shape: a row from loadPlanReviews() (which has .data
+// already parsed) or a raw journal_entries row straight from a query.
+export function isPlanReviewDraft(row) {
+  if (!row) return false;
+  if (row.status === 'draft') return true;
+  const data = row.data || parseContent(row);
+  return data.draft === true;
+}
+
 // One fetch of every plan-review row for this user; callers match the
 // one they need client-side (journal entries are low-volume per user,
 // and the plan link lives inside the JSON content, not a column we
@@ -71,6 +87,12 @@ export async function savePlanReview({ userId, entryId, planKind, planId, dateKe
     content,
     title,
     entry_date: dateKey,
+    // Kept exactly consistent with the JSON draft flag above (patch D2
+    // area A). This column was never written before, so every row saved
+    // earlier sits at its DEFAULT 'final' whatever its JSON says - read
+    // plan-review rows through isPlanReviewDraft(), never off either
+    // marker alone.
+    status: draft ? 'draft' : 'final',
     updated_at: new Date().toISOString(),
   };
 

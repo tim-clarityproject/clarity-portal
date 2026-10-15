@@ -2,7 +2,7 @@ import { useContext, useMemo, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { parseDbTimestamp, getLocalDateKey, formatReviewDayLabel } from '../lib/dateFormatter';
-import { loadPlanReviews, findPlanReview, savePlanReview } from '../lib/planReview';
+import { loadPlanReviews, findPlanReview, savePlanReview, isPlanReviewDraft } from '../lib/planReview';
 import { discardPlanReviewDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
@@ -133,11 +133,10 @@ export default function ReviewPlan() {
   const t = TY[planKind] || TY.daily_plan;
 
   const [entryId, setEntryId] = useState(null);
-  // Day reviews keep their draft marker inside the content JSON, not
-  // the status column (see planReview.js) - this reads the same flag
-  // the page already parses, so Discard can tell a saved draft from a
-  // finished review (patch D1). Moving the marker onto the status
-  // column is a separate patch; nothing here changes how it saves.
+  // Whether the row being edited is a saved draft, so Discard can tell
+  // it from a finished review (patch D1). Read through
+  // isPlanReviewDraft() because rows saved before patch D2 only carry
+  // the marker inside their content JSON, not the status column.
   const [existingIsDraft, setExistingIsDraft] = useState(false);
   const [a, setA] = useState('');
   const [b, setB] = useState('');
@@ -158,7 +157,7 @@ export default function ReviewPlan() {
         const existing = findPlanReview(reviews, { planKind, planId: plan?.id, dateKey });
         if (existing) {
           setEntryId(existing.id);
-          setExistingIsDraft(Boolean(existing.data.draft));
+          setExistingIsDraft(isPlanReviewDraft(existing));
           setA(existing.data.a || '');
           setB(existing.data.b || '');
         }

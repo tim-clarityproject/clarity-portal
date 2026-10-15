@@ -5,7 +5,7 @@ import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { parseDbTimestamp, getLocalDateKey } from '../lib/dateFormatter';
-import { loadPlanReviews, findPlanReview } from '../lib/planReview';
+import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BreathingOrb from '../components/ui/BreathingOrb';
@@ -811,7 +811,7 @@ export default function Welcome() {
                     const openPlan = () => navigate(PLAN_REVIEW_ROUTE[plan.tool_type], { state: { decisionId: plan.id } });
                     const dateKey = getLocalDateKey(parseDbTimestamp(plan.created_at));
                     const existingReview = findPlanReview(recentPlanReviews, { planKind: plan.tool_type, planId: plan.id, dateKey });
-                    const reviewed = Boolean(existingReview && !existingReview.data.draft);
+                    const reviewed = Boolean(existingReview && !isPlanReviewDraft(existingReview));
                     const openReview = (e) => {
                       e.stopPropagation();
                       if (reviewed) {
