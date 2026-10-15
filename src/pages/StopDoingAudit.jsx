@@ -47,6 +47,9 @@ export default function StopDoingAudit() {
   const [firstActionError, setFirstActionError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  // The saved title, so renaming an existing audit starts from its own
+  // name instead of always suggesting "Reclaiming my time" (patch D1).
+  const [currentTitle, setCurrentTitle] = useState('');
   const { message, showToast } = useToast();
 
   useEffect(() => {
@@ -68,6 +71,7 @@ export default function StopDoingAudit() {
         setIsLoading(false);
         return;
       }
+      if (data?.title) setCurrentTitle(data.title);
       const formData = data?.form_data || {};
       if (formData.items?.length) {
         setItems(formData.items);
@@ -173,7 +177,11 @@ export default function StopDoingAudit() {
     setIsSaving(true);
     setSaveError('');
     try {
-      const savedId = await persist('Reclaiming my time', 'draft');
+      // Keeps whatever this audit is already called - it used to write
+      // the literal "Reclaiming my time" every time, so saving a draft
+      // silently renamed an audit the person had named themselves
+      // (patch D1, same root cause as the empty name pop-up).
+      const savedId = await persist(currentTitle || 'Reclaiming my time', 'draft');
       setDecisionId(savedId);
       showToast('Draft saved.');
     } catch (error) {
@@ -337,7 +345,7 @@ export default function StopDoingAudit() {
         open={nameDialogOpen}
         title="Name this audit"
         message="Give it a name so you can find it in My plans."
-        suggestedName="Reclaiming my time"
+        suggestedName={currentTitle || 'Reclaiming my time'}
         onConfirm={handleFinishConfirmed}
         onCancel={() => setNameDialogOpen(false)}
       />

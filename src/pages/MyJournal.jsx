@@ -26,6 +26,11 @@ export default function MyJournal() {
 
   const [entryId, setEntryId] = useState(stateEntryId);
   const [existingStatus, setExistingStatus] = useState(null); // 'draft' | 'final' | null (new)
+  // The saved title, so re-naming an existing review starts from its
+  // own name instead of an empty box (patch D1). Weekly momentum names
+  // itself from the week's date and never opens the pop-up, so this is
+  // only ever read on the after-action path.
+  const [currentTitle, setCurrentTitle] = useState('');
   const [dateKey, setDateKey] = useState(getLocalDateKey(new Date()));
   const [answers, setAnswers] = useState({ q1: '', q2: '', q3: '', q4: '' });
   const [ratings, setRatings] = useState({ momentum: null, intentionality: null, communication: null, performanceUnderPressure: null });
@@ -59,6 +64,7 @@ export default function MyJournal() {
           });
           setDateKey(row.entry_date);
           setExistingStatus(row.status || 'final');
+          if (row.title) setCurrentTitle(row.title);
         } else if (reviewType === 'weekly-momentum') {
           const draft = await loadWeeklyDraftFor(user.id, dateKey);
           if (cancelled) return;
@@ -141,7 +147,11 @@ export default function MyJournal() {
     setSaveError('');
     setIsSaving(true);
     try {
-      const title = reviewType === 'weekly-momentum' ? weeklyTitle(dateKey) : afterActionTitle('');
+      // Keeps whatever this review is already called - it used to write
+      // afterActionTitle('') ("After-action review") every time, so
+      // saving a draft silently renamed a review the person had named
+      // themselves (patch D1, same root cause as the empty name pop-up).
+      const title = reviewType === 'weekly-momentum' ? weeklyTitle(dateKey) : (currentTitle || afterActionTitle(''));
       await persist({ title, status: 'draft' });
       setExistingStatus('draft');
       showToast('Draft saved.');
@@ -270,7 +280,7 @@ export default function MyJournal() {
         open={nameDialogOpen}
         title="Name this review"
         message="Say what you're reviewing, or leave it blank."
-        suggestedName=""
+        suggestedName={currentTitle}
         onConfirm={(name) => handleFinishConfirmed(afterActionTitle(name))}
         onCancel={() => setNameDialogOpen(false)}
       />
