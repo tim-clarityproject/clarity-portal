@@ -1236,3 +1236,80 @@
     transition: none;
   }
 }
+
+/* ---- Edit links, clickable projects, tappable progress ---- */
+.ui-root .al-headrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ui-root .al-headrow--sect {
+  margin-top: var(--space-6);
+}
+
+.ui-root .al-opobj .al-headrow {
+  margin-bottom: 0;
+}
+
+.ui-root .al-lhead.al-headrow {
+  margin-bottom: var(--space-3);
+}
+
+.ui-root .al-edit {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .al-edit:hover,
+.ui-root .al-edit:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .al-edit:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ui-root .al-rr {
+  cursor: pointer;
+}
+
+.ui-root .al-rr:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+  border-radius: var(--radius-input);
+}
+
+/* Footer: Back and Back to results sit together on the left. */
+.ui-root .al-foot-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ui-root .al-back[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media print {
+  .ui-root .al-edit {
+    display: none;
+  }
+}

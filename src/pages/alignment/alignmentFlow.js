@@ -7,9 +7,13 @@
 // step   = { screen, pi, mode, highlight }
 //          screen: welcome | objective | factors | projects | contrib | progress | resource | done
 //          pi: project index (among the non-blank projects)
-//          mode: 'full' (three screens per project) | 'revisit' (Contribution only,
-//                after a Critical Success Factor was added to rated projects)
-//          highlight: factor ids to point out in revisit mode
+//          mode: 'full' (three screens per project, first run)
+//                | 'revisit' (Contribution only, a factor added before the first one-pager)
+//                | 'gaps' (editing after the one-pager: only the projects in `queue`)
+//                | 'project' (one project opened from the one-pager)
+//          highlight: factor ids to point out when a new factor needs rating
+//          queue: for 'gaps' / 'project': numbers, project index * 2 + kind
+//                 (kind 1 = all three screens, 0 = Contribution only)
 
 export const OWNER = 'owner';
 export const MAX_FACTORS = 12;
@@ -112,94 +116,170 @@ export function dataFromDraft(draft) {
   };
 }
 
-/** Is this project rated on everything? */
-const isFullyRated = (draft, factors, p) => {
-  const r = draft.ratings[p.id] || {};
-  return factors.every((f) => r.contrib?.[f.id] != null) && r.progress != null && r.resource != null;
-};
+const isQueued = (step) => step.mode === 'gaps' || step.mode === 'project';
+const at = (screen, extra = {}) => ({ screen, pi: 0, mode: 'full', highlight: [], queue: [], ...extra });
 
-/** The JSON saved as current_step. */
+/** The JSON saved as current_step (kept small: the database limits it to 2 KB). */
 export function stepToJson(step) {
   const out = { screen: step.screen };
-  if (RATING_SCREENS.includes(step.screen)) {
-    out.project = step.pi;
-    out.mode = step.mode;
-    if (step.mode === 'revisit' && step.highlight?.length) out.highlight = step.highlight;
-  } else if (step.screen === 'done' && step.mode === 'revisit') {
-    // So Back from the end screen returns to the right kind of rating screen.
-    out.mode = 'revisit';
+  const rating = RATING_SCREENS.includes(step.screen);
+  if (rating) out.project = step.pi;
+  if (rating || step.screen === 'done') {
+    if (step.mode !== 'full') out.mode = step.mode;
     if (step.highlight?.length) out.highlight = step.highlight;
+    if (isQueued(step) && step.queue?.length) out.queue = step.queue;
   }
   return out;
 }
 
 const KNOWN = ['objective', 'factors', 'projects', 'contrib', 'progress', 'resource', 'done'];
+const MODES = ['full', 'revisit', 'gaps', 'project'];
 
 /** Reads a saved current_step back into a valid step for this draft. */
 export function stepFromJson(json, draft, complete = false) {
-  if (complete) {
-    return {
-      screen: 'done',
-      pi: 0,
-      mode: json?.mode === 'revisit' ? 'revisit' : 'full',
+  // A completed link opens the one-pager unless it was left part-way through an edit.
+  const known = KNOWN.includes(json?.screen);
+  if (complete && (!known || json.screen === 'done')) {
+    return clampStep({
+      ...at('done'),
+      mode: MODES.includes(json?.mode) ? json.mode : 'full',
       highlight: Array.isArray(json?.highlight) ? json.highlight : [],
-    };
+      queue: Array.isArray(json?.queue) ? json.queue : [],
+    }, draft);
   }
-  const screen = KNOWN.includes(json?.screen) ? json.screen : 'objective';
   const step = {
-    screen,
+    screen: known ? json.screen : 'objective',
     pi: Number.isInteger(json?.project) ? json.project : 0,
-    mode: json?.mode === 'revisit' ? 'revisit' : 'full',
+    mode: MODES.includes(json?.mode) ? json.mode : 'full',
     highlight: Array.isArray(json?.highlight) ? json.highlight : [],
+    queue: Array.isArray(json?.queue) ? json.queue.filter(Number.isInteger) : [],
   };
   return clampStep(step, draft);
 }
 
 /** Keeps a step valid when the answers underneath it changed. */
 export function clampStep(step, draft) {
-  const projects = cleanItems(draft.projects);
-  if (RATING_SCREENS.includes(step.screen) || step.screen === 'done') {
-    if (step.screen === 'done') return step;
-    if (projects.length === 0) return { ...step, screen: 'projects', pi: 0 };
-    return { ...step, pi: Math.min(Math.max(step.pi, 0), projects.length - 1) };
+  const n = cleanItems(draft.projects).length;
+  if (step.screen === 'done') {
+    if (isQueued(step)) return { ...step, queue: step.queue.filter((e) => (e >> 1) < n) };
+    return step;
   }
-  return step;
+  if (!RATING_SCREENS.includes(step.screen)) return step;
+  if (n === 0) return at('projects');
+  const queue = isQueued(step) ? step.queue.filter((e) => (e >> 1) < n) : [];
+  if (isQueued(step) && queue.length === 0) return { ...step, mode: 'full', queue: [], pi: Math.min(Math.max(step.pi, 0), n - 1) };
+  return { ...step, queue, pi: Math.min(Math.max(step.pi, 0), n - 1) };
 }
 
-/** Which step Continue leads to from the Projects screen. */
-function afterProjects(draft) {
+/** Is this project rated on everything? */
+const isFullyRated = (draft, factors, p) => {
+  const r = draft.ratings[p.id] || {};
+  return factors.every((f) => r.contrib?.[f.id] != null) && r.progress != null && r.resource != null;
+};
+
+/**
+ * What still needs an answer: the projects with a missing rating, as a queue
+ * (index * 2 + kind) and the factors to point out. A project missing only
+ * Contribution scores (a new factor) gets that screen alone; a project with
+ * nothing rated gets all three.
+ */
+export function missingWork(draft) {
+  const factors = cleanItems(draft.csfs);
+  const projects = cleanItems(draft.projects);
+  const queue = [];
+  const flagged = new Set();
+  projects.forEach((p, i) => {
+    if (isFullyRated(draft, factors, p)) return;
+    const r = draft.ratings[p.id] || {};
+    const onlyContrib = r.progress != null && r.resource != null;
+    queue.push(i * 2 + (onlyContrib ? 0 : 1));
+    if (onlyContrib) factors.forEach((f) => { if (r.contrib?.[f.id] == null) flagged.add(f.id); });
+  });
+  return { queue, highlight: [...flagged] };
+}
+
+/** Anything that stops the one-pager being complete? (objective, factors, projects, ratings) */
+export function hasMissingAnswers(draft) {
+  return draft.objective.trim() === ''
+    || cleanItems(draft.csfs).length === 0
+    || cleanItems(draft.projects).length === 0
+    || missingWork(draft).queue.length > 0;
+}
+
+/** A project opened from the one-pager: its three screens, then back. */
+export function projectStep(pi) {
+  return { screen: 'contrib', pi, mode: 'project', highlight: [], queue: [pi * 2 + 1] };
+}
+
+/** The step for the fourth progress segment: the first project with a gap, else the first. */
+export function ratingsEntryStep(draft, editing) {
+  const { queue, highlight } = missingWork(draft);
+  const pi = queue.length ? queue[0] >> 1 : 0;
+  if (!editing) return { screen: 'contrib', pi, mode: 'full', highlight: [], queue: [] };
+  if (queue.length) return { screen: 'contrib', pi, mode: 'gaps', highlight, queue };
+  return projectStep(0);
+}
+
+/** Which step Continue leads to from Step 1, 2 or 3. */
+function afterEdits(draft, editing) {
+  const work = missingWork(draft);
+  if (work.queue.length === 0) return at('done');
+  if (editing) {
+    return { screen: 'contrib', pi: work.queue[0] >> 1, mode: 'gaps', highlight: work.highlight, queue: work.queue };
+  }
+  // First run: every project in order (or, after a factor was added to rated
+  // projects, their Contribution screens only).
   const factors = cleanItems(draft.csfs);
   const projects = cleanItems(draft.projects);
   const gaps = projects.filter((p) => !isFullyRated(draft, factors, p));
-  if (gaps.length === 0) return { screen: 'done', pi: 0, mode: 'full', highlight: [] };
-
   const onlyContribMissing = gaps.every((p) => {
     const r = draft.ratings[p.id] || {};
     return r.progress != null && r.resource != null;
   });
   if (onlyContribMissing) {
-    const highlight = factors
-      .filter((f) => gaps.some((p) => draft.ratings[p.id]?.contrib?.[f.id] == null))
-      .map((f) => f.id);
-    return { screen: 'contrib', pi: 0, mode: 'revisit', highlight };
+    return { screen: 'contrib', pi: 0, mode: 'revisit', highlight: work.highlight, queue: [] };
   }
-  return { screen: 'contrib', pi: projects.indexOf(gaps[0]), mode: 'full', highlight: [] };
+  return { screen: 'contrib', pi: projects.indexOf(gaps[0]), mode: 'full', highlight: [], queue: [] };
 }
 
-/** The step after Continue. */
-export function nextStep(step, draft) {
+const queueIndex = (step) => step.queue.findIndex((e) => (e >> 1) === step.pi);
+const screensFor = (step) => {
+  const entry = step.queue[queueIndex(step)];
+  return entry != null && entry % 2 === 1 ? RATING_SCREENS : ['contrib'];
+};
+
+/**
+ * The step after Continue.
+ * @param {boolean} editing true once the one-pager has been reached
+ */
+export function nextStep(step, draft, editing = false) {
   const n = cleanItems(draft.projects).length;
-  const rate = (screen, pi) => ({ screen, pi, mode: step.mode, highlight: step.highlight });
+  const keep = (screen, pi) => ({ ...step, screen, pi });
+  const done = (mode = 'full') => ({ ...at('done'), mode, highlight: step.highlight, queue: step.queue });
   switch (step.screen) {
-    case 'objective': return { screen: 'factors', pi: 0, mode: 'full', highlight: [] };
-    case 'factors': return { screen: 'projects', pi: 0, mode: 'full', highlight: [] };
-    case 'projects': return afterProjects(draft);
+    case 'objective': return editing ? afterEdits(draft, true) : at('factors');
+    case 'factors': return editing ? afterEdits(draft, true) : at('projects');
+    case 'projects': return afterEdits(draft, editing);
     case 'contrib':
-      if (step.mode === 'revisit') return step.pi < n - 1 ? rate('contrib', step.pi + 1) : { screen: 'done', pi: 0, mode: 'revisit', highlight: step.highlight };
-      return rate('progress', step.pi);
-    case 'progress': return rate('resource', step.pi);
-    case 'resource':
-      return step.pi < n - 1 ? { screen: 'contrib', pi: step.pi + 1, mode: step.mode, highlight: [] } : { screen: 'done', pi: 0, mode: 'full', highlight: [] };
+    case 'progress':
+    case 'resource': {
+      if (isQueued(step)) {
+        const screens = screensFor(step);
+        const pos = screens.indexOf(step.screen);
+        if (pos < screens.length - 1) return keep(screens[pos + 1], step.pi);
+        const qi = queueIndex(step);
+        if (qi >= 0 && qi < step.queue.length - 1) return { ...step, screen: 'contrib', pi: step.queue[qi + 1] >> 1 };
+        return done(step.mode);
+      }
+      if (step.screen === 'contrib') {
+        if (step.mode === 'revisit') {
+          return step.pi < n - 1 ? keep('contrib', step.pi + 1) : done('revisit');
+        }
+        return keep('progress', step.pi);
+      }
+      if (step.screen === 'progress') return keep('resource', step.pi);
+      return step.pi < n - 1 ? { ...step, screen: 'contrib', pi: step.pi + 1, highlight: [] } : done('full');
+    }
     default: return step;
   }
 }
@@ -207,19 +287,40 @@ export function nextStep(step, draft) {
 /** The step after Back; null means the Welcome screen. */
 export function prevStep(step, draft) {
   const n = cleanItems(draft.projects).length;
-  const rate = (screen, pi) => ({ screen, pi, mode: step.mode, highlight: step.highlight });
+  const keep = (screen, pi) => ({ ...step, screen, pi });
   switch (step.screen) {
     case 'objective': return null;
-    case 'factors': return { screen: 'objective', pi: 0, mode: 'full', highlight: [] };
-    case 'projects': return { screen: 'factors', pi: 0, mode: 'full', highlight: [] };
+    case 'factors': return at('objective');
+    case 'projects': return at('factors');
     case 'contrib':
-      if (step.pi === 0) return { screen: 'projects', pi: 0, mode: 'full', highlight: [] };
-      return step.mode === 'revisit' ? rate('contrib', step.pi - 1) : rate('resource', step.pi - 1);
-    case 'progress': return rate('contrib', step.pi);
-    case 'resource': return rate('progress', step.pi);
-    case 'done':
-      if (n === 0) return { screen: 'projects', pi: 0, mode: 'full', highlight: [] };
-      return step.mode === 'revisit' ? { screen: 'contrib', pi: n - 1, mode: 'revisit', highlight: step.highlight } : { screen: 'resource', pi: n - 1, mode: 'full', highlight: [] };
+    case 'progress':
+    case 'resource': {
+      if (isQueued(step)) {
+        const screens = screensFor(step);
+        const pos = screens.indexOf(step.screen);
+        if (pos > 0) return keep(screens[pos - 1], step.pi);
+        const qi = queueIndex(step);
+        if (qi > 0) {
+          const prev = step.queue[qi - 1];
+          return { ...step, screen: prev % 2 === 1 ? 'resource' : 'contrib', pi: prev >> 1 };
+        }
+        return step.mode === 'project' ? at('done') : at('projects');
+      }
+      if (step.screen === 'progress') return keep('contrib', step.pi);
+      if (step.screen === 'resource') return keep('progress', step.pi);
+      if (step.pi === 0) return at('projects');
+      return step.mode === 'revisit' ? keep('contrib', step.pi - 1) : { ...step, screen: 'resource', pi: step.pi - 1 };
+    }
+    case 'done': {
+      if (n === 0) return at('projects');
+      if (isQueued(step) && step.queue.length) {
+        const last = step.queue[step.queue.length - 1];
+        return { ...step, screen: last % 2 === 1 ? 'resource' : 'contrib', pi: last >> 1 };
+      }
+      return step.mode === 'revisit'
+        ? { ...step, screen: 'contrib', pi: n - 1 }
+        : { ...at('resource'), pi: n - 1 };
+    }
     default: return step;
   }
 }
@@ -244,12 +345,18 @@ export function isStepValid(step, draft) {
 /** The four progress segments, each 0..1 (the fourth fills project by project). */
 export function progressFills(step, draft) {
   const n = Math.max(cleanItems(draft.projects).length, 1);
-  const at = { objective: 1, factors: 2, projects: 3, contrib: 4, progress: 4, resource: 4, done: 5 }[step.screen] || 0;
+  const place = { objective: 1, factors: 2, projects: 3, contrib: 4, progress: 4, resource: 4, done: 5 }[step.screen] || 0;
   return [1, 2, 3, 4].map((i) => {
     if (step.screen === 'done') return 1;
-    if (i < at) return 1;
-    if (i > at) return 0;
+    if (i < place) return 1;
+    if (i > place) return 0;
     if (!RATING_SCREENS.includes(step.screen)) return 1;
+    if (isQueued(step)) {
+      const total = step.queue.reduce((sum, e) => sum + (e % 2 === 1 ? 3 : 1), 0) || 1;
+      const qi = Math.max(queueIndex(step), 0);
+      const before = step.queue.slice(0, qi).reduce((sum, e) => sum + (e % 2 === 1 ? 3 : 1), 0);
+      return (before + RATING_SCREENS.indexOf(step.screen) + 1) / total;
+    }
     if (step.mode === 'revisit') return (step.pi + 1) / n;
     return (step.pi * 3 + RATING_SCREENS.indexOf(step.screen) + 1) / (3 * n);
   });

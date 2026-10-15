@@ -24,6 +24,14 @@ const VALUE = {
   res: (r) => (r.resource == null ? -1 : r.resource),
 };
 
+function EditButton({ label, onClick }) {
+  return (
+    <button type="button" className="al-edit" aria-label={label} onClick={onClick}>
+      Edit
+    </button>
+  );
+}
+
 const Arrow = ({ up }) => (
   <svg className={`al-dir${up ? ' al-dir--up' : ''}`} viewBox="0 0 12 12" aria-hidden="true">
     <path d="M6 1.5v9M2.5 7 6 10.5 9.5 7" />
@@ -67,8 +75,10 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount }) {
  * @param {() => void} props.onDownloadPdf
  * @param {() => void} props.onEmailLink
  * @param {() => void} props.onCreateAccount
+ * @param {(target: 'objective'|'factors'|'projects') => void} props.onEdit the Edit links
+ * @param {(projectId: string) => void} props.onOpenProject a table row or dot was chosen
  */
-export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAccount }) {
+export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAccount, onEdit, onOpenProject }) {
   const [sort, setSort] = useState({ k: 'att', d: -1 });
   const [hl, setHl] = useState(null);
 
@@ -107,11 +117,17 @@ export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAc
   return (
     <>
       <div className="al-opobj">
-        <span className="al-sect0">Objective</span>
+        <div className="al-headrow">
+          <span className="al-sect0">Objective</span>
+          <EditButton label="Edit the objective" onClick={() => onEdit('objective')} />
+        </div>
         <p>{draft.objective.trim() || <span className="al-faint">No objective yet</span>}</p>
       </div>
 
-      <span className="al-sect">Critical Success Factors</span>
+      <div className="al-headrow al-headrow--sect">
+        <span className="al-sect al-sect--first">Critical Success Factors</span>
+        <EditButton label="Edit the Critical Success Factors" onClick={() => onEdit('factors')} />
+      </div>
       <div className="al-csfg" style={{ '--cols': cols }}>
         {factors.map((f, i) => (
           <div key={f.id} className={cols === 2 && nf % 2 === 1 && i === nf - 1 ? 'al-span' : undefined}>
@@ -127,10 +143,13 @@ export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAc
         <>
           <span className="al-sect">Strategic importance versus progress</span>
           <div className="al-panel al-chartp">
-            <AlignmentChart rows={ranked} highlight={hl} onHighlight={setHl} />
+            <AlignmentChart rows={ranked} highlight={hl} onHighlight={setHl} onOpen={onOpenProject} />
           </div>
 
-          <div className="al-lhead"><span className="al-sect al-sect--first">Your projects</span></div>
+          <div className="al-lhead al-headrow">
+            <span className="al-sect al-sect--first">Your projects</span>
+            <EditButton label="Edit the projects" onClick={() => onEdit('projects')} />
+          </div>
           <FilterPills
             label="Sort projects"
             filters={SORTS}
@@ -156,6 +175,10 @@ export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAc
                   key={r.id}
                   className={`al-rr${hl === r.n ? ' al-hl' : ''}`}
                   tabIndex={0}
+                  role="button"
+                  aria-label={`${r.n}, ${r.text}. Open this project to change its ratings`}
+                  onClick={() => onOpenProject(r.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onOpenProject(r.id); } }}
                   onMouseEnter={() => setHl(r.n)}
                   onMouseLeave={() => setHl(null)}
                   onFocus={() => setHl(r.n)}

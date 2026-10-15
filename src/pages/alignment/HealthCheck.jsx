@@ -13,7 +13,7 @@ import { strategicImportance, roundPct } from '../../lib/alignmentScore';
 import {
   CONTRIB, PROGRESS, RESOURCE, MAX_FACTORS, MAX_PROJECTS, MAX_OBJECTIVE, MAX_ITEM, RATING_SCREENS,
   blankRow, cleanItems, emptyDraft, draftFromData, dataFromDraft, stepToJson, stepFromJson, clampStep,
-  nextStep, prevStep, isStepValid, progressFills,
+  nextStep, prevStep, isStepValid, progressFills, hasMissingAnswers, projectStep, ratingsEntryStep,
 } from './alignmentFlow';
 import '../../styles/alignment.css';
 
@@ -37,7 +37,9 @@ const SUBTITLE = {
 };
 const SUB_LABEL = { contrib: 'Contribution', progress: 'Progress', resource: 'Resource required' };
 
-const START = { screen: 'objective', pi: 0, mode: 'full', highlight: [] };
+const START = { screen: 'objective', pi: 0, mode: 'full', highlight: [], queue: [] };
+const RESULTS = { screen: 'done', pi: 0, mode: 'full', highlight: [], queue: [] };
+const STEP_NAMES = ['Objective', 'Critical Success Factors', 'Projects', 'Rate projects'];
 const pad = (n) => (n < 10 ? `0${n}` : String(n));
 const looksLikeEmail = (v) => /^\S+@\S+\.\S+$/.test(v.trim());
 const accessKey = (token) => `alignment-access:${token}`;
@@ -157,6 +159,8 @@ export default function HealthCheck() {
   const credsRef = useRef(null); // { email, code } of the open session: memory only
   const unsavedRef = useRef(false);
   const bootedRef = useRef(false);
+  const reachedRef = useRef(false); // the one-pager has been reached (the session is complete)
+  const [resultsReached, setResultsReached] = useState(false);
   const [openedAt, setOpenedAt] = useState(null); // updated_at when the session was opened (date fallback)
 
   // ---- page chrome: title and robots meta for this route only ----
@@ -208,6 +212,8 @@ export default function HealthCheck() {
   const startFlow = useCallback((session, creds) => {
     queueRef.current?.destroy();
     credsRef.current = creds;
+    reachedRef.current = session.status === 'complete';
+    setResultsReached(session.status === 'complete');
     setOpenedAt(session.updatedAt || null);
     writeAccess(token, creds);
 
@@ -374,18 +380,44 @@ export default function HealthCheck() {
     commit({ ...draftRef.current, ratings: { ...draftRef.current.ratings, [project.id]: next } }, stepRef.current, true);
   };
 
+  // Once the one-pager has been reached, editing works through shortcuts.
+  const isEditing = () => reachedRef.current || !!draftRef.current.completedAt;
   const goNext = () => {
     if (!isStepValid(stepRef.current, draftRef.current)) return;
-    commit(draftRef.current, nextStep(stepRef.current, draftRef.current), true);
+    commit(draftRef.current, nextStep(stepRef.current, draftRef.current, isEditing()), true);
   };
   const goBack = () => {
     const prev = prevStep(stepRef.current, draftRef.current);
     if (prev === null) {
+      if (isEditing()) {
+        commit(draftRef.current, RESULTS, true);
+        return;
+      }
       // Back from Step 1 shows the Welcome screen again; the session stays open.
       setPhase('welcome');
       return;
     }
     commit(draftRef.current, prev, true);
+  };
+  const backToResults = () => {
+    if (hasMissingAnswers(draftRef.current)) return;
+    commit(draftRef.current, RESULTS, true);
+  };
+  const editSection = (target) => {
+    commit(draftRef.current, { ...START, screen: target }, true);
+  };
+  const openProject = (id) => {
+    const index = cleanItems(draftRef.current.projects).findIndex((p) => p.id === id);
+    if (index < 0) return;
+    commit(draftRef.current, projectStep(index), true);
+  };
+  const jumpToStep = (i) => {
+    const d = draftRef.current;
+    if (i === 3) {
+      commit(d, ratingsEntryStep(d, isEditing()), true);
+      return;
+    }
+    commit(d, { ...START, screen: ['objective', 'factors', 'projects'][i] }, true);
   };
 
   // ---- screens ----
@@ -625,6 +657,8 @@ export default function HealthCheck() {
           onDownloadPdf={handleDownloadPdf}
           onEmailLink={handleEmailLink}
           onCreateAccount={handleCreateAccount}
+          onEdit={editSection}
+          onOpenProject={openProject}
         />
       </div>,
     ];
@@ -639,15 +673,45 @@ export default function HealthCheck() {
   }
 
   const fills = onWelcome ? [0, 0, 0, 0] : progressFills(step, draft);
+  const editing = resultsReached || !!draft.completedAt;
+  const missing = hasMissingAnswers(draft);
+
+  // The four segments are buttons for any step already reached.
+  const place = { objective: 0, factors: 1, projects: 2, contrib: 3, progress: 3, resource: 3 }[step.screen];
+  const reachable = [
+    true,
+    draft.objective.trim() !== '',
+    draft.objective.trim() !== '' && factors.length > 0,
+    draft.objective.trim() !== '' && factors.length > 0 && projects.length > 0,
+  ];
+  const progressActions = onWelcome || onDone ? undefined : [0, 1, 2, 3].map((i) => (
+    i === place || !(editing || reachable[i])
+      ? null
+      : { label: `Go to Step ${i + 1}, ${STEP_NAMES[i]}`, onClick: () => jumpToStep(i) }
+  ));
+  const hintText = !valid ? (HINTS[step.screen] || '') : (editing && missing ? 'Rate the new items first' : '');
 
   const footer = onWelcome ? null : (
     <div className={`al-foot${onDone ? ' al-foot--wide' : ''}`}>
-      <button type="button" className="al-back" onClick={goBack}>← Back</button>
+      <div className="al-foot-left">
+        <button type="button" className="al-back" onClick={goBack}>← Back</button>
+        {editing && !onDone && (
+          <button
+            type="button"
+            className="al-back"
+            disabled={missing}
+            title={missing ? 'Rate the new items first' : undefined}
+            onClick={backToResults}
+          >
+            Back to results
+          </button>
+        )}
+      </div>
       {onDone ? (
         <AuthPrimaryButton onClick={handleDownloadPdf}>Download PDF</AuthPrimaryButton>
       ) : (
         <div className="al-foot-right">
-          <span className={`al-hint${valid ? '' : ' al-hint--on'}`}>{HINTS[step.screen] || ''}</span>
+          <span className={`al-hint${hintText ? ' al-hint--on' : ''}`}>{hintText}</span>
           <AuthPrimaryButton disabled={!valid} onClick={goNext}>Continue</AuthPrimaryButton>
         </div>
       )}
@@ -659,6 +723,7 @@ export default function HealthCheck() {
       topBarContent={topBarContent}
       progress={fills}
       progressHidden={onWelcome || onDone}
+      progressActions={progressActions}
       contentKey={screenKey}
       footer={footer}
       {...shellProps}

@@ -30,8 +30,9 @@ function measureText(text, fontSize) {
  *   ranked projects (n = attention rank)
  * @param {number|null} props.highlight rank number being highlighted
  * @param {(n: number|null) => void} props.onHighlight
+ * @param {(id: string) => void} [props.onOpen] a dot was clicked or Enter pressed on it
  */
-export default function AlignmentChart({ rows, highlight, onHighlight }) {
+export default function AlignmentChart({ rows, highlight, onHighlight, onOpen }) {
   const wrapRef = useRef(null);
   const uid = useId().replace(/:/g, '');
   const [mode, setMode] = useState('d');
@@ -147,7 +148,6 @@ export default function AlignmentChart({ rows, highlight, onHighlight }) {
             <g
               key={p.id ?? p.n}
               className={`al-pt${highlight === p.n ? ' al-hl' : ''}`}
-              style={{ '--d': `${250 + i * 80}ms` }}
               tabIndex={0}
               role="img"
               aria-label={name}
@@ -155,6 +155,9 @@ export default function AlignmentChart({ rows, highlight, onHighlight }) {
               onMouseLeave={() => onHighlight(null)}
               onFocus={() => onHighlight(p.n)}
               onBlur={() => onHighlight(null)}
+              onClick={onOpen ? () => onOpen(p.id) : undefined}
+              onKeyDown={onOpen ? (e) => { if (e.key === 'Enter') { e.preventDefault(); onOpen(p.id); } } : undefined}
+              style={{ '--d': `${250 + i * 80}ms`, cursor: onOpen ? 'pointer' : undefined }}
             >
               <title>{p.text}</title>
               <circle className="al-halo" cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r={p.r + 6} style={{ fill: c }} fillOpacity={solid ? 0.16 : 0.07} />

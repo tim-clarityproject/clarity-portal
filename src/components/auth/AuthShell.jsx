@@ -26,6 +26,7 @@ export default function AuthShell({
   topBarContent, // node that replaces the whole top bar row (own layout)
   progress, // array of 0..1 fill amounts: replaces the 3-step progress with that many segments
   progressHidden = false, // keeps the progress row's space but hides it
+  progressActions, // optional, same length as progress: null or { label, onClick } makes a segment a button (44px tall hit area)
   contentKey, // changes remount just the content (re-plays the headline reveal)
   headlineSize = 'lg', // 'lg' (26/32px) | 'md' (the title size, 22/26px)
   letterStaggerMs = 45, // delay between headline letters (lower for long text)
@@ -305,6 +306,39 @@ export default function AuthShell({
           to { opacity: 1; transform: none; }
         }
 
+        .auth-progress-slot {
+          flex: 1;
+          position: relative;
+          min-width: 0;
+        }
+
+        .auth-progress-slot .auth-progress-seg {
+          width: 100%;
+        }
+
+        /* An invisible 44px-high hit area over the 2px line. mobile.css puts
+           padding/min-height with !important on every button at phone width. */
+        .ui-root .auth-progress-hit {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 50%;
+          height: 44px;
+          min-height: 44px !important;
+          margin: 0;
+          padding: 0 !important;
+          transform: translateY(-50%);
+          background: transparent;
+          border: 0;
+          cursor: pointer;
+        }
+
+        .ui-root .auth-progress-hit:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: -2px;
+          border-radius: 4px;
+        }
+
         .auth-progress--hidden {
           opacity: 0;
         }
@@ -400,9 +434,17 @@ export default function AuthShell({
 
       {progress && (
         <div className={`auth-progress${progressHidden ? ' auth-progress--hidden' : ''}`}>
-          {progress.map((fill, n) => (
-            <div key={n} className="auth-progress-seg auth-progress-seg--fill" style={{ '--fill': fill }} />
-          ))}
+          {progress.map((fill, n) => {
+            const action = progressActions?.[n];
+            return (
+              <div key={n} className="auth-progress-slot">
+                <div className="auth-progress-seg auth-progress-seg--fill" style={{ '--fill': fill }} />
+                {action && !progressHidden && (
+                  <button type="button" className="auth-progress-hit" aria-label={action.label} onClick={action.onClick} />
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
