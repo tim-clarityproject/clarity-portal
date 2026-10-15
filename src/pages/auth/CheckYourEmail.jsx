@@ -43,7 +43,13 @@ export default function CheckYourEmail() {
     setResending(true);
     setResendMessage('');
     try {
-      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        // Same redirect as the original sign-up (SignUpStep2.jsx), so a
+        // resent link lands on the themed mission step, not the Site URL.
+        options: { emailRedirectTo: `${window.location.origin}/auth/mission` },
+      });
       if (error) {
         setResendMessage(error.message || 'Could not resend the email. Please try again.');
       } else {

@@ -29,9 +29,9 @@ export default function EmailConfirmation() {
       window.history.replaceState(null, '', '/email-confirmation');
       localStorage.removeItem('pendingSignupName');
       setStatus('success');
-      setMessage('Email confirmed! Redirecting to your mission...');
+      setMessage('Email confirmed.');
       setTimeout(() => {
-        navigate('/onboarding-mission');
+        navigate('/auth/mission');
       }, 1000);
     };
 
