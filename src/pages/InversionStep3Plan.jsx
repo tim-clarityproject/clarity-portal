@@ -2,6 +2,7 @@ import { useMemo, useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
@@ -119,8 +120,20 @@ export default function InversionStep3Plan() {
     }
   };
 
-  const handleDiscard = () => {
+  // Deletes the saved row only if it is still a draft - a completed
+  // decision is never deleted by walking away from it. The condition
+  // lives in the query (see discardDraft.js), which is what makes this
+  // safe on the steps that never fetch the row and so cannot tell a
+  // draft from a completed one in page code (patch D1).
+  const handleDiscard = async () => {
     setDiscardOpen(false);
+    if (decisionId) {
+      try {
+        await discardDecisionDraft(user.id, decisionId);
+      } catch (error) {
+        console.error('[InversionStep3Plan] draft delete on discard failed:', error);
+      }
+    }
     navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 

@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
@@ -183,8 +184,19 @@ export default function StopDoingAudit() {
     }
   };
 
-  const handleDiscard = () => {
+  // Deletes the saved row only if it is still a draft - a completed
+  // audit is never deleted by walking away from it. The condition lives
+  // in the query (see discardDraft.js), so a completed row matches
+  // nothing even though this page does not track its status (patch D1).
+  const handleDiscard = async () => {
     setDiscardOpen(false);
+    if (decisionId) {
+      try {
+        await discardDecisionDraft(user.id, decisionId);
+      } catch (error) {
+        console.error('[StopDoingAudit] draft delete on discard failed:', error);
+      }
+    }
     navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
