@@ -1,66 +1,58 @@
 import { Component } from 'react';
 
+// Catches a crash in any page and shows a calm, dark screen instead of a
+// blank one. The error itself is logged to the console for us (see
+// componentDidCatch) and is never shown to the person. It replaces the
+// whole routed area, header and tab bar included - they are rendered by
+// the pages and the protected layout inside it, so they cannot be kept
+// safely when one of them is what crashed. "Go home" is a plain link (a
+// full page load) so the boundary resets and the app starts clean.
+// Rendered inside .ui-root so it picks up the design tokens.
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+  static getDerivedStateFromError() {
+    return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
   }
 
-  handleBack() {
-    this.setState({ hasError: false, error: null });
-    window.history.back();
-  }
-
   render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fafafa', padding: '20px' }}>
-          <div style={{ maxWidth: '500px', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', marginBottom: '12px' }}>
-              Something went wrong
-            </h1>
-            <p style={{ fontSize: '14px', color: '#666', marginBottom: '24px', lineHeight: '1.5' }}>
-              An error occurred while loading this page. Please try going back.
-            </p>
-            <details style={{ marginBottom: '24px', textAlign: 'left', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '6px', fontSize: '12px', color: '#666' }}>
-              <summary style={{ cursor: 'pointer', fontWeight: '600', marginBottom: '8px' }}>
-                Error details
-              </summary>
-              <pre style={{ overflow: 'auto', marginTop: '8px', padding: '8px', backgroundColor: '#fff', borderRadius: '4px', fontSize: '11px', color: '#c62828' }}>
-                {this.state.error?.toString()}
-              </pre>
-            </details>
-            <button
-              onClick={this.handleBack}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#F08571',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e6745f'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
-            >
-              Go Back
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <div
+        className="ui-root"
+        style={{
+          minHeight: '100dvh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 'var(--space-5)',
+          boxSizing: 'border-box',
+          background: 'var(--bg)',
+        }}
+      >
+        <div style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }} role="alert">
+          <div className="ui-title">Something went wrong</div>
+          <p className="ui-subtitle" style={{ marginBottom: 'var(--space-5)' }}>
+            This page hit a problem. Your saved work is safe. Reload the page, or head back to Home.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <button type="button" className="ui-btn-primary" onClick={() => window.location.reload()}>
+              Reload
             </button>
+            <a className="ui-btn-ghost" href="/welcome" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+              Go home
+            </a>
           </div>
         </div>
-      );
-    }
-
-    return this.props.children;
+      </div>
+    );
   }
 }
