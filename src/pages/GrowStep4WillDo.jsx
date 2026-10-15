@@ -10,9 +10,12 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function GrowStep4WillDo() {
   const navigate = useNavigate();
+  const { message: toastMessage, showToast } = useToast();
   const location = useLocation();
   const { updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
@@ -114,7 +117,7 @@ export default function GrowStep4WillDo() {
     if (!willDoValue.trim()) return;
 
     if (false) {
-      alert('Please log in to save decisions');
+      showToast('Please log in to save decisions.');
       return;
     }
 
@@ -206,7 +209,7 @@ export default function GrowStep4WillDo() {
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
-      alert(`Failed to save decision: ${error.message}`);
+      showToast('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -453,6 +456,7 @@ export default function GrowStep4WillDo() {
         isVisible={saved}
         onDismiss={() => setSaved(false)}
       />
+      <Toast message={toastMessage} />
     </div>
   );
 }

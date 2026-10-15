@@ -5,9 +5,12 @@ import { supabase } from '../lib/supabase';
 import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
 import PageHeading from '../components/PageHeading';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function EditPersonalDetails() {
   const navigate = useNavigate();
+  const { message: toastMessage, showToast } = useToast();
   const { user } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -92,7 +95,7 @@ export default function EditPersonalDetails() {
       }, 1500);
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert(`Failed to save profile: ${error?.message || 'Unknown error'}`);
+      showToast('Could not save your details - please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -326,6 +329,7 @@ export default function EditPersonalDetails() {
         isVisible={saved}
         onDismiss={() => setSaved(false)}
       />
+      <Toast message={toastMessage} />
     </div>
   );
 }

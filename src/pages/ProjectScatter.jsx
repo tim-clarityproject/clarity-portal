@@ -8,9 +8,12 @@ import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function ProjectScatter() {
   const navigate = useNavigate();
+  const { message: toastMessage, showToast } = useToast();
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const { updateFormData } = useContext(FormContext);
@@ -54,7 +57,7 @@ export default function ProjectScatter() {
 
   const handleSaveToLogClick = () => {
     if (!user) {
-      alert('Please log in to save decisions');
+      showToast('Please log in to save decisions.');
       return;
     }
     if (needsNaming) {
@@ -118,7 +121,7 @@ export default function ProjectScatter() {
       navigate('/decision-summary', { state: { decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
-      alert(`Failed to save: ${error.message}`);
+      showToast('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -537,7 +540,7 @@ export default function ProjectScatter() {
                     });
                   } else {
                     navigator.clipboard.writeText(window.location.href);
-                    alert('Link copied to clipboard!');
+                    showToast('Link copied.');
                   }
                 }}
                 style={{
@@ -568,6 +571,7 @@ export default function ProjectScatter() {
 
       </div>
 
+      <Toast message={toastMessage} />
     </div>
   );
 }

@@ -11,21 +11,25 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
   const { updateMission } = useContext(MissionContext);
   const [goal, setGoal] = useState(currentGoal);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     setGoal(currentGoal);
+    setSaveError('');
   }, [currentGoal, isOpen]);
 
   const handleSave = async () => {
     if (!user || !goal.trim()) return;
 
+    setSaveError('');
     setIsSaving(true);
     try {
       await updateMission(goal.trim());
       onGoalSaved(goal.trim());
       onClose();
     } catch (error) {
-      alert('Failed to save goal: ' + (error.message || 'Unknown error'));
+      console.error('[PersonalGoalModal] save failed:', error);
+      setSaveError('Could not save your mission - please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -46,6 +50,8 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
         placeholder="Type here"
         maxLength={MAX_GOAL_LENGTH}
       />
+
+      {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 
       <div className="popup-actions">
         <button type="button" className="ui-btn-ghost" onClick={onClose}>

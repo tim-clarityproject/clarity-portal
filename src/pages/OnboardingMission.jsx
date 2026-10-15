@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 const MAX_GOAL_LENGTH = 70;
 
 export default function OnboardingMission() {
   const navigate = useNavigate();
+  const { message: toastMessage, showToast } = useToast();
   const { user } = useContext(AuthContext);
   const { updateMission } = useContext(MissionContext);
   const [greeting, setGreeting] = useState('');
@@ -100,7 +103,7 @@ export default function OnboardingMission() {
 
   const handleSaveMission = async () => {
     if (!mission.trim()) {
-      alert('Please enter your mission');
+      showToast('Please enter your mission.');
       return;
     }
 
@@ -118,7 +121,7 @@ export default function OnboardingMission() {
         navigate('/welcome');
       }, 500);
     } catch (error) {
-      alert('Failed to save mission. Please try again.');
+      showToast('Could not save your mission - please try again.');
       setIsSaving(false);
     }
   };
@@ -327,6 +330,7 @@ export default function OnboardingMission() {
           </div>
         )}
       </div>
+      <Toast message={toastMessage} />
     </div>
   );
 }
