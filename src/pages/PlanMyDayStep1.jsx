@@ -11,7 +11,6 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import pageText from '../content/pageText';
 import PageHeading from '../components/PageHeading';
 
 // Worded exactly per the approved mock-up - topPriority/showUp/notDo are

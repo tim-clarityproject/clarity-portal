@@ -12,7 +12,6 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import pageText from '../content/pageText';
 import PageHeading from '../components/PageHeading';
 
 const MAX_NAME_LENGTH = 60;
