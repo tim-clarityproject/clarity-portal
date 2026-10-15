@@ -191,8 +191,8 @@ export default function BreathingPage() {
           </div>
 
           <div className="breathe-guidance">
-            {guidance.map((g) => (
-              <div className="breathe-guidance-col" key={g.label}>
+            {guidance.map((g, i) => (
+              <div className="breathe-guidance-col" key={`${technique}-${i}`}>
                 <span className="breathe-guidance-label">{g.label}</span>
                 <span className="breathe-guidance-rule" aria-hidden="true" />
                 <p className="breathe-guidance-text">{g.text}</p>

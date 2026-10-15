@@ -4624,8 +4624,12 @@ span.tc-editable:focus-visible {
 }
 
 .breathe-guidance {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* Flex-wrap, not a fixed grid: if the cards ever wrap onto a second
+     row (five or more, or a narrow width) the last row is centred under
+     the others, with every card the same width. */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   width: 100%;
   max-width: 760px;
   margin-bottom: var(--space-6);
@@ -4634,13 +4638,10 @@ span.tc-editable:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
-@media (max-width: 768px) {
-  .breathe-guidance {
-    grid-template-columns: 1fr;
-  }
-}
-
 .breathe-guidance-col {
+  box-sizing: border-box;
+  flex: 0 0 25%;
+  max-width: 25%;
   padding: var(--space-3) var(--space-3) var(--space-4);
 }
 
@@ -4649,6 +4650,11 @@ span.tc-editable:focus-visible {
 }
 
 @media (max-width: 768px) {
+  .breathe-guidance-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
   .breathe-guidance-col + .breathe-guidance-col {
     border-left: none;
     border-top: 1px solid var(--line);
