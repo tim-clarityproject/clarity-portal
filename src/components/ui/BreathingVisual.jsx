@@ -278,7 +278,11 @@ function BoxVisual({ technique, active, size }) {
         .breathing-visual--box { position: relative; flex-shrink: 0; }
       `}</style>
       <svg width={size} height={size} viewBox={FRAME}>
-        <rect x="-120" y="-120" width="240" height="240" rx="76" fill="none" stroke="var(--line)" strokeWidth="1" />
+        {/* Resting/guide outline: --btn-line (not --line, which all but
+            vanished on the dark card, leaving only the corner marks).
+            Same 1-unit stroke. A Tim-approved departure from the
+            mock-up. */}
+        <rect x="-120" y="-120" width="240" height="240" rx="76" fill="none" stroke="var(--btn-line)" strokeWidth="1" />
         <rect
           x="-120" y="-120" width="240" height="240" rx="76"
           fill={color} fillOpacity="0.08" transform={`scale(${innerScale})`}
