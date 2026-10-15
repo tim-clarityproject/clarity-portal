@@ -609,3 +609,629 @@
     transition: none;
   }
 }
+
+/* ======================= One-pager ======================= */
+.ui-root .auth-column.al-col--wide {
+  max-width: calc(var(--content-max) * 1.5);
+}
+
+.ui-root .al-foot--wide {
+  max-width: calc(var(--content-max) * 1.5);
+}
+
+.ui-root .al-opd {
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+}
+
+.ui-root .al-faint {
+  color: var(--placeholder);
+}
+
+.ui-root .al-opobj {
+  margin-top: var(--space-5);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.ui-root .al-sect0,
+.ui-root .al-sect {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .al-sect {
+  margin-top: var(--space-6);
+}
+
+.ui-root .al-opobj + .al-sect {
+  margin-top: var(--space-5);
+}
+
+.ui-root .al-sect--first {
+  margin-top: 0;
+}
+
+.ui-root .al-opobj p {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-title-desktop);
+  line-height: 1.45;
+  color: var(--text);
+  max-width: 46ch;
+  text-wrap: balance;
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-opobj p {
+    font-size: var(--fs-title-phone);
+  }
+}
+
+.ui-root .al-csfg {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.ui-root .al-csfg .al-span {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-csfg {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-root .al-csfg .al-span {
+    grid-column: auto;
+  }
+}
+
+.ui-root .al-csfg > div {
+  display: grid;
+  grid-template-columns: var(--space-4) 1fr;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  padding: var(--space-3);
+  font-size: var(--fs-body-sub);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .al-csfg b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  color: var(--coral-text);
+  padding-top: 2px;
+}
+
+.ui-root .al-empty {
+  margin-top: var(--space-5);
+  font-size: var(--fs-body-sub);
+  color: var(--text-2);
+}
+
+.ui-root .al-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  min-width: 0;
+}
+
+.ui-root .al-chartp {
+  margin-top: var(--space-3);
+  background: var(--bg);
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-chartp {
+    padding: var(--space-3) var(--space-2) var(--space-2);
+  }
+}
+
+.ui-root .al-lhead {
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-3);
+}
+
+/* ---- chart ---- */
+.ui-root .al-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ui-root .al-chart svg text {
+  font-family: var(--font-body);
+}
+
+.ui-root .al-chart svg .al-axis-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+}
+
+.ui-root .al-pt {
+  cursor: default;
+  outline: none;
+}
+
+.ui-root .al-pt:focus-visible .al-core {
+  stroke-width: 2;
+}
+
+.ui-root .al-pt circle,
+.ui-root .al-pt text,
+.ui-root .al-lab {
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+.ui-root .al-pt .al-core,
+.ui-root .al-pt .al-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--dur-slow) var(--ease), opacity var(--dur-slow) var(--ease);
+}
+
+.ui-root .al-enter .al-pt .al-core {
+  animation: al-pop var(--dur-slow) var(--ease) both;
+  animation-delay: var(--d);
+}
+
+.ui-root .al-enter .al-pt .al-halo {
+  animation: al-pop var(--dur-slow) var(--ease) both;
+  animation-delay: calc(var(--d) + var(--dur-fast));
+}
+
+.ui-root .al-enter .al-pt text {
+  animation: al-fade var(--dur-slow) var(--ease) both;
+  animation-delay: calc(var(--d) + var(--dur));
+}
+
+.ui-root .al-enter .al-lab {
+  animation: al-fade var(--dur-slow) var(--ease) both;
+  animation-delay: var(--d);
+}
+
+.ui-root .al-enter .al-zone {
+  animation: al-fade var(--dur-slow) var(--ease) both;
+}
+
+.ui-root .al-enter .al-xl line {
+  stroke-dasharray: 800;
+  stroke-dashoffset: 800;
+  animation: al-draw var(--dur-slow) var(--ease) 0.1s forwards;
+}
+
+@keyframes al-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes al-pop {
+  from { opacity: 0; transform: scale(0.2); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes al-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ui-root .al-hlon .al-pt:not(.al-hl),
+.ui-root .al-hlon .al-lab:not(.al-hl) {
+  opacity: 0.28;
+}
+
+.ui-root .al-pt.al-hl .al-halo {
+  transform: scale(1.35);
+}
+
+.ui-root .al-pt.al-hl .al-core {
+  transform: scale(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .al-enter .al-pt .al-core,
+  .ui-root .al-enter .al-pt .al-halo,
+  .ui-root .al-enter .al-pt text,
+  .ui-root .al-enter .al-lab,
+  .ui-root .al-enter .al-zone,
+  .ui-root .al-enter .al-xl line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .ui-root .al-pt .al-core,
+  .ui-root .al-pt .al-halo {
+    transition: none;
+  }
+}
+
+/* ---- sort pills (the shared FilterPills with an arrow) ---- */
+.ui-root .al-dir {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+.ui-root .al-dir--up {
+  transform: rotate(180deg);
+}
+
+.ui-root .fpills-btn i .al-dir {
+  display: block;
+}
+
+.ui-root .al-hb {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--placeholder);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .al-hb:hover,
+.ui-root .al-hb--on {
+  color: var(--text);
+}
+
+.ui-root .al-hb:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+/* The arrow sits beside the heading without ever making it wrap. */
+.ui-root .al-hb .al-dir {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin: -5px 0 0 var(--space-2);
+  width: 10px;
+  height: 10px;
+  stroke: var(--coral);
+}
+
+/* ---- project table: adapts to the space it has, not the device ---- */
+.ui-root .al-rk {
+  container-type: inline-size;
+  container-name: alrk;
+  margin-top: var(--space-3);
+  padding-top: var(--space-1);
+  padding-bottom: var(--space-1);
+}
+
+.ui-root .al-rh {
+  display: none;
+}
+
+.ui-root .al-rr {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "rn nm nm" ". ci ci" ". cp cr";
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+  outline: none;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root .al-rr:last-child {
+  border-bottom: 0;
+}
+
+.ui-root .al-rk.al-hlon .al-rr:not(.al-hl) {
+  opacity: 0.45;
+}
+
+.ui-root .al-rn {
+  grid-area: rn;
+  width: var(--space-4);
+  height: var(--space-4);
+  border: 1px solid var(--text);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  color: var(--text);
+}
+
+.ui-root .al-rn--mi {
+  background: var(--mint);
+  border-color: var(--mint);
+  color: var(--on-coral);
+}
+
+.ui-root .al-rn--co {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--on-coral);
+}
+
+.ui-root .al-nm {
+  grid-area: nm;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--fs-body);
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.ui-root .al-c {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  align-self: start;
+}
+
+.ui-root .al-ci { grid-area: ci; }
+.ui-root .al-cp { grid-area: cp; }
+.ui-root .al-cr { grid-area: cr; }
+
+.ui-root .al-c small {
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--placeholder);
+  line-height: 1.35;
+  min-height: 2.7em;
+  display: flex;
+  align-items: flex-end;
+}
+
+.ui-root .al-ibar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 12px;
+}
+
+.ui-root .al-tr {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ui-root .al-tr i {
+  display: block;
+  height: 100%;
+  background: var(--text);
+}
+
+.ui-root .al-vv {
+  font-family: var(--font-display);
+  font-size: var(--fs-label);
+  color: var(--text);
+  white-space: nowrap;
+  min-width: 42px;
+  text-align: right;
+}
+
+.ui-root .al-segs,
+.ui-root .al-pips {
+  display: flex;
+  align-items: center;
+  min-height: 12px;
+}
+
+.ui-root .al-segs {
+  gap: var(--space-1);
+}
+
+.ui-root .al-segs i {
+  width: 15px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.ui-root .al-segs i.al-f {
+  background: var(--text);
+}
+
+.ui-root .al-pips {
+  gap: 6px;
+}
+
+.ui-root .al-pips i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--btn-line);
+}
+
+.ui-root .al-pips i.al-f {
+  background: var(--text-2);
+  border-color: var(--text-2);
+}
+
+@container alrk (min-width: 520px) {
+  .ui-root .al-rr {
+    grid-template-columns: 40px repeat(3, minmax(0, 1fr));
+    grid-template-areas: "rn nm nm nm" ". ci cp cr";
+    gap: var(--space-3) var(--space-4);
+  }
+
+  .ui-root .al-c small {
+    min-height: 0;
+  }
+}
+
+@container alrk (min-width: 760px) {
+  .ui-root .al-rh {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) minmax(150px, 190px) 110px 172px;
+    gap: 0 var(--space-4);
+    align-items: center;
+    padding: var(--space-3) 0 var(--space-3);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ui-root .al-rh > span {
+    font-family: var(--font-display);
+    font-size: var(--fs-tab);
+    letter-spacing: var(--ls-overline);
+    text-transform: uppercase;
+    color: var(--placeholder);
+  }
+
+  .ui-root .al-rh > .al-hb:nth-of-type(1),
+  .ui-root .al-rh > .al-hb:nth-of-type(2) {
+    justify-self: center;
+  }
+
+  .ui-root .al-rr {
+    grid-template-columns: 40px minmax(0, 1fr) minmax(150px, 190px) 110px 172px;
+    grid-template-areas: "rn nm ci cp cr";
+    gap: 0 var(--space-4);
+    padding: var(--space-3) 0;
+  }
+
+  .ui-root .al-c small {
+    display: none;
+  }
+
+  .ui-root .al-c {
+    align-self: center;
+  }
+
+  .ui-root .al-cp,
+  .ui-root .al-cr {
+    align-items: center;
+  }
+}
+
+/* ---- note + keep your results ---- */
+.ui-root .al-onepager .al-note {
+  margin-top: var(--space-4);
+  line-height: 1.65;
+  color: var(--placeholder);
+  max-width: 72ch;
+}
+
+.ui-root .al-keep {
+  margin-top: var(--space-6);
+}
+
+.ui-root .al-kgrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .ui-root .al-kgrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ui-root .al-card {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-3);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .al-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--space-3);
+  bottom: var(--space-3);
+  width: 3px;
+  background: var(--coral);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .al-card:hover,
+.ui-root .al-card:focus-visible {
+  border-color: var(--btn-line);
+}
+
+.ui-root .al-card:hover::before,
+.ui-root .al-card:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.ui-root .al-card:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .al-card-name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.ui-root .al-card-name em {
+  font-style: normal;
+  margin-left: var(--space-2);
+  color: var(--placeholder);
+  font-size: var(--fs-tab);
+}
+
+.ui-root .al-card-desc {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.ui-root .al-card .ui-cross {
+  width: 20px;
+  height: 20px;
+  color: var(--coral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .al-card,
+  .ui-root .al-card::before,
+  .ui-root .al-dir,
+  .ui-root .al-rr {
+    transition: none;
+  }
+}

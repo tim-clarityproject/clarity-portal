@@ -12,16 +12,20 @@ import { useEffect, useRef } from 'react';
 // page: only the row's own scrollLeft changes). A trailing spacer keeps
 // the last pill clear of the right edge. No fade overlay, no gradient.
 // Look and counts are unchanged from the earlier pills.
-export default function FilterPills({ filters, active, onSelect, countFor, label, sub = false }) {
+// Optional extras (used by the Strategic Alignment Health Check sort pills):
+//  - countFor may return null to show no trailing item, or a node (an arrow);
+//  - ariaLabelFor(filter) gives a pill its own accessible name;
+//  - keepScroll leaves the row where it is when a pill is tapped.
+export default function FilterPills({ filters, active, onSelect, countFor, label, sub = false, ariaLabelFor, keepScroll = false }) {
   const rowRef = useRef(null);
 
   useEffect(() => {
     const row = rowRef.current;
     const pill = row?.querySelector('[aria-pressed="true"]');
-    if (!row || !pill) return;
+    if (!row || !pill || keepScroll) return;
     const target = pill.offsetLeft - (row.clientWidth - pill.offsetWidth) / 2;
     row.scrollLeft = Math.max(0, target);
-  }, [active, filters.length]);
+  }, [active, filters.length, keepScroll]);
 
   return (
     <>
@@ -38,10 +42,11 @@ export default function FilterPills({ filters, active, onSelect, countFor, label
             type="button"
             className="fpills-btn"
             aria-pressed={active === f.id}
+            aria-label={ariaLabelFor ? ariaLabelFor(f) : undefined}
             onClick={() => onSelect(f.id)}
           >
             {f.label}
-            <i>{countFor(f)}</i>
+            {countFor(f) !== null && <i>{countFor(f)}</i>}
           </button>
         ))}
       </div>

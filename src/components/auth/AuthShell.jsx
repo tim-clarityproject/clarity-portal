@@ -30,6 +30,7 @@ export default function AuthShell({
   headlineSize = 'lg', // 'lg' (26/32px) | 'md' (the title size, 22/26px)
   letterStaggerMs = 45, // delay between headline letters (lower for long text)
   footer, // node pinned below the content (sticky to the bottom of the screen)
+  headlineAside, // node shown at the right of the headline row (a date); stacks under it on phone
 }) {
   // Split into words (not just letters) so the headline can only wrap at
   // a space, never mid-word - each word is its own non-breaking group of
@@ -326,6 +327,19 @@ export default function AuthShell({
           }
         }
 
+        .auth-headline-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: var(--space-3);
+        }
+
+        .auth-headline-aside {
+          font-size: var(--fs-small);
+          color: var(--placeholder);
+        }
+
         .auth-footer {
           position: sticky;
           bottom: 0;
@@ -412,6 +426,49 @@ export default function AuthShell({
               {beforeHeadline}
             </div>
           )}
+          {headline && headlineAside ? (
+            <div className="auth-headline-row">
+              <div>
+          {headline && (
+                <h1 className={`auth-headline${headlineSize === 'md' ? ' auth-headline--md' : ''}`}>
+                  {words.map((word, wi) => (
+                    // The space between words is a separate sibling node, OUTSIDE
+                    // the nowrap word span - a trailing space INSIDE a
+                    // white-space:nowrap inline-block still gets collapsed away
+                    // by the browser (nowrap stops wrapping, it doesn't stop
+                    // whitespace collapsing), which silently ate the gap between
+                    // words until this was split out.
+                    <span key={wi}>
+                      <span className="auth-headline-word">
+                        {word.split('').map((char) => {
+                          const delay = 250 + letterIndex * letterStaggerMs;
+                          letterIndex += 1;
+                          return (
+                            <span
+                              key={letterIndex}
+                              className="auth-headline-letter"
+                              style={{ animationDelay: `${delay}ms` }}
+                            >
+                              {char}
+                            </span>
+                          );
+                        })}
+                      </span>
+                      {wi < words.length - 1 ? ' ' : ''}
+                    </span>
+                  ))}
+                </h1>
+              )}
+              {headline && (
+                <div className="auth-rule-wrap">
+                  <div className="auth-rule" />
+                </div>
+              )}
+                  </div>
+              <div className="auth-headline-aside">{headlineAside}</div>
+            </div>
+          ) : (
+            <>
           {headline && (
             <h1 className={`auth-headline${headlineSize === 'md' ? ' auth-headline--md' : ''}`}>
               {words.map((word, wi) => (
@@ -446,6 +503,8 @@ export default function AuthShell({
             <div className="auth-rule-wrap">
               <div className="auth-rule" />
             </div>
+          )}
+            </>
           )}
           {sub && <p className="auth-sub">{sub}</p>}
 

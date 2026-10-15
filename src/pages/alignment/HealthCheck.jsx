@@ -6,6 +6,8 @@ import { AuthTextField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
+import OnePager from './OnePager';
+import { formatUkDate } from '../../lib/dateFormatter';
 import { openSession, createSaveQueue, readBackup, clearBackup } from '../../lib/alignmentApi';
 import { strategicImportance, roundPct } from '../../lib/alignmentScore';
 import {
@@ -155,6 +157,7 @@ export default function HealthCheck() {
   const credsRef = useRef(null); // { email, code } of the open session: memory only
   const unsavedRef = useRef(false);
   const bootedRef = useRef(false);
+  const [openedAt, setOpenedAt] = useState(null); // updated_at when the session was opened (date fallback)
 
   // ---- page chrome: title and robots meta for this route only ----
   useEffect(() => {
@@ -174,7 +177,11 @@ export default function HealthCheck() {
   const applyStep = (next) => { stepRef.current = next; setStep(next); };
 
   // ---- saving ----
-  const commit = useCallback((nextDraft, nextStep, immediate) => {
+  const commit = useCallback((draftIn, nextStep, immediate) => {
+    let nextDraft = draftIn;
+    if (nextStep.screen === 'done' && !nextDraft.completedAt) {
+      nextDraft = { ...nextDraft, completedAt: new Date().toISOString() };
+    }
     applyDraft(nextDraft);
     applyStep(nextStep);
     setNotice('');
@@ -201,6 +208,7 @@ export default function HealthCheck() {
   const startFlow = useCallback((session, creds) => {
     queueRef.current?.destroy();
     credsRef.current = creds;
+    setOpenedAt(session.updatedAt || null);
     writeAccess(token, creds);
 
     // Backup rule: the browser copy is applied only if it holds unsaved changes
@@ -384,6 +392,11 @@ export default function HealthCheck() {
   const onWelcome = phase !== 'flow';
   const onDone = !onWelcome && step.screen === 'done';
   const total = projects.length || 1;
+
+  // One-pager card actions: wired in the next prompt (PDF, email link, account).
+  const handleDownloadPdf = () => {};
+  const handleEmailLink = () => {};
+  const handleCreateAccount = () => {};
 
   const topBarContent = (
     <div className="al-bar">
@@ -595,12 +608,26 @@ export default function HealthCheck() {
   } else if (onDone) {
     shellProps = {
       align: 'left',
-      headline: 'Your Strategic Alignment Health Check is ready.',
-      columnClassName: 'al-col',
+      headline: 'Strategic Alignment Health Check',
+      headlineSize: 'md',
+      columnClassName: 'al-col al-col--wide',
       letterStaggerMs: 28,
-      sub: 'Your one-pager will appear here.',
+      headlineAside: (
+        <span className="al-opd">
+          {formatUkDate(draft.completedAt || openedAt || new Date().toISOString())}
+        </span>
+      ),
     };
-    body = [];
+    body = [
+      <div key="onepager" className="al-onepager">
+        <OnePager
+          draft={draft}
+          onDownloadPdf={handleDownloadPdf}
+          onEmailLink={handleEmailLink}
+          onCreateAccount={handleCreateAccount}
+        />
+      </div>,
+    ];
   } else {
     // A rating screen with no projects left: send them back to add one.
     shellProps = { align: 'left', headline: 'What is your team working on?', headlineSize: 'md', columnClassName: 'al-col' };
@@ -614,9 +641,11 @@ export default function HealthCheck() {
   const fills = onWelcome ? [0, 0, 0, 0] : progressFills(step, draft);
 
   const footer = onWelcome ? null : (
-    <div className="al-foot">
+    <div className={`al-foot${onDone ? ' al-foot--wide' : ''}`}>
       <button type="button" className="al-back" onClick={goBack}>← Back</button>
-      {!onDone && (
+      {onDone ? (
+        <AuthPrimaryButton onClick={handleDownloadPdf}>Download PDF</AuthPrimaryButton>
+      ) : (
         <div className="al-foot-right">
           <span className={`al-hint${valid ? '' : ' al-hint--on'}`}>{HINTS[step.screen] || ''}</span>
           <AuthPrimaryButton disabled={!valid} onClick={goNext}>Continue</AuthPrimaryButton>

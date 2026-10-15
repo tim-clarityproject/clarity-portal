@@ -56,6 +56,7 @@ export function emptyDraft() {
     csfs: padRows([]),
     projects: padRows([]),
     ratings: {},
+    completedAt: null,
   };
 }
 
@@ -74,6 +75,9 @@ export function draftFromData(data) {
     csfs: padRows(items(d.csfs)),
     projects: padRows(items(d.projects)),
     ratings,
+    // When the Health Check was first completed (kept in the answers: the
+    // open/save functions do not return completed_at).
+    completedAt: typeof d.completedAt === 'string' ? d.completedAt : null,
   };
 }
 
@@ -104,6 +108,7 @@ export function dataFromDraft(draft) {
     csfs,
     projects,
     ratings: { [OWNER]: owner },
+    ...(draft.completedAt ? { completedAt: draft.completedAt } : {}),
   };
 }
 
