@@ -122,7 +122,8 @@ export default function GrowStep4WillDo() {
     }
 
     // Store the newDecisionId if provided (from SaveDiscardButtons auto-save)
-    if (newDecisionId) {
+    // (guarded: location.state is null when the page was opened directly)
+    if (newDecisionId && location.state) {
       location.state.decisionId = newDecisionId;
     }
 
