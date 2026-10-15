@@ -192,15 +192,18 @@ export default function EmailConfirmation() {
       beforeHeadline={<ClockIcon />}
       headline={isExpired ? 'THAT LINK HAS EXPIRED.' : 'WE COULD NOT CONFIRM YOUR EMAIL.'}
       sub={isExpired
-        ? 'Confirmation links only work for a little while. Go back to sign up and we will send you a fresh one.'
-        : (message || 'Something went wrong. Go back to sign up and we will send you a fresh link.')}
+        ? 'Confirmation links only work for a little while. If you have not confirmed yet, go back to sign up and we will send you a fresh one.'
+        : (message || 'Something went wrong while confirming your email.')}
     >
-      <AuthPrimaryButton onClick={() => navigate('/auth/sign-up')}>
-        Back to sign up
+      <AuthPrimaryButton onClick={() => navigate('/auth/login')}>
+        Log in
       </AuthPrimaryButton>
+      <p className="auth-tip">
+        If you opened the link on a different device, your email may already be confirmed - try logging in.
+      </p>
       <div>
-        <AuthTextLink onClick={() => navigate('/auth/login')} style={{ justifyContent: 'center' }}>
-          Already confirmed? Log in
+        <AuthTextLink onClick={() => navigate('/auth/sign-up')} style={{ justifyContent: 'center' }}>
+          Back to sign up
         </AuthTextLink>
       </div>
     </AuthShell>
