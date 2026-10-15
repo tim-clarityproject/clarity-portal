@@ -7,6 +7,7 @@ import {
   weeklyTitle, afterActionTitle, validateReview,
   loadReviewByEntryId, loadWeeklyDraftFor, saveReview,
 } from '../lib/reviewTool';
+import { discardReviewDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
@@ -152,8 +153,18 @@ export default function MyJournal() {
     }
   };
 
-  const handleDiscard = () => {
+  // Deletes the saved row only when it is a DRAFT - editing a finished
+  // review and pressing Discard loses the unsaved edits, never the
+  // review itself (patch D1).
+  const handleDiscard = async () => {
     setDiscardOpen(false);
+    if (entryId && existingStatus === 'draft') {
+      try {
+        await discardReviewDraft(user.id, entryId);
+      } catch (error) {
+        console.error('[MyJournal] draft delete on discard failed:', error);
+      }
+    }
     navigate('/review-section', { state: { toast: 'Discarded.' } });
   };
 

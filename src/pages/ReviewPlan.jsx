@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { parseDbTimestamp, getLocalDateKey, formatReviewDayLabel } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, savePlanReview } from '../lib/planReview';
+import { discardPlanReviewDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
@@ -132,6 +133,12 @@ export default function ReviewPlan() {
   const t = TY[planKind] || TY.daily_plan;
 
   const [entryId, setEntryId] = useState(null);
+  // Day reviews keep their draft marker inside the content JSON, not
+  // the status column (see planReview.js) - this reads the same flag
+  // the page already parses, so Discard can tell a saved draft from a
+  // finished review (patch D1). Moving the marker onto the status
+  // column is a separate patch; nothing here changes how it saves.
+  const [existingIsDraft, setExistingIsDraft] = useState(false);
   const [a, setA] = useState('');
   const [b, setB] = useState('');
   const [showPanel, setShowPanel] = useState(typeof window !== 'undefined' && window.innerWidth > 768);
@@ -151,6 +158,7 @@ export default function ReviewPlan() {
         const existing = findPlanReview(reviews, { planKind, planId: plan?.id, dateKey });
         if (existing) {
           setEntryId(existing.id);
+          setExistingIsDraft(Boolean(existing.data.draft));
           setA(existing.data.a || '');
           setB(existing.data.b || '');
         }
@@ -203,6 +211,7 @@ export default function ReviewPlan() {
     try {
       const savedId = await persist(true);
       setEntryId(savedId);
+      setExistingIsDraft(true);
       showToast('Draft saved. Find it in My plans to carry on.');
     } catch (error) {
       console.error('[ReviewPlan] draft save failed:', error);
@@ -212,8 +221,17 @@ export default function ReviewPlan() {
     }
   };
 
-  const handleDiscard = () => {
+  // Deletes the saved row only when it is a DRAFT - a finished day
+  // review is never deleted by walking away from it (patch D1).
+  const handleDiscard = async () => {
     setDiscardOpen(false);
+    if (entryId && existingIsDraft) {
+      try {
+        await discardPlanReviewDraft(user.id, entryId);
+      } catch (error) {
+        console.error('[ReviewPlan] draft delete on discard failed:', error);
+      }
+    }
     const target = plan ? t.summaryRoute : '/review-section';
     navigate(target, { state: plan ? { decisionId: plan.id, toast: 'Discarded.' } : { toast: 'Discarded.' } });
   };
