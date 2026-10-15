@@ -502,7 +502,7 @@ export default function HealthCheck() {
       sub: returning
         ? 'Your answers were saved. Enter the same email and access code to carry on where you left off.'
         : 'Check the alignment between what your team is trying to achieve and the work you do every day.',
-      columnClassName: '',
+      columnClassName: 'al-col-welcome',
     };
     body = [
       !returning && <p key="dur" className="al-dur">This will take about 15 minutes.</p>,

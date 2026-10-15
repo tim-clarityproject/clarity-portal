@@ -140,13 +140,32 @@
   margin-top: var(--space-5);
 }
 
+/* The mock-up's Welcome column is 420px wide inside its padding (the portal's
+   default is 420px including it), so the email and code boxes match its width. */
+@media (min-width: 769px) {
+  .ui-root .auth-column.al-col-welcome {
+    max-width: 484px;
+  }
+}
+
 /* ---- access code: six boxes over one real input ---- */
+/* The mock-up's gap is 10px on desktop and 8px on phone. 8px is --space-2; 10px
+   has no token, so it is kept as a feature-scoped value rather than rounded. */
 .ui-root .al-otp {
+  --al-otp-gap: var(--space-2);
+  --al-otp-char: 20px;
   position: relative;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: var(--al-otp-gap);
   cursor: text;
+}
+
+@media (min-width: 769px) {
+  .ui-root .al-otp {
+    --al-otp-gap: 10px;
+    --al-otp-char: var(--fs-title-phone);
+  }
 }
 
 .ui-root .al-otp-box {
@@ -161,10 +180,11 @@
   border-radius: var(--radius-input);
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: var(--fs-title-phone);
+  font-size: var(--al-otp-char);
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--text);
-  transition: border-color var(--dur-fast) var(--ease);
+  transition: border-color var(--dur) var(--ease);
 }
 
 @media (min-width: 769px) {
@@ -183,10 +203,10 @@
   top: 50%;
   left: 50%;
   width: 1px;
-  height: 28px;
-  margin-top: -14px;
+  height: 24px;
+  margin-top: -12px;
   background: var(--coral);
-  animation: al-caret calc(var(--dur-slow) * 2.5) steps(1) infinite;
+  animation: al-caret calc(var(--dur-slow) * 2.75) steps(1) infinite;
 }
 
 @keyframes al-caret {
@@ -214,7 +234,7 @@
   color: transparent;
   caret-color: transparent;
   font-size: var(--fs-input) !important;
-  opacity: 0.01;
+  opacity: 0;
   outline: none;
   cursor: text;
 }
