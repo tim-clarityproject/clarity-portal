@@ -120,6 +120,13 @@ export default function StopDoingAudit() {
       form_data: formData,
       title: name,
       status,
+      // decisions carries two draft markers and this tool only ever
+      // wrote status, leaving draft at its default false even on a
+      // genuine draft row (audit item 10.2). Every other
+      // decisions-table tool writes both together, so this now does
+      // too - the list pages check either marker, so nothing else
+      // changes; it just stops the data contradicting itself.
+      draft: status === 'draft',
       updated_at: new Date().toISOString(),
     };
     if (decisionId) {
