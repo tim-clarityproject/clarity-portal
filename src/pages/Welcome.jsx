@@ -5,7 +5,7 @@ import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { parseDbTimestamp, getLocalDateKey } from '../lib/dateFormatter';
-import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
+import { loadPlanReviews, findPlanReview, isPlanReviewDraft, findTodaysDailyPlan } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BreathingOrb from '../components/ui/BreathingOrb';
@@ -33,8 +33,9 @@ const TILES = [
     label: 'Review',
     title: 'Review my day',
     description: 'Reflect on what worked today',
-    route: '/my-journal',
-    state: { reviewType: 'after-action' },
+    route: '/review-plan',
+    state: { planKind: 'daily_plan' },
+    needsTodaysPlan: true,
   },
   {
     id: 'strategize',
@@ -238,6 +239,22 @@ export default function Welcome() {
   const handleOptionClick = () => {
     clearFormData();
     clearProgress();
+  };
+
+  // Review my day opens the Day review for today's daily plan (the same
+  // lookup the Review hub and the menu use). With no plan today it still
+  // opens, with the page's "no daily plan" line.
+  const handleTileClick = async (e, tile) => {
+    handleOptionClick();
+    if (!tile.needsTodaysPlan) return;
+    e.preventDefault();
+    let plan = null;
+    try {
+      plan = await findTodaysDailyPlan(user?.id);
+    } catch (err) {
+      console.error('[Welcome] today\'s plan lookup failed:', err);
+    }
+    navigate(tile.route, { state: { ...tile.state, plan } });
   };
 
   return (
@@ -759,7 +776,7 @@ export default function Welcome() {
                 key={tile.id}
                 to={tile.route}
                 state={{ ...location.state, ...tile.state, problemTitle: tile.title }}
-                onClick={handleOptionClick}
+                onClick={(e) => handleTileClick(e, tile)}
                 className="home-tile"
               >
                 <div className="home-tile-top">
