@@ -7,6 +7,7 @@ import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import OnePager from './OnePager';
+import AccessCodeInput, { cleanCode } from './AccessCodeInput';
 import { formatUkDate } from '../../lib/dateFormatter';
 import { requestAlignmentEmail } from '../../lib/alignmentEmail';
 import { downloadPdf } from './pdf/generatePdf';
@@ -515,17 +516,7 @@ export default function HealthCheck() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@company.com"
         />
-        <AuthTextField
-          label="Access code"
-          value={code}
-          inputClassName="al-code"
-          onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-          placeholder="6 characters"
-          maxLength={6}
-          autoComplete="one-time-code"
-          spellCheck={false}
-          autoCapitalize="characters"
-        />
+        <AccessCodeInput value={code} onChange={(next) => setCode(cleanCode(next))} />
         {openError && <p className="auth-field-error" role="alert" data-testid="open-error">{openError}</p>}
         <AuthPrimaryButton type="submit" disabled={!ready} loading={opening}>
           {returning ? 'Continue' : 'Begin'}
