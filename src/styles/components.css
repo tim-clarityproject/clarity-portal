@@ -1293,8 +1293,14 @@ html:has(.ui-root) {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--coral);
+  /* A block, so its padding, underline and margin really take up space:
+     on /auth/mission it is a <label> (inline by default), where the
+     vertical padding and margin do nothing and the typed text sat
+     against the underline. The gap below the underline is a spacing
+     token (16px). */
+  display: block;
   padding-bottom: 12px;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3);
   border-bottom: 1px solid var(--line);
 }
 
