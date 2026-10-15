@@ -30,7 +30,7 @@ export default function PrivacyPolicy() {
             1. Introduction
           </h2>
           <p style={{ marginBottom: '16px' }}>
-            The Clarity Project ("we," "us," "our," or "Company") respects the privacy of our users ("user" or "you"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services, including the Clarity Portal.
+            The Clarity Project ("we," "us," "our," or "Company") respects the privacy of our users ("user" or "you"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services, including The Clarity Portal.
           </p>
 
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px', color: 'black' }}>

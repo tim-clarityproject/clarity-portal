@@ -59,8 +59,8 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount }) {
         </button>
         <button type="button" className="al-card" onClick={onCreateAccount}>
           <span>
-            <span className="al-card-name">Create a Clarity Portal account<em>Optional</em></span>
-            <span className="al-card-desc">Your own login to the Clarity Portal: daily planning, decision tools and reviews, in one place</span>
+            <span className="al-card-name">Create your account on The Clarity Portal<em>Optional</em></span>
+            <span className="al-card-desc">Your own login to The Clarity Portal: daily planning, decision tools and reviews, in one place</span>
           </span>
           <span className="ui-cross" aria-hidden="true" />
         </button>

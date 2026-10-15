@@ -46,6 +46,8 @@
 
 22. **Mock-up files are the source of truth.** Before building or changing any page, open and read the actual mock-up file and spec in full. Never build from a summary or from memory. Copy markup, CSS values, wording and behaviour from the mock-up. If the built page differs, the mock-up wins. If something cannot match, stop and report it instead of simplifying. Every build summary must list the files read and any differences left.
 
+23. **Wording and spelling: always write The Clarity Portal with a capital T on The, everywhere it is named.** Never "the Clarity Portal" or "a Clarity Portal account", even mid-sentence, in headings, buttons, legal text, emails, aria-labels, titles and toasts. Code identifiers, file names, CSS classes, URLs, environment variables and database values are not changed.
+
 ## List row guidelines
 
 These are guidelines, to apply by default to every list built from the shared row (`src/components/ui/HistoryList.jsx`: My Plans, My Reviews, My Journals, Decision History). Where a mock-up shows a detail, the mock-up wins. They are about layout only, not saving or navigation.
