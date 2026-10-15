@@ -1448,11 +1448,36 @@
 }
 
 /* ---- Keep your results: PDF choices and card notes ---- */
+/* The wrapper IS the card box: the three in a row stretch to the tallest, and the
+   PDF choices and the "Sent to" note sit inside it, so the row grows together.
+   Content stays top-aligned; on phone (one column) each keeps its natural height. */
 .ui-root .al-cardwrap {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: var(--space-2);
   min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .al-cardwrap:hover,
+.ui-root .al-cardwrap:focus-within {
+  border-color: var(--btn-line);
+}
+
+.ui-root .al-cardwrap > .al-card {
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-card);
+  flex: 0 0 auto;
+}
+
+.ui-root .al-cardwrap > .al-pdfchoices,
+.ui-root .al-cardwrap > .al-cardnote {
+  padding: 0 var(--space-3) var(--space-3);
 }
 
 .ui-root .al-card[disabled] {
