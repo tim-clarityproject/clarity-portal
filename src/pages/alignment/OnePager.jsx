@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import FilterPills from '../../components/ui/FilterPills';
 import AlignmentChart from './AlignmentChart';
 import { cleanItems } from './alignmentFlow';
 import { quadrant } from './chartLayout';
@@ -150,15 +149,25 @@ export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAc
             <span className="al-sect al-sect--first">Your projects</span>
             <EditButton label="Edit the projects" onClick={() => onEdit('projects')} />
           </div>
-          <FilterPills
-            label="Sort projects"
-            filters={SORTS}
-            active={activeId}
-            onSelect={pick}
-            keepScroll
-            countFor={(f) => (f.id !== 'att' && activeId === f.id ? <Arrow up={sort.d > 0} /> : null)}
-            ariaLabelFor={(f) => (f.id !== 'att' && activeId === f.id ? `${f.label}, ${word}` : f.label)}
-          />
+          <div className="al-sorts" role="group" aria-label="Sort projects">
+            {SORTS.map((f) => {
+              const on = activeId === f.id;
+              const showArrow = on && f.id !== 'att';
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  className="al-sort"
+                  aria-pressed={on}
+                  aria-label={showArrow ? `${f.label}, ${word}` : undefined}
+                  onClick={() => pick(f.id)}
+                >
+                  {f.label}
+                  {showArrow && <Arrow up={sort.d > 0} />}
+                </button>
+              );
+            })}
+          </div>
 
           <div className={`al-panel al-rk${hl != null ? ' al-hlon' : ''}`}>
             <div className="al-rh">
