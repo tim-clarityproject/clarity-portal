@@ -18,13 +18,27 @@ export function shortLabel(text, max) {
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 }
 
+/** Break a name into lines of at most `max` characters, at spaces. */
+export function wrapLabel(text, max) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  words.forEach((w) => {
+    if (line && (line + ' ' + w).length > max) { lines.push(line); line = w; } else { line = line ? `${line} ${w}` : w; }
+  });
+  if (line) lines.push(line);
+  return lines.length ? lines : [text];
+}
+
 /**
  * @param {{n: number, text: string, importance: number, progress: number|null}[]} rows
  *   ranked projects; n is the attention rank (the number shown in the dot)
  * @param {'d'|'p'} mode desktop or phone geometry
  * @param {(text: string, fontSize: number) => number} measure text width
+ * @param {{wrapChars?: number}} [opts] wrapChars: wrap names onto lines of that
+ *   length (the PDF) instead of shortening them with an ellipsis (the page)
  */
-export function layoutChart(rows, mode, measure) {
+export function layoutChart(rows, mode, measure, opts = {}) {
   const D = mode === 'd';
   const W = D ? 780 : 300;
   const H = D ? 470 : 330;
@@ -117,29 +131,31 @@ export function layoutChart(rows, mode, measure) {
   const order = pts.slice().sort((a, b) => neighbours(b) - neighbours(a));
   const maxChars = D ? 34 : 22;
   order.forEach((p) => {
-    const label = shortLabel(p.text, maxChars);
-    const w = measure(label, fs) + 2;
+    const lines = opts.wrapChars ? wrapLabel(p.text, opts.wrapChars) : [shortLabel(p.text, maxChars)];
+    const w = Math.max(...lines.map((l) => measure(l, fs))) + 2;
+    const hh = lines.length * lh;
+    const extra = (hh - lh) / 2;
     const g = 7;
     const c = [];
     [0, -lh * 0.8, lh * 0.8].forEach((dy, i) => {
       const y = p.y + dy;
       const gg = g + (i ? -2 : 0);
-      c.push({ x: p.x + p.r + gg, y, a: 'start', b: [p.x + p.r + gg, y - lh / 2, p.x + p.r + gg + w, y + lh / 2], pen: i ? 8 : 0 });
-      c.push({ x: p.x - p.r - gg, y, a: 'end', b: [p.x - p.r - gg - w, y - lh / 2, p.x - p.r - gg, y + lh / 2], pen: i ? 10 : 2 });
+      c.push({ x: p.x + p.r + gg, y, a: 'start', b: [p.x + p.r + gg, y - hh / 2, p.x + p.r + gg + w, y + hh / 2], pen: i ? 8 : 0 });
+      c.push({ x: p.x - p.r - gg, y, a: 'end', b: [p.x - p.r - gg - w, y - hh / 2, p.x - p.r - gg, y + hh / 2], pen: i ? 10 : 2 });
     });
-    [p.y - p.r - g - 1, p.y + p.r + g + 1].forEach((y, i) => {
+    [p.y - p.r - g - 1 - extra, p.y + p.r + g + 1 + extra].forEach((y, i) => {
       [0, -w / 2 + p.r, w / 2 - p.r].forEach((dx, j) => {
         const cx = p.x + dx;
-        c.push({ x: cx, y, a: 'middle', b: [cx - w / 2, y - lh / 2, cx + w / 2, y + lh / 2], pen: 4 + i + j * 3 });
+        c.push({ x: cx, y, a: 'middle', b: [cx - w / 2, y - hh / 2, cx + w / 2, y + hh / 2], pen: 4 + i + j * 3 });
       });
     });
     let best = null;
     let bestScore = 1e9;
     c.forEach((k) => {
-      const s = hit(k.b) * 10 + k.pen;
-      if (s < bestScore) { bestScore = s; best = k; }
+      const sc = hit(k.b) * 10 + k.pen;
+      if (sc < bestScore) { bestScore = sc; best = k; }
     });
-    labs.push({ ...best, p, text: label });
+    labs.push({ ...best, p, text: lines.join(' '), lines });
   });
 
   return { W, H, L, T, pw, ph, mx, my, gap, sp, fs, D, pts, labs, xs, ys };

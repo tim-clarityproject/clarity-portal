@@ -31,6 +31,7 @@ const NETWORK_ERROR = 'We couldn’t reach the server. Check your connection and
  * @property {AlignmentData} data
  * @property {number} version
  * @property {string} updatedAt
+ * @property {string|null} completedAt When the session was first completed (server clock).
  */
 
 /**
@@ -80,6 +81,7 @@ function toSession(row) {
     data: row.data ?? {},
     version: row.version,
     updatedAt: row.updated_at,
+    completedAt: row.completed_at ?? null,
   };
 }
 

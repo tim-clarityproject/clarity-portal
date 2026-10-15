@@ -8,6 +8,8 @@ import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import OnePager from './OnePager';
 import { formatUkDate } from '../../lib/dateFormatter';
+import { requestAlignmentEmail } from '../../lib/alignmentEmail';
+import { downloadPdf } from './pdf/generatePdf';
 import { openSession, createSaveQueue, readBackup, clearBackup } from '../../lib/alignmentApi';
 import { strategicImportance, roundPct } from '../../lib/alignmentScore';
 import {
@@ -161,6 +163,10 @@ export default function HealthCheck() {
   const bootedRef = useRef(false);
   const reachedRef = useRef(false); // the one-pager has been reached (the session is complete)
   const [resultsReached, setResultsReached] = useState(false);
+  const [serverCompletedAt, setServerCompletedAt] = useState(null);
+  const [pdf, setPdf] = useState({ busy: false, message: '' });
+  const [emailState, setEmailState] = useState({ status: 'idle', sentTo: '' });
+  const notifyRef = useRef(false); // send the completion email after the completing save lands
   const [openedAt, setOpenedAt] = useState(null); // updated_at when the session was opened (date fallback)
 
   // ---- page chrome: title and robots meta for this route only ----
@@ -185,6 +191,7 @@ export default function HealthCheck() {
     let nextDraft = draftIn;
     if (nextStep.screen === 'done' && !nextDraft.completedAt) {
       nextDraft = { ...nextDraft, completedAt: new Date().toISOString() };
+      notifyRef.current = true; // first completion: tell Tim and AD once the save is confirmed
     }
     applyDraft(nextDraft);
     applyStep(nextStep);
@@ -214,6 +221,7 @@ export default function HealthCheck() {
     credsRef.current = creds;
     reachedRef.current = session.status === 'complete';
     setResultsReached(session.status === 'complete');
+    setServerCompletedAt(session.completedAt || null);
     setOpenedAt(session.updatedAt || null);
     writeAccess(token, creds);
 
@@ -243,7 +251,14 @@ export default function HealthCheck() {
     const queue = createSaveQueue({ token, email: creds.email, code: creds.code, session });
     queueRef.current = queue;
     queue.on('status', (state, detail) => {
-      if (state === 'saved') unsavedRef.current = false;
+      if (state === 'saved') {
+        unsavedRef.current = false;
+        if (notifyRef.current && credsRef.current) {
+          notifyRef.current = false;
+          // The server's once-only rule makes a repeat harmless; failures are not shown.
+          requestAlignmentEmail({ token, email: credsRef.current.email, code: credsRef.current.code, kind: 'complete' });
+        }
+      }
       setSaveState(state);
       if (state === 'error' && detail?.retryable === false) {
         leaveToWelcome(detail.message);
@@ -425,10 +440,33 @@ export default function HealthCheck() {
   const onDone = !onWelcome && step.screen === 'done';
   const total = projects.length || 1;
 
-  // One-pager card actions: wired in the next prompt (PDF, email link, account).
-  const handleDownloadPdf = () => {};
-  const handleEmailLink = () => {};
-  const handleCreateAccount = () => {};
+  // One-pager card actions.
+  const handleDownloadPdf = async (variant = 'light') => {
+    if (pdf.busy) return;
+    setPdf({ busy: true, message: '' });
+    try {
+      const done = serverCompletedAt || draftRef.current.completedAt || openedAt || null;
+      await downloadPdf(draftRef.current, variant, done);
+      setPdf({ busy: false, message: '' });
+    } catch {
+      setPdf({ busy: false, message: 'We could not make the PDF just now. Please try again.' });
+    }
+  };
+  const handleEmailLink = async () => {
+    const creds = credsRef.current;
+    if (!creds || emailState.status === 'sending') return;
+    setEmailState({ status: 'sending', sentTo: creds.email });
+    const result = await requestAlignmentEmail({ token, email: creds.email, code: creds.code, kind: 'link' });
+    setEmailState({
+      status: result.ok ? 'sent' : (result.error === 'limit' ? 'limit' : 'error'),
+      sentTo: creds.email,
+    });
+  };
+  const handleCreateAccount = () => {
+    // Sign-up opens in a new tab with the email filled in. Results stay separate for now.
+    const email = credsRef.current?.email || '';
+    window.open(`/auth/sign-up?email=${encodeURIComponent(email)}`, '_blank', 'noopener');
+  };
 
   const topBarContent = (
     <div className="al-bar">
@@ -493,6 +531,9 @@ export default function HealthCheck() {
           {returning ? 'Continue' : 'Begin'}
         </AuthPrimaryButton>
       </form>,
+      <p key="privacy" className="al-privacy">
+        Your answers are stored securely by The Clarity Project and kept for two years after your last visit.
+      </p>,
       <div key="legal" className="auth-legal-footer-spacing">
         <LegalFooterLinks align="center" newTab />
       </div>,
@@ -646,7 +687,7 @@ export default function HealthCheck() {
       letterStaggerMs: 28,
       headlineAside: (
         <span className="al-opd">
-          {formatUkDate(draft.completedAt || openedAt || new Date().toISOString())}
+          {formatUkDate(serverCompletedAt || draft.completedAt || openedAt || new Date().toISOString())}
         </span>
       ),
     };
@@ -657,6 +698,8 @@ export default function HealthCheck() {
           onDownloadPdf={handleDownloadPdf}
           onEmailLink={handleEmailLink}
           onCreateAccount={handleCreateAccount}
+          pdf={pdf}
+          email={emailState}
           onEdit={editSection}
           onOpenProject={openProject}
         />
@@ -708,7 +751,7 @@ export default function HealthCheck() {
         )}
       </div>
       {onDone ? (
-        <AuthPrimaryButton onClick={handleDownloadPdf}>Download PDF</AuthPrimaryButton>
+        <AuthPrimaryButton loading={pdf.busy} onClick={() => handleDownloadPdf('light')}>Download PDF</AuthPrimaryButton>
       ) : (
         <div className="al-foot-right">
           <span className={`al-hint${hintText ? ' al-hint--on' : ''}`}>{hintText}</span>

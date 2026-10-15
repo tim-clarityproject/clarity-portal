@@ -27,7 +27,12 @@ export default function SignUpStep1() {
     }
 
     navigate('/auth/sign-up/account', {
-      state: { firstName: firstName.trim(), lastName: lastName.trim() },
+      state: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        // From the Strategic Alignment Health Check's "Create your account" link.
+        email: new URLSearchParams(location.search).get('email') || undefined,
+      },
     });
   };
 
