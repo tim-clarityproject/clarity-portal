@@ -82,9 +82,15 @@ const SECTIONS = [
         childRoutes: ['/breathing-sessions-summary'],
       },
       {
-        label: 'Daily Pages',
+        label: 'Daily Journal',
         to: '/daily-journal',
-        childRoutes: ['/daily-journals'],
+        childRoutes: [],
+      },
+      {
+        label: 'My Journals',
+        to: '/daily-journals',
+        childRoutes: [],
+        childPrefixes: ['/daily-journals/'],
       },
       {
         label: 'Scenario Planning',
@@ -166,6 +172,7 @@ function findOpenSection(pathname, locationState) {
         }
       }
       if (link.childRoutes?.includes(pathname)) return section.id;
+      if (link.childPrefixes?.some((p) => pathname.startsWith(p))) return section.id;
     }
   }
   return null;
@@ -177,7 +184,8 @@ function isLinkCurrent(link, pathname, locationState) {
     if (link.matchState) return locationState?.reviewType === link.matchState;
     return true;
   }
-  return link.childRoutes?.includes(pathname) ?? false;
+  if (link.childRoutes?.includes(pathname)) return true;
+  return link.childPrefixes?.some((p) => pathname.startsWith(p)) ?? false;
 }
 
 export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef }) {

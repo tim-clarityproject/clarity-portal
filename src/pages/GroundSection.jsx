@@ -3,7 +3,7 @@ import DesignHeader from '../components/DesignHeader';
 
 const CARDS = [
   { title: 'Breathe', description: 'Calm your nervous system and ground yourself.', route: '/breathe' },
-  { title: 'Daily Pages', description: 'Write down what is on your mind.', route: '/daily-journal' },
+  { title: 'Daily Journal', description: 'Write down what is on your mind.', route: '/daily-journal' },
   { title: 'Scenario Planning', description: 'Get clear on what you will do in different scenarios.', route: '/if-then-planning' },
 ];
 

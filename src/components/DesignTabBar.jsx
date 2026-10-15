@@ -94,7 +94,9 @@ const TABS = [
 ];
 
 function getActiveTabIndex(pathname) {
-  return TABS.findIndex((tab) => tab.sectionRoutes.includes(pathname));
+  // A single day's journal (/daily-journals/:date) belongs to Ground too.
+  const key = pathname.startsWith('/daily-journals/') ? '/daily-journals' : pathname;
+  return TABS.findIndex((tab) => tab.sectionRoutes.includes(key));
 }
 
 export default function DesignTabBar() {
