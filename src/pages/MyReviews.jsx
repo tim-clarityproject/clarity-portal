@@ -6,6 +6,8 @@ import { formatPlainDayLabel } from '../lib/dateFormatter';
 import { formatVersion } from '../lib/missionPlan';
 import { deleteReview as deleteJournalEntryRow } from '../lib/reviewTool';
 import { deleteJournal } from '../lib/dailyJournal';
+import { isPlanReviewDraft, PLAN_REVIEW_TYPE } from '../lib/planReview';
+import { discardReviewDraft, discardPlanReviewDraft, discardMissionReviewDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -62,8 +64,13 @@ export default function MyReviews() {
         .eq('user_id', user.id);
       if (err) throw err;
       anySucceeded = true;
+      // Drafts are now listed too (patch D2 area C), tagged and with a
+      // Continue action - they used to be filtered out here. A Day
+      // review's draft state has to come from isPlanReviewDraft (its
+      // marker may only be in the content JSON on older rows); every
+      // other review_type reads the status column directly.
       (data || [])
-        .filter((e) => e.status !== 'draft' && JOURNAL_ENTRY_META[e.review_type])
+        .filter((e) => JOURNAL_ENTRY_META[e.review_type])
         .forEach((e) => {
           const meta = JOURNAL_ENTRY_META[e.review_type];
           built.push({
@@ -72,6 +79,7 @@ export default function MyReviews() {
             typeLabel: meta.typeLabel,
             source: meta.source,
             date: e.created_at,
+            isDraft: e.review_type === PLAN_REVIEW_TYPE ? isPlanReviewDraft(e) : e.status === 'draft',
             raw: e,
           });
         });
@@ -80,11 +88,14 @@ export default function MyReviews() {
     }
 
     try {
+      // No status filter any more (patch D2 area C): drafts are listed
+      // too, and dropping the filter also means this query no longer
+      // depends on the status column existing at all - it only reads
+      // it per row below, defaulting to "not a draft".
       const { data, error: err } = await supabase
         .from('mission_progress_reviews')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'final');
+        .eq('user_id', user.id);
       if (err) throw err;
       anySucceeded = true;
       const versionIds = [...new Set((data || []).map((r) => r.plan_version_id).filter(Boolean))];
@@ -102,6 +113,7 @@ export default function MyReviews() {
           source: 'plan',
           date: r.created_at,
           version: version ? formatVersion(version.major, version.minor) : null,
+          isDraft: r.status === 'draft',
           raw: r,
         });
       });
@@ -158,23 +170,72 @@ export default function MyReviews() {
     else navigate(`/daily-journals/${row.raw.journal_date}`);
   };
 
-  const editRow = (row) => {
-    if (row.source === 'day') navigate('/review-plan-summary', { state: { entryId: row.id } });
-    else if (row.source === 'weekly' || row.source === 'after-action') navigate('/my-journal', { state: { entryId: row.id, reviewType: row.raw.review_type } });
-    else if (row.source === 'plan') navigate('/mission-progress-review', { state: { reviewId: row.id } });
-    else navigate('/daily-journal', { state: { date: row.raw.journal_date } });
+  // HistoryList shows this as "Continue" on a draft row and as the
+  // pencil on a finished one, so this handles both (patch D2 area C).
+  // Every destination is an existing route - a draft just needs the
+  // editing one rather than the read-only summary.
+  const editRow = async (row) => {
+    if (row.source === 'day') {
+      if (!row.isDraft) {
+        navigate('/review-plan-summary', { state: { entryId: row.id } });
+        return;
+      }
+      // ReviewPlan finds its row by planKind + planId + the dateKey it
+      // derives from the plan's own created_at, so Continue has to hand
+      // it the plan itself. Only read on click, never on page load, so
+      // this does not touch My Reviews' load time.
+      const { planKind, planId } = row.raw.content ? JSON.parse(row.raw.content) : {};
+      let plan = null;
+      if (planId) {
+        try {
+          const { data } = await supabase.from('decisions').select('*').eq('id', planId).eq('user_id', user.id).single();
+          plan = data || null;
+        } catch (err) {
+          console.error('[MyReviews] plan lookup for Continue failed:', err);
+        }
+      }
+      navigate('/review-plan', { state: { planKind: planKind || 'daily_plan', plan } });
+    } else if (row.source === 'weekly' || row.source === 'after-action') {
+      // Same route and state the Review hub's "Continue your draft"
+      // link already uses.
+      navigate('/my-journal', { state: { entryId: row.id, reviewType: row.raw.review_type } });
+    } else if (row.source === 'plan') {
+      if (!row.isDraft) {
+        navigate('/mission-progress-review', { state: { reviewId: row.id } });
+        return;
+      }
+      // Deliberately missionId WITHOUT reviewId: that is the branch
+      // that calls loadDraftReview(), shows the "Continuing your draft"
+      // banner and lets its own Discard delete the draft. Passing
+      // reviewId instead takes the finished-review branch, which does
+      // neither.
+      navigate('/personal-operating-plan-review', { state: { missionId: row.raw.mission_id } });
+    } else {
+      navigate('/daily-journal', { state: { date: row.raw.journal_date } });
+    }
   };
 
+  // A draft row's bin goes through patch D1's draft-only helpers, so a
+  // bug here can never take a finished review with it; finished rows
+  // keep their existing unconditional delete.
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    const { id, source } = deleteTarget;
+    const { id, source, isDraft } = deleteTarget;
     setDeleteTarget(null);
     try {
       if (source === 'plan') {
-        const { error: err } = await supabase.from('mission_progress_reviews').delete().eq('id', id).eq('user_id', user.id);
-        if (err) throw err;
+        if (isDraft) {
+          await discardMissionReviewDraft(user.id, id);
+        } else {
+          const { error: err } = await supabase.from('mission_progress_reviews').delete().eq('id', id).eq('user_id', user.id);
+          if (err) throw err;
+        }
       } else if (source === 'journal') {
         await deleteJournal(user.id, id);
+      } else if (isDraft && source === 'day') {
+        await discardPlanReviewDraft(user.id, id);
+      } else if (isDraft) {
+        await discardReviewDraft(user.id, id);
       } else {
         await deleteJournalEntryRow(user.id, id);
       }

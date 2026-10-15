@@ -61,6 +61,20 @@ export async function discardPlanReviewDraft(userId, entryId) {
   if (error) throw error;
 }
 
+// Personal Operating Plan review drafts (patch D2 area C). Unlike the
+// Day review above, mission_progress_reviews.status has always been
+// written by saveReview(), so the condition can safely live in the
+// query - a finished review matches nothing.
+export async function discardMissionReviewDraft(userId, reviewId) {
+  const { error } = await supabase
+    .from('mission_progress_reviews')
+    .delete()
+    .eq('id', reviewId)
+    .eq('user_id', userId)
+    .eq('status', 'draft');
+  if (error) throw error;
+}
+
 // decisions carries two overlapping draft markers (a `draft` boolean
 // and a `status` text) - some tools write both, Stop Doing Audit writes
 // only status. Matching either one keeps this correct for every tool
