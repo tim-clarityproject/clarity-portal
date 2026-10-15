@@ -85,6 +85,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ForgotPasswordCheckEmail from './pages/auth/ForgotPasswordCheckEmail';
 import ResetPassword from './pages/auth/ResetPassword';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
+import ScrollToTop from './components/ScrollToTop';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -200,6 +201,7 @@ function AppContent() {
 
   return (
     <>
+      <ScrollToTop />
       <ErrorBoundary>
         <Routes>
           {/* PUBLIC ROUTES - No auth required. "/" and "/login" used to
