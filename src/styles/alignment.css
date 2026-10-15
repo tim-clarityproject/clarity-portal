@@ -100,6 +100,13 @@
   color: var(--placeholder);
 }
 
+/* The email field starts 40px below the "about 15 minutes" line (the
+   mock-up's value; the portal's own .auth-sub + form rule does the same
+   but cannot match here because that line sits between them). */
+.ui-root .al-dur + form > .auth-field:first-child {
+  margin-top: 40px;
+}
+
 .ui-root .al-tag {
   display: block;
   font-family: var(--font-display);
