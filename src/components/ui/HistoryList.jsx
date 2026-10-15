@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { parseDbTimestamp } from '../../lib/dateFormatter';
+import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 
 // Shared history list - used (later, by prompts 6-10) by My Plans, My
 // Reviews and My Journals. Driven only by props: no data fetching, no
@@ -46,18 +46,6 @@ function ChevronDownIcon() {
       <path d="m6 9.5 6 6 6-6" />
     </svg>
   );
-}
-
-// "1 Oct, 9:40pm" - UK, device local time (no explicit timeZone, so it
-// naturally follows the device's own BST/GMT offset). en-GB's AM/PM
-// comes back as " am"/" pm" (lower-case, space-separated) - the space
-// is stripped so it reads "9:40pm", not "9:40 pm".
-function formatRowDate(value) {
-  const date = parseDbTimestamp(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const day = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  const time = date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '');
-  return `${day}, ${time}`;
 }
 
 function formatMonthHeading(value) {
@@ -383,7 +371,7 @@ export default function HistoryList({
                     </span>
                     <span className="hlist-row-meta">
                       <b>{row.typeLabel}</b>
-                      <span>{formatRowDate(row.date)}</span>
+                      <span>{formatDayMonthTime(row.date)}</span>
                       {row.version && <span>{row.version}</span>}
                       {row.meta && <span>{row.meta}</span>}
                     </span>

@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { parseDbTimestamp, getLocalDateKey } from '../lib/dateFormatter';
+import { parseDbTimestamp, getLocalDateKey, formatClockTime, formatDayMonthTime } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft, findTodaysDailyPlan } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -76,24 +76,6 @@ function formatDailyPlanTitle(dateStr) {
   return `${weekday} ${ordinal(day)} ${month}`;
 }
 
-// "8:15am"
-function formatTimeOnly(dateStr) {
-  const date = parseDbTimestamp(dateStr);
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'pm' : 'am';
-  const displayHours = hours % 12 || 12;
-  return `${displayHours}:${minutes.toString().padStart(2, '0')}${ampm}`;
-}
-
-// "29 Sep, 9:30am" - UK day-before-month order, device local time.
-function formatDateAndTime(dateStr) {
-  const date = parseDbTimestamp(dateStr);
-  const day = date.getDate();
-  const month = date.toLocaleDateString('en-US', { month: 'short' });
-  return `${day} ${month}, ${formatTimeOnly(dateStr)}`;
-}
-
 function getPlanTitle(plan) {
   if (plan.tool_type === 'daily_plan') return formatDailyPlanTitle(plan.created_at);
   if (plan.tool_type === 'plan_meeting') return plan.title || 'Meeting';
@@ -102,7 +84,7 @@ function getPlanTitle(plan) {
 
 function getPlanMeta(plan) {
   const label = PLAN_LABEL[plan.tool_type];
-  const when = plan.tool_type === 'daily_plan' ? formatTimeOnly(plan.created_at) : formatDateAndTime(plan.created_at);
+  const when = plan.tool_type === 'daily_plan' ? formatClockTime(plan.created_at) : formatDayMonthTime(plan.created_at);
   return `${label} · ${when}`;
 }
 

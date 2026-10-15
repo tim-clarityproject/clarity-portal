@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { parseDbTimestamp } from '../lib/dateFormatter';
+import { parseDbTimestamp, formatDayMonthTime } from '../lib/dateFormatter';
 import { TECHNIQUES, loadBreathingSessions, deleteBreathingSession, formatSessionLength } from '../lib/breathing';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
@@ -12,13 +12,6 @@ import useToast from '../hooks/useToast';
 function formatMonthHeading(value) {
   const date = parseDbTimestamp(value);
   return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-}
-
-function formatRowDate(value) {
-  const date = parseDbTimestamp(value);
-  const day = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  const time = date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '');
-  return `${day}, ${time}`;
 }
 
 export default function BreathingSessionsSummary() {
@@ -114,7 +107,7 @@ export default function BreathingSessionsSummary() {
                   <div className="pop-version-row">
                     <span>
                       <span className="pop-version-label">{TECHNIQUES[s.breathing_mode]?.label || s.breathing_mode}</span>
-                      <span className="pop-version-date" style={{ display: 'block' }}>{formatRowDate(s.date)}{length ? ` · ${length}` : ''}</span>
+                      <span className="pop-version-date" style={{ display: 'block' }}>{formatDayMonthTime(s.date)}{length ? ` · ${length}` : ''}</span>
                     </span>
                     <button type="button" className="plan-bin-btn" aria-label="Delete session" onClick={() => setDeleteTarget(s.id)}>
                       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

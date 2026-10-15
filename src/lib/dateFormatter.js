@@ -27,6 +27,29 @@ export const getLocalDateKey = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
+// The one place a time of day is turned into text. 24 hour clock, no
+// am/pm, leading zero ("07:53", "19:26"), in the DEVICE's local time
+// (parseDbTimestamp reads the stored UTC reading as UTC, and the Date
+// getters below convert it to the device's own offset, BST/GMT
+// included). Everything that shows a time goes through this.
+export const formatClockTime = (value) => {
+  if (!value) return '';
+  const date = parseDbTimestamp(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+// "14 Oct, 19:26" - UK day-before-month order, 3-letter month, 24 hour.
+export const formatDayMonthTime = (value) => {
+  if (!value) return '';
+  const date = parseDbTimestamp(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  return `${date.getDate()} ${month}, ${formatClockTime(value)}`;
+};
+
 export const formatDateWithOrdinal = (dateStr) => {
   const date = new Date(dateStr + 'T00:00:00');
   const day = date.getDate();
@@ -57,12 +80,7 @@ export const formatDateAndTime = (dateStr) => {
   else if (day % 10 === 2 && day !== 12) ordinal = 'nd';
   else if (day % 10 === 3 && day !== 13) ordinal = 'rd';
 
-  // Format time as 12-hour with am/pm
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'pm' : 'am';
-  const displayHours = hours % 12 || 12;
-  const timeStr = `${displayHours}:${minutes.toString().padStart(2, '0')}${ampm}`;
+  const timeStr = formatClockTime(dateStr);
 
   return `${weekday} ${day}${ordinal} ${month}, ${year} - ${timeStr}`;
 };
@@ -141,18 +159,10 @@ export const formatShortDate = (dateStr) => {
   return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-// Format time only as 12-hour with am/pm (e.g. "03:14 PM")
-export const formatTimeOnly = (dateStr) => {
-  if (!dateStr) return '';
-  const date = parseDbTimestamp(dateStr);
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours % 12 || 12;
-  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-};
+// Time only, 24 hour (e.g. "15:14") - see formatClockTime.
+export const formatTimeOnly = (dateStr) => formatClockTime(dateStr);
 
-// Format date and time with ordinal suffix on day (e.g. "Sep 24th, 2026, 02:08 PM")
+// Format date and time with ordinal suffix on day (e.g. "Sep 24th, 2026, 14:08")
 export const formatDateTimeWithOrdinal = (dateStr) => {
   if (!dateStr) return '';
   const date = parseDbTimestamp(dateStr);
@@ -166,12 +176,7 @@ export const formatDateTimeWithOrdinal = (dateStr) => {
   else if (day % 10 === 2 && day !== 12) ordinal = 'nd';
   else if (day % 10 === 3 && day !== 13) ordinal = 'rd';
 
-  // Format time as 12-hour with AM/PM
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours % 12 || 12;
-  const timeStr = `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  const timeStr = formatClockTime(dateStr);
 
   return `${month} ${day}${ordinal}, ${year}, ${timeStr}`;
 };
