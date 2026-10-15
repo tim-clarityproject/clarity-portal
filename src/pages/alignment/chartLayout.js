@@ -55,7 +55,8 @@ export function layoutChart(rows, mode, measure) {
     if (k) x += (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (r * 1.6);
     pts.push({ ...p, x, y, r, q: quadrant(p.progress, p.importance) });
   });
-  // Push overlapping dots apart.
+  // Push overlapping dots apart: the mock-up's single pass (later dots move
+  // away from earlier ones)...
   pts.forEach((p, i) => {
     for (let j = 0; j < i; j += 1) {
       const o = pts[j];
@@ -69,6 +70,30 @@ export function layoutChart(rows, mode, measure) {
       }
     }
   });
+  // ...then, only if dots still touch (three or more identical scores that
+  // squeeze between neighbours), spread both dots of each touching pair.
+  for (let pass = 0; pass < 200; pass += 1) {
+    let moved = false;
+    for (let i = 0; i < pts.length; i += 1) {
+      for (let j = 0; j < i; j += 1) {
+        const p = pts[i];
+        const o = pts[j];
+        const dx = p.x - o.x;
+        const dy = p.y - o.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        const need = p.r + o.r + 3;
+        if (d < need - 0.01) {
+          const sideways = Math.sqrt(Math.max(0, need * need - dy * dy));
+          const shift = (sideways - Math.abs(dx)) / 2 + 0.5;
+          const dir = dx >= 0 ? 1 : -1;
+          p.x += dir * shift;
+          o.x -= dir * shift;
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
 
   // Labels: choose the least-overlapping spot around each dot.
   const fs = D ? 12 : 10;

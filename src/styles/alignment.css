@@ -882,6 +882,7 @@
   cursor: pointer;
   position: relative;
   white-space: nowrap;
+  line-height: 1.4;
   font-family: var(--font-display);
   font-size: var(--fs-tab);
   letter-spacing: var(--ls-overline);
