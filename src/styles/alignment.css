@@ -1360,10 +1360,12 @@
   outline-offset: 2px;
 }
 
-/* The chosen pill is outlined in coral, not filled. */
+/* The chosen pill is filled coral with black text, as in the approved mock-up
+   (the arrow takes the same colour). It follows the hover rule so it stays filled. */
 .ui-root .al-sort[aria-pressed="true"] {
+  background: var(--coral);
   border-color: var(--coral);
-  color: var(--coral-text);
+  color: var(--on-coral);
 }
 
 @media (prefers-reduced-motion: reduce) {
