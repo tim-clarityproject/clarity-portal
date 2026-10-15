@@ -196,8 +196,7 @@ export default function MyReviews() {
       }
       navigate('/review-plan', { state: { planKind: planKind || 'daily_plan', plan } });
     } else if (row.source === 'weekly' || row.source === 'after-action') {
-      // Same route and state the Review hub's "Continue your draft"
-      // link already uses.
+      // Opens the review for editing, the same as a finished row.
       navigate('/my-journal', { state: { entryId: row.id, reviewType: row.raw.review_type } });
     } else if (row.source === 'plan') {
       if (!row.isDraft) {

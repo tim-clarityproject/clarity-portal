@@ -1,10 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Fragment, useContext, useEffect, useState } from 'react';
+import { useContext } from 'react';
 import DesignHeader from '../components/DesignHeader';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { findTodaysDailyPlan } from '../lib/planReview';
-import { loadLatestDraft } from '../lib/reviewTool';
 
 // "Review my day" now opens the prompt 8 review page for today's daily
 // plan (separated from "Review a situation", which still opens the
@@ -12,8 +11,8 @@ import { loadLatestDraft } from '../lib/reviewTool';
 // place, see build summary point 6).
 const CARDS = [
   { title: 'Review my day', description: 'Reflect on what worked today.', needsTodaysPlan: true },
-  { title: 'Weekly momentum check-in', description: 'Look back on your week and set up the next.', route: '/my-journal', state: { reviewType: 'weekly-momentum' }, draftKey: 'weekly-momentum' },
-  { title: 'Review a situation', description: 'Learn from something that has happened.', route: '/my-journal', state: { reviewType: 'after-action' }, draftKey: 'after-action' },
+  { title: 'Weekly momentum check-in', description: 'Look back on your week and set up the next.', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
+  { title: 'Review a situation', description: 'Learn from something that has happened.', route: '/my-journal', state: { reviewType: 'after-action' } },
   { title: 'Review my personal operating plan', description: 'Check it still fits how you work.', route: '/personal-operating-plan-review', needsMissionLookup: true },
 ];
 
@@ -33,32 +32,6 @@ function ClockIcon() {
 export default function ReviewSection() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const [drafts, setDrafts] = useState({});
-
-  // Drafts are deliberately not listed in My Reviews (spec 10b) - the
-  // Review hub is one of the two places they stay reachable from.
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const [afterAction, weekly] = await Promise.all([
-          loadLatestDraft(user.id, 'after-action'),
-          loadLatestDraft(user.id, 'weekly-momentum'),
-        ]);
-        if (!cancelled) setDrafts({ 'after-action': afterAction, 'weekly-momentum': weekly });
-      } catch (err) {
-        console.error('[ReviewSection] draft lookup failed (migration 016 may not be run yet):', err);
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  const continueDraft = (e, reviewType) => {
-    e.stopPropagation();
-    navigate('/my-journal', { state: { reviewType, entryId: drafts[reviewType].id } });
-  };
 
   const openCard = async (card) => {
     if (card.needsTodaysPlan) {
@@ -103,25 +76,15 @@ export default function ReviewSection() {
         </div>
 
         <div className="dt-cards">
-          {CARDS.map((card) => {
-            const draft = card.draftKey && drafts[card.draftKey];
-            return (
-              <Fragment key={card.title}>
-                <button type="button" className="dt-card dt-card--row" onClick={() => openCard(card)}>
-                  <span className="dt-card-text">
-                    <span className="dt-card-title">{card.title}</span>
-                    <span className="dt-card-desc">{card.description}</span>
-                  </span>
-                  <CrossMark />
-                </button>
-                {draft && (
-                  <button type="button" className="plan-link-btn" style={{ marginTop: 'calc(-1 * var(--space-2))', marginBottom: 'var(--space-2)' }} onClick={(e) => continueDraft(e, card.draftKey)}>
-                    Continue your draft
-                  </button>
-                )}
-              </Fragment>
-            );
-          })}
+          {CARDS.map((card) => (
+            <button key={card.title} type="button" className="dt-card dt-card--row" onClick={() => openCard(card)}>
+              <span className="dt-card-text">
+                <span className="dt-card-title">{card.title}</span>
+                <span className="dt-card-desc">{card.description}</span>
+              </span>
+              <CrossMark />
+            </button>
+          ))}
         </div>
 
         <p className="dt-soon-label" style={{ marginTop: 'var(--space-6)' }}>Your history</p>
