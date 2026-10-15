@@ -30,10 +30,10 @@ const THEMES = {
   },
 };
 
-const PAGE = { w: 595.28, h: 841.89, margin: 40 };
+const PAGE = { w: 595.28, h: 841.89, margin: 36 };
 const CONTENT_W = PAGE.w - PAGE.margin * 2;
-const ROW_H = 24;
-const CHART_W = 470;
+const ROW_H = 21;
+const CHART_W = 380;
 
 const pad = (n) => (n < 10 ? `0${n}` : String(n));
 const pct = (v) => `${Math.round(v)}%`;
@@ -108,9 +108,9 @@ function TableHead({ t }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: 6, borderBottomWidth: 0.5, borderBottomColor: t.line }}>
       <Text style={[label(t.faint), { width: 26 }]}>No.</Text>
       <Text style={[label(t.faint), { flexGrow: 1 }]}>Project</Text>
-      <Text style={[label(t.faint), { width: 118 }]}>Strategic importance</Text>
-      <Text style={[label(t.faint), { width: 64, textAlign: 'center' }]}>Progress</Text>
-      <Text style={[label(t.faint), { width: 72, textAlign: 'center' }]}>Resource</Text>
+      <Text style={[label(t.faint), { width: 124, letterSpacing: 1 }]}>Strategic importance</Text>
+      <Text style={[label(t.faint), { width: 54, textAlign: 'center', letterSpacing: 1 }]}>Progress</Text>
+      <Text style={[label(t.faint), { width: 100, textAlign: 'center', letterSpacing: 1 }]}>Resource required</Text>
     </View>
   );
 }
@@ -120,25 +120,25 @@ function Row({ t, r }) {
   const circleFill = q === 'mi' ? t.mint : q === 'co' ? t.coral : 'transparent';
   const circleBorder = q === 'mi' ? t.mint : q === 'co' ? t.coral : t.text;
   return (
-    <View wrap={false} style={{ flexDirection: 'row', alignItems: 'center', minHeight: ROW_H, paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: t.line }}>
+    <View wrap={false} style={{ flexDirection: 'row', alignItems: 'center', minHeight: ROW_H, paddingVertical: 3, borderBottomWidth: 0.5, borderBottomColor: t.line }}>
       <View style={{ width: 26 }}>
         <View style={{ width: 15, height: 15, borderRadius: 8, borderWidth: 0.7, borderColor: circleBorder, backgroundColor: circleFill, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontFamily: 'Nekst', fontSize: 6.5, color: q === 'n' ? t.text : t.onAccent }}>{r.n}</Text>
         </View>
       </View>
       <Text style={{ flexGrow: 1, flexShrink: 1, fontFamily: 'DM Sans', fontSize: 9.5, color: t.text, paddingRight: 8 }}>{r.text}</Text>
-      <View style={{ width: 118, flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ width: 70, height: 1.5, backgroundColor: t.track }}>
+      <View style={{ width: 124, flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ width: 76, height: 1.5, backgroundColor: t.track }}>
           <View style={{ width: `${r.importance}%`, height: 1.5, backgroundColor: t.text }} />
         </View>
         <Text style={{ fontFamily: 'Nekst', fontSize: 7, color: t.text, marginLeft: 8 }}>{pct(r.importance)}</Text>
       </View>
-      <View style={{ width: 64, flexDirection: 'row', justifyContent: 'center' }}>
+      <View style={{ width: 54, flexDirection: 'row', justifyContent: 'center' }}>
         {[1, 2, 3, 4, 5].map((k) => (
           <View key={k} style={{ width: 9, height: 1.5, marginHorizontal: 1, backgroundColor: r.progress != null && k <= r.progress ? t.text : t.track }} />
         ))}
       </View>
-      <View style={{ width: 72, flexDirection: 'row', justifyContent: 'center' }}>
+      <View style={{ width: 100, flexDirection: 'row', justifyContent: 'center' }}>
         {[1, 2, 3, 4, 5].map((k) => {
           const on = r.resource != null && k <= r.resource;
           return (
@@ -164,8 +164,8 @@ function Footer({ t }) {
 export function firstPageRows(objectiveLength, factorCount) {
   const cols = factorCount <= 1 ? 1 : (factorCount % 3 === 0 ? 3 : 2);
   const factorRows = Math.max(1, Math.ceil(factorCount / cols));
-  const used = 40 + 44 + 38 + Math.ceil(objectiveLength / 70) * 17 + 24 + factorRows * 38 + 26
-    + (CHART_W * 470) / 780 + 18 + 26 + 30 + 36 + 36;
+  const used = 36 + 40 + 30 + Math.ceil(objectiveLength / 75) * 17 + 18 + factorRows * 34 + 22
+    + (CHART_W * 470) / 780 + 14 + 24 + 14 + 40 + 24;
   return Math.max(3, Math.min(40, Math.floor((PAGE.h - used) / ROW_H)));
 }
 
@@ -191,7 +191,7 @@ export default function AlignmentPdf({ variant, objective, factors, ranked, date
 
   return (
     <Document title="Strategic Alignment Health Check" author="The Clarity Project">
-      <Page size="A4" style={{ backgroundColor: t.page, paddingTop: PAGE.margin, paddingBottom: 56, paddingHorizontal: PAGE.margin, fontFamily: 'DM Sans' }}>
+      <Page size="A4" style={{ backgroundColor: t.page, paddingTop: PAGE.margin, paddingBottom: 48, paddingHorizontal: PAGE.margin, fontFamily: 'DM Sans' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
             <Text style={{ fontFamily: 'Nekst', fontSize: 15, letterSpacing: 1.8, textTransform: 'uppercase', color: t.text }}>
@@ -202,12 +202,12 @@ export default function AlignmentPdf({ variant, objective, factors, ranked, date
           <Text style={{ fontFamily: 'DM Sans', fontSize: 8, color: t.faint }}>{dateText}</Text>
         </View>
 
-        <View style={{ marginTop: 18, paddingVertical: 12, borderTopWidth: 0.5, borderTopColor: t.line, borderBottomWidth: 0.5, borderBottomColor: t.line }}>
+        <View style={{ marginTop: 14, paddingVertical: 10, borderTopWidth: 0.5, borderTopColor: t.line, borderBottomWidth: 0.5, borderBottomColor: t.line }}>
           <Text style={label(t.text2)}>Objective</Text>
           <Text style={{ fontFamily: 'DM Sans', fontSize: 13, lineHeight: 1.4, color: t.text, marginTop: 6 }}>{objective}</Text>
         </View>
 
-        <Text style={[label(t.text2), { marginTop: 18 }]}>Critical Success Factors</Text>
+        <Text style={[label(t.text2), { marginTop: 14 }]}>Critical Success Factors</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 7 }}>
           {factors.map((f, i) => {
             const span = cols === 2 && nf % 2 === 1 && i === nf - 1;
@@ -241,7 +241,7 @@ export default function AlignmentPdf({ variant, objective, factors, ranked, date
       </Page>
 
       {chunks.slice(1).map((rows, ci) => (
-        <Page key={ci} size="A4" style={{ backgroundColor: t.page, paddingTop: PAGE.margin, paddingBottom: 56, paddingHorizontal: PAGE.margin, fontFamily: 'DM Sans' }}>
+        <Page key={ci} size="A4" style={{ backgroundColor: t.page, paddingTop: PAGE.margin, paddingBottom: 48, paddingHorizontal: PAGE.margin, fontFamily: 'DM Sans' }}>
           <Text style={[label(t.text2), { marginBottom: 7 }]}>Your projects (continued)</Text>
           <TableHead t={t} />
           {rows.map((r) => <Row key={r.n} t={t} r={r} />)}

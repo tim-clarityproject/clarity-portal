@@ -66,3 +66,22 @@ where token = '<token>';
 ## 5. Backups
 
 The Supabase free plan has **no backups**. Upgrade the plan before real client data goes in.
+
+## 6. Emails, PDF and sign-up (SA4)
+
+**Run in the SQL editor, in this order:** `018` (done), `019_alignment_emails.sql`, then `supabase/alignment_emails_test.sql`.
+
+**Vercel environment variables** (Project, Settings, Environment Variables; tick Production and Preview):
+
+| Name | Example | What it is |
+|---|---|---|
+| `RESEND_API_KEY` | `re_...` | A Resend API key that can send from your verified domain. |
+| `ALIGNMENT_EMAIL_FROM` | `The Clarity Portal <portal@theclarityproject.co.uk>` | Must be on the domain verified in Resend. |
+| `ALIGNMENT_NOTIFY_TO` | `tim@theclarityproject.co.uk,ad@theclarityproject.co.uk` | Who gets the completion email (comma-separated). |
+
+The Supabase URL and anon key the app already uses are reused by the function. After adding variables, redeploy the preview (Deployments, the three dots, Redeploy).
+
+- The link email goes only to the email on the session; it never contains the access code. At most 3 per session per 24 hours.
+- The completion email is sent once, the first time a session is completed.
+- Answers are kept for two years after the last activity. No deletion job exists yet: until one is built, delete old rows by hand:
+  `delete from public.alignment_sessions where updated_at < now() - interval '2 years';`
