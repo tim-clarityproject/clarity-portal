@@ -4,28 +4,36 @@ import DesignHeader from '../components/DesignHeader';
 import { designTokens } from '../lib/designTokens';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import DeleteDialog from '../components/ui/DeleteDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function AccountSection() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteStage, setDeleteStage] = useState(0);
+  const [deleteError, setDeleteError] = useState('');
+  const { message, showToast } = useToast();
+  const reportDeleteError = (text) => {
+    setDeleteError(text);
+    showToast(text);
+  };
 
   const handleLogout = async () => {
     await logout();
     navigate('/');
   };
 
-  const handleDeleteAccount = async () => {
-    if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
-      return;
-    }
+  // Two stages in one shared DeleteDialog (the same two confirmations the
+  // old window.confirm chain asked), then the unchanged delete below.
+  const handleDeleteAccount = () => {
+    setDeleteError('');
+    setDeleteStage(1);
+  };
 
-    const doubleConfirm = window.confirm('This cannot be undone. All your data including missions, decisions, and reviews will be permanently deleted. Are you absolutely sure?');
-    if (!doubleConfirm) {
-      return;
-    }
-
+  const performDeleteAccount = async () => {
     setIsDeleting(true);
     try {
       await supabase.from('missions').delete().eq('user_id', user.id);
@@ -34,7 +42,7 @@ export default function AccountSection() {
 
       const { error: profileError } = await supabase.from('profiles').delete().eq('id', user.id);
       if (profileError) {
-        alert('Failed to delete account: ' + profileError.message);
+        reportDeleteError('Failed to delete account: ' + profileError.message);
         setIsDeleting(false);
         return;
       }
@@ -64,7 +72,7 @@ export default function AccountSection() {
       } catch (authError) {
         console.error('Error deleting auth user:', authError);
         setIsDeleting(false);
-        alert('Failed to delete account: ' + (authError.message || 'Unknown error occurred'));
+        reportDeleteError('Failed to delete account: ' + (authError.message || 'Unknown error occurred'));
         return;
       }
 
@@ -72,11 +80,11 @@ export default function AccountSection() {
       sessionStorage.clear();
       localStorage.clear();
 
-      alert('Your account has been permanently deleted.');
+      showToast('Your account has been permanently deleted.');
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Delete account error:', error);
-      alert('Failed to delete account. Please try again or contact support.');
+      reportDeleteError('Failed to delete account. Please try again or contact support.');
       setIsDeleting(false);
     }
   };
@@ -198,8 +206,27 @@ export default function AccountSection() {
               <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.9 }}>Permanently delete all data</div>
             </div>
           </button>
+          {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
         </div>
       </div>
+
+      <DeleteDialog
+        open={deleteStage > 0}
+        title={deleteStage === 2 ? 'Are you absolutely sure?' : 'Delete your account?'}
+        body={deleteStage === 2
+          ? 'This cannot be undone. All your data including missions, decisions, and reviews will be permanently deleted.'
+          : 'This will permanently delete your account and all data.'}
+        onConfirm={() => {
+          if (deleteStage === 1) {
+            setDeleteStage(2);
+          } else {
+            setDeleteStage(0);
+            performDeleteAccount();
+          }
+        }}
+        onCancel={() => setDeleteStage(0)}
+      />
+      <Toast message={message} />
     </div>
   );
 }

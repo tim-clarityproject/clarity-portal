@@ -3,6 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
+import DeleteDialog from '../components/ui/DeleteDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 import DesignHeader from '../components/DesignHeader';
 import PageHeading from '../components/PageHeading';
 import BreathingSettingsModal from '../components/BreathingSettingsModal';
@@ -19,6 +22,13 @@ export default function MyAccount() {
   const [personalGoal, setPersonalGoal] = useState('');
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteStage, setDeleteStage] = useState(0);
+  const [deleteError, setDeleteError] = useState('');
+  const { message, showToast } = useToast();
+  const reportDeleteError = (text) => {
+    setDeleteError(text);
+    showToast(text);
+  };
   const [showBreathingSettings, setShowBreathingSettings] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
@@ -48,16 +58,15 @@ export default function MyAccount() {
     navigate('/');
   };
 
-  const handleDeleteAccount = async () => {
-    if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
-      return;
-    }
+  // Two stages in one shared DeleteDialog (the same two confirmations the
+  // old window.confirm chain asked): "Are you sure?" then "This cannot be
+  // undone". Only the second one's Delete runs performDeleteAccount.
+  const handleDeleteAccount = () => {
+    setDeleteError('');
+    setDeleteStage(1);
+  };
 
-    const doubleConfirm = window.confirm('This cannot be undone. All your data including missions, decisions, and reviews will be permanently deleted. Are you absolutely sure?');
-    if (!doubleConfirm) {
-      return;
-    }
-
+  const performDeleteAccount = async () => {
     setIsDeleting(true);
     try {
       // Delete all user data from public tables first
@@ -86,7 +95,7 @@ export default function MyAccount() {
         .eq('id', user.id);
 
       if (profileError) {
-        alert('Failed to delete account: ' + profileError.message);
+        reportDeleteError('Failed to delete account: ' + profileError.message);
         setIsDeleting(false);
         return;
       }
@@ -120,7 +129,7 @@ export default function MyAccount() {
       } catch (authError) {
         console.error('Error deleting auth user:', authError);
         setIsDeleting(false);
-        alert('Failed to delete account: ' + (authError.message || 'Unknown error occurred'));
+        reportDeleteError('Failed to delete account: ' + (authError.message || 'Unknown error occurred'));
         return;
       }
 
@@ -128,11 +137,11 @@ export default function MyAccount() {
       sessionStorage.clear();
       localStorage.clear();
 
-      alert('Your account has been permanently deleted.');
+      showToast('Your account has been permanently deleted.');
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Delete account error:', error);
-      alert('Failed to delete account. Please try again or contact support.');
+      reportDeleteError('Failed to delete account. Please try again or contact support.');
       setIsDeleting(false);
     }
   };
@@ -500,10 +509,28 @@ export default function MyAccount() {
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
+            {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
           </div>
         </div>
       </div>
 
+      <DeleteDialog
+        open={deleteStage > 0}
+        title={deleteStage === 2 ? 'Are you absolutely sure?' : 'Delete your account?'}
+        body={deleteStage === 2
+          ? 'This cannot be undone. All your data including missions, decisions, and reviews will be permanently deleted.'
+          : 'This will permanently delete your account and all data.'}
+        onConfirm={() => {
+          if (deleteStage === 1) {
+            setDeleteStage(2);
+          } else {
+            setDeleteStage(0);
+            performDeleteAccount();
+          }
+        }}
+        onCancel={() => setDeleteStage(0)}
+      />
+      <Toast message={message} />
       <BreathingSettingsModal isOpen={showBreathingSettings} onClose={() => setShowBreathingSettings(false)} />
       <PersonalGoalModal
         isOpen={showGoalModal}
