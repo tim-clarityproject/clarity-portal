@@ -283,9 +283,19 @@ function BoxVisual({ technique, active, size }) {
             Same 1-unit stroke. A Tim-approved departure from the
             mock-up. */}
         <rect x="-120" y="-120" width="240" height="240" rx="76" fill="none" stroke="var(--btn-line)" strokeWidth="1" />
+        {/* The breathing shape itself. It now carries the same coral
+            1.6 stroke the ring techniques' circle has, so the resting box
+            is no longer an empty dark space (it is coral at rest, since
+            the colour starts at coral). The stroke is divided by the
+            scale so it stays 1.6 units wide as the shape grows, exactly
+            as the circle's does. Same element, same scale and tint as
+            before - only the outline is new, so nothing appears or jumps
+            when a session starts. */}
         <rect
           x="-120" y="-120" width="240" height="240" rx="76"
-          fill={color} fillOpacity="0.08" transform={`scale(${innerScale})`}
+          fill={color} fillOpacity="0.08"
+          stroke={color} strokeWidth={1.6 / innerScale}
+          transform={`scale(${innerScale})`}
         />
         {BOX_TICKS.map(({ point: [px, py], at }, idx) => (
           <line
