@@ -21,13 +21,13 @@ const THEMES = {
   light: {
     page: '#FFFFFF', text: '#111111', text2: '#5F5F5C', faint: '#8F8B84', line: '#DDD8CE',
     card: '#F4F4F3', coral: '#FF6F5C', coralText: '#C2412E', mint: '#5FEFBB', mintText: '#0B7F58',
-    onAccent: '#000000', ringFill: '#FFFFFF', track: '#E3DDD2',
+    onAccent: '#000000', ringFill: '#FFFFFF', track: '#E3DDD2', mark: '/brand/logomark-positive.png',
     dotBottom: '#D6D3CC', dotCoral: '#FFB3A8', dotMint: '#8FE6C8', midline: '#9A968E', coralOpacity: 1, mintOpacity: 1,
   },
   dark: {
     page: '#000000', text: '#FFFFFF', text2: '#A3A3A0', faint: '#7F7F7C', line: '#262626',
     card: '#0B0B0B', coral: '#FF6F5C', coralText: '#FF6F5C', mint: '#5FEFBB', mintText: '#5FEFBB',
-    onAccent: '#000000', ringFill: '#000000', track: '#262626',
+    onAccent: '#000000', ringFill: '#000000', track: '#262626', mark: '/brand/logomark-negative.png',
     dotBottom: '#2B2B2B', dotCoral: '#FF6F5C', dotMint: '#5FEFBB', midline: '#4A4A49', coralOpacity: 1, mintOpacity: 0.7,
   },
 };
@@ -173,7 +173,7 @@ function Bleed({ t }) {
 function Footer({ t }) {
   return (
     <View fixed style={{ position: 'absolute', left: PAGE.margin, right: PAGE.margin, bottom: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Image src="/brand/mark_colour-on-dark.png" style={{ width: 16, height: 16 }} />
+      <Image src={t.mark} style={{ width: 16, height: 16 }} />
       <Text style={{ fontFamily: 'DM Sans', fontSize: 7.5, color: t.faint }}>theclarityproject.co.uk</Text>
       <Text style={{ fontFamily: 'DM Sans', fontSize: 7.5, color: t.faint }} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>

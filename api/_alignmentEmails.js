@@ -1,5 +1,6 @@
 // Strategic Alignment Health Check: email content (plain, well-spaced HTML plus a
-// plain-text version). Black page, white text, the logo mark only. The file name
+// plain-text version). Black page, white text, the logo mark only (the NEGATIVE
+// emblem, with its crosshair, because the background is dark). The file name
 // starts with an underscore so Vercel does not publish it as a route.
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -14,7 +15,7 @@ function shell({ origin, heading, bodyHtml }) {
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${COLOURS.bg};">
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;">
-<tr><td style="padding-bottom:32px;"><img src="${esc(origin)}/brand/mark_colour-on-dark.png" width="40" height="40" alt="The Clarity Project" style="display:block;border:0;"></td></tr>
+<tr><td style="padding-bottom:32px;"><img src="${esc(origin)}/brand/logomark-negative.png" width="40" height="40" alt="The Clarity Project" style="display:block;border:0;"></td></tr>
 <tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:20px;line-height:1.3;letter-spacing:2px;text-transform:uppercase;color:${COLOURS.text};padding-bottom:12px;">${esc(heading)}</td></tr>
 <tr><td style="padding-bottom:24px;"><div style="width:56px;height:1px;background:${COLOURS.coral};"></div></td></tr>
 ${bodyHtml}
