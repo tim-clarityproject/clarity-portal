@@ -509,10 +509,13 @@ const HLIST_CSS = `
   .hlist-seg {
     display: flex;
     border: 1px solid var(--line);
-    border-radius: var(--radius-pill);
+    border-radius: 28px;
     padding: 3px;
     gap: 2px;
-    overflow-x: auto;
+    /* Wrap, never clip: with five or six pills at tablet or small
+       laptop widths the last one (Journals) used to scroll out of
+       sight inside the pill group. */
+    flex-wrap: wrap;
     max-width: 100%;
     width: max-content;
   }
@@ -814,7 +817,16 @@ const HLIST_CSS = `
   flex: 1;
   min-width: 0;
   padding: 18px 8px 18px 24px !important;
-  display: block;
+  /* A flex column, not display:block: Safari lays a <button>'s block
+     children out in a shrink-to-fit box and centres it, so short lines
+     (type label, date, word count) drifted to the middle while a long
+     title looked left-aligned. Flex with align-items:flex-start keeps
+     every line on the left edge. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
   min-height: var(--tap-min);
 }
 
@@ -879,14 +891,14 @@ const HLIST_CSS = `
    aligned right - so a Reviewed or Draft tag never squeezes the title
    (this departs from the mock-up's single-line truncated phone row, by
    Tim's request). Rows with and without tags share this structure. */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .hlist-row {
     flex-wrap: wrap;
     align-items: flex-start;
   }
   .ui-root .hlist-row-main {
     flex: 1 1 100%;
-    padding-right: var(--space-2) !important;
+    padding: var(--space-3) var(--space-2) 0 var(--space-3) !important;
   }
   .hlist-row-sub {
     flex-direction: column;
@@ -896,7 +908,7 @@ const HLIST_CSS = `
   .hlist-row-controls {
     flex: 1 1 100%;
     justify-content: flex-end;
-    padding: 0 var(--space-1) var(--space-2) 24px;
+    padding: 0 var(--space-1) var(--space-1) var(--space-3);
   }
 }
 
@@ -1048,34 +1060,13 @@ const HLIST_CSS = `
   stroke-linejoin: round;
 }
 
-/* Phone (prompt 7f): same row, title/date on the left and the
-   controls on the right, same line as desktop - not stacked under the
-   title. The text wraps instead of truncating (a long title/date grows
-   the row rather than forcing it onto its own line above the
-   controls); the controls keep flex-shrink: 0 so they never squash. */
+/* Phone (<= 768px): one structure for every list - see the single
+   phone block above (title, tags, date, then one right-aligned action
+   row). The older side-by-side phone rule that lived here fought with
+   it (overflow-wrap: anywhere split dates mid-word, and a 14px offset
+   on the controls left a gap), so it was removed. */
 @media (max-width: 768px) {
-  .hlist-row {
-    align-items: flex-start;
-    padding-bottom: 4px;
-  }
   .hlist-row::before { display: none; }
-  .ui-root .hlist-row-main {
-    padding: 14px 8px 14px 16px !important;
-  }
-  .hlist-row-title {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    overflow-wrap: anywhere;
-  }
-  .hlist-row-meta {
-    flex-wrap: wrap;
-    white-space: normal;
-  }
-  .hlist-row-controls {
-    flex-shrink: 0;
-    padding-top: 14px;
-  }
 }
 
 .hlist-show-more-wrap {
