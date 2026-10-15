@@ -166,6 +166,7 @@ export default function DailyJournal() {
       if (saved) {
         setSaveStatus('Draft saved');
         showToast('Draft saved.');
+        navigate('/daily-journals');
       }
     } catch (error) {
       console.error('[DailyJournal] draft save failed:', error);

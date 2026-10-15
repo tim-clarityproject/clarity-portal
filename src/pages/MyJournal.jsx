@@ -155,6 +155,7 @@ export default function MyJournal() {
       await persist({ title, status: 'draft' });
       setExistingStatus('draft');
       showToast('Draft saved.');
+      navigate('/my-reviews');
     } catch (error) {
       console.error('[MyJournal] draft save failed:', error);
       setSaveError('Could not save - please try again.');

@@ -133,6 +133,8 @@ export default function IfThenPlanning() {
       if (mode === 'draft') {
         setDecisionId(savedId);
         showToast(`Draft saved as ${name}.`);
+        clearProgress();
+        navigate('/my-plans');
       } else {
         clearProgress();
         navigate('/if-then-planning-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });

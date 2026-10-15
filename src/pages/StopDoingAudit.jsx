@@ -191,6 +191,7 @@ export default function StopDoingAudit() {
       const savedId = await persist(currentTitle || 'Reclaiming my time', 'draft');
       setDecisionId(savedId);
       showToast('Draft saved.');
+      navigate('/my-plans');
     } catch (error) {
       console.error('[StopDoingAudit] draft save failed:', error);
       setSaveError('Could not save - please try again.');

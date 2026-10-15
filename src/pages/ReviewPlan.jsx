@@ -211,7 +211,8 @@ export default function ReviewPlan() {
       const savedId = await persist(true);
       setEntryId(savedId);
       setExistingIsDraft(true);
-      showToast('Draft saved. Find it in My plans to carry on.');
+      showToast('Draft saved.');
+      navigate('/my-reviews');
     } catch (error) {
       console.error('[ReviewPlan] draft save failed:', error);
       setSaveError('Could not save - please try again. (This needs a database change the site owner has not run yet.)');

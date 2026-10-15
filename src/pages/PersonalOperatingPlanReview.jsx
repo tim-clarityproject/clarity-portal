@@ -216,6 +216,7 @@ export default function PersonalOperatingPlanReview() {
       } else {
         setExistingReviewId(savedId);
         showToast('Draft saved.');
+        navigate('/my-reviews');
       }
     } catch (error) {
       console.error('[PlanReview] save failed:', error);

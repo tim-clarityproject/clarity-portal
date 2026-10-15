@@ -197,7 +197,8 @@ export default function PlanMeeting() {
     try {
       const savedId = await persist(true);
       setDecisionId(savedId);
-      showToast('Draft saved. Find it in My plans to carry on.');
+      showToast('Draft saved.');
+      navigate('/my-plans');
     } catch (error) {
       console.error('[PlanMeeting] Save as draft failed:', error);
       setSaveError('Could not save - please try again.');
