@@ -4038,6 +4038,15 @@ span.tc-editable:focus-visible {
   margin-top: var(--space-2);
 }
 
+/* Phone: room below the last line equal to the fixed Save bar plus the
+   tab bar beneath it plus about two lines, so the page can always
+   scroll far enough to lift the line being typed clear of them. */
+@media (max-width: 768px) {
+  .jrn-paper-wrap {
+    padding-bottom: calc(var(--action-bar-height, 96px) + var(--tabbar-height, 79px) + var(--space-6));
+  }
+}
+
 .jrn-qrow {
   box-sizing: border-box;
   min-height: 40px;

@@ -52,20 +52,35 @@ function keepCaretVisible(el) {
   const caretTop = rect.top + caretOffset;
   const caretBottom = caretTop + lineHeight;
 
+  // Everything is measured NOW, at the moment of the check (the bar, the
+  // tab bar and the visual viewport all change when the keyboard opens,
+  // closes or the phone rotates). The lowest usable edge is whichever is
+  // higher: the bottom of the visual viewport (above the keyboard), or
+  // the top of the fixed Save bar / tab bar if one is showing.
   const vv = window.visualViewport;
   const viewTop = vv ? vv.offsetTop : 0;
-  let viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
-  if (window.innerWidth <= 768) {
-    const bar = parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--action-bar-height'));
-    viewBottom -= Number.isFinite(bar) ? bar : 0;
+  let limit = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  const bar = document.querySelector('.ui-phone-action-bar');
+  if (bar && window.getComputedStyle(bar).display !== 'none') {
+    limit = Math.min(limit, bar.getBoundingClientRect().top);
+  } else if (window.innerWidth <= 768) {
+    const tab = document.querySelector('.design-tabbar');
+    if (tab) limit = Math.min(limit, tab.getBoundingClientRect().top);
   }
-  const margin = lineHeight;
-  if (caretBottom > viewBottom - margin) {
-    window.scrollBy(0, caretBottom - (viewBottom - margin));
+
+  // One and a half lines of clear space: the caret line is always at
+  // least one full line above the bar. behavior:'instant' because
+  // src/index.css sets scroll-behavior: smooth on html - a smooth
+  // scrollBy is relative to wherever the animation currently is, so
+  // several quick keystrokes (or Return presses) under-scrolled and the
+  // caret slid behind the bar.
+  const margin = lineHeight * 1.5;
+  if (caretBottom > limit - margin) {
+    window.scrollBy({ top: caretBottom - (limit - margin), left: 0, behavior: 'instant' });
   } else if (caretTop < viewTop) {
     // Only when the caret line has gone off the top (e.g. after a paste
     // or Enter-and-delete) - never to nudge a caret that is on screen.
-    window.scrollBy(0, caretTop - viewTop - lineHeight);
+    window.scrollBy({ top: caretTop - viewTop - lineHeight, left: 0, behavior: 'instant' });
   }
 }
 
@@ -133,6 +148,47 @@ const AutoGrowTextarea = forwardRef(function AutoGrowTextarea({
     // action bar.
     if (document.activeElement === el) keepCaretVisible(el);
   };
+
+  // While this field has focus, re-check the caret line whenever the
+  // caret moves without the text changing (tapping into the middle,
+  // arrow keys, select) and whenever the keyboard opens, closes or the
+  // phone rotates (visual viewport resize / scroll). Typing and Return
+  // are already covered by resize() above.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    let frame = 0;
+    const check = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (document.activeElement === el) keepCaretVisible(el);
+      });
+    };
+    const vv = window.visualViewport;
+    const start = () => {
+      document.addEventListener('selectionchange', check);
+      window.addEventListener('resize', check);
+      vv?.addEventListener('resize', check);
+      vv?.addEventListener('scroll', check);
+      check();
+    };
+    const stop = () => {
+      document.removeEventListener('selectionchange', check);
+      window.removeEventListener('resize', check);
+      vv?.removeEventListener('resize', check);
+      vv?.removeEventListener('scroll', check);
+    };
+    el.addEventListener('focus', start);
+    el.addEventListener('blur', stop);
+    if (document.activeElement === el) start();
+    return () => {
+      el.removeEventListener('focus', start);
+      el.removeEventListener('blur', stop);
+      stop();
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   // The ResizeObserver/font-ready effects below are set up once (mount
   // only - there's no reason to tear down and recreate a
