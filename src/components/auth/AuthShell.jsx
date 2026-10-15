@@ -20,6 +20,16 @@ export default function AuthShell({
   headline,
   sub,
   children,
+  // Optional additions used by the standalone Strategic Alignment Health
+  // Check (src/pages/alignment). Every one defaults to "off", so the
+  // existing Welcome-flow screens render exactly as before.
+  topBarContent, // node that replaces the whole top bar row (own layout)
+  progress, // array of 0..1 fill amounts: replaces the 3-step progress with that many segments
+  progressHidden = false, // keeps the progress row's space but hides it
+  contentKey, // changes remount just the content (re-plays the headline reveal)
+  headlineSize = 'lg', // 'lg' (26/32px) | 'md' (the title size, 22/26px)
+  letterStaggerMs = 45, // delay between headline letters (lower for long text)
+  footer, // node pinned below the content (sticky to the bottom of the screen)
 }) {
   // Split into words (not just letters) so the headline can only wrap at
   // a space, never mid-word - each word is its own non-breaking group of
@@ -294,6 +304,37 @@ export default function AuthShell({
           to { opacity: 1; transform: none; }
         }
 
+        .auth-progress--hidden {
+          opacity: 0;
+        }
+
+        .auth-progress-seg--fill::after {
+          transform: scaleX(var(--fill, 0));
+          transition: transform var(--dur-slow) var(--ease);
+        }
+
+        /* The title size (22px phone, 26px desktop) for screens whose
+           heading is a page title rather than a greeting. Same
+           !important reasoning as .auth-headline above. */
+        .ui-root .auth-headline.auth-headline--md {
+          font-size: var(--fs-title-phone) !important;
+        }
+
+        @media (min-width: 769px) {
+          .ui-root .auth-headline.auth-headline--md {
+            font-size: var(--fs-title-desktop) !important;
+          }
+        }
+
+        .auth-footer {
+          position: sticky;
+          bottom: 0;
+          z-index: 2;
+          flex-shrink: 0;
+          background: var(--bg);
+          border-top: 1px solid var(--line);
+        }
+
         /* Reduced motion: every bespoke animation in the auth flow turns
            off and content shows in its final, visible state immediately -
            nothing stays hidden waiting for an animation that will never
@@ -309,11 +350,18 @@ export default function AuthShell({
             filter: none !important;
             transform: none !important;
           }
+
+          /* Fractional progress is a value, not an animation: keep it. */
+          .ui-root .auth-progress-seg--fill::after {
+            transform: scaleX(var(--fill, 0)) !important;
+            transition: none;
+          }
         }
       `}</style>
 
       <div className="auth-topbar">
-        {topBar === 'mark' && (
+        {topBarContent}
+        {!topBarContent && topBar === 'mark' && (
           // Pre-login: no signed-in Home to return to, so this goes back
           // to the sign-in start (prompt 7h) - not currently reached by
           // any page (none pass topBar="mark" today), fixed for when one
@@ -322,19 +370,27 @@ export default function AuthShell({
             <img className="auth-mark" src="/brand/mark_colour-on-dark.png" alt="" />
           </Link>
         )}
-        {topBar === 'back' && (
+        {!topBarContent && topBar === 'back' && (
           backTo ? (
             <Link to={backTo} className="auth-back">{backLabel}</Link>
           ) : (
             <span />
           )
         )}
-        {topBar === 'none' && <span />}
+        {!topBarContent && topBar === 'none' && <span />}
 
-        {step && (
+        {!topBarContent && step && (
           <span className="auth-step-label">STEP {step} OF 3</span>
         )}
       </div>
+
+      {progress && (
+        <div className={`auth-progress${progressHidden ? ' auth-progress--hidden' : ''}`}>
+          {progress.map((fill, n) => (
+            <div key={n} className="auth-progress-seg auth-progress-seg--fill" style={{ '--fill': fill }} />
+          ))}
+        </div>
+      )}
 
       {step && (
         <div className="auth-progress">
@@ -344,7 +400,7 @@ export default function AuthShell({
         </div>
       )}
 
-      <div className="auth-content">
+      <div className="auth-content" key={contentKey}>
         <div className={`auth-column align-${align} ${columnClassName}`.trim()}>
           {logo && (
             <div className="auth-rise" style={{ marginBottom: '28px', animationDelay: '0ms' }}>
@@ -357,7 +413,7 @@ export default function AuthShell({
             </div>
           )}
           {headline && (
-            <h1 className="auth-headline">
+            <h1 className={`auth-headline${headlineSize === 'md' ? ' auth-headline--md' : ''}`}>
               {words.map((word, wi) => (
                 // The space between words is a separate sibling node, OUTSIDE
                 // the nowrap word span - a trailing space INSIDE a
@@ -368,7 +424,7 @@ export default function AuthShell({
                 <span key={wi}>
                   <span className="auth-headline-word">
                     {word.split('').map((char) => {
-                      const delay = 250 + letterIndex * 45;
+                      const delay = 250 + letterIndex * letterStaggerMs;
                       letterIndex += 1;
                       return (
                         <span
@@ -396,6 +452,8 @@ export default function AuthShell({
           {staggeredChildren}
         </div>
       </div>
+
+      {footer && <div className="auth-footer">{footer}</div>}
     </div>
   );
 }
