@@ -23,7 +23,7 @@ const oneLine = (s) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
 
 const COLOURS = { bg: '#000000', text: '#FFFFFF', muted: '#A3A3A0', line: '#262626', coral: '#FF6F5C' };
 
-function shell({ origin, heading, bodyHtml }) {
+function shell({ heading, bodyHtml }) {
   return `<!doctype html>
 <html lang="en-GB">
 <body style="margin:0;padding:0;background:${COLOURS.bg};">
@@ -62,7 +62,6 @@ export function linkEmail({ origin, token, dateText }) {
   const link = `${origin}/health-check/${token}`;
   const subject = 'Your Strategic Alignment Health Check';
   const html = shell({
-    origin,
     heading: 'Your Strategic Alignment Health Check',
     bodyHtml: [
       para('Here is the link to your Strategic Alignment Health Check results, so you can find them again at any time.'),
@@ -95,7 +94,6 @@ export function completeEmail({ origin, token, clientLabel, respondentEmail, com
     ? `<ol style="margin:0;padding-left:20px;">${top.map((p) => `<li style="padding-bottom:6px;">${esc(p.text)} <span style="color:${COLOURS.muted};">(${p.importance}% strategic importance)</span></li>`).join('')}</ol>`
     : '<span style="color:#A3A3A0;">No projects were rated.</span>';
   const html = shell({
-    origin,
     heading: 'Strategic Alignment Health Check completed',
     bodyHtml: [
       para(`<strong>${esc(label)}</strong> has completed the Strategic Alignment Health Check.`),
