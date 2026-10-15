@@ -3,27 +3,34 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
-import { designTokens } from '../lib/designTokens';
-import HomeHeader from '../components/HomeHeader';
-import BreathingSettingsModal from '../components/BreathingSettingsModal';
-import PersonalGoalModal from '../components/PersonalGoalModal';
+import { clearAppStorage } from '../lib/clearAppStorage';
+import DeleteDialog from '../components/ui/DeleteDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+import DesignHeader from '../components/DesignHeader';
+import PageHeading from '../components/PageHeading';
+import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
 export default function MyAccount() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isLoading } = useContext(AuthContext);
-  const { refetchMission } = useContext(MissionContext);
+  const { showInHeader, updateShowInHeader } = useContext(MissionContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [personalGoal, setPersonalGoal] = useState('');
-  const [showGoalInHeader, setShowGoalInHeader] = useState(true);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showBreathingSettings, setShowBreathingSettings] = useState(false);
+  const [deleteStage, setDeleteStage] = useState(0);
+  const [deleteError, setDeleteError] = useState('');
+  const { message, showToast } = useToast();
+  const reportDeleteError = (text) => {
+    setDeleteError(text);
+    showToast(text);
+  };
   const [showGoalModal, setShowGoalModal] = useState(false);
-  const [archivedMissions, setArchivedMissions] = useState([]);
-  const [showArchivedMissions, setShowArchivedMissions] = useState(false);
+  const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
 
   // Handle scrolling to sections when navigated with state.scrollTo
@@ -36,16 +43,29 @@ export default function MyAccount() {
     }
   }, [location.state?.scrollTo]);
 
-  const handleDeleteAccount = async () => {
-    if (!window.confirm('Are you sure? This will permanently delete your account and all data.')) {
-      return;
+  // Handle opening Edit Mission pop-up from header link
+  useEffect(() => {
+    if (location.state?.openEditMission) {
+      setShowGoalModal(true);
+      // Clear the state to prevent reopening on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
+  }, [location.state?.openEditMission]);
 
-    const doubleConfirm = window.confirm('This cannot be undone. All your data including missions, decisions, and reviews will be permanently deleted. Are you absolutely sure?');
-    if (!doubleConfirm) {
-      return;
-    }
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
+  // Two stages in one shared DeleteDialog (the same two confirmations the
+  // old window.confirm chain asked): "Are you sure?" then "This cannot be
+  // undone". Only the second one's Delete runs performDeleteAccount.
+  const handleDeleteAccount = () => {
+    setDeleteError('');
+    setDeleteStage(1);
+  };
+
+  const performDeleteAccount = async () => {
     setIsDeleting(true);
     try {
       // Delete all user data from public tables first
@@ -74,7 +94,7 @@ export default function MyAccount() {
         .eq('id', user.id);
 
       if (profileError) {
-        alert('Failed to delete account: ' + profileError.message);
+        reportDeleteError('Failed to delete account: ' + profileError.message);
         setIsDeleting(false);
         return;
       }
@@ -108,19 +128,18 @@ export default function MyAccount() {
       } catch (authError) {
         console.error('Error deleting auth user:', authError);
         setIsDeleting(false);
-        alert('Failed to delete account: ' + (authError.message || 'Unknown error occurred'));
+        reportDeleteError('Failed to delete account: ' + (authError.message || 'Unknown error occurred'));
         return;
       }
 
       await logout();
-      sessionStorage.clear();
-      localStorage.clear();
+      clearAppStorage();
 
-      alert('Your account has been permanently deleted.');
+      showToast('Your account has been permanently deleted.');
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Delete account error:', error);
-      alert('Failed to delete account. Please try again or contact support.');
+      reportDeleteError('Failed to delete account. Please try again or contact support.');
       setIsDeleting(false);
     }
   };
@@ -135,7 +154,7 @@ export default function MyAccount() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('first_name, last_name, personal_goal, show_mission_in_header')
+          .select('first_name, last_name, personal_goal')
           .eq('id', user.id)
           .single();
 
@@ -143,10 +162,6 @@ export default function MyAccount() {
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
           setPersonalGoal(profile.personal_goal || '');
-
-          if (profile.show_mission_in_header !== null && profile.show_mission_in_header !== undefined) {
-            setShowGoalInHeader(profile.show_mission_in_header);
-          }
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -158,97 +173,45 @@ export default function MyAccount() {
     fetchUserData();
   }, [user?.id]);
 
-  // Load archived missions on component mount to prevent stale count
+  // Archived plans now have their own dedicated page (prompt 9 spec:
+  // "NOT in profile settings") - this only keeps a live count for the
+  // redirect row below, not the restore/delete UI that used to live
+  // here.
   useEffect(() => {
-    if (user) {
-      loadArchivedMissions();
-    }
+    if (!user) return;
+    (async () => {
+      setLoadingArchivedMissions(true);
+      try {
+        const { count } = await supabase
+          .from('missions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .not('archived_at', 'is', null);
+        setArchivedMissionsCount(count || 0);
+      } catch (error) {
+        console.error('Error loading archived missions count:', error);
+      } finally {
+        setLoadingArchivedMissions(false);
+      }
+    })();
   }, [user?.id]);
 
-  // Reload when section is expanded (in case new archives happened)
-  useEffect(() => {
-    if (showArchivedMissions && user) {
-      loadArchivedMissions();
-    }
-  }, [showArchivedMissions, user]);
-
-  const loadArchivedMissions = async () => {
-    setLoadingArchivedMissions(true);
-    try {
-      const { data } = await supabase
-        .from('missions')
-        .select('*')
-        .eq('user_id', user.id)
-        .not('archived_at', 'is', null)
-        .order('archived_at', { ascending: false });
-
-      setArchivedMissions(data || []);
-    } catch (error) {
-      console.error('Error loading archived missions:', error);
-    } finally {
-      setLoadingArchivedMissions(false);
-    }
-  };
-
-  const handleRestoreMission = async (missionId) => {
-    try {
-      await supabase
-        .from('missions')
-        .update({ archived_at: null })
-        .eq('id', missionId)
-        .eq('user_id', user.id);
-
-      // Immediately refetch mission in MissionContext to update header
-      await refetchMission();
-
-      loadArchivedMissions();
-    } catch (error) {
-      console.error('Error restoring mission:', error);
-      alert('Failed to restore mission');
-    }
-  };
-
-  const handleDeleteArchivedMission = async (missionId) => {
-    const confirmed = window.confirm(
-      'Permanently delete this archived mission? This cannot be undone. All reviews will be lost.'
-    );
-    if (!confirmed) return;
-
-    const doubleConfirm = window.confirm(
-      'Are you absolutely sure? This is permanent and cannot be recovered.'
-    );
-    if (!doubleConfirm) return;
-
-    try {
-      await supabase
-        .from('missions')
-        .delete()
-        .eq('id', missionId)
-        .eq('user_id', user.id);
-
-      loadArchivedMissions();
-    } catch (error) {
-      console.error('Error deleting mission:', error);
-      alert('Failed to delete mission');
-    }
-  };
-
-  // Re-fetch goal when modal closes (to show updated value immediately)
+  // Re-fetch goal when modal closes (to show updated value immediately).
+  // show_mission_in_header is no longer read here: it lives in
+  // MissionContext (showInHeader), the same shared source of truth the
+  // header pill reads from.
   useEffect(() => {
     if (!showGoalModal && user) {
       const refetchGoal = async () => {
         try {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('personal_goal, show_mission_in_header')
+            .select('personal_goal')
             .eq('id', user.id)
             .single();
 
           if (profile) {
             setPersonalGoal(profile.personal_goal || '');
-            if (profile.show_mission_in_header !== null && profile.show_mission_in_header !== undefined) {
-              setShowGoalInHeader(profile.show_mission_in_header);
-            }
           }
         } catch (error) {
           console.error('Error refetching goal:', error);
@@ -259,20 +222,8 @@ export default function MyAccount() {
     }
   }, [showGoalModal, user]);
 
-  const handleToggleGoalVisibility = async () => {
-    const newVisibility = !showGoalInHeader;
-    setShowGoalInHeader(newVisibility);
-
-    if (user) {
-      try {
-        await supabase
-          .from('profiles')
-          .update({ show_mission_in_header: newVisibility })
-          .eq('id', user.id);
-      } catch (error) {
-        console.error('Error updating visibility preference:', error);
-      }
-    }
+  const handleToggleGoalVisibility = () => {
+    updateShowInHeader(!showInHeader);
   };
 
   // Handle hash-based scrolling to sections
@@ -288,346 +239,290 @@ export default function MyAccount() {
     }
   }, [location.hash]);
 
+  const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Your Name';
+
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader personalGoal={showGoalInHeader ? personalGoal : ''} />
+    <div className="ui-root account-root">
+      <style>{`
+        .account-root {
+          width: 100%;
+          min-height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          background: var(--bg);
+        }
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%', padding: designTokens.layout.contentPadding }} className="page-container">
-        <h1 style={{ ...designTokens.typography.h1, color: designTokens.colors.text.primary, marginTop: '12px', marginBottom: designTokens.spacing.xl }}>
-          My Account
-        </h1>
+        .account-content {
+          flex: 1;
+          width: 100%;
+          background: var(--bg);
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
 
-        <EmailVerificationBanner />
+        @media (max-width: 768px) {
+          .account-content {
+            min-height: calc(100dvh - var(--tabbar-height, 81px));
+          }
+        }
 
-        {/* Settings Container */}
-        <div style={{ backgroundColor: 'white' }}>
-          {/* Profile Section */}
-          <div style={{
-            paddingBottom: '24px',
-            marginBottom: '32px',
-            borderBottom: '1px solid #e5e5e5',
-          }}>
-            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-              Profile
-            </h2>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 0',
-            }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  {firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Your Name'}
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
-                  {user?.email}
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/edit-profile')}
-                style={{
-                  ...designTokens.button.secondary,
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
-                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
-              >
-                Edit
-              </button>
+        .account-column {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0 20px;
+        }
+
+        @media (min-width: 769px) {
+          .account-column {
+            max-width: 620px;
+            margin: 0 auto;
+            padding: 44px 24px 40px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .account-column {
+            padding-top: 34px;
+            padding-bottom: 40px;
+          }
+        }
+
+        .account-section-label {
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          letter-spacing: 0.22em;
+          font-size: 11px;
+          color: var(--coral);
+          margin: 38px 0 6px;
+        }
+
+        .account-section-label--muted {
+          color: var(--text-2);
+        }
+
+
+        .account-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 20px;
+          padding: 20px 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .account-row-text {
+          min-width: 0;
+        }
+
+        .account-row-title {
+          font-family: var(--font-body);
+          font-weight: 500;
+          font-size: 16px;
+          color: var(--text);
+        }
+
+        .account-row-desc {
+          font-family: var(--font-body);
+          font-size: 14px;
+          color: var(--text-2);
+          margin-top: 4px;
+        }
+
+        .account-row-count {
+          font-family: var(--font-body);
+          font-size: 12px;
+          color: var(--placeholder);
+          margin-top: 6px;
+        }
+
+        .account-row-buttons {
+          display: flex;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .account-empty-line {
+          font-family: var(--font-body);
+          font-size: 14px;
+          color: var(--text-2);
+          padding: 18px 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .account-switch-row {
+          min-height: 44px;
+        }
+
+        .account-switch-control {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+
+        .account-switch-state-label {
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          font-size: 10px;
+          letter-spacing: 0.18em;
+          color: var(--text-2);
+        }
+
+        .account-danger-zone {
+          margin-top: 48px;
+        }
+
+        /* About row: phone only. Desktop reaches About via the menu
+           drawer, so this row would be a duplicate there - hidden at
+           769px+ and shown only at 768px and below. */
+        .account-row--phone-only {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .account-row--phone-only {
+            display: flex;
+          }
+        }
+      `}</style>
+
+      <DesignHeader />
+
+      <div className="account-content">
+        <div className="account-column">
+          <PageHeading pageKey="myAccount" title="My Account" />
+
+          <EmailVerificationBanner />
+
+          {/* Profile */}
+          <div className="account-section-label">Profile</div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">{fullName}</div>
+              <div className="account-row-desc">{user?.email}</div>
             </div>
-          </div>
-
-          {/* Mission Section */}
-          <div style={{
-            paddingBottom: '24px',
-            marginBottom: '32px',
-            borderBottom: '1px solid #e5e5e5',
-          }}>
-            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-              Your Mission
-            </h2>
-
-            {/* Mission Statement Setting */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              padding: '16px 0',
-              borderBottom: '1px solid #f0f0f0',
-              marginBottom: '16px',
-            }}>
-              <div style={{ flex: 1, maxWidth: '60%' }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  Mission Statement
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
-                  {personalGoal || 'No mission set yet'}
-                </p>
-                <p style={{ fontSize: '12px', color: '#bbb', margin: '6px 0 0 0' }}>
-                  {personalGoal.length}/50 characters
-                </p>
-              </div>
-              <button
-                onClick={() => setShowGoalModal(true)}
-                style={{
-                  ...designTokens.button.secondary,
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
-                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
-              >
-                Edit
-              </button>
-            </div>
-
-            {/* Show in Header Setting */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 0',
-            }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  Show in Header
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
-                  Display your mission in the page heading
-                </p>
-              </div>
-              <button
-                onClick={handleToggleGoalVisibility}
-                style={{
-                  ...designTokens.button.secondary,
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                  minWidth: '76px',
-                  textAlign: 'center',
-                  opacity: showGoalInHeader ? 1 : 0.6,
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
-                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
-              >
-                {showGoalInHeader ? 'Visible' : 'Hidden'}
-              </button>
-            </div>
-          </div>
-
-          {/* Advanced Settings Section */}
-          <div id="breathing-settings" style={{
-            paddingBottom: '24px',
-            marginBottom: '32px',
-            borderBottom: '1px solid #e5e5e5',
-          }}>
-            <h2 style={{ ...designTokens.typography.h2, color: designTokens.colors.text.primary, margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-              Advanced
-            </h2>
-
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 0',
-            }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0, marginBottom: '4px' }}>
-                  Breathing Settings
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
-                  Customize your breathing cycle duration
-                </p>
-              </div>
-              <button
-                onClick={() => setShowBreathingSettings(true)}
-                style={{
-                  ...designTokens.button.secondary,
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = designTokens.colors.background.secondary}
-                onMouseLeave={(e) => e.target.style.backgroundColor = designTokens.button.secondary.backgroundColor}
-              >
-                Edit
-              </button>
-            </div>
-          </div>
-
-          {/* Archived Missions */}
-          <div style={{
-            paddingTop: '24px',
-            borderTop: '1px solid #e5e5e5',
-          }}>
-            <button
-              onClick={() => setShowArchivedMissions(!showArchivedMissions)}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                padding: '0',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '16px',
-              }}
-            >
-              <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#333', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Archived Missions
-              </h2>
-              <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>
-                ({archivedMissions.length})
-              </span>
+            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/edit-profile')}>
+              Edit
             </button>
-
-            {showArchivedMissions && (
-              <div>
-                {loadingArchivedMissions ? (
-                  <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Loading archived missions...</p>
-                ) : archivedMissions.length === 0 ? (
-                  <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>No archived missions</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {archivedMissions.map((mission) => (
-                      <div key={mission.id} style={{
-                        ...designTokens.card,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow = designTokens.shadow.md;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = designTokens.shadow.sm;
-                      }}
-                      >
-                        <div style={{ flex: 1 }}>
-                          <p style={{ ...designTokens.typography.button, color: designTokens.colors.text.primary, margin: 0, marginBottom: designTokens.spacing.sm }}>
-                            {mission.title}
-                          </p>
-                          <p style={{ ...designTokens.typography.caption, color: designTokens.colors.text.tertiary, margin: 0 }}>
-                            Archived {new Date(mission.archived_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
-                          <button
-                            onClick={() => handleRestoreMission(mission.id)}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: 'white',
-                              border: '1px solid #e5e5e5',
-                              borderRadius: '4px',
-                              color: '#F08571',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              transition: 'all 0.2s',
-                              whiteSpace: 'nowrap',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = '#f9f9f9';
-                              e.target.style.borderColor = '#F08571';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = 'white';
-                              e.target.style.borderColor = '#e5e5e5';
-                            }}
-                          >
-                            Restore
-                          </button>
-                          <button
-                            onClick={() => handleDeleteArchivedMission(mission.id)}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: 'white',
-                              border: '1px solid #e5e5e5',
-                              borderRadius: '4px',
-                              color: '#c0574c',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              transition: 'all 0.2s',
-                              whiteSpace: 'nowrap',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.backgroundColor = 'rgba(192, 87, 76, 0.1)';
-                              e.target.style.borderColor = '#c0574c';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = 'white';
-                              e.target.style.borderColor = '#e5e5e5';
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Danger Zone */}
-          <div style={{
-            paddingTop: '24px',
-            borderTop: '2px solid #fee5de',
-          }}>
-            <h2 style={{ ...designTokens.typography.h2, color: '#c0574c', margin: `0 0 ${designTokens.spacing.lg} 0` }}>
-              Danger Zone
-            </h2>
+          {/* Mission */}
+          <div id="mission-section" className="account-section-label">Mission</div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Statement</div>
+              <div className="account-row-desc">{personalGoal || 'No mission set yet'}</div>
+              <div className="account-row-count">{personalGoal.length}/{MAX_GOAL_LENGTH} characters</div>
+            </div>
+            <button type="button" className="ui-btn-ghost" onClick={() => setShowGoalModal(true)}>
+              Edit
+            </button>
+          </div>
+          <div className="account-row account-switch-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Show in header</div>
+              <div className="account-row-desc">Display your mission in the page heading</div>
+            </div>
+            <div className="account-switch-control">
+              <span className="account-switch-state-label">
+                {showInHeader ? 'Visible' : 'Hidden'}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showInHeader}
+                aria-label="Show mission in header"
+                className={`ui-switch${showInHeader ? ' ui-switch--on' : ''}`}
+                onClick={handleToggleGoalVisibility}
+              />
+            </div>
+          </div>
 
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 0',
-            }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#c0574c', margin: 0, marginBottom: '4px' }}>
-                  Delete Account
-                </p>
-                <p style={{ fontSize: '13px', color: '#999', margin: 0, lineHeight: '1.5' }}>
-                  Permanently delete your account and all data
-                </p>
+          {/* Archived missions: redirects to the dedicated Archived
+              plans page (prompt 9 spec - restore/view live there now,
+              not in profile settings). */}
+          <div className="account-section-label">Archived missions</div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Archived plans</div>
+              <div className="account-row-desc">
+                {loadingArchivedMissions ? 'Loading...' : `${archivedMissionsCount} archived`}
+              </div>
+            </div>
+            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/personal-operating-plan-archived')}>
+              Open
+            </button>
+          </div>
+
+          {/* Portal */}
+          <div className="account-section-label">Portal</div>
+          <div className="account-row account-row--phone-only">
+            <div className="account-row-text">
+              <div className="account-row-title">About</div>
+              <div className="account-row-desc">Learn about The Clarity Project</div>
+            </div>
+            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/about')}>
+              Open
+            </button>
+          </div>
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Log out</div>
+              <div className="account-row-desc">Sign out of this device</div>
+            </div>
+            <button type="button" className="ui-btn-ghost" onClick={handleLogout}>
+              Log out
+            </button>
+          </div>
+
+          {/* Danger zone */}
+          <div className="account-danger-zone">
+            <div className="account-section-label account-section-label--muted">Danger zone</div>
+            <div className="account-row">
+              <div className="account-row-text">
+                <div className="account-row-title">Delete account</div>
+                <div className="account-row-desc">Permanently delete your account and all data</div>
               </div>
               <button
+                type="button"
+                className="ui-btn-ghost ui-btn-ghost--danger"
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: 'transparent',
-                  border: '2px solid #c0574c',
-                  borderRadius: '6px',
-                  color: '#c0574c',
-                  fontWeight: '600',
-                  cursor: isDeleting ? 'not-allowed' : 'pointer',
-                  fontSize: '13px',
-                  transition: 'all 0.2s',
-                  flexShrink: 0,
-                  marginLeft: '16px',
-                  opacity: isDeleting ? 0.5 : 1,
-                }}
-                onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = 'rgba(192, 87, 76, 0.1)')}
-                onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
+            {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
           </div>
         </div>
-
-        <BreathingSettingsModal isOpen={showBreathingSettings} onClose={() => setShowBreathingSettings(false)} />
-        <PersonalGoalModal
-          isOpen={showGoalModal}
-          onClose={() => setShowGoalModal(false)}
-          currentGoal={personalGoal}
-          onGoalSaved={(newGoal) => setPersonalGoal(newGoal)}
-        />
       </div>
+
+      <DeleteDialog
+        open={deleteStage > 0}
+        title={deleteStage === 2 ? 'Are you absolutely sure?' : 'Delete your account?'}
+        body={deleteStage === 2
+          ? 'This cannot be undone. All your data including missions, decisions, and reviews will be permanently deleted.'
+          : 'This will permanently delete your account and all data.'}
+        onConfirm={() => {
+          if (deleteStage === 1) {
+            setDeleteStage(2);
+          } else {
+            setDeleteStage(0);
+            performDeleteAccount();
+          }
+        }}
+        onCancel={() => setDeleteStage(0)}
+      />
+      <Toast message={message} />
+      <PersonalGoalModal
+        isOpen={showGoalModal}
+        onClose={() => setShowGoalModal(false)}
+        currentGoal={personalGoal}
+        onGoalSaved={(newGoal) => setPersonalGoal(newGoal)}
+      />
     </div>
   );
 }

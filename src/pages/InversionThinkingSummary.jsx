@@ -2,8 +2,12 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import HomeHeader from '../components/HomeHeader';
-import BackArrow from '../components/BackArrow';
+import { formatUkDate } from '../lib/dateFormatter';
+import DesignHeader from '../components/DesignHeader';
+import { BackLink } from '../components/ui/DiscardLink';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 export default function InversionThinkingSummary() {
   const navigate = useNavigate();
@@ -12,15 +16,26 @@ export default function InversionThinkingSummary() {
   const [thinking, setThinking] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const decisionId = location.state?.decisionId;
+  const { message, showToast } = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
       loadThinking();
+    } else {
+      setIsLoading(false);
     }
-  }, [decisionId, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decisionId, user?.id]);
+
+  useEffect(() => {
+    if (location.state?.toast) {
+      showToast(location.state.toast);
+      navigate(location.pathname, { replace: true, state: { decisionId } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadThinking = async () => {
-    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('decisions')
@@ -28,160 +43,112 @@ export default function InversionThinkingSummary() {
         .eq('id', decisionId)
         .eq('user_id', user.id)
         .single();
-
-      if (data) {
-        setThinking(data);
-      }
+      if (error) throw error;
+      if (data) setThinking(data);
     } catch (error) {
-      console.error('Error loading thinking:', error);
+      console.error('[InversionThinkingSummary] load failed:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEdit = () => {
-    navigate('/inversion-step-1', { state: { decisionId, ...thinking.form_data } });
-  };
-
-  const handleDownloadPDF = () => {
-    window.print();
-  };
-
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px' }}>Loading thinking...</p>
-        </div>
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
       </div>
     );
   }
 
   if (!thinking) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px' }}>Thinking not found</p>
-        </div>
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page"><p className="ui-subtitle">Decision not found.</p></div>
       </div>
     );
   }
 
   const data = thinking.form_data || {};
+  const risks = data.risks || [];
+  const hasRiskAnswers = Array.isArray(data.riskAnswers) && data.riskAnswers.length === risks.length;
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+    <div className="ui-root">
+      <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '100px' }} className="page-container print-container">
-        <BackArrow />
-
-        <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, flex: 1 }}>
-            {thinking.title || 'Inversion Thinking'}
-          </h1>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-            Inversion Thinking
-          </span>
+      <div className="plan-page">
+        <div className="plan-back-row">
+          <BackLink onClick={() => navigate('/decision-history')} label="Back to my decisions" />
         </div>
 
-        {/* Goal Section */}
-        {data.goal && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Goal
-            </h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {data.goal}
-            </p>
-          </div>
-        )}
+        <div className="plan-summary-head">
+          <PageHeading pageKey="inversionThinkingSummary" title={thinking.title || 'Pre-Mortem'} overline="Pre-Mortem" subtitle={`Created ${formatUkDate(thinking.created_at)}`} rule={false} />
+        </div>
 
-        {/* Failure Modes Section */}
-        {data.fuckups && data.fuckups.length > 0 && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              What Could Go Wrong
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {data.fuckups.map((mode, index) => (
-                <div key={index} style={{ backgroundColor: '#f9f9f9', padding: '12px 16px', borderRadius: '6px', border: '1px solid #f0f0f0' }}>
-                  <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0 }}>
-                    {mode}
-                  </p>
-                </div>
-              ))}
+        <div className="plan-sum">
+          <div className="plan-sum-row">
+            <p className="plan-sum-label">Goal</p>
+            <p className="plan-sum-value">{data.goal || <span className="plan-none">No goal recorded.</span>}</p>
+          </div>
+
+          {hasRiskAnswers ? (
+            <div className="plan-sum-row">
+              <p className="plan-sum-label">Risks &amp; plans</p>
+              <div className="plan-sum-value">
+                {risks.length > 0 ? (
+                  risks.map((risk, index) => (
+                    <div className="inv-sum-risk-row" key={index}>
+                      <div>
+                        <span className="inv-sum-risk-label">Risk {String(index + 1).padStart(2, '0')}</span>
+                        <p>{risk}</p>
+                      </div>
+                      <div>
+                        <span className="inv-sum-risk-label">What you'll do</span>
+                        <p>{data.riskAnswers[index] || <span className="plan-none">Not answered.</span>}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="plan-none">No risks recorded.</p>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <>
+              <div className="plan-sum-row">
+                <p className="plan-sum-label">Ways this could go wrong</p>
+                <div className="plan-sum-value plan-sum-value--list">
+                  {risks.length > 0 ? (
+                    <ol style={{ margin: 0, padding: 0, listStylePosition: 'inside' }}>
+                      {risks.map((risk, index) => <li key={index}>{risk}</li>)}
+                    </ol>
+                  ) : (
+                    <span className="plan-none">No risks recorded.</span>
+                  )}
+                </div>
+              </div>
+              <div className="plan-sum-row">
+                <p className="plan-sum-label">Your plan</p>
+                <p className="plan-sum-value">{data.plan || <span className="plan-none">No plan recorded.</span>}</p>
+              </div>
+            </>
+          )}
+        </div>
 
-        {/* Prevention Plan Section */}
-        {data.plan && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Prevention Plan
-            </h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {data.plan}
-            </p>
-          </div>
-        )}
-
-        {/* Bottom Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '32px', flexWrap: 'wrap', paddingTop: '32px', borderTop: '1px solid #f0f0f0', justifyContent: 'space-between' }} className="no-print">
+        <div className="plan-actions">
           <button
-            onClick={handleEdit}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#333',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'white';
-            }}
+            type="button"
+            className="ui-btn-primary"
+            onClick={() => navigate('/inversion-step-1', { state: { decisionId: thinking.id, goal: data.goal, risks, riskAnswers: data.riskAnswers, legacyPlan: hasRiskAnswers ? '' : data.plan, problemTitle: thinking.title } })}
           >
-            Edit Thinking
-          </button>
-
-          <button
-            onClick={handleDownloadPDF}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'white',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#333',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.backgroundColor = 'white';
-            }}
-          >
-            Download PDF
+            Edit
           </button>
         </div>
       </div>
+
+      <Toast message={message} />
     </div>
   );
 }

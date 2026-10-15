@@ -1,9 +1,32 @@
-import { useState, useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Download, X, ChevronLeft } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import HomeHeader from '../components/HomeHeader';
+import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
+import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
+import DesignHeader from '../components/DesignHeader';
+import { BackLink } from '../components/ui/DiscardLink';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
+
+// "Fri, 2 Oct" - UK order, device local time. Plain input[type=date]
+// string ("YYYY-MM-DD"), so noon is used to dodge UTC/local day-shift.
+function formatMeetingDate(dateStr) {
+  if (!dateStr) return '—';
+  const date = new Date(`${dateStr}T12:00:00`);
+  return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function calcEndTime(time, flowItems) {
+  if (!time || !flowItems?.length) return '—';
+  const totalMinutes = flowItems.reduce((sum, item) => sum + (parseInt(item.length, 10) || 0), 0);
+  const [hours, minutes] = time.split(':').map(Number);
+  const start = new Date();
+  start.setHours(hours, minutes, 0, 0);
+  const end = new Date(start.getTime() + totalMinutes * 60000);
+  return `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+}
 
 export default function MeetingSummary() {
   const navigate = useNavigate();
@@ -13,29 +36,44 @@ export default function MeetingSummary() {
 
   const [meeting, setMeeting] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [reviewEntryId, setReviewEntryId] = useState(null);
+  const { message, showToast } = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
       loadMeeting();
+    } else {
+      setIsLoading(false);
     }
-  }, [decisionId, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decisionId, user?.id]);
 
   useEffect(() => {
-    if (meeting && meeting.form_data) {
-      const formData = meeting.form_data;
-      const title = formData.title || 'Meeting Summary';
-      const date = formData.date ? new Date(formData.date).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
-      const documentTitle = date ? `${title} - ${date}` : title;
-      document.title = documentTitle;
+    if (!meeting || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const reviews = await loadPlanReviews(user.id);
+        if (cancelled) return;
+        const dateKey = getLocalDateKey(parseDbTimestamp(meeting.created_at));
+        const existing = findPlanReview(reviews, { planKind: 'plan_meeting', planId: meeting.id, dateKey });
+        if (existing && !isPlanReviewDraft(existing)) setReviewEntryId(existing.id);
+      } catch (error) {
+        console.error('[MeetingSummary] review check failed:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [meeting, user?.id]);
+
+  useEffect(() => {
+    if (location.state?.toast) {
+      showToast(location.state.toast);
+      navigate(location.pathname, { replace: true, state: { decisionId } });
     }
-  }, [meeting]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadMeeting = async () => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
     try {
       const { data, error } = await supabase
         .from('decisions')
@@ -43,35 +81,21 @@ export default function MeetingSummary() {
         .eq('id', decisionId)
         .eq('user_id', user.id)
         .single();
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        setMeeting(data);
-      }
+      if (error) throw error;
+      if (data) setMeeting(data);
     } catch (error) {
-      // Silently handle load errors
+      console.error('[MeetingSummary] load failed:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEdit = () => {
-    navigate('/plan-meeting', { state: { decisionId, ...meeting.form_data } });
-  };
-
-  const handleDownloadPDF = () => {
-    window.print();
-  };
-
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px' }}>Loading meeting...</p>
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page">
+          <p className="ui-subtitle">Loading...</p>
         </div>
       </div>
     );
@@ -79,460 +103,162 @@ export default function MeetingSummary() {
 
   if (!meeting) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        <HomeHeader />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: '#999', fontSize: '14px' }}>Meeting not found</p>
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page">
+          <p className="ui-subtitle">Meeting not found.</p>
         </div>
       </div>
     );
   }
 
   const data = meeting.form_data || {};
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
-  };
-
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '';
-    return timeStr;
-  };
+  const objectives = (data.objectives || []).filter((o) => o.text && o.text.trim());
+  const agenda = (data.flowItems || []).filter((r) => `${r.item || ''}${r.aim || ''}${r.lead || ''}${r.length || ''}`.trim());
+  const total = agenda.reduce((sum, item) => sum + (parseInt(item.length, 10) || 0), 0);
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader className="no-print" />
-
+    <div className="ui-root meeting-summary-root">
+      {/* Printing the dark theme would waste ink and read poorly, so these
+          tokens are overridden to print-safe light values for @media print
+          only - every .plan-* class below already reads off these vars, so
+          nothing else needs a print-specific rule. */}
       <style>{`
-        .page-container {
-          padding: 64px 32px;
-          padding-bottom: 100px;
+        @page {
+          size: A4 landscape;
+          margin: 0.5in;
         }
-        @media (max-width: 768px) {
-          .page-container {
-            padding: 32px 16px;
-            padding-bottom: 100px;
+        @media print {
+          .meeting-summary-root {
+            --bg: #ffffff;
+            --surface: #ffffff;
+            --line: #dddddd;
+            --text: #000000;
+            --text-2: #333333;
+            --placeholder: #666666;
+            --coral-text: #000000;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .design-tabbar {
+            display: none !important;
           }
         }
       `}</style>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '900px', margin: '0 auto', width: '100%' }} className="page-container print-container">
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+      <div className="no-print"><DesignHeader /></div>
+
+      <div className="plan-page">
+        <div className="plan-back-row no-print">
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to my plans" />
+        </div>
+
+        <div className="plan-summary-head">
+          <PageHeading pageKey="meetingSummary" title={data.title || 'Meeting plan'} overline="Meeting planner" subtitle="" rule={false} />
+        </div>
+
+        <div className="plan-facts">
+          <div>
+            <b>Date</b>
+            <span>{formatMeetingDate(data.date)}</span>
+          </div>
+          <div>
+            <b>Start time</b>
+            <span>{data.time || '—'}</span>
+          </div>
+          <div>
+            <b>End time</b>
+            <span>{calcEndTime(data.time, data.flowItems)}</span>
+          </div>
+          <div>
+            <b>Chair</b>
+            <span>{data.chair || '—'}</span>
+          </div>
+        </div>
+
+        {data.meetingContext && (
+          <div className="plan-sum">
+            <div className="plan-sum-row">
+              <div className="plan-sum-label">Meeting context</div>
+              <p className="plan-sum-value">{data.meetingContext}</p>
+            </div>
+          </div>
+        )}
+
+        {data.preReads && (
+          <div className="plan-sum">
+            <div className="plan-sum-row">
+              <div className="plan-sum-label">Attendee preparation</div>
+              <p className="plan-sum-value">{data.preReads}</p>
+            </div>
+          </div>
+        )}
+
+        {objectives.length > 0 && (
+          <div className="plan-sum">
+            <div className="plan-sum-row">
+              <div className="plan-sum-label">Objectives (in priority order)</div>
+              <ol className="plan-olist plan-sum-value plan-sum-value--list">
+                {objectives.map((o) => <li key={o.id}>{o.text}</li>)}
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {agenda.length > 0 && (
+          <div className="plan-sum">
+            <div className="plan-sum-row">
+              <div className="plan-sum-label">Meeting agenda</div>
+              <div className="plan-sum-value">
+                <div className="plan-table-wrap">
+                  <table className="plan-table">
+                    <colgroup>
+                      <col style={{ width: '24%' }} />
+                      <col style={{ width: '44%' }} />
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '12%' }} />
+                    </colgroup>
+                    <thead>
+                      <tr><th>Item</th><th>Aim</th><th>Lead</th><th>Min</th></tr>
+                    </thead>
+                    <tbody>
+                      {agenda.map((r) => (
+                        <tr key={r.id}>
+                          <td data-label="Item">{r.item}</td>
+                          <td data-label="Aim">{r.aim}</td>
+                          <td data-label="Lead">{r.lead}</td>
+                          <td data-label="Min">{r.length}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="plan-table-total">Total: {total} minutes</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="plan-actions no-print">
           <button
-            onClick={() => navigate('/my-plans')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '4px 8px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#F08571',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '600',
-              transition: 'color 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#e07560'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#F08571'}
-            className="no-print"
+            type="button"
+            className="ui-btn-primary"
+            onClick={() => (
+              reviewEntryId
+                ? navigate('/review-plan-summary', { state: { entryId: reviewEntryId, planKind: 'plan_meeting', plan: meeting } })
+                : navigate('/review-plan', { state: { planKind: 'plan_meeting', plan: meeting } })
+            )}
           >
-            <ChevronLeft size={18} />
-            Back to Meeting Plans
+            {reviewEntryId ? 'View my review' : 'Review this meeting'}
+          </button>
+          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/plan-meeting', { state: { decisionId: meeting.id } })}>
+            Edit
           </button>
         </div>
-
-        {/* Meeting Title with Tag - Only on Screen */}
-        <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} className="no-print">
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#000', margin: 0, flex: 1 }}>
-            {data.title || 'Meeting Plan'}
-          </h1>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: 'white', backgroundColor: '#F08571', padding: '6px 12px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-            Meeting Planner
-          </span>
-        </div>
-
-        {/* Title for Print */}
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#000', margin: '0 0 24px 0' }} className="print-only">
-          {data.title || 'Meeting Plan'}
-        </h1>
-
-        {/* Meeting Details - Compact Grid */}
-        <div style={{ backgroundColor: '#f9f9f9', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #f0f0f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
-          <div>
-            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</p>
-            <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{formatDate(data.date)}</p>
-          </div>
-          <div>
-            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Start Time</p>
-            <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{formatTime(data.time)}</p>
-          </div>
-          <div>
-            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>End Time</p>
-            <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-              {(() => {
-                if (!data.time || !data.flowItems || data.flowItems.length === 0) return '—';
-                try {
-                  const totalMinutes = data.flowItems.reduce((sum, item) => sum + (parseInt(item.length) || 0), 0);
-                  const [hours, minutes] = data.time.split(':').map(Number);
-                  const startDate = new Date();
-                  startDate.setHours(hours, minutes, 0);
-                  const endDate = new Date(startDate.getTime() + totalMinutes * 60000);
-                  const endHours = String(endDate.getHours()).padStart(2, '0');
-                  const endMinutes = String(endDate.getMinutes()).padStart(2, '0');
-                  return `${endHours}:${endMinutes}`;
-                } catch (e) {
-                  return '—';
-                }
-              })()}
-            </p>
-          </div>
-          <div>
-            <p style={{ fontSize: '11px', fontWeight: '600', color: '#999', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chair</p>
-            <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>{data.chair || '—'}</p>
-          </div>
-        </div>
-
-        {/* Meeting Context */}
-        {data.meetingContext && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Context</h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{data.meetingContext}</p>
-          </div>
-        )}
-
-        {/* Attendee Preparation */}
-        {data.preReads && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Preparation</h2>
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{data.preReads}</p>
-          </div>
-        )}
-
-        {/* Objectives */}
-        {data.objectives && data.objectives.length > 0 && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Objectives</h2>
-            <ol style={{ fontSize: '13px', color: '#666', margin: '0', paddingLeft: '24px', lineHeight: '1.6', listStyle: 'decimal' }}>
-              {data.objectives.map((obj, index) => (
-                <li key={obj.id} style={{ marginBottom: '4px', marginLeft: '4px' }}>{obj.text}</li>
-              ))}
-            </ol>
-          </div>
-        )}
-
-        {/* Meeting Agenda */}
-        {data.flowItems && data.flowItems.length > 0 && (
-          <div style={{ marginBottom: '16px', paddingLeft: '24px', borderLeft: '4px solid #F08571' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: '700', color: '#333', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Meeting Agenda</h2>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #e5e5e5', backgroundColor: '#fafafa' }}>
-                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Item</th>
-                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Aim</th>
-                    <th style={{ padding: '8px', textAlign: 'left', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Lead</th>
-                    <th style={{ padding: '8px', textAlign: 'center', fontWeight: '700', color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px', width: '50px' }}>Min</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.flowItems.map((item) => (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: '8px', color: '#333', fontWeight: '500' }}>{item.item}</td>
-                      <td style={{ padding: '8px', color: '#666', fontSize: '12px' }}>{item.aim}</td>
-                      <td style={{ padding: '8px', color: '#666', fontSize: '12px' }}>{item.lead}</td>
-                      <td style={{ padding: '8px', textAlign: 'center', color: '#666', fontSize: '12px', fontWeight: '600' }}>{item.length}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-              <p style={{ fontSize: '12px', color: '#333', marginBottom: 0, fontWeight: '700' }}>
-                Total: {data.flowItems.reduce((sum, item) => sum + (parseInt(item.length) || 0), 0)} minutes
-              </p>
-            </div>
-          </div>
-        )}
-
-        <style>{`
-          .print-only {
-            display: none !important;
-          }
-
-          @page {
-            size: A4 landscape;
-            margin: 0;
-            padding: 0;
-            /* Hide browser headers and footers */
-            @top-left { content: none; }
-            @top-center { content: none; }
-            @top-right { content: none; }
-            @bottom-left { content: none; }
-            @bottom-center { content: none; }
-            @bottom-right { content: none; }
-          }
-
-          @media print {
-            * {
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-            /* Hide ALL non-content elements */
-            header, nav, .no-print, [class*="no-print"] {
-              display: none !important;
-              visibility: hidden !important;
-              height: 0 !important;
-              width: 0 !important;
-            }
-            .print-only {
-              display: block !important;
-            }
-            .page-container {
-              padding: 0.5in !important;
-              max-width: 100% !important;
-              margin: 0 !important;
-            }
-            .mission-container {
-              display: none !important;
-            }
-            button {
-              display: none !important;
-            }
-            svg {
-              display: none !important;
-            }
-            /* Hide any timestamp or date elements */
-            time, [data-timestamp], [class*="time"], [class*="date"] {
-              display: none !important;
-            }
-            * {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              color-adjust: exact !important;
-            }
-            body, html {
-              margin: 0 !important;
-              padding: 0 !important;
-              background: white !important;
-            }
-            body::before, body::after {
-              display: none !important;
-            }
-            h1 {
-              margin: 0 0 20px 0 !important;
-              padding: 0 !important;
-              page-break-after: avoid;
-              font-size: 28px !important;
-              font-weight: bold !important;
-              color: #000 !important;
-              border-bottom: 2px solid #F08571;
-              padding-bottom: 12px;
-            }
-            h2 {
-              page-break-after: avoid;
-              margin: 20px 0 12px 0 !important;
-              font-size: 14px !important;
-              font-weight: 600 !important;
-              color: #333 !important;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-              border-bottom: 2px solid #F08571;
-              padding-bottom: 8px;
-            }
-            p {
-              margin: 0 !important;
-              font-size: 12px !important;
-              color: #333 !important;
-            }
-            div {
-              page-break-inside: avoid;
-            }
-            table {
-              width: 100% !important;
-              border-collapse: collapse !important;
-              font-size: 12px !important;
-              margin: 12px 0 !important;
-              border: 1px solid #ddd !important;
-            }
-            td, th {
-              padding: 8px 10px !important;
-              border: 1px solid #ddd !important;
-              text-align: left !important;
-            }
-            th {
-              background-color: #f5f5f5 !important;
-              font-weight: 600 !important;
-              color: #333 !important;
-            }
-            tr:nth-child(even) {
-              background-color: #fafafa !important;
-            }
-            /* Hide header background */
-            div[style*="backgroundColor: '#fafafa'"] {
-              background-color: white !important;
-              border: 1px solid #ddd !important;
-            }
-            /* Meeting details grid */
-            div[style*="gridTemplateColumns"] {
-              display: grid !important;
-              grid-template-columns: 1fr 1fr 1fr !important;
-              gap: 16px !important;
-              margin-bottom: 24px !important;
-              padding: 16px !important;
-              border: 1px solid #ddd !important;
-              background: white !important;
-            }
-          }
-        `}</style>
       </div>
 
-      {/* Action Buttons */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid #e5e5e5',
-        padding: '12px 32px',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '12px',
-        zIndex: 10,
-      }} className="no-print">
-        <button
-          onClick={handleEdit}
-          style={{
-            padding: '10px 16px',
-            backgroundColor: 'transparent',
-            border: '1px solid #e5e5e5',
-            color: '#333',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: '500',
-            borderRadius: '6px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#f9f9f9';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#e5e5e5';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          Edit
-        </button>
-        <button
-          onClick={() => setShareModalOpen(true)}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#F08571',
-            color: 'white',
-            fontWeight: '600',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '13px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e07560'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F08571'}
-        >
-          Share
-        </button>
-      </div>
-
-      {/* Share Modal */}
-      {shareModalOpen && (
-        <>
-          <div
-            onClick={() => setShareModalOpen(false)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
-              zIndex: 99,
-            }}
-            className="no-print"
-          />
-          <div style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-            padding: '32px',
-            maxWidth: '400px',
-            width: '90%',
-            zIndex: 100,
-          }}
-          className="no-print">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>Share Meeting</h2>
-              <button
-                onClick={() => setShareModalOpen(false)}
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#999',
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#333'}
-                onMouseLeave={(e) => e.target.style.color = '#999'}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Download Option */}
-            <button
-              onClick={() => {
-                handleDownloadPDF();
-                setShareModalOpen(false);
-              }}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px',
-                backgroundColor: '#f9f9f9',
-                border: '1px solid #e5e5e5',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                marginBottom: '12px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
-                e.currentTarget.style.borderColor = '#F08571';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9f9f9';
-                e.currentTarget.style.borderColor = '#e5e5e5';
-              }}
-            >
-              <Download size={18} style={{ color: '#F08571', flexShrink: 0 }} />
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontSize: '13px', fontWeight: '600', color: '#333', margin: 0 }}>Download PDF</p>
-                <p style={{ fontSize: '12px', color: '#999', margin: '4px 0 0 0' }}>Save to your computer</p>
-              </div>
-            </button>
-
-          </div>
-        </>
-      )}
+      <div className="no-print"><Toast message={message} /></div>
     </div>
   );
 }

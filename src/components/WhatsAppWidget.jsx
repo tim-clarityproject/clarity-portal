@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle } from 'lucide-react';
 
 export default function WhatsAppWidget() {
-  const [isHovered, setIsHovered] = useState(false);
   const [isNorthAmerica, setIsNorthAmerica] = useState(false);
 
   useEffect(() => {
@@ -38,74 +36,98 @@ export default function WhatsAppWidget() {
   };
 
   return (
-    <>
+    <div className="ui-root">
       <style>{`
-        .whatsapp-widget {
+        .ui-root .fab-chat {
           position: fixed;
-          bottom: 32px;
           right: 24px;
+          bottom: 24px;
           z-index: 999;
-          height: 40px;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: 1px solid var(--line);
+          background: var(--surface);
+          color: var(--text);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: border-color var(--dur) var(--ease);
         }
+
+        .ui-root .fab-chat:hover,
+        .ui-root .fab-chat:focus-visible {
+          border-color: var(--coral);
+        }
+
+        .ui-root .fab-chat:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: 2px;
+        }
+
+        .ui-root .fab-chat svg {
+          width: 22px;
+          height: 22px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.5;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        .ui-root .fab-chat .fab-label {
+          position: absolute;
+          right: 58px;
+          white-space: nowrap;
+          font-family: var(--font-display);
+          font-weight: 400;
+          text-transform: uppercase;
+          letter-spacing: 0.16em;
+          font-size: 10px;
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: var(--radius-pill);
+          padding: 0 14px;
+          min-height: 30px;
+          display: flex;
+          align-items: center;
+          color: var(--text);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity var(--dur) var(--ease);
+        }
+
+        .ui-root .fab-chat:hover .fab-label,
+        .ui-root .fab-chat:focus-visible .fab-label {
+          opacity: 1;
+        }
+
         @media (max-width: 768px) {
-          .whatsapp-widget {
-            display: none !important;
+          .ui-root .fab-chat {
+            display: none;
           }
         }
-        .whatsapp-button {
-          height: 40px;
-          min-height: 40px;
-          padding: 0;
-          margin: 0;
-        }
-        .whatsapp-icon {
-          width: 18px;
-          height: 18px;
-          flex-shrink: 0;
+
+        @media (prefers-reduced-motion: reduce) {
+          .ui-root .fab-chat,
+          .ui-root .fab-chat .fab-label {
+            transition: none !important;
+          }
         }
       `}</style>
-      <div
-        className="whatsapp-widget"
-      >
+
       <button
-        className="whatsapp-button"
+        type="button"
+        className="fab-chat"
         onClick={handleMessageClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: isHovered ? '8px' : '0',
-          width: isHovered ? 'auto' : '40px',
-          minWidth: '40px',
-          paddingLeft: isHovered ? '12px' : '0',
-          paddingRight: isHovered ? '8px' : '0',
-          backgroundColor: isHovered ? '#f0f0f0' : '#fafafa',
-          border: `1.5px solid ${isHovered ? '#e07560' : '#F08571'}`,
-          borderRadius: '8px',
-          cursor: 'pointer',
-          boxShadow: 'none',
-          transition: 'all 0.2s ease',
-          whiteSpace: 'nowrap',
-        }}
-        title={isNorthAmerica ? "Chat with Tim on iMessage" : "Chat with Tim on WhatsApp"}
+        aria-label="Chat to Dr. Tim"
       >
-        {isHovered && (
-          <span style={{
-            fontSize: '12px',
-            fontWeight: '500',
-            color: isHovered ? '#e07560' : '#F08571',
-            flex: 1,
-          }}>
-            Chat directly with Tim
-          </span>
-        )}
-        <div className="whatsapp-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: '18px', height: '18px' }}>
-          <MessageCircle color={isHovered ? '#e07560' : '#F08571'} fill="none" style={{ width: '100%', height: '100%' }} />
-        </div>
+        <span className="fab-label" aria-hidden="true">Chat to Dr. Tim</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 6.5h14v9.5h-8l-4 3v-3H5z" />
+        </svg>
       </button>
-      </div>
-    </>
+    </div>
   );
 }

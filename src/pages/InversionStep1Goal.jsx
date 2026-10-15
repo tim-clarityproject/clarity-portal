@@ -2,322 +2,230 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
+import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
+import { DiscardLink } from '../components/ui/DiscardLink';
+import DiscardDialog from '../components/ui/DiscardDialog';
+import NameDialog from '../components/ui/NameDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
+
+const MAX_NAME_LENGTH = 60;
+
+function suggestNameFrom(goal) {
+  const trimmed = (goal || '').trim();
+  if (!trimmed) return 'New Pre-Mortem';
+  return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
+}
 
 export default function InversionStep1Goal() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const decisionId = location.state?.decisionId;
+  const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
 
   const [goal, setGoal] = useState(location.state?.goal || '');
-  const [isLoading, setIsLoading] = useState(false);
+  const [risks, setRisks] = useState(location.state?.risks || []);
+  const [riskAnswers, setRiskAnswers] = useState(location.state?.riskAnswers || []);
+  const [legacyPlan, setLegacyPlan] = useState(location.state?.legacyPlan || '');
+  const [currentTitle, setCurrentTitle] = useState(location.state?.problemTitle || '');
+  const [isLoading, setIsLoading] = useState(Boolean(decisionId) && !location.state?.goal);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [nameDialog, setNameDialog] = useState(null); // null | 'draft'
+  const { message, showToast } = useToast();
 
   useEffect(() => {
-    if (decisionId && user?.id) {
-      loadDecision();
+    if (!decisionId || !user || location.state?.goal) {
+      setIsLoading(false);
+      return;
     }
-  }, [decisionId, user?.id]);
-
-  const loadDecision = async () => {
-    if (!user) return;
-    try {
+    let cancelled = false;
+    (async () => {
       const { data, error } = await supabase
         .from('decisions')
         .select('*')
         .eq('id', decisionId)
         .eq('user_id', user.id)
         .single();
-
-      if (data && data.form_data) {
-        const formData = data.form_data;
-        setGoal(formData.goal || data.title || '');
+      if (cancelled) return;
+      if (error) {
+        console.error('[InversionStep1Goal] load failed:', error);
+        setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error loading decision:', error);
-    } finally {
+      if (data?.title) setCurrentTitle(data.title);
+      const formData = data?.form_data || {};
+      setGoal(formData.goal || data.title || '');
+      setRisks(formData.risks || []);
+      setRiskAnswers(formData.riskAnswers || []);
+      setLegacyPlan(formData.riskAnswers ? '' : (formData.plan || ''));
       setIsLoading(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decisionId, user?.id]);
+
+  const buildState = (overrides = {}) => ({
+    decisionId,
+    goal,
+    risks,
+    riskAnswers,
+    legacyPlan,
+    problemTitle: currentTitle,
+    ...overrides,
+  });
+
+  const persistDraft = async (name) => {
+    const payload = {
+      form_data: { goal, risks, riskAnswers },
+      title: name,
+      draft: true,
+      status: 'draft',
+      updated_at: new Date().toISOString(),
+    };
+    if (decisionId) {
+      const { data, error } = await supabase
+        .from('decisions')
+        .update(payload)
+        .eq('id', decisionId)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Could not find this entry to update.');
+      return decisionId;
     }
+    const { data, error } = await supabase
+      .from('decisions')
+      .insert({ user_id: user.id, tool_type: 'inversion', ...payload })
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Save did not return an entry.');
+    return data[0].id;
   };
 
-  const handleSave = async () => {
-    if (!user) return;
-
+  const handleSaveDraftConfirm = async (name) => {
+    if (!user || isSaving) return;
+    setSaveError('');
     setIsSaving(true);
     try {
-      const formData = { goal, fuckups: location.state?.fuckups || [], plan: location.state?.plan || '' };
-      let savedId = decisionId;
-      const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-      const title = location.state?.problemTitle || dateTitle;
-
-      if (decisionId) {
-        console.log('[InversionStep1] Updating with decisionId:', decisionId);
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            title,
-            form_data: formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        if (error) {
-          console.error('[InversionStep1] Update error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          console.error('[InversionStep1] SILENT FAILURE: UPDATE returned 0 rows');
-          throw new Error('Failed to update inversion - no rows affected');
-        }
-
-        savedId = data[0].id;
-      } else {
-        console.log('[InversionStep1] Creating new inversion');
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert({
-            user_id: user.id,
-            tool_type: 'inversion',
-            title,
-            form_data: formData,
-            status: 'completed',
-          })
-          .select();
-
-        if (error) {
-          console.error('[InversionStep1] Insert error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          console.error('[InversionStep1] SILENT FAILURE: INSERT returned 0 rows');
-          throw new Error('Failed to create inversion - no rows returned');
-        }
-
-        savedId = data[0].id;
-      }
-
-      setIsSaved(true);
+      const savedId = await persistDraft(name);
+      setDecisionId(savedId);
+      setCurrentTitle(name);
+      setNameDialog(null);
       clearProgress();
-      setTimeout(() => {
-        navigate('/inversion-step-2', { state: { decisionId: savedId, goal, problemTitle: title } });
-      }, 500);
-    } catch (error) {
-      console.error('Error saving inversion:', error);
-      alert(`Failed to save: ${error?.message || 'Unknown error'}`);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveDraft = async () => {
-    if (!user) return;
-
-    setIsSaving(true);
-    try {
-      const formData = { goal, fuckups: location.state?.fuckups || [], plan: location.state?.plan || '' };
-      const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-      const title = location.state?.problemTitle || dateTitle;
-
-      if (decisionId) {
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            form_data: formData,
-            status: 'draft',
-            draft: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        if (error) {
-          console.error('[InversionStep1] Draft update error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          throw new Error('Failed to update draft - no rows affected');
-        }
-      } else {
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert({
-            user_id: user.id,
-            tool_type: 'inversion',
-            title,
-            form_data: formData,
-            status: 'draft',
-            draft: true,
-          })
-          .select();
-
-        if (error) {
-          console.error('[InversionStep1] Draft insert error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          throw new Error('Failed to save draft - no rows returned');
-        }
-      }
-
-      setIsSaved(true);
-      clearProgress();
-      alert('Saved as draft');
+      showToast(`Draft saved as ${name}.`);
       navigate('/decision-history');
     } catch (error) {
-      console.error('Error saving draft:', error);
-      alert(`Failed to save draft: ${error?.message || 'Unknown error'}`);
+      console.error('[InversionStep1Goal] draft save failed:', error);
+      setNameDialog(null);
+      setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Discard this entry?')) {
-      setGoal('');
-      clearProgress();
-      navigate('/decision-tools');
+  // Deletes the saved row only if it is still a draft - a completed
+  // decision is never deleted by walking away from it. The condition
+  // lives in the query (see discardDraft.js), which is what makes this
+  // safe on the steps that never fetch the row and so cannot tell a
+  // draft from a completed one in page code (patch D1).
+  const handleDiscard = async () => {
+    setDiscardOpen(false);
+    if (decisionId) {
+      try {
+        await discardDecisionDraft(user.id, decisionId);
+      } catch (error) {
+        console.error('[InversionStep1Goal] draft delete on discard failed:', error);
+      }
     }
+    navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 
+  const canContinue = goal.trim().length > 0;
+  const suggestedName = currentTitle || suggestNameFrom(goal);
+
+  const actionButtons = (
+    <>
+      <button
+        type="button"
+        className="ui-btn-primary"
+        disabled={!canContinue || isSaving}
+        onClick={() => navigate('/inversion-step-2', { state: buildState() })}
+      >
+        Continue
+      </button>
+      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={() => setNameDialog('draft')}>
+        Save as draft
+      </button>
+    </>
+  );
+
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+    <div className="ui-root">
+      <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
-          <div>
-            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
-              What's your goal?
-            </h1>
+      <div className="plan-page plan-page--form">
+        <div className="inv-stepper">
+          <div className="inv-stepper-lines" aria-hidden="true">
+            <i className="on" />
+            <i />
+            <i />
           </div>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
-              borderRadius: '6px',
-              color: '#333',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <span className="inv-stepper-label">Step 1 of 3</span>
         </div>
 
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '24px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '33.33%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
-          </div>
-
-          {isLoading && <p style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>Loading decision...</p>}
-
-          <textarea
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            placeholder="Type here"
-            style={{
-              width: '100%',
-              minHeight: '300px',
-              padding: '16px',
-              border: '2px solid #e5e5e5',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              boxSizing: 'border-box',
-              outline: 'none',
-              resize: 'none',
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
-          />
+        <div className="plan-header">
+          <PageHeading pageKey="inversionStep1Goal" title="What are you trying to achieve?" overline="" subtitle="" rule={false} />
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginTop: '24px' }}>
-          <button
-            onClick={handleDelete}
-            title="Delete this entry"
-            style={{
-              padding: '12px',
-              backgroundColor: 'transparent',
-              color: '#F08571',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            ×
-          </button>
+        {isLoading ? (
+          <p className="ui-subtitle">Loading...</p>
+        ) : (
+          <div className="plan-field">
+            <AutoGrowTextarea
+              className="plan-dq-textarea"
+              placeholder="Type here"
+              aria-label="What are you trying to achieve?"
+              value={goal}
+              onChange={setGoal}
+            />
+          </div>
+        )}
 
-          <button
-            onClick={handleSaveDraft}
-            disabled={isSaving}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: 'transparent',
-              color: '#F08571',
-              fontWeight: '600',
-              border: '2px solid #F08571',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-              opacity: isSaving ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#f9f9f9')}
-            onMouseLeave={(e) => !isSaving && (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            Save as Draft
-          </button>
+        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 
-          <button
-            onClick={handleSave}
-            disabled={!goal.trim() || isSaving}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: (!goal.trim() || isSaving) ? '#ccc' : '#F08571',
-              color: 'white',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: (!goal.trim() || isSaving) ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => (!goal.trim() || isSaving) || (e.currentTarget.style.backgroundColor = '#e07560')}
-            onMouseLeave={(e) => (!goal.trim() || isSaving) || (e.currentTarget.style.backgroundColor = '#F08571')}
-          >
-            {isSaving ? 'Saving...' : 'Continue'}
-          </button>
+        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
+
+        <div className="plan-discard-row">
+          <DiscardLink onClick={() => setDiscardOpen(true)} />
         </div>
       </div>
+
+      <PhoneActionBar>{actionButtons}</PhoneActionBar>
+
+      <NameDialog
+        open={nameDialog === 'draft'}
+        title="Name this draft"
+        message="Give it a name so you can find it in My decisions."
+        suggestedName={suggestedName}
+        onConfirm={handleSaveDraftConfirm}
+        onCancel={() => setNameDialog(null)}
+      />
+
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard this entry?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
+      />
+      <Toast message={message} />
     </div>
   );
 }

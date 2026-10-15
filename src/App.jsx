@@ -10,7 +10,6 @@ import './lib/debugStorage'; // Make debugging utilities available
 import WhatsAppWidget from './components/WhatsAppWidget';
 import BreathButton from './components/BreathButton';
 import ProtectedLayout from './components/ProtectedLayout';
-import Login from './pages/Login';
 import Welcome from './pages/Welcome';
 import About from './pages/About';
 import MyAccount from './pages/MyAccount';
@@ -22,13 +21,14 @@ import ProjectList from './pages/ProjectList';
 import ProjectMatrix from './pages/ProjectMatrix';
 import ProjectProgress from './pages/ProjectProgress';
 import ProjectScatter from './pages/ProjectScatter';
-import Dashboard from './pages/Dashboard';
-import Results from './pages/Results';
 import MyJournal from './pages/MyJournal';
-import JournalLog from './pages/JournalLog';
+import DailyJournal from './pages/DailyJournal';
+import DailyJournals from './pages/DailyJournals';
+import DailyJournalRead from './pages/DailyJournalRead';
 import MyReviews from './pages/MyReviews';
 import ReviewSummary from './pages/ReviewSummary';
-import WeeklyMomentumReviewSummary from './pages/WeeklyMomentumReviewSummary';
+import ReviewPlan from './pages/ReviewPlan';
+import ReviewPlanSummary from './pages/ReviewPlanSummary';
 import DecisionTools from './pages/DecisionTools';
 import DecisionHistory from './pages/DecisionHistory';
 import DecisionSummary from './pages/DecisionSummary';
@@ -49,7 +49,7 @@ import GrowStep3Options from './pages/GrowStep3Options';
 import GrowStep3bPrioritize from './pages/GrowStep3bPrioritize';
 import GrowStep4WillDo from './pages/GrowStep4WillDo';
 import InversionStep1Goal from './pages/InversionStep1Goal';
-import InversionStep2Fuckups from './pages/InversionStep2Fuckups';
+import InversionStep2Risks from './pages/InversionStep2Risks';
 import InversionStep3Plan from './pages/InversionStep3Plan';
 import InversionThinkingSummary from './pages/InversionThinkingSummary';
 import ToughConversationStep1Feedback from './pages/ToughConversationStep1Feedback';
@@ -58,21 +58,33 @@ import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coachi
 import AuthCallback from './pages/AuthCallback';
 import EmailConfirmation from './pages/EmailConfirmation';
 import CheckEmailConfirmation from './pages/CheckEmailConfirmation';
-import TermsOfService from './pages/TermsOfService';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
-import PersonalOperatingPlanSummary from './pages/PersonalOperatingPlanSummary';
 import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
 import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
+import PersonalOperatingPlanHistory from './pages/PersonalOperatingPlanHistory';
+import PersonalOperatingPlanHistoryVersion from './pages/PersonalOperatingPlanHistoryVersion';
+import PersonalOperatingPlanArchived from './pages/PersonalOperatingPlanArchived';
+import PersonalOperatingPlanArchivedOne from './pages/PersonalOperatingPlanArchivedOne';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
 import PlanSection from './pages/PlanSection';
+import PlanningTools from './pages/PlanningTools';
 import GroundSection from './pages/GroundSection';
 import DecideSection from './pages/DecideSection';
 import ReviewSection from './pages/ReviewSection';
 import AccountSection from './pages/AccountSection';
+import AuthLogIn from './pages/auth/LogIn';
+import AuthSignUpStep1 from './pages/auth/SignUpStep1';
+import AuthSignUpStep2 from './pages/auth/SignUpStep2';
+import AuthCheckYourEmail from './pages/auth/CheckYourEmail';
+import AuthMission from './pages/auth/Mission';
+import AuthFinished from './pages/auth/Finished';
+import AuthWelcomeBack from './pages/auth/WelcomeBack';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ForgotPasswordCheckEmail from './pages/auth/ForgotPasswordCheckEmail';
+import ResetPassword from './pages/auth/ResetPassword';
+import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -123,25 +135,35 @@ function AppContent() {
     }
   }, [location.pathname, location.search, location.hash, navigate]);
 
-  // Handle post-signup redirect to mission page
+  // Handle post-signup redirect to mission page. Retargeted from the old
+  // /onboarding-mission to /auth/mission (the new Welcome-flow mission
+  // step) - src/pages/auth/Mission.jsx sets the same justConfirmedEmail
+  // flag itself (so AuthContext's own profile-upsert logic, which reads
+  // this flag, is unaffected), and is also the direct emailRedirectTo
+  // target, so in the normal case this effect and Mission.jsx's own
+  // navigation agree on the same destination.
   useEffect(() => {
     if (isLoading || !user) return;
 
-    // Check if user just confirmed their email (new signup flow)
+    // Check if user just confirmed their email (new signup flow). Guards
+    // on the whole /auth/ namespace, not just /auth/mission: AuthContext's
+    // own onAuthStateChange listener (which reads this same flag to decide
+    // terms_accepted) can finish its async profile upsert well after
+    // Mission.jsx has already saved the mission and moved the user on to
+    // /auth/finished - a narrower guard let this effect fire late and
+    // yank the user back to the mission screen after they'd already left it.
     const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
-    if (justConfirmedEmail && !location.pathname.includes('onboarding-mission')) {
+    if (justConfirmedEmail && !location.pathname.startsWith('/auth/')) {
       console.log('[App] New signup confirmed, redirecting to mission page');
-      navigate('/onboarding-mission', { replace: true });
+      navigate('/auth/mission', { replace: true });
       localStorage.removeItem('justConfirmedEmail');
     }
   }, [user, isLoading, location.pathname, navigate]);
 
   if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
-        <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
-      </div>
-    );
+    // Plain black, no text: the first paint matches the dark app instead
+    // of flashing a white "Loading..." page.
+    return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
   }
 
   // Determine if buttons should be hidden on current page
@@ -154,25 +176,74 @@ function AppContent() {
     '/onboarding-mission',
     '/personal-operating-plan-edit',
     '/personal-operating-plan-review',
+    '/personal-operating-plan-history',
+    '/personal-operating-plan-archived',
     '/mission-progress-review',
     '/terms-of-service',
     '/privacy-policy',
-    '/data-storage-notice'
-  ].includes(location.pathname);
+    '/data-storage-notice',
+    '/auth/login',
+    '/auth/sign-up',
+    '/auth/sign-up/account',
+    '/auth/check-email',
+    '/auth/mission',
+    '/auth/finished',
+    '/auth/welcome-back',
+    '/forgot-password',
+    '/forgot-password/check-email',
+    '/auth/reset-password',
+    '/breathe'
+  ].includes(location.pathname)
+    || location.pathname.startsWith('/legal/')
+    || location.pathname.startsWith('/personal-operating-plan-history/')
+    || location.pathname.startsWith('/personal-operating-plan-archived/');
 
   return (
     <>
       <ErrorBoundary>
         <Routes>
-          {/* PUBLIC ROUTES - No auth required */}
-          <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
+          {/* PUBLIC ROUTES - No auth required. "/" and "/login" used to
+              render the old Login page unconditionally. They now gate on
+              auth state instead: a logged-out visitor goes to the new
+              Welcome-flow log in screen, a logged-in visitor goes straight
+              to Home. The old Login page (src/pages/Login.jsx) is kept in
+              the codebase but is no longer routed to from here. */}
+          <Route path="/" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/auth/login" replace />} />
+        <Route path="/login" element={user ? <Navigate to="/welcome" replace /> : <Navigate to="/auth/login" replace />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/check-email-confirmation" element={<CheckEmailConfirmation />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/data-storage-notice" element={<DataStorageNotice />} />
+        <Route path="/terms-of-service" element={<Navigate to="/legal/terms" replace />} />
+        <Route path="/privacy-policy" element={<Navigate to="/legal/privacy" replace />} />
+        <Route path="/data-storage-notice" element={<Navigate to="/legal/data-storage" replace />} />
+
+        {/* NEW WELCOME FLOW - public routes (log in, sign up, check email,
+            mission, finished, welcome back). Deliberately NOT nested under
+            ProtectedLayout even where a session exists (Mission, Finished,
+            Welcome back) - these screens must never show the header pill,
+            drawer or tab bar that ProtectedLayout always renders. Each
+            page that needs a session checks AuthContext itself. */}
+        <Route path="/auth/login" element={<AuthLogIn />} />
+        <Route path="/auth/sign-up" element={<AuthSignUpStep1 />} />
+        <Route path="/auth/sign-up/account" element={<AuthSignUpStep2 />} />
+        <Route path="/auth/check-email" element={<AuthCheckYourEmail />} />
+        <Route path="/auth/mission" element={<AuthMission />} />
+        <Route path="/auth/finished" element={<AuthFinished />} />
+        <Route path="/auth/welcome-back" element={<AuthWelcomeBack />} />
+
+        {/* Password reset journey - also public, same reasoning as the
+            block above. /auth/reset-password is reached from the emailed
+            link and must work with no existing session, so it cannot be
+            nested under ProtectedLayout either. */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/forgot-password/check-email" element={<ForgotPasswordCheckEmail />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
+
+        {/* Standalone, publicly reachable versions of the same three
+            documents the sign-up reading pop-up shows, linked from the
+            foot of the log in / sign up screens - see
+            src/pages/legal/LegalDocumentPage.jsx. */}
+        <Route path="/legal/:doc" element={<LegalDocumentPage />} />
 
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>
@@ -180,9 +251,12 @@ function AppContent() {
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/onboarding-mission" element={<OnboardingMission />} />
           <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
-          <Route path="/personal-operating-plan-summary" element={<PersonalOperatingPlanSummary />} />
           <Route path="/personal-operating-plan-edit" element={<PersonalOperatingPlanEdit />} />
           <Route path="/personal-operating-plan-review" element={<PersonalOperatingPlanReview />} />
+          <Route path="/personal-operating-plan-history" element={<PersonalOperatingPlanHistory />} />
+          <Route path="/personal-operating-plan-history/:version" element={<PersonalOperatingPlanHistoryVersion />} />
+          <Route path="/personal-operating-plan-archived" element={<PersonalOperatingPlanArchived />} />
+          <Route path="/personal-operating-plan-archived/:missionId" element={<PersonalOperatingPlanArchivedOne />} />
           <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
           <Route path="/my-account" element={<MyAccount />} />
           <Route path="/goal-setting" element={<GoalSetting />} />
@@ -193,17 +267,19 @@ function AppContent() {
           <Route path="/project-matrix" element={<ProjectMatrix />} />
           <Route path="/project-progress" element={<ProjectProgress />} />
           <Route path="/project-scatter" element={<ProjectScatter />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/results" element={<Results />} />
           <Route path="/my-journal" element={<MyJournal />} />
-          <Route path="/journal-log" element={<JournalLog />} />
+          <Route path="/daily-journal" element={<DailyJournal />} />
+          <Route path="/daily-journals" element={<DailyJournals />} />
+          <Route path="/daily-journals/:date" element={<DailyJournalRead />} />
           <Route path="/my-reviews" element={<MyReviews />} />
           <Route path="/review-summary" element={<ReviewSummary />} />
-          <Route path="/weekly-momentum-review-summary" element={<WeeklyMomentumReviewSummary />} />
+          <Route path="/review-plan" element={<ReviewPlan />} />
+          <Route path="/review-plan-summary" element={<ReviewPlanSummary />} />
           <Route path="/decision-tools" element={<DecisionTools />} />
           <Route path="/decision-history" element={<DecisionHistory />} />
           <Route path="/decision-summary" element={<DecisionSummary />} />
           <Route path="/plan-section" element={<PlanSection />} />
+          <Route path="/planning-tools" element={<PlanningTools />} />
           <Route path="/ground-section" element={<GroundSection />} />
           <Route path="/decide-section" element={<DecideSection />} />
           <Route path="/review-section" element={<ReviewSection />} />
@@ -225,13 +301,14 @@ function AppContent() {
           <Route path="/grow-step-3b-prioritize" element={<GrowStep3bPrioritize />} />
           <Route path="/grow-step-4" element={<GrowStep4WillDo />} />
           <Route path="/inversion-step-1" element={<InversionStep1Goal />} />
-          <Route path="/inversion-step-2" element={<InversionStep2Fuckups />} />
+          <Route path="/inversion-step-2" element={<InversionStep2Risks />} />
           <Route path="/inversion-step-3" element={<InversionStep3Plan />} />
           <Route path="/inversion-thinking-summary" element={<InversionThinkingSummary />} />
           <Route path="/tough-conversation-step-1" element={<ToughConversationStep1Feedback />} />
           <Route path="/tough-conversation-step-2" element={<ToughConversationStep2Coaching />} />
           <Route path="/tough-conversation-summary" element={<ToughConversationSummary />} />
           <Route path="/edit-profile" element={<EditPersonalDetails />} />
+          {/* TEMP - dev-only test route for Build Prompt 5, remove when prompts 6-10 wire the real pages */}
         </Route>
 
           {/* Catch-all for unmatched routes */}

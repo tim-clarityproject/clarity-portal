@@ -8,7 +8,7 @@ import SaveProgressModal from '../components/SaveProgressModal';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 
 export default function ProjectList() {
   const navigate = useNavigate();
@@ -88,7 +88,7 @@ export default function ProjectList() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">

@@ -3,6 +3,7 @@ import { supabase, auth } from '../lib/supabase';
 import { sessionManager } from '../lib/sessionManager';
 import { dataSyncManager } from '../lib/dataSyncManager';
 import { diag } from '../utils/diag';
+import { clearAppStorage } from '../lib/clearAppStorage';
 
 export const AuthContext = createContext();
 
@@ -300,26 +301,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Helper: Clear draft autosave data on logout
+  // Helper: clear everything the app keeps in the browser (drafts,
+  // legacy tool autosaves, cached profile data) - see clearAppStorage.js.
   const clearUserDrafts = () => {
-    try {
-      // Remove draft keys from sessionStorage
-      for (let i = sessionStorage.length - 1; i >= 0; i--) {
-        const key = sessionStorage.key(i);
-        if (key && key.startsWith('clarity-') && key.includes('-draft-')) {
-          sessionStorage.removeItem(key);
-        }
-      }
-      // Remove draft keys from localStorage
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('clarity-') && key.includes('-draft-')) {
-          localStorage.removeItem(key);
-        }
-      }
-    } catch (e) {
-      console.error('Error clearing drafts on logout:', e);
-    }
+    clearAppStorage();
   };
 
   const logout = async () => {

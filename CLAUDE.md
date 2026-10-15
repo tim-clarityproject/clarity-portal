@@ -1,58 +1,62 @@
-# Clarity Portal: Project Memory (read this at the start of every session)
+# Clarity Portal Codebase Guide
 
-## What this project is
+## Design rules (Clarity Portal)
 
-The Clarity Portal is a client portal for The Clarity Project, a high-performance coaching business.
+1. **Dark first, pure black background.** The default is a pure black (#000000) background with white text. The light theme exists only as `[data-theme="light"]` and will be toggled via an Auto / Light / Dark switch on My Account in a later task. No default light theme.
 
-The owner is not technical. Always explain things in very simple language, one step at a time, with no jargon.
+2. **Never hard-code a colour, font, font size, spacing or timing.** All design values must come from `src/styles/tokens.css` (CSS variables starting with `--`) and all component classes from `src/styles/components.css`. This includes button styles, borders, text sizes, padding, gaps, animation duration, and motion curves.
 
-## Hosting and live address
+3. **No gradients anywhere in the interface.** Buttons, borders, backgrounds and other elements use flat single colours only. The only gradient allowed anywhere is inside the supplied logo image files (which are never modified).
 
-Hosted on Vercel. Team: theclarityproject. Project: clarity-portal-app.
+4. **Nekst (display font) is for titles, greetings, overlines, labels, tab names, dropdown prompts, buttons and the Your Mission label.** Always uppercase with wide letter spacing. Never below 10px. Never in paragraphs. DM Sans is for paragraphs, descriptions, typed answers, dropdown options and inputs. Inputs must be 16px minimum.
 
-The ONLY live website address is https://portal.theclarityproject.co.uk
+5. **Coral (#FF6F5C) is for actions and the active tab. Mint (#5FEFBB) is only for success or saved states.** Buttons use black text (#000000) on flat coral. The button classes are `.ui-btn-primary` (filled coral) and `.ui-btn-ghost` (outlined). Use var(--coral) and var(--mint-text) only.
 
-GitHub is connected to Vercel. Pushing to main automatically deploys to PRODUCTION on that address.
+6. **The crosshair (.ui-cross, cropped from the logo) is the only symbol for choose, add and expand actions.** Never smaller than 14px. Used in dropdowns, add buttons, and section expand/collapse triggers. Never used in the Your Mission bar. Apply with the .ui-cross class and size variants --sm (14px), --lg (24px). The .ui-cross--open modifier rotates 45 degrees when a section opens.
 
-Do NOT use the Vercel CLI. Do NOT ask the owner to run vercel login. It is not needed.
+7. **Every page title uses PageHeading component and all subtitle text lives in src/content/pageText.js.** The overline names the section only (Plan, Ground, Review) and must never repeat a word from the title. PageHeading hides the overline automatically when repetition is detected. Home has no subtitle. Pages inside a section get the section name as overline.
 
-## Branch rules
+8. **Use the word Mission everywhere, never Purpose.** The Your Mission bar, mission settings, and all related text use "Mission".
 
-main is the production branch. Pushing to main means the change goes live to real clients.
+9. **Spacing uses only the scale --space-1 to --space-7 (4px, 8px, 16px, 24px, 32px, 48px, 80px).** Tap targets are at least 44px (var(--tap-min)). No arbitrary spacing values.
 
-**DEFAULT:** make changes on main and push to main so they deploy to production.
+10. **Motion uses only the --ease curve and the --dur-fast (150ms), --dur (250ms) and --dur-slow (400ms) timings.** Animate only transform, opacity, colour and size. No bounce, spin or fly-in effects. Everything switches off under prefers-reduced-motion. Planned movements include: drawer slide with scrim fade, crosshair rotation when a section opens, smooth expand of the Your Mission pill, sliding highlight in segmented controls and tab bar, switch knob glide, modal fade and rise, dropdown fade, button hover lift, cross-fade between dark and light, page fade between routes.
 
-**EXCEPTION:** only work on a separate branch when the owner explicitly says to use a branch. In that case, push only that branch (Vercel will build a preview copy for testing), never touch main, and give the owner the test address.
+11. **Logo files in public/brand are used as supplied and never redrawn, recoloured, stretched or cropped.** The files are lockup-full_colour-on-dark.png (full logo with wordmark for desktop header), mark_colour-on-dark.png (emblem/mark for phone), and crosshair_white.png / crosshair_black.png (mask images for CSS masks).
 
-Never leave finished work sitting on a feature branch unless the owner asked for a branch.
+12. **HOME suggestion rules.** The Home page shows three action cards (Plan my day, Review my day, Refine my personal operating plan) with no subheading. At most ONE card carries the "Suggested for now" tag, chosen by this order using the device's local time and whether the action has been finished (started but unfinished counts as not done): First, on Friday/Saturday/Sunday, if this week's Weekly Momentum Review is not done, an extra fourth card "Weekly momentum review" appears at the top, tagged. Otherwise before 4pm, if today's plan is not done, Plan my day is tagged. Otherwise from 4pm, if today's review is not done, Review my day is tagged. Otherwise, if the personal operating plan has not been refined in the last 7 days, Refine my personal operating plan is tagged. Otherwise no tag. Check the `journal_entries` table (entry_date field for reviews) and `decisions` table (tool_type: 'daily_plan' and created_at for today's plan) and missions table (updated_at).
 
-Never delete branches, deployments, domains, files or environment variables without asking first.
+13. **The Account page sections, to be built in a later task, are: Profile, Mission (Statement and Show in header toggle), Appearance, Archived missions, and Danger zone.** Show in header is a switch (ui-switch). Delete is a quiet danger button (ui-btn-ghost--danger).
 
-## Things that must NOT be broken
+14. **Design tasks must not change logic, routing, database code or ProtectedLayout.jsx.** Design work happens on a feature branch and is merged to main only when explicitly asked. Every task ends with a summary in the specified format.
 
-The desktop experience is currently perfect. Any mobile change must sit inside a mobile-only media query (max-width: 768px) or be a safe fix that does not change how desktop looks.
+15. **The breathing tool (Breathe) is the showpiece of the portal.** Three techniques: Physiological sigh, Vagal breathing, Box breathing. A ring that swells and settles with faint echo rings for the first two techniques. For Box breathing, a coral line traces the rounded-square outline of the logo mark, one side per phase. The ring is coral on the in-breath and mint on the out-breath. The crosshair sits in the centre and rotates 45 degrees as the ring grows. All timings come from the Breathing Settings.
 
-Do not remove or change the diag import, the BottomTabBar behaviour, or the keyboard handling in ProtectedLayout.jsx. They were added on purpose to fix earlier keyboard problems.
+16. **Navigation structure (planned for a later task).** Home, Plan (which combines everything currently under Plan AND everything currently under Decide, including Decision Tools, Grow steps, Inversion steps and Tough Conversation), Ground, Review, My Account (with About and Log Out inside it). No separate Decide section. On phone, no hamburger menu; the five bottom tabs are Home, Ground, Plan, Review, Account. On desktop, the drawer has three groups: (1) Home; (2) Plan, Ground, Review sections; (3) My Account with About and Log Out pages inside.
 
-Keep overflow-x: hidden on the body unless the owner approves removing it.
+17. **New design styles apply only inside the .ui-root scope.** Never put global rules on html, body, #root or bare element selectors (input, button, textarea, select). All design variables (--bg, --text, --coral, etc.) and component classes (.ui-*) live only inside .ui-root and its data-theme variants. New pages in future tasks will wrap themselves (or a key container) in `class="ui-root"` to opt into the dark theme and design system styles. Existing pages have no .ui-root class and remain untouched. Everything new, including pop-ups and overlays, must render inside .ui-root. If a pop-up attaches to document.body, give that element the .ui-root class too so it sees the design variables.
 
-Do not change colours, fonts, wording, features or routes unless the task says so.
+18. **Every text field the user types into must grow to show all of its text.** No hidden text, and no scrolling inside a text box. Use the shared AutoGrowTextarea component (src/components/ui) for every free-text field, short or long - no fixed single-line inputs for free text, and no max-height caps on text boxes. The page scrolls instead.
 
-## How to work
+19. **Database timestamps are UTC with no time-zone ending on the live database.** Always read a saved created_at/updated_at (or similar) through parseDbTimestamp (src/lib/dateFormatter.js) before turning it into a Date, formatting it, sorting it or comparing it - never new Date(value) directly. Never use toISOString().split('T')[0] to get "today"'s date; use getLocalDateKey instead, which is built from the device's own getFullYear/getMonth/getDate. Times are shown on a 24 hour clock with no am or pm (07:53, 19:26) in the device's local time, always through formatClockTime or formatDayMonthTime in src/lib/dateFormatter.js - nothing formats a time on its own.
 
-Before changing anything, read the relevant files. Do not assume, check the code.
+20. **Tables and grids must never squash.** Use fixed column widths, keep headings to one line, let cell text wrap (overflow-wrap: anywhere) and let rows grow to fit their content - never let a column crush its text or force a sideways scroll. Stack into cards under ~600px instead of shrinking a table.
 
-Do not guess. If something is unclear, stop and ask the owner ONE clear question in simple language.
+21. **No swear words anywhere.** Not in product text, not in file names, not in code comments, not in variable or component names. If one is ever found, rename/reword it immediately.
 
-Do not change anything unrelated to the task.
+22. **Mock-up files are the source of truth.** Before building or changing any page, open and read the actual mock-up file and spec in full. Never build from a summary or from memory. Copy markup, CSS values, wording and behaviour from the mock-up. If the built page differs, the mock-up wins. If something cannot match, stop and report it instead of simplifying. Every build summary must list the files read and any differences left.
 
-Always run npm run build and make sure it passes before pushing.
+## List row guidelines
 
-Do not add user-scalable=no or maximum-scale to the viewport tag, it harms accessibility.
+These are guidelines, to apply by default to every list built from the shared row (`src/components/ui/HistoryList.jsx`: My Plans, My Reviews, My Journals, Decision History). Where a mock-up shows a detail, the mock-up wins. They are about layout only, not saving or navigation.
 
-## Summary format (give this at the end of EVERY task, in very simple language)
+On phone every row is built the same way:
 
-- **WHAT I CHANGED** (each file and what changed)
-- **WHERE IT IS LIVE** (the exact address, or the test address if a branch was used)
-- **WHAT I NEED TO CHECK** (simple numbered steps for the owner to test)
-- **ANYTHING RISKY OR UNRESOLVED**
+1. **Line 1:** the title, left-aligned, wrapping only between words.
+2. **Line 2:** the type label, then the status tag (Draft, Reviewed) beside it, then the version chip (for example Version 1.2) beside the tag, all on one left-aligned line that wraps cleanly. The version belongs here, not on the date line.
+3. **Line 3:** the date and time (24 hour), then any count (for example 196 words), always left-aligned and directly under line 2, in the same place in every row.
+4. **Actions:** one right-aligned row beneath with a small, even gap above it (spacing tokens). The text action (Continue, Review, View review) is the same size and weight as the type label, not larger; the pencil and bin icons are the same size and distance apart in every row.
+5. Every element starts at the same left edge in every row: no indents, no centring. Desktop keeps its single-line row.
+6. **Filters:** the one shared `FilterPills` row: a single non-wrapping row that swipes sideways at every width, with no dropdown on phone and no gradient or fade overlay.
+
+Note for mock-ups: Tim approved swipeable pills at every width and the type, status and version line in place of the mock-ups' dropdown on phone and version on the date line.

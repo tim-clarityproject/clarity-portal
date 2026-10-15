@@ -1,351 +1,186 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Trash2, Edit } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { formatDateWithOrdinal, formatDateTimeWithOrdinal } from '../lib/dateFormatter';
-import HomeHeader from '../components/HomeHeader';
-import BackArrow from '../components/BackArrow';
+import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
+import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
+import DesignHeader from '../components/DesignHeader';
+import HistoryList from '../components/ui/HistoryList';
+import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
+
+// Decision types with a "Review this plan" page (prompt 8).
+const REVIEWABLE_TYPES = new Set(['inversion', 'tough-conversation']);
+
+const TYPE_LABEL = {
+  grow: 'GROW',
+  inversion: 'Pre-mortem',
+  'tough-conversation': 'Tough conversation',
+  'strategic-alignment': 'Strategic alignment',
+  if_then_planning: 'If-Then plan',
+  stop_doing_audit: 'Stop doing audit',
+};
+
+const SUMMARY_ROUTE = {
+  inversion: '/inversion-thinking-summary',
+  'tough-conversation': '/tough-conversation-summary',
+  if_then_planning: '/if-then-planning-summary',
+  stop_doing_audit: '/stop-doing-audit-summary',
+};
+
+const EDIT_ROUTE = {
+  grow: '/grow-step-1',
+  inversion: '/inversion-step-1',
+  'tough-conversation': '/tough-conversation-step-1',
+  'strategic-alignment': '/goal-setting',
+  if_then_planning: '/if-then-planning',
+  stop_doing_audit: '/stop-doing-audit',
+};
 
 export default function DecisionHistory() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const [decisions, setDecisions] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { message, showToast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      loadDecisions();
+    if (user) loadDecisions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // A Discard on any Inversion/Tough conversation/Stop doing audit step
+  // lands here with a one-shot toast - show it once, then clear the
+  // router state so refreshing/going back doesn't repeat it.
+  useEffect(() => {
+    if (location.state?.toast) {
+      showToast(location.state.toast);
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadDecisions = async () => {
-    if (!user) return;
+    setError(null);
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('decisions')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-
-      if (data) {
-        setDecisions(data);
+      if (fetchError) throw fetchError;
+      setDecisions((data || []).filter((d) => d.tool_type !== 'daily_plan' && d.tool_type !== 'plan_meeting'));
+      try {
+        setReviews(await loadPlanReviews(user.id));
+      } catch (reviewErr) {
+        console.error('[DecisionHistory] review lookup failed (migration 013 may not be run yet):', reviewErr);
+        setReviews([]);
       }
-    } catch (error) {
-      console.error('Error loading decisions:', error);
+    } catch (err) {
+      console.error('[DecisionHistory] load failed:', err);
+      setError({ message: 'Could not load your decisions.', onRetry: loadDecisions });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-  };
-
-  const formatDailyPlanDate = (dateStr) => {
-    const date = new Date(dateStr);
-    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-    const ordinal = (n) => {
-      const s = ['th', 'st', 'nd', 'rd'];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  const rows = useMemo(() => decisions.map((d) => {
+    const isDraft = Boolean(d.draft || d.status === 'draft');
+    const reviewable = REVIEWABLE_TYPES.has(d.tool_type) && !isDraft;
+    let review = null;
+    if (reviewable) {
+      const dateKey = getLocalDateKey(parseDbTimestamp(d.created_at));
+      review = findPlanReview(reviews, { planKind: d.tool_type, planId: d.id, dateKey });
+    }
+    return {
+      id: d.id,
+      title: d.title || 'Untitled decision',
+      typeLabel: TYPE_LABEL[d.tool_type] || d.tool_type,
+      date: d.created_at,
+      isDraft,
+      canReview: reviewable,
+      reviewed: Boolean(review && !isPlanReviewDraft(review)),
+      reviewEntryId: review?.id || null,
+      raw: d,
     };
-    return `${weekday} ${ordinal(day)} ${month}, ${year}`;
+  }), [decisions, reviews]);
+
+  const openRow = (row) => {
+    const route = SUMMARY_ROUTE[row.raw.tool_type] || '/decision-summary';
+    navigate(route, { state: { decisionId: row.id } });
   };
 
-  const formatDailyPlanDateAndTime = (dateStr) => {
-    const date = new Date(dateStr);
-    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-    const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const ordinal = (n) => {
-      const s = ['th', 'st', 'nd', 'rd'];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
-    };
-    return `${weekday} ${ordinal(day)} ${month}, ${year} - ${time}`;
+  const editRow = (row) => {
+    const route = EDIT_ROUTE[row.raw.tool_type] || '/decision-tools';
+    navigate(route, { state: { decisionId: row.id, ...row.raw.form_data, problemTitle: row.raw.title } });
   };
 
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '';
-    const date = new Date(timeStr);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatTagName = (toolType) => {
-    // Special cases
-    if (toolType === 'if_then_planning') return 'If-Then Plan';
-    if (toolType === 'grow') return 'GROW';
-    if (toolType === 'stop_doing_audit') return 'Time Allocation Audit';
-
-    const words = toolType
-      .split(/[-_]/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1));
-
-    // Use hyphen for underscored names, space for hyphenated names
-    const separator = toolType.includes('_') ? '-' : ' ';
-    return words.join(separator);
-  };
-
-  const formatDateAndTime = (timeStr) => {
-    if (!timeStr) return '';
-    const date = new Date(timeStr);
-    const dateStr = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    const timeStr_ = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    return `${dateStr} ${timeStr_}`;
-  };
-
-  const handleEdit = (decision, e) => {
-    e.stopPropagation();
-    const editPageMap = {
-      grow: '/grow-step-1',
-      inversion: '/inversion-step-1',
-      'tough-conversation': '/tough-conversation-step-1',
-      'strategic-alignment': '/goal-setting',
-      'daily_plan': '/plan-my-day',
-      'if_then_planning': '/if-then-planning',
-      'stop_doing_audit': '/stop-doing-audit',
-    };
-    const editPage = editPageMap[decision.tool_type] || '/decision-tools';
-    navigate(editPage, { state: { decisionId: decision.id, ...decision } });
-  };
-
-  const handleDelete = async (decisionId, e) => {
-    e.stopPropagation();
-    if (!window.confirm('Delete this decision?')) return;
-
-    try {
-      await supabase
-        .from('decisions')
-        .delete()
-        .eq('id', decisionId);
-      setDecisions(decisions.filter(d => d.id !== decisionId));
-      clearProgress();
-    } catch (error) {
-      console.error('Error deleting decision:', error);
-      alert('Failed to delete decision');
+  const reviewRow = (row) => {
+    if (row.reviewed) {
+      navigate('/review-plan-summary', { state: { entryId: row.reviewEntryId, planKind: row.raw.tool_type, plan: row.raw } });
+    } else {
+      navigate('/review-plan', { state: { planKind: row.raw.tool_type, plan: row.raw } });
     }
   };
 
-  const truncateContent = (content, length = 100) => {
-    if (!content) return '';
-    return content.length > length ? content.substring(0, length) + '...' : content;
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      const { error: deleteError } = await supabase.from('decisions').delete().eq('id', id);
+      if (deleteError) throw deleteError;
+      setDecisions((prev) => prev.filter((d) => d.id !== id));
+      clearProgress();
+      showDeletedToast(showToast);
+    } catch (err) {
+      console.error('[DecisionHistory] delete failed:', err);
+      showToast('Could not delete - please try again.');
+    }
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+    <div className="ui-root">
+      <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '48px' }}>My Decisions</h1>
+      <div className="plan-page">
+        <div className="dt-hrow">
+          <PageHeading pageKey="decisionHistory" title="My decisions" overline="" subtitle="" rule={false} />
+          <button type="button" className="ui-btn-primary" onClick={() => navigate('/decision-tools')}>
+            Make a decision
+          </button>
+        </div>
 
         {isLoading ? (
-          <p style={{ color: '#999', fontSize: '14px', textAlign: 'center' }}>Loading...</p>
-        ) : decisions.length === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: '32px' }}>
-            <p style={{ color: '#999', fontSize: '14px', marginBottom: '16px' }}>No decisions yet</p>
-            <button
-              onClick={() => navigate('/decision-tools')}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#F08571',
-                color: 'white',
-                fontWeight: '600',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#e07560';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#F08571';
-              }}
-            >
-              Make a Decision
-            </button>
-          </div>
+          <p className="ui-subtitle">Loading...</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {decisions
-              .filter((decision) => decision.tool_type !== 'daily_plan' && decision.tool_type !== 'plan_meeting')
-              .map((decision) => {
-              return (
-              <button
-                key={decision.id}
-                onClick={() => {
-                  let route = '/decision-summary';
-                  if (decision.tool_type === 'daily_plan') route = '/daily-plan-summary';
-                  if (decision.tool_type === 'if_then_planning') route = '/if-then-planning-summary';
-                  if (decision.tool_type === 'stop_doing_audit') route = '/stop-doing-audit-summary';
-                  navigate(route, { state: { decisionId: decision.id, ...decision } });
-                }}
-                style={{
-                  padding: '16px',
-                  backgroundColor: '#f9f9f9',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  minHeight: '70px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f0f0f0';
-                  e.currentTarget.style.borderColor = '#F08571';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f9f9f9';
-                  e.currentTarget.style.borderColor = '#e5e5e5';
-                }}
-              >
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '16px', width: '100%' }}>
-                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#333', margin: 0 }}>
-                    {decision.tool_type === 'daily_plan' ? (
-                      formatDailyPlanDateAndTime(decision.created_at)
-                    ) : (
-                      decision.title ? truncateContent(decision.title, 60) : 'Untitled Decision'
-                    )}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        color: 'white',
-                        backgroundColor: '#F08571',
-                        padding: '4px 12px',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {decision.tool_type === 'daily_plan' ? 'Daily Plan' : formatTagName(decision.tool_type)}
-                    </span>
-                    {(decision.draft || decision.status === 'draft') && (
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          color: '#fff',
-                          backgroundColor: '#999',
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                        }}
-                      >
-                        Draft
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: '34px' }}>
-                    <p style={{ fontSize: '13px', color: '#999', margin: 0, whiteSpace: 'nowrap', lineHeight: '34px', width: '170px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {decision.tool_type === 'daily_plan' ? '' : formatDateTimeWithOrdinal(decision.created_at)}
-                    </p>
-                    <button
-                      onClick={(e) => handleEdit(decision, e)}
-                      title="Edit decision"
-                      style={{
-                        padding: '8px',
-                        backgroundColor: 'transparent',
-                        color: '#F08571',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '34px',
-                        width: '34px',
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(decision.id, e)}
-                      title="Delete decision"
-                      style={{
-                        padding: '8px',
-                        backgroundColor: 'transparent',
-                        color: '#F08571',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '34px',
-                        width: '34px',
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              </button>
-            );
-            })}
-
-          </div>
+          <HistoryList
+            rows={rows}
+            emptyText="No decisions yet."
+            error={error}
+            onOpen={openRow}
+            onEdit={editRow}
+            onReview={reviewRow}
+            onDelete={(row) => setDeleteTarget(row)}
+          />
         )}
       </div>
 
-      {/* Fixed bottom bar for making new decisions - always visible */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid #e5e5e5',
-        padding: '16px 32px',
-        display: 'flex',
-        justifyContent: 'center',
-        zIndex: 10,
-      }}>
-        <button
-          onClick={() => navigate('/decision-tools')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: 'transparent',
-            border: '2px solid #e5e5e5',
-            color: '#333',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: '600',
-            borderRadius: '6px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#F08571';
-            e.currentTarget.style.backgroundColor = '#f9f9f9';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#e5e5e5';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          + Make another decision
-        </button>
-      </div>
+      <DeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this decision?"
+        body={deleteTarget ? `"${deleteTarget.title}" will be removed for good. This cannot be undone.` : ''}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <Toast message={message} />
     </div>
   );
 }

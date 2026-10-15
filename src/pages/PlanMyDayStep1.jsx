@@ -1,282 +1,245 @@
-import { useState, useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
-import SavedConfirmation from '../components/SavedConfirmation';
-import HomeHeader from '../components/HomeHeader';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
+import DesignHeader from '../components/DesignHeader';
+import PhoneActionBar from '../components/ui/PhoneActionBar';
+import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
+import { DiscardLink } from '../components/ui/DiscardLink';
+import DiscardDialog from '../components/ui/DiscardDialog';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
+
+// Worded exactly per the approved mock-up - topPriority/showUp/notDo are
+// the real Supabase field names (unchanged); only the on-screen wording
+// changed, including the two that were previously shortened on the
+// summary (see DailyPlanSummary.jsx).
+const QUESTIONS = [
+  { key: 'gratitude', label: 'What are you grateful for today?' },
+  { key: 'topPriority', label: 'What are your top priorities today?' },
+  { key: 'showUp', label: "What's within your control today?" },
+  { key: 'notDo', label: 'What do you not want to do today?' },
+];
+
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// "Friday 2nd October" - today's device-local date, no year (per mock).
+function formatTodayHeader(date) {
+  const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' });
+  const month = date.toLocaleDateString('en-GB', { month: 'long' });
+  return `${weekday} ${ordinal(date.getDate())} ${month}`;
+}
+
+function CheckIcon() {
+  return (
+    <svg className="plan-dq-check" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
 
 export default function PlanMyDayStep1() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const decisionId = location.state?.decisionId;
-  const isEditMode = Boolean(decisionId);
-  const [gratitude, setGratitude] = useState(() => location.state?.gratitude || '');
-  const [topPriority, setTopPriority] = useState(() => location.state?.topPriority || '');
-  const [showUp, setShowUp] = useState(() => location.state?.showUp || '');
-  const [notDo, setNotDo] = useState(() => location.state?.notDo || '');
+  const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
+  const [gratitude, setGratitude] = useState('');
+  const [topPriority, setTopPriority] = useState('');
+  const [showUp, setShowUp] = useState('');
+  const [notDo, setNotDo] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const refGratitude = useRef(null);
-  const refTopPriority = useRef(null);
-  const refShowUp = useRef(null);
-  const refNotDo = useRef(null);
-  useAutoExpandTextarea(refGratitude, gratitude);
-  useAutoExpandTextarea(refTopPriority, topPriority);
-  useAutoExpandTextarea(refShowUp, showUp);
-  useAutoExpandTextarea(refNotDo, notDo);
+  const [saveError, setSaveError] = useState('');
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const { message, showToast } = useToast();
 
+  const values = { gratitude, topPriority, showUp, notDo };
+  const setters = {
+    gratitude: setGratitude,
+    topPriority: setTopPriority,
+    showUp: setShowUp,
+    notDo: setNotDo,
+  };
+
+  // Loads an existing plan (edit, or resuming a draft) by id - the real
+  // data source for Edit, replacing the old pattern of reading answers
+  // straight off location.state (never actually wired to a real Edit
+  // button before this task).
   useEffect(() => {
-    console.log('[PlanMyDayStep1] mounted/updated. location.state:', location.state, '-> decisionId:', decisionId, 'isEditMode:', isEditMode);
-  }, [location.state, decisionId, isEditMode]);
+    if (!decisionId || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('decisions')
+        .select('*')
+        .eq('id', decisionId)
+        .eq('user_id', user.id)
+        .single();
+      if (cancelled) return;
+      if (error) {
+        console.error('[PlanMyDayStep1] load failed:', error);
+        return;
+      }
+      const formData = data?.form_data || {};
+      setGratitude(formData.gratitude || '');
+      setTopPriority(formData.topPriority || '');
+      setShowUp(formData.showUp || '');
+      setNotDo(formData.notDo || '');
+    })();
+    return () => { cancelled = true; };
+  }, [decisionId, user?.id]);
 
-  const handleSave = async () => {
-    if (!user) {
-      alert('Please log in to save');
-      return;
+  const buildTitle = () =>
+    `Daily Plan - ${new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}`;
+
+  const persist = async (draft) => {
+    const payload = {
+      form_data: { gratitude, topPriority, showUp, notDo },
+      title: buildTitle(),
+      draft,
+      status: draft ? 'draft' : 'completed',
+      updated_at: new Date().toISOString(),
+    };
+
+    if (decisionId) {
+      const { data, error } = await supabase
+        .from('decisions')
+        .update(payload)
+        .eq('id', decisionId)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Could not find this plan to update.');
+      return decisionId;
     }
 
-    if (false) {
-      alert('Please log in to save decisions');
-      return;
-    }
+    const { data, error } = await supabase
+      .from('decisions')
+      .insert([{ user_id: user.id, tool_type: 'daily_plan', ...payload }])
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Save did not return a plan.');
+    return data[0].id;
+  };
 
+  const handleFinish = async () => {
+    if (!user || isSaving) return;
+    setSaveError('');
     setIsSaving(true);
     try {
-      const formData = {
-        gratitude,
-        topPriority,
-        showUp,
-        notDo,
-      };
-
-      const title = `Daily Plan - ${new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}`;
-
-      let resultDecisionId = decisionId;
-
-      console.log('[PlanMyDayStep1] handleSave: decisionId =', decisionId, 'isEditMode =', isEditMode, '-> branch:', (isEditMode && decisionId) ? 'UPDATE' : 'INSERT');
-
-      if (isEditMode && decisionId) {
-        // Update existing decision (edit mode)
-        const { data, error } = await supabase
-          .from('decisions')
-          .update({
-            form_data: formData,
-            title,
-            status: 'completed',
-            draft: false,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', decisionId)
-          .eq('user_id', user.id)
-          .select();
-
-        console.log('[PlanMyDayStep1] UPDATE result: rows affected =', data?.length, 'error =', error);
-
-        if (error) throw error;
-        if (!data || data.length === 0) {
-          console.warn('[PlanMyDayStep1] UPDATE matched 0 rows for decisionId', decisionId, '- check that this id exists and belongs to user', user.id);
-        }
-      } else {
-        // Create new decision
-        const { data, error } = await supabase
-          .from('decisions')
-          .insert([{
-            user_id: user.id,
-            tool_type: 'daily_plan',
-            title,
-            form_data: formData,
-            status: 'completed',
-            draft: false,
-          }])
-          .select();
-
-        console.log('[PlanMyDayStep1] INSERT result: new id =', data?.[0]?.id, 'error =', error);
-
-        if (error) throw error;
-        resultDecisionId = data?.[0]?.id;
-      }
-
-      setSaved(true);
+      const savedId = await persist(false);
       clearProgress();
-      setTimeout(() => {
-        navigate('/daily-plan-summary', {
-          state: {
-            decisionId: resultDecisionId
-          }
-        });
-      }, 1500);
+      navigate('/daily-plan-summary', { state: { decisionId: savedId, toast: 'Saved.' } });
     } catch (error) {
-      console.error('Error saving plan:', error);
-      alert(`Failed to save plan: ${error.message}`);
+      console.error('[PlanMyDayStep1] Finish failed:', error);
+      setSaveError('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Discard this plan?')) {
-      setGratitude('');
-      setTopPriority('');
-      setShowUp('');
-      setNotDo('');
-      navigate('/decision-history');
+  const handleSaveDraft = async () => {
+    if (!user || isSaving) return;
+    setSaveError('');
+    setIsSaving(true);
+    try {
+      const savedId = await persist(true);
+      setDecisionId(savedId);
+      showToast('Draft saved.');
+      navigate('/my-plans');
+    } catch (error) {
+      console.error('[PlanMyDayStep1] Save as draft failed:', error);
+      setSaveError('Could not save - please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const sectionStyle = {
-    marginBottom: '28px',
-    backgroundColor: 'white',
-    padding: '20px',
-    borderRadius: '8px',
-    borderLeft: '3px solid #F08571'
+  // Deletes the saved row only if it is still a draft - a completed
+  // plan is never deleted by walking away from it. The condition lives
+  // in the query (see discardDraft.js), so a completed row matches
+  // nothing even though this page does not track its status (patch D1).
+  const handleDiscard = async () => {
+    setDiscardOpen(false);
+    if (decisionId) {
+      try {
+        await discardDecisionDraft(user.id, decisionId);
+      } catch (error) {
+        console.error('[PlanMyDayStep1] draft delete on discard failed:', error);
+      }
+    }
+    navigate('/my-plans');
   };
-  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '500', color: '#666', marginBottom: '6px' };
-  const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
+
+  const todayLabel = formatTodayHeader(new Date());
+
+  const actionButtons = (
+    <>
+      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleFinish}>
+        Finish
+      </button>
+      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>
+        Save as draft
+      </button>
+    </>
+  );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+    <div className="ui-root">
+      <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px', paddingBottom: '120px' }} className="page-container">
-        <div style={{ marginBottom: '48px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
-            Daily Intentions
-          </h1>
-          <p style={{ fontSize: '14px', color: '#999', margin: 0 }}>
-            Make sure your day aligns with your mission.
-          </p>
+      <div className="plan-page plan-page--form">
+        <div className="plan-header">
+          <PageHeading pageKey="planMyDayStep1" title="Daily intentions" overline={todayLabel} rule={false} />
         </div>
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+        {QUESTIONS.map((q, index) => {
+          const answered = values[q.key].trim().length > 0;
+          return (
+            <div className={`plan-dq${answered ? ' on' : ''}`} key={q.key}>
+              <div className="plan-dq-num">
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <CheckIcon />
+              </div>
+              <div>
+                <label className="plan-dq-label" htmlFor={`dq-${q.key}`}>{q.label}</label>
+                <AutoGrowTextarea
+                  id={`dq-${q.key}`}
+                  className="plan-dq-textarea"
+                  value={values[q.key]}
+                  placeholder="Type here"
+                  onChange={(v) => setters[q.key](v)}
+                />
+              </div>
+            </div>
+          );
+        })}
+
+        {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
+
+        <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
+
+        <div className="plan-discard-row">
+          <DiscardLink onClick={() => setDiscardOpen(true)} />
         </div>
-
-        <div style={{ marginBottom: '32px', display: 'grid', gridTemplateColumns: '1fr', gap: '0' }}>
-          <div style={sectionStyle}>
-            <label style={labelStyle}>
-              What are you grateful for today?
-            </label>
-            <textarea
-              ref={refGratitude}
-              value={gratitude}
-              onChange={(e) => setGratitude(e.target.value)}
-              placeholder="Type here"
-              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'none', overflow: 'hidden'}}
-            />
-          </div>
-
-          <div style={sectionStyle}>
-            <label style={labelStyle}>
-              What's your top priority today?
-            </label>
-            <textarea
-              ref={refTopPriority}
-              value={topPriority}
-              onChange={(e) => setTopPriority(e.target.value)}
-              placeholder="Type here"
-              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'none', overflow: 'hidden'}}
-            />
-          </div>
-
-          <div style={sectionStyle}>
-            <label style={labelStyle}>
-              What's within your control today?
-            </label>
-            <textarea
-              ref={refShowUp}
-              value={showUp}
-              onChange={(e) => setShowUp(e.target.value)}
-              placeholder="Type here"
-              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'none', overflow: 'hidden'}}
-            />
-          </div>
-
-          <div style={sectionStyle}>
-            <label style={labelStyle}>
-              What do you not want to do today?
-            </label>
-            <textarea
-              ref={refNotDo}
-              value={notDo}
-              onChange={(e) => setNotDo(e.target.value)}
-              placeholder="Type here"
-              style={{...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'none', overflow: 'hidden'}}
-            />
-          </div>
-        </div>
-
       </div>
 
-      {/* Fixed bottom bar */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid #e5e5e5',
-        padding: '12px 32px',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '12px',
-        zIndex: 10,
-      }}>
-        {saved && (
-          <div style={{ textAlign: 'center', color: '#5ECCC0', fontSize: '14px', fontWeight: '600', position: 'absolute', left: '32px' }}>
-            ✓ Daily plan saved
-          </div>
-        )}
-        <button
-          onClick={handleDelete}
-          title="Delete plan"
-          style={{
-            padding: '8px 12px',
-            backgroundColor: 'transparent',
-            color: '#F08571',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        >
-          <Trash2 size={18} />
-        </button>
+      <PhoneActionBar>{actionButtons}</PhoneActionBar>
 
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#F08571',
-            color: 'white',
-            fontWeight: '600',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: isSaving ? 'not-allowed' : 'pointer',
-            fontSize: '13px',
-            opacity: isSaving ? 0.7 : 1,
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#e07560')}
-          onMouseLeave={(e) => !isSaving && (e.currentTarget.style.backgroundColor = '#F08571')}
-        >
-          {isSaving ? 'Finishing...' : 'Finish'}
-        </button>
-      </div>
-
-      <SavedConfirmation
-        isVisible={saved}
-        onDismiss={() => setSaved(false)}
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard this plan?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
       />
+      <Toast message={message} />
     </div>
   );
 }

@@ -106,8 +106,33 @@ export function MissionProvider({ children }) {
     }
   };
 
+  // Single source of truth for "show mission in header": updates context
+  // state immediately (so every consumer - the header pill, the phone
+  // panel, the scrim, and the My Account switch - reflects the change
+  // with no reload), then persists it the same way updateMission already
+  // does. On failure, reverts the context state back to what it was
+  // before the toggle, keeping the existing console.error handling.
+  const updateShowInHeader = async (visible) => {
+    const previousValue = showInHeader;
+    setShowInHeader(visible);
+
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ show_mission_in_header: visible })
+          .eq('id', user.id);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating visibility preference:', error);
+        setShowInHeader(previousValue);
+      }
+    }
+  };
+
   return (
-    <MissionContext.Provider value={{ mission, showInHeader, setShowInHeader, updateMission, refetchMission: fetchMission }}>
+    <MissionContext.Provider value={{ mission, showInHeader, setShowInHeader, updateMission, updateShowInHeader, refetchMission: fetchMission }}>
       {children}
     </MissionContext.Provider>
   );

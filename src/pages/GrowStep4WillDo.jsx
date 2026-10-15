@@ -9,10 +9,13 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import SavedConfirmation from '../components/SavedConfirmation';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
+import Toast from '../components/ui/Toast';
+import useToast from '../hooks/useToast';
 
 export default function GrowStep4WillDo() {
   const navigate = useNavigate();
+  const { message: toastMessage, showToast } = useToast();
   const location = useLocation();
   const { updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
@@ -114,12 +117,13 @@ export default function GrowStep4WillDo() {
     if (!willDoValue.trim()) return;
 
     if (false) {
-      alert('Please log in to save decisions');
+      showToast('Please log in to save decisions.');
       return;
     }
 
     // Store the newDecisionId if provided (from SaveDiscardButtons auto-save)
-    if (newDecisionId) {
+    // (guarded: location.state is null when the page was opened directly)
+    if (newDecisionId && location.state) {
       location.state.decisionId = newDecisionId;
     }
 
@@ -206,7 +210,7 @@ export default function GrowStep4WillDo() {
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
-      alert(`Failed to save decision: ${error.message}`);
+      showToast('Could not save - please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -214,7 +218,7 @@ export default function GrowStep4WillDo() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
@@ -453,6 +457,7 @@ export default function GrowStep4WillDo() {
         isVisible={saved}
         onDismiss={() => setSaved(false)}
       />
+      <Toast message={toastMessage} />
     </div>
   );
 }

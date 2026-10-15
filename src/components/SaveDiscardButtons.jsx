@@ -5,12 +5,14 @@ import { saveProgress, clearProgress, AUTO_SAVE_KEY } from '../lib/saveProgress'
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { mergeFormData } from '../utils/mergeFormData';
+import DiscardDialog from './ui/DiscardDialog';
 
 export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, onSaveAsDraft = null, nextLabel = 'Continue' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const [isSaving, setIsSaving] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   const saveToSupabase = async () => {
     if (!user || !toolType) return null;
@@ -169,13 +171,12 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
   };
 
   const handleDiscard = () => {
-    if (window.confirm('Are you sure you want to discard this entry?')) {
-      clearProgress();
-      if (pageType === 'decision') {
-        navigate('/decision-tools');
-      } else if (pageType === 'journal') {
-        navigate('/my-journal');
-      }
+    setDiscardOpen(false);
+    clearProgress();
+    if (pageType === 'decision') {
+      navigate('/decision-tools');
+    } else if (pageType === 'journal') {
+      navigate('/my-journal');
     }
   };
 
@@ -211,7 +212,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
       <button
         type="button"
-        onClick={handleDiscard}
+        onClick={() => setDiscardOpen(true)}
         title="Discard this entry"
         style={{
           padding: '12px',
@@ -289,6 +290,14 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           {isSaving ? 'Saving...' : nextLabel}
         </button>
       )}
+
+      <DiscardDialog
+        isOpen={discardOpen}
+        title="Discard this entry?"
+        message="Anything you have not saved will be lost."
+        onKeep={() => setDiscardOpen(false)}
+        onDiscard={handleDiscard}
+      />
     </div>
   );
 }

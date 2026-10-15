@@ -1,94 +1,100 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
-import HomeHeader from '../components/HomeHeader';
-import { designTokens } from '../lib/designTokens';
+import DesignHeader from '../components/DesignHeader';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { findTodaysDailyPlan } from '../lib/planReview';
+import PageHeading from '../components/PageHeading';
 
-const REVIEW_ITEMS = [
-  { id: 'after-action', title: 'After-Action Review', description: 'Reflect on what you learned from recent events', route: '/my-journal', state: { reviewType: 'after-action' } },
-  { id: 'weekly-momentum', title: 'Weekly Momentum Review', description: 'Assess your progress and reset for the week ahead', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
-  { id: 'pop-review', title: 'Personal Operating Plan Review', description: 'Review your mission, strategies, and tactics', needsFetch: true, route: '/personal-operating-plan-review' },
-  { id: 'my-reviews', title: 'My Reviews', description: 'View all your completed reviews', route: '/my-reviews' },
+// "Review my day" now opens the prompt 8 review page for today's daily
+// plan (separated from "Review a situation", which still opens the
+// existing after-action journal flow - they used to land in the same
+// place, see build summary point 6).
+const CARDS = [
+  { title: 'Review my day', description: 'Reflect on what worked today.', needsTodaysPlan: true },
+  { title: 'Weekly momentum check-in', description: 'Look back on your week and set up the next.', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
+  { title: 'Review a situation', description: 'Learn from something that has happened.', route: '/my-journal', state: { reviewType: 'after-action' } },
+  { title: 'Review my personal operating plan', description: 'Check it still fits how you work.', route: '/personal-operating-plan-review', needsMissionLookup: true },
 ];
+
+function CrossMark() {
+  return <span className="dt-card-mark ui-cross ui-cross--sm" aria-hidden="true" />;
+}
+
+function ClockIcon() {
+  return (
+    <svg className="hub-history-card-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}
 
 export default function ReviewSection() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useContext(AuthContext);
 
-  const handleReviewSelect = async (item) => {
-    if (item.needsFetch) {
-      // For Personal Operating Plan Review, fetch the latest mission ID
+  const openCard = async (card) => {
+    if (card.needsTodaysPlan) {
       try {
-        const { data: missionData } = await supabase
-          .from('missions')
-          .select('id')
-          .eq('user_id', user?.id)
-          .is('archived_at', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (missionData) {
-          navigate(item.route, { state: { missionId: missionData.id } });
-        }
+        const plan = await findTodaysDailyPlan(user?.id);
+        navigate('/review-plan', { state: { planKind: 'daily_plan', plan } });
       } catch (err) {
-        console.error('Error fetching mission:', err);
+        console.error('[ReviewSection] today\'s plan lookup failed:', err);
+        navigate('/review-plan', { state: { planKind: 'daily_plan', plan: null } });
       }
-    } else {
-      // For other reviews, navigate with optional state
-      const state = item.state ? { ...location.state, ...item.state } : { ...location.state };
-      navigate(item.route, { state });
+      return;
+    }
+    if (!card.needsMissionLookup) {
+      navigate(card.route, { state: card.state });
+      return;
+    }
+    try {
+      const { data: missionData } = await supabase
+        .from('missions')
+        .select('id')
+        .eq('user_id', user?.id)
+        .is('archived_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (missionData) {
+        navigate(card.route, { state: { missionId: missionData.id } });
+      }
+    } catch (err) {
+      console.error('[ReviewSection] mission lookup failed:', err);
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+    <div className="ui-root">
+      <DesignHeader />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '0' }}>Review</h1>
+      <div className="plan-page">
+        <div className="plan-header">
+          <PageHeading pageKey="reviewSection" title="Review" overline="" rule={false} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '0' }}>
-          {REVIEW_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleReviewSelect(item)}
-              style={{
-                padding: '20px',
-                backgroundColor: 'white',
-                border: '2px solid #e5e5e5',
-                borderRadius: '12px',
-                color: '#333',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '16px',
-                transition: 'all 0.2s',
-                textAlign: 'left',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                minHeight: '140px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#F08571';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(240, 133, 113, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#e5e5e5';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>{item.title}</div>
-                <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>{item.description}</div>
-              </div>
+        <div className="dt-cards">
+          {CARDS.map((card) => (
+            <button key={card.title} type="button" className="dt-card dt-card--row" onClick={() => openCard(card)}>
+              <span className="dt-card-text">
+                <span className="dt-card-title">{card.title}</span>
+                <span className="dt-card-desc">{card.description}</span>
+              </span>
+              <CrossMark />
             </button>
           ))}
         </div>
+
+        <p className="dt-soon-label" style={{ marginTop: 'var(--space-6)' }}>Your history</p>
+        <button type="button" className="hub-history-card" onClick={() => navigate('/my-reviews')}>
+          <span>
+            <span className="hub-history-card-title">My reviews</span>
+            <span className="hub-history-card-desc">Your journal entries and past reviews.</span>
+          </span>
+          <ClockIcon />
+        </button>
       </div>
     </div>
   );

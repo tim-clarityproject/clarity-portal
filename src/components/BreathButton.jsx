@@ -1,78 +1,107 @@
 import { useState } from 'react';
-import BreathingGuide from './BreathingGuide';
+import BreathingQuickOpen from './BreathingQuickOpen';
 
 export default function BreathButton() {
   const [showBreathing, setShowBreathing] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <>
-      <style>{`
-        .breathe-button {
-          position: fixed;
-          bottom: 88px;
-          right: 24px;
-          height: 40px;
-          padding: 0;
-          margin: 0;
-          z-index: 999;
-        }
-        @media (max-width: 768px) {
-          .breathe-button {
-            display: none !important;
+      <div className="ui-root">
+        <style>{`
+          .ui-root .fab-breathe {
+            position: fixed;
+            right: 24px;
+            bottom: 88px;
+            z-index: 999;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color var(--dur) var(--ease);
           }
-        }
-      `}</style>
-      <button
-        className="breathe-button"
-        onClick={() => setShowBreathing(true)}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        style={{
-          width: isHovered ? 'auto' : '40px',
-          minWidth: '40px',
-          borderRadius: '8px',
-          backgroundColor: isHovered ? '#f0f0f0' : '#fafafa',
-          border: `1.5px solid ${isHovered ? '#e07560' : '#F08571'}`,
-          color: isHovered ? '#e07560' : '#F08571',
-          fontSize: '12px',
-          fontWeight: '500',
-          cursor: 'pointer',
-          boxShadow: 'none',
-          transition: 'all 0.2s',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: isHovered ? '8px' : '0',
-          paddingLeft: isHovered ? '12px' : '0',
-          paddingRight: isHovered ? '8px' : '0',
-          zIndex: 999,
-          lineHeight: '1',
-          whiteSpace: 'nowrap',
-        }}
-        title="Take a breath"
-      >
-        {isHovered && (
-          <span style={{
-            fontSize: '12px',
-            fontWeight: '500',
-            color: isHovered ? '#e07560' : '#F08571',
-            flex: 1,
-          }}>
-            Take a breath
-          </span>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: '18px', height: '18px' }}>
-          <svg width="18" height="18" viewBox="0 0 18 18">
-            {/* Top wavy line */}
-            <path d="M 3 7 Q 6 5 9 7 Q 12 9 15 7" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            {/* Bottom wavy line */}
-            <path d="M 3 11 Q 6 9 9 11 Q 12 13 15 11" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </div>
-      </button>
 
-      <BreathingGuide isOpen={showBreathing} onClose={() => setShowBreathing(false)} />
+          .ui-root .fab-breathe:hover,
+          .ui-root .fab-breathe:focus-visible {
+            border-color: var(--coral);
+          }
+
+          .ui-root .fab-breathe:focus-visible {
+            outline: 2px solid var(--coral);
+            outline-offset: 2px;
+          }
+
+          .ui-root .fab-breathe svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+          }
+
+          .ui-root .fab-breathe .fab-label {
+            position: absolute;
+            right: 58px;
+            white-space: nowrap;
+            font-family: var(--font-display);
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            font-size: 10px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-pill);
+            padding: 0 14px;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            color: var(--text);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--dur) var(--ease);
+          }
+
+          .ui-root .fab-breathe:hover .fab-label,
+          .ui-root .fab-breathe:focus-visible .fab-label {
+            opacity: 1;
+          }
+
+          @media (max-width: 768px) {
+            .ui-root .fab-breathe {
+              display: none;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .ui-root .fab-breathe,
+            .ui-root .fab-breathe .fab-label {
+              transition: none !important;
+            }
+          }
+        `}</style>
+
+        <button
+          type="button"
+          className="fab-breathe"
+          onClick={() => setShowBreathing(true)}
+          aria-label="Take a breath"
+        >
+          <span className="fab-label" aria-hidden="true">Take a breath</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4.5 9.5c2-2 4 2 7.5 0s5.5 2 7.5 0" />
+            <path d="M4.5 14.5c2-2 4 2 7.5 0s5.5 2 7.5 0" />
+          </svg>
+        </button>
+      </div>
+
+      <BreathingQuickOpen isOpen={showBreathing} onClose={() => setShowBreathing(false)} />
     </>
   );
 }

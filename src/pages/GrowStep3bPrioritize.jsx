@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
-import HomeHeader from '../components/HomeHeader';
+import DesignHeader from '../components/DesignHeader';
 import { supabase } from '../lib/supabase';
 
 export default function GrowStep3bPrioritize() {
@@ -233,7 +233,7 @@ export default function GrowStep3bPrioritize() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <HomeHeader />
+      <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>

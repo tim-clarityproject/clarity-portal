@@ -1,0 +1,4759 @@
+/* UI Components - all unused for now, to be applied page by page */
+
+/* The one deliberate global rule in this file. src/index.css sets the
+   html element's background to white via :root { --bg: #fff; background:
+   var(--bg); } - the old light design's canvas colour. Every protected
+   page now has the new dark header and/or tab bar (both wrapped in
+   .ui-root) mounted on it, old pages included, via ProtectedLayout. On
+   phone that white html background was showing through on rubber-band
+   overscroll (pulling past the top or bottom) and in the body
+   padding-bottom gap reserved for the fixed tab bar. This selector only
+   fires when a .ui-root element actually exists in the page - i.e. only
+   on the new dark app shell - so public pages (Login, Terms, Privacy)
+   that never render .ui-root are completely unaffected, and it never
+   touches src/index.css or src/styles/mobile.css. Old page CONTENT is
+   untouched; only the canvas behind/around it turns black.
+   overscroll-behavior-y removes the rubber-band stretch itself where
+   the browser supports it (not supported everywhere, hence the
+   background-color fix above still being needed as the real fix). */
+html:has(.ui-root),
+html:has(.ui-root) body,
+html:has(.ui-root) #root {
+  background-color: #000;
+}
+
+html:has(.ui-root) {
+  overscroll-behavior-y: none;
+}
+
+.ui-overline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-overline);
+  color: var(--coral-text);
+}
+
+.ui-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: var(--fs-title-phone);
+  letter-spacing: var(--ls-title);
+  line-height: 1.35;
+  color: var(--text);
+}
+
+@media (min-width: 769px) {
+  .ui-title {
+    font-size: var(--fs-title-desktop);
+  }
+}
+
+.ui-greeting {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: var(--fs-greeting-phone);
+  letter-spacing: var(--ls-greeting);
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text);
+}
+
+@media (min-width: 769px) {
+  .ui-greeting {
+    font-size: var(--fs-greeting-desktop);
+  }
+}
+
+.ui-subtitle {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-body-sub);
+  color: var(--text-2);
+  margin-top: var(--space-2);
+}
+
+.ui-rule {
+  width: 32px;
+  height: 2px;
+  background: var(--coral);
+  margin-top: var(--space-3);
+}
+
+.ui-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+}
+
+.ui-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  color: var(--text);
+}
+
+.ui-input {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-input);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  padding: 13px 14px;
+  min-height: var(--tap-min);
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.ui-input::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-input:focus-visible {
+  border-color: var(--coral);
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.ui-input:disabled {
+  color: var(--placeholder);
+  background: var(--surface);
+}
+
+/* ============================================================
+   AutoGrowTextarea (src/components/ui/AutoGrowTextarea.jsx) - CLAUDE.md
+   rule 18: every free-text field grows to show all of its text, no
+   scrolling inside the box. This class carries only the BEHAVIOUR every
+   use shares (no scrollbar, no drag handle, height transitions instead
+   of jumping) - the look (border, background, padding, font) comes from
+   whichever skin class is passed alongside it (.plan-input,
+   .plan-dq-textarea, .name-dialog-input, ...), each of which must
+   include `height` in its own transition list - a second `transition`
+   declared here would just overwrite theirs, not merge with it, since
+   it is a shorthand property.
+   ============================================================ */
+.ui-autogrow {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .ui-autogrow {
+    scroll-margin-bottom: calc(var(--action-bar-height, 96px) + var(--space-3));
+  }
+}
+
+/* .ui-btn-primary and .ui-btn-ghost (below) are real <button> elements.
+   src/styles/mobile.css has button:not(.breathe-button) { padding: 12px
+   16px !important; font-size: 14px !important; } at max-width: 768px,
+   specificity (0,1,1). A single class alone (0,1,0) does NOT out-rank
+   that - and since both sides would then be !important, specificity
+   (not source order) breaks the tie, so the legacy rule would still
+   win even with !important on our side. Scoped under the ever-present
+   .ui-root ancestor (0,2,0) to reliably beat it regardless of load
+   order. Confirmed this was a real bug: before adding the .ui-root
+   ancestor, a mounted .ui-btn-ghost on a sub-768px viewport computed to
+   the legacy 14px, not our 10px. */
+.ui-root .ui-btn-primary {
+  border-radius: var(--radius-pill);
+  background: var(--coral);
+  color: var(--on-coral);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-button) !important;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-button);
+  padding: 12px 28px 11px !important;
+  min-height: var(--tap-min);
+  border: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.ui-root .ui-btn-primary:hover,
+.ui-root .ui-btn-primary:focus-visible {
+  background: var(--coral-soft);
+}
+
+.ui-root .ui-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ui-root .ui-btn-ghost {
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--btn-line);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-button) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  padding: 11px 22px 10px !important;
+  min-height: var(--tap-min);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ui-btn-ghost:hover,
+.ui-root .ui-btn-ghost:focus-visible {
+  border-color: var(--coral);
+}
+
+.ui-root .ui-btn-ghost:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .ui-btn-ghost--danger {
+  color: var(--coral-text);
+  border-color: rgba(255, 111, 92, 0.45);
+}
+
+.ui-root .ui-btn-ghost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ui-link-quiet {
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+  text-decoration: none;
+}
+
+.ui-link-quiet:hover {
+  text-decoration: underline;
+}
+
+.ui-saved {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-button);
+  color: var(--mint-text);
+}
+
+.ui-select {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  padding: 13px 14px;
+  min-height: var(--tap-min);
+  color: var(--text-2);
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: none;
+}
+
+.ui-section-heading {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-section);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-section);
+  color: var(--coral-text);
+  margin-top: var(--space-5);
+}
+
+.ui-setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ui-setting-title {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.ui-setting-desc {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--text-2);
+  margin-top: var(--space-1);
+}
+
+/* .ui-switch is a real <button>, scoped under .ui-root (0,2,0) for the
+   same reason as .ui-btn-ghost/.ui-btn-primary above - a bare
+   single-class selector cannot out-rank the legacy rule's 0,1,1 once
+   both sides are !important. The legacy padding !important would also
+   shift the button's padding edge inward, which the ::after knob is
+   positioned absolutely against (top/left measure from the padding
+   edge) - this would silently break the knob's alignment, not just
+   look odd. */
+.ui-root .ui-switch {
+  width: 44px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 !important;
+  font-size: 0 !important;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  border: 1px solid var(--btn-line);
+  cursor: pointer;
+  position: relative;
+  box-sizing: border-box;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  flex-shrink: 0;
+}
+
+.ui-root .ui-switch--on {
+  background: var(--coral);
+  border-color: var(--coral);
+}
+
+.ui-root .ui-switch::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-2);
+  top: 2px;
+  left: 2px;
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .ui-switch--on::after {
+  background: #000000;
+  transform: translateX(18px);
+}
+
+.ui-segmented {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  background: transparent;
+  position: relative;
+}
+
+/* .ui-segmented-option is a real <button>, scoped under .ui-root
+   (0,2,0) for the same reason as the other button classes above. */
+.ui-root .ui-segmented-option {
+  flex: 1;
+  min-height: 0;
+  padding: 9px 0 8px !important;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: color var(--dur-slow) var(--ease);
+}
+
+.ui-root .ui-segmented-option.active {
+  background: var(--coral);
+  color: #000000;
+}
+
+.ui-segmented-bg {
+  position: absolute;
+  background: var(--coral);
+  border-radius: var(--radius-pill);
+  height: 100%;
+  top: 0;
+  left: 0;
+  transition: transform var(--dur-slow) var(--ease), width var(--dur-slow) var(--ease);
+  z-index: 0;
+}
+
+.ui-modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 26px 24px;
+  max-width: 460px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(8px);
+  opacity: 0;
+  animation: ui-modal-in var(--dur-slow) var(--ease) forwards;
+  z-index: 3000;
+}
+
+@keyframes ui-modal-in {
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+}
+
+.ui-modal-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text);
+  margin: 0 0 var(--space-3);
+}
+
+.ui-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--scrim);
+  opacity: 0;
+  animation: ui-modal-backdrop-in var(--dur-slow) var(--ease) forwards;
+  z-index: 2999;
+}
+
+@keyframes ui-modal-backdrop-in {
+  to {
+    opacity: 1;
+  }
+}
+
+.ui-slider {
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--line);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.ui-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--coral);
+  cursor: pointer;
+}
+
+.ui-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--coral);
+  cursor: pointer;
+  border: none;
+}
+
+.ui-slider::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.ui-action-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  position: relative;
+}
+
+.ui-action-card-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.ui-action-card-desc {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.ui-action-card--suggested {
+  border-color: var(--coral);
+}
+
+.ui-action-card--suggested::before {
+  content: 'Suggested for now';
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--coral-text);
+  background: var(--bg);
+  padding: 0 8px;
+}
+
+@media (min-width: 769px) {
+  .ui-action-card-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    max-width: 780px;
+    margin: 0 auto;
+  }
+}
+
+.ui-tabbar {
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  padding: 14px 4px 22px;
+  padding-bottom: max(22px, calc(22px + env(safe-area-inset-bottom)));
+  display: flex;
+  justify-content: space-around;
+  position: relative;
+}
+
+.ui-tabbar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0;
+  flex: 1;
+  position: relative;
+}
+
+.ui-tabbar-item.active {
+  color: var(--coral-text);
+}
+
+.ui-tabbar-item.active::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 2px;
+  background: var(--coral);
+}
+
+.ui-tabbar-icon {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+}
+
+.ui-tabbar-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tab);
+  color: currentColor;
+}
+
+.ui-cross {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-color: currentColor;
+  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  flex-shrink: 0;
+}
+
+.ui-cross--sm {
+  width: 14px;
+  height: 14px;
+}
+
+.ui-cross--lg {
+  width: 24px;
+  height: 24px;
+}
+
+.ui-cross--open {
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-cross--open.open {
+  transform: rotate(45deg);
+}
+
+/* ============================================================
+   Pre-login Welcome flow buttons (src/pages/auth/*,
+   src/components/auth/AuthButton.jsx). Deliberately a different,
+   larger size than .ui-btn-primary/.ui-btn-ghost above (Nekst 11px,
+   ~52px tall vs the existing Nekst 10px, ~49px) per the approved
+   mock-up for these screens - the existing built buttons elsewhere in
+   the app are untouched.
+
+   src/styles/mobile.css has button:not(.breathe-button) { min-height:
+   44px; padding: 12px 16px !important; font-size: 14px !important; }
+   at max-width: 768px (0,1,1 specificity, !important). Scoped under
+   .ui-root (0,2,0) with matching !important on font-size/padding, the
+   same proven pattern as .ui-btn-ghost above. ============================================================ */
+.ui-root .auth-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px !important;
+  margin-top: 32px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: #000;
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 11px !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0 24px !important;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-btn-primary:hover {
+  background: var(--coral-soft);
+}
+
+.ui-root .auth-btn-primary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.ui-root .auth-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-root .auth-btn-primary.loading {
+  pointer-events: none;
+}
+
+.auth-btn-spinner {
+  width: 18px;
+  height: 18px;
+  background-color: #000;
+  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  animation: auth-btn-spin var(--dur-slow) linear infinite;
+}
+
+@keyframes auth-btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ui-root .auth-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px !important;
+  padding: 0 24px !important;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--btn-line);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px !important;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-btn-ghost:hover {
+  border-color: var(--coral);
+}
+
+.ui-root .auth-btn-ghost:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .auth-btn-ghost:disabled {
+  color: var(--placeholder);
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+
+.ui-root .auth-text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: 13px !important;
+  color: var(--text-2);
+  background: transparent;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-text-link:hover,
+.ui-root .auth-text-link:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .auth-text-link:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .auth-btn-spinner {
+    animation: none !important;
+  }
+}
+
+/* ============================================================
+   Pre-login Welcome flow fields (src/components/auth/AuthField.jsx).
+
+   src/styles/mobile.css has select, input { min-height: 44px; padding:
+   12px 16px !important; } at max-width: 768px (0,1,0 bare-tag
+   specificity, !important on padding only - min-height is not
+   !important there). .ui-root .auth-input (0,2,0) already out-ranks
+   the bare "input" selector on specificity for min-height, and padding
+   below carries its own !important to beat the legacy !important
+   regardless. ============================================================ */
+/* Spacing standard (mock-ups claude/mockups/welcome-flow.html v9 and
+   reset-password.html v4, read-only from ~/Downloads - "polish" section):
+   26px between fields, 12px label-to-field, 40px intro-line-to-first-
+   field (.auth-sub + .auth-field below), 32px last-field-to-button (26px
+   when a .auth-row2 sits between). None of these exact px values has a
+   --space-* token (space-3=16, space-4=24 - neither is 26/12/40/32), so
+   hard-coded here per instruction, matching the mock-ups exactly. */
+/* Every field label is left-aligned regardless of the column's own
+   align-center (only the heading block above - logo, headline, rule,
+   intro line - is ever centred). Explains the Log in bug this task
+   flagged: Email's label inherited text-align:center from the column
+   and rendered centred, while Password's label happened to look
+   left-aligned only because its wrapping .auth-field-label-row is a
+   flex row (default justify-content:flex-start positions the label at
+   the row's start regardless of the inherited text-align) - two
+   different fields silently out of sync. Mock-up's own rule:
+   ".fld,.fld label,.err,.hint{text-align:left}". */
+.auth-field,
+.auth-field-label,
+.auth-field-error,
+.auth-strength-hint {
+  text-align: left;
+}
+
+.auth-field {
+  margin-top: 26px;
+}
+
+.auth-field:first-child {
+  margin-top: 0;
+}
+
+/* Every field sits inside a <form>, not as a direct sibling of
+   .auth-sub, so the first field/field-row needs targeting one level
+   down rather than a plain adjacent-sibling selector. The `>` (direct
+   child) matters on the first half: without it, ":first-child" also
+   matched the First name .auth-field nested one level deeper inside
+   .auth-field-row (SignUpStep1.jsx) - a second, independent
+   :first-child match, since it's the first child of ITS OWN parent
+   too. At (0,3,1) this rule's 40px beat ".auth-field-row .auth-field"
+   below's 0px (0,2,0) outright for First name, while Last name - not
+   a :first-child of anything - correctly kept the 0px, staggering the
+   pair by 40px. The row itself still gets the 40px via the second
+   half below, unchanged. */
+.auth-sub + form > .auth-field:first-child,
+.auth-sub + form > .auth-field-row:first-child {
+  margin-top: 40px;
+}
+
+.auth-field-label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 12px;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.auth-field-label.focused {
+  color: var(--coral);
+}
+
+.auth-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.auth-field-label-row .auth-field-label {
+  margin-bottom: 0;
+}
+
+.ui-root .auth-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 52px !important;
+  padding: 0 16px !important;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-input::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .auth-input:focus {
+  outline: none;
+  border-color: var(--coral);
+}
+
+.ui-root .auth-input.error {
+  border-color: var(--coral-soft);
+}
+
+.auth-field-error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--coral-soft);
+  margin: 8px 0 0;
+}
+
+.auth-password-wrap {
+  position: relative;
+}
+
+.auth-password-wrap .auth-input-password {
+  padding-right: 64px !important;
+}
+
+.ui-root .auth-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 44px;
+  min-height: 44px !important;
+  padding: 0 12px !important;
+  background: transparent;
+  border: none;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px !important;
+  letter-spacing: 0.16em;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.ui-root .auth-password-toggle:hover,
+.ui-root .auth-password-toggle:focus-visible {
+  color: var(--text);
+}
+
+.shake {
+  animation: auth-shake 420ms ease;
+}
+
+@keyframes auth-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shake {
+    animation: none !important;
+  }
+}
+
+.auth-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 30px 0 6px;
+}
+
+.auth-or-divider span:not(.auth-or-label) {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* Name step (SignUpStep1.jsx): stacked on phone - each field already
+   gets the standard 26px top margin from .auth-field above, except the
+   first, via the existing :first-child rule, so phone needs no extra
+   CSS here. Side by side on desktop, 14px gap (mock-up ".nm2"), margin
+   zeroed since they're no longer stacked. */
+.auth-field-row {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 769px) {
+  .auth-field-row {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  .auth-field-row .auth-field {
+    flex: 1;
+    margin-top: 0;
+  }
+}
+
+/* "Forgot password?" row (Log in) - sits below the password field, not
+   beside its label. 8px below the field, 26px above the button
+   (overriding the standalone .auth-btn-primary's 32px - mock-up
+   ".row2"/".row2 + .btn"). */
+.auth-row2 {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.ui-root .auth-row2 + .auth-btn-primary {
+  margin-top: 26px;
+}
+
+/* Resend button + "Use a different email" stack (check-email screens). */
+.auth-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+/* Log in screen: Terms/Privacy/Data Storage links, well below the
+   "New here?" link (mock-up's ".legal{margin-top:40px}",
+   ".p .legal{margin-top:34px}"). */
+.auth-legal-footer-spacing {
+  margin-top: 34px;
+}
+
+@media (min-width: 769px) {
+  .auth-legal-footer-spacing {
+    margin-top: 40px;
+  }
+}
+
+.auth-stack .auth-btn-primary,
+.auth-stack .auth-btn-ghost {
+  margin: 0;
+}
+
+.auth-strength {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.auth-strength-seg {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.auth-strength-seg.filled {
+  background: var(--coral);
+}
+
+.auth-strength-hint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--placeholder);
+  margin: 8px 0 0;
+}
+
+.auth-terms-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.ui-root .auth-checkbox {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  min-height: 44px !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-checkbox::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--btn-line);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  box-sizing: border-box;
+}
+
+.auth-checkbox.checked::before {
+  background: var(--coral);
+  border-color: var(--coral);
+}
+
+.auth-checkbox.error::before {
+  border-color: var(--coral-soft);
+}
+
+.auth-checkbox-tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+}
+
+.auth-checkbox.checked .auth-checkbox-tick {
+  opacity: 1;
+}
+
+.auth-checkbox-tick path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+}
+
+.auth-checkbox.checked .auth-checkbox-tick path {
+  animation: auth-tick-draw 400ms var(--ease) forwards;
+}
+
+@keyframes auth-tick-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.auth-terms-text {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-2);
+  margin: 0;
+  padding-top: 10px;
+}
+
+.ui-root .auth-terms-link {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--btn-line);
+  padding: 0 !important;
+  min-height: 0 !important;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-terms-link:hover,
+.ui-root .auth-terms-link:focus-visible {
+  border-bottom-color: var(--coral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-checkbox-tick path {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Shared icon (envelope: CheckYourEmail.jsx/ForgotPasswordCheckEmail.jsx;
+   clock: ResetPassword.jsx/Mission.jsx's ClockIcon, same class). An SVG
+   root renders as display:block by default, so the ancestor column's
+   text-align:center (.align-center) never centred it - margin:auto is
+   what actually does that for a block-level element of a fixed width.
+   Pre-existing since the icon was first built, not something prompts
+   6/6b touched (confirmed against commit 685b96e - this file had no
+   .auth-envelope diff at all in between). */
+.auth-envelope {
+  display: block;
+  margin: 0 auto 8px;
+}
+
+/* Centred "proper desktop page" screens (mock-up's ".cc"): CheckYourEmail,
+   ForgotPasswordCheckEmail, and the expired states of Mission and
+   ResetPassword. Passed as AuthShell's columnClassName="cc". None of
+   these px values has a --space-* token, hard-coded to match the
+   mock-up exactly (mobile-first; see the mock-up's own .p/.d split). */
+.auth-column.cc {
+  max-width: 460px;
+}
+
+.cc .auth-envelope {
+  width: 76px;
+  height: 76px;
+  margin-bottom: 28px;
+}
+
+@media (min-width: 769px) {
+  .cc .auth-envelope {
+    width: 96px;
+    height: 96px;
+    margin-bottom: 36px;
+  }
+}
+
+.cc .auth-rule {
+  margin-top: 26px;
+}
+
+.cc .auth-sub {
+  margin: 22px auto 0;
+  max-width: 390px;
+  line-height: 1.65;
+}
+
+.cc .auth-btn-primary {
+  margin: 34px auto 0;
+  max-width: 300px;
+}
+
+@media (min-width: 769px) {
+  .cc .auth-btn-primary {
+    margin-top: 40px;
+  }
+}
+
+.cc .auth-stack {
+  margin: 36px auto 0;
+  max-width: 300px;
+  gap: 14px;
+}
+
+@media (min-width: 769px) {
+  .cc .auth-stack {
+    margin-top: 44px;
+  }
+}
+
+.cc .auth-tip {
+  margin: 38px auto 0;
+  max-width: 340px;
+  line-height: 1.6;
+}
+
+.cc .auth-confirmed-row {
+  margin-bottom: 30px;
+}
+
+.cc .auth-text-link.quiet {
+  margin-top: 14px;
+}
+
+.auth-envelope-body,
+.auth-envelope-flap {
+  fill: none;
+  stroke: var(--coral);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.auth-envelope-body {
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  animation: auth-envelope-draw 1.4s var(--ease) forwards;
+}
+
+.auth-envelope-flap {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: auth-envelope-draw 1.4s var(--ease) 700ms forwards;
+}
+
+@keyframes auth-envelope-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.auth-tip {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--placeholder);
+  text-align: center;
+  margin: 24px 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .auth-envelope-body,
+  .ui-root .auth-envelope-flap {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+.auth-confirmed-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mint-text);
+  margin-bottom: 20px;
+}
+
+.auth-confirmed-tick {
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  animation: auth-tick-draw-16 400ms var(--ease) 200ms forwards;
+}
+
+@keyframes auth-tick-draw-16 {
+  to { stroke-dashoffset: 0; }
+}
+
+.auth-mission-card {
+  width: fit-content;
+  min-width: min(100%, 300px);
+  max-width: 100%;
+  margin: 0 auto 24px;
+  box-sizing: border-box;
+  border: 1px solid var(--coral);
+  border-radius: 28px;
+  padding: 16px 22px 20px;
+  text-align: center;
+}
+
+.auth-mission-card-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--coral);
+  /* A block, so its padding, underline and margin really take up space:
+     on /auth/mission it is a <label> (inline by default), where the
+     vertical padding and margin do nothing and the typed text sat
+     against the underline. The gap below the underline is a spacing
+     token (16px). */
+  display: block;
+  padding-bottom: 12px;
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.auth-mission-card-text {
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 769px) {
+  .auth-mission-card-text {
+    font-size: 20px;
+  }
+}
+
+.auth-mission-card-placeholder {
+  color: var(--placeholder);
+}
+
+/* Mission page (/auth/mission): one coral-outlined card IS the input -
+   no separate preview card, no separate text box. Modifier on the same
+   .auth-mission-card used by Finished.jsx/WelcomeBack.jsx (unchanged,
+   static-display use there); only this variant turns it into a live
+   textarea. */
+.auth-mission-card--input {
+  width: 100%;
+  min-width: 0;
+  margin: 30px auto 0;
+  padding: 14px 22px 16px;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.auth-mission-card--input.error {
+  border-color: var(--coral-soft);
+}
+
+.auth-mission-card--input:focus-within .auth-mission-card-label {
+  color: var(--coral-soft);
+}
+
+.ui-root .auth-mission-card-input {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.45;
+  text-align: center;
+  resize: none;
+  overflow: hidden;
+  padding: 0;
+  min-height: 30px;
+}
+
+@media (min-width: 769px) {
+  .ui-root .auth-mission-card-input {
+    font-size: 20px;
+  }
+}
+
+.ui-root .auth-mission-card-input::placeholder {
+  color: var(--placeholder);
+}
+
+.auth-mission-counter-row {
+  display: flex;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--placeholder);
+  margin-top: 14px;
+}
+
+.auth-mission-counter-row .at-limit {
+  color: var(--coral-soft);
+}
+
+.auth-mission-error {
+  text-align: center;
+}
+
+.auth-spark-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--placeholder);
+  text-align: center;
+  margin: 30px 0 12px;
+}
+
+.auth-example-pills {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.ui-root .auth-example-pill {
+  min-height: 44px !important;
+  height: auto;
+  padding: 11px 18px !important;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 13px !important;
+  line-height: 1.4;
+  color: var(--text-2);
+  text-align: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .auth-example-pill:hover,
+.ui-root .auth-example-pill:focus-visible {
+  color: var(--text);
+  border-color: var(--btn-line);
+}
+
+.auth-more-ideas-wrap {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Mission column (AuthShell columnClassName="mc"): centred, narrower
+   heading, tighter gaps above the card than the generic .cc screens. */
+.auth-column.mc {
+  max-width: 440px;
+}
+
+@media (min-width: 769px) {
+  .auth-column.mc {
+    max-width: 520px;
+  }
+
+  .auth-column.mc .auth-headline {
+    font-size: 26px !important;
+  }
+}
+
+.mc .auth-confirmed-row {
+  margin-bottom: 20px;
+}
+
+.mc .auth-rule {
+  margin-top: 20px;
+}
+
+.mc .auth-sub {
+  margin-top: 16px;
+}
+
+/* Save my mission: always-visible bar pinned to the bottom of the
+   screen, respecting the phone safe area. position:fixed, not sticky -
+   confirmed by isolated repro that src/index.css's global
+   `html, body { overflow-x: hidden }` (untouchable per CLAUDE.md rule
+   17 - never a global rule on html/body) forces overflow-y to compute
+   as "auto" too (an auto-promotion the CSS Overflow spec requires when
+   one axis is non-visible and the other isn't), and that alone breaks
+   position:sticky against the viewport in this Chromium build - the
+   element just scrolls with the page instead of sticking. Verified
+   fixed sidesteps it entirely in the same reduced test case. Mission.jsx
+   measures this bar's real height and pads the form by that amount so
+   scrolled content never sits behind it. */
+.auth-sticky-save {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px 20px max(24px, calc(16px + env(safe-area-inset-bottom)));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  z-index: 10;
+}
+
+.auth-sticky-save .auth-btn-primary {
+  margin: 0 auto;
+  max-width: 420px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-confirmed-tick {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+}
+
+.auth-or-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--placeholder);
+}
+
+/* ============================================================
+   Shared footer Discard/Back links (src/components/ui/DiscardLink.jsx).
+   Real <button> elements - scoped under .ui-root (0,2,0) to beat
+   src/styles/mobile.css's button:not(.breathe-button) (0,1,1,
+   !important) on font-size/padding, same pattern as .ui-btn-ghost above.
+   ============================================================ */
+.ui-root .ui-discard-link,
+.ui-root .ui-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap-min);
+  padding: 0 !important;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-button) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  transition: color var(--dur-slow) var(--ease);
+}
+
+.ui-root .ui-discard-link {
+  color: var(--placeholder);
+}
+
+.ui-root .ui-back-link {
+  color: var(--text-2);
+}
+
+.ui-root .ui-discard-link:hover,
+.ui-root .ui-discard-link:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .ui-back-link:hover,
+.ui-root .ui-back-link:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .ui-discard-link:focus-visible,
+.ui-root .ui-back-link:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.ui-discard-link-icon,
+.ui-back-link-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+.ui-root .ui-discard-link:hover .ui-discard-link-icon,
+.ui-root .ui-discard-link:focus-visible .ui-discard-link-icon,
+.ui-root .ui-back-link:hover .ui-back-link-icon,
+.ui-root .ui-back-link:focus-visible .ui-back-link-icon {
+  opacity: 1;
+}
+
+.ui-discard-link-label {
+  background-image: linear-gradient(var(--coral), var(--coral));
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  padding-bottom: 3px;
+  transition: background-size var(--dur-slow) var(--ease);
+}
+
+.ui-root .ui-discard-link:hover .ui-discard-link-label,
+.ui-root .ui-discard-link:focus-visible .ui-discard-link-label {
+  background-size: 100% 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ui-discard-link,
+  .ui-root .ui-back-link,
+  .ui-discard-link-icon,
+  .ui-back-link-icon,
+  .ui-discard-link-label {
+    transition: none !important;
+  }
+}
+
+.ui-discard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.ui-discard-footer-left {
+  display: flex;
+}
+
+/* ============================================================
+   Discard confirm dialog buttons (src/components/ui/DiscardDialog.jsx).
+   Real <button> elements - same .ui-root (0,2,0) mobile-legacy-beating
+   pattern as above. Sizes/letter-spacing (48px min-height, 0.16em) are
+   deliberately different from .ui-btn-primary/.ui-btn-ghost (44px,
+   0.24em) per this task's spec, so new classes rather than reusing
+   those. rgba(255,111,92,*) alpha values have no existing token,
+   hardcoded the same way .ui-btn-ghost--danger already does above.
+   ============================================================ */
+.ui-root .discard-dialog-keep {
+  border-radius: var(--radius-pill);
+  background: var(--coral);
+  color: var(--on-coral);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding: 0 28px !important;
+  min-height: 48px;
+  border: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.ui-root .discard-dialog-keep:hover,
+.ui-root .discard-dialog-keep:focus-visible {
+  background: var(--coral-soft);
+}
+
+.ui-root .discard-dialog-keep:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+/* .dng (DeleteDialog.jsx's danger button, "class dng" per the brief)
+   shares this exact recipe rather than duplicating it - same coral-
+   tinted ghost pill as the approved Discard pop-up. */
+.ui-root .discard-dialog-discard,
+.ui-root .dng {
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--coral-text);
+  border: 1px solid rgba(255, 111, 92, 0.35);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-button) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding: 0 24px !important;
+  min-height: 48px;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .discard-dialog-discard:hover,
+.ui-root .discard-dialog-discard:focus-visible,
+.ui-root .dng:hover,
+.ui-root .dng:focus-visible {
+  border-color: var(--coral);
+  background: rgba(255, 111, 92, 0.07);
+}
+
+.ui-root .discard-dialog-discard:focus-visible,
+.ui-root .dng:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Clock icon (src/pages/auth/ResetPassword.jsx "link expired" screen).
+   No clock icon exists anywhere in the Welcome flow to reuse, so this is
+   new - built in the exact same visual recipe as the envelope icon
+   above (same stroke width/colour/round caps, same draw-in mechanic via
+   stroke-dasharray/dashoffset animating to 0), just a different shape.
+   ============================================================ */
+.auth-clock-face {
+  fill: none;
+  stroke: var(--coral);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 201;
+  stroke-dashoffset: 201;
+  animation: auth-envelope-draw 1.4s var(--ease) forwards;
+}
+
+.auth-clock-hands {
+  fill: none;
+  stroke: var(--coral);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: auth-envelope-draw 1.4s var(--ease) 700ms forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .auth-clock-face,
+  .ui-root .auth-clock-hands {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* ============================================================
+   Planning tools: Daily intentions, Meeting planner, If-Then plan
+   (src/pages/PlanMyDayStep1.jsx, PlanMeeting.jsx, IfThenPlanning.jsx
+   and their three summaries). These pages do not use PageHeading - the
+   approved mock-up for this job has no section-name overline on any of
+   the three forms (Meeting planner/If-Then plan show no overline at
+   all; Daily intentions shows today's date in that slot instead), and
+   summaries show the tool name, not the section name. .plan-overline
+   covers both of those jobs with one visual recipe.
+   ============================================================ */
+
+.plan-page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-6) var(--page-x-phone) var(--space-6);
+  box-sizing: border-box;
+}
+
+@media (min-width: 769px) {
+  .plan-page {
+    padding: var(--space-6) var(--page-x-desktop) var(--space-7);
+  }
+}
+
+@media (max-width: 768px) {
+  .plan-page--form {
+    padding-bottom: calc(var(--action-bar-height, 96px) + var(--space-4));
+  }
+}
+
+.plan-overline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-overline);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-overline);
+  color: var(--coral-text);
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.plan-header {
+  margin-bottom: var(--space-6);
+}
+
+.plan-header .ui-subtitle {
+  max-width: 46ch;
+}
+
+/* ---- Daily intentions: numbered questions on an open writing line ---- */
+
+.plan-dq {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .plan-dq {
+    display: block;
+  }
+}
+
+.plan-dq-num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-overline);
+  color: var(--placeholder);
+  padding-top: 9px;
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  transition: color var(--dur) var(--ease);
+}
+
+@media (max-width: 768px) {
+  .plan-dq-num {
+    padding: 0 0 var(--space-2);
+  }
+}
+
+.plan-dq.on .plan-dq-num {
+  color: var(--coral-text);
+}
+
+.plan-dq-check {
+  width: 13px;
+  height: 13px;
+  margin-top: 1px;
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.plan-dq.on .plan-dq-check {
+  opacity: 1;
+}
+
+.plan-dq-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--text);
+  margin: 0 0 var(--space-1);
+}
+
+@media (max-width: 768px) {
+  .plan-dq-label {
+    font-size: 19px;
+  }
+}
+
+.plan-dq-help {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.ui-root .plan-dq-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 18px !important;
+  line-height: 1.6;
+  padding: 10px 0 14px !important;
+  min-height: 58px;
+  outline: none;
+  transition: height var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.ui-root .plan-dq-textarea::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .plan-dq-textarea:hover {
+  border-bottom-color: var(--btn-line);
+}
+
+.ui-root .plan-dq-textarea:focus {
+  border-bottom-color: var(--coral);
+  outline: none;
+}
+
+/* ---- Generic field rows (meeting title/chair/date/time etc) ---- */
+
+.plan-field {
+  margin-bottom: var(--space-4);
+}
+
+.plan-field label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: var(--space-2);
+}
+
+.plan-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .plan-field-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.ui-root .plan-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-input) !important;
+  line-height: 1.5;
+  padding: 0 14px !important;
+  min-height: var(--tap-min);
+  outline: none;
+  transition: height var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.ui-root .plan-input::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .plan-input:focus {
+  border-color: var(--coral);
+}
+
+/* A <textarea> does not vertically centre its text the way <input>
+   does, so it needs real top/bottom padding to look the same at rest
+   (rule 18 - every free-text field is now a textarea via
+   AutoGrowTextarea, growing with no max-height; .ui-autogrow supplies
+   resize:none/overflow:hidden/the behaviour, this just fixes the
+   padding). Plain <input type=date/time/number> elements sharing
+   .plan-input are untouched by this textarea-only selector. */
+.ui-root textarea.plan-input {
+  padding: 11px 14px !important;
+  line-height: 1.4;
+}
+
+.plan-endline {
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.plan-endline b {
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-endline span {
+  color: var(--placeholder);
+  font-size: 12px;
+  margin-left: var(--space-2);
+}
+
+/* ---- Meeting context / Attendee preparation (removable sections) ---- */
+
+.plan-section {
+  border-left: 1px solid var(--line);
+  padding-left: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+
+.plan-section-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.plan-section-top label {
+  font-family: var(--font-body);
+  font-size: 18px;
+  color: var(--text);
+  margin: 0;
+}
+
+.ui-root .plan-link-btn {
+  all: unset;
+  cursor: pointer;
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  padding: 0 2px;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .plan-link-btn:hover,
+.ui-root .plan-link-btn:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .plan-link-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+/* ---- Add-section/objective/agenda/scenario pill buttons ---- */
+
+.ui-root .plan-add-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: var(--fs-button) !important;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .plan-add-btn:hover,
+.ui-root .plan-add-btn:focus-visible,
+.ui-root .plan-add-btn[aria-expanded="true"] {
+  color: var(--text);
+  border-color: var(--coral);
+}
+
+.ui-root .plan-add-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.plan-menu {
+  position: relative;
+  display: inline-block;
+  margin: var(--space-1) 0;
+}
+
+.plan-menu-list {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 6;
+  min-width: 240px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-1) 0;
+  overflow: hidden;
+}
+
+.ui-root .plan-menu-option {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 18px 0 22px !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  color: var(--text-2);
+  position: relative;
+}
+
+.ui-root .plan-menu-option::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background: var(--coral);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .plan-menu-option:hover,
+.ui-root .plan-menu-option:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .plan-menu-option:hover::before,
+.ui-root .plan-menu-option:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.ui-root .plan-menu-option:disabled {
+  color: var(--placeholder);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.ui-root .plan-menu-option:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+}
+
+/* ---- Objectives / section labels ---- */
+
+.plan-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: var(--space-5) 0 var(--space-3);
+}
+
+.plan-label-row .ui-section-heading {
+  margin-top: 0;
+}
+
+.plan-total-badge {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+}
+
+.plan-obj-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 44px;
+  /* start, not center: when an objective wraps to several lines the
+     number and bin icon stay level with the FIRST line, not the
+     vertical middle of the now-taller row (rule 18). */
+  align-items: start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.plan-obj-num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--placeholder);
+  padding-top: 11px;
+}
+
+.ui-root .plan-bin-btn {
+  all: unset;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--placeholder);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .plan-bin-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ui-root .plan-bin-btn:hover,
+.ui-root .plan-bin-btn:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .plan-bin-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -4px;
+  border-radius: 8px;
+}
+
+.ui-root .plan-bin-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ---- Meeting agenda: table on desktop, stacked cards on phone ---- */
+
+.plan-ag-head,
+.plan-ag-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1.2fr) 80px 44px;
+  gap: var(--space-3);
+}
+
+.plan-ag-head {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  padding: 0 2px var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .plan-ag-head {
+    display: none;
+  }
+}
+
+.plan-ag-row {
+  /* start, not center: Item/Aim grow with their text, so the Length
+     box and bin icon stay level with the row's FIRST line instead of
+     re-centering every keystroke (rule 18). */
+  align-items: start;
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .plan-ag-row {
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    gap: var(--space-2);
+    background: var(--surface);
+    margin-bottom: var(--space-3);
+  }
+}
+
+.plan-ag-field label {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .plan-ag-field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: var(--space-1);
+  }
+
+  .plan-ag-field--item,
+  .plan-ag-field--aim {
+    grid-column: 1 / -1;
+  }
+
+  .plan-ag-row .plan-bin-btn {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-top: -4px;
+  }
+}
+
+.ui-root .plan-ag-row input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.ui-root .plan-ag-row input[type="number"]::-webkit-inner-spin-button,
+.ui-root .plan-ag-row input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ---- If-Then scenario pairs ---- */
+
+.plan-sc-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: var(--space-2);
+  align-items: start;
+  margin-bottom: var(--space-3);
+}
+
+.plan-sc-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .plan-sc-row {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    background: var(--surface);
+    grid-template-columns: 1fr;
+  }
+
+  .plan-sc-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-sc-row .plan-bin-btn {
+    justify-self: end;
+  }
+}
+
+.plan-sc-pair label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: var(--space-1);
+}
+
+/* ---- Shared action row + discard footer spacing ---- */
+
+.plan-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--space-5);
+}
+
+.plan-actions--desktop {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .plan-actions--desktop {
+    display: flex;
+  }
+}
+
+.plan-discard-row {
+  margin-top: var(--space-4);
+}
+
+.plan-save-error {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--coral-text);
+}
+
+/* ---- Phone fixed Finish/Save-as-draft bar (shared, prompts 6-11) ---- */
+
+.ui-phone-action-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .ui-phone-action-bar {
+    display: flex;
+    gap: var(--space-3);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--tabbar-height, 79px);
+    z-index: 1500;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    padding: var(--space-3) var(--page-x-phone);
+    box-sizing: border-box;
+  }
+
+  .ui-phone-action-bar .ui-btn-primary,
+  .ui-phone-action-bar .ui-btn-ghost {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ---- Summary pages: back link, tag, two-column Q&A, facts, tables ---- */
+
+.plan-back-row {
+  margin-bottom: var(--space-3);
+}
+
+.plan-summary-head {
+  margin-bottom: var(--space-2);
+}
+
+/* Meeting title / If-Then plan name is user-typed and can be a single
+   long unbroken word - wrap it rather than letting it run off the
+   page (scoped here, not on the shared .ui-title, to stay inside this
+   job's six pages). */
+.plan-summary-head .ui-title {
+  overflow-wrap: anywhere;
+}
+
+.plan-sum {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  margin-top: var(--space-5);
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  .plan-sum {
+    display: block;
+  }
+}
+
+.plan-sum-row {
+  display: contents;
+}
+
+.plan-sum-label {
+  grid-column: 1;
+  margin: 0;
+  padding: var(--space-5) var(--space-4) var(--space-5) 0;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  color: var(--text-2);
+  align-self: start;
+}
+
+.plan-sum-value {
+  grid-column: 2;
+  padding: var(--space-4) 0 var(--space-5) 4px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .plan-sum-label {
+    padding: var(--space-4) 0 var(--space-1);
+  }
+
+  .plan-sum-value {
+    padding: 0 0 var(--space-4);
+    border-top: 0;
+  }
+}
+
+.plan-sum-value--list {
+  padding-left: var(--space-5);
+  white-space: normal;
+}
+
+.plan-none {
+  color: var(--placeholder);
+}
+
+.plan-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: var(--space-3) 0;
+  margin: var(--space-1) 0;
+}
+
+@media (max-width: 768px) {
+  .plan-facts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.plan-facts b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  margin-bottom: var(--space-1);
+}
+
+.plan-facts span {
+  font-size: var(--fs-body);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.plan-olist {
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.plan-olist li {
+  margin-bottom: var(--space-1);
+}
+
+.plan-table-wrap {
+  overflow-x: auto;
+}
+
+/* table-layout:fixed + the <colgroup> widths in MeetingSummary.jsx
+   (Item ~24%, Aim ~44%, Lead ~20%, Min ~12%) stop a long unbroken Aim
+   from stretching its column and squeezing ITEM/LEAD down to nothing -
+   that squeeze was what forced the heading letters to stack
+   (I/T/E/M) once a column got narrower than one letter. Columns now
+   stay fixed; rows simply get taller (overflow-wrap below). */
+.plan-table {
+  color: var(--text);
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--fs-body-sub);
+}
+
+.plan-table th {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  text-align: left;
+  padding: 0 var(--space-2) var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plan-table td {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.plan-table td:last-child,
+.plan-table th:last-child {
+  text-align: right;
+  padding-right: 0;
+  white-space: nowrap;
+}
+
+.plan-table-total {
+  margin-top: var(--space-2);
+  text-align: right;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+/* Phone: the table becomes stacked cards (label above value, a thin
+   line between rows) - a narrower breakpoint than the rest of these
+   pages' usual 768px, because even the fixed desktop column widths
+   above get too cramped for four columns much below 600px. Differs
+   from the approved mock-up, which only showed the desktop table -
+   see the build summary. */
+@media (max-width: 600px) {
+  .plan-table,
+  .plan-table thead,
+  .plan-table tbody,
+  .plan-table th,
+  .plan-table td,
+  .plan-table tr {
+    display: block;
+    width: auto;
+  }
+
+  .plan-table thead {
+    display: none;
+  }
+
+  .plan-table tr {
+    border-bottom: 1px solid var(--line);
+    padding: var(--space-3) 0;
+  }
+
+  .plan-table tr:first-child {
+    border-top: 1px solid var(--line);
+  }
+
+  .plan-table td {
+    padding: 0 0 var(--space-2);
+    border-bottom: 0;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .plan-table td:last-child {
+    padding-bottom: 0;
+  }
+
+  .plan-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 10px;
+    color: var(--placeholder);
+    margin-bottom: var(--space-1);
+  }
+}
+
+.plan-pair2 {
+  border-left: 1px solid var(--line);
+  padding: 2px 0 2px var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.plan-pair2 small {
+  display: block;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  margin: 0 0 var(--space-1);
+}
+
+.plan-pair2 p {
+  margin: 0 0 var(--space-2);
+  color: var(--text);
+  font-size: var(--fs-body);
+  overflow-wrap: anywhere;
+}
+
+.plan-pair2 p:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================================
+   Inversion thinking / Tough conversation (prompt 7)
+   ============================================================ */
+
+/* ---- Step marker: progress lines + "Step n of 3" ---- */
+
+.inv-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.inv-stepper-lines {
+  display: flex;
+  gap: 6px;
+}
+
+.inv-stepper-lines i {
+  display: block;
+  width: 30px;
+  height: 2px;
+  background: var(--line);
+  transition: background var(--dur) var(--ease);
+}
+
+.inv-stepper-lines i.on {
+  background: var(--coral);
+}
+
+.inv-stepper-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: var(--coral-text);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-stepper-lines i {
+    transition: none !important;
+  }
+}
+
+/* ---- Goal recap line with a Change link (step 3 / coaching step) ---- */
+
+.inv-recap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0 var(--space-4);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.inv-recap p {
+  margin: 0;
+  flex: 1 1 220px;
+  min-width: 0;
+  font-size: var(--fs-body-sub);
+  line-height: 1.5;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.inv-recap .plan-link-btn {
+  margin-left: auto;
+}
+
+/* ---- Risk mitigation cards (Inversion step 3) ---- */
+
+.inv-cards {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.inv-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.inv-card.now {
+  border-color: var(--coral);
+}
+
+.inv-card-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 24px;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.inv-card-num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--coral-text);
+}
+
+.inv-card-row p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.inv-card-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--btn-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  margin-top: 2px;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.inv-card-check svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--on-coral);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.inv-card.ok .inv-card-check {
+  background: var(--mint);
+  border-color: var(--mint);
+}
+
+.inv-card.ok .inv-card-check svg {
+  opacity: 1;
+}
+
+.ui-root .inv-card-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--btn-line);
+  border-radius: var(--radius-input);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  line-height: 1.55;
+  padding: 14px 16px !important;
+  min-height: 56px;
+  outline: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .inv-card-textarea:focus {
+  border-color: var(--coral);
+}
+
+.ui-root .inv-card-textarea::placeholder {
+  color: var(--placeholder);
+}
+
+/* ---- Summary: risk + what-you'll-do side by side ---- */
+
+.inv-sum-risk-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  .inv-sum-risk-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+}
+
+.inv-sum-risk-label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--coral-text);
+  margin-bottom: var(--space-1);
+}
+
+.inv-sum-risk-row p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* ---- Tough conversation: live script panel ---- */
+
+.tc-script {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: var(--space-2) 0 4px;
+  margin: var(--space-2) 0 var(--space-6);
+}
+
+.tc-script-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.tc-script-sent {
+  font-size: 20px;
+  line-height: 1.65;
+  padding: 6px 0 22px;
+  margin: 0;
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .tc-script-sent {
+    font-size: 18px;
+  }
+}
+
+.tc-blank {
+  color: var(--placeholder);
+}
+
+.tc-filled {
+  color: var(--coral-soft);
+}
+
+span.tc-editable {
+  cursor: pointer;
+  color: var(--coral-soft);
+  border-bottom: 1px dashed var(--btn-line);
+  transition: border-color var(--dur) var(--ease);
+}
+
+span.tc-editable.tc-blank {
+  color: var(--placeholder);
+}
+
+span.tc-editable:hover,
+span.tc-editable:focus-visible {
+  border-bottom-color: var(--coral);
+}
+
+span.tc-editable:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.ui-root .tc-copy-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+  flex-shrink: 0;
+}
+
+.ui-root .tc-copy-btn:hover,
+.ui-root .tc-copy-btn:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .tc-copy-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .tc-copy-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tc-edit-row {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.tc-edit-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.ui-root .tc-edit-save,
+.ui-root .tc-edit-cancel {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 0 var(--space-3) !important;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ui-root .tc-edit-save {
+  background: var(--coral);
+  color: var(--on-coral);
+}
+
+.ui-root .tc-edit-cancel {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--btn-line);
+}
+
+.ui-root .tc-edit-save:focus-visible,
+.ui-root .tc-edit-cancel:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+/* ---- Coaching questions: tick rows (mint = chosen) ---- */
+
+.tc-ck-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: 0 0 var(--space-1);
+}
+
+.tc-ck-count {
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.tc-ck-help {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.tc-ck-list {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.ui-root .tc-ck {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) !important;
+  border-radius: var(--radius-input);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .tc-ck:hover {
+  background: var(--surface);
+}
+
+.ui-root .tc-ck:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.tc-ck-box {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  margin-top: 1px;
+  border: 1px solid var(--btn-line);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+.tc-ck-box svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--on-coral);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.tc-ck[aria-checked="true"] .tc-ck-box {
+  background: var(--mint);
+  border-color: var(--mint);
+}
+
+.tc-ck[aria-checked="true"] .tc-ck-box svg {
+  opacity: 1;
+}
+
+.tc-ck-text {
+  font-size: var(--fs-body-sub);
+  line-height: 1.5;
+  color: var(--text);
+  padding-top: 2px;
+}
+
+/* ---- Decision tools hub (prompt 7) ---- */
+
+.dt-hrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.dt-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .dt-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ui-root .dt-card {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .dt-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 3px;
+  background: var(--coral);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .dt-card:hover,
+.ui-root .dt-card:focus-visible {
+  border-color: var(--btn-line);
+}
+
+.ui-root .dt-card:hover::before,
+.ui-root .dt-card:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.ui-root .dt-card:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.dt-card-title {
+  display: block;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.dt-card-desc {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+/* ---- Plan hub / Review hub (prompt 7b): same card, 3-across row,
+   trailing static crosshair mark, text nudges 6px on hover ---- */
+
+.dt-cards--three {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 769px) {
+  .dt-cards--three {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .dt-cards--three .dt-card {
+    min-height: 150px;
+  }
+}
+
+.ui-root .dt-card--row {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.dt-card-text {
+  display: block;
+  min-width: 0;
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .dt-card:hover .dt-card-text,
+.ui-root .dt-card:focus-visible .dt-card-text {
+  transform: translateX(6px);
+}
+
+.dt-card-mark {
+  color: var(--coral);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---- "Your history" card: My Plans / My reviews ---- */
+
+.ui-root .hub-history-card {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .hub-history-card:hover,
+.ui-root .hub-history-card:focus-visible {
+  border-color: var(--btn-line);
+}
+
+.ui-root .hub-history-card:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.hub-history-card-title {
+  display: block;
+  font-size: 17px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.hub-history-card-desc {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.hub-history-card-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke var(--dur-fast) var(--ease);
+}
+
+.ui-root .hub-history-card:hover .hub-history-card-icon,
+.ui-root .hub-history-card:focus-visible .hub-history-card-icon {
+  stroke: var(--text);
+}
+
+/* ---- All planning tools: grouped navigational row list ---- */
+
+.ptl-group {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: var(--coral-text);
+  margin: var(--space-6) 0 6px;
+}
+
+.ptl-group:first-of-type {
+  margin-top: 0;
+}
+
+.ptl-list {
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-root .ptl-row {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  position: relative;
+  cursor: pointer;
+  padding: 18px 8px 18px var(--space-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+  min-height: 56px;
+  transition: color var(--dur) var(--ease);
+}
+
+.ptl-list .ptl-row:last-child {
+  border-bottom: 0;
+}
+
+.ptl-row::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  background: var(--coral);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .ptl-row:hover,
+.ui-root .ptl-row:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .ptl-row:hover::before,
+.ui-root .ptl-row:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.ui-root .ptl-row:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.ptl-row-title {
+  display: block;
+  font-size: 18px;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.ui-root .ptl-row--locked .ptl-row-title {
+  color: var(--placeholder);
+}
+
+.ptl-row-desc {
+  display: block;
+  font-size: 14px;
+  color: var(--placeholder);
+  margin-top: 4px;
+  line-height: 1.4;
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .ptl-row:hover .ptl-row-desc,
+.ui-root .ptl-row:focus-visible .ptl-row-desc {
+  color: var(--text-2);
+}
+
+.ptl-row-mark {
+  flex-shrink: 0;
+  color: var(--coral);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+@media (max-width: 768px) {
+  .ptl-row-mark {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ui-root .ptl-row:hover .ptl-row-mark,
+.ui-root .ptl-row:focus-visible .ptl-row-mark {
+  opacity: 1;
+  transform: none;
+}
+
+.ui-root .ptl-row--locked {
+  cursor: default;
+  color: var(--placeholder);
+}
+
+.ui-root .ptl-row--locked .ptl-row-desc {
+  color: var(--placeholder);
+  opacity: 0.8;
+}
+
+.ui-root .ptl-row--locked:hover {
+  color: var(--placeholder);
+}
+
+.ui-root .ptl-row--locked:hover::before {
+  transform: scaleY(0);
+}
+
+.ui-root .ptl-row--locked:hover .ptl-row-desc {
+  color: var(--placeholder);
+  opacity: 0.8;
+}
+
+.ptl-lock-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--placeholder);
+  white-space: nowrap;
+}
+
+.ptl-lock-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-card-text,
+  .hub-history-card,
+  .hub-history-card-icon,
+  .ptl-row,
+  .ptl-row::before,
+  .ptl-row-desc,
+  .ptl-row-mark {
+    transition: none !important;
+  }
+}
+
+.dt-soon {
+  margin-top: var(--space-6);
+}
+
+.dt-soon-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: var(--coral-text);
+  margin: 0 0 14px;
+}
+
+.dt-soon-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--space-5);
+}
+
+@media (max-width: 768px) {
+  .dt-soon-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dt-soon-item {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--placeholder);
+  font-size: var(--fs-body-sub);
+  line-height: 1.4;
+}
+
+.dt-soon-lock {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 3px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dt-soon-item small {
+  display: block;
+  font-size: 13px;
+  color: var(--placeholder);
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-card,
+  .dt-card::before {
+    transition: none !important;
+  }
+
+  .inv-card,
+  .inv-card-check,
+  .inv-card-check svg,
+  .inv-card-textarea,
+  span.tc-editable,
+  .tc-copy-btn,
+  .tc-ck,
+  .tc-ck-box,
+  .tc-ck-box svg {
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   Review a plan (prompt 8)
+   ============================================================ */
+
+.rp-panel-wrap {
+  margin-bottom: var(--space-5);
+}
+
+.rp-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.rp-panel-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: var(--coral-text);
+}
+
+.rp-panel-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .rp-panel-body {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+}
+
+.rp-panel-body > div {
+  border-left: 1px solid var(--line);
+  padding-left: var(--space-3);
+  min-width: 0;
+}
+
+.rp-panel-body small {
+  display: block;
+  font-size: 12px;
+  color: var(--placeholder);
+  margin-bottom: var(--space-1);
+}
+
+.rp-panel-body p {
+  margin: 0 0 4px;
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.rp-no-plan {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0;
+  color: var(--text-2);
+  font-size: var(--fs-body-sub);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--space-5);
+}
+
+/* ============================================================
+   Personal operating plan (prompt 9)
+   ============================================================ */
+
+.pop-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+/* ---- Read-only plan view: strategy cards + tactic tick/progress ---- */
+
+.pop-view-strategy {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--coral);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.pop-view-strategy-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
+  margin: 0 0 var(--space-1);
+}
+
+.pop-view-strategy-desc {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  margin: 0 0 var(--space-3);
+}
+
+.pop-view-tactic {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--line);
+}
+
+.pop-view-tactic:first-child {
+  border-top: none;
+}
+
+.pop-tick {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--btn-line);
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.pop-tick svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.pop-tick--done {
+  border-color: var(--mint);
+}
+
+.pop-tick--done svg {
+  opacity: 1;
+}
+
+.pop-view-tactic-text {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.pop-view-tactic-progress {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.pop-view-tactic-reviewed {
+  font-size: 11px;
+  color: var(--placeholder);
+  margin-top: 2px;
+}
+
+.pop-empty {
+  padding: var(--space-5) 0;
+  color: var(--text-2);
+  font-size: var(--fs-body-sub);
+}
+
+/* ---- Edit plan: strategy/tactic editing ---- */
+
+.pop-strategy {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--surface);
+}
+
+.pop-strategy-top {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.pop-strategy-top .plan-input {
+  font-weight: 500;
+}
+
+.pop-strategy-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pop-tactics {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+/* Tactic editor: action text + delete bin on one row, then a second,
+   full-width row for the tracking-type toggle and (when Measure is
+   chosen) the Target stepper and Unit field - matching the mock-up's
+   own .te/.row2 layout. The old version squeezed toggle+stepper+unit
+   into a fixed 150px grid column (half that again for Target/Unit),
+   which is what made them look cramped and cut off (rule 20). */
+.pop-tactic-editor {
+  border-top: 1px solid var(--line);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.pop-tactic-editor:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.pop-tactic-action-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.pop-tactic-action-row .plan-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pop-tactic-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.ui-root .pop-tactic-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--btn-line);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+}
+
+.ui-root .pop-tactic-toggle-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0 16px !important;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .pop-tactic-toggle-btn.active {
+  background: var(--coral);
+  color: #000000;
+}
+
+.ui-root .pop-tactic-toggle-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.pop-tactic-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.pop-tactic-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.ui-root .pop-unit-input {
+  width: auto;
+  min-width: 90px;
+  max-width: 160px;
+  flex: none;
+}
+
+/* Target stepper input, phone only: src/styles/mobile.css forces
+   padding: 12px 16px !important onto every input/select at
+   max-width: 768px. .tsa-stepper input (unlike .pop-unit-input, which
+   inherits .plan-input's own 0 14px !important, and unlike
+   .pop-tactic-toggle-btn, which sets its own 0 16px !important) has no
+   padding of its own, so that blanket rule was the only one that
+   applied - eating 32px of horizontal space the ch-based inline width
+   (set in the JSX from the current digit count) never accounted for,
+   since on desktop this input has near-zero padding and the full ch
+   width goes to the digits. Reclaiming that space here is enough on
+   its own; nothing else needed changing.
+   Scoped to .pop-target-stepper (not the bare .tsa-stepper the Time
+   Audit tool also uses) so that page's hours stepper is untouched,
+   and wrapped in the same max-width: 768px breakpoint mobile.css
+   uses, so desktop is untouched too. */
+@media (max-width: 768px) {
+  .ui-root .pop-target-stepper input {
+    padding: 0 4px !important;
+  }
+}
+
+/* "Saving creates Version X.Y" beside the Save button (mock-up's
+   .nvp), not as the page subtitle. */
+.pop-save-preview {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+/* ---- Version history / archived plans ---- */
+
+.pop-version-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.pop-version-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.pop-version-date {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.pop-version-current {
+  font-size: 11px;
+  color: var(--mint-text);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-left: var(--space-2);
+}
+
+/* ---- Mission recap card (plan view / old version / archived plan) ---- */
+
+/* Review plan page only (patch 2d, fix 1): the mock-up's dhead has no
+   rule/divider under the title+subtitle at all, so PageHeading's
+   .ui-rule (a short coral underline, no margin-bottom of its own) is
+   hidden here rather than restyled - nothing to "separate", there is
+   no such element in the approved mock-up. The wrapper's own
+   margin-bottom stands in for the mock's .dhead margin-bottom
+   (44px desktop / 34px phone) - --space-6 (48px) comfortably clears
+   both and guarantees the required >=24px gap at any width, so the
+   first .pop-view-strategy card's coral left border/rounded corner
+   never touches anything above it. */
+.pop-review-heading {
+  margin-bottom: var(--space-6);
+}
+
+.pop-review-heading .ui-rule {
+  display: none;
+}
+
+.pop-mission-card {
+  margin-top: var(--space-5);
+  border-top: 1px solid var(--line);
+  padding: var(--space-4) 0 var(--space-5);
+}
+
+.pop-mission-text {
+  margin: var(--space-2) 0 0;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+/* ---- Collapsible strategy header (plan view) ---- */
+
+.ui-root .pop-strategy-header {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+}
+
+.pop-strategy-header:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.pop-strategy-number {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--coral-text);
+  flex-shrink: 0;
+}
+
+.pop-strategy-header .pop-view-strategy-name {
+  flex: 1;
+  margin: 0;
+}
+
+.pop-strategy-header .ui-cross {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.ui-root .pop-note-btn.has {
+  color: var(--coral-text);
+}
+
+.pop-last-reviewed {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  margin: var(--space-4) 0 0;
+}
+
+.pop-draft-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+/* ============================================================
+   Daily Journal (prompt 10a) - a page that feels like paper: faint
+   ruled lines, no toolbar, grows with content (rule 18 via
+   AutoGrowTextarea's minPixelHeight). Date heading deliberately uses
+   the body font and is NOT uppercase, per the spec's own wording
+   ("the date in plain words in the body font") and the approved
+   mock - a departure from the usual Nekst-uppercase title rule for
+   this one page, not an oversight.
+
+   The ruled lines are tied to the textarea's line-height (30px, about
+   1.6 x the 19px text) rather than the mock-up's 40px: Safari on
+   iPhone draws the caret the full height of the line box, so a 40px
+   line gave a caret nearly twice the height of the text. 30px keeps a
+   comfortable paper feel with a caret close to the text height. The
+   rule is one 1px line per 30px tile (no gradient).
+   ============================================================ */
+
+.jrn-date {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+@media (min-width: 769px) {
+  .jrn-date {
+    font-size: 40px;
+  }
+}
+
+.jrn-date small {
+  font-size: 18px;
+  color: var(--text-2);
+  margin-left: var(--space-2);
+}
+
+.jrn-sub {
+  margin: var(--space-3) 0 var(--space-5);
+  max-width: 46ch;
+}
+
+.jrn-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-5);
+}
+
+.ui-root .jrn-prompt-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0 var(--space-3) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .jrn-prompt-btn:hover,
+.ui-root .jrn-prompt-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--btn-line);
+}
+
+.jrn-paper-wrap {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-top: var(--space-2);
+}
+
+/* Phone: room below the last line equal to the fixed Save bar plus the
+   tab bar beneath it plus about two lines, so the page can always
+   scroll far enough to lift the line being typed clear of them. */
+@media (max-width: 768px) {
+  .jrn-paper-wrap {
+    padding-bottom: calc(var(--action-bar-height, 96px) + var(--tabbar-height, 79px) + var(--space-6));
+  }
+}
+
+.jrn-qrow {
+  box-sizing: border-box;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  font-size: 17px;
+  color: var(--coral-soft);
+  padding: var(--space-2) 0;
+}
+
+.jrn-qdash {
+  flex: none;
+  width: 18px;
+  height: 1px;
+  background: var(--coral);
+}
+
+.jrn-qtext {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .jrn-qremove {
+  all: unset;
+  cursor: pointer;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--placeholder);
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .jrn-qremove:hover,
+.ui-root .jrn-qremove:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .jrn-paper {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='30' viewBox='0 0 8 30' preserveAspectRatio='none'%3E%3Crect y='29' width='8' height='1' fill='%23262626'/%3E%3C/svg%3E");
+  background-size: 100% 30px;
+  background-attachment: local;
+  border: 0;
+  border-radius: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 19px !important;
+  line-height: 30px;
+  padding: 0 !important;
+  margin: 0;
+  outline: none;
+  caret-color: var(--coral);
+}
+
+:root[data-theme="light"] .ui-root .jrn-paper {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='30' viewBox='0 0 8 30' preserveAspectRatio='none'%3E%3Crect y='29' width='8' height='1' fill='%23E3DDD2'/%3E%3C/svg%3E");
+}
+
+.ui-root .jrn-paper.jrn-paper--read {
+  background-attachment: initial;
+}
+
+.jrn-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.jrn-meta .ok {
+  color: var(--mint-text);
+}
+
+.jrn-draft-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+/* ============================================================
+   After-action review / Weekly Momentum Check-in (prompt 10b) - the
+   five-segment rating scale replacing the old <input type=range> slider.
+   ============================================================ */
+
+.rate-row {
+  margin-bottom: var(--space-5);
+}
+
+.rate-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.rate-label {
+  font-size: 16px;
+  color: var(--text);
+}
+
+.rate-help {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+.rate-score {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  color: var(--coral-text);
+  white-space: nowrap;
+}
+
+.rate-scale {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.ui-root .rate-seg {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  min-height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: 15px;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.ui-root .rate-seg:last-child {
+  border-right: 0;
+}
+
+.ui-root .rate-seg:hover {
+  color: var(--text);
+}
+
+.ui-root .rate-seg[aria-pressed="true"] {
+  background: var(--coral);
+  color: var(--on-coral);
+}
+
+.ui-root .rate-seg:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+}
+
+.rate-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  color: var(--placeholder);
+}
+
+/* Read-only five-dot rating (summary pages) */
+.rate-dots {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rate-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--btn-line);
+  background: transparent;
+}
+
+.rate-dot--on {
+  background: var(--coral);
+  border-color: var(--coral);
+}
+
+.rate-dots-score {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+/* ============================================================
+   Time Allocation Audit (prompt 10b)
+   ============================================================ */
+
+.tsa-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 150px 44px;
+  align-items: start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .tsa-row {
+    grid-template-columns: 1fr;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    background: var(--surface);
+    margin-bottom: var(--space-3);
+  }
+}
+
+.tsa-num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--placeholder);
+  padding-top: 11px;
+}
+
+.tsa-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ui-root .tsa-stepper-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font-size: 18px;
+  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.ui-root .tsa-stepper-btn:hover,
+.ui-root .tsa-stepper-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--btn-line);
+}
+
+.ui-root .tsa-stepper input {
+  width: 48px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  min-height: var(--tap-min);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.ui-root .tsa-stepper input::-webkit-inner-spin-button,
+.ui-root .tsa-stepper input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tsa-hrs-label {
+  font-size: 12px;
+  color: var(--placeholder);
+}
+
+.tsa-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  margin: var(--space-3) 0 var(--space-5);
+  font-size: var(--fs-body-sub);
+  color: var(--text);
+}
+
+.tsa-total b {
+  color: var(--coral-text);
+  font-weight: 500;
+}
+
+.tsa-activity-block {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.tsa-activity-name {
+  font-size: 16px;
+  color: var(--text);
+  margin: 0 0 var(--space-2);
+}
+
+.tsa-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ui-root .tsa-pill {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.ui-root .tsa-pill:hover {
+  border-color: var(--btn-line);
+  color: var(--text);
+}
+
+.ui-root .tsa-pill[aria-pressed="true"] {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--on-coral);
+}
+
+.tsa-saves {
+  font-size: var(--fs-small);
+  color: var(--coral-text);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Breathe page (prompt 11)
+   ============================================================ */
+
+.breathe-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: calc(var(--breathe-bar-height, 88px) + var(--space-5));
+}
+
+/* .plan-header isn't display:flex, so align-items here was a no-op -
+   .breathe-resting (the flex item centred by .breathe-page above) is
+   centred as a whole box, but .plan-header and its children are then
+   plain block descendants inside it, not flex items themselves, so
+   .ui-title/.plan-overline (no max-width - their box already spans
+   .plan-header's full width, so text-align: center alone correctly
+   centres them) stay fine, but .ui-subtitle's own max-width: 46ch (set
+   generically in .plan-header .ui-subtitle above, for every other,
+   left-aligned .plan-page) narrows its box without ever centring that
+   narrower box - it was sitting flush left, with only its own text
+   centred inside it (patch 3D area C). */
+.breathe-page .ui-subtitle {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Resting content (instructions, selector, guidance, meta row) fades
+   out when a session starts and the full-screen session view (below)
+   fades in over it - patch 3B area C, breathe-redesign.html's own
+   .main.running .scroll{opacity:0;pointer-events:none;
+   transform:translateY(6px)}. .35s in the mock; --dur-slow (400ms) is
+   the nearest token. */
+.breathe-resting {
+  transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
+}
+
+.breathe-resting.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+}
+
+.breathe-shape-wrap {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-5) 0 var(--space-6);
+}
+
+/* Full-screen session view (patch 3B area C) - breathe-redesign.html's
+   .sess: a fixed overlay, above the header and the (now-hidden) start
+   bar, that fades in once Start is pressed and contains nothing but
+   the growing dial and the phase/count/timer/Done stack. .5s in the
+   mock; --dur-slow (400ms) is the nearest token. */
+.breathe-session {
+  position: fixed;
+  inset: 0;
+  z-index: 5200;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+.breathe-session.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.breathe-session-fg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.breathe-session-field {
+  flex: none;
+}
+
+.breathe-session-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  margin-top: var(--space-4);
+}
+
+.breathe-session-done {
+  margin-top: var(--space-4);
+}
+
+.breathe-phase {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.36em;
+  padding-left: 0.36em;
+  font-size: 12px;
+  min-height: 18px;
+}
+
+.breathe-count {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 60px;
+  line-height: 1;
+  margin-top: var(--space-2);
+  min-height: 60px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.breathe-timer {
+  font-size: 13px;
+  color: var(--placeholder);
+  margin-top: var(--space-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Breathe's own technique selector (patch 3, area A): the shared
+   .ui-segmented-option has zero horizontal padding (9px 0 8px), built
+   for short two-word labels elsewhere (the "No hold"/"With hold" choice
+   of the removed My Account modal) - reused here for three much longer uppercase
+   labels, it left them touching the pill edge. Scoped classes instead
+   of changing .ui-segmented-option, which other screens still rely on
+   as-is. Matches the mock-up's own .tq/.tq button exactly: 3px group
+   padding, 6px 8px button padding, 44px min-height, stacked to one
+   column on phone (grid-template-columns: 1fr) rather than squeezed
+   into three. max-width raised from 420px to 760px to match the
+   mock-up's own (unconstrained) width and this page's guidance row
+   below it. */
+.breathe-technique-select {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0 auto var(--space-6);
+  width: 100%;
+  max-width: 760px;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+}
+
+@media (max-width: 768px) {
+  .breathe-technique-select {
+    grid-template-columns: 1fr;
+    border-radius: 20px;
+  }
+}
+
+.ui-root .breathe-technique-option {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--tap-min);
+  padding: 6px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.ui-root .breathe-technique-option:hover {
+  color: var(--text);
+}
+
+/* Dark lifted capsule (patch 3B area B) - no coral anywhere in the
+   selector, so Start breathing stays the only coral block on the
+   page. The mock's selected fill is --sel:#1A1A1A, which has no
+   matching token in tokens.css; --surface (#0B0B0B) is the nearest
+   existing one, so that's what this uses (flagged to Tim as
+   instructed rather than adding a new token). */
+.ui-root .breathe-technique-option.active {
+  background: var(--surface);
+  border-color: var(--btn-line);
+  color: var(--text);
+}
+
+.ui-root .breathe-technique-option:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .ui-root .breathe-technique-option {
+    border-radius: 16px;
+  }
+}
+
+.breathe-guidance {
+  /* Flex-wrap, not a fixed grid: if the cards ever wrap onto a second
+     row (five or more, or a narrow width) the last row is centred under
+     the others, with every card the same width. */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 760px;
+  margin-bottom: var(--space-6);
+  text-align: center;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.breathe-guidance-col {
+  box-sizing: border-box;
+  flex: 0 0 25%;
+  max-width: 25%;
+  padding: var(--space-3) var(--space-3) var(--space-4);
+}
+
+.breathe-guidance-col + .breathe-guidance-col {
+  border-left: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  .breathe-guidance-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .breathe-guidance-col + .breathe-guidance-col {
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+}
+
+.breathe-guidance-label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--coral-text);
+  margin-bottom: var(--space-2);
+}
+
+.breathe-guidance-rule {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--coral);
+  margin: 0 auto var(--space-2);
+}
+
+.breathe-guidance-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.breathe-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 760px;
+  flex-wrap: wrap;
+}
+
+.ui-root .breathe-meta-item {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--text-2);
+}
+
+.ui-root .breathe-meta-link {
+  all: unset;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  color: var(--text-2);
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .breathe-meta-link:hover,
+.ui-root .breathe-meta-link:focus-visible {
+  color: var(--text);
+}
+
+.breathe-start-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1600;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  padding: var(--space-3) var(--page-x-desktop);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+}
+
+.breathe-start-bar .ui-btn-primary {
+  width: 100%;
+  max-width: 420px;
+}
+
+@media (max-width: 768px) {
+  .breathe-start-bar {
+    bottom: var(--tabbar-height, 79px);
+    padding: var(--space-3) var(--page-x-phone);
+  }
+}

@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { diag } from '../utils/diag';
-import BottomTabBar from './BottomTabBar';
+import DesignTabBar from './DesignTabBar';
 
 /**
  * Master auth guard - wraps ALL protected routes via React Router layout pattern.
@@ -56,11 +56,7 @@ export default function ProtectedLayout() {
 
   // During auth check, show loading screen (blocks rendering of child routes)
   if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
-      </div>
-    );
+    return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
   }
 
   // After auth check complete, only render child routes if user exists
@@ -72,7 +68,7 @@ export default function ProtectedLayout() {
   return (
     <>
       <Outlet />
-      <BottomTabBar />
+      <DesignTabBar />
     </>
   );
 }
