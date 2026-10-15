@@ -238,6 +238,14 @@ const BOX_TICKS = [
   { point: [-BOX_CORNER, -BOX_CORNER], at: 0.985 },
 ];
 
+// The Box inner square's scale (of the 240-unit guide). ONE value is
+// both its resting size and the animation's starting size, so they can
+// never drift apart and a session grows from exactly the resting shape.
+// 0.373 is the same proportion the ring techniques' circle has at rest
+// (radius 56 of its 150 guide). The peak is unchanged at 0.96.
+const BOX_INNER_REST_SCALE = 0.373;
+const BOX_INNER_PEAK_SCALE = 0.96;
+
 function BoxVisual({ technique, active, size }) {
   const reducedMotion = useReducedMotion();
   const { elapsedMs, color } = useCycleAnimation(technique, active);
@@ -246,7 +254,7 @@ function BoxVisual({ technique, active, size }) {
   const { s } = phaseAt(technique, cycleMs);
   const prog = active ? cycleMs / totalMs : 0;
   const rotation = active && !reducedMotion ? s * 45 : 0;
-  const innerScale = 0.22 + 0.74 * (active ? s : 0);
+  const innerScale = BOX_INNER_REST_SCALE + (BOX_INNER_PEAK_SCALE - BOX_INNER_REST_SCALE) * (active ? s : 0);
 
   const progRef = useRef(null);
   const dotRef = useRef(null);
