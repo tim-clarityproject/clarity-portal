@@ -45,3 +45,18 @@
 21. **No swear words anywhere.** Not in product text, not in file names, not in code comments, not in variable or component names. If one is ever found, rename/reword it immediately.
 
 22. **Mock-up files are the source of truth.** Before building or changing any page, open and read the actual mock-up file and spec in full. Never build from a summary or from memory. Copy markup, CSS values, wording and behaviour from the mock-up. If the built page differs, the mock-up wins. If something cannot match, stop and report it instead of simplifying. Every build summary must list the files read and any differences left.
+
+## List row guidelines
+
+These are guidelines, to apply by default to every list built from the shared row (`src/components/ui/HistoryList.jsx`: My Plans, My Reviews, My Journals, Decision History). Where a mock-up shows a detail, the mock-up wins. They are about layout only, not saving or navigation.
+
+On phone every row is built the same way:
+
+1. **Line 1:** the title, left-aligned, wrapping only between words.
+2. **Line 2:** the type label, then the status tag (Draft, Reviewed) beside it, then the version chip (for example Version 1.2) beside the tag, all on one left-aligned line that wraps cleanly. The version belongs here, not on the date line.
+3. **Line 3:** the date and time (24 hour), then any count (for example 196 words), always left-aligned and directly under line 2, in the same place in every row.
+4. **Actions:** one right-aligned row beneath with a small, even gap above it (spacing tokens). The text action (Continue, Review, View review) is the same size and weight as the type label, not larger; the pencil and bin icons are the same size and distance apart in every row.
+5. Every element starts at the same left edge in every row: no indents, no centring. Desktop keeps its single-line row.
+6. **Filters:** the one shared `FilterPills` row: a single non-wrapping row that swipes sideways at every width, with no dropdown on phone and no gradient or fade overlay.
+
+Note for mock-ups: Tim approved swipeable pills at every width and the type, status and version line in place of the mock-ups' dropdown on phone and version on the date line.

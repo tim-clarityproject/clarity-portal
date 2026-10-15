@@ -1,7 +1,26 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import PageHeading from '../PageHeading';
+import FilterPills from './FilterPills';
 
+// LIST ROW GUIDELINES (guidelines to apply by default; a mock-up wins
+// where it shows a detail). On phone every row of every list is built
+// the same way:
+//   1. Title - left-aligned, wraps only between words.
+//   2. Type label, then the status tag (Draft / Reviewed), then the
+//      version chip (e.g. Version 1.2), all on one left-aligned line
+//      that wraps cleanly. The version lives here, not on the date line.
+//   3. Date and time (24 hour), then any count (e.g. 196 words), always
+//      left-aligned directly under line 2.
+//   4. One right-aligned action row beneath, with a small even gap
+//      above it. The text action (Continue, Review, View review) is the
+//      same size and weight as the type label; the icons are the same
+//      size and spacing in every row.
+//   Every element starts at the same left edge: no indents, no centring.
+//   Desktop keeps its single-line row. Filters are the shared
+//   FilterPills row: one line, swipes sideways, never wraps, no
+//   dropdown.
+//
 // Shared history list - used (later, by prompts 6-10) by My Plans, My
 // Reviews and My Journals. Driven only by props: no data fetching, no
 // Supabase calls, no navigation of its own. The caller supplies rows,
@@ -19,7 +38,7 @@ import PageHeading from '../PageHeading';
 //
 // `subFilters` (prompt 7, My Plans): an optional map of parent filter id
 // -> a second array of {id,label[,match]} filter defs, shown as a
-// second row of pills (desktop) / a second dropdown (phone) once that
+// second row of pills (the same swipeable row at every width) once that
 // parent filter is active - e.g. choosing "Decisions" reveals a second
 // level for If-Then/Time audit/GROW/Tough feedback.
 const DEFAULT_VISIBLE = 50;
@@ -37,14 +56,6 @@ function BinIcon() {
   return (
     <svg className="hlist-icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M5 7h14M10 7V4.5h4V7M7 7l.8 12.5h8.4L17 7M10.5 11v5M13.5 11v5" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg className="hlist-chevron" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m6 9.5 6 6 6-6" />
     </svg>
   );
 }
@@ -84,100 +95,10 @@ export default function HistoryList({
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeSubFilter, setActiveSubFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('new'); // 'new' | 'old'
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [subDropdownOpen, setSubDropdownOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE);
-  const dropdownRef = useRef(null);
-  const dropdownButtonRef = useRef(null);
-  const optionRefs = useRef([]);
-  const subDropdownRef = useRef(null);
-  const subDropdownButtonRef = useRef(null);
-  const subOptionRefs = useRef([]);
 
   const activeSubFilterList = subFilters[activeFilter];
   const allSubFilters = activeSubFilterList ? [{ id: 'all', label: 'All' }, ...activeSubFilterList] : null;
-
-  // Close the phone filter dropdown(s) on outside tap and Escape.
-  useEffect(() => {
-    if (!dropdownOpen && !subDropdownOpen) return;
-    const handlePointerDown = (e) => {
-      if (dropdownOpen && dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-      if (subDropdownOpen && subDropdownRef.current && !subDropdownRef.current.contains(e.target)) {
-        setSubDropdownOpen(false);
-      }
-    };
-    const handleKey = (e) => {
-      if (e.key !== 'Escape') return;
-      if (subDropdownOpen) {
-        setSubDropdownOpen(false);
-        subDropdownButtonRef.current?.focus();
-      } else if (dropdownOpen) {
-        setDropdownOpen(false);
-        dropdownButtonRef.current?.focus();
-      }
-    };
-    document.addEventListener('mousedown', handlePointerDown);
-    window.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      window.removeEventListener('keydown', handleKey);
-    };
-  }, [dropdownOpen, subDropdownOpen]);
-
-  const handleDropdownToggle = () => {
-    setDropdownOpen((open) => !open);
-  };
-
-  const handleOptionSelect = (filterId) => {
-    setActiveFilter(filterId);
-    setActiveSubFilter('all');
-    setDropdownOpen(false);
-    dropdownButtonRef.current?.focus();
-  };
-
-  const handleSubOptionSelect = (filterId) => {
-    setActiveSubFilter(filterId);
-    setSubDropdownOpen(false);
-    subDropdownButtonRef.current?.focus();
-  };
-
-  const handleListboxKeyDown = (e, index) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const next = optionRefs.current[index + 1] || optionRefs.current[0];
-      next?.focus();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const prev = optionRefs.current[index - 1] || optionRefs.current[optionRefs.current.length - 1];
-      prev?.focus();
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleOptionSelect(allFilters[index].id);
-    } else if (e.key === 'Escape') {
-      setDropdownOpen(false);
-      dropdownButtonRef.current?.focus();
-    }
-  };
-
-  const handleSubListboxKeyDown = (e, index) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const next = subOptionRefs.current[index + 1] || subOptionRefs.current[0];
-      next?.focus();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const prev = subOptionRefs.current[index - 1] || subOptionRefs.current[subOptionRefs.current.length - 1];
-      prev?.focus();
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleSubOptionSelect(allSubFilters[index].id);
-    } else if (e.key === 'Escape') {
-      setSubDropdownOpen(false);
-      subDropdownButtonRef.current?.focus();
-    }
-  };
 
   if (error) {
     return (
@@ -233,110 +154,22 @@ export default function HistoryList({
 
       {allFilters.length > 0 && (
         <>
-          <div className="hlist-seg" role="group" aria-label="Filter by type">
-            {allFilters.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                className="hlist-seg-btn"
-                aria-pressed={activeFilter === f.id}
-                onClick={() => { setActiveFilter(f.id); setActiveSubFilter('all'); }}
-              >
-                {f.label}
-                <i>{countForFilter(rows, f)}</i>
-              </button>
-            ))}
-          </div>
-
+          <FilterPills
+            label="Filter by type"
+            filters={allFilters}
+            active={activeFilter}
+            countFor={(f) => countForFilter(rows, f)}
+            onSelect={(id) => { setActiveFilter(id); setActiveSubFilter('all'); }}
+          />
           {allSubFilters && (
-            <div className="hlist-seg hlist-seg--sub" role="group" aria-label="Filter by decision type">
-              {allSubFilters.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  className="hlist-seg-btn"
-                  aria-pressed={activeSubFilter === f.id}
-                  onClick={() => setActiveSubFilter(f.id)}
-                >
-                  {f.label}
-                  <i>{countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), f)}</i>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="hlist-dropdown-wrap" ref={dropdownRef}>
-            <button
-              type="button"
-              ref={dropdownButtonRef}
-              className="hlist-dropdown-btn"
-              aria-expanded={dropdownOpen}
-              aria-haspopup="listbox"
-              onClick={handleDropdownToggle}
-            >
-              <span>
-                {activeFilterDef?.label}
-                <i>{countForFilter(rows, activeFilterDef)}</i>
-              </span>
-              <ChevronDownIcon />
-            </button>
-            {dropdownOpen && (
-              <div className="hlist-dropdown-list" role="listbox" aria-label="Filter by type">
-                {allFilters.map((f, i) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    ref={(el) => { optionRefs.current[i] = el; }}
-                    role="option"
-                    aria-selected={activeFilter === f.id}
-                    className="hlist-dropdown-option"
-                    onClick={() => handleOptionSelect(f.id)}
-                    onKeyDown={(e) => handleListboxKeyDown(e, i)}
-                  >
-                    {f.label}
-                    <i>{countForFilter(rows, f)}</i>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {allSubFilters && (
-            <div className="hlist-dropdown-wrap hlist-dropdown-wrap--sub" ref={subDropdownRef}>
-              <button
-                type="button"
-                ref={subDropdownButtonRef}
-                className="hlist-dropdown-btn"
-                aria-expanded={subDropdownOpen}
-                aria-haspopup="listbox"
-                onClick={() => setSubDropdownOpen((open) => !open)}
-              >
-                <span>
-                  {activeSubFilterDef?.label}
-                  <i>{countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), activeSubFilterDef)}</i>
-                </span>
-                <ChevronDownIcon />
-              </button>
-              {subDropdownOpen && (
-                <div className="hlist-dropdown-list" role="listbox" aria-label="Filter by decision type">
-                  {allSubFilters.map((f, i) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      ref={(el) => { subOptionRefs.current[i] = el; }}
-                      role="option"
-                      aria-selected={activeSubFilter === f.id}
-                      className="hlist-dropdown-option"
-                      onClick={() => handleSubOptionSelect(f.id)}
-                      onKeyDown={(e) => handleSubListboxKeyDown(e, i)}
-                    >
-                      {f.label}
-                      <i>{countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), f)}</i>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <FilterPills
+              sub
+              label="Filter by decision type"
+              filters={allSubFilters}
+              active={activeSubFilter}
+              countFor={(f) => countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), f)}
+              onSelect={setActiveSubFilter}
+            />
           )}
         </>
       )}
@@ -369,10 +202,11 @@ export default function HistoryList({
                         <b>{row.typeLabel}</b>
                         {row.isDraft && <span className="hlist-draft-tag">Draft</span>}
                         {row.reviewed && <span className="hlist-reviewed-tag">Reviewed</span>}
+                        {row.version && <span className="hlist-version hlist-version--phone">{row.version}</span>}
                       </span>
                       <span className="hlist-row-meta">
                         <span>{formatDayMonthTime(row.date)}</span>
-                        {row.version && <span>{row.version}</span>}
+                        {row.version && <span className="hlist-version--desktop">{row.version}</span>}
                         {row.meta && <span>{row.meta}</span>}
                       </span>
                     </span>
@@ -496,221 +330,6 @@ const HLIST_CSS = `
   .hlist-new-phone-wrap { display: flex; }
 }
 
-/* Desktop pill filters */
-.hlist-seg {
-  display: none;
-}
-
-.hlist-seg--sub {
-  margin-top: var(--space-2);
-}
-
-@media (min-width: 769px) {
-  .hlist-seg {
-    display: flex;
-    border: 1px solid var(--line);
-    border-radius: 28px;
-    padding: 3px;
-    gap: 2px;
-    /* Wrap, never clip: with five or six pills at tablet or small
-       laptop widths the last one (Journals) used to scroll out of
-       sight inside the pill group. */
-    flex-wrap: wrap;
-    max-width: 100%;
-    width: max-content;
-  }
-}
-
-.ui-root .hlist-seg-btn {
-  min-height: var(--tap-min);
-  padding: 0 16px !important;
-  border-radius: var(--radius-pill);
-  border: none;
-  background: transparent;
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: var(--fs-button) !important;
-  color: var(--text-2);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
-}
-
-.hlist-seg-btn i {
-  font-style: normal;
-  font-family: var(--font-body);
-  letter-spacing: 0;
-  font-size: 12px;
-  color: var(--placeholder);
-}
-
-.hlist-seg-btn:hover {
-  color: var(--text);
-}
-
-.hlist-seg-btn[aria-pressed="true"] {
-  background: var(--coral);
-  color: var(--on-coral);
-}
-
-.hlist-seg-btn[aria-pressed="true"] i {
-  color: var(--on-coral);
-}
-
-.hlist-seg-btn:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 2px;
-}
-
-/* Phone dropdown */
-.hlist-dropdown-wrap {
-  position: relative;
-}
-
-.hlist-dropdown-wrap--sub {
-  margin-top: var(--space-2);
-}
-
-@media (min-width: 769px) {
-  .hlist-dropdown-wrap { display: none; }
-}
-
-.ui-root .hlist-dropdown-btn {
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 48px;
-  padding: 0 18px !important;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: var(--fs-button) !important;
-  color: var(--text);
-  cursor: pointer;
-  transition: border-color var(--dur) var(--ease);
-}
-
-.hlist-dropdown-btn span {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.hlist-dropdown-btn i {
-  font-style: normal;
-  font-family: var(--font-body);
-  letter-spacing: 0;
-  font-size: 13px;
-  color: var(--placeholder);
-}
-
-.hlist-dropdown-btn:hover {
-  border-color: var(--btn-line);
-}
-
-.hlist-dropdown-btn[aria-expanded="true"] {
-  border-color: var(--coral);
-}
-
-.hlist-dropdown-btn:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-}
-
-.hlist-chevron {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: var(--coral);
-  stroke-width: 1.3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform var(--dur) var(--ease);
-  flex-shrink: 0;
-}
-
-.hlist-dropdown-btn[aria-expanded="true"] .hlist-chevron {
-  transform: rotate(180deg);
-}
-
-.hlist-dropdown-list {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 6px);
-  z-index: 6;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  padding: 6px 0;
-  overflow: hidden;
-}
-
-.ui-root .hlist-dropdown-option {
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 48px;
-  padding: 0 18px 0 22px !important;
-  background: transparent;
-  border: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-body);
-  font-size: 15px !important;
-  color: var(--text-2);
-  position: relative;
-  cursor: pointer;
-}
-
-.hlist-dropdown-option i {
-  font-style: normal;
-  font-size: 13px;
-  color: var(--placeholder);
-}
-
-.hlist-dropdown-option::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  background: var(--coral);
-  transform: scaleY(0);
-  transition: transform var(--dur) var(--ease);
-}
-
-.hlist-dropdown-option:hover,
-.hlist-dropdown-option:focus-visible,
-.hlist-dropdown-option[aria-selected="true"] {
-  color: var(--text);
-}
-
-.hlist-dropdown-option:hover::before,
-.hlist-dropdown-option:focus-visible::before,
-.hlist-dropdown-option[aria-selected="true"]::before {
-  transform: scaleY(1);
-}
-
-.hlist-dropdown-option:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: -2px;
-}
-
-/* Entries count + sort toggle */
 .hlist-tools {
   display: flex;
   justify-content: space-between;
@@ -886,28 +505,78 @@ const HLIST_CSS = `
   flex-shrink: 0;
 }
 
-/* Phone: the title, then the tag and type label, then the date each get
-   the whole row width, and the actions sit in their own row beneath,
-   aligned right - so a Reviewed or Draft tag never squeezes the title
-   (this departs from the mock-up's single-line truncated phone row, by
-   Tim's request). Rows with and without tags share this structure. */
+/* Phone row anatomy (<= 768px), the same for every row of every list:
+     line 1  title, wraps between words only
+     line 2  type label, status tag (Draft / Reviewed), version chip
+     line 3  date and time, then any count
+     actions one right-aligned row beneath, small even gap above
+   Everything starts at the same left edge: nothing is indented or
+   centred. Selectors carry .ui-root so they always out-rank the base
+   rules declared further down this sheet (the earlier version of this
+   block lost that fight - the stack stayed centre-aligned - and
+   mobile.css's 14px button font beat the action text). Desktop keeps
+   its single line: see the base rules. */
+.hlist-version--phone {
+  display: none;
+}
+
+.hlist-version--phone,
+.hlist-version--desktop {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  color: var(--text-2);
+}
+
 @media (max-width: 768px) {
-  .hlist-row {
+  .ui-root .hlist-row {
     flex-wrap: wrap;
     align-items: flex-start;
   }
   .ui-root .hlist-row-main {
     flex: 1 1 100%;
-    padding: var(--space-3) var(--space-2) 0 var(--space-3) !important;
+    align-items: flex-start;
+    text-align: left;
+    padding: var(--space-3) var(--space-2) var(--space-1) var(--space-3) !important;
   }
-  .hlist-row-sub {
+  .ui-root .hlist-row-sub {
+    display: flex;
     flex-direction: column;
     align-items: flex-start;
     row-gap: var(--space-1);
+    margin-top: var(--space-1);
+    width: 100%;
   }
-  .hlist-row-controls {
+  .ui-root .hlist-row-tags,
+  .ui-root .hlist-row-meta {
+    justify-content: flex-start;
+    align-items: center;
+    margin: 0;
+    text-align: left;
+  }
+  .ui-root .hlist-row-tags {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    /* One line height whether or not a tag is present, so the date
+       line sits at the same distance below the title in every row. */
+    min-height: calc(var(--space-3) + var(--space-1));
+  }
+  .ui-root .hlist-row-tags .hlist-version--phone {
+    display: inline-block;
+    padding: 1px 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    line-height: 1.4;
+  }
+  .ui-root .hlist-row-meta .hlist-version--desktop {
+    display: none;
+  }
+  .ui-root .hlist-row-controls {
     flex: 1 1 100%;
     justify-content: flex-end;
+    gap: var(--space-1);
     padding: 0 var(--space-1) var(--space-1) var(--space-3);
   }
 }
@@ -923,7 +592,7 @@ const HLIST_CSS = `
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 10px;
+  font-size: 10px !important;
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease);
 }
@@ -953,7 +622,7 @@ const HLIST_CSS = `
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 10px;
+  font-size: 10px !important;
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease);
 }
@@ -1101,11 +770,8 @@ const HLIST_CSS = `
   .hlist-row::before,
   .hlist-row-title,
   .hlist-row-meta,
-  .hlist-chevron,
-  .hlist-dropdown-option::before,
   .hlist-ghost-btn,
   .hlist-seg-btn,
-  .hlist-dropdown-btn,
   .hlist-sort-link,
   .hlist-show-more,
   .hlist-icon-btn {
