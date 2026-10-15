@@ -58,9 +58,6 @@ import ToughConversationStep2Coaching from './pages/ToughConversationStep2Coachi
 import AuthCallback from './pages/AuthCallback';
 import EmailConfirmation from './pages/EmailConfirmation';
 import CheckEmailConfirmation from './pages/CheckEmailConfirmation';
-import TermsOfService from './pages/TermsOfService';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import DataStorageNotice from './pages/DataStorageNotice';
 import EditPersonalDetails from './pages/EditPersonalDetails';
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
@@ -218,9 +215,9 @@ function AppContent() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/check-email-confirmation" element={<CheckEmailConfirmation />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/data-storage-notice" element={<DataStorageNotice />} />
+        <Route path="/terms-of-service" element={<Navigate to="/legal/terms" replace />} />
+        <Route path="/privacy-policy" element={<Navigate to="/legal/privacy" replace />} />
+        <Route path="/data-storage-notice" element={<Navigate to="/legal/data-storage" replace />} />
 
         {/* NEW WELCOME FLOW - public routes (log in, sign up, check email,
             mission, finished, welcome back). Deliberately NOT nested under
