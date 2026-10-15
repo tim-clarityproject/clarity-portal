@@ -120,6 +120,10 @@ export function stepToJson(step) {
     out.project = step.pi;
     out.mode = step.mode;
     if (step.mode === 'revisit' && step.highlight?.length) out.highlight = step.highlight;
+  } else if (step.screen === 'done' && step.mode === 'revisit') {
+    // So Back from the end screen returns to the right kind of rating screen.
+    out.mode = 'revisit';
+    if (step.highlight?.length) out.highlight = step.highlight;
   }
   return out;
 }
@@ -128,7 +132,14 @@ const KNOWN = ['objective', 'factors', 'projects', 'contrib', 'progress', 'resou
 
 /** Reads a saved current_step back into a valid step for this draft. */
 export function stepFromJson(json, draft, complete = false) {
-  if (complete) return { screen: 'done', pi: 0, mode: 'full', highlight: [] };
+  if (complete) {
+    return {
+      screen: 'done',
+      pi: 0,
+      mode: json?.mode === 'revisit' ? 'revisit' : 'full',
+      highlight: Array.isArray(json?.highlight) ? json.highlight : [],
+    };
+  }
   const screen = KNOWN.includes(json?.screen) ? json.screen : 'objective';
   const step = {
     screen,
@@ -179,7 +190,7 @@ export function nextStep(step, draft) {
     case 'factors': return { screen: 'projects', pi: 0, mode: 'full', highlight: [] };
     case 'projects': return afterProjects(draft);
     case 'contrib':
-      if (step.mode === 'revisit') return step.pi < n - 1 ? rate('contrib', step.pi + 1) : { screen: 'done', pi: 0, mode: 'full', highlight: [] };
+      if (step.mode === 'revisit') return step.pi < n - 1 ? rate('contrib', step.pi + 1) : { screen: 'done', pi: 0, mode: 'revisit', highlight: step.highlight };
       return rate('progress', step.pi);
     case 'progress': return rate('resource', step.pi);
     case 'resource':
