@@ -33,10 +33,15 @@ export default function LogIn() {
   const [error, setError] = useState('');
   const [shakeToken, setShakeToken] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendNote, setResendNote] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setNeedsConfirmation(false);
+    setResendNote('');
 
     if (!email.trim() || !password.trim()) {
       setError('Please fill in all fields.');
@@ -73,16 +78,47 @@ export default function LogIn() {
         return;
       }
 
-      if (signInError.status === 400 || signInError.message?.includes('Invalid login credentials')) {
+      // Supabase answers a wrong password and an unconfirmed email with
+      // the same HTTP status (400); only the error code / message tell
+      // them apart ("email_not_confirmed" / "Email not confirmed" versus
+      // "invalid_credentials" / "Invalid login credentials"). Supabase
+      // only returns the unconfirmed error when the password was right,
+      // so this reveals nothing it did not already reveal.
+      const unconfirmed = signInError.code === 'email_not_confirmed'
+        || /email not confirmed/i.test(signInError.message || '');
+      if (unconfirmed) {
+        setNeedsConfirmation(true);
+        setError('Your email address has not been confirmed yet. Open the link we sent you, or send it again below.');
+      } else if (signInError.status === 400 || signInError.message?.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please try again.');
-      } else if (signInError.status === 401) {
-        setError('Email not confirmed. Check your email for verification link.');
       } else {
         setError(signInError.message || 'Login failed. Please try again.');
       }
       setShakeToken((t) => t + 1);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Same redirect the original sign-up used (SignUpStep2.jsx), so the
+  // resent link lands on the themed mission step.
+  const handleResend = async () => {
+    if (!email.trim() || isResending) return;
+    setIsResending(true);
+    setResendNote('');
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/auth/mission` },
+      });
+      setResendNote(resendError
+        ? (resendError.message || 'Could not send the email. Please try again.')
+        : 'Done. If this address needs confirming, a new link is on its way.');
+    } catch (err) {
+      setResendNote(err.message || 'Could not send the email. Please try again.');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -114,6 +150,15 @@ export default function LogIn() {
         />
 
         {error && <p className="auth-field-error" role="alert" data-testid="login-error">{error}</p>}
+
+        {needsConfirmation && (
+          <div className="auth-row2">
+            <AuthTextLink onClick={handleResend} disabled={isResending}>
+              {isResending ? 'Sending...' : 'Resend confirmation email'}
+            </AuthTextLink>
+          </div>
+        )}
+        {resendNote && <p className="auth-field-error" role="status" style={{ color: 'var(--text-2)' }}>{resendNote}</p>}
 
         <div className="auth-row2">
           <AuthTextLink to="/forgot-password">Forgot password?</AuthTextLink>
