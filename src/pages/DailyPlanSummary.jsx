@@ -8,6 +8,7 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 // Headings repeat the four questions word for word - see
 // PlanMyDayStep1.jsx's QUESTIONS. Two of these were previously shortened
@@ -141,8 +142,7 @@ export default function DailyPlanSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">Daily intentions</span>
-          <div className="ui-title">{formatPlanDate(plan.created_at)}</div>
+          <PageHeading pageKey="dailyPlanSummary" title={formatPlanDate(plan.created_at)} overline="Daily intentions" subtitle="" rule={false} />
         </div>
 
         {answered.length > 0 && (

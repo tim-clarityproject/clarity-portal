@@ -10,6 +10,7 @@ import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 // Decision types with a "Review this plan" page (prompt 8).
 const REVIEWABLE_TYPES = new Set(['inversion', 'tough-conversation']);
@@ -151,7 +152,7 @@ export default function DecisionHistory() {
 
       <div className="plan-page">
         <div className="dt-hrow">
-          <div className="ui-title">My decisions</div>
+          <PageHeading pageKey="decisionHistory" title="My decisions" overline="" subtitle="" rule={false} />
           <button type="button" className="ui-btn-primary" onClick={() => navigate('/decision-tools')}>
             Make a decision
           </button>

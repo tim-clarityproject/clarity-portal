@@ -11,6 +11,7 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -252,10 +253,8 @@ export default function ReviewPlan() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        <span className="plan-overline">{formatReviewDayLabel(reviewDate)}</span>
         <div className="plan-header">
-          <div className="ui-title">{t.h}</div>
-          <p className="ui-subtitle">{t.sub}</p>
+          <PageHeading pageKey="reviewPlan" title={t.h} overline={formatReviewDayLabel(reviewDate)} subtitle={t.sub} rule={false} />
         </div>
 
         {isLoading ? (

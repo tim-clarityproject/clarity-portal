@@ -13,6 +13,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -206,8 +207,7 @@ export default function ToughConversationStep2Coaching() {
         </div>
 
         <div className="plan-header">
-          <div className="ui-title">Have a tough conversation</div>
-          <p className="ui-subtitle">Plan your coaching and follow-up questions.</p>
+          <PageHeading pageKey="toughConversationStep2Coaching" title="Have a tough conversation" overline="" rule={false} />
         </div>
 
         <div className="tc-script">

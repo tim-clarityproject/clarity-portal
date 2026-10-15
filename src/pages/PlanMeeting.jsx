@@ -11,6 +11,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
+import PageHeading from '../components/PageHeading';
 
 const SECTION_OPTIONS = [
   { id: 'context', label: 'Meeting context' },
@@ -223,7 +224,6 @@ export default function PlanMeeting() {
     navigate('/my-plans');
   };
 
-  const page = pageText.planMeeting;
   const bothAdded = sections.includes('context') && sections.includes('pre-reads');
 
   const actionButtons = (
@@ -239,8 +239,7 @@ export default function PlanMeeting() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <div className="ui-title">Meeting planner</div>
-          <p className="ui-subtitle">{page.subtitle}</p>
+          <PageHeading pageKey="planMeeting" title="Meeting planner" overline="" rule={false} />
         </div>
 
         <div className="plan-field">

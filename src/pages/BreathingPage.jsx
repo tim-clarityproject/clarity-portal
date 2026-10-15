@@ -11,6 +11,7 @@ import DesignHeader from '../components/DesignHeader';
 import BreathingVisual, { useBreathingPhase, useDialSize } from '../components/ui/BreathingVisual';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
@@ -168,9 +169,7 @@ export default function BreathingPage() {
       <div className="plan-page breathe-page">
         <div className={`breathe-resting${sessionActive ? ' hidden' : ''}`} aria-hidden={sessionActive}>
           <div className="plan-header">
-            <span className="plan-overline">Ground</span>
-            <div className="ui-title">Breathe</div>
-            <p className="ui-subtitle">Choose a technique, then settle in and begin.</p>
+            <PageHeading pageKey="breathingPage" title="Breathe" overline="Ground" rule={false} />
           </div>
 
           <div className="breathe-shape-wrap">

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
+import PageHeading from '../components/PageHeading';
 
 // Types with their own dedicated, design-system summary page now - an
 // old bookmark/link that still points here gets sent on rather than
@@ -102,9 +103,7 @@ export default function DecisionSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">{TYPE_LABEL[toolType] || toolType}</span>
-          <div className="ui-title">{decision.title || 'Untitled decision'}</div>
-          <p className="ui-subtitle">Created {formatUkDate(decision.created_at)}</p>
+          <PageHeading pageKey="decisionSummary" title={decision.title || 'Untitled decision'} overline={TYPE_LABEL[toolType] || toolType} subtitle={`Created ${formatUkDate(decision.created_at)}`} rule={false} />
         </div>
 
         {toolType === 'grow' && (

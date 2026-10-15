@@ -6,6 +6,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DesignHeader from '../components/DesignHeader';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -130,8 +131,7 @@ export default function ReviewPlanSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">{TAG[planKind] || 'Plan review'}</span>
-          <div className="ui-title">{entry.title}</div>
+          <PageHeading pageKey="reviewPlanSummary" title={entry.title} overline={TAG[planKind] || 'Plan review'} subtitle="" rule={false} />
         </div>
 
         <div className="plan-sum">

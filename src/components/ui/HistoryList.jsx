@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
+import PageHeading from '../PageHeading';
 
 // Shared history list - used (later, by prompts 6-10) by My Plans, My
 // Reviews and My Journals. Driven only by props: no data fetching, no
@@ -67,7 +68,7 @@ function countForFilter(rows, filterDef) {
 
 export default function HistoryList({
   title,
-  subLine,
+  pageKey,
   rows = [],
   filters = [],
   subFilters = {},
@@ -184,8 +185,7 @@ export default function HistoryList({
         <HistoryListStyles />
         <div className="hlist-head">
           <div>
-            {title && <h2 className="hlist-title">{title}</h2>}
-            {subLine && <p className="hlist-sub">{subLine}</p>}
+            {title && <PageHeading pageKey={pageKey} title={title} overline="" rule={false} />}
           </div>
         </div>
         <div className="hlist-error" role="alert">
@@ -222,8 +222,7 @@ export default function HistoryList({
 
       <div className="hlist-head">
         <div>
-          {title && <h2 className="hlist-title">{title}</h2>}
-          {subLine && <p className="hlist-sub">{subLine}</p>}
+          {title && <PageHeading pageKey={pageKey} title={title} overline="" rule={false} />}
         </div>
         {newButton && (
           <button type="button" className="hlist-ghost-btn hlist-new-desktop" onClick={newButton.onClick}>
@@ -457,28 +456,6 @@ const HLIST_CSS = `
   align-items: flex-start;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
-}
-
-.hlist-title {
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 22px;
-  line-height: 1.25;
-  color: var(--text);
-  margin: 0;
-}
-
-@media (min-width: 769px) {
-  .hlist-title { font-size: 26px; }
-}
-
-.hlist-sub {
-  margin: 10px 0 0;
-  color: var(--text-2);
-  font-size: var(--fs-body-sub);
-  line-height: 1.5;
 }
 
 .ui-root .hlist-ghost-btn {

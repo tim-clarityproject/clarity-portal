@@ -12,6 +12,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 const ACTIONS = ['Stop', 'Automate', 'Delegate', 'Defer'];
 const MAX_ACTIVITY = 80;
@@ -238,9 +239,7 @@ export default function StopDoingAudit() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <span className="plan-overline">Plan</span>
-          <div className="ui-title">Time Allocation Audit</div>
-          <p className="ui-subtitle">Identify time-sink activities and reclaim your time.</p>
+          <PageHeading pageKey="stopDoingAudit" title="Time Allocation Audit" overline="Plan" rule={false} />
         </div>
 
         <div className="plan-label-row">

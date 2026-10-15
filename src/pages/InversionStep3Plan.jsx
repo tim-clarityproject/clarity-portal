@@ -12,6 +12,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -171,8 +172,7 @@ export default function InversionStep3Plan() {
         </div>
 
         <div className="plan-header">
-          <div className="ui-title">So what will you do?</div>
-          <p className="ui-subtitle">For each risk, write what you will do to stop it happening.</p>
+          <PageHeading pageKey="inversionStep3Plan" title="So what will you do?" overline="" rule={false} />
         </div>
 
         <div className="inv-recap">

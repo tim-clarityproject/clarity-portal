@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -117,8 +118,7 @@ export default function MissionProgressReviewDetail() {
               explicit wording (patch 2d) overriding my-reviews.html's
               own "Plan review" - matches My Reviews' filter/row label
               for this same review type. */}
-          <span className="plan-overline">POP review</span>
-          <div className="ui-title">POP review, {formatShortDate(review.created_at)}</div>
+          <PageHeading pageKey="missionProgressReviewDetail" title={`POP review, ${formatShortDate(review.created_at)}`} overline="POP review" subtitle="" rule={false} />
         </div>
 
         {version && (

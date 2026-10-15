@@ -16,6 +16,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 export default function MyJournal() {
   const navigate = useNavigate();
@@ -205,8 +206,7 @@ export default function MyJournal() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <span className="plan-overline">Review</span>
-          <div className="ui-title">{pageTitle}</div>
+          <PageHeading pageKey="myJournal" title={pageTitle} overline="Review" subtitle="" rule={false} />
         </div>
 
         {continuingDraftDate && (

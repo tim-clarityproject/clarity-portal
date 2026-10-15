@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -124,9 +125,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-history', { state: { missionId } })} label="Back to version history" /></div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">{formatShortDate(version.created_at)}</span>
-          <div className="ui-title">{formatVersion(version.major, version.minor)}</div>
-          <p className="ui-subtitle">{version.change_note}</p>
+          <PageHeading pageKey="personalOperatingPlanHistoryVersion" title={formatVersion(version.major, version.minor)} overline={formatShortDate(version.created_at)} subtitle={version.change_note} rule={false} />
         </div>
 
         <p className="pop-version-date">{isCurrent ? 'This is your current plan.' : 'This is an older Version. You can read it but not change it.'}</p>

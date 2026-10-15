@@ -184,7 +184,7 @@ export default function MyPlans() {
         ) : (
           <HistoryList
             title="My Plans"
-            subLine="Every plan and decision you have made, in one history."
+            pageKey="myPlans"
             rows={rows}
             filters={FILTERS}
             subFilters={SUB_FILTERS}

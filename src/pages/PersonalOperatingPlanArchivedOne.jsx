@@ -8,6 +8,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -132,9 +133,7 @@ export default function PersonalOperatingPlanArchivedOne() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-archived')} label="Back to archived plans" /></div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">Archived</span>
-          <div className="ui-title">{mission.title}</div>
-          <p className="ui-subtitle">Archived {new Date(mission.archived_at).toLocaleDateString('en-GB')}</p>
+          <PageHeading pageKey="personalOperatingPlanArchivedOne" title={mission.title} overline="Archived" subtitle={`Archived ${new Date(mission.archived_at).toLocaleDateString('en-GB')}`} rule={false} />
         </div>
 
         <p className="pop-version-date">

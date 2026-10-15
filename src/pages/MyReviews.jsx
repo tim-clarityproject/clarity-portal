@@ -262,6 +262,7 @@ export default function MyReviews() {
       <div className="plan-page">
         <HistoryList
           title="My Reviews"
+          pageKey="myReviews"
           rows={rows}
           filters={FILTERS}
           newButton={{ label: 'New review', onClick: () => navigate('/review-section') }}

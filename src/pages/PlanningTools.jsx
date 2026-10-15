@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
+import PageHeading from '../components/PageHeading';
 
 const PLAN_ROWS = [
   { title: 'Plan my day', description: 'Set your intentions and priorities.', route: '/plan-my-day' },
@@ -48,8 +49,7 @@ export default function PlanningTools() {
 
       <div className="plan-page">
         <div className="plan-header">
-          <div className="ui-title">All planning tools</div>
-          <p className="ui-subtitle">Everything you can use to plan, in one place.</p>
+          <PageHeading pageKey="planningTools" title="All planning tools" overline="" rule={false} />
         </div>
 
         <p className="ptl-group">Plan</p>

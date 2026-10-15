@@ -8,6 +8,7 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 export default function IfThenPlanningSummary() {
   const navigate = useNavigate();
@@ -106,8 +107,7 @@ export default function IfThenPlanningSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">If-Then plan</span>
-          <div className="ui-title">{planning.title || 'If-Then plan'}</div>
+          <PageHeading pageKey="ifThenPlanningSummary" title={planning.title || 'If-Then plan'} overline="If-Then plan" subtitle="" rule={false} />
         </div>
 
         <div className="plan-sum">

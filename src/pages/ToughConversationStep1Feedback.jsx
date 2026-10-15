@@ -12,6 +12,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -149,8 +150,7 @@ export default function ToughConversationStep1Feedback() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <div className="ui-title">Have a tough conversation</div>
-          <p className="ui-subtitle">Frame your feedback clearly and compassionately.</p>
+          <PageHeading pageKey="toughConversationStep1Feedback" title="Have a tough conversation" overline="" rule={false} />
         </div>
 
         <div className={`plan-dq${observation.trim() ? ' on' : ''}`}>

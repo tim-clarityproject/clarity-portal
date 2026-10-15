@@ -8,6 +8,7 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 // "Fri, 2 Oct" - UK order, device local time. Plain input[type=date]
 // string ("YYYY-MM-DD"), so noon is used to dodge UTC/local day-shift.
@@ -154,8 +155,7 @@ export default function MeetingSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">Meeting planner</span>
-          <div className="ui-title">{data.title || 'Meeting plan'}</div>
+          <PageHeading pageKey="meetingSummary" title={data.title || 'Meeting plan'} overline="Meeting planner" subtitle="" rule={false} />
         </div>
 
         <div className="plan-facts">

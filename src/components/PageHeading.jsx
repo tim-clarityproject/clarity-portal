@@ -1,8 +1,15 @@
 import pageText from '../content/pageText';
 
-export default function PageHeading({ pageKey, title }) {
+// `overline` and `subtitle` normally come from pageText.js. A page whose
+// overline or subtitle depends on the record on screen (a date, a saved
+// title) passes it as a prop instead - the repetition rule below still
+// applies to it. `rule={false}` is for the tool, summary and hub pages,
+// whose mock-ups show no coral rule under the heading: it renders the
+// same overline / title / subtitle without the rule.
+export default function PageHeading({ pageKey, title, overline: overlineProp, subtitle: subtitleProp, rule = true }) {
   const page = pageText[pageKey] || { overline: '', subtitle: '' };
-  let { overline, subtitle } = page;
+  let overline = overlineProp !== undefined ? overlineProp : page.overline;
+  const subtitle = subtitleProp !== undefined ? subtitleProp : page.subtitle;
 
   // Check repetition rule: if any word in overline matches any word in title, hide overline
   if (overline && title) {
@@ -26,6 +33,16 @@ export default function PageHeading({ pageKey, title }) {
       }
       if (!overline) break;
     }
+  }
+
+  if (!rule) {
+    return (
+      <>
+        {overline && <span className="plan-overline">{overline}</span>}
+        <div className="ui-title">{title}</div>
+        {subtitle && <p className="ui-subtitle">{subtitle}</p>}
+      </>
+    );
   }
 
   return (

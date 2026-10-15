@@ -17,6 +17,7 @@ export const pageText = {
   personalOperatingPlanHistory: { overline: 'Plan', subtitle: 'Every time you save a change, a copy is kept. Look back at any earlier Version of your plan, or restore it.' },
   personalOperatingPlanArchived: { overline: 'Plan', subtitle: 'Plans you have archived. Open one to read it, or restore it as your current plan. Their Versions and reviews are kept.' },
   personalOperatingPlanReview: { overline: 'Plan', subtitle: 'Tick what you have done and update your numbers.' },
+  personalOperatingPlanReviewEmpty: { overline: '', subtitle: 'You do not have a personal operating plan yet.' },
   personalOperatingPlanSummary: { overline: 'Plan', subtitle: '' },
   goalSetting: { overline: 'Plan', subtitle: '' },
   risksAssessment: { overline: 'Plan', subtitle: '' },
@@ -31,16 +32,16 @@ export const pageText = {
   dailyPlanSummary: { overline: 'Plan', subtitle: '' },
   planMeeting: { overline: 'Plan', subtitle: "Bad meetings kill team morale. Let's get it right." },
   meetingSummary: { overline: 'Plan', subtitle: '' },
-  myPlans: { overline: 'Plan', subtitle: '' },
+  myPlans: { overline: 'Plan', subtitle: 'Every plan and decision you have made, in one history.' },
 
   // Ground section
   ifThenPlanning: { overline: 'Ground', subtitle: "Let's tackle anxiety by getting clear on what you'll do in different scenarios." },
   ifThenPlanningSummary: { overline: 'Ground', subtitle: '' },
-  breathingPage: { overline: 'Ground', subtitle: '' },
+  breathingPage: { overline: 'Ground', subtitle: 'Choose a technique, then settle in and begin.' },
   breathingSessionsSummary: { overline: 'Ground', subtitle: '' },
 
   // Decide section (becomes Plan in later task)
-  decisionTools: { overline: 'Plan', subtitle: '' },
+  decisionTools: { overline: 'Plan', subtitle: 'Pick the situation that sounds most like yours.' },
   decisionHistory: { overline: 'Plan', subtitle: '' },
   decisionSummary: { overline: 'Plan', subtitle: '' },
 
@@ -54,23 +55,24 @@ export const pageText = {
   // Inversion steps
   inversionStep1Goal: { overline: 'Plan', subtitle: '' },
   inversionStep2Risks: { overline: 'Plan', subtitle: '' },
-  inversionStep3Plan: { overline: 'Plan', subtitle: '' },
+  inversionStep3Plan: { overline: 'Plan', subtitle: 'For each risk, write what you will do to stop it happening.' },
   inversionThinkingSummary: { overline: 'Plan', subtitle: '' },
 
   // Tough Conversation
-  toughConversationStep1Feedback: { overline: 'Plan', subtitle: '' },
-  toughConversationStep2Coaching: { overline: 'Plan', subtitle: '' },
+  toughConversationStep1Feedback: { overline: 'Plan', subtitle: 'Frame your feedback clearly and compassionately.' },
+  toughConversationStep2Coaching: { overline: 'Plan', subtitle: 'Plan your coaching and follow-up questions.' },
   toughConversationSummary: { overline: 'Plan', subtitle: '' },
 
   // Review section
   myJournal: { overline: 'Review', subtitle: '' },
-  myReviews: { overline: 'Review', subtitle: '' },
+  myReviews: { overline: 'Review', subtitle: 'Every review and journal you have written, in one history.' },
+  dailyJournals: { overline: 'Ground', subtitle: 'Every day you have written, in one history. Saved journals also appear in My Reviews.' },
   reviewSummary: { overline: 'Review', subtitle: '' },
   weeklyMomentumReviewSummary: { overline: 'Review', subtitle: '' },
   journalLog: { overline: 'Review', subtitle: '' },
 
   // Stop Doing Audit
-  stopDoingAudit: { overline: 'Ground', subtitle: '' },
+  stopDoingAudit: { overline: 'Ground', subtitle: 'Identify time-sink activities and reclaim your time.' },
   stopDoingAuditSummary: { overline: 'Ground', subtitle: '' },
 
   // Other/misc pages
@@ -80,14 +82,19 @@ export const pageText = {
   dataStorageNotice: { overline: '', subtitle: '' },
 
   // Section pages (navigation hubs)
-  planSection: { overline: '', subtitle: '' },
-  groundSection: { overline: '', subtitle: '' },
+  planSection: { overline: '', subtitle: 'Shape your day, your operating plan and what is ahead.' },
+  groundSection: { overline: '', subtitle: 'Steady yourself before you act.' },
   decideSection: { overline: '', subtitle: '' },
-  reviewSection: { overline: '', subtitle: '' },
+  reviewSection: { overline: '', subtitle: 'Look back, learn and sharpen how you work.' },
   accountSection: { overline: '', subtitle: '' },
 
   // Additional pages
   missionProgressReviewDetail: { overline: 'Review', subtitle: '' },
+  planningTools: { overline: '', subtitle: 'Everything you can use to plan, in one place.' },
+  personalOperatingPlanArchivedOne: { overline: '', subtitle: '' },
+  personalOperatingPlanHistoryVersion: { overline: '', subtitle: '' },
+  reviewPlan: { overline: '', subtitle: '' },
+  reviewPlanSummary: { overline: '', subtitle: '' },
 };
 
 export default pageText;

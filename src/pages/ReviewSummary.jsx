@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 const TAG = {
   'after-action': 'After-Action Review',
@@ -133,9 +134,7 @@ export default function ReviewSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-reviews')} label="Back to Reviews" /></div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">{TAG[reviewType] || 'Review'}</span>
-          <div className="ui-title">{review.title || TAG[reviewType]}</div>
-          <p className="ui-subtitle">{formatUkDate(review.entry_date)}</p>
+          <PageHeading pageKey="reviewSummary" title={review.title || TAG[reviewType]} overline={TAG[reviewType] || 'Review'} subtitle={formatUkDate(review.entry_date)} rule={false} />
         </div>
 
         <div className="plan-sum">

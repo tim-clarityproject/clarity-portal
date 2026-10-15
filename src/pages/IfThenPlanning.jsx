@@ -13,6 +13,7 @@ import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
+import PageHeading from '../components/PageHeading';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -164,7 +165,6 @@ export default function IfThenPlanning() {
     navigate('/my-plans');
   };
 
-  const page = pageText.ifThenPlanning;
   const suggestedName = currentTitle || suggestNameFrom(situation);
 
   const actionButtons = (
@@ -180,8 +180,7 @@ export default function IfThenPlanning() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <div className="ui-title">If-Then plan</div>
-          <p className="ui-subtitle">{page.subtitle}</p>
+          <PageHeading pageKey="ifThenPlanning" title="If-Then plan" overline="" rule={false} />
         </div>
 
         <div className="plan-field">

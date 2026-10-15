@@ -255,8 +255,7 @@ export default function PersonalOperatingPlanReview() {
         <DesignHeader />
         <div className="plan-page">
           <div className="plan-header">
-            <div className="ui-title">Review your plan</div>
-            <p className="ui-subtitle">You do not have a personal operating plan yet.</p>
+            <PageHeading pageKey="personalOperatingPlanReviewEmpty" title="Review your plan" rule={false} />
           </div>
           <div className="plan-actions">
             <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}>

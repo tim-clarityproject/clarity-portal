@@ -103,7 +103,7 @@ export default function DailyJournals() {
       <div className="plan-page">
         <HistoryList
           title="My Journals"
-          subLine="Every day you have written, in one history. Saved journals also appear in My Reviews."
+          pageKey="dailyJournals"
           rows={rows}
           filters={FILTERS}
           newButton={{ label: hasTodayRow ? 'Continue today' : 'New journal', onClick: () => navigate('/daily-journal') }}

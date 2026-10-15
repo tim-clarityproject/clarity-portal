@@ -7,6 +7,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 export default function StopDoingAuditSummary() {
   const navigate = useNavigate();
@@ -100,9 +101,7 @@ export default function StopDoingAuditSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" /></div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">Time Audit</span>
-          <div className="ui-title">{audit.title}</div>
-          <p className="ui-subtitle">{totalHours} hours a week to reclaim</p>
+          <PageHeading pageKey="stopDoingAuditSummary" title={audit.title} overline="Time Audit" subtitle={`${totalHours} hours a week to reclaim`} rule={false} />
         </div>
 
         <div className="plan-sum">

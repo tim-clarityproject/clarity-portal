@@ -12,6 +12,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
+import PageHeading from '../components/PageHeading';
 
 // Worded exactly per the approved mock-up - topPriority/showUp/notDo are
 // the real Supabase field names (unchanged); only the on-screen wording
@@ -177,7 +178,6 @@ export default function PlanMyDayStep1() {
     navigate('/my-plans');
   };
 
-  const page = pageText.planMyDayStep1;
   const todayLabel = formatTodayHeader(new Date());
 
   const actionButtons = (
@@ -197,9 +197,7 @@ export default function PlanMyDayStep1() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <span className="plan-overline">{todayLabel}</span>
-          <div className="ui-title">Daily intentions</div>
-          <p className="ui-subtitle">{page.subtitle}</p>
+          <PageHeading pageKey="planMyDayStep1" title="Daily intentions" overline={todayLabel} rule={false} />
         </div>
 
         {QUESTIONS.map((q, index) => {

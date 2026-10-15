@@ -8,6 +8,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import PageHeading from '../components/PageHeading';
 
 function formatMonthHeading(value) {
   const date = parseDbTimestamp(value);
@@ -74,8 +75,7 @@ export default function BreathingSessionsSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/breathe')} label="Back to Breathe" /></div>
 
         <div className="plan-summary-head">
-          <span className="plan-overline">Ground</span>
-          <div className="ui-title">Breathing Sessions</div>
+          <PageHeading pageKey="breathingSessionsSummary" title="Breathing Sessions" overline="Ground" subtitle="" rule={false} />
         </div>
 
         {sessions.length === 0 ? (
