@@ -364,16 +364,18 @@ export default function HistoryList({
                 {showMonth && <div className="hlist-month">{mm}</div>}
                 <div className="hlist-row">
                   <button type="button" className="hlist-row-main" onClick={() => onOpen?.(row)}>
-                    <span className="hlist-row-title">
-                      {row.title}
-                      {row.isDraft && <span className="hlist-draft-tag">Draft</span>}
-                      {row.reviewed && <span className="hlist-reviewed-tag">Reviewed</span>}
-                    </span>
-                    <span className="hlist-row-meta">
-                      <b>{row.typeLabel}</b>
-                      <span>{formatDayMonthTime(row.date)}</span>
-                      {row.version && <span>{row.version}</span>}
-                      {row.meta && <span>{row.meta}</span>}
+                    <span className="hlist-row-title">{row.title}</span>
+                    <span className="hlist-row-sub">
+                      <span className="hlist-row-tags">
+                        <b>{row.typeLabel}</b>
+                        {row.isDraft && <span className="hlist-draft-tag">Draft</span>}
+                        {row.reviewed && <span className="hlist-reviewed-tag">Reviewed</span>}
+                      </span>
+                      <span className="hlist-row-meta">
+                        <span>{formatDayMonthTime(row.date)}</span>
+                        {row.version && <span>{row.version}</span>}
+                        {row.meta && <span>{row.meta}</span>}
+                      </span>
                     </span>
                   </button>
                   <div className="hlist-row-controls">
@@ -816,8 +818,10 @@ const HLIST_CSS = `
     transform: scaleY(1);
   }
   .hlist-row:hover .hlist-row-title,
+  .hlist-row:hover .hlist-row-tags,
   .hlist-row:hover .hlist-row-meta,
   .hlist-row:focus-within .hlist-row-title,
+  .hlist-row:focus-within .hlist-row-tags,
   .hlist-row:focus-within .hlist-row-meta {
     transform: translateX(6px);
   }
@@ -848,15 +852,18 @@ const HLIST_CSS = `
   font-size: 17px;
   color: var(--text);
   line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Wraps between words only - a date title never breaks mid-word.
+     (overflow-wrap: break-word only splits a single word that is
+     longer than the whole line.) */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
   transition: transform var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
 .hlist-draft-tag {
   display: inline-block;
-  margin-left: var(--space-2);
   padding: 1px 8px;
   border: 1px solid var(--coral);
   border-radius: var(--radius-pill);
@@ -866,12 +873,11 @@ const HLIST_CSS = `
   letter-spacing: 0.14em;
   font-size: 10px;
   color: var(--coral-text);
-  vertical-align: middle;
+  line-height: 1.4;
 }
 
 .hlist-reviewed-tag {
   display: inline-block;
-  margin-left: var(--space-2);
   padding: 1px 8px;
   border: 1px solid var(--mint);
   border-radius: var(--radius-pill);
@@ -881,7 +887,7 @@ const HLIST_CSS = `
   letter-spacing: 0.14em;
   font-size: 10px;
   color: var(--mint-text);
-  vertical-align: middle;
+  line-height: 1.4;
 }
 
 .hlist-row-controls {
@@ -889,6 +895,32 @@ const HLIST_CSS = `
   align-items: center;
   gap: var(--space-1);
   flex-shrink: 0;
+}
+
+/* Phone: the title, then the tag and type label, then the date each get
+   the whole row width, and the actions sit in their own row beneath,
+   aligned right - so a Reviewed or Draft tag never squeezes the title
+   (this departs from the mock-up's single-line truncated phone row, by
+   Tim's request). Rows with and without tags share this structure. */
+@media (max-width: 600px) {
+  .hlist-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .ui-root .hlist-row-main {
+    flex: 1 1 100%;
+    padding-right: var(--space-2) !important;
+  }
+  .hlist-row-sub {
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: var(--space-1);
+  }
+  .hlist-row-controls {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    padding: 0 var(--space-1) var(--space-2) 24px;
+  }
 }
 
 .ui-root .hlist-continue-btn {
@@ -962,20 +994,34 @@ const HLIST_CSS = `
   stroke-linejoin: round;
 }
 
-.hlist-row-meta {
-  margin-top: 5px;
-  font-size: 13px;
-  color: var(--text-2);
+.hlist-row-sub {
   display: flex;
-  gap: var(--space-3);
+  flex-wrap: wrap;
   align-items: center;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  overflow: hidden;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  margin-top: 5px;
+}
+
+.hlist-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
   transition: transform var(--dur) var(--ease);
 }
 
-.hlist-row-meta b {
+.hlist-row-meta {
+  font-size: 13px;
+  color: var(--text-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  transition: transform var(--dur) var(--ease);
+}
+
+.hlist-row-tags b {
   font-family: var(--font-display);
   font-weight: 400;
   text-transform: uppercase;
