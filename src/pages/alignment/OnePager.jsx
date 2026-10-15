@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import AlignmentChart from './AlignmentChart';
+import PdfChoice from './PdfChoice';
 import { cleanItems } from './alignmentFlow';
 import { quadrant } from './chartLayout';
 import { rankProjects, roundPct, MAX_CONTRIBUTION } from '../../lib/alignmentScore';
@@ -37,12 +38,9 @@ const Arrow = ({ up }) => (
   </svg>
 );
 
-function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email }) {
-  const [choosing, setChoosing] = useState(false);
-  const choose = (variant) => {
-    setChoosing(false);
-    onDownloadPdf(variant);
-  };
+function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email, menuOpen, onMenu }) {
+  const wrapRef = useRef(null);
+  const cardRef = useRef(null);
   const emailNote = {
     sent: `Sent to ${email.sentTo}`,
     limit: 'You have asked for this a few times already. Please try again tomorrow.',
@@ -52,22 +50,31 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email 
     <div className="al-keep">
       <span className="al-sect al-sect--first">Keep your results</span>
       <div className="al-kgrid">
-        <div className="al-cardwrap">
-          <button type="button" className="al-card" aria-expanded={choosing} onClick={() => setChoosing((o) => !o)} disabled={pdf.busy}>
+        <div className="al-cardwrap al-cardwrap--pdf" ref={wrapRef}>
+          <button
+            ref={cardRef}
+            type="button"
+            className="al-card"
+            aria-haspopup="dialog"
+            aria-expanded={menuOpen}
+            onClick={() => onMenu(!menuOpen)}
+            disabled={pdf.busy}
+          >
             <span>
               <span className="al-card-name">Download a PDF</span>
               <span className="al-card-desc">
                 {pdf.busy ? 'Preparing your PDF…' : 'This one-pager, ready to print or share'}
               </span>
             </span>
-            <span className={`ui-cross ui-cross--open${choosing ? ' open' : ''}`} aria-hidden="true" />
+            <span className="ui-cross" aria-hidden="true" />
           </button>
-          {choosing && (
-            <div className="al-pdfchoices" role="group" aria-label="PDF version">
-              <button type="button" className="al-choice" onClick={() => choose('light')}>Light, for printing</button>
-              <button type="button" className="al-choice" onClick={() => choose('dark')}>Dark, for screens</button>
-            </div>
-          )}
+          <PdfChoice
+            open={menuOpen}
+            onClose={() => onMenu(false)}
+            onChoose={onDownloadPdf}
+            containerRef={wrapRef}
+            returnFocusRef={cardRef}
+          />
           {pdf.message && <p className="al-cardnote" role="status">{pdf.message}</p>}
         </div>
         <div className="al-cardwrap">
@@ -102,6 +109,8 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email 
  * @param {Object} props
  * @param {Object} props.draft the shared answers
  * @param {(variant: 'light'|'dark') => void} props.onDownloadPdf
+ * @param {boolean} props.pdfMenuOpen whether the Light/Dark choice from the card is open
+ * @param {(open: boolean) => void} props.onPdfMenu
  * @param {{busy: boolean, message: string}} props.pdf
  * @param {{status: 'idle'|'sending'|'sent'|'limit'|'error', sentTo: string}} props.email
  * @param {() => void} props.onEmailLink
@@ -109,7 +118,7 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email 
  * @param {(target: 'objective'|'factors'|'projects') => void} props.onEdit the Edit links
  * @param {(projectId: string) => void} props.onOpenProject a table row or dot was chosen
  */
-export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAccount, onEdit, onOpenProject, pdf, email }) {
+export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAccount, onEdit, onOpenProject, pdf, email, pdfMenuOpen, onPdfMenu }) {
   const [sort, setSort] = useState({ k: 'att', d: -1 });
   const [hl, setHl] = useState(null);
 
@@ -257,7 +266,7 @@ export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAc
         {`Strategic importance: a project’s contribution scores added together, divided by the highest possible score (${nf} Critical Success Factors × ${MAX_CONTRIBUTION} = ${nf * MAX_CONTRIBUTION}), shown as a percentage. Numbers match the dots on the chart.`}
       </p>
 
-      <ProjectCards onDownloadPdf={onDownloadPdf} onEmailLink={onEmailLink} onCreateAccount={onCreateAccount} pdf={pdf} email={email} />
+      <ProjectCards onDownloadPdf={onDownloadPdf} onEmailLink={onEmailLink} onCreateAccount={onCreateAccount} pdf={pdf} email={email} menuOpen={pdfMenuOpen} onMenu={onPdfMenu} />
     </>
   );
 }

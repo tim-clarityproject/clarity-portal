@@ -1,7 +1,22 @@
 // Strategic Alignment Health Check: email content (plain, well-spaced HTML plus a
 // plain-text version). Black page, white text, the logo mark only (the NEGATIVE
-// emblem, with its crosshair, because the background is dark). The file name
+// emblem, with its crosshair, because the background is dark). The logo travels
+// inside the email as an inline attachment (content ID), so it shows in every
+// inbox whichever deployment sent the email. The file name
 // starts with an underscore so Vercel does not publish it as a route.
+
+import { LOGO_NEGATIVE_BASE64 } from './_alignmentLogo.js';
+
+const LOGO_CID = 'clarity-logomark';
+
+/** The inline logo attachment, referenced in the HTML as cid:clarity-logomark. */
+export const logoAttachment = () => ({
+  filename: 'the-clarity-project.png',
+  content: LOGO_NEGATIVE_BASE64,
+  content_id: LOGO_CID,
+  content_type: 'image/png',
+  disposition: 'inline',
+});
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const oneLine = (s) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
@@ -15,7 +30,7 @@ function shell({ origin, heading, bodyHtml }) {
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${COLOURS.bg};">
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;">
-<tr><td style="padding-bottom:32px;"><img src="${esc(origin)}/brand/logomark-negative.png" width="40" height="40" alt="The Clarity Project" style="display:block;border:0;"></td></tr>
+<tr><td style="padding-bottom:32px;"><img src="cid:${LOGO_CID}" width="40" height="40" alt="The Clarity Project" style="display:block;border:0;width:40px;height:40px;"></td></tr>
 <tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:20px;line-height:1.3;letter-spacing:2px;text-transform:uppercase;color:${COLOURS.text};padding-bottom:12px;">${esc(heading)}</td></tr>
 <tr><td style="padding-bottom:24px;"><div style="width:56px;height:1px;background:${COLOURS.coral};"></div></td></tr>
 ${bodyHtml}
@@ -68,7 +83,7 @@ export function linkEmail({ origin, token, dateText }) {
     '',
     'The Clarity Project - theclarityproject.co.uk',
   ].join('\n');
-  return { subject, html, text };
+  return { subject, html, text, attachments: [logoAttachment()] };
 }
 
 /** The notice to Tim and AD when a Strategic Alignment Health Check is completed. */
@@ -81,7 +96,7 @@ export function completeEmail({ origin, token, clientLabel, respondentEmail, com
     : '<span style="color:#A3A3A0;">No projects were rated.</span>';
   const html = shell({
     origin,
-    heading: 'Health Check completed',
+    heading: 'Strategic Alignment Health Check completed',
     bodyHtml: [
       para(`<strong>${esc(label)}</strong> has completed the Strategic Alignment Health Check.`),
       small(`Respondent: ${esc(respondentEmail)}<br>Completed: ${esc(completedText)}`),
@@ -108,5 +123,5 @@ export function completeEmail({ origin, token, clientLabel, respondentEmail, com
     '',
     'The Clarity Project - theclarityproject.co.uk',
   ].join('\n');
-  return { subject, html, text };
+  return { subject, html, text, attachments: [logoAttachment()] };
 }

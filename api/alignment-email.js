@@ -36,14 +36,14 @@ async function rpc(name, args) {
   return r.json();
 }
 
-async function sendWithResend({ to, subject, html, text }) {
+async function sendWithResend({ to, subject, html, text, attachments }) {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.ALIGNMENT_EMAIL_FROM;
   if (!key || !from || to.length === 0) throw new Error('config');
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ from, to, subject, html, text }),
+    body: JSON.stringify({ from, to, subject, html, text, attachments }),
   });
   if (!r.ok) throw new Error('send');
 }

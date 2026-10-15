@@ -8,6 +8,7 @@ import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import OnePager from './OnePager';
 import AccessCodeInput, { cleanCode } from './AccessCodeInput';
+import PdfChoice from './PdfChoice';
 import { formatUkDate } from '../../lib/dateFormatter';
 import { requestAlignmentEmail } from '../../lib/alignmentEmail';
 import { downloadPdf } from './pdf/generatePdf';
@@ -167,6 +168,9 @@ export default function HealthCheck() {
   const [serverCompletedAt, setServerCompletedAt] = useState(null);
   const [pdf, setPdf] = useState({ busy: false, message: '' });
   const [emailState, setEmailState] = useState({ status: 'idle', sentTo: '' });
+  const [pdfMenu, setPdfMenu] = useState(null); // 'footer' | 'card' | null
+  const footerMenuRef = useRef(null);
+  const footerButtonRef = useRef(null);
   const notifyRef = useRef(false); // send the completion email after the completing save lands
   const [openedAt, setOpenedAt] = useState(null); // updated_at when the session was opened (date fallback)
 
@@ -690,6 +694,8 @@ export default function HealthCheck() {
           onEmailLink={handleEmailLink}
           onCreateAccount={handleCreateAccount}
           pdf={pdf}
+          pdfMenuOpen={pdfMenu === 'card'}
+          onPdfMenu={(open) => setPdfMenu(open ? 'card' : null)}
           email={emailState}
           onEdit={editSection}
           onOpenProject={openProject}
@@ -742,7 +748,24 @@ export default function HealthCheck() {
         )}
       </div>
       {onDone ? (
-        <AuthPrimaryButton loading={pdf.busy} onClick={() => handleDownloadPdf('light')}>Download PDF</AuthPrimaryButton>
+        <div className="al-pdfmenu" ref={footerMenuRef}>
+          <AuthPrimaryButton
+            ref={footerButtonRef}
+            loading={pdf.busy}
+            aria-haspopup="dialog"
+            aria-expanded={pdfMenu === 'footer'}
+            onClick={() => setPdfMenu((m) => (m === 'footer' ? null : 'footer'))}
+          >
+            Download PDF
+          </AuthPrimaryButton>
+          <PdfChoice
+            open={pdfMenu === 'footer'}
+            onClose={() => setPdfMenu(null)}
+            onChoose={(v) => handleDownloadPdf(v)}
+            containerRef={footerMenuRef}
+            returnFocusRef={footerButtonRef}
+          />
+        </div>
       ) : (
         <div className="al-foot-right">
           <span className={`al-hint${hintText ? ' al-hint--on' : ''}`}>{hintText}</span>
