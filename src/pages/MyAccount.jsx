@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
+import { clearAppStorage } from '../lib/clearAppStorage';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
@@ -132,8 +133,7 @@ export default function MyAccount() {
       }
 
       await logout();
-      sessionStorage.clear();
-      localStorage.clear();
+      clearAppStorage();
 
       showToast('Your account has been permanently deleted.');
       setTimeout(() => navigate('/'), 500);

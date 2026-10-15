@@ -4,6 +4,7 @@ import DesignHeader from '../components/DesignHeader';
 import { designTokens } from '../lib/designTokens';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { clearAppStorage } from '../lib/clearAppStorage';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
@@ -77,8 +78,7 @@ export default function AccountSection() {
       }
 
       await logout();
-      sessionStorage.clear();
-      localStorage.clear();
+      clearAppStorage();
 
       showToast('Your account has been permanently deleted.');
       setTimeout(() => navigate('/'), 500);
