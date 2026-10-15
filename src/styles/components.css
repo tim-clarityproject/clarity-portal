@@ -3971,6 +3971,13 @@ span.tc-editable:focus-visible {
    ("the date in plain words in the body font") and the approved
    mock - a departure from the usual Nekst-uppercase title rule for
    this one page, not an oversight.
+
+   The ruled lines are tied to the textarea's line-height (30px, about
+   1.6 x the 19px text) rather than the mock-up's 40px: Safari on
+   iPhone draws the caret the full height of the line box, so a 40px
+   line gave a caret nearly twice the height of the text. 30px keeps a
+   comfortable paper feel with a caret close to the text height. The
+   rule is one 1px line per 30px tile (no gradient).
    ============================================================ */
 
 .jrn-date {
@@ -4082,15 +4089,15 @@ span.tc-editable:focus-visible {
   width: 100%;
   box-sizing: border-box;
   background-color: transparent;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='40' viewBox='0 0 8 40' preserveAspectRatio='none'%3E%3Crect y='39' width='8' height='1' fill='%23262626'/%3E%3C/svg%3E");
-  background-size: 100% 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='30' viewBox='0 0 8 30' preserveAspectRatio='none'%3E%3Crect y='29' width='8' height='1' fill='%23262626'/%3E%3C/svg%3E");
+  background-size: 100% 30px;
   background-attachment: local;
   border: 0;
   border-radius: 0;
   color: var(--text);
   font-family: var(--font-body);
   font-size: 19px !important;
-  line-height: 40px;
+  line-height: 30px;
   padding: 0 !important;
   margin: 0;
   outline: none;
@@ -4098,7 +4105,7 @@ span.tc-editable:focus-visible {
 }
 
 :root[data-theme="light"] .ui-root .jrn-paper {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='40' viewBox='0 0 8 40' preserveAspectRatio='none'%3E%3Crect y='39' width='8' height='1' fill='%23E3DDD2'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='30' viewBox='0 0 8 30' preserveAspectRatio='none'%3E%3Crect y='29' width='8' height='1' fill='%23E3DDD2'/%3E%3C/svg%3E");
 }
 
 .ui-root .jrn-paper.jrn-paper--read {
