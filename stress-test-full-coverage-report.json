@@ -34,7 +34,7 @@
       "passed": 3,
       "failed": 0
     },
-    "Inversion Step 2: Fuckups": {
+    "Inversion Step 2: Risks": {
       "passed": 3,
       "failed": 0
     },
@@ -121,7 +121,7 @@
     ],
     "Inversion": [
       "Inversion Step 1: Goal",
-      "Inversion Step 2: Fuckups",
+      "Inversion Step 2: Risks",
       "Inversion Step 3: Plan"
     ],
     "Strategic Alignment": [

@@ -71,7 +71,7 @@ export default function InversionThinkingSummary() {
   }
 
   const data = thinking.form_data || {};
-  const risks = data.risks || data.fuckups || [];
+  const risks = data.risks || [];
   const hasRiskAnswers = Array.isArray(data.riskAnswers) && data.riskAnswers.length === risks.length;
 
   return (

@@ -62,7 +62,7 @@ export default function InversionStep1Goal() {
       if (data?.title) setCurrentTitle(data.title);
       const formData = data?.form_data || {};
       setGoal(formData.goal || data.title || '');
-      setRisks(formData.risks || formData.fuckups || []);
+      setRisks(formData.risks || []);
       setRiskAnswers(formData.riskAnswers || []);
       setLegacyPlan(formData.riskAnswers ? '' : (formData.plan || ''));
       setIsLoading(false);

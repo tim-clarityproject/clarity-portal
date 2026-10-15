@@ -79,7 +79,7 @@ function PanelBody({ planKind, plan }) {
     );
   }
   if (planKind === 'inversion') {
-    const risks = formData.risks || formData.fuckups || [];
+    const risks = formData.risks || [];
     const answers = formData.riskAnswers || [];
     return (
       <div className="rp-panel-body">
@@ -89,7 +89,9 @@ function PanelBody({ planKind, plan }) {
         </div>
         <div>
           <small>Risks</small>
-          {risks.map((r, i) => <p key={i}>{r}{answers[i] ? ` → ${answers[i]}` : ''}</p>)}
+          {risks.length > 0
+            ? risks.map((r, i) => <p key={i}>{r}{answers[i] ? ` → ${answers[i]}` : ''}</p>)
+            : <p>No risks recorded.</p>}
         </div>
       </div>
     );

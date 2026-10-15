@@ -40,7 +40,7 @@ ITERATION 1/3
      ✓ Textarea fillable
      ✓ Continue button enabled
      ✅ Pass (127ms load)
-  📄 Inversion Step 2: Fuckups [Run 1]
+  📄 Inversion Step 2: Risks [Run 1]
      ✓ Input fillable
      ⚠️ Console errors: Failed to load resource: the server responded with a status of 429 ()
      ✓ Continue button enabled
@@ -149,7 +149,7 @@ ITERATION 2/3
      ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
      ✓ Continue button enabled
      ✅ Pass (159ms load)
-  📄 Inversion Step 2: Fuckups [Run 2]
+  📄 Inversion Step 2: Risks [Run 2]
      ✓ Input fillable
      ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
      ✓ Continue button enabled
@@ -259,7 +259,7 @@ ITERATION 3/3
      ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
      ✓ Continue button enabled
      ✅ Pass (135ms load)
-  📄 Inversion Step 2: Fuckups [Run 3]
+  📄 Inversion Step 2: Risks [Run 3]
      ✓ Input fillable
      ⚠️ Console errors: Access to fetch at 'https://ipapi.co/json/' from origin 'https://portal.theclarityproject.co.uk' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource., Failed to load resource: net::ERR_FAILED
      ✓ Continue button enabled
@@ -367,7 +367,7 @@ Navigation           ███████████████████�
 ✅ Grow Step 3b: Prioritize            3/3 passed
 ✅ Grow Step 4: Will Do                3/3 passed
 ✅ Inversion Step 1: Goal              3/3 passed
-✅ Inversion Step 2: Fuckups           3/3 passed
+✅ Inversion Step 2: Risks           3/3 passed
 ✅ Inversion Step 3: Plan              3/3 passed
 ✅ Goal Setting                        3/3 passed
 ✅ Risks Assessment                    3/3 passed
