@@ -6,6 +6,7 @@ import {
   PROMPTS, MAX_CHARS, textBlock, addPrompt, removeBlock, textOf, wordCount,
   loadJournalByDate, saveJournal,
 } from '../lib/dailyJournal';
+import { discardJournalDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
@@ -25,6 +26,10 @@ export default function DailyJournal() {
   const draftKey = `clarity-journal-draft-${dateKey}`;
 
   const [existingId, setExistingId] = useState(null);
+  // 'draft' | 'final' | null (nothing saved for this day yet). Needed
+  // so Discard can tell a saved draft (delete it) from a finished
+  // journal (never delete it) - patch D1.
+  const [existingStatus, setExistingStatus] = useState(null);
   const [blocks, setBlocks] = useState([textBlock('')]);
   const [saveStatus, setSaveStatus] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +48,7 @@ export default function DailyJournal() {
         if (cancelled) return;
         if (row) {
           setExistingId(row.id);
+          setExistingStatus(row.status === 'draft' ? 'draft' : 'final');
           setBlocks(row.body?.length ? row.body : [textBlock('')]);
           setSaveStatus(row.status === 'draft' ? 'Draft saved' : 'Saved');
         }
@@ -133,6 +139,7 @@ export default function DailyJournal() {
     }
     const saved = await saveJournal({ userId: user.id, journalDate: dateKey, blocks, status: draft ? 'draft' : 'final', existingId });
     setExistingId(saved.id);
+    setExistingStatus(draft ? 'draft' : 'final');
     try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
     return saved;
   };
@@ -168,9 +175,23 @@ export default function DailyJournal() {
     }
   };
 
-  const handleDiscard = () => {
+  // Discard throws away this day's work. It deletes the saved row only
+  // when that row is a DRAFT - a finished journal is never deleted by
+  // walking away from it, only its unsaved edits are lost (patch D1).
+  const handleDiscard = async () => {
     setDiscardOpen(false);
+    if (existingId && existingStatus === 'draft') {
+      try {
+        await discardJournalDraft(user.id, existingId);
+      } catch (error) {
+        console.error('[DailyJournal] draft delete on discard failed:', error);
+      }
+    }
     try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+    setBlocks([textBlock('')]);
+    setExistingId(null);
+    setExistingStatus(null);
+    setSaveStatus('');
     navigate('/daily-journals', { state: { toast: 'Discarded.' } });
   };
 
