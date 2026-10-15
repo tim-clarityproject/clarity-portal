@@ -162,12 +162,11 @@ export function cycleDuration(technique) {
 }
 
 // Technique preference lives inside profiles.breathing_settings (jsonb)
-// as a "technique" key, alongside its existing inhale/hold/exhale keys
-// (the old cycle-duration customiser, still reachable - see
-// BreathingSettingsModal.jsx) - profiles has no breathing_preference
-// column on the live database, confirmed directly, so this is read
-// with a quiet default rather than a visible error if anything about
-// it is ever missing.
+// as a "technique" key (any older inhale/hold/exhale keys left in that
+// column from the removed My Account customiser are ignored) - profiles
+// has no breathing_preference column on the live database, confirmed
+// directly, so this is read with a quiet default rather than a visible
+// error if anything about it is ever missing.
 export async function loadBreathingPreference(userId) {
   try {
     const { data, error } = await supabase.from('profiles').select('breathing_settings').eq('id', userId).single();

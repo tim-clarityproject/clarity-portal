@@ -8,7 +8,6 @@ import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import DesignHeader from '../components/DesignHeader';
 import PageHeading from '../components/PageHeading';
-import BreathingSettingsModal from '../components/BreathingSettingsModal';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
@@ -29,7 +28,6 @@ export default function MyAccount() {
     setDeleteError(text);
     showToast(text);
   };
-  const [showBreathingSettings, setShowBreathingSettings] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
@@ -443,18 +441,6 @@ export default function MyAccount() {
             </div>
           </div>
 
-          {/* Advanced */}
-          <div className="account-section-label">Advanced</div>
-          <div className="account-row">
-            <div className="account-row-text">
-              <div className="account-row-title">Breathing settings</div>
-              <div className="account-row-desc">Customise your breathing cycle duration</div>
-            </div>
-            <button type="button" className="ui-btn-ghost" onClick={() => setShowBreathingSettings(true)}>
-              Edit
-            </button>
-          </div>
-
           {/* Archived missions: redirects to the dedicated Archived
               plans page (prompt 9 spec - restore/view live there now,
               not in profile settings). */}
@@ -531,7 +517,6 @@ export default function MyAccount() {
         onCancel={() => setDeleteStage(0)}
       />
       <Toast message={message} />
-      <BreathingSettingsModal isOpen={showBreathingSettings} onClose={() => setShowBreathingSettings(false)} />
       <PersonalGoalModal
         isOpen={showGoalModal}
         onClose={() => setShowGoalModal(false)}

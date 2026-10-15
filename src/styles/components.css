@@ -4535,8 +4535,8 @@ span.tc-editable:focus-visible {
 
 /* Breathe's own technique selector (patch 3, area A): the shared
    .ui-segmented-option has zero horizontal padding (9px 0 8px), built
-   for short two-word labels elsewhere (BreathingSettingsModal's "No
-   hold"/"With hold") - reused here for three much longer uppercase
+   for short two-word labels elsewhere (the "No hold"/"With hold" choice
+   of the removed My Account modal) - reused here for three much longer uppercase
    labels, it left them touching the pill edge. Scoped classes instead
    of changing .ui-segmented-option, which other screens still rely on
    as-is. Matches the mock-up's own .tq/.tq button exactly: 3px group
