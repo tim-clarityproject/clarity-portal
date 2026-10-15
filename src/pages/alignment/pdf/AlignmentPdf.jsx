@@ -13,27 +13,32 @@ Font.register({
   family: 'DM Sans',
   fonts: [{ src: dm400, fontWeight: 400 }, { src: dm500, fontWeight: 500 }],
 });
-Font.registerHyphenationCallback((word) => [word]);
+// Words are never hyphenated, except a very long unbroken one, which may split so
+// it cannot run out of its column.
+Font.registerHyphenationCallback((word) => (word.length > 24 ? word.match(/.{1,22}/g) : [word]));
 
 const THEMES = {
   light: {
     page: '#FFFFFF', text: '#111111', text2: '#5F5F5C', faint: '#8F8B84', line: '#DDD8CE',
-    card: '#F7F4EE', coral: '#FF6F5C', coralText: '#C2412E', mint: '#5FEFBB', mintText: '#0B7F58',
+    card: '#F4F4F3', coral: '#FF6F5C', coralText: '#C2412E', mint: '#5FEFBB', mintText: '#0B7F58',
     onAccent: '#000000', ringFill: '#FFFFFF', track: '#E3DDD2',
-    dotBottom: '#D6D3CC', dotCoral: '#FFB3A8', dotMint: '#8FE6C8', midline: '#9A968E', dotOpacity: 1,
+    dotBottom: '#D6D3CC', dotCoral: '#FFB3A8', dotMint: '#8FE6C8', midline: '#9A968E', coralOpacity: 1, mintOpacity: 1,
   },
   dark: {
     page: '#000000', text: '#FFFFFF', text2: '#A3A3A0', faint: '#7F7F7C', line: '#262626',
     card: '#0B0B0B', coral: '#FF6F5C', coralText: '#FF6F5C', mint: '#5FEFBB', mintText: '#5FEFBB',
     onAccent: '#000000', ringFill: '#000000', track: '#262626',
-    dotBottom: '#2B2B2B', dotCoral: '#FF6F5C', dotMint: '#5FEFBB', midline: '#4A4A49', dotOpacity: 0.55,
+    dotBottom: '#2B2B2B', dotCoral: '#FF6F5C', dotMint: '#5FEFBB', midline: '#4A4A49', coralOpacity: 1, mintOpacity: 0.7,
   },
 };
 
 const PAGE = { w: 595.28, h: 841.89, margin: 36 };
 const CONTENT_W = PAGE.w - PAGE.margin * 2;
 const ROW_H = 21;
-const CHART_W = 380;
+const CHART_W = CONTENT_W;
+const CHART_H = 290; // points: the chart is the centrepiece (about 27% taller than before)
+const MAX_NAMED = 10; // beyond this the chart shows numbered dots only
+const COL = { project: 214, importance: 124, progress: 54, resource: 100 };
 
 const pad = (n) => (n < 10 ? `0${n}` : String(n));
 const pct = (v) => `${Math.round(v)}%`;
@@ -41,7 +46,11 @@ const pct = (v) => `${Math.round(v)}%`;
 const label = (c) => ({ fontFamily: 'Nekst', fontSize: 6.5, letterSpacing: 1.5, textTransform: 'uppercase', color: c });
 
 function Chart({ t, rows, measure }) {
-  const g = layoutChart(rows, 'd', measure, { wrapChars: 22 });
+  const named = rows.length <= MAX_NAMED;
+  const scale0 = CHART_W / 780;
+  const g = layoutChart(rows, 'd', measure, {
+    wrapChars: 22, height: CHART_H / scale0, fontSize: 14, avoidLines: true,
+  });
   const { W, H, L, T, pw, ph, mx, my, gap, sp, fs, pts, labs, xs, ys } = g;
   const scale = CHART_W / W;
   const dots = [];
@@ -55,7 +64,7 @@ function Chart({ t, rows, measure }) {
       const top = y < my;
       const left = x < mx;
       const colour = top ? (left ? t.dotCoral : t.dotMint) : t.dotBottom;
-      dots.push(<Circle key={`${x}-${y}`} cx={x} cy={y} r={1} fill={colour} fillOpacity={top ? t.dotOpacity : 1} />);
+      dots.push(<Circle key={`${x}-${y}`} cx={x} cy={y} r={1.15} fill={colour} fillOpacity={top ? (left ? t.coralOpacity : t.mintOpacity) : 1} />);
     }
   }
   const FILL = { mi: t.mint, co: t.coral, n: t.text };
@@ -67,15 +76,15 @@ function Chart({ t, rows, measure }) {
       <Line x1={mx} y1={T} x2={mx} y2={my - gap} stroke={t.midline} strokeWidth={1} />
       <Line x1={mx} y1={my + gap} x2={mx} y2={T + ph} stroke={t.midline} strokeWidth={1} />
       {[[100, '100%'], [50, '50%'], [0, '0%']].map(([v, s]) => (
-        <Text key={s} x={L - 10} y={ys(v) + 3} textAnchor="end" style={{ fontFamily: 'Nekst', fontSize: 9 }} fill={t.faint}>{s}</Text>
+        <Text key={s} x={L - 10} y={ys(v) + 4} textAnchor="end" style={{ fontFamily: 'Nekst', fontSize: 12 }} fill={t.faint}>{s}</Text>
       ))}
       {[1, 2, 3, 4, 5].map((v) => (
-        <Text key={v} x={xs(v)} y={T + ph + 20} textAnchor="middle" style={{ fontFamily: 'DM Sans', fontSize: 11 }} fill={t.faint}>
+        <Text key={v} x={xs(v)} y={T + ph + 24} textAnchor="middle" style={{ fontFamily: 'DM Sans', fontSize: 14 }} fill={t.faint}>
           {PROGRESS_WORDS[v - 1]}
         </Text>
       ))}
-      <Text x={L + pw / 2} y={H - 4} textAnchor="middle" style={{ fontFamily: 'Nekst', fontSize: 9 }} fill={t.text2}>PROGRESS</Text>
-      <Text x={12} y={T + ph / 2} textAnchor="middle" transform={`rotate(-90 12 ${T + ph / 2})`} style={{ fontFamily: 'Nekst', fontSize: 9 }} fill={t.text2}>
+      <Text x={L + pw / 2} y={H - 6} textAnchor="middle" style={{ fontFamily: 'Nekst', fontSize: 11 }} fill={t.text2}>PROGRESS</Text>
+      <Text x={14} y={T + ph / 2} textAnchor="middle" transform={`rotate(-90 14 ${T + ph / 2})`} style={{ fontFamily: 'Nekst', fontSize: 11 }} fill={t.text2}>
         STRATEGIC IMPORTANCE
       </Text>
       {pts.map((p) => {
@@ -84,13 +93,13 @@ function Chart({ t, rows, measure }) {
           <G key={p.n}>
             <Circle cx={p.x} cy={p.y} r={p.r + 6} fill={FILL[p.q]} fillOpacity={solid ? 0.16 : 0.07} />
             <Circle cx={p.x} cy={p.y} r={p.r} fill={solid ? FILL[p.q] : t.ringFill} stroke={FILL[p.q]} strokeWidth={1} />
-            <Text x={p.x} y={p.y + 3.5} textAnchor="middle" style={{ fontFamily: 'Nekst', fontSize: 10 }} fill={solid ? t.onAccent : t.text}>
+            <Text x={p.x} y={p.y + 4.2} textAnchor="middle" style={{ fontFamily: 'Nekst', fontSize: 12 }} fill={solid ? t.onAccent : t.text}>
               {p.n}
             </Text>
           </G>
         );
       })}
-      {labs.map((l) => l.lines.map((line, i) => {
+      {named && labs.map((l) => l.lines.map((line, i) => {
         const lineH = fs + 3;
         const y0 = l.y - ((l.lines.length - 1) * lineH) / 2 + i * lineH + fs * 0.35;
         return (
@@ -107,10 +116,10 @@ function TableHead({ t }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: 6, borderBottomWidth: 0.5, borderBottomColor: t.line }}>
       <Text style={[label(t.faint), { width: 26 }]}>No.</Text>
-      <Text style={[label(t.faint), { flexGrow: 1 }]}>Project</Text>
-      <Text style={[label(t.faint), { width: 124, letterSpacing: 1 }]}>Strategic importance</Text>
-      <Text style={[label(t.faint), { width: 54, textAlign: 'center', letterSpacing: 1 }]}>Progress</Text>
-      <Text style={[label(t.faint), { width: 100, textAlign: 'center', letterSpacing: 1 }]}>Resource required</Text>
+      <Text style={[label(t.faint), { width: COL.project }]}>Project</Text>
+      <Text style={[label(t.faint), { width: COL.importance, letterSpacing: 1 }]}>Strategic importance</Text>
+      <Text style={[label(t.faint), { width: COL.progress, textAlign: 'center', letterSpacing: 1 }]}>Progress</Text>
+      <Text style={[label(t.faint), { width: COL.resource, textAlign: 'center', letterSpacing: 1 }]}>Resource required</Text>
     </View>
   );
 }
@@ -126,19 +135,19 @@ function Row({ t, r }) {
           <Text style={{ fontFamily: 'Nekst', fontSize: 6.5, color: q === 'n' ? t.text : t.onAccent }}>{r.n}</Text>
         </View>
       </View>
-      <Text style={{ flexGrow: 1, flexShrink: 1, fontFamily: 'DM Sans', fontSize: 9.5, color: t.text, paddingRight: 8 }}>{r.text}</Text>
-      <View style={{ width: 124, flexDirection: 'row', alignItems: 'center' }}>
+      <Text style={{ width: COL.project, fontFamily: 'DM Sans', fontSize: 9.5, lineHeight: 1.25, color: t.text, paddingRight: 10 }}>{r.text}</Text>
+      <View style={{ width: COL.importance, flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ width: 76, height: 1.5, backgroundColor: t.track }}>
           <View style={{ width: `${r.importance}%`, height: 1.5, backgroundColor: t.text }} />
         </View>
         <Text style={{ fontFamily: 'Nekst', fontSize: 7, color: t.text, marginLeft: 8 }}>{pct(r.importance)}</Text>
       </View>
-      <View style={{ width: 54, flexDirection: 'row', justifyContent: 'center' }}>
+      <View style={{ width: COL.progress, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
         {[1, 2, 3, 4, 5].map((k) => (
           <View key={k} style={{ width: 9, height: 1.5, marginHorizontal: 1, backgroundColor: r.progress != null && k <= r.progress ? t.text : t.track }} />
         ))}
       </View>
-      <View style={{ width: 100, flexDirection: 'row', justifyContent: 'center' }}>
+      <View style={{ width: COL.resource, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
         {[1, 2, 3, 4, 5].map((k) => {
           const on = r.resource != null && k <= r.resource;
           return (
@@ -147,6 +156,17 @@ function Row({ t, r }) {
         })}
       </View>
     </View>
+  );
+}
+
+// A black (or white) rectangle the full size of the paper, behind everything on
+// every page, so no viewer ever shows a white edge. It is slightly oversize.
+function Bleed({ t }) {
+  return (
+    <View
+      fixed
+      style={{ position: 'absolute', top: -2, left: -2, width: PAGE.w + 4, height: PAGE.h + 4, backgroundColor: t.page }}
+    />
   );
 }
 
@@ -164,8 +184,8 @@ function Footer({ t }) {
 export function firstPageRows(objectiveLength, factorCount) {
   const cols = factorCount <= 1 ? 1 : (factorCount % 3 === 0 ? 3 : 2);
   const factorRows = Math.max(1, Math.ceil(factorCount / cols));
-  const used = 36 + 40 + 30 + Math.ceil(objectiveLength / 75) * 17 + 18 + factorRows * 34 + 22
-    + (CHART_W * 470) / 780 + 14 + 24 + 14 + 40 + 24;
+  const used = 30 + 34 + 24 + Math.ceil(objectiveLength / 80) * 16 + 14 + factorRows * 30 + 18
+    + CHART_H + 8 + 20 + 8 + 30 + 34 + 44;
   return Math.max(3, Math.min(40, Math.floor((PAGE.h - used) / ROW_H)));
 }
 
@@ -191,7 +211,8 @@ export default function AlignmentPdf({ variant, objective, factors, ranked, date
 
   return (
     <Document title="Strategic Alignment Health Check" author="The Clarity Project">
-      <Page size="A4" style={{ backgroundColor: t.page, paddingTop: PAGE.margin, paddingBottom: 48, paddingHorizontal: PAGE.margin, fontFamily: 'DM Sans' }}>
+      <Page size="A4" style={{ backgroundColor: t.page, paddingTop: 30, paddingBottom: 44, paddingHorizontal: PAGE.margin, fontFamily: 'DM Sans' }}>
+        <Bleed t={t} />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
             <Text style={{ fontFamily: 'Nekst', fontSize: 15, letterSpacing: 1.8, textTransform: 'uppercase', color: t.text }}>
@@ -202,17 +223,17 @@ export default function AlignmentPdf({ variant, objective, factors, ranked, date
           <Text style={{ fontFamily: 'DM Sans', fontSize: 8, color: t.faint }}>{dateText}</Text>
         </View>
 
-        <View style={{ marginTop: 14, paddingVertical: 10, borderTopWidth: 0.5, borderTopColor: t.line, borderBottomWidth: 0.5, borderBottomColor: t.line }}>
+        <View style={{ marginTop: 11, paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: t.line, borderBottomWidth: 0.5, borderBottomColor: t.line }}>
           <Text style={label(t.text2)}>Objective</Text>
-          <Text style={{ fontFamily: 'DM Sans', fontSize: 13, lineHeight: 1.4, color: t.text, marginTop: 6 }}>{objective}</Text>
+          <Text style={{ fontFamily: 'DM Sans', fontSize: 12, lineHeight: 1.35, color: t.text, marginTop: 5 }}>{objective}</Text>
         </View>
 
-        <Text style={[label(t.text2), { marginTop: 14 }]}>Critical Success Factors</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 7 }}>
+        <Text style={[label(t.text2), { marginTop: 11 }]}>Critical Success Factors</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>
           {factors.map((f, i) => {
             const span = cols === 2 && nf % 2 === 1 && i === nf - 1;
             return (
-              <View key={f.id} wrap={false} style={{ width: span ? CONTENT_W : cardW, marginRight: !span && (i % cols) < cols - 1 ? gapPx : 0, marginBottom: gapPx, flexDirection: 'row', backgroundColor: t.card, borderWidth: 0.5, borderColor: t.line, borderRadius: 5, padding: 7 }}>
+              <View key={f.id} wrap={false} style={{ width: span ? CONTENT_W : cardW, marginRight: !span && (i % cols) < cols - 1 ? gapPx : 0, marginBottom: gapPx, flexDirection: 'row', backgroundColor: t.card, borderWidth: 0.5, borderColor: t.line, borderRadius: 5, padding: 5.5 }}>
                 <Text style={{ width: 16, fontFamily: 'Nekst', fontSize: 6.5, color: t.coralText, paddingTop: 1.5 }}>{pad(i + 1)}</Text>
                 <Text style={{ flex: 1, fontFamily: 'DM Sans', fontSize: 8.5, lineHeight: 1.3, color: t.text }}>{f.text}</Text>
               </View>
@@ -222,14 +243,14 @@ export default function AlignmentPdf({ variant, objective, factors, ranked, date
 
         {anyRated && (
           <View wrap={false}>
-            <Text style={[label(t.text2), { marginTop: 12 }]}>Strategic importance versus progress</Text>
-            <View style={{ marginTop: 6, alignItems: 'center' }}>
+            <Text style={[label(t.text2), { marginTop: 8 }]}>Strategic importance versus progress</Text>
+            <View style={{ marginTop: 4, alignItems: 'center' }}>
               <Chart t={t} rows={ranked} measure={measure} />
             </View>
           </View>
         )}
 
-        <Text style={[label(t.text2), { marginTop: 14, marginBottom: 7 }]}>Your projects</Text>
+        <Text style={[label(t.text2), { marginTop: 8, marginBottom: 5 }]}>Your projects</Text>
         <TableHead t={t} />
         {chunks[0].map((r) => <Row key={r.n} t={t} r={r} />)}
         {chunks.length === 1 && (
@@ -241,7 +262,8 @@ export default function AlignmentPdf({ variant, objective, factors, ranked, date
       </Page>
 
       {chunks.slice(1).map((rows, ci) => (
-        <Page key={ci} size="A4" style={{ backgroundColor: t.page, paddingTop: PAGE.margin, paddingBottom: 48, paddingHorizontal: PAGE.margin, fontFamily: 'DM Sans' }}>
+        <Page key={ci} size="A4" style={{ backgroundColor: t.page, paddingTop: 30, paddingBottom: 44, paddingHorizontal: PAGE.margin, fontFamily: 'DM Sans' }}>
+          <Bleed t={t} />
           <Text style={[label(t.text2), { marginBottom: 7 }]}>Your projects (continued)</Text>
           <TableHead t={t} />
           {rows.map((r) => <Row key={r.n} t={t} r={r} />)}

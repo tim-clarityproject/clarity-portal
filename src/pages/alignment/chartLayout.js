@@ -20,7 +20,8 @@ export function shortLabel(text, max) {
 
 /** Break a name into lines of at most `max` characters, at spaces. */
 export function wrapLabel(text, max) {
-  const words = text.split(/\s+/).filter(Boolean);
+  // A word longer than a line is cut into line-sized pieces.
+  const words = text.split(/\s+/).filter(Boolean).flatMap((w) => (w.length > max ? w.match(new RegExp(`.{1,${max}}`, 'g')) : [w]));
   const lines = [];
   let line = '';
   words.forEach((w) => {
@@ -35,13 +36,16 @@ export function wrapLabel(text, max) {
  *   ranked projects; n is the attention rank (the number shown in the dot)
  * @param {'d'|'p'} mode desktop or phone geometry
  * @param {(text: string, fontSize: number) => number} measure text width
- * @param {{wrapChars?: number}} [opts] wrapChars: wrap names onto lines of that
- *   length (the PDF) instead of shortening them with an ellipsis (the page)
+ * @param {{wrapChars?: number, height?: number, fontSize?: number, avoidLines?: boolean}} [opts]
+ *   Options used by the PDF (the page uses none): wrapChars wraps names onto
+ *   lines of that length instead of shortening them with an ellipsis; height
+ *   and fontSize override the plot height and label size; avoidLines keeps
+ *   labels off the centre lines.
  */
 export function layoutChart(rows, mode, measure, opts = {}) {
   const D = mode === 'd';
   const W = D ? 780 : 300;
-  const H = D ? 470 : 330;
+  const H = opts.height ?? (D ? 470 : 330);
   const L = D ? 58 : 34;
   const Rm = D ? 14 : 8;
   const T = D ? 10 : 24;
@@ -110,7 +114,7 @@ export function layoutChart(rows, mode, measure, opts = {}) {
   }
 
   // Labels: choose the least-overlapping spot around each dot.
-  const fs = D ? 12 : 10;
+  const fs = opts.fontSize ?? (D ? 12 : 10);
   const lh = fs + 3;
   const labs = [];
   const boxes = pts.map((p) => [p.x - p.r - 1, p.y - p.r - 1, p.x + p.r + 1, p.y + p.r + 1]);
@@ -121,6 +125,11 @@ export function layoutChart(rows, mode, measure, opts = {}) {
       const h = Math.min(b[3], c[3]) - Math.max(b[1], c[1]);
       if (w > -2 && h > -1) o += (w + 2) * (h + 1);
     });
+    if (opts.avoidLines) {
+      // A label that crosses a centre line is as bad as one touching a dot.
+      if (b[0] < mx + 1 && b[2] > mx - 1 && b[3] > T && b[1] < T + ph) o += 40 * (b[3] - b[1]);
+      if (b[1] < my + 1 && b[3] > my - 1 && b[2] > L && b[0] < L + pw) o += 40 * (b[2] - b[0]);
+    }
     if (b[0] < L - 6) o += (L - 6 - b[0]) * 60;
     if (b[2] > W + 4) o += (b[2] - W - 4) * 60;
     if (b[1] < T) o += (T - b[1]) * 60;
