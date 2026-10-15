@@ -161,11 +161,9 @@ function AppContent() {
   }, [user, isLoading, location.pathname, navigate]);
 
   if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
-        <p style={{ color: '#999', fontSize: '14px' }}>Loading...</p>
-      </div>
-    );
+    // Plain black, no text: the first paint matches the dark app instead
+    // of flashing a white "Loading..." page.
+    return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
   }
 
   // Determine if buttons should be hidden on current page
