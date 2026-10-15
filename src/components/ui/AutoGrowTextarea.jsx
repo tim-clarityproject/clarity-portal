@@ -17,6 +17,58 @@ import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } f
 // fields must grow together: the If-Then If.../Then I will pair, where
 // the parent measures both children's own natural height and feeds the
 // larger one back down so the shorter box stretches to match.
+// Scrolls the PAGE just enough to keep the caret's line visible with a
+// one-line margin above the keyboard / fixed action bar. The caret's
+// position is found with a hidden mirror of the textarea, because a
+// textarea that has grown to full height has no scroll of its own to
+// ask. Nothing happens while the caret is already comfortably visible,
+// so it does not fight the browser's own scrolling.
+function keepCaretVisible(el) {
+  const style = window.getComputedStyle(el);
+  const fontSize = parseFloat(style.fontSize) || 16;
+  const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.5;
+  const mirror = document.createElement('div');
+  const props = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'lineHeight',
+    'textTransform', 'wordSpacing', 'textIndent', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'boxSizing', 'tabSize'];
+  props.forEach((p) => { mirror.style[p] = style[p]; });
+  mirror.style.position = 'absolute';
+  mirror.style.visibility = 'hidden';
+  mirror.style.top = '0';
+  mirror.style.left = '-9999px';
+  mirror.style.width = `${el.offsetWidth}px`;
+  mirror.style.whiteSpace = 'pre-wrap';
+  mirror.style.overflowWrap = 'break-word';
+  const caret = el.selectionEnd ?? el.value.length;
+  mirror.textContent = el.value.slice(0, caret);
+  const marker = document.createElement('span');
+  marker.textContent = '\u200b';
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+  const caretOffset = marker.offsetTop;
+  document.body.removeChild(mirror);
+
+  const rect = el.getBoundingClientRect();
+  const caretTop = rect.top + caretOffset;
+  const caretBottom = caretTop + lineHeight;
+
+  const vv = window.visualViewport;
+  const viewTop = vv ? vv.offsetTop : 0;
+  let viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  if (window.innerWidth <= 768) {
+    const bar = parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--action-bar-height'));
+    viewBottom -= Number.isFinite(bar) ? bar : 0;
+  }
+  const margin = lineHeight;
+  if (caretBottom > viewBottom - margin) {
+    window.scrollBy(0, caretBottom - (viewBottom - margin));
+  } else if (caretTop < viewTop) {
+    // Only when the caret line has gone off the top (e.g. after a paste
+    // or Enter-and-delete) - never to nudge a caret that is on screen.
+    window.scrollBy(0, caretTop - viewTop - lineHeight);
+  }
+}
+
 const AutoGrowTextarea = forwardRef(function AutoGrowTextarea({
   value,
   onChange,
@@ -28,6 +80,8 @@ const AutoGrowTextarea = forwardRef(function AutoGrowTextarea({
 }, forwardedRef) {
   const ref = useRef(null);
   const lastWidthRef = useRef(0);
+  const lastLengthRef = useRef(0);
+  const lastMinRef = useRef(minPixelHeight);
   // Exposes the plain textarea DOM node (not a custom handle), so
   // existing call sites' `.focus()`/`.select()` keep working unchanged.
   useImperativeHandle(forwardedRef, () => ref.current, []);
@@ -37,10 +91,32 @@ const AutoGrowTextarea = forwardRef(function AutoGrowTextarea({
     if (!el) return;
     if (!animate) el.style.transition = 'none';
 
-    el.style.height = 'auto';
-    const natural = el.scrollHeight;
+    // Growing needs no measuring pass: scrollHeight already reports the
+    // full content height while the box is still too short, so typing
+    // forward never sets height:auto (which collapsed the page for a
+    // moment and made the scroll position jump on iPhone once the
+    // entry was long). Only a shrink (text got shorter) or a re-wrap
+    // (width/font change, animate=false) needs the collapse-and-measure
+    // pass, and that pass puts the page scroll back where it was.
+    const length = typeof value === 'string' ? value.length : 0;
+    const typedForward = animate && length > lastLengthRef.current
+      && minPixelHeight === lastMinRef.current && el.style.height !== '';
+    lastLengthRef.current = length;
+    lastMinRef.current = minPixelHeight;
+
+    let natural;
+    if (typedForward) {
+      natural = el.scrollHeight;
+    } else {
+      const scroller = document.scrollingElement;
+      const savedScroll = scroller ? scroller.scrollTop : 0;
+      el.style.height = 'auto';
+      natural = el.scrollHeight;
+      if (scroller) scroller.scrollTop = savedScroll;
+    }
     const applied = minPixelHeight ? Math.max(natural, minPixelHeight) : natural;
-    el.style.height = `${applied}px`;
+    const currentHeight = parseFloat(el.style.height);
+    if (currentHeight !== applied) el.style.height = `${applied}px`;
 
     if (!animate) {
       // Let the instant height paint before transitions resume, so the
@@ -52,11 +128,10 @@ const AutoGrowTextarea = forwardRef(function AutoGrowTextarea({
 
     if (onHeightChange) onHeightChange(natural);
 
-    // Keep the caret in view past the fixed phone action bar -
-    // .ui-autogrow's scroll-margin-bottom reserves space for it.
-    if (document.activeElement === el) {
-      el.scrollIntoView({ block: 'nearest' });
-    }
+    // Keep the caret line (not the whole box - a long journal is taller
+    // than the screen) visible above the keyboard and the fixed phone
+    // action bar.
+    if (document.activeElement === el) keepCaretVisible(el);
   };
 
   // The ResizeObserver/font-ready effects below are set up once (mount
