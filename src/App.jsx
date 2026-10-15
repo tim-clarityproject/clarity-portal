@@ -86,10 +86,11 @@ import ForgotPasswordCheckEmail from './pages/auth/ForgotPasswordCheckEmail';
 import ResetPassword from './pages/auth/ResetPassword';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
+import { loadWithReload } from './lib/loadWithReload';
 
 // Strategic Alignment Health Check: a standalone page for people with no
 // portal account. Lazy-loaded so none of it is in the portal's main bundle.
-const HealthCheck = lazy(() => import('./pages/alignment/HealthCheck'));
+const HealthCheck = lazy(() => loadWithReload(() => import('./pages/alignment/HealthCheck')));
 
 // The private link carries a secret token in the path: never write it into
 // the local diagnostics log.

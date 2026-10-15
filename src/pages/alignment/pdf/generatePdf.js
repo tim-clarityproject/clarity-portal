@@ -1,4 +1,5 @@
 import { cleanItems } from '../alignmentFlow';
+import { loadWithReload } from '../../../lib/loadWithReload';
 import { rankProjects } from '../../../lib/alignmentScore';
 import { formatUkDate, getLocalDateKey, parseDbTimestamp } from '../../../lib/dateFormatter';
 
@@ -31,8 +32,8 @@ export function pdfFileName(objective, completedAt) {
  */
 export async function buildPdfBlob(draft, variant, completedAt) {
   const [{ pdf }, { default: AlignmentPdf }, React] = await Promise.all([
-    import('@react-pdf/renderer'),
-    import('./AlignmentPdf'),
+    loadWithReload(() => import('@react-pdf/renderer')),
+    loadWithReload(() => import('./AlignmentPdf')),
     import('react'),
   ]);
   const factors = cleanItems(draft.csfs);
