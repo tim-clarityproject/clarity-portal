@@ -71,6 +71,14 @@ export const pageText = {
   weeklyMomentumReviewSummary: { overline: 'Review', subtitle: '' },
   journalLog: { overline: 'Review', subtitle: '' },
 
+  // Wheel of Life (wording from the approved mock-up, wheel-of-life.html).
+  // The rating screens' title is the area's own name, with no overline.
+  wheelOfLife: { overline: 'Review', subtitle: 'See how satisfied you are across the areas of your life right now, and how that changes over time.' },
+  wheelOfLifeAreas: { overline: 'Wheel of Life', subtitle: 'Remove any area that doesn’t fit your life right now, and add as many of your own as you like. Removed areas keep their past scores, and you can bring them back at any time.' },
+  wheelOfLifeTargets: { overline: 'Wheel of Life', subtitle: 'Not every area needs to be a 10. Choose the score you’d be happy with in each area. There’s no deadline, and you can change your targets at any time.' },
+  wheelOfLifeCheckIn: { overline: '', subtitle: '' },
+  wheelOfLifeResults: { overline: 'Review', subtitle: '' },
+
   // Stop Doing Audit
   stopDoingAudit: { overline: 'Ground', subtitle: 'Identify time-sink activities and reclaim your time.' },
   stopDoingAuditSummary: { overline: 'Ground', subtitle: '' },

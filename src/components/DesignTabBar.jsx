@@ -82,6 +82,11 @@ const TABS = [
       '/my-reviews',
       '/review-summary',
       '/mission-progress-review',
+      '/wheel-of-life',
+      '/wheel-of-life/areas',
+      '/wheel-of-life/check-in',
+      '/wheel-of-life/results',
+      '/wheel-of-life/targets',
     ],
   },
   {
