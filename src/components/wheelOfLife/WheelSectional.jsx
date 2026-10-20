@@ -1,5 +1,6 @@
 import { average, oneDecimal } from '../../lib/wheelOfLife';
-import { remap, sizeFor, WheelLabels } from './wheelGeometry';
+import { remap, sizeFor } from './wheelGeometry';
+import { WheelLabels } from './WheelLabels';
 
 // The sectional wheel, ported line for line from the approved mock-up's
 // sectional() (wheel-of-life.html): round slices with a hole in the

@@ -1,4 +1,5 @@
-import { remap, sizeFor, WheelLabels } from './wheelGeometry';
+import { remap, sizeFor } from './wheelGeometry';
+import { WheelLabels } from './WheelLabels';
 
 // The radar wheel, ported line for line from the approved mock-up's
 // wheel() (wheel-of-life.html): five rings (2 to 10), spokes that stop
