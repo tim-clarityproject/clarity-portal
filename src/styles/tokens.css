@@ -17,6 +17,13 @@
   --mint-text: #5FEFBB;
   --scrim: rgba(0, 0, 0, 0.62);
 
+  /* Wheel of Life chart colours (wheel-of-life.html mock-up) that have no
+     token above. Its other chart colours reuse existing tokens. */
+  --wol-panel: #050505;     /* chart panel behind the wheel */
+  --wol-dot: #333333;       /* empty-band dot on the sectional wheel */
+  --wol-label: #EDEDEA;     /* area names around the wheel */
+  --wol-between: #4A4A49;   /* check-ins between first and latest (radar) */
+
   /* Fonts */
   --font-display: 'Nekst', 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;

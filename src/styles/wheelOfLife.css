@@ -1,0 +1,105 @@
+/* Wheel of Life (src/pages/wheelOfLife, src/components/wheelOfLife).
+   Imported only by the lazy-loaded Wheel of Life pages, so none of this is
+   in the portal's main bundle. Ported from the approved mock-up
+   (wheel-of-life.html). Every rule lives inside .ui-root and uses tokens
+   (tokens.css); animation times are multiples of the timing tokens, so
+   they switch off with them under prefers-reduced-motion. The portal's
+   shared parts are reused (PageHeading, BackLink, DiscardLink,
+   PhoneActionBar, DiscardDialog, Toast, AutoGrowTextarea, .ui-btn-primary,
+   .ui-btn-ghost, .ui-cross); the classes below are only what the mock-up
+   needs that they do not already give.
+
+   src/styles/mobile.css puts padding / font-size / min-height with
+   !important on every <button> at 768px and under, so button rules here
+   are scoped under .ui-root and carry matching !important where they set
+   those properties, the same pattern as alignment.css. */
+
+/* ---- the wheel drawings (WheelSectional, WheelRadar) --------------------- */
+.ui-root .wol-sw text,
+.ui-root .wol-rw text {
+  font-family: var(--font-body);
+}
+
+.ui-root .wol-sw .wol-sl {
+  transform-box: view-box;
+  transform-origin: var(--o, 50% 50%);
+  transition: opacity var(--dur) var(--ease);
+}
+
+/* slices sweep in one by one (mock-up: 800ms, 55ms apart, after 120ms) */
+.ui-root .wol-enter .wol-sw .wol-sl {
+  animation: wol-slice calc(var(--dur-slow) * 2) var(--ease) both;
+  animation-delay: calc(var(--k) * var(--dur) * 0.22 + var(--dur) * 0.48);
+}
+
+@keyframes wol-slice {
+  from { opacity: 0; transform: scale(0.6) rotate(-8deg); }
+  to { opacity: 1; transform: none; }
+}
+
+/* hover one slice to bring it forward */
+.ui-root .wol-sw:hover .wol-sl { opacity: 0.35; }
+.ui-root .wol-sw .wol-sl:hover { opacity: 1; }
+
+.ui-root .wol-ser {
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+/* radar: the latest shape grows from the centre, the start outline fades
+   in (mock-up: 900ms, the start 100ms later) */
+.ui-root .wol-enter .wol-ser--now {
+  animation: wol-grow calc(var(--dur-slow) * 2.25) var(--ease) both;
+  transform-origin: var(--o);
+}
+
+.ui-root .wol-enter .wol-ser--start {
+  animation: wol-fade calc(var(--dur-slow) * 2.25) var(--ease) calc(var(--dur-slow) * 0.25) both;
+}
+
+@keyframes wol-grow {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes wol-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* the one-pager's chart panel (used by WL3) */
+.ui-root .wol-wheel {
+  margin-top: 14px;
+  padding: 20px 20px 18px;
+  background: var(--wol-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  min-width: 0;
+}
+
+.ui-root .wol-wheel svg {
+  display: block;
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
+  height: auto;
+  overflow: visible;
+}
+
+@media (max-width: 768px) {
+  .ui-root .wol-wheel {
+    padding: 14px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .wol-enter .wol-sw .wol-sl,
+  .ui-root .wol-enter .wol-ser--now,
+  .ui-root .wol-enter .wol-ser--start {
+    animation: none !important;
+  }
+
+  .ui-root .wol-sw .wol-sl,
+  .ui-root .wol-ser {
+    transition: none !important;
+  }
+}
