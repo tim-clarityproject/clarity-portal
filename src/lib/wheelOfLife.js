@@ -193,14 +193,14 @@ export function validateOwnName(name) {
 /**
  * The duplicate rule for a new own area (spec 1.2). Compares the trimmed
  * name case-insensitively with the name of every ACTIVE area; if none
- * matches, looks for a REMOVED own area with that name, which should be
- * restored instead of adding a new one (so its history is kept).
- * A removed STANDARD area is not matched (the spec only restores own areas).
+ * matches, looks for a REMOVED area with that name, standard or own, which
+ * is restored instead of adding a new one (so its history is kept).
  * @param {string} name
  * @param {Array<{ key: string, kind: string, label: string|null, active: boolean }>} areas - every area, active and removed
  * @returns {{ duplicate: object|null, restore: object|null, message: string|null }}
  *   duplicate: the active area it matches ("You already have an area called <name>.")
- *   restore: the removed own area to switch back on ("<name> is back on your wheel.")
+ *   restore: the removed area to switch back on ("<name> is back on your wheel.")
+ * @example isDuplicateName('career / work', areasWithCareerRemoved).restore.key // 'career'
  */
 export function isDuplicateName(name, areas) {
   const t = (name || '').trim().toLowerCase();
@@ -209,7 +209,7 @@ export function isDuplicateName(name, areas) {
   if (duplicate) {
     return { duplicate, restore: null, message: `You already have an area called ${(name || '').trim()}.` };
   }
-  const restore = list.find((a) => !a.active && a.kind === 'own' && areaName(a).toLowerCase() === t) || null;
+  const restore = list.find((a) => !a.active && areaName(a).toLowerCase() === t) || null;
   return { duplicate: null, restore, message: restore ? `${areaName(restore)} is back on your wheel.` : null };
 }
 

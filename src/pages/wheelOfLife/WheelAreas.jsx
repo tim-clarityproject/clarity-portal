@@ -1,11 +1,187 @@
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
+import PageHeading from '../../components/PageHeading';
+import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
+import Toast from '../../components/ui/Toast';
+import useToast from '../../hooks/useToast';
+import {
+  OWN_NAME_MAX, areaName, differsFromStandard, isDuplicateName, questionFor, sortAreas,
+} from '../../lib/wheelOfLife';
+import { addOwnArea, resetToStandard, setAreaActive } from '../../lib/wheelOfLifeApi';
+import useWheelData from './useWheelData';
+import useArrivalToast, { returnPath } from './useArrivalToast';
+import WheelFooter from './WheelFooter';
+import WheelLoadState from './WheelLoadState';
+import { BinIcon } from './icons';
+import '../../styles/wheelOfLife.css';
 
-// Built in the next area of this prompt.
+const SAVE_FAILED = 'That change hasn’t saved. Check your connection and try again.';
+
+function split(all) {
+  const sorted = sortAreas(all);
+  return { all: sorted, active: sorted.filter((a) => a.active), removed: sorted.filter((a) => !a.active) };
+}
+
+// /wheel-of-life/areas - "Your areas" from the approved mock-up
+// (wheel-of-life.html R.areas). Every add, remove, restore and reset saves
+// straight away; if a save fails the change is undone on screen and an
+// in-page message says so. Save areas and Back return to where the person
+// came from (Start or the one-pager).
 export default function WheelAreas() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const back = returnPath(location.state);
+  const { message, showToast } = useToast();
+  useArrivalToast(showToast);
+  const data = useWheelData();
+  const [draft, setDraft] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+
+  if (data.loading || data.error) {
+    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} toast={message} />;
+  }
+
+  const { all, active, removed } = data.areas;
+  const n = active.length;
+
+  // Shows a change at once; puts the previous list back if the save fails.
+  const save = async (optimistic, run, toastOnSuccess) => {
+    const before = data.areas;
+    if (optimistic) data.setAreas(split(optimistic));
+    setPending(true);
+    setError('');
+    const res = await run();
+    setPending(false);
+    if (res.error) {
+      data.setAreas(before);
+      if (res.error.code === 'duplicate' || res.error.code === 'invalid' || res.error.code === 'last_area') {
+        showToast(res.error.message);
+      } else {
+        setError(res.error.code === 'network' ? SAVE_FAILED : res.error.message);
+      }
+      return false;
+    }
+    data.setAreas(res.data.areas);
+    const t = toastOnSuccess || res.data.message;
+    if (t) showToast(t);
+    return true;
+  };
+
+  const toggle = (key, on) => {
+    if (pending) return;
+    if (!on && n <= 1) return;
+    save(all.map((a) => (a.key === key ? { ...a, active: on } : a)), () => setAreaActive(key, on), null);
+  };
+
+  const reset = () => {
+    if (pending) return;
+    save(
+      all.map((a) => ({ ...a, active: a.kind === 'standard' })),
+      () => resetToStandard(),
+      'Back to the ten standard areas.',
+    );
+  };
+
+  const add = async () => {
+    const name = draft.trim();
+    if (!name || pending) return;
+    const dup = isDuplicateName(name, all);
+    if (dup.duplicate) {
+      showToast(dup.message);
+      return;
+    }
+    const optimistic = dup.restore ? all.map((a) => (a.key === dup.restore.key ? { ...a, active: true } : a)) : null;
+    const saved = await save(optimistic, () => addOwnArea(name), null);
+    if (saved) setDraft('');
+  };
+
+  const goBack = () => navigate(back);
+  const saveAreas = () => navigate(back, { state: { toast: 'Areas saved. Your wheel and next check-in use them.' } });
+
   return (
     <div className="ui-root">
       <DesignHeader />
-      <div className="plan-page" />
+      <div className="plan-page plan-page--form wol-page wol-page--footer wol-enter">
+        <div className="wol-head">
+          <PageHeading pageKey="wheelOfLifeAreas" title="Your areas" />
+        </div>
+
+        <span className="wol-lab">{`On your wheel · ${n}`}</span>
+        <div className="wol-arl">
+          {active.map((a, j) => (
+            <div className="wol-ar" key={a.key}>
+              <b>{String(j + 1).padStart(2, '0')}</b>
+              <div className="wol-arin">
+                <span className="wol-an">
+                  {areaName(a)}
+                  {a.kind === 'own' ? <span className="wol-tg wol-tg--c">Your own</span> : null}
+                </span>
+                <small>{questionFor(a)}</small>
+              </div>
+              <button
+                type="button"
+                className="wol-ib"
+                aria-label={`Remove ${areaName(a)}`}
+                disabled={n <= 1 || pending}
+                onClick={() => toggle(a.key, false)}
+              >
+                <BinIcon />
+              </button>
+            </div>
+          ))}
+        </div>
+        {n <= 1 ? <p className="wol-hint3">Keep at least one area on your wheel.</p> : null}
+        {n > 1 && n < 3 ? <p className="wol-hint3">With fewer than three areas, your wheel shows as Sectional.</p> : null}
+        {error ? <p className="plan-save-error" role="alert">{error}</p> : null}
+
+        <div className="wol-addw">
+          <label htmlFor="wol-add">Add your own area</label>
+          <div className="wol-addr">
+            <AutoGrowTextarea
+              id="wol-add"
+              className="wol-add-input"
+              singleLine
+              maxLength={OWN_NAME_MAX}
+              autoComplete="off"
+              placeholder="e.g. Travel"
+              value={draft}
+              onChange={setDraft}
+              onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
+            />
+            <button type="button" className="ui-btn-ghost wol-add-btn" disabled={!draft.trim() || pending} onClick={add}>
+              <span className="ui-cross ui-cross--sm" aria-hidden="true" />Add
+            </button>
+          </div>
+          <small>New areas start with no history. Their question will read “…how satisfied are you with travel in your life right now?”</small>
+        </div>
+
+        {removed.length ? (
+          <>
+            <span className="wol-lab">{`Removed · ${removed.length}`}</span>
+            <div className="wol-arl">
+              {removed.map((a) => (
+                <div className="wol-ar wol-ar--off" key={a.key}>
+                  <b>–</b>
+                  <div className="wol-arin">
+                    <span>{areaName(a)}</span>
+                    <small>Past scores kept</small>
+                  </div>
+                  <button type="button" className="wol-rest" disabled={pending} onClick={() => toggle(a.key, true)}>Restore</button>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        {differsFromStandard(all) ? (
+          <button type="button" className="wol-qlink wol-reset" disabled={pending} onClick={reset}>Go back to the ten standard areas</button>
+        ) : null}
+      </div>
+
+      <WheelFooter onBack={goBack} primary={{ label: 'Save areas', onClick: saveAreas }} />
+      <Toast message={message} clearBarVar="--wol-bar-height" />
     </div>
   );
 }
