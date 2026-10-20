@@ -131,7 +131,8 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
       return;
     }
     clearInProgress(userId);
-    navigate('/wheel-of-life/results', { state: { toast: 'Check-in saved. Here is your wheel.' } });
+    // savedId: the one-pager tags this check-in "New" in its list.
+    navigate('/wheel-of-life/results', { state: { toast: 'Check-in saved. Here is your wheel.', savedId: res.data.id } });
   };
 
   let body;
