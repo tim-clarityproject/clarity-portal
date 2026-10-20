@@ -13,6 +13,7 @@ import PageHeading from '../components/PageHeading';
 const CARDS = [
   { title: 'Review my day', description: 'Reflect on what worked today.', needsTodaysPlan: true },
   { title: 'Weekly momentum check-in', description: 'Look back on your week and set up the next.', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
+  { title: 'Check in on your Wheel of Life', description: 'Rate the areas of your life and see how your wheel changes over time.', route: '/wheel-of-life' },
   { title: 'Review a situation', description: 'Learn from something that has happened.', route: '/my-journal', state: { reviewType: 'after-action' } },
   { title: 'Review my personal operating plan', description: 'Check it still fits how you work.', route: '/personal-operating-plan-review', needsMissionLookup: true },
 ];

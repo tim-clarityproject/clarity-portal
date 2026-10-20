@@ -124,6 +124,11 @@ const SECTIONS = [
         childRoutes: [],
       },
       {
+        label: 'Wheel of Life',
+        to: '/wheel-of-life',
+        childPrefixes: ['/wheel-of-life/'],
+      },
+      {
         label: 'Personal Operating Plan Review',
         to: '/personal-operating-plan-review',
         isMissionLookup: true,

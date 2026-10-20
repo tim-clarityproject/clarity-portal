@@ -92,6 +92,19 @@ import { loadWithReload } from './lib/loadWithReload';
 // portal account. Lazy-loaded so none of it is in the portal's main bundle.
 const HealthCheck = lazy(() => loadWithReload(() => import('./pages/alignment/HealthCheck')));
 
+// Wheel of Life (Review section, inside the portal). Lazy-loaded, like the
+// Health Check, so its pages and styles stay out of the main bundle.
+const WheelStart = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelStart')));
+const WheelAreas = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelAreas')));
+const WheelCheckIn = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelCheckIn')));
+const WheelResults = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelResults')));
+const WheelTargets = lazy(() => loadWithReload(() => import('./pages/wheelOfLife/WheelTargets')));
+const lazyPage = (Page) => (
+  <Suspense fallback={<div className="ui-root" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />}>
+    <Page />
+  </Suspense>
+);
+
 // The private link carries a secret token in the path: never write it into
 // the local diagnostics log.
 const redactHealthCheckToken = (pathname) => pathname.replace(/^(\/health-check\/).*/, '$1[token]');
@@ -202,7 +215,11 @@ function AppContent() {
     '/forgot-password',
     '/forgot-password/check-email',
     '/auth/reset-password',
-    '/breathe'
+    '/breathe',
+    // Wheel of Life screens with a pinned footer bar (as /breathe).
+    '/wheel-of-life/areas',
+    '/wheel-of-life/check-in',
+    '/wheel-of-life/targets'
   ].includes(location.pathname)
     || location.pathname.startsWith('/legal/')
     || location.pathname.startsWith('/health-check/')
@@ -306,6 +323,11 @@ function AppContent() {
           <Route path="/ground-section" element={<GroundSection />} />
           <Route path="/decide-section" element={<DecideSection />} />
           <Route path="/review-section" element={<ReviewSection />} />
+          <Route path="/wheel-of-life" element={lazyPage(WheelStart)} />
+          <Route path="/wheel-of-life/areas" element={lazyPage(WheelAreas)} />
+          <Route path="/wheel-of-life/check-in" element={lazyPage(WheelCheckIn)} />
+          <Route path="/wheel-of-life/results" element={lazyPage(WheelResults)} />
+          <Route path="/wheel-of-life/targets" element={lazyPage(WheelTargets)} />
           <Route path="/account-section" element={<AccountSection />} />
           <Route path="/plan-my-day" element={<PlanMyDayStep1 />} />
           <Route path="/daily-plan-summary" element={<DailyPlanSummary />} />

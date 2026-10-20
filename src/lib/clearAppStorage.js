@@ -25,6 +25,9 @@ function isAppOwnedKey(key) {
   if (key.startsWith('clarity-') && key.includes('-draft-')) return true;
   // dataSyncManager's per-tool saves: <toolType>-autosave / -progress.
   if (key.endsWith('-autosave') || key.endsWith('-progress')) return true;
+  // Wheel of Life in-progress check-in: clarity.wol.inprogress.<userId>
+  // (IN_PROGRESS_PREFIX in wheelOfLifeApi.js).
+  if (key.startsWith('clarity.wol.')) return true;
   return false;
 }
 

@@ -8,6 +8,8 @@ import { deleteReview as deleteJournalEntryRow } from '../lib/reviewTool';
 import { deleteJournal } from '../lib/dailyJournal';
 import { isPlanReviewDraft, PLAN_REVIEW_TYPE } from '../lib/planReview';
 import { discardReviewDraft, discardPlanReviewDraft, discardMissionReviewDraft } from '../lib/discardDraft';
+import { deleteCheckin, listCheckins } from '../lib/wheelOfLifeApi';
+import { formatCheckinDate } from '../lib/wheelOfLife';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -32,12 +34,13 @@ const JOURNAL_ENTRY_META = {
 // overriding my-reviews.html's own "Plan"/"Plan review" wording -
 // Personal Operating Plan reviews, not to be confused with the
 // Plan section/nav label elsewhere in the app, which is unrelated and
-// untouched. Order unchanged: All, Day, Weekly momentum, After-action,
-// POP review, Journals.
+// untouched. Order: All, Day, Weekly momentum, After-action, Wheel of
+// Life, POP review, Journals.
 const FILTERS = [
   { id: 'day', label: 'Day', match: (r) => r.source === 'day' },
   { id: 'weekly', label: 'Weekly momentum', match: (r) => r.source === 'weekly' },
   { id: 'after-action', label: 'After-action', match: (r) => r.source === 'after-action' },
+  { id: 'wheel', label: 'Wheel of Life', match: (r) => r.source === 'wheel' },
   { id: 'plan', label: 'POP review', match: (r) => r.source === 'plan' },
   { id: 'journals', label: 'Journals', match: (r) => r.source === 'journal' },
 ];
@@ -143,6 +146,26 @@ export default function MyReviews() {
       console.error('[MyReviews] daily_journals load failed (migration 015 may not be run yet):', err);
     }
 
+    try {
+      // Wheel of Life check-ins: never edited, so no pencil (canEdit).
+      const { data, error: err } = await listCheckins({ summaryOnly: true });
+      if (err) throw new Error(err.message);
+      anySucceeded = true;
+      (data || []).forEach((c) => {
+        built.push({
+          id: c.id,
+          title: `Wheel of Life, ${formatCheckinDate(c.date)}`,
+          typeLabel: 'Wheel of Life',
+          source: 'wheel',
+          date: c.checkinAt,
+          canEdit: false,
+          raw: c,
+        });
+      });
+    } catch (err) {
+      console.error('[MyReviews] wheel_of_life_checkins load failed (migration 020 may not be run yet):', err);
+    }
+
     setRows(built);
     if (!anySucceeded) {
       setError({ message: 'Could not load your reviews.', onRetry: load });
@@ -167,6 +190,7 @@ export default function MyReviews() {
     if (row.source === 'day') navigate('/review-plan-summary', { state: { entryId: row.id } });
     else if (row.source === 'weekly' || row.source === 'after-action') navigate('/review-summary', { state: { entryId: row.id } });
     else if (row.source === 'plan') navigate('/mission-progress-review', { state: { reviewId: row.id } });
+    else if (row.source === 'wheel') navigate(`/wheel-of-life/results?to=${row.raw.date}`);
     else navigate(`/daily-journals/${row.raw.journal_date}`);
   };
 
@@ -222,7 +246,10 @@ export default function MyReviews() {
     const { id, source, isDraft } = deleteTarget;
     setDeleteTarget(null);
     try {
-      if (source === 'plan') {
+      if (source === 'wheel') {
+        const { error: err } = await deleteCheckin(id);
+        if (err) throw new Error(err.message);
+      } else if (source === 'plan') {
         if (isDraft) {
           await discardMissionReviewDraft(user.id, id);
         } else {
@@ -276,7 +303,7 @@ export default function MyReviews() {
 
       <DeleteDialog
         open={Boolean(deleteTarget)}
-        title={deleteTarget?.source === 'journal' ? 'Delete this journal?' : 'Delete this review?'}
+        title={deleteTarget?.source === 'journal' ? 'Delete this journal?' : (deleteTarget?.source === 'wheel' ? 'Delete this check-in?' : 'Delete this review?')}
         body="This cannot be undone."
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
