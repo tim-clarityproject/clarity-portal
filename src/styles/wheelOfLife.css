@@ -862,6 +862,147 @@
   }
 }
 
+/* ---- Your targets ----------------------------------------------------- */
+.ui-root .wol-tgl {
+  border-top: 1px solid var(--line);
+}
+
+.ui-root .wol-tgr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 64px;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ui-root .wol-tgn span {
+  display: block;
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+
+.ui-root .wol-tgn small {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+}
+
+.ui-root .wol-tgn em {
+  font-style: normal;
+  font-size: var(--fs-label);
+  color: var(--coral-soft);
+}
+
+.ui-root .wol-tgn em.wol-ok {
+  color: var(--mint-text);
+}
+
+/* − / + stepper */
+.ui-root .wol-stp {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.ui-root .wol-stp button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 20px !important;
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .wol-stp button:hover {
+  color: var(--coral);
+}
+
+.ui-root .wol-stp button:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: -4px;
+}
+
+.ui-root .wol-stp button:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.ui-root .wol-stp b {
+  min-width: 34px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text);
+}
+
+.ui-root .wol-stp b.wol-none {
+  color: var(--placeholder);
+}
+
+.ui-root .wol-clr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--fs-small) !important;
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .wol-clr:hover {
+  color: var(--coral);
+}
+
+.ui-root .wol-clr:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ui-root .wol-clr:disabled {
+  visibility: hidden;
+}
+
+.ui-root .wol-tnote {
+  max-width: 60ch;
+  margin: 18px 0 0;
+  font-size: var(--fs-small);
+  line-height: 1.6;
+  color: var(--placeholder);
+}
+
+@media (max-width: 768px) {
+  .ui-root .wol-tgr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "n n" "s c";
+    gap: 10px 12px;
+  }
+
+  .ui-root .wol-tgr .wol-tgn { grid-area: n; }
+  .ui-root .wol-tgr .wol-stp { grid-area: s; justify-self: start; }
+  .ui-root .wol-tgr .wol-clr { grid-area: c; justify-self: end; }
+}
+
 /* ---- footer action bar (WheelFooter) --------------------------------- */
 .ui-root .wol-ft {
   position: fixed;
@@ -945,6 +1086,8 @@
   .ui-root .wol-note label,
   .ui-root .wol-note-input,
   .ui-root .wol-chips button,
+  .ui-root .wol-stp button,
+  .ui-root .wol-clr,
   .ui-root .wol-qlink,
   .ui-root .wol-ib,
   .ui-root .wol-rest,
