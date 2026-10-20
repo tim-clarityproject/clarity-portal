@@ -5,7 +5,9 @@ import { wrapLabel } from '../../lib/wheelOfLife';
 
 /**
  * One area name around the wheel, on one to three lines, with the latest
- * score after the last line in coral (the mock-up's svgLab, line for line).
+ * score after the last line in coral (the mock-up's svgLab, line for line;
+ * the score is never below 10px, Nekst's minimum - the mock-up's fs-1 gave
+ * 9px on phone).
  */
 export function WheelLabel({ x, y, anchor, pos, lines, fs, fill, val }) {
   const lh = 1.15;
@@ -19,7 +21,7 @@ export function WheelLabel({ x, y, anchor, pos, lines, fs, fill, val }) {
           {k === n - 1 && val != null ? (
             <>
               {' '}
-              <tspan style={{ fill: 'var(--coral)', fontFamily: 'var(--font-display)' }} fontSize={fs - 1}>{val}</tspan>
+              <tspan style={{ fill: 'var(--coral)', fontFamily: 'var(--font-display)' }} fontSize={Math.max(10, fs - 1)}>{val}</tspan>
             </>
           ) : null}
         </tspan>

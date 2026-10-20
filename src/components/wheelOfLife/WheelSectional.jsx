@@ -7,7 +7,7 @@ import { WheelLabels } from './WheelLabels';
 // middle, ten bands per slice in a tonal coral ramp, empty bands as faint
 // dots, the start of the range as a white hairline arc, the target as a
 // dashed arc just outside its band (soft coral, mint once reached), a
-// dial rim with ticks, and the average in the centre (or the crosshair
+// dial rim with ticks, and the average number in the centre (or the crosshair
 // when there are no labels). Animations live in wheelOfLife.css
 // (.wol-enter .wol-sw .wol-sl), switched off under reduced motion.
 
@@ -119,8 +119,9 @@ export default function WheelSectional({
   if (labels && vals.length) {
     centre = (
       <>
+        {/* The mock-up's small "AVERAGE" word under the number is left out:
+            it was Nekst below 10px (CLAUDE.md rule 4). */}
         <text x={cx} y={cy - 1} textAnchor="middle" style={{ fontFamily: 'var(--font-display)', fill: 'var(--text)' }} fontSize={R > 100 ? 18 : 13}>{oneDecimal(average(vals))}</text>
-        <text x={cx} y={cy + (R > 100 ? 13 : 10)} textAnchor="middle" style={{ fontFamily: 'var(--font-display)', fill: 'var(--placeholder)' }} fontSize={R > 100 ? 7 : 6} letterSpacing="1.4">AVERAGE</text>
       </>
     );
   } else {

@@ -20,17 +20,22 @@
 --        note are all refused
 --     6. A cannot edit a check-in or delete an area (not allowed at all)
 --     7. A can save a chart style; an unknown style is refused
---     8. A cannot write a row in B's name
---     9. B sees none of A's rows and cannot change or delete them
+--     8. A cannot write a row in the name of B
+--     9. B sees none of the rows of A and cannot change or delete them
 --    10. someone signed out (anon) cannot read any of the tables
 --   If every check passes it finishes with no error and the notice
 --   "ALL CHECKS PASSED". If one fails, it stops with a message starting
 --   "FAIL" saying which. Either way nothing is saved.
+--
+--   Written for the Supabase SQL editor: values are read with
+--   "n := (select ...)" (the editor mistakes "select ... into" for a new
+--   table), no message contains an apostrophe, and the block uses the
+--   $wol$ tag.
 -- =============================================================================
 
 begin;
 
-do $$
+do $wol$
 declare
   u_a  uuid := gen_random_uuid();
   u_b  uuid := gen_random_uuid();
@@ -70,7 +75,7 @@ begin
   insert into public.wheel_of_life_areas (user_id, area_key, kind, label, sort_order)
   values (u_a, 'own_0123456789abcdef', 'own', 'Travel', 100);
 
-  select count(*) into n from public.wheel_of_life_areas where user_id = u_a;
+  n := (select count(*) from public.wheel_of_life_areas where user_id = u_a);
   if n <> 11 then raise exception 'FAIL: A should see 11 areas, saw %', n; end if;
 
   -- 2. bad area rows are refused
@@ -105,17 +110,17 @@ begin
 
   -- 3. a target saves and stamps target_updated_at
   update public.wheel_of_life_areas set target = 5 where user_id = u_a and area_key = 'fun';
-  select target_updated_at into ts from public.wheel_of_life_areas where user_id = u_a and area_key = 'fun';
+  ts := (select target_updated_at from public.wheel_of_life_areas where user_id = u_a and area_key = 'fun');
   if ts is null then raise exception 'FAIL: target_updated_at was not set'; end if;
   update public.wheel_of_life_areas set target = null where user_id = u_a and area_key = 'fun';
-  select count(*) into n from public.wheel_of_life_areas where user_id = u_a and area_key = 'fun' and target is null;
+  n := (select count(*) from public.wheel_of_life_areas where user_id = u_a and area_key = 'fun' and target is null);
   if n <> 1 then raise exception 'FAIL: a target could not be cleared'; end if;
 
   -- 4. a good check-in saves and reads back
   insert into public.wheel_of_life_checkins (user_id, checkin_date, scores, areas, notes, focus_area_key, focus_note)
   values (u_a, current_date, good_scores, good_areas, '{"career":"A good month."}', 'financial', 'One small step')
   returning id into c_id;
-  select count(*) into n from public.wheel_of_life_checkins where user_id = u_a;
+  n := (select count(*) from public.wheel_of_life_checkins where user_id = u_a);
   if n <> 1 then raise exception 'FAIL: A should see 1 check-in, saw %', n; end if;
 
   -- 5. bad check-ins are refused
@@ -191,7 +196,7 @@ begin
   on conflict (user_id) do update set chart_style = excluded.chart_style;
   insert into public.wheel_of_life_settings (user_id, chart_style) values (u_a, 'delta')
   on conflict (user_id) do update set chart_style = excluded.chart_style;
-  select count(*) into n from public.wheel_of_life_settings where user_id = u_a and chart_style = 'delta';
+  n := (select count(*) from public.wheel_of_life_settings where user_id = u_a and chart_style = 'delta');
   if n <> 1 then raise exception 'FAIL: the chart style did not save'; end if;
   begin
     update public.wheel_of_life_settings set chart_style = 'pie' where user_id = u_a;
@@ -199,7 +204,7 @@ begin
   exception when check_violation then null;
   end;
 
-  -- 8. A cannot write in B's name
+  -- 8. A cannot write in the name of B
   begin
     insert into public.wheel_of_life_checkins (user_id, checkin_date, scores, areas)
     values (u_b, current_date, good_scores, good_areas);
@@ -216,27 +221,27 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', u_b, 'role', 'authenticated')::text, true);
   if auth.uid() is distinct from u_b then raise exception 'FAIL: could not act as person B'; end if;
 
-  select count(*) into n from public.wheel_of_life_areas;
-  if n <> 0 then raise exception 'FAIL: B can see % of A''s areas', n; end if;
-  select count(*) into n from public.wheel_of_life_checkins;
-  if n <> 0 then raise exception 'FAIL: B can see % of A''s check-ins', n; end if;
-  select count(*) into n from public.wheel_of_life_settings;
-  if n <> 0 then raise exception 'FAIL: B can see A''s settings'; end if;
+  n := (select count(*) from public.wheel_of_life_areas);
+  if n <> 0 then raise exception 'FAIL: B can see % of the areas of A', n; end if;
+  n := (select count(*) from public.wheel_of_life_checkins);
+  if n <> 0 then raise exception 'FAIL: B can see % of the check-ins of A', n; end if;
+  n := (select count(*) from public.wheel_of_life_settings);
+  if n <> 0 then raise exception 'FAIL: B can see the settings of A'; end if;
 
   update public.wheel_of_life_areas set active = false, target = 0 where user_id = u_a;
   get diagnostics n = row_count;
-  if n <> 0 then raise exception 'FAIL: B changed % of A''s areas', n; end if;
+  if n <> 0 then raise exception 'FAIL: B changed % of the areas of A', n; end if;
   update public.wheel_of_life_settings set chart_style = 'sectional' where user_id = u_a;
   get diagnostics n = row_count;
-  if n <> 0 then raise exception 'FAIL: B changed A''s settings'; end if;
+  if n <> 0 then raise exception 'FAIL: B changed the settings of A'; end if;
   delete from public.wheel_of_life_checkins where id = c_id;
   get diagnostics n = row_count;
-  if n <> 0 then raise exception 'FAIL: B deleted A''s check-in'; end if;
+  if n <> 0 then raise exception 'FAIL: B deleted the check-in of A'; end if;
 
   -- ------------------------------------------------- back to A: all still there
   perform set_config('request.jwt.claims', json_build_object('sub', u_a, 'role', 'authenticated')::text, true);
-  select count(*) into n from public.wheel_of_life_areas where active and target is null;
-  if n <> 11 then raise exception 'FAIL: A''s areas were changed by B'; end if;
+  n := (select count(*) from public.wheel_of_life_areas where active and target is null);
+  if n <> 11 then raise exception 'FAIL: the areas of A were changed by B'; end if;
   delete from public.wheel_of_life_checkins where id = c_id;
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'FAIL: A could not delete their own check-in'; end if;
@@ -262,7 +267,7 @@ begin
 
   raise notice 'ALL CHECKS PASSED';
 end;
-$$;
+$wol$;
 
 -- Throw everything away: the two test sign-ins and all of their rows.
 rollback;
