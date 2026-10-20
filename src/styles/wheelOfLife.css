@@ -567,6 +567,301 @@
   margin-top: 22px;
 }
 
+/* ---- the check-in: rating screens and Choose one area ------------------ */
+.ui-root .wol-rate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 44px;
+  align-items: start;
+}
+
+.ui-root .wol-steps {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: 26px;
+}
+
+.ui-root .wol-steps i {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+  transition: background-color var(--dur-slow) var(--ease);
+}
+
+.ui-root .wol-steps i.f { background: var(--coral); }
+.ui-root .wol-steps i.n { background: var(--text-2); }
+
+.ui-root .wol-stag {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--coral);
+}
+
+.ui-root .wol-stag span + span {
+  color: var(--placeholder);
+}
+
+.ui-root .wol-rate-title .ui-title {
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.ui-root .wol-qq {
+  max-width: 40ch;
+  margin: var(--space-3) 0 0;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.ui-root .wol-scale {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: var(--space-5);
+}
+
+.ui-root .wol-scale button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px !important;
+  padding: 0 !important;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 15px !important;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .wol-scale button:hover {
+  border-color: var(--btn-line);
+}
+
+.ui-root .wol-scale button:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .wol-scale button[aria-checked="true"] {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--on-coral);
+}
+
+/* last check-in's score: a small dot under the number */
+.ui-root .wol-scale button.wol-prev::after {
+  content: "";
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--text-2);
+}
+
+.ui-root .wol-scale button.wol-prev[aria-checked="true"]::after {
+  background: var(--on-coral);
+}
+
+.ui-root .wol-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: var(--fs-small);
+  color: var(--placeholder);
+}
+
+.ui-root .wol-lastt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 20px;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.ui-root .wol-lastt i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-2);
+}
+
+.ui-root .wol-sep {
+  margin: 0 6px;
+  color: var(--placeholder);
+}
+
+.ui-root .wol-note {
+  margin-top: 28px;
+}
+
+.ui-root .wol-note label {
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .wol-note:focus-within label {
+  color: var(--coral);
+}
+
+.ui-root .wol-note label em {
+  margin-left: var(--space-2);
+  font-style: normal;
+  letter-spacing: 0.12em;
+  color: var(--placeholder);
+}
+
+.ui-root .wol-note-input {
+  min-height: 46px;
+  padding: var(--space-2) 0 12px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  line-height: 1.55;
+  color: var(--text);
+  transition: border-color var(--dur) var(--ease), height var(--dur) var(--ease);
+}
+
+.ui-root .wol-note-input::placeholder {
+  color: var(--placeholder);
+}
+
+.ui-root .wol-note-input:hover {
+  border-bottom-color: var(--btn-line);
+}
+
+.ui-root .wol-note-input:focus {
+  border-bottom-color: var(--coral);
+}
+
+/* the small live wheel beside the rating screens (desktop only) */
+.ui-root .wol-mini {
+  position: sticky;
+  top: var(--space-4);
+  padding: 18px 14px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+.ui-root .wol-mini small {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-tab);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  text-align: center;
+  color: var(--placeholder);
+}
+
+.ui-root .wol-mini svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 6px;
+}
+
+.ui-root .wol-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: 26px;
+}
+
+.ui-root .wol-chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap-min) !important;
+  padding: 0 var(--space-3) !important;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 14px !important;
+  color: var(--text-2);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.ui-root .wol-chips button b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ui-root .wol-chips button:hover {
+  border-color: var(--btn-line);
+  color: var(--text);
+}
+
+.ui-root .wol-chips button:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.ui-root .wol-chips button[aria-pressed="true"] {
+  border-color: var(--coral);
+  color: var(--text);
+}
+
+.ui-root .wol-chips button[aria-pressed="true"] b {
+  color: var(--coral);
+}
+
+@media (max-width: 768px) {
+  .ui-root .wol-rate {
+    display: block;
+  }
+
+  .ui-root .wol-mini {
+    display: none;
+  }
+
+  .ui-root .wol-qq {
+    font-size: 18px;
+  }
+
+  /* rows of 6 and 5, every target at least 44px */
+  .ui-root .wol-scale {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .ui-root .wol-scale button {
+    min-height: 52px !important;
+  }
+}
+
 /* ---- footer action bar (WheelFooter) --------------------------------- */
 .ui-root .wol-ft {
   position: fixed;
@@ -645,6 +940,11 @@
     animation: none !important;
   }
 
+  .ui-root .wol-steps i,
+  .ui-root .wol-scale button,
+  .ui-root .wol-note label,
+  .ui-root .wol-note-input,
+  .ui-root .wol-chips button,
   .ui-root .wol-qlink,
   .ui-root .wol-ib,
   .ui-root .wol-rest,
