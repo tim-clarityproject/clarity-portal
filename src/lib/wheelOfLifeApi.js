@@ -210,13 +210,15 @@ function checkinFromRow(row) {
 /**
  * Every saved check-in, newest first. Notes are not loaded: they are not
  * shown anywhere in the first release.
+ * @param {{ summaryOnly?: boolean }} [options] - summaryOnly loads just the
+ *   id and dates (My Reviews); scores, areas and focus come back empty
  * @returns {Promise<{ data: Array<{ id: string, checkinAt: Date, date: string, scores: object, areas: Array<{ key: string, label: string }>, focusAreaKey: string|null, focusNote: string }>|null, error: object|null }>}
  */
-export async function listCheckins() {
+export async function listCheckins({ summaryOnly = false } = {}) {
   return asUser(MSG.load, async (userId) => {
     const { data, error } = await supabase
       .from('wheel_of_life_checkins')
-      .select(CHECKIN_COLUMNS)
+      .select(summaryOnly ? 'id, checkin_at, checkin_date' : CHECKIN_COLUMNS)
       .eq('user_id', userId)
       .order('checkin_at', { ascending: false });
     if (error) throw error;

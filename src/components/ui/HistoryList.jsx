@@ -229,7 +229,7 @@ export default function HistoryList({
                       >
                         Continue
                       </button>
-                    ) : (
+                    ) : row.canEdit !== false ? (
                       <button
                         type="button"
                         className="hlist-icon-btn"
@@ -238,7 +238,7 @@ export default function HistoryList({
                       >
                         <PencilIcon />
                       </button>
-                    )}
+                    ) : null /* row.canEdit false: a type that is never edited (Wheel of Life check-ins) */}
                     <button
                       type="button"
                       className="hlist-icon-btn hlist-icon-btn--del"
