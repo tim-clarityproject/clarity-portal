@@ -1,0 +1,49 @@
+import { useId, useRef, useState } from 'react';
+import Crosshair from './Crosshair';
+import './design.css';
+
+// Filter: one Filter button that opens the dropdowns (children, usually
+// Choice or Dropdown), then one plain line saying what is applied, with a
+// Clear link. The crosshair plus turns 45° while the dropdowns are open.
+//
+// applied: words for what is applied ("day reviews from this month"), or
+//          empty when nothing is.
+export default function FilterButton({ label = 'Filter', applied, onClear, children }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const buttonRef = useRef(null);
+  return (
+    <div className="ds-filter">
+      <button
+        ref={buttonRef}
+        type="button"
+        className="ds-btn ds-btn--outline"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Crosshair turned={open} />
+        {label}
+      </button>
+      <div id={panelId} className="ds-filter-panel" hidden={!open}>
+        {children}
+      </div>
+      <p className="ds-filter-line" aria-live="polite">
+        <span>{applied ? `Showing ${applied}.` : 'Showing everything.'}</span>
+        {applied && onClear && (
+          <button
+            type="button"
+            className="ds-link"
+            onClick={() => {
+              onClear();
+              // Clear disappears once nothing is applied; focus goes back to Filter.
+              buttonRef.current?.focus();
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </p>
+    </div>
+  );
+}

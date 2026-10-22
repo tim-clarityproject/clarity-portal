@@ -1,0 +1,354 @@
+/* Layout of the design gallery (/design-reference), copied from
+   design-reference-v2.html: one dark column, each section showing one
+   shared component live with its rules beside it. The components' own
+   look comes only from src/components/design/design.css; this file only
+   lays the page out. Page-only measurements are kept together here. */
+
+.ui-root.dr-page {
+  --dr-max: 980px;
+  --dr-rules-w: 300px;
+  --dr-pad-top: 56px;
+  --dr-pad-bottom: 96px;
+  --dr-mini-h: 300px;
+  --dr-mini-pop-h: 220px;
+  --dr-loadbox-h: 180px;
+  --dr-swatch-w: 120px;
+  --dr-swatch-h: 56px;
+  --dr-type-label-w: 150px;
+
+  box-sizing: border-box;
+  min-height: 100dvh;
+  padding: var(--dr-pad-top) max(var(--space-3), env(safe-area-inset-right, 0px)) var(--dr-pad-bottom) max(var(--space-3), env(safe-area-inset-left, 0px));
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.ui-root .dr-wrap {
+  max-width: var(--dr-max);
+  margin-inline: auto;
+}
+
+.ui-root .dr-wrap .dr-title {
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: clamp(22px, 4vw, 28px) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-page-title);
+  word-spacing: normal;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .dr-lead {
+  margin: var(--space-px12) 0 0;
+  max-width: 62ch;
+  color: var(--text-2);
+}
+
+.ui-root .dr-rule {
+  width: var(--space-5);
+  height: var(--space-px2);
+  margin-top: var(--space-px20);
+  background: var(--coral);
+}
+
+.ui-root .dr-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-px18);
+  margin-top: var(--space-px18);
+  font-size: var(--fs-note);
+}
+
+.ui-root .dr-toc a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  color: var(--text-2);
+  text-decoration: none;
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .dr-toc a:hover {
+  color: var(--coral);
+}
+
+.ui-root .dr-toc a:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-1);
+}
+
+.ui-root .dr-c {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--dr-rules-w);
+  gap: var(--space-px28) var(--space-6);
+  padding: var(--space-6) 0;
+  border-top: var(--line-w) solid var(--line);
+  margin-top: var(--space-6);
+  scroll-margin-top: var(--space-3);
+}
+
+.ui-root .dr-c + .dr-c {
+  margin-top: 0;
+}
+
+@media (max-width: 820px) {
+  .ui-root .dr-c {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ui-root .dr-c .dr-h2 {
+  grid-column: 1 / -1;
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-number-sm) !important;
+  line-height: var(--lh-text);
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .dr-demo {
+  min-width: 0;
+}
+
+.ui-root .dr-stack {
+  display: grid;
+  gap: var(--space-px20);
+  justify-items: start;
+}
+
+.ui-root .dr-stack > * {
+  max-width: 100%;
+}
+
+.ui-root .dr-stack--fill {
+  justify-items: stretch;
+}
+
+.ui-root .dr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px12);
+  align-items: center;
+}
+
+.ui-root .dr-quiet {
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .dr-then {
+  color: var(--label);
+}
+
+.ui-root .dr-small {
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .dr-rules {
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+.ui-root .dr-rules p {
+  margin: 0 0 var(--space-px10);
+}
+
+.ui-root .dr-rules b {
+  color: var(--text);
+  font-weight: var(--fw-medium);
+}
+
+/* Colour swatches */
+.ui-root .dr-sw {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px10);
+}
+
+.ui-root .dr-sw > div {
+  width: var(--dr-swatch-w);
+}
+
+.ui-root .dr-sw i {
+  display: block;
+  height: var(--dr-swatch-h);
+  border-radius: var(--radius-input);
+  border: var(--line-w) solid var(--line);
+}
+
+.ui-root .dr-sw b {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+}
+
+.ui-root .dr-sw span {
+  font-size: var(--fs-min);
+  color: var(--label);
+}
+
+/* Type scale */
+.ui-root .dr-type > div {
+  display: grid;
+  grid-template-columns: var(--dr-type-label-w) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-px10) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .dr-type small {
+  font-size: var(--fs-min);
+  color: var(--label);
+}
+
+@media (max-width: 560px) {
+  .ui-root .dr-type > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ui-root .dr-type-page {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-page-title);
+  font-size: var(--fs-page-title);
+  line-height: var(--lh-title);
+}
+
+.ui-root .dr-type-section {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-section-title);
+  font-size: var(--fs-section-title);
+}
+
+.ui-root .dr-type-secondary {
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+.ui-root .dr-type-label {
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .dr-type-number {
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-number);
+  line-height: 1;
+}
+
+/* Panel miniatures (decorative, as the mock-up) */
+.ui-root .dr-mini {
+  position: relative;
+  height: var(--dr-mini-h);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--wol-panel);
+}
+
+.ui-root .dr-mini--pop {
+  height: var(--dr-mini-pop-h);
+}
+
+.ui-root .dr-mini-page {
+  position: absolute;
+  inset: 0;
+  padding: var(--space-px20);
+  font-size: var(--fs-note);
+  color: var(--label);
+}
+
+.ui-root .dr-mini-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+
+.ui-root .dr-mini-sheet {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 62%;
+  padding: var(--space-px18);
+  background: var(--bg);
+  border-left: var(--line-w) solid var(--line);
+}
+
+.ui-root .dr-mini-pop {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  transform: translate(-50%, -50%);
+  padding: var(--space-px18);
+  background: var(--bg);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+.ui-root .dr-mini-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-section-title);
+  font-size: var(--fs-meta);
+}
+
+.ui-root .dr-mini-line {
+  height: var(--space-2);
+  margin-top: var(--space-px12);
+  border-radius: var(--space-1);
+  background: var(--line);
+}
+
+.ui-root .dr-mini-line--box {
+  height: var(--space-6);
+  margin-top: var(--space-3);
+}
+
+.ui-root .dr-mini-line--80 { width: 80%; }
+.ui-root .dr-mini-line--70 { width: 70%; }
+.ui-root .dr-mini-line--60 { width: 60%; }
+
+.ui-root .dr-loadbox {
+  height: var(--dr-loadbox-h);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+/* The orb is desktop only; on phone the gallery says so instead. */
+.ui-root .dr-phone-only {
+  display: none;
+}
+
+@media not ((hover: hover) and (pointer: fine)) {
+  .ui-root .dr-phone-only {
+    display: block;
+  }
+}
+
+.ui-root .dr-panel-form {
+  display: grid;
+  gap: var(--space-4);
+}

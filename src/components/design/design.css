@@ -1,0 +1,1547 @@
+/* ==========================================================================
+   The calm design system: one stylesheet for every shared component in
+   src/components/design. Source of truth: design-reference-v2.html
+   (approved by Tim, 22 Oct) and portal-overhaul-decisions.md, which wins
+   where the two differ. Every value comes from src/styles/tokens.css.
+
+   Everything is scoped under .ui-root (CLAUDE.md rule 17).
+
+   Living alongside the old global rules, without editing them:
+   - src/styles/mobile.css (max-width 768px) forces
+     button:not(.breathe-button) { padding: 12px 16px !important;
+     font-size: 14px !important }, select, input { padding: 12px 16px
+     !important }, and h1/h2/h3 { font-size; margin !important }. Rules
+     here that must beat those repeat the property with !important at a
+     higher specificity (.ui-root .ds-x is 0,2,0; theirs is 0,1,1 or less).
+   - mobile.css also targets div[style*="position: fixed"] and
+     div[style*="flex: 1"], so no component sets those as inline styles;
+     fixed positions live in classes below.
+   - src/index.css sets an inherited letter-spacing (0.18px) and a fixed
+     line-height on :root, so each component sets both itself.
+   ========================================================================== */
+
+/* ---------- Shared bits ---------- */
+
+.ui-root .ds-sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Crosshair: every plus, and (turned 45°) every close ---------- */
+
+.ui-root .ds-cross {
+  display: inline-block;
+  flex: none;
+  width: var(--cross-sm);
+  height: var(--cross-sm);
+  background-color: var(--coral);
+  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  transition: transform var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-cross--close {
+  transform: rotate(45deg);
+  width: var(--cross-close);
+  height: var(--cross-close);
+  background-color: var(--text-2);
+}
+
+.ui-root .ds-cross--md { width: var(--cross-md); height: var(--cross-md); }
+.ui-root .ds-cross--lg { width: var(--cross-spin); height: var(--cross-spin); }
+.ui-root .ds-cross--sm { width: var(--cross-sm); height: var(--cross-sm); }
+
+.ui-root .ds-cross--coral { background-color: var(--coral); }
+.ui-root .ds-cross--grey { background-color: var(--text-2); }
+.ui-root .ds-cross--label { background-color: var(--label); }
+.ui-root .ds-cross--white { background-color: var(--text); }
+.ui-root .ds-cross--dark { background-color: var(--on-coral); }
+
+/* A plus that turns into a close: rotates 45° and goes grey when open. */
+.ui-root .ds-cross--turned {
+  transform: rotate(45deg);
+  background-color: var(--text-2);
+}
+
+.ui-root .ds-cross--spin {
+  animation: ds-spin var(--dur-spin) var(--ease-spin) infinite;
+}
+
+.ui-root .ds-cross--spin.ds-cross--sm {
+  animation-duration: var(--dur-spin-sm);
+}
+
+@keyframes ds-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ds-pulse {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-cross--spin {
+    animation: ds-pulse var(--dur-pulse) ease-in-out infinite;
+  }
+}
+
+/* ---------- Buttons ---------- */
+
+.ui-root .ds-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-px10);
+  min-height: var(--btn-h) !important;
+  padding: 0 var(--space-px26) !important;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-btn) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-btn);
+  text-transform: uppercase;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-btn--primary {
+  background: var(--coral);
+  color: var(--on-coral);
+  transition: background-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-btn--primary:hover {
+  background: var(--coral-soft);
+}
+
+.ui-root .ds-btn--primary:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px3);
+}
+
+.ui-root .ds-btn--outline {
+  padding: 0 var(--space-px22) !important;
+  border: var(--line-w) solid var(--grey-brand);
+  color: var(--text);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-btn--outline:hover {
+  border-color: var(--coral);
+}
+
+.ui-root .ds-btn--outline:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px3);
+}
+
+.ui-root .ds-btn[aria-disabled='true'],
+.ui-root .ds-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.ui-root .ds-btn--primary[aria-disabled='true']:hover,
+.ui-root .ds-btn--primary:disabled:hover {
+  background: var(--coral);
+}
+
+/* Text link, for minor actions. */
+.ui-root .ds-link {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-secondary) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  text-decoration-color: var(--grey-brand-2);
+  transition: color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-link:hover {
+  color: var(--coral);
+}
+
+.ui-root .ds-link:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-1);
+}
+
+/* Icon button: a 44px round target around a crosshair. */
+.ui-root .ds-icon-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: none;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-icon-btn:hover .ds-cross--close {
+  background-color: var(--coral);
+}
+
+.ui-root .ds-icon-btn:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+}
+
+/* "How the system fits together", with its small circled i. */
+.ui-root .ds-info-link {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: inherit !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+  transition: color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-info-link:hover {
+  color: var(--coral);
+}
+
+.ui-root .ds-info-link:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-1);
+}
+
+.ui-root .ds-info {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--info-size);
+  height: var(--info-size);
+  border: var(--line-w) solid currentColor;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-glyph);
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* ---------- Page header ---------- */
+
+.ui-root .ds-page-header {
+  letter-spacing: normal;
+}
+
+.ui-root .ds-page-header .ds-page-title {
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-page-title) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-page-title);
+  word-spacing: normal;
+  text-transform: uppercase;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-page-job {
+  margin: var(--space-px10) 0 0;
+  max-width: 56ch;
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-px2) var(--space-px20);
+  margin-top: var(--space-px10);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-rule {
+  width: var(--space-5);
+  height: var(--space-px2);
+  margin-top: var(--space-px18);
+  background: var(--coral);
+}
+
+/* ---------- Section ---------- */
+
+.ui-root .ds-section {
+  border-top: var(--line-w) solid var(--line);
+  padding-top: var(--space-5);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ui-root .ds-section .ds-section-title {
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-section-title) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-section-title);
+  word-spacing: normal;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .ds-section-line {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-section-body {
+  margin-top: var(--space-4);
+}
+
+/* The small "i" a section's line collapses to after the first visit. */
+.ui-root .ds-help-toggle {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  font-size: inherit !important;
+  border-radius: var(--radius-pill);
+}
+
+.ui-root .ds-help-toggle:hover,
+.ui-root .ds-help-toggle[aria-expanded='true'] {
+  color: var(--coral);
+}
+
+.ui-root .ds-help-toggle:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+}
+
+/* ---------- Stat ---------- */
+
+.ui-root .ds-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px28) var(--space-6);
+}
+
+.ui-root .ds-stat {
+  min-width: 0;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-stat-label {
+  display: block;
+  margin-bottom: var(--space-px6);
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-stat-value {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-number);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ui-root .ds-stat-value--live {
+  color: var(--coral);
+}
+
+.ui-root .ds-stat-note {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* The thin bar, under a stat or a logging row. */
+.ui-root .ds-bar {
+  display: block;
+  width: var(--bar-w);
+  max-width: 100%;
+  height: var(--bar-h);
+  margin-top: var(--space-px12);
+  border-radius: var(--radius-bar);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.ui-root .ds-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-bar);
+  background: var(--coral);
+  transition: width var(--dur) var(--ease);
+}
+
+/* ---------- List rows ---------- */
+
+.ui-root .ds-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-list > li {
+  margin: 0;
+  padding: 0;
+}
+
+.ui-root .ds-row {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  min-height: var(--tap-min) !important;
+  padding: var(--space-3) 0 !important;
+  border-bottom: var(--line-w) solid var(--line);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-row:hover .ds-row-title {
+  color: var(--coral);
+}
+
+.ui-root .ds-row:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-row-main {
+  min-width: 0;
+}
+
+.ui-root .ds-row-title {
+  display: block;
+  font-size: var(--fs-text);
+  color: var(--text);
+  overflow-wrap: break-word;
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .ds-row-type {
+  display: block;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ds-row-date {
+  font-size: var(--fs-note);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* ---------- Logging rows ---------- */
+
+.ui-root .ds-log {
+  /* Name and entry side by side; with large text the entry drops below
+     the name rather than squeezing it. */
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px6) var(--space-px20);
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-log-main {
+  flex: 1 1 10em;
+  min-width: 0;
+}
+
+.ui-root .ds-log-name {
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-log-detail {
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-log .ds-bar {
+  flex: 1 1 100%;
+  width: 100%;
+  margin-top: var(--space-1);
+}
+
+/* Number entry: the field, with the unit shown inside it. */
+.ui-root .ds-num {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px6);
+  min-width: var(--num-input-w);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-px12);
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  cursor: text;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-num:focus-within {
+  border-color: var(--coral);
+}
+
+.ui-root .ds-num input.ds-num-input {
+  all: unset;
+  box-sizing: border-box;
+  width: 7ch;
+  min-width: 0;
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-root .ds-num-unit {
+  font-size: var(--fs-meta);
+  color: var(--label);
+  white-space: nowrap;
+}
+
+/* Stepper: minus, the count, the crosshair plus. */
+.ui-root .ds-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.ui-root .ds-stepper-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--fs-minus) !important;
+  line-height: 1;
+  color: var(--text-2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-stepper-btn:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+}
+
+.ui-root .ds-stepper-btn[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.ui-root .ds-stepper-value {
+  min-width: var(--space-px28);
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-text);
+  line-height: 1;
+  text-align: center;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tiles and hub cards ---------- */
+
+.ui-root .ds-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--tile-min), 100%), 1fr));
+  gap: var(--space-px14);
+}
+
+.ui-root .ds-tile {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-px12);
+  padding: var(--space-px20) !important;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-tile);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  text-align: left;
+  transition: border-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-tile:hover {
+  border-color: var(--grey-brand);
+}
+
+.ui-root .ds-tile:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-tile-name {
+  font-size: var(--fs-text);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-tile);
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-tile-desc {
+  font-size: var(--fs-note);
+  color: var(--text-2);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-tile-foot {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-px12);
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ds-tile-score {
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-number-sm);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ui-root .ds-serves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ds-onum {
+  box-sizing: border-box;
+  width: var(--onum-size);
+  height: var(--onum-size);
+  border: var(--line-w) solid var(--grey-brand-2);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-glyph);
+  line-height: 1;
+  color: var(--text-2);
+}
+
+/* ---------- Controls ---------- */
+
+.ui-root .ds-seg {
+  display: inline-flex;
+  max-width: 100%;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: var(--space-px3);
+  gap: var(--space-px2);
+}
+
+.ui-root .ds-seg-btn {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--seg-h) !important;
+  padding: 0 var(--space-3) !important;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--fs-note) !important;
+  line-height: var(--lh-title);
+  letter-spacing: normal;
+  text-align: center;
+  color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The 38px pill reaches the full 44px tap target through the control's padding. */
+.ui-root .ds-seg-btn::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--space-px3)) 0;
+}
+
+.ui-root .ds-seg-btn[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--on-coral);
+}
+
+.ui-root .ds-seg-btn:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px12);
+  align-items: center;
+}
+
+.ui-root .ds-chip {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--chip-h) !important;
+  padding: 0 var(--space-3) !important;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--fs-note) !important;
+  line-height: var(--lh-title);
+  letter-spacing: normal;
+  color: var(--text-2);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 40px chip, 44px tap target. */
+.ui-root .ds-chip::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--space-px2)) 0;
+}
+
+.ui-root .ds-chip[aria-pressed='true'],
+.ui-root .ds-chip[aria-checked='true'] {
+  border-color: var(--coral);
+  color: var(--text);
+}
+
+.ui-root .ds-chip:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+}
+
+/* Field label, as the mock-up's "What needs doing?" */
+.ui-root .ds-field-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+}
+
+/* The big text box in panels (the shared AutoGrowTextarea, skinned). */
+.ui-root .ds-textbox {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: var(--textbox-min-h);
+  padding: var(--space-px14) var(--space-3) !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text);
+  outline: none;
+  resize: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-textbox::placeholder {
+  color: var(--label);
+}
+
+.ui-root .ds-textbox:focus {
+  border-color: var(--coral);
+}
+
+/* Dropdown: the native picker (the phone's own wheel on iPhone), with
+   the crosshair as its "choose" mark (CLAUDE.md rule 6). The chosen
+   option is shown as ordinary text that wraps, so long wording is never
+   cut off (Safari can't wrap or shorten text inside a select); the real
+   select sits invisibly on top and takes every tap, click and key. */
+.ui-root .ds-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-px10) calc(var(--tap-min) + var(--space-1)) var(--space-px10) var(--space-3);
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-select-value {
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-tile);
+  letter-spacing: normal;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-select select {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0 !important;
+  padding: 0 !important;
+  opacity: 0;
+  font-size: var(--fs-text);
+}
+
+.ui-root .ds-select select option {
+  background: var(--card);
+  color: var(--text);
+}
+
+.ui-root .ds-select:focus-within {
+  border-color: var(--coral);
+}
+
+.ui-root .ds-select:has(select:focus-visible) {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-select .ds-cross {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  margin-top: calc(var(--cross-sm) / -2);
+  pointer-events: none;
+}
+
+.ui-root .ds-choice {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  letter-spacing: normal;
+}
+
+/* Checkbox: 22px square in a 44px target. */
+.ui-root .ds-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-px12);
+  min-width: 0;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-check-box {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: none;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-check-box > span {
+  box-sizing: border-box;
+  width: var(--checkbox-box);
+  height: var(--checkbox-box);
+  border: var(--line-w-strong) solid var(--grey-brand);
+  border-radius: var(--radius-box);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-check-box[aria-checked='true'] > span {
+  background: var(--coral);
+  border-color: var(--coral);
+}
+
+.ui-root .ds-check-box svg {
+  width: var(--tick-size);
+  height: var(--tick-size);
+  fill: none;
+  stroke: var(--on-coral);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root .ds-check-box[aria-checked='true'] svg {
+  opacity: 1;
+}
+
+.ui-root .ds-check-box:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  border-radius: var(--radius-box);
+}
+
+.ui-root .ds-check-label {
+  flex: 1 1 8em;
+  max-width: max-content;
+  min-width: 0;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-impact {
+  display: inline-block;
+  padding: var(--space-px2) var(--space-px10);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-min);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* ---------- Filter ---------- */
+
+.ui-root .ds-filter {
+  letter-spacing: normal;
+}
+
+.ui-root .ds-filter-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--field-min), 100%), 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.ui-root .ds-filter-panel[hidden] {
+  display: none;
+}
+
+.ui-root .ds-filter-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-px12);
+  margin-top: var(--space-2);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  overflow-wrap: break-word;
+}
+
+/* ---------- Show less, reveal more ---------- */
+
+.ui-root .ds-collapse {
+  border-bottom: var(--line-w) solid var(--line);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-collapse-head {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--tap-min) !important;
+  padding: var(--space-px12) 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  text-align: left;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-collapse-head:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-collapse-head > span:first-child {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* A fixed box, so the crosshair can turn without nudging the row wider. */
+.ui-root .ds-collapse-mark {
+  flex: none;
+  width: var(--cross-md);
+  height: var(--cross-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Grows by animating its size (rows 0fr to 1fr), never by jumping. */
+.ui-root .ds-collapse-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur) var(--ease);
+}
+
+.ui-root .ds-collapse-body > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ui-root .ds-collapse--open .ds-collapse-body {
+  grid-template-rows: 1fr;
+}
+
+.ui-root .ds-collapse-inner {
+  padding-bottom: var(--space-3);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* ---------- Saving, saved, will sync ---------- */
+
+.ui-root .ds-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-status--saved {
+  color: var(--mint);
+}
+
+.ui-root .ds-status--saving,
+.ui-root .ds-status--sync {
+  color: var(--text-2);
+}
+
+.ui-root .ds-dot {
+  flex: none;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  background: var(--mint);
+}
+
+.ui-root .ds-dot--hollow {
+  box-sizing: border-box;
+  background: transparent;
+  border: var(--line-w) solid var(--text-2);
+}
+
+/* ---------- Loading ---------- */
+
+.ui-root .ds-loading {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-px14);
+  padding: var(--space-3);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  text-align: center;
+  color: var(--label);
+}
+
+.ui-root .ds-loading-inner {
+  display: contents;
+}
+
+/* ---------- Toast ---------- */
+
+.ui-root .ds-toast-region {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + var(--ds-toast-offset, 0px));
+  z-index: var(--z-toast);
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  pointer-events: none;
+}
+
+.ui-root .ds-toast {
+  pointer-events: auto;
+  box-sizing: border-box;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px10);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-px20);
+  border: var(--line-w) solid var(--line);
+  /* A pill on one line; a rounded box if a long message wraps. */
+  border-radius: calc(var(--tap-min) / 2);
+  background: var(--card);
+  font-family: var(--font-body);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-title);
+  letter-spacing: normal;
+  color: var(--text);
+  opacity: 0;
+  transform: translateY(var(--space-2));
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.ui-root .ds-toast:not(.ds-toast--shown) {
+  pointer-events: none;
+}
+
+.ui-root .ds-toast--shown {
+  opacity: 1;
+  transform: none;
+}
+
+.ui-root .ds-toast svg {
+  flex: none;
+  width: var(--space-3);
+  height: var(--space-3);
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 1.6;
+}
+
+.ui-root .ds-toast-text {
+  padding: var(--space-px10) 0;
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-toast-undo {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min) !important;
+  padding: 0 var(--space-1) !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-secondary) !important;
+  letter-spacing: normal;
+  color: var(--coral);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-toast-undo:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  border-radius: var(--space-1);
+}
+
+/* ---------- Slide-across panel and centred pop-up ---------- */
+
+.ui-root .ds-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  background: var(--scrim);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root.ds-modal--shown .ds-scrim {
+  opacity: 1;
+}
+
+.ui-root .ds-dialog {
+  position: fixed;
+  z-index: var(--z-dialog);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  outline: none;
+  overscroll-behavior: contain;
+}
+
+.ui-root .ds-dialog-head {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-px12) var(--space-px12) var(--space-px12) var(--space-4);
+}
+
+.ui-root .ds-dialog .ds-dialog-title {
+  margin: 0 !important;
+  padding-top: var(--space-px12);
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-section-title) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-px6) var(--space-4) var(--space-4);
+}
+
+.ui-root .ds-dialog-foot {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px12);
+  align-items: center;
+  padding: var(--space-3) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  border-top: var(--line-w) solid var(--line);
+}
+
+/* Slide-across panel: from the right. */
+.ui-root .ds-panel {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(var(--panel-w), 100%);
+  border-left: var(--line-w) solid var(--line);
+  transform: translateX(100%);
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+.ui-root.ds-modal--shown .ds-panel {
+  transform: none;
+}
+
+/* Centred pop-up: fades and rises a little. */
+.ui-root .ds-popup {
+  left: 50%;
+  top: 50%;
+  width: min(var(--popup-w), calc(100% - 2 * var(--space-3)));
+  max-height: calc(100dvh - 2 * var(--space-6));
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+  opacity: 0;
+  transform: translate(-50%, calc(-50% + var(--space-2)));
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.ui-root.ds-modal--shown .ds-popup {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
+/* Phone: both are full screen; swipe down closes them. */
+@media (max-width: 600px) {
+  .ui-root .ds-panel,
+  .ui-root .ds-popup {
+    inset: 0;
+    width: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .ui-root .ds-popup {
+    transform: translateY(var(--space-2));
+  }
+
+  .ui-root.ds-modal--shown .ds-popup {
+    transform: none;
+  }
+
+  .ui-root .ds-dialog-head {
+    padding-left: var(--space-3);
+  }
+
+  .ui-root .ds-dialog-body {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .ui-root .ds-dialog-foot {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+}
+
+/* While a finger drags the dialog down, it follows with no easing. */
+.ui-root .ds-dialog.ds-dialog--dragging {
+  transition: none;
+}
+
+/* ---------- Empty state ---------- */
+
+.ui-root .ds-empty {
+  border: var(--line-w) dashed var(--grey-brand);
+  border-radius: var(--radius-tile);
+  padding: var(--space-5) var(--space-px28);
+  text-align: left;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-empty .ds-cross {
+  display: block;
+  margin-bottom: var(--space-3);
+}
+
+.ui-root .ds-empty .ds-empty-title {
+  margin: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-empty-title) !important;
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-title);
+  letter-spacing: normal;
+  color: var(--text);
+}
+
+.ui-root .ds-empty-line {
+  margin: var(--space-2) 0 var(--space-px20);
+  max-width: 44ch;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px12);
+  align-items: center;
+}
+
+/* ---------- Floating breathing orb (desktop only) ---------- */
+
+.ui-root .ds-orb {
+  position: relative;
+  display: inline-block;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-orb--fixed {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: var(--z-orb);
+}
+
+/* Never on phone (Tim, 21 Oct): it only exists where there is a mouse. */
+@media not ((hover: hover) and (pointer: fine)) {
+  .ui-root .ds-orb {
+    display: none;
+  }
+}
+
+.ui-root .ds-orb-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: var(--orb-btn);
+  height: var(--orb-btn);
+  min-height: var(--orb-btn) !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--line-w) solid var(--line);
+  border-radius: 50%;
+  background: var(--bg);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-orb-btn:hover {
+  border-color: var(--grey-brand);
+}
+
+.ui-root .ds-orb-btn:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+  outline-offset: var(--space-px3);
+}
+
+.ui-root .ds-orb-art {
+  position: relative;
+  display: block;
+  width: var(--orb-size);
+  height: var(--orb-size);
+}
+
+.ui-root .ds-orb-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ui-root .ds-orb-art .ds-cross {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: calc(var(--cross-sm) / -2) 0 0 calc(var(--cross-sm) / -2);
+  background-color: var(--text);
+  transition: none;
+}
+
+.ui-root .ds-orb-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+  min-width: var(--tile-min);
+  padding: var(--space-2);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-root .ds-orb-item {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min) !important;
+  padding: 0 var(--space-px12) !important;
+  border-radius: var(--radius-input);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .ds-orb-item:hover {
+  color: var(--coral);
+}
+
+.ui-root .ds-orb-item:focus-visible {
+  outline: var(--focus-w) solid var(--coral);
+}
