@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Database backups and secrets (never commit)
+*.dump
+*.dump.partial
+.env
+.env.*
+*.env
