@@ -4,9 +4,9 @@ import InfoIcon from './InfoIcon';
 import './design.css';
 
 // Page header (design reference v3: Page header). The title in Nekst
-// capitals, a quiet meta line (version, dates, the system link), then the
-// short coral rule, once per page, here only. No overline above the title
-// and no intro line under it: the title is enough, and any explanation
+// capitals and a quiet meta line (version, dates, the system link). No
+// coral line under the title (Tim, 23 Oct), no overline above it and no
+// intro line under it: the title is enough, and any explanation
 // sits behind the small "i" beside it (Tim, 23 Oct).
 //
 // meta:           short items for the meta line, e.g. ['Version 2.1', '8 weeks · 28 Sep to 22 Nov'].
@@ -54,7 +54,6 @@ export default function PageHeader({ title, meta = [], info, onSystemLink, as: H
           {onSystemLink && <SystemLink onClick={onSystemLink} />}
         </div>
       )}
-      <div className="ds-rule" aria-hidden="true" />
     </header>
   );
 }

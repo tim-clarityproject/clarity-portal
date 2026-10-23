@@ -114,7 +114,7 @@
   font-size: var(--fs-tab);
   letter-spacing: var(--ls-overline);
   text-transform: uppercase;
-  color: var(--coral-text);
+  color: var(--label);
   margin-bottom: var(--space-3);
 }
 
@@ -380,7 +380,7 @@
    that come back for it mark it, and quieten the ones already rated. */
 .ui-root .al-factor--new .al-factor-text > b,
 .ui-root .al-factor--new .al-new {
-  color: var(--coral-text);
+  color: var(--coral-soft-text);
 }
 
 .ui-root .al-factor--old .al-factor-text {
@@ -738,7 +738,7 @@
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-label);
-  color: var(--coral-text);
+  color: var(--label);
   padding-top: 2px;
 }
 

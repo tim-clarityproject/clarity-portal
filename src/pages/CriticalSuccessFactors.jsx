@@ -110,7 +110,7 @@ export default function CriticalSuccessFactors() {
                 >
                   <span
                     style={{
-                      color: 'var(--coral-text)',
+                      color: 'var(--text-2)',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',
@@ -152,7 +152,7 @@ export default function CriticalSuccessFactors() {
                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '80px' }}>
                   <span
                     style={{
-                      color: 'var(--coral-text)',
+                      color: 'var(--text-2)',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',

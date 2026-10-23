@@ -114,7 +114,7 @@ export default function ProjectProgress() {
                 color: 'var(--text)',
                 fontSize: '14px',
                 flexShrink: 0,
-                border: '2px solid var(--coral-text)',
+                border: '2px solid var(--field-line)',
                 borderRadius: '8px',
                 padding: '8px 12px',
                 minWidth: '50px',

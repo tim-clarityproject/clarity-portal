@@ -243,7 +243,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
                   return (
                     <tr key={projectIdx}>
                       <td style={{ paddingTop: '8px', paddingBottom: '8px', color: 'var(--text-2)' }}>{String.fromCharCode(65 + projectIdx)}. {project}</td>
-                      <td style={{ textAlign: 'center', paddingTop: '8px', paddingBottom: '8px', color: 'var(--coral-text)' }}>{score}/{formData.factors.length * 3}</td>
+                      <td style={{ textAlign: 'center', paddingTop: '8px', paddingBottom: '8px', color: 'var(--text)' }}>{score}/{formData.factors.length * 3}</td>
                     </tr>
                   );
                 })}

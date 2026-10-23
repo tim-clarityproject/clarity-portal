@@ -352,9 +352,9 @@ const HLIST_CSS = `
   font-family: var(--font-display);
   font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: var(--fs-button);
-  color: var(--coral-text);
+  letter-spacing: var(--ls-section-title);
+  font-size: var(--fs-section-title);
+  color: var(--text);
   margin: var(--space-5) 0 6px;
 }
 
@@ -461,14 +461,14 @@ const HLIST_CSS = `
 .hlist-draft-tag {
   display: inline-block;
   padding: 1px 8px;
-  border: 1px solid var(--coral);
+  border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   font-family: var(--font-display);
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 10px;
-  color: var(--coral-text);
+  color: var(--text-2);
   line-height: 1.4;
 }
 
@@ -663,7 +663,7 @@ const HLIST_CSS = `
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 10px;
-  color: var(--coral-text);
+  color: var(--text-2);
 }
 
 .ui-root .hlist-icon-btn {

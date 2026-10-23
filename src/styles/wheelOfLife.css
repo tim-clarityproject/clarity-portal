@@ -214,7 +214,7 @@
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-min);
-  color: var(--coral);
+  color: var(--text-2);
 }
 
 .ui-root .wol-areas {
@@ -242,7 +242,7 @@
   font-size: var(--fs-tab);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--coral-soft);
+  color: var(--text-2);
 }
 
 .ui-root .wol-qrow {
@@ -385,8 +385,8 @@
 }
 
 .ui-root .wol-tg--c {
-  border-color: var(--coral);
-  color: var(--coral);
+  border-color: var(--line);
+  color: var(--text-2);
 }
 
 /* icon button (bin) */
@@ -1026,7 +1026,7 @@
 }
 
 .ui-root .wol-leg i.wol-tgt {
-  border-top: 1.5px dashed var(--coral-soft);
+  border-top: 1.5px dashed var(--text-2);
 }
 
 /* summary numbers */
@@ -1119,7 +1119,7 @@
 .ui-root .wol-focus {
   margin-top: 14px;
   padding: 18px 20px;
-  border: 1px solid var(--coral);
+  border: 1px solid var(--line);
   border-radius: var(--radius-card);
 }
 
@@ -1131,7 +1131,7 @@
   font-size: var(--fs-tab);
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: var(--coral);
+  color: var(--text);
 }
 
 .ui-root .wol-focus p {
@@ -1223,14 +1223,14 @@
 }
 
 .ui-root .wol-dl.wol-up { color: var(--text); }
-.ui-root .wol-dl.wol-dn { color: var(--coral-soft); }
+.ui-root .wol-dl.wol-dn { color: var(--below); }
 .ui-root .wol-dl.wol-eq { color: var(--placeholder); }
 
 .ui-root .wol-dl.wol-nw {
   font-size: var(--fs-tab);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--coral);
+  color: var(--text);
 }
 
 .ui-root .wol-tgc {
@@ -1252,7 +1252,7 @@
 .ui-root .wol-tgm em {
   font-style: normal;
   font-size: var(--fs-min);
-  color: var(--coral-soft);
+  color: var(--text-2);
 }
 
 .ui-root .wol-tgc em.wol-ok,
@@ -1402,14 +1402,14 @@
 .ui-root .wol-db b.wol-up {
   left: 50%;
   border-radius: 0 3px 3px 0;
-  background: var(--coral);
+  background: var(--text);
   transform-origin: left center;
 }
 
 .ui-root .wol-db b.wol-dn {
   right: 50%;
   border-radius: 3px 0 0 3px;
-  background: var(--coral-soft);
+  background: var(--below);
   transform-origin: right center;
 }
 
@@ -1450,14 +1450,14 @@
   color: var(--text);
 }
 
-.ui-root .wol-dv.wol-dn { color: var(--coral-soft); }
+.ui-root .wol-dv.wol-dn { color: var(--below); }
 .ui-root .wol-dv.wol-eq { color: var(--placeholder); }
 
 .ui-root .wol-dv.wol-nw {
   font-size: var(--fs-tab);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--coral);
+  color: var(--text);
 }
 
 .ui-root .wol-dv small {
@@ -1523,14 +1523,14 @@
   color: var(--text);
 }
 
-.ui-root .wol-dpt b.wol-dn { color: var(--coral-soft); }
+.ui-root .wol-dpt b.wol-dn { color: var(--below); }
 .ui-root .wol-dpt b.wol-eq { color: var(--placeholder); }
 
 .ui-root .wol-dpt b.wol-nw {
   font-size: var(--fs-tab);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--coral);
+  color: var(--text);
 }
 
 .ui-root .wol-dpb {
@@ -1559,8 +1559,8 @@
   transform-origin: left center;
 }
 
-.ui-root .wol-trk i.wol-up { background: var(--coral); }
-.ui-root .wol-trk i.wol-dn { background: var(--coral-soft); }
+.ui-root .wol-trk i.wol-up { background: var(--text); }
+.ui-root .wol-trk i.wol-dn { background: var(--below); }
 
 .ui-root .wol-dpb small {
   min-width: 44px;

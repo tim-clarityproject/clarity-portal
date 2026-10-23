@@ -361,7 +361,7 @@ export default function Welcome() {
           font-size: var(--fs-button);
           text-transform: uppercase;
           letter-spacing: 0.2em;
-          color: var(--coral-text);
+          color: var(--label);
         }
 
         .home-tile-title {
@@ -426,7 +426,7 @@ export default function Welcome() {
           align-items: center;
           gap: var(--space-3);
           margin-top: var(--space-5);
-          border: 1px solid var(--coral-text);
+          border: 1px solid var(--coral-soft-text);
           border-radius: var(--radius-card);
           padding: 20px 22px;
           text-decoration: none;
@@ -444,7 +444,7 @@ export default function Welcome() {
           font-size: 10px;
           text-transform: uppercase;
           letter-spacing: 0.16em;
-          color: var(--coral-text);
+          color: var(--coral-soft-text);
         }
 
         .home-weekly-title {
@@ -494,10 +494,10 @@ export default function Welcome() {
         .home-section-label-text {
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: var(--fs-section);
+          font-size: var(--fs-section-title);
           text-transform: uppercase;
-          letter-spacing: var(--ls-section);
-          color: var(--text-2);
+          letter-spacing: var(--ls-section-title);
+          color: var(--text);
         }
 
         .home-root .home-section-link {

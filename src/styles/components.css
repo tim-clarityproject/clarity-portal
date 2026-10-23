@@ -120,10 +120,10 @@ html:has(.ui-root) {
 .ui-section-heading {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: var(--fs-section);
+  font-size: var(--fs-section-title);
   text-transform: uppercase;
-  letter-spacing: var(--ls-section);
-  color: var(--coral-text);
+  letter-spacing: var(--ls-section-title);
+  color: var(--text);
   margin-top: var(--space-5);
 }
 
@@ -152,8 +152,8 @@ html:has(.ui-root) {
 }
 
 .ui-root .ui-switch--on {
-  background: var(--coral);
-  border-color: var(--coral);
+  background: var(--mint-text);
+  border-color: var(--mint-text);
 }
 
 .ui-root .ui-switch::after {
@@ -169,7 +169,7 @@ html:has(.ui-root) {
 }
 
 .ui-root .ui-switch--on::after {
-  background: var(--on-coral);
+  background: var(--bg);
   transform: translateX(18px);
 }
 
@@ -590,7 +590,7 @@ html:has(.ui-root) {
 }
 
 .auth-strength-seg.filled {
-  background: var(--coral);
+  background: var(--text);
 }
 
 .auth-strength-hint {
@@ -859,7 +859,7 @@ html:has(.ui-root) {
   max-width: 100%;
   margin: 0 auto 24px;
   box-sizing: border-box;
-  border: 1px solid var(--coral);
+  border: 1px solid var(--line);
   border-radius: 28px;
   padding: 16px 22px 20px;
   text-align: center;
@@ -871,7 +871,7 @@ html:has(.ui-root) {
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--coral);
+  color: var(--label);
   /* A block, so its padding, underline and margin really take up space:
      on /auth/mission it is a <label> (inline by default), where the
      vertical padding and margin do nothing and the typed text sat
@@ -1238,7 +1238,7 @@ html:has(.ui-root) {
   font-size: var(--fs-overline);
   text-transform: uppercase;
   letter-spacing: var(--ls-overline);
-  color: var(--coral-text);
+  color: var(--label);
   display: block;
   margin-bottom: var(--space-2);
 }
@@ -1759,7 +1759,7 @@ html:has(.ui-root) {
   margin: var(--space-3) 0 0;
   font-family: var(--font-body);
   font-size: var(--fs-small);
-  color: var(--coral-text);
+  color: var(--coral-soft-text);
 }
 
 /* ---- Phone fixed Finish/Save-as-draft bar (shared, prompts 6-11) ---- */
@@ -2087,7 +2087,7 @@ html:has(.ui-root) {
   text-transform: uppercase;
   letter-spacing: 0.2em;
   font-size: 10px;
-  color: var(--coral-text);
+  color: var(--label);
   white-space: nowrap;
 }
 
@@ -2155,7 +2155,7 @@ html:has(.ui-root) {
   font-weight: 400;
   font-size: 10px;
   letter-spacing: 0.16em;
-  color: var(--coral-text);
+  color: var(--text-2);
 }
 
 .inv-card-row p {
@@ -2224,7 +2224,7 @@ html:has(.ui-root) {
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 10px;
-  color: var(--coral-text);
+  color: var(--label);
   margin-bottom: var(--space-1);
 }
 
@@ -2520,9 +2520,9 @@ span.tc-editable:focus-visible {
   font-family: var(--font-display);
   font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 10px;
-  color: var(--coral-text);
+  letter-spacing: var(--ls-section-title);
+  font-size: var(--fs-section-title);
+  color: var(--text);
   margin: var(--space-6) 0 6px;
 }
 
@@ -2674,9 +2674,9 @@ span.tc-editable:focus-visible {
   font-family: var(--font-display);
   font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 10px;
-  color: var(--coral-text);
+  letter-spacing: var(--ls-section-title);
+  font-size: var(--fs-section-title);
+  color: var(--text);
   margin: 0 0 14px;
 }
 
@@ -2759,7 +2759,7 @@ span.tc-editable:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.2em;
   font-size: 10px;
-  color: var(--coral-text);
+  color: var(--label);
 }
 
 .rp-panel-body {
@@ -2825,7 +2825,7 @@ span.tc-editable:focus-visible {
 
 .pop-view-strategy {
   border: 1px solid var(--line);
-  border-left: 3px solid var(--coral);
+  border-left: 3px solid var(--quiet-line);
   border-radius: var(--radius-card);
   padding: var(--space-4);
   margin-bottom: var(--space-3);
@@ -3108,7 +3108,7 @@ span.tc-editable:focus-visible {
   font-weight: 400;
   font-size: 10px;
   letter-spacing: 0.16em;
-  color: var(--coral-text);
+  color: var(--text-2);
   flex-shrink: 0;
 }
 
@@ -3188,7 +3188,7 @@ span.tc-editable:focus-visible {
   gap: var(--space-3);
   border-bottom: 1px solid var(--line);
   font-size: 17px;
-  color: var(--coral-soft);
+  color: var(--text);
   padding: var(--space-2) 0;
 }
 
@@ -3196,7 +3196,7 @@ span.tc-editable:focus-visible {
   flex: none;
   width: 18px;
   height: 1px;
-  background: var(--coral);
+  background: var(--quiet-line);
 }
 
 .jrn-qtext {
@@ -3319,7 +3319,7 @@ span.tc-editable:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 11px;
-  color: var(--coral-text);
+  color: var(--text);
   white-space: nowrap;
 }
 
@@ -3458,7 +3458,7 @@ span.tc-editable:focus-visible {
 }
 
 .tsa-total b {
-  color: var(--coral-text);
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -3476,7 +3476,7 @@ span.tc-editable:focus-visible {
 
 .tsa-saves {
   font-size: var(--fs-small);
-  color: var(--coral-text);
+  color: var(--text-2);
   white-space: nowrap;
 }
 
@@ -3668,7 +3668,7 @@ span.tc-editable:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 10px;
-  color: var(--coral-text);
+  color: var(--label);
   margin-bottom: var(--space-2);
 }
 
@@ -3676,7 +3676,7 @@ span.tc-editable:focus-visible {
   display: block;
   width: 20px;
   height: 2px;
-  background: var(--coral);
+  background: var(--line);
   margin: 0 auto var(--space-2);
 }
 

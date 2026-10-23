@@ -278,7 +278,9 @@ export default function AuthShell({
         .auth-rule {
           width: 56px;
           height: 1px;
-          background: var(--coral-text);
+          /* No line under the headline (Tim, 23 Oct); the empty space keeps
+             everything below where it was. */
+          background: transparent;
           margin-top: 16px;
           transform: scaleX(0);
           animation: auth-rule-draw 900ms var(--ease) 350ms forwards;

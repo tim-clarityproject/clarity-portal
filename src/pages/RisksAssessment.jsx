@@ -94,7 +94,7 @@ export default function RisksAssessment() {
               <div key={index} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px', minHeight: '58px' }}>
                 <span
                   style={{
-                    color: 'var(--coral-text)',
+                    color: 'var(--text-2)',
                     fontSize: '20px',
                     minWidth: '24px',
                   }}

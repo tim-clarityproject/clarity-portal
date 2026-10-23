@@ -297,6 +297,9 @@
 
 .ui-root .ds-page-header {
   letter-spacing: normal;
+  /* The space the coral rule used to take, so nothing below moves
+     now that it is gone (Tim, 23 Oct: no line under titles). */
+  padding-bottom: calc(var(--space-px18) + var(--space-px2));
 }
 
 .ui-root .ds-page-header .ds-page-title {
@@ -342,13 +345,6 @@
   font-size: var(--fs-meta);
   line-height: var(--lh-text);
   color: var(--label);
-}
-
-.ui-root .ds-rule {
-  width: var(--space-5);
-  height: var(--space-px2);
-  margin-top: var(--space-px18);
-  background: var(--coral-text);
 }
 
 /* A question heading under the page header (a step in a tool): DM Sans,

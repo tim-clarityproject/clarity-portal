@@ -367,7 +367,7 @@ export default function ProjectScatter() {
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
               <div
-                style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--quiet-line)', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={() => setHoveredQuadrant('topLeft')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
@@ -391,7 +391,7 @@ export default function ProjectScatter() {
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
               <div
-                style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--quiet-line)', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={() => setHoveredQuadrant('bottomRight')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
@@ -414,7 +414,7 @@ export default function ProjectScatter() {
                       padding: '16px',
                       backgroundColor: isSelected ? 'var(--raised)' : 'var(--raised)',
                       borderRadius: '8px',
-                      borderLeft: '4px solid var(--coral-text)',
+                      borderLeft: '4px solid var(--quiet-line)',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       transform: isSelected ? 'scale(1.02)' : 'scale(1)',
@@ -426,7 +426,7 @@ export default function ProjectScatter() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '13px' }}>
                       <div>
                         <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: '12px' }}>Project Progress</div>
-                        <div style={{ color: 'var(--coral-text)', fontSize: '18px' }}>
+                        <div style={{ color: 'var(--text)', fontSize: '18px' }}>
                           {project.progress}/5
                         </div>
                       </div>

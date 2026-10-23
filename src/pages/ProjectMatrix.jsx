@@ -179,7 +179,7 @@ export default function ProjectMatrix() {
                       </td>
                     );
                   })}
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', textAlign: 'center', color: 'var(--coral-text)' }}>
+                  <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', textAlign: 'center', color: 'var(--text)' }}>
                     {factors.reduce((sum, _, factorIndex) => sum + (matrix[`${projectIndex}-${factorIndex}`] || 0), 0)}
                   </td>
                 </tr>

@@ -70,7 +70,7 @@ export default function EmailVerificationBanner() {
           align-items: flex-start;
           gap: 16px;
           background: var(--card);
-          border: 1px solid var(--coral-text);
+          border: 1px solid var(--coral-soft-text);
           border-radius: var(--radius-card);
           padding: 20px;
           margin: 0 20px 24px;
@@ -94,7 +94,7 @@ export default function EmailVerificationBanner() {
           font-size: var(--fs-button);
           text-transform: uppercase;
           letter-spacing: 0.16em;
-          color: var(--coral-text);
+          color: var(--coral-soft-text);
           margin: 0 0 8px;
         }
 

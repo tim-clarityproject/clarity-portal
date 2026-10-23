@@ -90,7 +90,7 @@ export default function Strategies() {
                 >
                   <span
                     style={{
-                      color: 'var(--coral-text)',
+                      color: 'var(--text-2)',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',
@@ -132,7 +132,7 @@ export default function Strategies() {
                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '88px' }}>
                   <span
                     style={{
-                      color: 'var(--coral-text)',
+                      color: 'var(--text-2)',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',

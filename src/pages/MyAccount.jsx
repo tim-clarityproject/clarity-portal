@@ -268,9 +268,9 @@ export default function MyAccount() {
           font-family: var(--font-display);
           font-weight: 400;
           text-transform: uppercase;
-          letter-spacing: 0.22em;
-          font-size: 11px;
-          color: var(--coral-text);
+          letter-spacing: var(--ls-section-title);
+          font-size: var(--fs-section-title);
+          color: var(--text);
           margin: 38px 0 6px;
         }
 

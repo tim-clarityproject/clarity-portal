@@ -30,9 +30,15 @@ const JOURNAL_CSS = `
     flex-direction: column;
     align-items: stretch;
   }
+  /* The pill rule on phones (Tim, 23 Oct): the prompts that don't fit on
+     one line become full-width rows, drawn like the answer lists. */
   .ui-root .jrn-prompts .ds-chip {
     display: flex;
     width: 100%;
+    min-height: var(--row-min-h) !important;
+    padding: var(--space-px12) var(--row-pad-x) !important;
+    border-radius: var(--radius-field);
+    font-size: var(--fs-option) !important;
   }
 }
 .ui-root .jrn-paper-wrap {

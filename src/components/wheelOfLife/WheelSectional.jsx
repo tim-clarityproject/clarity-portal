@@ -99,7 +99,7 @@ export default function WheelSectional({
           key="tg"
           d={arc(a1 + 0.5, a2 - 0.5, rt)}
           fill="none"
-          style={{ stroke: met ? 'var(--mint)' : 'var(--coral-soft)' }}
+          style={{ stroke: met ? 'var(--mint)' : 'var(--text-2)' }}
           strokeWidth={R > 100 ? 2 : 1.6}
           strokeDasharray={R > 100 ? '2.5 2.5' : '2 2'}
         />,

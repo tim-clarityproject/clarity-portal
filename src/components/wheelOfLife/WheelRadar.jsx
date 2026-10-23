@@ -127,16 +127,16 @@ export default function WheelRadar({
     const all = tp.every((p) => p);
     const marks = [];
     if (all) {
-      marks.push(<path key="tgl" className="wol-tgl" d={`${tp.map((p, j) => `${j ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('')}Z`} fill="none" style={{ stroke: 'var(--coral-soft)' }} strokeWidth="1.25" strokeDasharray="2 3" strokeLinejoin="round" />);
+      marks.push(<path key="tgl" className="wol-tgl" d={`${tp.map((p, j) => `${j ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('')}Z`} fill="none" style={{ stroke: 'var(--text-2)' }} strokeWidth="1.25" strokeDasharray="2 3" strokeLinejoin="round" />);
     } else {
       for (let i = 0; i < N; i += 1) {
         const p1 = tp[i];
         const p2 = tp[(i + 1) % N];
-        if (p1 && p2) marks.push(<line key={`t${i}`} x1={p1[0].toFixed(1)} y1={p1[1].toFixed(1)} x2={p2[0].toFixed(1)} y2={p2[1].toFixed(1)} style={{ stroke: 'var(--coral-soft)' }} strokeWidth="1.25" strokeDasharray="2 3" />);
+        if (p1 && p2) marks.push(<line key={`t${i}`} x1={p1[0].toFixed(1)} y1={p1[1].toFixed(1)} x2={p2[0].toFixed(1)} y2={p2[1].toFixed(1)} style={{ stroke: 'var(--text-2)' }} strokeWidth="1.25" strokeDasharray="2 3" />);
       }
     }
     tp.forEach((p, j) => {
-      if (p) marks.push(<circle key={`td${j}`} cx={p[0].toFixed(1)} cy={p[1].toFixed(1)} r="1.6" style={{ fill: 'var(--coral-soft)' }} />);
+      if (p) marks.push(<circle key={`td${j}`} cx={p[0].toFixed(1)} cy={p[1].toFixed(1)} r="1.6" style={{ fill: 'var(--text-2)' }} />);
     });
     targetMarks = marks;
   }
