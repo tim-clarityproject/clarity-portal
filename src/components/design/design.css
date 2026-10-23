@@ -41,7 +41,7 @@
   flex: none;
   width: var(--cross-sm);
   height: var(--cross-sm);
-  background-color: var(--coral);
+  background-color: var(--coral-text);
   -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
   mask: url('/brand/crosshair_white.png') center / contain no-repeat;
   transition: transform var(--dur) var(--ease), background-color var(--dur) var(--ease);
@@ -58,7 +58,7 @@
 .ui-root .ds-cross--lg { width: var(--cross-spin); height: var(--cross-spin); }
 .ui-root .ds-cross--sm { width: var(--cross-sm); height: var(--cross-sm); }
 
-.ui-root .ds-cross--coral { background-color: var(--coral); }
+.ui-root .ds-cross--coral { background-color: var(--coral-text); }
 .ui-root .ds-cross--grey { background-color: var(--text-2); }
 .ui-root .ds-cross--label { background-color: var(--label); }
 .ui-root .ds-cross--white { background-color: var(--text); }
@@ -103,7 +103,7 @@
   justify-content: center;
   gap: var(--space-px10);
   min-height: var(--btn-h) !important;
-  padding: 0 var(--space-px26) !important;
+  padding: 0 var(--space-4) !important;
   border-radius: var(--radius-pill);
   font-family: var(--font-display);
   font-weight: var(--fw-regular);
@@ -131,18 +131,18 @@
 }
 
 .ui-root .ds-btn--outline {
-  padding: 0 var(--space-px22) !important;
-  border: var(--line-w) solid var(--grey-brand);
+  padding: 0 var(--space-px20) !important;
+  border: var(--line-w) solid var(--outline);
   color: var(--text);
   transition: border-color var(--dur) var(--ease);
 }
 
 .ui-root .ds-btn--outline:hover {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 .ui-root .ds-btn--outline:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px3);
 }
 
@@ -174,17 +174,17 @@
   color: var(--text-2);
   text-decoration: underline;
   text-underline-offset: var(--space-1);
-  text-decoration-color: var(--grey-brand-2);
+  text-decoration-color: var(--quiet-line);
   transition: color var(--dur) var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
 
 .ui-root .ds-link:hover {
-  color: var(--coral);
+  color: var(--coral-text);
 }
 
 .ui-root .ds-link:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
   border-radius: var(--space-1);
 }
@@ -207,11 +207,11 @@
 }
 
 .ui-root .ds-icon-btn:hover .ds-cross--close {
-  background-color: var(--coral);
+  background-color: var(--coral-text);
 }
 
 .ui-root .ds-icon-btn:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
 }
 
 /* "How the system fits together", with its small circled i. */
@@ -234,11 +234,11 @@
 }
 
 .ui-root .ds-info-link:hover {
-  color: var(--coral);
+  color: var(--coral-text);
 }
 
 .ui-root .ds-info-link:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
   border-radius: var(--space-1);
 }
@@ -279,14 +279,6 @@
   overflow-wrap: break-word;
 }
 
-.ui-root .ds-page-job {
-  margin: var(--space-px10) 0 0;
-  max-width: 56ch;
-  font-size: var(--fs-text);
-  line-height: var(--lh-text);
-  color: var(--text-2);
-}
-
 .ui-root .ds-page-meta {
   display: flex;
   flex-wrap: wrap;
@@ -302,14 +294,14 @@
   width: var(--space-5);
   height: var(--space-px2);
   margin-top: var(--space-px18);
-  background: var(--coral);
+  background: var(--coral-text);
 }
 
 /* ---------- Section ---------- */
 
 .ui-root .ds-section {
   border-top: var(--line-w) solid var(--line);
-  padding-top: var(--space-5);
+  padding-top: var(--space-4);
   letter-spacing: normal;
 }
 
@@ -361,11 +353,11 @@
 
 .ui-root .ds-help-toggle:hover,
 .ui-root .ds-help-toggle[aria-expanded='true'] {
-  color: var(--coral);
+  color: var(--coral-text);
 }
 
 .ui-root .ds-help-toggle:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
 }
 
 /* ---------- Stat ---------- */
@@ -401,7 +393,7 @@
 }
 
 .ui-root .ds-stat-value--live {
-  color: var(--coral);
+  color: var(--coral-text);
 }
 
 .ui-root .ds-stat-note {
@@ -428,7 +420,7 @@
   display: block;
   height: 100%;
   border-radius: var(--radius-bar);
-  background: var(--coral);
+  background: var(--coral-text);
   transition: width var(--dur) var(--ease);
 }
 
@@ -456,7 +448,7 @@
   gap: var(--space-1) var(--space-3);
   align-items: center;
   min-height: var(--tap-min) !important;
-  padding: var(--space-3) 0 !important;
+  padding: var(--space-px14) 0 !important;
   border-bottom: var(--line-w) solid var(--line);
   font-family: var(--font-body);
   font-size: var(--fs-text) !important;
@@ -467,11 +459,11 @@
 }
 
 .ui-root .ds-row:hover .ds-row-title {
-  color: var(--coral);
+  color: var(--coral-text);
 }
 
 .ui-root .ds-row:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }
 
@@ -555,7 +547,7 @@
 }
 
 .ui-root .ds-num:focus-within {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 .ui-root .ds-num input.ds-num-input {
@@ -583,7 +575,7 @@
 .ui-root .ds-stepper {
   display: inline-flex;
   align-items: center;
-  border: var(--line-w) solid var(--line);
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-pill);
 }
 
@@ -607,7 +599,7 @@
 }
 
 .ui-root .ds-stepper-btn:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
 }
 
 .ui-root .ds-stepper-btn[aria-disabled='true'] {
@@ -641,34 +633,46 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-px12);
-  padding: var(--space-px20) !important;
-  border: var(--line-w) solid var(--line);
+  gap: var(--space-px10);
+  padding: var(--space-px18) !important;
   border-radius: var(--radius-tile);
+  background: var(--raised);
   font-family: var(--font-body);
   font-size: var(--fs-text) !important;
   line-height: var(--lh-text);
   letter-spacing: normal;
   text-align: left;
-  transition: border-color var(--dur) var(--ease);
+  color: var(--text);
+  transition: outline-color var(--dur) var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
 
-.ui-root .ds-tile:hover {
-  border-color: var(--grey-brand);
+.ui-root .ds-tile:hover .ds-tile-name {
+  color: var(--coral-text);
+}
+
+/* Something needs them (v3: soft coral, always with words). */
+.ui-root .ds-tile--flagged {
+  outline: var(--line-w) solid var(--coral-soft-text);
+}
+
+.ui-root .ds-tile-flag {
+  font-size: var(--fs-meta);
+  color: var(--coral-soft-text);
 }
 
 .ui-root .ds-tile:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }
 
 .ui-root .ds-tile-name {
   font-size: var(--fs-text);
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-regular);
   line-height: var(--lh-tile);
   color: var(--text);
   overflow-wrap: break-word;
+  transition: color var(--dur) var(--ease);
 }
 
 .ui-root .ds-tile-desc {
@@ -709,7 +713,7 @@
   box-sizing: border-box;
   width: var(--onum-size);
   height: var(--onum-size);
-  border: var(--line-w) solid var(--grey-brand-2);
+  border: var(--line-w) solid var(--quiet-line);
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
@@ -761,11 +765,11 @@
 
 .ui-root .ds-seg-btn[aria-pressed='true'] {
   background: var(--text);
-  color: var(--on-coral);
+  color: var(--on-text);
 }
 
 .ui-root .ds-seg-btn:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }
 
@@ -805,20 +809,20 @@
 
 .ui-root .ds-chip[aria-pressed='true'],
 .ui-root .ds-chip[aria-checked='true'] {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
   color: var(--text);
 }
 
 .ui-root .ds-chip:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }
 
 /* Field label, as the mock-up's "What needs doing?" */
 .ui-root .ds-field-label {
   display: block;
-  margin-bottom: var(--space-2);
-  font-size: var(--fs-note);
+  margin-bottom: var(--space-px10);
+  font-size: var(--fs-label-row);
   line-height: var(--lh-text);
   letter-spacing: normal;
   color: var(--text-2);
@@ -849,7 +853,7 @@
 }
 
 .ui-root .ds-textbox:focus {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 /* Dropdown: the native picker (the phone's own wheel on iPhone), with
@@ -901,11 +905,11 @@
 }
 
 .ui-root .ds-select:focus-within {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 .ui-root .ds-select:has(select:focus-visible) {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }
 
@@ -954,7 +958,7 @@
   box-sizing: border-box;
   width: var(--checkbox-box);
   height: var(--checkbox-box);
-  border: var(--line-w-strong) solid var(--grey-brand);
+  border: var(--line-w-strong) solid var(--field-line);
   border-radius: var(--radius-box);
   display: flex;
   align-items: center;
@@ -984,7 +988,7 @@
 }
 
 .ui-root .ds-check-box:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   border-radius: var(--radius-box);
 }
 
@@ -1070,7 +1074,7 @@
 }
 
 .ui-root .ds-collapse-head:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }
 
@@ -1124,7 +1128,7 @@
 }
 
 .ui-root .ds-status--saved {
-  color: var(--mint);
+  color: var(--mint-text);
 }
 
 .ui-root .ds-status--saving,
@@ -1137,7 +1141,7 @@
   width: var(--dot);
   height: var(--dot);
   border-radius: 50%;
-  background: var(--mint);
+  background: var(--mint-text);
 }
 
 .ui-root .ds-dot--hollow {
@@ -1193,15 +1197,15 @@
   gap: var(--space-px10);
   min-height: var(--tap-min);
   padding: 0 var(--space-px20);
-  border: var(--line-w) solid var(--line);
+  border: var(--line-w) solid var(--toast-line);
   /* A pill on one line; a rounded box if a long message wraps. */
   border-radius: calc(var(--tap-min) / 2);
-  background: var(--card);
+  background: var(--toast-bg);
   font-family: var(--font-body);
   font-size: var(--fs-secondary);
   line-height: var(--lh-title);
   letter-spacing: normal;
-  color: var(--text);
+  color: var(--toast-text);
   opacity: 0;
   transform: translateY(var(--space-2));
   transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
@@ -1221,7 +1225,7 @@
   width: var(--space-3);
   height: var(--space-3);
   fill: none;
-  stroke: var(--mint);
+  stroke: var(--toast-tick);
   stroke-width: 1.6;
 }
 
@@ -1241,14 +1245,14 @@
   font-family: var(--font-body);
   font-size: var(--fs-secondary) !important;
   letter-spacing: normal;
-  color: var(--coral);
+  color: inherit;
   text-decoration: underline;
   text-underline-offset: var(--space-1);
   -webkit-tap-highlight-color: transparent;
 }
 
 .ui-root .ds-toast-undo:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   border-radius: var(--space-1);
 }
 
@@ -1397,37 +1401,22 @@
   transition: none;
 }
 
-/* ---------- Empty state ---------- */
+/* ---------- Empty state: a question, then the button (v3) ---------- */
 
 .ui-root .ds-empty {
-  border: var(--line-w) dashed var(--grey-brand);
-  border-radius: var(--radius-tile);
-  padding: var(--space-5) var(--space-px28);
-  text-align: left;
+  padding: var(--space-px6) 0;
   letter-spacing: normal;
-}
-
-.ui-root .ds-empty .ds-cross {
-  display: block;
-  margin-bottom: var(--space-3);
 }
 
 .ui-root .ds-empty .ds-empty-title {
-  margin: 0 !important;
+  margin: 0 0 var(--space-px18) !important;
   font-family: var(--font-body);
   font-size: var(--fs-empty-title) !important;
-  font-weight: var(--fw-medium);
-  line-height: var(--lh-title);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-question);
   letter-spacing: normal;
+  text-transform: none;
   color: var(--text);
-}
-
-.ui-root .ds-empty-line {
-  margin: var(--space-2) 0 var(--space-px20);
-  max-width: 44ch;
-  font-size: var(--fs-secondary);
-  line-height: var(--lh-text);
-  color: var(--text-2);
 }
 
 .ui-root .ds-actions {
@@ -1477,11 +1466,11 @@
 }
 
 .ui-root .ds-orb-btn:hover {
-  border-color: var(--grey-brand);
+  border-color: var(--outline);
 }
 
 .ui-root .ds-orb-btn:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px3);
 }
 
@@ -1539,9 +1528,117 @@
 }
 
 .ui-root .ds-orb-item:hover {
-  color: var(--coral);
+  color: var(--coral-text);
 }
 
 .ui-root .ds-orb-item:focus-visible {
-  outline: var(--focus-w) solid var(--coral);
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+/* ---------- Small win and calm error (v3 Messages) ---------- */
+
+.ui-root .ds-win {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px6);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+}
+
+.ui-root .ds-win-tick {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--checkbox-box);
+  height: var(--checkbox-box);
+  margin: var(--space-px3);
+  border-radius: var(--radius-box);
+  background: var(--coral);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-root .ds-win-tick svg {
+  width: var(--tick-size);
+  height: var(--tick-size);
+  fill: none;
+  stroke: var(--on-coral);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ui-root .ds-error {
+  display: flex;
+  gap: var(--space-px10);
+  align-items: flex-start;
+  max-width: var(--row-max-w);
+  padding: var(--space-px12) var(--space-3);
+  border-radius: var(--radius-input);
+  background: var(--coral-soft-tint);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text);
+}
+
+.ui-root .ds-error-mark {
+  font-weight: var(--fw-medium);
+  color: var(--coral-soft-text);
+}
+
+/* ---------- Logo mark and Continue with Google ---------- */
+
+.ui-root .ds-brand-mark {
+  display: inline-flex;
+}
+
+.ui-root .ds-brand-mark img {
+  display: var(--mark-dark-display);
+}
+
+.ui-root .ds-brand-mark .ds-brand-mark-light {
+  display: var(--mark-light-display);
+}
+
+.ui-root .ds-google {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 var(--space-3) !important;
+  border: var(--line-w) solid var(--google-line);
+  border-radius: var(--radius-pill);
+  background: var(--google-bg);
+  color: var(--google-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-px10);
+  font-family: var(--font-google);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-note) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-google);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-google svg {
+  flex: none;
+  width: var(--space-px18);
+  height: var(--space-px18);
+}
+
+.ui-root .ds-google:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-google:disabled {
+  cursor: default;
+  opacity: 0.4;
 }

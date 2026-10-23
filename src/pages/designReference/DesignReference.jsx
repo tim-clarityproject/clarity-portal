@@ -1,17 +1,21 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import {
+  BrandMark,
   Button,
   Checkbox,
   Chip,
   ChipRow,
   Choice,
   Collapsible,
+  ColourModeChoice,
   Crosshair,
   Dropdown,
   EmptyState,
+  ErrorMessage,
   FilterButton,
   FloatingOrb,
+  GoogleButton,
   HubCard,
   IconButton,
   ImpactTag,
@@ -27,6 +31,7 @@ import {
   Section,
   SegmentedControl,
   SlidePanel,
+  SmallWin,
   Stat,
   StatGroup,
   Tile,
@@ -35,34 +40,45 @@ import {
   useToast,
   WillSyncIndicator,
 } from '../../components/design';
+import { GallerySection, New } from './galleryKit';
+import { contrast, ViewContext, useGalleryView } from './galleryUtils';
 import './designReference.css';
 
 // The design gallery: every shared component from src/components/design,
-// live, laid out like design-reference-v2.html (approved by Tim, 22 Oct),
-// each with a one-line note. Invented example text only. It never signs
-// in or reads the database, and exists only on previews and local
-// development (see vite.config.js).
-
-const SWATCHES = [
-  ['var(--black)', 'Background', '#000000'],
-  ['var(--grey-brand)', 'Brand grey', '#3C3C3B, outlines'],
-  ['var(--grey-brand-2)', 'Brand grey', '#4A4A49'],
-  ['var(--grey-brand-3)', 'Brand grey', '#636362'],
-  ['var(--line)', 'Line', '#262626, interface'],
-  ['var(--text-2)', 'Secondary text', '#A3A3A0, interface'],
-  ['var(--label)', 'Labels', '#7F7F7C, interface'],
-  ['var(--mint-soft)', 'Soft mint', '#89F3CD'],
-  ['var(--coral)', 'Coral', 'actions, live score'],
-  ['var(--coral-soft)', 'Soft coral', 'needs you, urgent'],
-  ['var(--mint)', 'Mint', 'saved, done, wins'],
-];
+// live, in dark and light side by side, laid out like
+// design-reference-v3.html (approved by Tim, 23 Oct), with its rules
+// beside it. Invented example text only. It never signs in or reads the
+// database, and exists only on previews and local development (see
+// vite.config.js).
 
 const TOC = [
-  ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Section'], ['c5', 'Buttons'],
-  ['c6', 'Crosshair'], ['c7', 'Stats'], ['c8', 'Lists'], ['c9', 'Logging rows'],
-  ['c10', 'Tiles and hub cards'], ['c11', 'Controls'], ['c17', 'Choices'], ['c18', 'Filter'],
-  ['c19', 'Show less'], ['c12', 'Feedback'], ['c16', 'Loading'], ['c13', 'Panels'],
-  ['c14', 'Empty state'], ['c15', 'Floating button'],
+  ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Sections and questions'],
+  ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
+  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Choices'], ['c21', 'Filter'], ['c22', 'Show less'],
+  ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
+  ['c17', 'Breathe button'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
+];
+
+// The colour table (design-reference-v3.html): name, what it's for, dark,
+// light, and the light colour's contrast on the light background.
+const LIGHT_BG = '#F9F8F5';
+const COLOURS = [
+  ['Background', 'Page', '#000000', '#F9F8F5', 'none'],
+  ['Surface', 'Tiles, Mission pill', '#111110', '#EFEDE8', 'none'],
+  ['Boxes', 'Text and number boxes', '#0B0B0B', '#FFFFFF', 'none'],
+  ['Lines', 'Dividers, tracks', '#262626', '#DCDAD3', 'none'],
+  ['Faint lines', 'Rows in lists', '#1A1A1A', '#E9E7E1', 'none'],
+  ['Box edges', 'Fields, checkboxes, steppers', '#636362', '#858480', 'measure'],
+  ['Outlined buttons', 'Outlined button edge', '#3C3C3B', '#B9B7B1', 'none'],
+  ['Text', 'Main text, this week', '#FFFFFF', '#000000', 'measure'],
+  ['Secondary text', 'Lines under things', '#A3A3A0', '#4A4A49', 'measure'],
+  ['Labels', 'Small labels, examples', '#7F7F7C', '#636362', 'measure'],
+  ['Coral, buttons', 'The one main button, ticks', '#FF6F5C', '#FF6F5C', 'black text 7.7 to 1'],
+  ['Coral, text and lines', 'Live score, bars, selected', '#FF6F5C', '#C2412E', 'measure'],
+  ['Soft coral', 'Needs you', '#FFBD9E', '#A84E28', 'measure'],
+  ['Mint', 'Saved, done', '#5FEFBB', '#0B7A52', 'measure'],
+  ['Below standard', 'Weeks under the standard', '#636362', '#8F8D88', 'measure'],
+  ['Weeks to come', 'Dial, empty segments', '#262626', '#DCDAD3', 'none'],
 ];
 
 const TYPE_OPTIONS = [
@@ -85,544 +101,539 @@ const STRATEGY_OPTIONS = [
   { value: 's3', label: 'Protect deep work every morning' },
 ];
 
-function GallerySection({ id, title, rules, children, demoClass = '' }) {
+function Swatch({ hex }) {
   return (
-    <section className="dr-c" id={id} aria-labelledby={`${id}-h`}>
-      <h2 className="dr-h2" id={`${id}-h`}>{title}</h2>
-      <div className={`dr-demo ${demoClass}`.trim()}>{children}</div>
-      <div className="dr-rules">{rules}</div>
-    </section>
+    <span className="dr-sw2">
+      <i style={{ background: hex }} />
+      {hex}
+    </span>
   );
 }
 
-function Gallery() {
-  const toast = useToast();
+function ColourTable() {
+  return (
+    <table className="dr-ct">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Dark</th>
+          <th scope="col">Light</th>
+          <th scope="col" className="dr-hide-s">Light contrast</th>
+        </tr>
+      </thead>
+      <tbody>
+        {COLOURS.map(([name, use, dark, light, check]) => (
+          <tr key={name}>
+            <td>{name}<br /><span className="dr-ct-note">{use}</span></td>
+            <td><Swatch hex={dark} /></td>
+            <td><Swatch hex={light} /></td>
+            <td className="dr-hide-s dr-ct-note">
+              {check === 'measure' && `${contrast(light, LIGHT_BG).toFixed(1)} to 1`}
+              {check === 'none' && 'not text'}
+              {check !== 'measure' && check !== 'none' && check}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
+function TypeDemo() {
+  return (
+    <div className="dr-type">
+      <div><small>Page title, Nekst capitals</small><span className="dr-type-page">Performance Sprint 4</span></div>
+      <div><small>Screen question, sentence case</small><span className="dr-type-question">What 2 to 4 results would show your mission is moving?</span></div>
+      <div><small>Body, 17px</small><span>Enter today’s number for each habit.</span></div>
+      <div><small>Secondary, 15px</small><span className="dr-type-secondary">Your performance score updates as you go.</span></div>
+      <div><small>Big number, Nekst Light</small><span className="dr-type-number">78%</span></div>
+    </div>
+  );
+}
+
+function PageHeaderDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <PageHeader as="h3" title="Performance Sprint 4" meta={['8 weeks · 28 Sep to 22 Nov']} onSystemLink={() => setOpen(true)} />
+      <SystemPopup open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
+function SystemPopup({ open, onClose }) {
+  return (
+    <Popup open={open} onClose={onClose} title="How it fits together">
+      <div className="dr-stack">
+        <p className="dr-quiet">My Mission sits at the top. Under it, a few Outcome Objectives say what you want to be true.</p>
+        <p className="dr-quiet">Strategies are how you’ll get there, and Tactics are the habits and to-dos you log in each Performance Sprint.</p>
+      </div>
+    </Popup>
+  );
+}
+
+function SectionDemo() {
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <Section as="h4" title="Outcome Objectives" />
+      <div>
+        <p className="dr-question">What 2 to 4 results would show your mission is moving?</p>
+        <p className="dr-nudge">Pick ones you can track.</p>
+      </div>
+    </div>
+  );
+}
+
+function ButtonsDemo() {
+  const toast = useToast();
+  return (
+    <div className="dr-row">
+      <Button variant="primary" onClick={() => toast.show('Saved')}>Save my mission</Button>
+      <Button icon="plus" onClick={() => toast.show('This adds a to-do.')}>Add a to-do</Button>
+      <Button variant="text" onClick={() => toast.show('Sprint details open here.')}>Sprint details</Button>
+    </div>
+  );
+}
+
+function CrosshairDemo() {
+  const toast = useToast();
+  return (
+    <div className="dr-stack">
+      <span className="dr-small">Standard crosshair: every plus and close</span>
+      <div className="dr-row">
+        <Crosshair size="md" />
+        <Crosshair size="md" tone="white" />
+        <IconButton label="Close" onClick={() => toast.show('Close closes what’s open.')} />
+      </div>
+    </div>
+  );
+}
+
+function StatsDemo() {
+  return (
+    <StatGroup>
+      <Stat label="Performance score this week" value="78%" live note="Your usual 72 to 84%. Standard 85%." bar={0.78} />
+      <Stat label="Training sessions" value="3 of 4" note="This week" />
+    </StatGroup>
+  );
+}
+
+function ListDemo() {
+  const toast = useToast();
+  return (
+    <List label="Recent reviews">
+      <ListRow title="Board pitch" type="After-action review" date="Today" onClick={() => toast.show('The review opens here.')} />
+      <ListRow title="Wednesday reflections" type="Review my day" date="Mon 19 Oct" onClick={() => toast.show('The review opens here.')} />
+    </List>
+  );
+}
+
+function LoggingDemo() {
   const [steps, setSteps] = useState('6200');
   const [sessions, setSessions] = useState(2);
-  const [view, setView] = useState('today');
-  const [week, setWeek] = useState('this');
-  const [todo, setTodo] = useState('Book a physio assessment before the end of the month');
-  const [done, setDone] = useState(true);
-  const [editing, setEditing] = useState(true);
-  const [when, setWhen] = useState('today');
-  const [strategy, setStrategy] = useState('s1');
-  const [filterType, setFilterType] = useState('all');
-  const [filterWhen, setFilterWhen] = useState('any');
-  const [saveState, setSaveState] = useState('saved');
-  const [loadingKey, setLoadingKey] = useState(0);
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [popupOpen, setPopupOpen] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [draftWhen, setDraftWhen] = useState('today');
-  const [draftImpact, setDraftImpact] = useState('high');
-  const saveTimer = useRef(null);
-  const draftBox = useRef(null);
-
   const stepsNumber = Number(steps) || 0;
-  const filterParts = [
-    filterType !== 'all' && TYPE_OPTIONS.find((o) => o.value === filterType).label.toLowerCase() + 's',
-    filterWhen !== 'any' && WHEN_OPTIONS.find((o) => o.value === filterWhen).label.toLowerCase(),
-  ].filter(Boolean);
-  const applied = filterParts.length ? filterParts.join(' from ') : '';
-
-  const trySaving = () => {
-    clearTimeout(saveTimer.current);
-    setSaveState('saving');
-    saveTimer.current = setTimeout(() => setSaveState('saved'), 1200);
-  };
-
-  const addTodo = () => {
-    setPanelOpen(false);
-    const saved = draft;
-    setDraft('');
-    toast.saved({
-      onUndo: () => {
-        setDraft(saved);
-        toast.show('To-do removed.');
-      },
-    });
-  };
-
   return (
-    <div className="dr-wrap">
-      <h1 className="dr-title">Clarity Design Reference</h1>
-      <p className="dr-lead">
-        Version 2, the calm style, following The Clarity Project brand guide 2025. “Clarity over complexity.
-        Presence is power.” Every page in the overhaul is built from these parts and nothing else. If a page
-        needs something that isn’t here, it’s added here first, then used.
-      </p>
-      <div className="dr-rule" aria-hidden="true" />
-      <nav className="dr-toc" aria-label="Components">
-        {TOC.map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}
-      </nav>
+    <div>
+      <LoggingRow
+        name="Steps"
+        detail={`${stepsNumber.toLocaleString('en-GB')} of 10,000 today`}
+        value={steps}
+        onChange={setSteps}
+        unit="steps"
+        entryLabel="Steps today"
+        progress={stepsNumber / 10000}
+      />
+      <LoggingRow
+        name="Training sessions"
+        detail={`${sessions} of 4 this week`}
+        kind="stepper"
+        value={sessions}
+        onChange={setSessions}
+        min={0}
+        max={14}
+        entryLabel="Training sessions this week"
+      />
+    </div>
+  );
+}
 
-      <GallerySection
-        id="c1"
-        title="Colour"
-        demoClass="dr-sw"
-        rules={(
-          <>
-            <p><b>Coral is for actions and the live score only.</b> Labels, tags and other numbers are white or grey.</p>
-            <p>Mint only means done or saved. Soft coral only means something needs you (for example an overdue item).</p>
-            <p><b>Below-standard weeks are neutral grey</b>, never coral, soft coral or red, so a deficit is never highlighted (Tim, 22 Oct).</p>
-            <p>Brand colours are exact. The three “interface” greys are approved extras for readability on black; no other greys.</p>
-            <p>No gradients (except the logo mark itself), no shadows.</p>
-          </>
-        )}
-      >
-        {SWATCHES.map(([colour, name, note]) => (
-          <div key={`${name}${note}`}>
-            <i style={{ background: colour }} />
-            <b>{name}</b>
-            <span>{note}</span>
-          </div>
+function TilesDemo() {
+  const toast = useToast();
+  return (
+    <TileGrid>
+      <Tile
+        serves={[1, 2]}
+        name="Maintain my availability to do good work"
+        score={{ label: 'Performance score this week', value: '82%' }}
+        onClick={() => toast.show('This Strategy opens here.')}
+      />
+      <Tile
+        name="Grow through referrals"
+        flag="No habits yet"
+        score={{ label: 'Serves 1 objective', value: '' }}
+        onClick={() => toast.show('This Strategy opens here.')}
+      />
+      <HubCard name="Weekly performance debrief" description="Score your week and set up the next one." onClick={() => toast.show('The debrief opens here.')} />
+    </TileGrid>
+  );
+}
+
+function ControlsDemo() {
+  const [view, setView] = useState('today');
+  const [week, setWeek] = useState('today');
+  const [todo, setTodo] = useState('');
+  const [done, setDone] = useState(true);
+  const todoId = useId();
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <SegmentedControl
+        label="View"
+        options={[{ value: 'today', label: 'Today' }, { value: 'week', label: 'This week' }]}
+        value={view}
+        onChange={setView}
+      />
+      <ChipRow label="When">
+        {[['today', 'Today'], ['week', 'This week'], ['later', 'Later']].map(([value, label]) => (
+          <Chip key={value} pressed={week === value} onClick={() => setWeek(value)}>{label}</Chip>
         ))}
-      </GallerySection>
+      </ChipRow>
+      <div>
+        <label className="ds-field-label" htmlFor={todoId}>What needs doing?</label>
+        <AutoGrowTextarea id={todoId} className="ds-textbox" value={todo} onChange={setTodo} placeholder="e.g. Book a physio assessment" />
+      </div>
+      <Checkbox checked={done} onChange={setDone} after={<ImpactTag editing>High impact</ImpactTag>}>Draft the case study</Checkbox>
+    </div>
+  );
+}
 
-      <GallerySection
-        id="c2"
-        title="Type"
-        demoClass="dr-type"
-        rules={(
-          <>
-            <p><b>Nekst capitals only for page titles, section titles and buttons.</b> Small labels are sentence case in DM Sans.</p>
-            <p>Nekst is the brand typeface: Regular for titles and buttons, <b>Light for numbers 24px and up</b>. DM Sans for body text and labels (approved pairing for readability).</p>
-            <p>Body 17px, so screens read well when shared on a call. Nothing below 12px.</p>
-            <p>No overline above titles.</p>
-          </>
-        )}
-      >
-        <div><small>Page title</small><span className="dr-type-page">Performance Sprint 4</span></div>
-        <div><small>Section title</small><span className="dr-type-section">Log today</span></div>
-        <div><small>Body, 17px</small><span>Enter today’s number for each habit.</span></div>
-        <div><small>Secondary, 15px</small><span className="dr-type-secondary">Your performance score updates as you go.</span></div>
-        <div><small>Small label, 13px</small><span className="dr-type-label">Performance score this week</span></div>
-        <div><small>Big number, Nekst Light</small><span className="dr-type-number">78%</span></div>
-      </GallerySection>
+function ChoicesDemo() {
+  const [when, setWhen] = useState('today');
+  const [strategy, setStrategy] = useState('s2');
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <Choice
+        label="When will you do it?"
+        options={[{ value: 'today', label: 'Today' }, { value: 'week', label: 'This week' }, { value: 'later', label: 'Later' }]}
+        value={when}
+        onChange={setWhen}
+      />
+      <Choice label="Which Strategy does it serve?" options={STRATEGY_OPTIONS} value={strategy} onChange={setStrategy} />
+    </div>
+  );
+}
 
-      <GallerySection
-        id="c3"
-        title="Page header"
-        rules={(
-          <>
-            <p>Title, then <b>one sentence saying the page’s job</b>, then a quiet meta line (version, dates, the system link), then the coral rule.</p>
-            <p>The coral rule appears once per page, here only.</p>
-          </>
-        )}
-      >
-        <PageHeader
-          as="h3"
-          title="Performance Sprint 4"
-          job="Where you do the work. Log today’s habits, tick off your to-dos and watch your performance score build."
-          meta={['8 weeks · 28 Sep to 22 Nov']}
-          onSystemLink={() => setPopupOpen(true)}
-        />
-      </GallerySection>
+function FilterDemo() {
+  const [type, setType] = useState('all');
+  const [when, setWhen] = useState('any');
+  const parts = [
+    type !== 'all' && `${TYPE_OPTIONS.find((o) => o.value === type).label.toLowerCase()}s`,
+    when !== 'any' && WHEN_OPTIONS.find((o) => o.value === when).label.toLowerCase(),
+  ].filter(Boolean);
+  return (
+    <FilterButton label="Filter" applied={parts.join(' from ')} onClear={() => { setType('all'); setWhen('any'); }}>
+      <Dropdown label="Which type?" options={TYPE_OPTIONS} value={type} onChange={setType} />
+      <Dropdown label="From when?" options={WHEN_OPTIONS} value={when} onChange={setWhen} />
+    </FilterButton>
+  );
+}
 
-      <GallerySection
-        id="c4"
-        title="Section"
-        rules={(
-          <>
-            <p><b>Action-led title</b> (what you do here), one short line, a divider above.</p>
-            <p>The line shows on first visit, then collapses to a small “i”.</p>
-            <p>Numbers on sections only when they are a real sequence.</p>
-          </>
-        )}
-      >
-        <Section as="h4" title="Log today" line="Wednesday 21 Oct. Enter today’s number for each habit." />
-      </GallerySection>
+function CollapsibleDemo() {
+  return (
+    <Collapsible summary="Sprint details: average 74%, 26 days left">
+      <p>Average performance score so far: 74%, across 3 weeks.</p>
+      <p>26 days left in Performance Sprint 4, then Recovery.</p>
+    </Collapsible>
+  );
+}
 
-      <GallerySection
-        id="c5"
-        title="Buttons"
-        rules={(
-          <>
-            <p><b>One coral button per screen</b>, for the thing most people come to do, visible without scrolling.</p>
-            <p>Everything else is outlined, or a text link for minor actions. Icon buttons are 44px round targets around the crosshair.</p>
-            <p><b>Verb plus object</b>: never Open, Go, Submit or Continue on their own.</p>
-          </>
-        )}
-      >
-        <div className="dr-row">
-          <Button variant="primary" onClick={() => toast.show('Today is logged.')}>Log today</Button>
-          <Button icon="plus" onClick={() => setPanelOpen(true)}>Add a to-do</Button>
-          <Button variant="text" onClick={() => toast.show('Sprint details would open here.')}>Sprint details</Button>
+function MessagesDemo() {
+  const toast = useToast();
+  return (
+    <div className="dr-stack">
+      <SavedIndicator />
+      <SmallWin>Done. 3 of 4 this week.</SmallWin>
+      <span className="ds-toast ds-toast--shown dr-static-toast" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+        <span className="ds-toast-text">Deleted</span>
+        <span className="ds-toast-undo">Undo</span>
+      </span>
+      <ErrorMessage>That didn’t save. Check your connection and try again.</ErrorMessage>
+      <div className="dr-row">
+        <Button onClick={() => toast.show('Added to this week.')}>Show a toast</Button>
+        <Button onClick={() => toast.saved({ message: 'Deleted', onUndo: () => toast.show('Back again.') })}>Show Deleted with Undo</Button>
+      </div>
+    </div>
+  );
+}
+
+function LoadingDemo() {
+  const [key, setKey] = useState(0);
+  const [state, setState] = useState('saved');
+  const timer = useRef(null);
+  const save = () => {
+    clearTimeout(timer.current);
+    setState('saving');
+    timer.current = setTimeout(() => setState('saved'), 1200);
+  };
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <div className="dr-loadbox"><Loading key={key} label="Loading your plan" /></div>
+      <div className="dr-row">
+        <SavingIndicator />
+        <span className="dr-small">then</span>
+        <SavedIndicator />
+        <span className="dr-small">or</span>
+        <WillSyncIndicator />
+      </div>
+      <div className="dr-row">
+        <Button variant="text" onClick={() => setKey((k) => k + 1)}>Load again</Button>
+        <Button variant="text" onClick={save}>Save an entry</Button>
+        <SaveStatus state={state} />
+      </div>
+    </div>
+  );
+}
+
+function PanelsDemo() {
+  const toast = useToast();
+  const [panel, setPanel] = useState(false);
+  const [popup, setPopup] = useState(false);
+  const [draft, setDraft] = useState('');
+  const box = useRef(null);
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <div className="dr-mini" aria-hidden="true">
+        <div className="dr-mini-page">Page underneath</div>
+        <div className="dr-mini-scrim" />
+        <div className="dr-mini-sheet">
+          <div className="dr-mini-title">Add a to-do<Crosshair variant="close" size="sm" /></div>
+          <div className="dr-mini-line dr-mini-line--box" />
+          <div className="dr-mini-line" />
+          <div className="dr-mini-line dr-mini-line--70" />
         </div>
-      </GallerySection>
+      </div>
+      <div className="dr-row">
+        <Button icon="plus" onClick={() => setPanel(true)}>Add a to-do</Button>
+        <Button onClick={() => setPopup(true)}>See how it fits together</Button>
+      </div>
+      <SlidePanel
+        open={panel}
+        onClose={() => setPanel(false)}
+        title="Add a to-do"
+        initialFocusRef={box}
+        footer={<Button variant="primary" disabled={!draft.trim()} onClick={() => { setPanel(false); setDraft(''); toast.saved({ message: 'Added to this week.', onUndo: () => toast.show('Removed.') }); }}>Add a to-do</Button>}
+      >
+        <label className="ds-field-label" htmlFor="dr-panel-box">What needs doing?</label>
+        <AutoGrowTextarea ref={box} id="dr-panel-box" className="ds-textbox" value={draft} onChange={setDraft} placeholder="e.g. Send the board pack to Sam" />
+      </SlidePanel>
+      <SystemPopup open={popup} onClose={() => setPopup(false)} />
+    </div>
+  );
+}
 
-      <GallerySection
-        id="c6"
-        title="Crosshair"
-        rules={(
+function EmptyDemo() {
+  const toast = useToast();
+  return (
+    <EmptyState
+      as="h3"
+      question="What’s one thing that would move this week forward?"
+      action={{ label: 'Add a to-do', onClick: () => toast.show('This adds a to-do.') }}
+    />
+  );
+}
+
+function OrbDemo() {
+  const toast = useToast();
+  return (
+    <>
+      <FloatingOrb placement="inline" onBreathe={() => toast.show('Breathe opens here.')} onChat={() => toast.show('Chat opens here.')} />
+      <p className="dr-phone-only dr-quiet">The Breathe button is desktop only, so it isn’t shown on a phone.</p>
+    </>
+  );
+}
+
+function SignInDemo() {
+  const toast = useToast();
+  return (
+    <div className="dr-signin">
+      <BrandMark size={48} />
+      <div className="dr-signin-brand">The Clarity Portal</div>
+      <div className="dr-signin-core">Clarity drives performance.</div>
+      <GoogleButton onClick={() => toast.show('Google sign-in starts here.')} />
+    </div>
+  );
+}
+
+function ModeDemo() {
+  return <ColourModeChoice />;
+}
+
+function Gallery() {
+  const [view, setView] = useGalleryView();
+  return (
+    <ViewContext.Provider value={view}>
+      <div className="dr-wrap">
+        <h1 className="dr-title">Clarity Design Reference</h1>
+        <p className="dr-lead">Version 3: dark and light. Every part of the portal is shown in both modes side by side, with its rules beside it.</p>
+        <p className="dr-lead">Phase 0b. Items marked “new” were added or changed in this phase.</p>
+        <div className="dr-rule" aria-hidden="true" />
+        <div className="dr-switches">
+          <ColourModeChoice label="How should the portal look?" />
+          <SegmentedControl
+            label="Show"
+            options={[{ value: 'both', label: 'Side by side' }, { value: 'one', label: 'This mode only' }]}
+            value={view}
+            onChange={setView}
+          />
+        </div>
+        <nav className="dr-toc" aria-label="Sections">
+          {TOC.map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}
+        </nav>
+
+        <GallerySection
+          id="c1"
+          title="Colour"
+          rules={(
+            <>
+              <p><New /><b>Every colour has a dark and a light value.</b> Pages only ever use the names, never a colour code, so both modes always match.</p>
+              <p><b>Light mode is built on the brand off-white</b> (#F9F8F5) with brand black text.</p>
+              <p><b>Coral and mint are too pale to read as text on off-white</b>, so light mode uses deeper versions for text, lines and numbers. Coral buttons keep their black text in both modes.</p>
+              <p>Every text colour passes WCAG AA (4.5 to 1); box edges pass 3 to 1. The last column shows each light colour against the background.</p>
+              <p><b>Below-standard weeks are neutral grey</b> in both modes, never coral, soft coral or red.</p>
+              <p>No gradients, no shadows, in either mode.</p>
+            </>
+          )}
+        >
+          <div className="dr-pane dr-pane--table"><ColourTable /></div>
+        </GallerySection>
+
+        <GallerySection id="c2" title="Type" demo={TypeDemo} rules={(
           <>
-            <p>The crosshair from the logo mark is <b>every plus</b>. Turned 45°, it is <b>every close</b>.</p>
+            <p><b>Nekst capitals only for short names:</b> page titles, section names and buttons.</p>
+            <p><b>Screen questions are sentence case in DM Sans</b>, so long questions read easily.</p>
+            <p>Nekst Light for numbers 24px and up. Body 17px. Nothing below 12px. No bold text anywhere.</p>
+          </>
+        )} />
+
+        <GallerySection id="c3" title="Page header" demo={PageHeaderDemo} rules={(
+          <>
+            <p><New /><b>No intro line under the title.</b> The title is enough; any explanation sits behind the small “i”.</p>
+            <p>A quiet meta line, then the coral rule, once per page.</p>
+          </>
+        )} />
+
+        <GallerySection id="c4" title="Sections and questions" demo={SectionDemo} rules={(
+          <>
+            <p><b>Section headings are names</b>, easy to scan.</p>
+            <p><b>Screen headings ask a question</b> of about 12 words or fewer, with a short nudge underneath that starts with a verb.</p>
+          </>
+        )} />
+
+        <GallerySection id="c5" title="Buttons" demo={ButtonsDemo} rules={(
+          <>
+            <p><b>One coral button per screen</b>, the same coral with black text in both modes.</p>
+            <p>Outlined buttons for everything else; a text link for minor actions.</p>
+            <p><b>“My” where it’s theirs</b> (Save my mission), otherwise verb and thing (Add a to-do). Never Submit, OK or Go.</p>
+          </>
+        )} />
+
+        <GallerySection id="c6" title="Crosshairs" demo={CrosshairDemo} rules={(
+          <>
+            <p><b>Standard crosshair</b>: every plus and close, from the logo’s own crop. Coral or white on dark; deep coral or black on light.</p>
             <p>Never a typed + or ×, never smaller than 14px.</p>
           </>
-        )}
-      >
-        <div className="dr-row">
-          <Crosshair size="md" />
-          <span className="dr-quiet">Add</span>
-          <IconButton label="Close" onClick={() => toast.show('Close would close what’s open.')} />
-          <span className="dr-quiet">Close</span>
-        </div>
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c7"
-        title="Stats"
-        rules={(
+        <GallerySection id="c7" title="Stats" demo={StatsDemo} rules={(
           <>
-            <p><b>Label first, then the number</b>, then one line saying what it means. Never a number on its own.</p>
-            <p>Scores show against the person’s usual range and the standard. Only the live score is coral.</p>
+            <p><b>Label first, then the number</b>, then one line saying what it means.</p>
+            <p>The live score is coral in dark and deep coral in light. Counts read “3 of 4”.</p>
           </>
-        )}
-      >
-        <StatGroup>
-          <Stat label="Performance score this week" value="78%" live note="Your usual 72 to 84% · standard 85%" bar={0.78} />
-          <Stat label="Sprint ends in" value="32 days" note="Then Recovery" />
-        </StatGroup>
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c8"
-        title="Lists"
-        rules={<p>Title and date only; the type as a small grey word. <b>No buttons on rows</b>: the whole row opens it.</p>}
-      >
-        <List label="Recent reviews">
-          <ListRow title="Wednesday 21 Oct" type="Day review" date="Today" onClick={() => toast.show('The day review would open here.')} />
-          <ListRow title="Board pitch" type="After-action review" date="18 Oct" onClick={() => toast.show('The after-action review would open here.')} />
-        </List>
-      </GallerySection>
-
-      <GallerySection
-        id="c9"
-        title="Logging rows"
-        rules={(
+        <GallerySection id="c9" title="Lists" demo={ListDemo} rules={(
           <>
-            <p>One habit per row: name, one grey line (today against today’s target, and its strategy), the entry, a thin bar.</p>
-            <p>Numbers open the number keypad on phone, with the unit shown. Counters use a minus and the crosshair plus.</p>
-            <p><b>Impact tags only when editing</b>, never while logging.</p>
+            <p>Title and date only, the type as a small grey word. The whole row opens it.</p>
+            <p>Dates: Today, Yesterday, then “Mon 19 Oct”.</p>
           </>
-        )}
-      >
-        <LoggingRow
-          name="Steps"
-          detail={`${stepsNumber.toLocaleString('en-GB')} of 10,000 today · Maintain my availability`}
-          value={steps}
-          onChange={setSteps}
-          unit="steps"
-          entryLabel="Steps today"
-          progress={stepsNumber / 10000}
-        />
-        <LoggingRow
-          name="Training sessions"
-          detail={`${sessions} of 4 this week`}
-          kind="stepper"
-          value={sessions}
-          onChange={setSessions}
-          min={0}
-          max={14}
-          entryLabel="Training sessions this week"
-          progress={sessions / 4}
-        />
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c10"
-        title="Tiles and hub cards"
-        rules={(
+        <GallerySection id="c10" title="Logging rows" demo={LoggingDemo} rules={(
           <>
-            <p>A tile shows only what’s needed to choose it; detail opens on tap.</p>
-            <p>Hub pages (Plan tools, Review tools…) are tiles with a name and a one-line performance description, most used first.</p>
+            <p>One habit per row: name, one grey line, the entry, a thin bar.</p>
+            <p><New />Box edges use the edges colour in both modes so the box is always visible (3 to 1).</p>
           </>
-        )}
-      >
-        <TileGrid>
-          <Tile
-            serves={[1, 2]}
-            name="Maintain my availability to do good work"
-            score={{ label: 'Performance score this week', value: '82%' }}
-            onClick={() => toast.show('This Strategy would open here.')}
-          />
-          <HubCard
-            name="Weekly performance debrief"
-            description="Score your week and set up the next one."
-            onClick={() => toast.show('The debrief would open here.')}
-          />
-        </TileGrid>
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c11"
-        title="Controls"
-        demoClass="dr-stack dr-stack--fill"
-        rules={(
+        <GallerySection id="c11" title="Tiles" demo={TilesDemo} rules={(
           <>
-            <p>Segmented control for views; chips for picking one of several; large text boxes for anything written.</p>
-            <p>Tap targets at least 44px.</p>
+            <p><New />Tiles sit on the slightly raised surface colour, in both modes.</p>
+            <p>Soft coral means something needs them, always with words (“No habits yet”), never colour alone.</p>
           </>
-        )}
-      >
-        <SegmentedControl
-          label="View"
-          options={[{ value: 'today', label: 'Today' }, { value: 'week', label: 'This week' }]}
-          value={view}
-          onChange={setView}
-        />
-        <ChipRow label="Week">
-          {[['this', 'This week'], ['5', 'Week 5'], ['6', 'Week 6']].map(([value, label]) => (
-            <Chip key={value} pressed={week === value} onClick={() => setWeek(value)}>{label}</Chip>
-          ))}
-        </ChipRow>
-        <div>
-          <label htmlFor="dr-todo" className="ds-field-label">What needs doing?</label>
-          <AutoGrowTextarea id="dr-todo" className="ds-textbox" value={todo} onChange={setTodo} />
-        </div>
-        <div className="dr-row">
-          <Checkbox
-            checked={done}
-            onChange={setDone}
-            after={<ImpactTag editing={editing}>High impact</ImpactTag>}
-          >
-            Draft the case study
-          </Checkbox>
-          <Chip pressed={editing} onClick={() => setEditing((v) => !v)}>Editing</Chip>
-          <span className="dr-small">(impact shown when editing)</span>
-        </div>
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c17"
-        title="Choices: pills or a dropdown"
-        demoClass="dr-stack dr-stack--fill"
-        rules={(
+        <GallerySection id="c12" title="Controls" demo={ControlsDemo} rules={(
           <>
-            <p><b>Pills only when every option fits on one line on a phone</b> (about four short words). Otherwise a dropdown (Tim, 22 Oct).</p>
-            <p>The shared Choice decides by itself, measured at phone width, so the same choice looks the same everywhere.</p>
+            <p>Segmented control for views; chips for on and off; large text boxes for anything written.</p>
+            <p><New />Checkbox edges use the edges colour so an empty box is easy to see in both modes.</p>
           </>
-        )}
-      >
-        <Choice
-          label="When will you do it?"
-          options={[{ value: 'today', label: 'Today' }, { value: 'week', label: 'This week' }, { value: 'later', label: 'Later' }]}
-          value={when}
-          onChange={setWhen}
-        />
-        <Choice label="Which Strategy does it serve?" options={STRATEGY_OPTIONS} value={strategy} onChange={setStrategy} />
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c18"
-        title="Filter"
-        rules={(
+        <GallerySection id="c20" title="Choices" demo={ChoicesDemo} rules={(
+          <p><b>Pills only when every option fits on one line on a phone.</b> Otherwise a drop-down.</p>
+        )} />
+
+        <GallerySection id="c21" title="Filter" demo={FilterDemo} rules={(
+          <p>One Filter button opens the drop-downs. Underneath, one plain line says what is applied, with Clear.</p>
+        )} />
+
+        <GallerySection id="c22" title="Show less, reveal more" demo={CollapsibleDemo} rules={(
+          <p>One line with the key fact and the crosshair plus; tap to see the detail. The plus turns 45° to close.</p>
+        )} />
+
+        <GallerySection id="c13" title="Messages" demo={MessagesDemo} rules={(
           <>
-            <p>One Filter button opens the dropdowns. Underneath, <b>one plain line says what is applied</b>, with a Clear link.</p>
-            <p>The crosshair plus turns 45° while the dropdowns are open.</p>
+            <p><b>Saved</b> is just “Saved”, in mint (deep green in light).</p>
+            <p><New /><b>Small wins</b>: the tick fills coral and a few words show.</p>
+            <p><New /><b>Toasts</b> are black with white text in both modes. Deleting shows “Deleted” with Undo; no “Are you sure?”.</p>
+            <p><New /><b>Errors</b> say what happened, then what to do, on a soft coral tint.</p>
           </>
-        )}
-      >
-        <FilterButton
-          label="Filter reviews"
-          applied={applied}
-          onClear={() => { setFilterType('all'); setFilterWhen('any'); }}
-        >
-          <Dropdown label="Type" options={TYPE_OPTIONS} value={filterType} onChange={setFilterType} />
-          <Dropdown label="When" options={WHEN_OPTIONS} value={filterWhen} onChange={setFilterWhen} />
-        </FilterButton>
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c19"
-        title="Show less, reveal more"
-        rules={(
+        <GallerySection id="c14" title="Loading" demo={LoadingDemo} rules={(
+          <p>The rotating crosshair, after about 0.3 seconds, with one short line. With reduced motion it fades instead.</p>
+        )} />
+
+        <GallerySection id="c15" title="Panels" demo={PanelsDemo} rules={(
           <>
-            <p>Each page shows only what’s needed now. <b>One line with the key fact</b> and the crosshair plus; tap to see the detail.</p>
-            <p>The plus turns 45° to close. The detail grows smoothly; the page never jumps.</p>
+            <p><New />The page underneath dims: strongly in dark, lightly in light, so it never looks muddy.</p>
+            <p>Full screen on phone; swipe down or Escape closes.</p>
           </>
-        )}
-      >
-        <Collapsible summary="Sprint details: average 74%, 26 days left">
-          <p>Average performance score so far: 74%, across 3 weeks.</p>
-          <p>26 days left in Performance Sprint 4, then Recovery.</p>
-        </Collapsible>
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c12"
-        title="Feedback"
-        demoClass="dr-stack"
-        rules={(
+        <GallerySection id="c16" title="Empty space" demo={EmptyDemo} rules={(
+          <p><New /><b>A question, then the button.</b> No tours, no long explanations.</p>
+        )} />
+
+        <GallerySection id="c17" title="Breathe button" demo={OrbDemo} rules={(
+          <p>Coral on the in-breath, mint on the out-breath; deeper coral and green in light.</p>
+        )} />
+
+        <GallerySection id="c18" title="Sign in" demo={SignInDemo} rules={(
           <>
-            <p><b>Saving is automatic</b>, shown by a quiet mint “Saved”. No Save buttons; Finish only where something is completed.</p>
-            <p>After an action, one short toast for about 3 seconds; “Saved · Undo” for about 5 seconds. Errors are calm, and nothing is lost.</p>
+            <p><New /><b>Google’s button follows Google’s rules</b>: their four-colour “G”, the words “Continue with Google”, their light version on light and their dark version on dark, never recoloured.</p>
+            <p>The logo uses Emblem NEGATIVE (white crosshair) on dark and Emblem POSITIVE (black crosshair) on light.</p>
           </>
-        )}
-      >
-        <SavedIndicator />
-        <span className="ds-toast ds-toast--shown" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
-          <span className="ds-toast-text">Added to this week.</span>
-        </span>
-        <div className="dr-row">
-          <Button onClick={() => toast.show('Added to this week.')}>Show a toast</Button>
-          <Button onClick={() => toast.saved({ onUndo: () => toast.show('Undone.') })}>Show Saved with Undo</Button>
-          <Button onClick={() => toast.error()}>Show the error toast</Button>
-        </div>
-      </GallerySection>
+        )} />
 
-      <GallerySection
-        id="c16"
-        title="Loading and saving"
-        demoClass="dr-stack dr-stack--fill"
-        rules={(
+        <GallerySection id="c19" title="Choosing a mode" demo={ModeDemo} rules={(
           <>
-            <p><b>Loading</b>: the brand crosshair rotating, centred in the space that is loading, with one short line saying what is loading. It appears only after about 0.3 seconds, so fast loads never flash. It replaces every grey “Loading…” text.</p>
-            <p><b>Saving</b>: a small grey rotating crosshair and “Saving”, which becomes the mint “Saved” once the server confirms. With no signal it says “Will sync” until the entry can be sent.</p>
-            <p>With reduced motion, the crosshair gently fades instead of spinning.</p>
+            <p><New /><b>In My Account: Light, Dark or Match my device.</b> Match my device is the starting choice; it follows the phone or laptop, including switching at night.</p>
+            <p>The phone’s top bar matches: black in dark, off-white in light. Emails and PDFs stay light.</p>
           </>
-        )}
-      >
-        <div className="dr-loadbox">
-          <Loading key={loadingKey} label="Loading your plan" />
-        </div>
-        <div className="dr-row">
-          <SavingIndicator />
-          <span className="dr-then">then</span>
-          <SavedIndicator />
-          <span className="dr-small">or</span>
-          <WillSyncIndicator />
-        </div>
-        <div className="dr-row">
-          <Button variant="text" onClick={() => setLoadingKey((k) => k + 1)}>Load again</Button>
-          <Button variant="text" onClick={trySaving}>Save an entry</Button>
-          <Button variant="text" onClick={() => { clearTimeout(saveTimer.current); setSaveState('offline'); }}>Lose the signal</Button>
-          <SaveStatus state={saveState} />
-        </div>
-      </GallerySection>
-
-      <GallerySection
-        id="c13"
-        title="Panels"
-        demoClass="dr-stack dr-stack--fill"
-        rules={(
-          <>
-            <p><b>Slide-across panel</b> for adding or editing (full screen on phone): big text box first, choices below.</p>
-            <p><b>Centred pop-up</b> for explanations, like the Individual Performance System (full screen on phone).</p>
-            <p>Both close with the crosshair, Escape or a tap outside, and with a swipe down on phone.</p>
-          </>
-        )}
-      >
-        <div className="dr-mini" aria-hidden="true">
-          <div className="dr-mini-page">Page underneath</div>
-          <div className="dr-mini-scrim" />
-          <div className="dr-mini-sheet">
-            <div className="dr-mini-title">Add a to-do<Crosshair variant="close" size="sm" /></div>
-            <div className="dr-mini-line dr-mini-line--box" />
-            <div className="dr-mini-line" />
-            <div className="dr-mini-line dr-mini-line--70" />
-          </div>
-        </div>
-        <div className="dr-mini dr-mini--pop" aria-hidden="true">
-          <div className="dr-mini-page">Page underneath</div>
-          <div className="dr-mini-scrim" />
-          <div className="dr-mini-pop">
-            <div className="dr-mini-title">How it fits together<Crosshair variant="close" size="sm" /></div>
-            <div className="dr-mini-line" />
-            <div className="dr-mini-line dr-mini-line--80" />
-            <div className="dr-mini-line dr-mini-line--60" />
-          </div>
-        </div>
-        <div className="dr-row">
-          <Button icon="plus" onClick={() => setPanelOpen(true)}>Add a to-do</Button>
-          <Button onClick={() => setPopupOpen(true)}>See how it fits together</Button>
-        </div>
-      </GallerySection>
-
-      <GallerySection
-        id="c14"
-        title="Empty state"
-        rules={<p><b>One clear next step</b> and one button, with a small quiet grey crosshair. No tours.</p>}
-      >
-        <EmptyState
-          as="h3"
-          title="Start your first Performance Sprint"
-          line="Pick how many weeks, then choose the habits you’ll log each day."
-          action={{ label: 'Start a sprint', onClick: () => toast.show('The sprint set-up would start here.') }}
-          onSystemLink={() => setPopupOpen(true)}
-        />
-      </GallerySection>
-
-      <GallerySection
-        id="c15"
-        title="Floating button"
-        rules={(
-          <>
-            <p>One floating button, bottom right: <b>a miniature of the breathing orb</b>, breathing slowly (4 seconds in, 4 out), coral on the in-breath and mint on the out, with the brand crosshair turning in the centre. Tap it to choose Breathe or Chat to Dr. Tim.</p>
-            <p><b>Desktop only.</b> Never on phone, where it gets in the way: there, Breathe is in Personal → Ground and Chat to Dr. Tim is in the Account tab.</p>
-            <p>With reduced motion it stays still.</p>
-          </>
-        )}
-      >
-        <FloatingOrb
-          placement="inline"
-          onBreathe={() => toast.show('Breathe would open here.')}
-          onChat={() => toast.show('Chat to Dr. Tim would open here.')}
-        />
-        <p className="dr-phone-only dr-quiet">The floating button is desktop only, so it isn’t shown on a phone.</p>
-      </GallerySection>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title="Add a to-do"
-        initialFocusRef={draftBox}
-        footer={(
-          <Button variant="primary" onClick={addTodo} disabled={!draft.trim()}>Add the to-do</Button>
-        )}
-      >
-        <div className="dr-panel-form">
-          <div>
-            <label htmlFor="dr-draft" className="ds-field-label">What needs doing?</label>
-            <AutoGrowTextarea
-              ref={draftBox}
-              id="dr-draft"
-              className="ds-textbox"
-              value={draft}
-              onChange={setDraft}
-              placeholder="For example, send the board pack to Sam"
-            />
-          </div>
-          <Choice
-            label="When will you do it?"
-            options={[{ value: 'today', label: 'Today' }, { value: 'week', label: 'This week' }]}
-            value={draftWhen}
-            onChange={setDraftWhen}
-          />
-          <Choice
-            label="Impact"
-            options={[{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]}
-            value={draftImpact}
-            onChange={setDraftImpact}
-          />
-          <Choice label="Which Strategy does it serve?" options={STRATEGY_OPTIONS} value={strategy} onChange={setStrategy} />
-        </div>
-      </SlidePanel>
-
-      <Popup open={popupOpen} onClose={() => setPopupOpen(false)} title="How it fits together">
-        <div className="dr-stack">
-        <p className="dr-quiet">
-          My Mission sits at the top. Under it, a few Outcome Objectives say what you want to be true by the end of the year.
-        </p>
-        <p className="dr-quiet">
-          Strategies are how you’ll get there, and Tactics are the habits and to-dos you log in each Performance Sprint.
-        </p>
-        <p className="dr-quiet">Your performance score shows how well this week’s work matched the plan.</p>
-        </div>
-      </Popup>
-    </div>
+        )} />
+      </div>
+    </ViewContext.Provider>
   );
 }
 

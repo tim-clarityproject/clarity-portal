@@ -4,11 +4,15 @@ import './design.css';
 // shows only what's needed to choose it; detail opens on tap. Type only,
 // no icons.
 //
+// Tiles sit on the slightly raised surface colour, in both modes.
+//
 // serves: objective numbers this tile serves, shown as small circled numbers.
 // score:  { label, value } shown at the bottom, label first.
-export function Tile({ name, description, serves = [], score, onClick, ...rest }) {
+// flag:   words for something that needs them ("No habits yet"), shown in
+//         soft coral with a soft coral edge. Never colour alone.
+export function Tile({ name, description, serves = [], score, flag, onClick, ...rest }) {
   return (
-    <button type="button" className="ds-tile" onClick={onClick} {...rest}>
+    <button type="button" className={`ds-tile${flag ? ' ds-tile--flagged' : ''}`} onClick={onClick} {...rest}>
       {serves.length > 0 && (
         <span className="ds-serves">
           Serves
@@ -23,6 +27,7 @@ export function Tile({ name, description, serves = [], score, onClick, ...rest }
       )}
       <span className="ds-tile-name">{name}</span>
       {description && <span className="ds-tile-desc">{description}</span>}
+      {flag && <span className="ds-tile-flag">{flag}</span>}
       {score && (
         <span className="ds-tile-foot">
           <span>{score.label}</span>

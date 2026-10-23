@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import useColourMode from '../../lib/colourMode/useColourMode';
 import Crosshair from './Crosshair';
+import { useThemeScope } from './themeScope';
 import './design.css';
 
 // The one floating button (decisions: "One floating button: a breathing
@@ -25,15 +27,16 @@ function tokenRgb(el, name, fallback) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function useOrbDrawing(artRef) {
+function useOrbDrawing(artRef, mode) {
   useEffect(() => {
     const art = artRef.current;
     if (!art) return undefined;
     const rings = [...art.querySelectorAll('[data-ring]')];
     const core = art.querySelector('[data-core]');
     const cross = art.querySelector('.ds-cross');
-    const inColour = tokenRgb(art, '--coral', FALLBACK_IN);
-    const outColour = tokenRgb(art, '--mint', FALLBACK_OUT);
+    // Deeper coral and green in light mode (--orb-in, --orb-out).
+    const inColour = tokenRgb(art, '--orb-in', FALLBACK_IN);
+    const outColour = tokenRgb(art, '--orb-out', FALLBACK_OUT);
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let colour = inColour.slice();
     let raf = 0;
@@ -76,7 +79,7 @@ function useOrbDrawing(artRef) {
       cancelAnimationFrame(raf);
       motion.removeEventListener?.('change', restart);
     };
-  }, [artRef]);
+  }, [artRef, mode]);
 }
 
 export default function FloatingOrb({ onBreathe, onChat, placement = 'fixed' }) {
@@ -86,7 +89,9 @@ export default function FloatingOrb({ onBreathe, onChat, placement = 'fixed' }) 
   const buttonRef = useRef(null);
   const menuRef = useRef(null);
   const artRef = useRef(null);
-  useOrbDrawing(artRef);
+  const scope = useThemeScope();
+  const { mode } = useColourMode();
+  useOrbDrawing(artRef, scope || mode);
 
   // Open: focus the first choice. Escape or a click elsewhere closes.
   useEffect(() => {

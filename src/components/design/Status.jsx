@@ -46,6 +46,31 @@ export function SaveStatus({ state }) {
   );
 }
 
+// A small win (Tim, 23 Oct): the tick fills coral and a few words show,
+// e.g. "Done. 3 of 4 this week." Big moments get the full celebration.
+export function SmallWin({ children }) {
+  return (
+    <span className="ds-win">
+      <span className="ds-win-tick" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+      </span>
+      {children}
+    </span>
+  );
+}
+
+// A calm error: what happened, then what to do, on a soft coral tint.
+// No blame, no codes, never red. e.g. "That didn't save. Check your
+// connection and try again."
+export function ErrorMessage({ children }) {
+  return (
+    <div className="ds-error" role="alert">
+      <span className="ds-error-mark" aria-hidden="true">!</span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
 // Loading: the brand crosshair turning, centred in the space that is
 // loading, with one short line saying what is loading ("Loading your
 // plan"). Nothing shows for the first 0.3 seconds, so fast loads never
