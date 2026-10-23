@@ -10,8 +10,11 @@ export default function useViewportFit(ref, active) {
     if (!active || !el) return undefined;
     const vv = window.visualViewport;
     const fit = () => {
-      el.style.setProperty('--vv-top', `${vv ? vv.offsetTop : 0}px`);
-      el.style.setProperty('--vv-height', `${vv ? vv.height : window.innerHeight}px`);
+      // A zoomed page (larger text) scales everything, this layer
+      // included, so the visible space is divided back by the zoom.
+      const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+      el.style.setProperty('--vv-top', `${(vv ? vv.offsetTop : 0) / zoom}px`);
+      el.style.setProperty('--vv-height', `${(vv ? vv.height : window.innerHeight) / zoom}px`);
     };
     fit();
     vv?.addEventListener('resize', fit);

@@ -43,7 +43,9 @@ function weeksOf(key) {
   const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   const cells = [...Array(lead).fill(null)];
   for (let d = 1; d <= days; d += 1) cells.push(toKey(new Date(first.getFullYear(), first.getMonth(), d)));
-  while (cells.length % 7) cells.push(null);
+  // Always six weeks, so the panel never changes height between months
+  // and the arrows stay under the thumb.
+  while (cells.length < 42) cells.push(null);
   const weeks = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
   return weeks;
@@ -60,6 +62,7 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
   const view = monthStart(focusKey);
   const viewKey = toKey(view);
   const atMin = toKey(monthStart(min)) >= viewKey;
+  const weeks = weeksOf(viewKey);
 
   // After a keyboard move, focus follows (into another month if needed).
   useEffect(() => {
@@ -119,8 +122,8 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
           </tr>
         </thead>
         <tbody>
-          {weeksOf(viewKey).map((week) => (
-            <tr key={week.find(Boolean)}>
+          {weeks.map((week) => (
+            <tr key={week.find(Boolean) || `week-${weeks.indexOf(week)}`}>
               {week.map((key, i) => (
                 <td key={key || `blank-${i}`} role="gridcell">
                   {key && (

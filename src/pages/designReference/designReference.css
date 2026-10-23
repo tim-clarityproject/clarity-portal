@@ -223,6 +223,7 @@
 
 .ui-root .dr-pane--table {
   padding: var(--space-px18) var(--space-px18) var(--space-2);
+  overflow-x: auto;
 }
 
 .ui-root .dr-pane--one {

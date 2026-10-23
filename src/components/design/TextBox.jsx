@@ -144,7 +144,8 @@ const TextBox = forwardRef(function TextBox({
           {showCount && <span className="ds-count">{`${text.length} of ${maxLength}`}</span>}
         </div>
       )}
-      {writer && (
+      {/* Once open it stays open, even if the phone turns to landscape. */}
+      {(writer || writing) && (
         <FocusWriter
           ref={writerRef}
           open={writing}

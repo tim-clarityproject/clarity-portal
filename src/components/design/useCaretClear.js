@@ -46,8 +46,16 @@ function scrollerOf(el) {
 
 export function keepCaretClear(el) {
   const vv = window.visualViewport;
-  const viewTop = vv ? vv.offsetTop : 0;
-  const viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  let viewTop = vv ? vv.offsetTop : 0;
+  let viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  // Inside a scrolling box (a guided tool), its own edges count too, so
+  // the line never ends up behind the tool's footer.
+  const scroller = scrollerOf(el);
+  if (scroller) {
+    const box = scroller.getBoundingClientRect();
+    viewTop = Math.max(viewTop, box.top);
+    viewBottom = Math.min(viewBottom, box.bottom);
+  }
   const { top, height } = caretOffset(el);
   const rect = el.getBoundingClientRect();
   const lineTop = rect.top + top;
@@ -57,7 +65,6 @@ export function keepCaretClear(el) {
   if (lineBottom > viewBottom - margin) by = lineBottom - (viewBottom - margin);
   else if (lineTop < viewTop) by = lineTop - viewTop - margin;
   if (Math.abs(by) < 1) return;
-  const scroller = scrollerOf(el);
   if (scroller) scroller.scrollTop += by;
   else window.scrollBy({ top: by, left: 0, behavior: 'instant' });
 }

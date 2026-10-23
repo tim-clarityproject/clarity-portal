@@ -2757,7 +2757,7 @@
   }
 
   .ui-root .ds-guide .ds-guide-title {
-    font-size: var(--fs-title-phone) !important;
+    font-size: var(--fs-title-guide-phone) !important;
   }
 
   /* Footer: the arrow alone, then Skip and a wide button under the thumb. */
@@ -2910,6 +2910,7 @@
 }
 
 .ui-root .ds-cal-grid td {
+  height: var(--cal-day-h);
   padding: 0;
 }
 

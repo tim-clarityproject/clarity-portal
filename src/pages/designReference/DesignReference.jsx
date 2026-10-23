@@ -48,7 +48,7 @@ import {
   WillSyncIndicator,
 } from '../../components/design';
 import { GallerySection, New } from './galleryKit';
-import { contrast, ViewContext, useGalleryView } from './galleryUtils';
+import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView } from './galleryUtils';
 import SprintTool from './SprintTool';
 import { useSprintDemo } from './useSprintDemo';
 import './designReference.css';
@@ -386,23 +386,12 @@ function WhoSeesDemo() {
   );
 }
 
-// Pretends to save, as the real portal would (no database here). With
-// "Lose the signal" ticked it fails, so the box shows Will sync and keeps
-// trying until the signal is back.
-function useExampleSave() {
-  const offline = useRef(false);
-  const save = useCallback(() => new Promise((resolve, reject) => {
-    setTimeout(() => (offline.current ? reject(new Error('offline')) : resolve()), 600);
-  }), []);
-  const setOffline = useCallback((v) => { offline.current = v; }, []);
-  return [save, setOffline];
-}
-
 function SteadyBoxDemo({ mode }) {
-  const [entry, setEntry] = useState('');
+  const key = `gallery-journal-${mode || 'page'}`;
+  const [entry, setEntry] = useState(() => startingValue(key, ''));
   const [noSignal, setNoSignal] = useState(false);
-  const [save, setOffline] = useExampleSave();
-  const state = useAutosave(entry, save, { draftKey: `gallery-journal-${mode || 'page'}` });
+  const [save, setOffline] = usePretendServer(key);
+  const state = useAutosave(entry, save, { draftKey: key });
   return (
     <div className="dr-stack dr-stack--fill">
       <TextBox
@@ -419,9 +408,10 @@ function SteadyBoxDemo({ mode }) {
 }
 
 function FocusModeDemo({ mode }) {
-  const [answer, setAnswer] = useState('');
-  const [save] = useExampleSave();
-  const state = useAutosave(answer, save, { draftKey: `gallery-focus-${mode || 'page'}` });
+  const key = `gallery-focus-${mode || 'page'}`;
+  const [answer, setAnswer] = useState(() => startingValue(key, ''));
+  const [save] = usePretendServer(key);
+  const state = useAutosave(answer, save, { draftKey: key });
   return (
     <div className="dr-stack dr-stack--fill">
       <TextBox

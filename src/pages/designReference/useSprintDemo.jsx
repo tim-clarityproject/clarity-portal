@@ -1,18 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   Choice,
-  clearDraft,
   clearGuideDraft,
   dayLabel,
   GuidedSummary,
   HelpPanel,
   nextMondayKey,
-  readDraft,
   TextBox,
   todayKey,
   useAutosave,
   useToast,
 } from '../../components/design';
+import { forgetSaved, startingValue, usePretendServer } from './galleryUtils';
 
 // A live guided-tool demo for the gallery, built on GuidedTool with M6's
 // "Start a sprint" wording. Invented text only; nothing is sent anywhere
@@ -50,39 +49,13 @@ function startingAnswers() {
   };
 }
 
-// The pretend server: answers "saved" here stand in for the database, so
-// a reload carries on where it was (the device copy is cleared once saved).
-const SAVED_PREFIX = 'gallery-saved:';
-
-function readSaved(key) {
-  try {
-    return JSON.parse(window.localStorage.getItem(SAVED_PREFIX + key) || 'null');
-  } catch {
-    return null;
-  }
-}
-
 function useSprintAnswers(key) {
-  const [answers, setAnswers] = useState(() => ({ ...startingAnswers(), ...(readSaved(key) || {}), ...(readDraft(key) || {}) }));
-  const save = useCallback((value) => new Promise((resolve) => {
-    setTimeout(() => {
-      try {
-        window.localStorage.setItem(SAVED_PREFIX + key, JSON.stringify(value));
-      } catch {
-        // Storage blocked: the demo just forgets on reload.
-      }
-      resolve();
-    }, 500);
-  }), [key]);
+  const [answers, setAnswers] = useState(() => ({ ...startingAnswers(), ...(startingValue(key, {}) || {}) }));
+  const [save] = usePretendServer(key);
   const state = useAutosave(answers, save, { draftKey: key });
   const set = useCallback((patch) => setAnswers((a) => ({ ...a, ...patch })), []);
   const reset = useCallback(() => {
-    clearDraft(key);
-    try {
-      window.localStorage.removeItem(SAVED_PREFIX + key);
-    } catch {
-      // Nothing to clear.
-    }
+    forgetSaved(key);
     setAnswers(startingAnswers());
   }, [key]);
   return [answers, set, state, reset];
@@ -127,6 +100,7 @@ function sprintSteps(a, set, role, openCalendar) {
             <TextBox
               label="What would you like to call it?"
               who="me"
+              maxLength={40}
               lines="one"
               value={a.label}
               onChange={(label) => set({ label })}

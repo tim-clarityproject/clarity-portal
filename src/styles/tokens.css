@@ -206,6 +206,7 @@
   --guide-page-max: 640px;
   --fs-question: 24px;       /* the question heading, DM Sans */
   --fs-question-phone: 21px;
+  --fs-title-guide-phone: 20px; /* a step's Nekst title on phone (M6) */
   --lh-question: 1.3;
   --fs-nudge: 16px;
   --fs-tool-name: 12px;      /* the tool's name in the top bar, Nekst */
