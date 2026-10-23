@@ -15,6 +15,8 @@ export { Choice, Dropdown } from './Choice';
 export { needsDropdown } from './choiceFit';
 export { default as InlineChoice } from './InlineChoice';
 export { default as FieldLabel } from './FieldLabel';
+export { default as WhoSees } from './WhoSees';
+export { CoachContext, useCoachName, whoSeesText } from './coachContext';
 export { default as Popover } from './Popover';
 export { default as useIsPhone } from './useIsPhone';
 export { default as FilterButton } from './FilterButton';

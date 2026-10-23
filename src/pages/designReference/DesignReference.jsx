@@ -8,11 +8,13 @@ import {
   ChipRow,
   Choice,
   Collapsible,
+  CoachContext,
   ColourModeChoice,
   Crosshair,
   Dropdown,
   EmptyState,
   ErrorMessage,
+  FieldLabel,
   FilterButton,
   FloatingOrb,
   GoogleButton,
@@ -54,7 +56,7 @@ import './designReference.css';
 const TOC = [
   ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Sections and questions'],
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
-  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c21', 'Filter'], ['c22', 'Show less'],
+  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c17', 'Breathe button'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
 ];
@@ -359,6 +361,28 @@ function PillsDemo() {
   );
 }
 
+function WhoSeesDemo() {
+  const [shared, setShared] = useState(true);
+  const [mission, setMission] = useState('Lead with clarity so the business grows and the best people want to stay.');
+  const [well, setWell] = useState('');
+  const missionId = useId();
+  const wellId = useId();
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <div>
+        <FieldLabel label="What’s your mission?" htmlFor={missionId} who={shared ? 'coach' : 'me'} />
+        <AutoGrowTextarea id={missionId} className="ds-textbox" value={mission} onChange={setMission} />
+      </div>
+      <Checkbox checked={shared} onChange={setShared}>My coach sees my mission</Checkbox>
+      <div>
+        <FieldLabel label="What went well today?" htmlFor={wellId} who="me" />
+        <AutoGrowTextarea id={wellId} className="ds-textbox" value={well} onChange={setWell} placeholder="e.g. I held the line in the board meeting" />
+      </div>
+      <FieldLabel label="Team strategy" who="team" />
+    </div>
+  );
+}
+
 function FilterDemo() {
   const [type, setType] = useState('all');
   const [when, setWhen] = useState('any');
@@ -634,6 +658,15 @@ function Gallery() {
           </>
         )} />
 
+        <GallerySection id="c24" title="Who can see this" demo={WhoSeesDemo} rules={(
+          <>
+            <p><New /><b>Every box that holds something personal shows a small lock and who can see it</b>: “Only you”, “You and [coach’s first name]” or “Your team” (Tim, 23 Oct; experience rule 44).</p>
+            <p>It sits at the right of the question above the box, 13px, in the label colour. Screen readers hear “Who can see this: Only you”.</p>
+            <p>It changes the moment something is shared, and back if sharing is undone. Tick and untick the box to see it.</p>
+            <p>The coach’s first name comes from the client’s own coach, never typed into the code. Here it is example data.</p>
+          </>
+        )} />
+
         <GallerySection id="c21" title="Filter" demo={FilterDemo} rules={(
           <p>One Filter button opens the drop-downs. Underneath, one plain line says what is applied, with Clear.</p>
         )} />
@@ -688,12 +721,17 @@ function Gallery() {
   );
 }
 
+// Example data: in the portal this is the client's own coach's first name.
+const EXAMPLE_COACH = 'Tim';
+
 export default function DesignReference() {
   return (
     <div className="ui-root dr-page">
-      <ToastProvider>
-        <Gallery />
-      </ToastProvider>
+      <CoachContext.Provider value={EXAMPLE_COACH}>
+        <ToastProvider>
+          <Gallery />
+        </ToastProvider>
+      </CoachContext.Provider>
     </div>
   );
 }

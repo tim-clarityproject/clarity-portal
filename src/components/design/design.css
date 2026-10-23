@@ -1950,3 +1950,28 @@
   cursor: default;
   opacity: 0.4;
 }
+
+/* ---------- Who can see this (experience rule 44; M6) ---------- */
+
+.ui-root .ds-who {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px6);
+  font-family: var(--font-body);
+  font-size: var(--fs-who);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--label);
+  white-space: nowrap;
+}
+
+.ui-root .ds-who svg {
+  flex: none;
+  width: var(--who-icon);
+  height: var(--who-icon);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
