@@ -2843,3 +2843,123 @@
   line-height: var(--lh-text);
   color: var(--label);
 }
+
+/* ---------- The branded calendar (M6) ---------- */
+
+.ui-root .ds-pop--panel {
+  width: var(--cal-w);
+}
+
+.ui-root .ds-cal {
+  font-family: var(--font-body);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-cal-month {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-px6);
+  font-size: var(--fs-option);
+  color: var(--text);
+}
+
+.ui-root .ds-cal-nav {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text-2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-cal-nav svg {
+  width: var(--space-3);
+  height: var(--space-3);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.ui-root .ds-cal-nav:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+.ui-root .ds-cal-nav:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+.ui-root .ds-cal-grid {
+  width: 100%;
+  margin-top: var(--space-px6);
+  border-collapse: separate;
+  border-spacing: var(--space-1);
+  table-layout: fixed;
+}
+
+.ui-root .ds-cal-grid th {
+  padding: var(--space-px6) 0;
+  font-size: var(--fs-min);
+  font-weight: var(--fw-regular);
+  text-align: center;
+  color: var(--label);
+}
+
+.ui-root .ds-cal-grid td {
+  padding: 0;
+}
+
+.ui-root .ds-cal-day {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--cal-day-h);
+  min-height: var(--cal-day-h) !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-day);
+  font-family: var(--font-body);
+  font-size: var(--fs-day) !important;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-cal-day:hover {
+    background: var(--raised);
+  }
+}
+
+.ui-root .ds-cal-day--today {
+  outline: var(--line-w) solid var(--quiet-line);
+  outline-offset: calc(-1 * var(--line-w));
+}
+
+.ui-root .ds-cal-day[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--on-text);
+  outline: 0;
+}
+
+.ui-root .ds-cal-day[aria-disabled='true'] {
+  cursor: default;
+  color: var(--day-off);
+  background: none;
+}
+
+.ui-root .ds-cal-day:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc(-1 * var(--focus-w));
+}

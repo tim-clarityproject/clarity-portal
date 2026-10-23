@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   BrandMark,
+  CalendarPopover,
   Button,
   Checkbox,
   Chip,
@@ -10,6 +11,7 @@ import {
   CoachContext,
   ColourModeChoice,
   Crosshair,
+  DatePicker,
   Dropdown,
   EmptyState,
   ErrorMessage,
@@ -59,7 +61,7 @@ import './designReference.css';
 const TOC = [
   ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Sections and questions'],
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
-  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
+  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c17', 'Breathe button'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
 ];
@@ -437,7 +439,12 @@ function GuidedDemo({ mode }) {
   const toast = useToast();
   const [role, setRole] = useState('ceo');
   const [full, setFull] = useState(false);
-  const openCalendar = useCallback(() => toast.show('The calendar opens here.'), [toast]);
+  const [calendar, setCalendar] = useState(false);
+  const calendarFrom = useRef(null);
+  const openCalendar = useCallback((e) => {
+    calendarFrom.current = e.currentTarget;
+    setCalendar(true);
+  }, []);
   const demo = useSprintDemo(mode || 'page', role, openCalendar);
   const closed = (why) => { if (why !== 'finished') toast.show('Saved. Carry on whenever you like.'); };
   return (
@@ -450,6 +457,23 @@ function GuidedDemo({ mode }) {
         <SprintTool demo={demo} layout="framed" role={role} onClose={closed} />
       </div>
       <SprintTool demo={demo} layout="fullscreen" open={full} role={role} onClose={(why) => { setFull(false); closed(why); }} />
+      <CalendarPopover
+        open={calendar}
+        onClose={() => setCalendar(false)}
+        anchorRef={calendarFrom}
+        title="When does it start?"
+        value={demo.answers.start}
+        onChange={(start) => demo.set({ start, extraStart: start })}
+      />
+    </div>
+  );
+}
+
+function CalendarDemo() {
+  const [by, setBy] = useState(null);
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <DatePicker label="By when?" value={by} onChange={setBy} />
     </div>
   );
 }
@@ -751,6 +775,14 @@ function Gallery() {
             <p>Nothing else on the page moves. It fits the space above the keyboard, so the line being typed stays in sight.</p>
             <p>Done, or a swipe down, closes it and puts you back in the same place, with what you wrote in the box. Nothing needs saving by hand.</p>
             <p>For long writing only: journal, reflections and debrief answers. On a laptop the box stays in the page and grows smoothly.</p>
+          </>
+        )} />
+
+        <GallerySection id="c28" title="Calendar" demo={CalendarDemo} rules={(
+          <>
+            <p><New /><b>Dates are picked from the portal’s own calendar</b>, never typed: the question as its title, the month with previous and next, today marked, past days greyed out, the chosen day filled.</p>
+            <p>On a laptop it opens beside the field like the drop-down; on a phone it slides up from the bottom. Weeks start on Monday.</p>
+            <p>Arrow keys move a day or a week, Page Up and Page Down change the month, Enter picks. Dates show as “Mon 26 Oct”.</p>
           </>
         )} />
 

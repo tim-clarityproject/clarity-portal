@@ -21,6 +21,7 @@ import './design.css';
 //
 // variant 'list':  the list itself is what opens (the drop-down).
 // variant 'panel': a small panel with the title and close (the calendar).
+// width:           'anchor' (as wide as the box) or 'css' (the stylesheet's).
 // keepFocus:       on laptop, focus stays on the box (the drop-down reads
 //                  its list through aria-activedescendant); otherwise
 //                  focus moves to initialFocusRef inside.
@@ -39,7 +40,9 @@ function place(anchor, pop, width) {
   const openUp = natural > below && above > below;
   const room = Math.max(0, openUp ? above : below);
   const height = Math.min(natural, room);
-  const w = Math.min(width === 'anchor' ? box.width : width, viewW - 2 * EDGE);
+  // 'anchor': as wide as the box; 'css': as its stylesheet says.
+  const own = pop.getBoundingClientRect().width;
+  const w = Math.min(width === 'anchor' ? box.width : own, viewW - 2 * EDGE);
   const left = Math.min(Math.max(EDGE, box.left), Math.max(EDGE, viewW - w - EDGE));
   return {
     top: openUp ? box.top - gap - height : box.bottom + gap,
@@ -116,7 +119,9 @@ export default function Popover({
       removeLayer();
       if (isPhone) unlockPage();
       const focusInside = pop?.contains(document.activeElement) || sheet?.contains(document.activeElement);
-      if (isPhone || !keepFocus || focusInside) returnFocus(anchor);
+      // After React has finished this update (it would otherwise put focus
+      // back on what was focused when the update began, inside here).
+      if (isPhone || !keepFocus || focusInside) queueMicrotask(() => returnFocus(anchor));
     };
     // initialFocusRef is read once, when it opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -163,10 +168,12 @@ export default function Popover({
 
   if (!isPhone) {
     const style = pos
-      ? { top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxHeight }
-      : { top: 0, left: 0, visibility: 'hidden' };
+      ? { top: pos.top, left: pos.left, width: width === 'anchor' ? pos.width : undefined, maxHeight: pos.maxHeight }
+      // Not placed yet: it is still fully transparent (not hidden, so
+      // focus can already move into it).
+      : { top: 0, left: 0 };
     return createPortal(
-      <div className="ui-root ds-portal" {...themeProps(scope)}>
+      <div className="ui-root ds-portal" {...themeProps(scope)} inert={!open}>
         <div
           ref={popRef}
           className={`ds-pop ds-pop--${variant}${shown && pos ? ' ds-pop--shown' : ''}${pos?.up ? ' ds-pop--up' : ''}`}
