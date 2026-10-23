@@ -281,6 +281,7 @@ export default function GrowStep3bPrioritize() {
             color: var(--text);
           }
           .ui-root .gp-option {
+            flex: 1 1 0;
             min-width: 0;
             overflow-wrap: anywhere;
           }
@@ -357,7 +358,7 @@ export default function GrowStep3bPrioritize() {
                     }
                   }}
                 >
-                  <div className="gp-option" style={{ flex: 1 }}>
+                  <div className="gp-option">
                     {editingIndex === index && editingSource === 'available' ? (
                       <input
                         type="text"
@@ -550,7 +551,7 @@ export default function GrowStep3bPrioritize() {
                       }
                     }}
                   >
-                    <div className="gp-option" style={{ flex: 1 }}>
+                    <div className="gp-option">
                       {editingIndex === originalIndex && editingSource === 'prioritized' ? (
                         <input
                           type="text"

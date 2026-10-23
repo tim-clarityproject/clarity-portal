@@ -243,15 +243,33 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
     wasOpenRef.current = isOpen;
   }, [isOpen, shouldRender, burgerRef]);
 
-  // Escape key closes.
+  // Escape key closes. Tab and Shift+Tab stay inside the open drawer and
+  // its menu button, so focus never lands on the page behind the scrim.
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !drawerRef.current) return;
+      const inDrawer = [...drawerRef.current.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter((el) => !el.closest('[inert]') && el.getClientRects().length > 0);
+      const stops = [burgerRef?.current, ...inDrawer].filter(Boolean);
+      if (stops.length === 0) return;
+      // The menu button sits outside the drawer in the page order, so every
+      // step is moved by hand rather than left to the browser.
+      const at = stops.indexOf(document.activeElement);
+      const step = e.shiftKey ? -1 : 1;
+      const next = at === -1
+        ? stops[e.shiftKey ? stops.length - 1 : 0]
+        : stops[(at + step + stops.length) % stops.length];
+      e.preventDefault();
+      next.focus();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, burgerRef]);
 
   // Close when the window becomes 768px or narrower.
   useEffect(() => {

@@ -13,7 +13,19 @@ export default function FilterButton({ label = 'Filter', applied, onClear, child
   const panelId = useId();
   const buttonRef = useRef(null);
   return (
-    <div className="ds-filter">
+    <div
+      className="ds-filter"
+      onKeyDown={(e) => {
+        // Escape closes the panel, unless it is closing a drop-down inside it.
+        if (e.key !== 'Escape' || !open) return;
+        const t = e.target;
+        const insideOpenList = t !== buttonRef.current
+          && (t.getAttribute?.('aria-expanded') === 'true' || t.closest?.('[role="listbox"], [role="dialog"]'));
+        if (insideOpenList) return;
+        setOpen(false);
+        buttonRef.current?.focus();
+      }}
+    >
       <button
         ref={buttonRef}
         type="button"

@@ -301,13 +301,15 @@
   word-spacing: normal;
   text-transform: uppercase;
   color: var(--text);
-  overflow-wrap: break-word;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .ui-root .ds-page-title-row {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .ui-root .ds-page-title-row .ds-page-info-toggle {

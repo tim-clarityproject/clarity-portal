@@ -44,6 +44,17 @@ export default function DesignHeader({ className = '' }) {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
+  // The phone mission panel closes when the window grows to desktop
+  // width, so its scroll lock never outlives it.
+  useEffect(() => {
+    if (!expandedPanel) return undefined;
+    const handleResize = () => {
+      if (window.innerWidth > 768) setExpandedPanel(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [expandedPanel]);
+
   // Close the phone mission panel on Escape.
   useEffect(() => {
     const handleEscape = (e) => {

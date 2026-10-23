@@ -298,11 +298,13 @@ const HLIST_CSS = `
 
 .hlist-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
+.hlist-head > div { min-width: 0; max-width: 100%; }
 
 .hlist-new-phone-wrap {
   display: none;
@@ -311,7 +313,7 @@ const HLIST_CSS = `
 }
 
 @media (max-width: 768px) {
-  .hlist-new-desktop { display: none; }
+  .ui-root .hlist-head .hlist-new-desktop { display: none !important; }
   .hlist-new-phone-wrap { display: flex; }
 }
 
@@ -448,6 +450,7 @@ const HLIST_CSS = `
   /* Wraps between words only - a date title never breaks mid-word.
      (overflow-wrap: break-word only splits a single word that is
      longer than the whole line.) */
+  max-width: 100%;
   white-space: normal;
   overflow-wrap: break-word;
   word-break: normal;

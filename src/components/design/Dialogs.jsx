@@ -17,6 +17,7 @@ import './design.css';
 // - dim the page underneath strongly in dark and lightly in light.
 
 const SWIPE_CLOSE_PX = 90;
+const DOUBLE_CLICK_MS = 400;
 
 function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, closeLabel = 'Close' }) {
   const ms = kind === 'panel' ? PANEL_MS : POPUP_MS;
@@ -64,11 +65,15 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
   }, [open, mounted, shown]);
 
   const active = open && mounted;
+  // When it opened: the second click of a double click on the button that
+  // opened it must not land on the scrim and close it straight away.
+  const openedAtRef = useRef(0);
 
   // While open: lock the page, move focus in, and on close give it back.
   useLayoutEffect(() => {
     if (!active) return undefined;
     const returnTo = openerOf(document.activeElement);
+    openedAtRef.current = performance.now();
     lockPage();
     const removeLayer = pushLayer(() => onCloseRef.current?.());
     const target = initialFocusRef?.current || dialogRef.current;
@@ -142,7 +147,14 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
       // focus away from the button it has just been returned to.
       onMouseDown={(e) => { if (!open) e.preventDefault(); }}
     >
-      <div className="ds-scrim" aria-hidden="true" onClick={() => onCloseRef.current?.()} />
+      <div
+        className="ds-scrim"
+        aria-hidden="true"
+        onClick={() => {
+          if (performance.now() - openedAtRef.current < DOUBLE_CLICK_MS) return;
+          onCloseRef.current?.();
+        }}
+      />
       <div
         ref={dialogRef}
         className={`ds-dialog ${kind === 'panel' ? 'ds-panel' : 'ds-popup'}${phoneForm ? ' ds-dialog--phone' : ''}`}
