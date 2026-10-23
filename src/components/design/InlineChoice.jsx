@@ -32,11 +32,15 @@ export default function InlineChoice({
   const radio = semantics === 'radio';
   const selectedIndex = Math.max(0, options.findIndex((o) => o.value === value));
 
-  const move = (from, step) => {
-    const next = (from + step + options.length) % options.length;
+  const moveTo = (next) => {
     onChange(options[next].value);
-    refs.current[next]?.focus();
+    const el = refs.current[next];
+    if (!el) return;
+    // Only as far as needed to see it, never a jump to the end.
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ block: 'nearest' });
   };
+  const move = (from, step) => moveTo((from + step + options.length) % options.length);
 
   const groupProps = {
     role: radio ? 'radiogroup' : 'group',
@@ -60,6 +64,8 @@ export default function InlineChoice({
         onKeyDown={radio ? (e) => {
           if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); move(i, 1); }
           if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(i, -1); }
+          if (e.key === 'Home') { e.preventDefault(); moveTo(0); }
+          if (e.key === 'End') { e.preventDefault(); moveTo(options.length - 1); }
         } : undefined}
       >
         <span>{option.label}</span>

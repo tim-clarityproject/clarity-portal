@@ -41,19 +41,22 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
       setMounted(true);
       // Reopened mid-close after a swipe: forget where the finger left it.
       if (dialogRef.current) dialogRef.current.style.transform = '';
-      let second;
-      const first = requestAnimationFrame(() => {
-        second = requestAnimationFrame(() => setShown(true));
-      });
-      return () => {
-        cancelAnimationFrame(first);
-        cancelAnimationFrame(second);
-      };
+      return undefined;
     }
     setShown(false);
     const timer = setTimeout(() => setMounted(false), prefersReducedMotion() ? 0 : ms);
     return () => clearTimeout(timer);
   }, [open, ms]);
+
+  // Shown only once it is in the page and its closed position has been
+  // laid out, so the opening slide or fade always runs (a frame timer
+  // alone could fire before the first render landed).
+  useLayoutEffect(() => {
+    if (!open || !mounted || shown) return undefined;
+    void dialogRef.current?.offsetHeight;
+    const frame = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(frame);
+  }, [open, mounted, shown]);
 
   const active = open && mounted;
 

@@ -94,14 +94,7 @@ export default function Popover({
     if (open) {
       setMounted(true);
       if (sheetRef.current) sheetRef.current.style.transform = '';
-      let second;
-      const first = requestAnimationFrame(() => {
-        second = requestAnimationFrame(() => setShown(true));
-      });
-      return () => {
-        cancelAnimationFrame(first);
-        cancelAnimationFrame(second);
-      };
+      return undefined;
     }
     setShown(false);
     const timer = setTimeout(() => {
@@ -110,6 +103,15 @@ export default function Popover({
     }, prefersReducedMotion() ? 0 : (isPhone ? PANEL_MS : POPUP_MS));
     return () => clearTimeout(timer);
   }, [open, isPhone]);
+
+  // Shown only once it is in the page and laid out in its closed
+  // position, so the opening motion always runs.
+  useLayoutEffect(() => {
+    if (!open || !mounted || shown) return undefined;
+    void (popRef.current || sheetRef.current)?.offsetHeight;
+    const frame = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(frame);
+  }, [open, mounted, shown]);
 
   const active = open && mounted;
 

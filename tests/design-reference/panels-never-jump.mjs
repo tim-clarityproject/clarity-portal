@@ -2,6 +2,7 @@
 // Changing anything inside it updates only that part; the panel must not
 // be rebuilt, slide or fade again, lose focus or lose its scroll position.
 //
+// Also checks that the slide panel and pop-up do animate when they open.
 // Checks the slide panel (to-do and unplanned win), the pop-up, the
 // drop-down's phone panel, the calendar (laptop and phone) and focus mode
 // on /design-reference. Needs the dev server running:
@@ -53,6 +54,21 @@ async function verdict(page, name, selector, scrollerSelector) {
 
 const wait = (page, ms = SETTLE_MS) => page.waitForTimeout(ms);
 
+// The other half of the rule: the panel does animate when it opens (also
+// on the very first open after the page loads).
+async function expectOpening(page) {
+  await page.evaluate(() => {
+    window.__opened = 0;
+    const count = (e) => { if (e.target.classList?.contains('ds-dialog')) window.__opened += 1; };
+    document.addEventListener('transitionrun', count, true);
+  });
+}
+
+async function openingRan(page, name) {
+  const ran = await page.evaluate(() => window.__opened > 0);
+  results.push({ name, ok: ran, same: true, starts: ran ? 'ran' : 'none', scrollHeld: true, focusInside: true });
+}
+
 async function open(page) {
   await page.goto(URL);
   await page.waitForSelector('#c15');
@@ -70,8 +86,10 @@ const browser = await chromium.launch();
   await open(page);
   const pane = page.locator('#c15 .dr-pane').first();
 
+  await expectOpening(page);
   await pane.getByRole('button', { name: 'Add a to-do' }).click();
   await wait(page);
+  await openingRan(page, 'Slide panel slides in on the first open');
   await watch(page, '.ds-panel', '.ds-panel .ds-dialog-body');
   const panel = page.locator('.ds-panel');
   // Pressed where they are (a click from the test would first scroll them
@@ -97,8 +115,10 @@ const browser = await chromium.launch();
   await page.keyboard.press('Escape');
   await wait(page);
 
+  await expectOpening(page);
   await pane.getByRole('button', { name: 'See how it fits together' }).click();
   await wait(page);
+  await openingRan(page, 'Pop-up fades in when it opens');
   await watch(page, '.ds-popup', '.ds-popup .ds-dialog-body');
   await page.locator('.ds-popup').getByRole('radio', { name: 'The sprint' }).click();
   await wait(page);

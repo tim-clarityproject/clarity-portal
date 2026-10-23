@@ -2200,6 +2200,7 @@
 }
 
 .ui-root .ds-guide--fullscreen {
+  animation: ds-fade var(--dur) var(--ease);
   position: fixed;
   left: 0;
   right: 0;

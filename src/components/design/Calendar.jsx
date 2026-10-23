@@ -64,6 +64,24 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
   const atMin = toKey(monthStart(min)) >= viewKey;
   const weeks = weeksOf(viewKey);
 
+  // On opening, the focused day is in sight even when a short window cuts
+  // the calendar down (only the calendar scrolls).
+  useEffect(() => {
+    // After the calendar has been placed beside its field.
+    const frame = requestAnimationFrame(() => {
+      const day = gridRef.current?.querySelector(`[data-key="${focusKey}"]`);
+      const scroller = day?.closest('.ds-pop, .ds-sheet-body');
+      if (!day || !scroller) return;
+      const view = scroller.getBoundingClientRect();
+      const box = day.getBoundingClientRect();
+      if (box.bottom > view.bottom) scroller.scrollTop += box.bottom - view.bottom;
+      else if (box.top < view.top) scroller.scrollTop -= view.top - box.top;
+    });
+    return () => cancelAnimationFrame(frame);
+    // Once, when it opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // After a keyboard move, focus follows (into another month if needed).
   useEffect(() => {
     if (!moved.current) return;
