@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { findTodaysDailyPlan } from '../lib/planReview';
+import { DisclosureArrow } from './design';
 
 // Plan now absorbs the old Decide section. Each sub-link lists the extra
 // routes that count as "current" for it (its own child/summary/step pages).
@@ -496,14 +497,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           right: 28px;
           top: 50%;
           transform: translateY(-50%);
-          width: 14px;
-          height: 14px;
-          color: var(--coral);
-          transition: transform var(--dur) var(--ease);
-        }
-
-        .design-drawer .drawer-section-cross.open {
-          transform: translateY(-50%) rotate(45deg);
+          display: flex;
         }
 
         .design-drawer-sublist-outer {
@@ -632,7 +626,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
                   tabIndex={isOpen ? 0 : -1}
                 >
                   {section.label}
-                  <span className={`drawer-section-cross ui-cross${isSectionOpen ? ' open' : ''}`} aria-hidden="true" />
+                  <span className="drawer-section-cross"><DisclosureArrow open={isSectionOpen} /></span>
                 </button>
                 <div className={`design-drawer-sublist-outer${isSectionOpen ? ' open' : ''}`}>
                   <div className="design-drawer-sublist-inner">
@@ -716,7 +710,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
                   tabIndex={isOpen ? 0 : -1}
                 >
                   {section.label}
-                  <span className={`drawer-section-cross ui-cross${isSectionOpen ? ' open' : ''}`} aria-hidden="true" />
+                  <span className="drawer-section-cross"><DisclosureArrow open={isSectionOpen} /></span>
                 </button>
                 <div className={`design-drawer-sublist-outer${isSectionOpen ? ' open' : ''}`}>
                   <div className="design-drawer-sublist-inner">

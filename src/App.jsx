@@ -7,8 +7,8 @@ import { FormProvider } from './context/FormContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
-import WhatsAppWidget from './components/WhatsAppWidget';
-import BreathButton from './components/BreathButton';
+import { FloatingOrb, ToastProvider } from './components/design';
+import { CoachChatProvider } from './components/coach/CoachChat';
 import ProtectedLayout from './components/ProtectedLayout';
 import Welcome from './pages/Welcome';
 import About from './pages/About';
@@ -139,6 +139,12 @@ function AppContent() {
       historyLength: window.history.length
     });
   }, [location.pathname, location.key, navigationType]);
+
+  // Each page shows dark, or follows the colour mode if it has been
+  // rebuilt for both (src/lib/colourMode/boot.js), so check on every move.
+  useEffect(() => {
+    window.ClarityColourMode?.refresh();
+  }, [location.pathname]);
 
   // Handle confirmation code redirects (Supabase email links may land on root with code parameter)
   useEffect(() => {
@@ -360,10 +366,11 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ErrorBoundary>
-      {!hideButtons && (
-        <div className="no-print">
-          <BreathButton />
-          <WhatsAppWidget />
+      {/* The one floating button (desktop only): Breathe. Chat to the
+          coach is in the header on desktop and in My Account on phone. */}
+      {!hideButtons && user && (
+        <div className="ui-root ds-portal no-print">
+          <FloatingOrb onBreathe={() => navigate('/breathe')} />
         </div>
       )}
     </>
@@ -375,9 +382,13 @@ export default function App() {
     <AuthProvider>
       <MissionProvider>
         <FormProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
+          <CoachChatProvider>
+            <ToastProvider>
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </ToastProvider>
+          </CoachChatProvider>
         </FormProvider>
       </MissionProvider>
     </AuthProvider>

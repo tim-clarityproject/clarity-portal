@@ -304,6 +304,25 @@
   overflow-wrap: break-word;
 }
 
+.ui-root .ds-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ui-root .ds-page-title-row .ds-page-info-toggle {
+  flex: none;
+  margin: calc((var(--tap-min) - var(--info-size)) / -2) 0;
+}
+
+.ui-root .ds-page-info {
+  margin: var(--space-2) 0 0;
+  max-width: var(--nudge-max);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
 .ui-root .ds-page-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1784,8 +1803,9 @@
   z-index: var(--z-orb);
 }
 
-/* Never on phone (Tim, 21 Oct): it only exists where there is a mouse. */
-@media not ((hover: hover) and (pointer: fine)) {
+/* Never on phone (Tim, 21 Oct): it only exists where there is a mouse,
+   and never at phone width, where the tab bar sits at the bottom. */
+@media not ((hover: hover) and (pointer: fine)), (max-width: 768px) {
   .ui-root .ds-orb {
     display: none;
   }
@@ -3157,4 +3177,37 @@
 /* After a statement, the who-sees label lines up with the answer rows. */
 .ui-root .ds-statement + .ds-label-row {
   max-width: var(--row-max-w);
+}
+
+/* ---------- Chat to [coach] (M2 header, top right) ---------- */
+
+.ui-root .ds-chat {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--chip-h) !important;
+  padding: 0 var(--space-px18) !important;
+  border: var(--line-w) solid var(--outline);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--fs-note) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-chat:hover {
+    color: var(--text);
+    border-color: var(--quiet-line);
+  }
+}
+
+.ui-root .ds-chat:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
 }

@@ -1,20 +1,38 @@
 import { useContext, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
+import { BoldCrosshair, ChatButton } from './design';
+import { useStartChat } from './coach/CoachChat';
 import DesignDrawer from './DesignDrawer';
+
+// The header (approved Home mock-up M2, version 3; decisions "Header").
+//
+// Desktop: the bold crosshair on the left is the menu button (it opens the
+// drawer and turns 45 degrees while it is open), M2's My Mission pill in
+// the middle, and Chat to [coach's first name] on the right. No logo.
+// Phone: M2's full-width My Mission pill. The phone tab bar stays as it is
+// until Phase 4, and everything in the drawer is reachable from it, so the
+// phone header has no menu button.
+//
+// The pill opens what the mission bar opened before: the plan on desktop,
+// the full mission with Edit mission on phone. With no mission it reads
+// "Add your mission when you're ready" and opens the mission step in My
+// Account.
+const NO_MISSION = 'Add your mission when you’re ready';
 
 export default function DesignHeader({ className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const startChat = useStartChat();
   const { mission, showInHeader } = useContext(MissionContext);
   const [expandedPanel, setExpandedPanel] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerWrapperRef = useRef(null);
-  const hamburgerRef = useRef(null);
+  const menuRef = useRef(null);
 
-  // Measure the phone header (row + line) so the scrim can start exactly below it
+  // Measure the header so the scrim and the drawer start exactly below it.
   useLayoutEffect(() => {
     const measure = () => {
       if (headerWrapperRef.current) {
@@ -26,18 +44,16 @@ export default function DesignHeader({ className = '' }) {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
-  // Close panel on Escape key
+  // Close the phone mission panel on Escape.
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape' && expandedPanel) {
-        setExpandedPanel(false);
-      }
+      if (e.key === 'Escape' && expandedPanel) setExpandedPanel(false);
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [expandedPanel]);
 
-  // Stop the page behind from scrolling while the panel is open
+  // Stop the page behind from scrolling while the panel is open.
   useEffect(() => {
     if (expandedPanel) {
       const original = document.body.style.overflow;
@@ -48,455 +64,279 @@ export default function DesignHeader({ className = '' }) {
     }
   }, [expandedPanel]);
 
-  // Close panel when clicking scrim
-  const handleScrimClick = () => {
-    setExpandedPanel(false);
-  };
-
-  // Navigate to My Account Mission section and open Edit Mission
-  const handleEditMission = () => {
+  // My Account's mission section, with Edit mission open.
+  const openMissionStep = () => {
     setExpandedPanel(false);
     navigate('/my-account', {
-      state: { ...location.state, scrollTo: 'mission-section', openEditMission: true }
+      state: { ...location.state, scrollTo: 'mission-section', openEditMission: true },
     });
   };
 
-  // Desktop pill click: go to Personal Operating Plan, no pop-up
-  const handleDesktopPillClick = () => {
-    navigate('/personal-operating-plan');
-  };
-
-  const shouldShowPill = mission && showInHeader;
+  const showPill = showInHeader;
+  const hasMission = Boolean(mission);
 
   return (
-    <div className={`ui-root ${className}`.trim()} style={{
-      background: 'var(--bg)',
-      color: 'var(--text)',
-    }}>
+    <div className={`ui-root ${className}`.trim()}>
       <style>{`
-        .design-header-wrapper {
+        .ui-root .hdr {
+          position: relative;
+          background: var(--bg);
+        }
+
+        /* M2's My Mission pill: the solid surface pill, no outline, a small
+           "My Mission" label in Nekst capitals (no crosshair), then the
+           mission, cut short with "…" when it doesn't fit. */
+        .ui-root .hdr-mis {
+          all: unset;
+          cursor: pointer;
+          box-sizing: border-box;
           display: flex;
-          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-3);
+          min-width: 0;
+          min-height: var(--box-min-h) !important;
+          padding: 0 var(--space-px22) !important;
+          border-radius: var(--radius-pill);
+          background: var(--raised);
+          color: var(--text);
+          font-family: var(--font-body);
+          letter-spacing: normal;
+        }
+        .ui-root .hdr-mis:focus-visible {
+          outline: var(--focus-w) solid var(--text);
+          outline-offset: var(--space-px3);
+        }
+        .ui-root .hdr-mis-label {
+          flex: none;
+          font-family: var(--font-display);
+          font-weight: var(--fw-regular);
+          font-size: var(--fs-glyph);
+          text-transform: uppercase;
+          letter-spacing: var(--ls-overline);
+          line-height: 1;
+          color: var(--text-2);
+          white-space: nowrap;
+        }
+        .ui-root .hdr-mis-text {
+          min-width: 0;
+          font-size: var(--fs-note) !important;
+          line-height: var(--lh-text);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-align: right;
+        }
+        .ui-root .hdr-mis--none .hdr-mis-text {
+          color: var(--placeholder);
         }
 
         @media (max-width: 768px) {
-          .design-header-wrapper {
-            position: relative;
+          .ui-root .hdr {
             z-index: 5002;
           }
-          .design-header-phone {
-            display: flex;
-            padding: 24px 20px 0;
-            gap: 14px;
-            align-items: center;
-            background: var(--bg);
+          .ui-root .hdr-desktop {
+            display: none;
           }
-          .design-header-phone .logo-mark {
-            width: 30px;
-            height: 30px;
-            flex-shrink: 0;
+          .ui-root .hdr-phone {
+            padding: var(--space-px22) var(--space-px18) var(--space-px10);
           }
-          /* 44px tap target without shifting the visible mark or the
-             rest of the phone header's layout - the extra 7px of hit
-             area on each side is pulled back out of flow by the
-             matching negative margin (prompt 7h). */
-          .logo-mark-link-phone {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 44px;
-            margin: -7px;
-            flex-shrink: 0;
-            border-radius: 8px;
-          }
-          .logo-mark-link-phone:focus-visible {
-            outline: 2px solid var(--coral);
-            outline-offset: 2px;
-          }
-          .mis-slot {
-            flex: 1;
-            position: relative;
-            height: 36px;
-          }
-          .design-mis {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 36px;
-            border: 1px solid var(--coral);
-            border-radius: 999px;
-            overflow: hidden;
-            background: var(--bg);
+          .ui-root .hdr-mis-card {
+            border-radius: var(--radius-pill);
             transition: border-radius var(--dur) var(--ease);
+            background: var(--raised);
+            overflow: hidden;
           }
-          .design-mis.open {
-            height: auto;
-            border-radius: 26px;
-          }
-          .mis-trigger {
-            display: flex;
+          .ui-root .hdr-phone .hdr-mis {
             width: 100%;
-            height: 34px;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            padding: 0 0 0 0.16em;
-            line-height: 1;
-            border: none;
+          }
+          .ui-root .hdr-mis-card .hdr-mis {
             background: transparent;
-            cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-            font: inherit;
-            color: inherit;
           }
-          /* A global rule in src/styles/mobile.css, button:not(.breathe-button),
-             targets every <button> with !important padding/min-height/font-size
-             (specificity 0,1,1). It overrode the padding/height above, which
-             pushed the YOUR MISSION label visibly below centre. This selector
-             (two classes, specificity 0,2,0) beats it without touching the
-             global file. */
-          .design-mis .mis-trigger {
-            height: 34px !important;
-            min-height: 0 !important;
-            padding: 0 0 0 0.16em !important;
-            font-size: 11px !important;
+          .ui-root .hdr-mis-card.open {
+            border-radius: var(--radius-sheet-desktop);
           }
-          .mis-trigger:focus-visible {
-            outline: 2px solid var(--text);
-            outline-offset: -4px;
-          }
-          .mis-trigger-text {
-            font-family: var(--font-display);
-            font-weight: 400;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.16em;
-            line-height: 1;
-            color: var(--text);
-          }
-          .mis-panel-outer {
+          .ui-root .hdr-mis-panel {
             display: grid;
             grid-template-rows: 0fr;
             transition: grid-template-rows var(--dur) var(--ease);
           }
-          .mis-panel-outer.open {
+          .ui-root .hdr-mis-panel.open {
             grid-template-rows: 1fr;
           }
-          .mis-panel-inner {
+          .ui-root .hdr-mis-panel-inner {
             min-height: 0;
             overflow: hidden;
           }
-          .mis-panel-content {
-            border-top: 1px solid var(--line);
-            margin: 0 18px;
-            opacity: 0;
-            transform: translateY(-4px);
-            transition: opacity var(--dur) var(--ease) 120ms, transform var(--dur) var(--ease) 120ms;
+          .ui-root .hdr-mis-full {
+            margin: 0 var(--space-px22);
+            padding: var(--space-px6) 0 var(--space-px18);
+            border-top: var(--line-w) solid var(--line);
           }
-          .mis-panel-outer.open .mis-panel-content {
-            opacity: 1;
-            transform: none;
-          }
-          .mis-statement {
-            font-family: var(--font-body);
-            font-size: 18px;
-            line-height: 1.5;
+          .ui-root .hdr-mis-full p {
+            margin: var(--space-px14) 0 0;
+            font-size: var(--fs-statement);
+            line-height: var(--lh-statement);
             color: var(--text);
-            text-align: center;
-            padding: 18px 4px 6px;
           }
-          /* A global rule in src/styles/mobile.css, button:not(.breathe-button),
-             targets every <button> with !important font-size/padding/min-height
-             (specificity 0,1,1). The plain .mis-edit-button class alone (0,1,0,
-             no !important) lost to it outright, so this link rendered at the
-             legacy 14px/12px-16px instead of the small, quiet 10px intended -
-             it was competing with the mission statement instead of sitting
-             under it. Scoped under .ui-root (0,2,0) with matching !important
-             to reliably beat the legacy rule. The 44px tap target is built
-             from invisible padding alone (text itself stays 10px); the 20px
-             gaps above/below are a true margin outside that padding, so they
-             measure as 20px regardless of the tap-area padding inside. */
-          .ui-root .mis-edit-button {
-            display: block;
-            width: 100%;
-            margin: 20px 0 !important;
-            border: none;
-            background: transparent;
-            padding: 17px 0 !important;
-            font-family: var(--font-display);
-            font-weight: 400;
-            font-size: 10px !important;
-            line-height: 1;
-            text-transform: uppercase;
-            letter-spacing: 0.16em;
-            text-decoration: none;
-            color: var(--coral);
-            text-align: center;
-            cursor: pointer;
-          }
-          .ui-root .mis-edit-button:hover,
-          .ui-root .mis-edit-button:active {
-            color: var(--coral-soft);
-          }
-          .design-header-line {
-            margin: 18px 20px 0;
-            height: 1px;
-            background: var(--line);
-          }
-          .design-header-desktop {
-            display: none;
-          }
-          .design-scrim {
+          .ui-root .hdr-scrim {
             position: fixed;
             left: 0;
             right: 0;
             bottom: 0;
             background: var(--scrim);
             z-index: 5001;
-            animation: ui-scrim-fade var(--dur) var(--ease) forwards;
+            animation: hdr-scrim-fade var(--dur) var(--ease) forwards;
           }
         }
 
         @media (min-width: 769px) {
-          .design-header-phone {
+          .ui-root .hdr {
+            z-index: 5003;
+          }
+          .ui-root .hdr-phone {
             display: none;
           }
-          .design-header-line {
-            display: none;
-          }
-          .design-header-desktop {
+          .ui-root .hdr-desktop {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-            height: 79px;
-            padding: 0 32px;
+            grid-template-columns: minmax(max-content, 1fr) minmax(0, max-content) minmax(max-content, 1fr);
             align-items: center;
-            background: var(--bg);
+            gap: var(--space-3);
+            height: var(--header-h-desktop);
+            padding: 0 var(--space-px28);
+            border-bottom: var(--line-w) solid var(--line);
           }
-          .design-header-desktop .hamburger {
+          .ui-root .hdr-desktop .hdr-mis {
+            justify-self: center;
+            gap: var(--space-px28);
+            min-height: var(--mission-pill-h) !important;
+            max-width: 100%;
+          }
+          .ui-root .hdr-desktop .hdr-mis-text {
+            font-size: var(--fs-secondary) !important;
+          }
+          .ui-root .hdr-menu {
+            all: unset;
+            cursor: pointer;
             justify-self: start;
+            box-sizing: border-box;
+            width: var(--tap-min);
+            height: var(--tap-min);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4.5px;
-            min-width: 44px;
-            min-height: 44px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 0;
+            border-radius: var(--radius-pill);
           }
-          .design-header-desktop .hamburger:focus-visible {
-            outline: 2px solid var(--coral);
-            outline-offset: 4px;
-            border-radius: 8px;
+          .ui-root .hdr-menu:focus-visible {
+            outline: var(--focus-w) solid var(--text);
+            outline-offset: var(--space-px3);
           }
-          .design-header-desktop .hamburger:focus:not(:focus-visible) {
-            outline: none;
+          .ui-root .hdr-menu .ds-bold-cross {
+            width: var(--bold-cross-menu);
+            height: var(--bold-cross-menu);
+            transition: transform var(--dur-slow) var(--ease);
           }
-          .design-header-desktop .hamburger-line {
-            width: 22px;
-            height: 1.5px;
-            background: var(--coral);
+          .ui-root .hdr-menu[aria-expanded="true"] .ds-bold-cross {
+            transform: rotate(45deg);
           }
-          .design-header-desktop .mission-pill-desktop {
-            justify-self: center;
-            display: inline-flex;
-            align-items: center;
-            gap: 20px;
-            min-height: 50px;
-            padding: 0 30px;
-            width: max-content;
-            min-width: 300px;
-            max-width: calc(100vw - 200px);
-            border: 1px solid var(--coral);
-            border-radius: 999px;
-            background: transparent;
-            cursor: pointer;
-            transition: border-color var(--dur-fast) var(--ease);
-          }
-          .design-header-desktop .mission-pill-desktop:hover {
-            border-color: var(--coral-soft);
-          }
-          .design-header-desktop .mission-pill-desktop:focus-visible {
-            outline: 2px solid var(--coral);
-            outline-offset: 2px;
-          }
-          .design-header-desktop .mission-pill-desktop:focus:not(:focus-visible) {
-            outline: none;
-          }
-          .design-header-desktop .mission-pill-text {
-            font-family: var(--font-display);
-            font-weight: 400;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            color: var(--coral);
-            white-space: nowrap;
-            padding-right: 20px;
-            border-right: 1px solid var(--line);
-            line-height: 50px;
-            flex-shrink: 0;
-          }
-          .design-header-desktop .mission-statement {
-            font-family: var(--font-body);
-            font-size: 15px;
-            color: var(--text);
-            letter-spacing: 0;
-            text-transform: none;
-            line-height: 1.3;
-            white-space: normal;
-            flex: 1;
-            text-align: center;
-          }
-          .design-header-desktop .logo-mark-link {
+          .ui-root .hdr-chat {
             justify-self: end;
-            display: flex;
-            border-radius: 8px;
-          }
-          .design-header-desktop .logo-mark-link:focus-visible {
-            outline: 2px solid var(--coral);
-            outline-offset: 4px;
-          }
-          .design-header-desktop .logo-mark-link:focus:not(:focus-visible) {
-            outline: none;
-          }
-          .design-header-desktop .logo-mark-desktop {
-            width: 34px;
-            height: 34px;
-            flex-shrink: 0;
-          }
-          .design-header-line-desktop {
-            height: 1px;
-            background: var(--line);
-            width: 100%;
           }
         }
 
-        @keyframes ui-scrim-fade {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+        @keyframes hdr-scrim-fade {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
 
-      <div className="design-header-wrapper" ref={headerWrapperRef}>
+      <div className="hdr" ref={headerWrapperRef}>
         {/* PHONE HEADER */}
-        <div className="design-header-phone">
-          <Link to="/welcome" className="logo-mark-link-phone" aria-label="Home">
-            <img
-              className="logo-mark"
-              src="/brand/mark_colour-on-dark.png"
-              alt=""
-            />
-          </Link>
-          {shouldShowPill && (
-            <div className="mis-slot">
-              <div className={`design-mis${expandedPanel ? ' open' : ''}`}>
+        {showPill && (
+          <div className="hdr-phone">
+            {hasMission ? (
+              <div className={`hdr-mis-card${expandedPanel ? ' open' : ''}`}>
                 <button
                   type="button"
-                  className="mis-trigger"
+                  className="hdr-mis"
                   onClick={() => setExpandedPanel(!expandedPanel)}
                   aria-expanded={expandedPanel}
                 >
-                  <span className="mis-trigger-text">YOUR MISSION</span>
+                  <span className="hdr-mis-label">My Mission</span>
+                  <span className="hdr-mis-text">{mission}</span>
                 </button>
-                <div className={`mis-panel-outer${expandedPanel ? ' open' : ''}`}>
-                  <div className="mis-panel-inner">
-                    <div className="mis-panel-content">
-                      <div className="mis-statement">{mission}</div>
-                      <button
-                        type="button"
-                        className="mis-edit-button"
-                        onClick={handleEditMission}
-                      >
+                <div className={`hdr-mis-panel${expandedPanel ? ' open' : ''}`}>
+                  <div className="hdr-mis-panel-inner" inert={!expandedPanel}>
+                    <div className="hdr-mis-full">
+                      <p>{mission}</p>
+                      <button type="button" className="ds-link" onClick={openMissionStep}>
                         Edit mission
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Phone header line */}
-        {shouldShowPill && <div className="design-header-line" />}
+            ) : (
+              <button type="button" className="hdr-mis hdr-mis--none" onClick={openMissionStep}>
+                <span className="hdr-mis-label">My Mission</span>
+                <span className="hdr-mis-text">{NO_MISSION}</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* DESKTOP HEADER */}
-        <div className="design-header-desktop">
-          {/* Hamburger - opens the desktop drawer */}
+        <div className="hdr-desktop">
           <button
-            ref={hamburgerRef}
+            ref={menuRef}
             type="button"
-            className="hamburger"
+            className="hdr-menu"
             onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Menu"
             aria-expanded={menuOpen}
             aria-controls="design-drawer"
           >
-            <div className="hamburger-line" />
-            <div className="hamburger-line" />
-            <div className="hamburger-line" />
+            <BoldCrosshair />
           </button>
 
-          {/* Mission pill */}
-          {shouldShowPill && (
+          {showPill ? (
             <button
               type="button"
-              className="mission-pill-desktop"
-              onClick={handleDesktopPillClick}
+              className={`hdr-mis${hasMission ? '' : ' hdr-mis--none'}`}
+              onClick={hasMission ? () => navigate('/personal-operating-plan') : openMissionStep}
             >
-              <div className="mission-pill-text">YOUR MISSION</div>
-              <div className="mission-statement">{mission}</div>
+              <span className="hdr-mis-label">My Mission</span>
+              <span className="hdr-mis-text">{hasMission ? mission : NO_MISSION}</span>
             </button>
-          )}
+          ) : <span />}
 
-          {/* Logo mark - links to Home */}
-          <Link to="/welcome" className="logo-mark-link" aria-label="Home">
-            <img
-              className="logo-mark-desktop"
-              src="/brand/mark_colour-on-dark.png"
-              alt="The Clarity Project"
-            />
-          </Link>
+          <span className="hdr-chat">
+            <ChatButton onClick={startChat} />
+          </span>
         </div>
-
-        {/* Desktop header line */}
-        <div className="design-header-line-desktop" />
       </div>
 
-      {/* Full-screen scrim behind the open phone panel - portaled to document.body
-          so no ancestor (padding, transform, overflow, stacking context) can
-          constrain its position: fixed edges. Position/size come from the
-          .design-scrim class (not inline style) because a pre-existing global
-          rule in src/styles/mobile.css - div[style*="position: fixed"] { left:
-          16px !important; right: 16px !important; ... } - matches and overrides
-          ANY div with "position: fixed" literally inside its inline style
-          attribute. Using a class avoids that match entirely without touching
-          the global file. */}
-      {expandedPanel && shouldShowPill && createPortal(
-        <div className="ui-root">
+      {/* The scrim behind the open phone panel, portaled to document.body
+          so no ancestor can constrain its fixed edges. Its position lives
+          in the .hdr-scrim class, never an inline "position: fixed",
+          which a global rule in src/styles/mobile.css would override. */}
+      {expandedPanel && showPill && createPortal(
+        <div className="ui-root ds-portal">
           <div
-            className="design-scrim"
-            onClick={handleScrimClick}
+            className="hdr-scrim"
+            onClick={() => setExpandedPanel(false)}
             style={{ top: `${headerHeight}px` }}
           />
         </div>,
-        document.body
+        document.body,
       )}
 
-      {/* Desktop navigation drawer, opened by the hamburger above */}
+      {/* The drawer, opened by the menu button above */}
       <DesignDrawer
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         headerHeight={headerHeight}
-        burgerRef={hamburgerRef}
+        burgerRef={menuRef}
       />
     </div>
   );

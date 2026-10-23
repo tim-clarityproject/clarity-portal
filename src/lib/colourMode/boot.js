@@ -14,7 +14,13 @@
    including when it switches at night.
 
    The choice is remembered on this device for now; from Phase 1 the
-   account saves it. */
+   account saves it.
+
+   Existing pages stay in dark until each is rebuilt in its own phase
+   (Tim, 23 Oct), so nobody on a light-mode phone sees a page half in
+   light mode. Only the pages listed in BOTH_MODES follow the choice;
+   every other page shows dark whatever the choice, without changing it.
+   A page joins the list when its phase rebuilds it for both modes. */
 (function () {
   if (typeof window === 'undefined' || window.ClarityColourMode) return;
 
@@ -26,6 +32,9 @@
   // src/styles/tokens.css (JavaScript can't read the tokens before the
   // first paint).
   var BACKGROUND = { dark: '#000000', light: '#F9F8F5' };
+
+  // Pages rebuilt for both modes (path prefixes).
+  var BOTH_MODES = ['/design-reference'];
 
   var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
 
@@ -41,7 +50,17 @@
 
   var choice = read();
 
+  function pageHasBothModes() {
+    var path = window.location.pathname.replace(/\/+$/, '');
+    for (var i = 0; i < BOTH_MODES.length; i += 1) {
+      var page = BOTH_MODES[i];
+      if (path === page || path.indexOf(page + '/') === 0) return true;
+    }
+    return false;
+  }
+
   function resolve(c) {
+    if (!pageHasBothModes()) return 'dark';
     if (c === 'light' || c === 'dark') return c;
     return media && media.matches ? 'light' : 'dark';
   }
@@ -111,10 +130,17 @@
     document.addEventListener('DOMContentLoaded', apply, { once: true });
   }
 
+  // The app moved to another page: it may show both modes or only dark.
+  function refresh() {
+    var before = document.documentElement.getAttribute('data-theme');
+    if (apply() !== before) announce();
+  }
+
   window.ClarityColourMode = {
     EVENT: EVENT,
     get: function () { return choice; },
     mode: function () { return resolve(choice); },
     set: set,
+    refresh: refresh,
   };
 })();

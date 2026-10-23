@@ -11,12 +11,16 @@ import DesignHeader from '../components/DesignHeader';
 import PageHeading from '../components/PageHeading';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
+import { useCoachName } from '../components/design';
+import { useStartChat } from '../components/coach/CoachChat';
 
 export default function MyAccount() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isLoading } = useContext(AuthContext);
   const { showInHeader, updateShowInHeader } = useContext(MissionContext);
+  const coachName = useCoachName();
+  const startChat = useStartChat();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [personalGoal, setPersonalGoal] = useState('');
@@ -468,6 +472,18 @@ export default function MyAccount() {
               Open
             </button>
           </div>
+          {/* Chat to the coach: in the header on desktop, here on phone. */}
+          {coachName && (
+            <div className="account-row account-row--phone-only">
+              <div className="account-row-text">
+                <div className="account-row-title">{`Chat to ${coachName}`}</div>
+                <div className="account-row-desc">A message on WhatsApp or iMessage</div>
+              </div>
+              <button type="button" className="ui-btn-ghost" onClick={startChat}>
+                Start a chat
+              </button>
+            </div>
+          )}
           <div className="account-row">
             <div className="account-row-text">
               <div className="account-row-title">Log out</div>

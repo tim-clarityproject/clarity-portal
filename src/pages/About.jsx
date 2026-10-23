@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import { openContactDrTim } from '../lib/contactDrTim';
+import { Button, useCoachName } from '../components/design';
+import { useStartChat } from '../components/coach/CoachChat';
 
 function ExternalLinkIcon() {
   return (
@@ -13,6 +14,8 @@ function ExternalLinkIcon() {
 
 export default function About() {
   const navigate = useNavigate();
+  const coachName = useCoachName();
+  const startChat = useStartChat();
 
   return (
     <div className="ui-root">
@@ -190,9 +193,9 @@ export default function About() {
             <ExternalLinkIcon />
           </a>
           <div className="about-actions">
-            <button type="button" className="ui-btn-primary" onClick={openContactDrTim}>
-              Contact Dr. Tim directly
-            </button>
+            {coachName && (
+              <Button variant="primary" onClick={startChat}>{`Chat to ${coachName}`}</Button>
+            )}
           </div>
         </div>
 

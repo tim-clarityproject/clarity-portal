@@ -1569,18 +1569,17 @@ html:has(.ui-root) {
   opacity: 1;
 }
 
+/* A flat underline that appears on hover (no gradients, rule 3). */
 .ui-discard-link-label {
-  background-image: linear-gradient(var(--coral), var(--coral));
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  background-size: 0% 1px;
-  padding-bottom: 3px;
-  transition: background-size var(--dur-slow) var(--ease);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--space-px3);
+  transition: text-decoration-color var(--dur-slow) var(--ease);
 }
 
 .ui-root .ui-discard-link:hover .ui-discard-link-label,
 .ui-root .ui-discard-link:focus-visible .ui-discard-link-label {
-  background-size: 100% 1px;
+  text-decoration-color: var(--coral-text);
 }
 
 @media (prefers-reduced-motion: reduce) {

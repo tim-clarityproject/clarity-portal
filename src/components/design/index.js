@@ -29,7 +29,7 @@ export { default as GuidedTool, GuidedSummary } from './GuidedTool';
 export { clearGuideDraft } from './guideDraft';
 export { default as useAutosave, readDraft, clearDraft } from './useAutosave';
 export { default as WhoSees } from './WhoSees';
-export { CoachContext, useCoachName, whoSeesText } from './coachContext';
+export { CoachContext, useCoach, useCoachName, whoSeesText } from './coachContext';
 export { default as Popover } from './Popover';
 export { default as useIsPhone } from './useIsPhone';
 export { default as FilterButton } from './FilterButton';
