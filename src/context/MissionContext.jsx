@@ -1,17 +1,9 @@
 import React, { createContext, useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
 import { supabase } from '../lib/supabase';
+import { MISSION_CHANGED } from '../lib/missionEvents';
 
 export const MissionContext = createContext();
-
-// Anything that changes the mission outside this context (the operating
-// plan editor, restoring a version or an archived plan, archiving) calls
-// announceMissionChange() so the pill, Welcome and My Account update at
-// once, with no sign-out.
-const MISSION_CHANGED = 'clarity:mission-changed';
-export function announceMissionChange() {
-  window.dispatchEvent(new Event(MISSION_CHANGED));
-}
 
 // How long to wait before trying a failed load again.
 const RETRY_MS = [1000, 3000, 8000];
@@ -32,9 +24,11 @@ export function MissionProvider({ children }) {
   const readSeq = useRef(0);
   const retryTimer = useRef(null);
   const userIdRef = useRef(userId);
-  userIdRef.current = userId;
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
-  const fetchMission = useCallback(async (attempt = 0) => {
+  const fetchMission = useCallback(async function read(attempt = 0) {
     clearTimeout(retryTimer.current);
     const forUser = userIdRef.current;
     const seq = ++readSeq.current;
@@ -75,7 +69,7 @@ export function MissionProvider({ children }) {
       // Keep what is showing and try again shortly.
       console.error('Error fetching mission:', error);
       if (seq === readSeq.current && attempt < RETRY_MS.length) {
-        retryTimer.current = setTimeout(() => fetchMission(attempt + 1), RETRY_MS[attempt]);
+        retryTimer.current = setTimeout(() => read(attempt + 1), RETRY_MS[attempt]);
       }
     }
   }, []);

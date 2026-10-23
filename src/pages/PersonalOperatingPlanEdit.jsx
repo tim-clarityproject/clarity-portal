@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { announceMissionChange } from '../context/MissionContext';
+import { announceMissionChange } from '../lib/missionEvents';
 import { supabase } from '../lib/supabase';
 import { LIMITS, formatVersion, loadLatestVersion, previewNextVersion, recordVersionAfterSave, validatePlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';

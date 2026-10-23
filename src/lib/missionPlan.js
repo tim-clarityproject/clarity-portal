@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { announceMissionChange } from '../context/MissionContext';
+import { announceMissionChange } from './missionEvents';
 
 // Personal Operating Plan version history + plan reviews (prompt 9,
 // per clarity-specs-9-to-11.md section A).
