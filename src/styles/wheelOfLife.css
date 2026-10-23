@@ -4,7 +4,7 @@
    (wheel-of-life.html). Every rule lives inside .ui-root and uses tokens
    (tokens.css); animation times are multiples of the timing tokens, so
    they switch off with them under prefers-reduced-motion. The portal's
-   shared parts are reused (PageHeading, BackLink, DiscardLink,
+   shared parts are reused (PageHeader, BackLink, DiscardLink,
    PhoneActionBar, DiscardDialog, Toast, AutoGrowTextarea, .ui-btn-primary,
    .ui-btn-ghost, and the design Crosshair, DatePicker and Loading); the classes below are only what the mock-up
    needs that they do not already give.
@@ -124,36 +124,15 @@
   }
 }
 
-/* PageHeading inside a Wheel of Life page: the mock-up's heading spacing */
-.ui-root .wol-head .ui-overline {
-  margin-bottom: 12px;
-}
-
-.ui-root .wol-head .ui-title {
-  line-height: 1.25;
-  text-wrap: balance;
-}
-
-.ui-root .wol-head .ui-subtitle {
-  margin-top: 10px;
-  line-height: 1.55;
-  max-width: 56ch;
-}
-
 /* screen entry: each block rises in, a little after the one before
    (mock-up .rv: 600ms, 60ms apart, after 80ms) */
 .ui-root .wol-enter .wol-rv,
-.ui-root .wol-enter .wol-head .ui-overline,
-.ui-root .wol-enter .wol-head .ui-title,
-.ui-root .wol-enter .wol-head .ui-subtitle,
-.ui-root .wol-enter .wol-head .ui-rule {
+.ui-root .wol-enter .wol-head .ds-page-header {
   animation: wol-up calc(var(--dur-slow) * 1.5) var(--ease) both;
   animation-delay: calc(var(--i, 0) * var(--dur) * 0.24 + var(--dur) * 0.32);
 }
 
-.ui-root .wol-enter .wol-head .ui-title { --i: 1; }
-.ui-root .wol-enter .wol-head .ui-subtitle,
-.ui-root .wol-enter .wol-head .ui-rule { --i: 2; }
+.ui-root .wol-enter .wol-head .ds-page-header { --i: 1; }
 
 @keyframes wol-up {
   from { opacity: 0; transform: translateY(12px); }
@@ -592,27 +571,6 @@
 .ui-root .wol-steps i.f { background: var(--coral); }
 .ui-root .wol-steps i.n { background: var(--text-2); }
 
-.ui-root .wol-stag {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--coral);
-}
-
-.ui-root .wol-stag span + span {
-  color: var(--placeholder);
-}
-
-.ui-root .wol-rate-title .ui-title {
-  line-height: 1.25;
-  text-wrap: balance;
-}
-
 .ui-root .wol-qq {
   max-width: 40ch;
   margin: var(--space-3) 0 0;
@@ -1004,19 +962,6 @@
 }
 
 /* ---- the one-pager (/wheel-of-life/results) -------------------------- */
-.ui-root .wol-oph {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: var(--space-3);
-}
-
-.ui-root .wol-opd {
-  font-size: var(--fs-small);
-  color: var(--placeholder);
-}
-
 .ui-root .wol-range {
   display: flex;
   flex-direction: column;
@@ -1820,11 +1765,6 @@
 }
 
 @media (max-width: 768px) {
-  .ui-root .wol-oph {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .ui-root .wol-seg { gap: 9px; }
   .ui-root .wol-seg button { letter-spacing: 0.14em; }
   .ui-root .wol-seg button svg { display: none; }
@@ -1977,10 +1917,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ui-root .wol-enter .wol-rv,
-  .ui-root .wol-enter .wol-head .ui-overline,
-  .ui-root .wol-enter .wol-head .ui-title,
-  .ui-root .wol-enter .wol-head .ui-subtitle,
-  .ui-root .wol-enter .wol-head .ui-rule {
+  .ui-root .wol-enter .wol-head .ds-page-header {
     animation: none !important;
   }
 

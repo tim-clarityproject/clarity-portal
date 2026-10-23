@@ -12,8 +12,8 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Crosshair } from '../components/design';
+import pageText from '../content/pageText';
+import { Crosshair, PageHeader } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -106,7 +106,7 @@ export default function InversionStep2Risks() {
     } catch (error) {
       console.error('[InversionStep2Risks] draft save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -170,7 +170,8 @@ export default function InversionStep2Risks() {
         </div>
 
         <div className="plan-header">
-          <PageHeading pageKey="inversionStep2Risks" title="List all the ways you could mess this up" overline="" subtitle="" rule={false} />
+          <PageHeader title="Pre-mortem" info={pageText.inversionStep2Risks} />
+          <h2 className="ds-question">List all the ways you could mess this up</h2>
         </div>
 
         {risks.map((risk, index) => (

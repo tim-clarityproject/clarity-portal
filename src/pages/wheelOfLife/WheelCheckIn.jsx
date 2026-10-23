@@ -2,7 +2,8 @@ import { useContext, useLayoutEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import PageHeading from '../../components/PageHeading';
+import { PageHeader } from '../../components/design';
+import pageText from '../../content/pageText';
 import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import DiscardDialog from '../../components/ui/DiscardDialog';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
@@ -148,9 +149,8 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
           <div className="wol-steps" aria-hidden="true">
             {areas.map((a, k) => <i key={a.key} className={k < i ? 'f' : (k === i ? 'n' : '')} />)}
           </div>
-          <div className="wol-stag"><span>{`Area ${i + 1} of ${N}`}</span><span>Wheel of Life</span></div>
           <div className="wol-rate-title wol-rv">
-            <PageHeading pageKey="wheelOfLifeCheckIn" title={name} rule={false} />
+            <PageHeader title={name} info={pageText.wheelOfLifeCheckIn} meta={[`Area ${i + 1} of ${N}`, 'Wheel of Life']} />
           </div>
           <p className="wol-qq wol-rv" style={{ '--i': 1 }}>{questionFor(area)}</p>
           <div className="wol-scale wol-rv" style={{ '--i': 2 }} role="radiogroup" aria-label={name}>
@@ -201,9 +201,8 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
         <div className="wol-steps" aria-hidden="true">
           {areas.map((a) => <i key={a.key} className="f" />)}
         </div>
-        <div className="wol-stag"><span>Last step</span><span>Wheel of Life</span></div>
         <div className="wol-rate-title wol-rv">
-          <PageHeading pageKey="wheelOfLifeCheckIn" title="Choose one area" rule={false} />
+          <PageHeader title="Choose one area" info={pageText.wheelOfLifeCheckIn} meta={['Last step', 'Wheel of Life']} />
         </div>
         <p className="wol-qq wol-rv" style={{ '--i': 1 }}>If one area moved up by a single point, which would make the biggest difference to everything else?</p>
         <div className="wol-chips wol-rv" style={{ '--i': 2 }} role="group" aria-label="Area to focus on">
@@ -214,7 +213,7 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
               aria-pressed={st.focusAreaKey === a.key}
               onClick={() => update({ focusAreaKey: st.focusAreaKey === a.key ? null : a.key })}
             >
-              <b>{st.scores[a.key] ?? '–'}</b>{areaName(a)}
+              <b>{st.scores[a.key] ?? 'None'}</b>{areaName(a)}
             </button>
           ))}
         </div>

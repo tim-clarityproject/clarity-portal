@@ -12,8 +12,8 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Crosshair, Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Crosshair, Loading, PageHeader } from '../components/design';
 
 const ACTIONS = ['Stop', 'Automate', 'Delegate', 'Defer'];
 const MAX_ACTIVITY = 80;
@@ -162,7 +162,7 @@ export default function StopDoingAudit() {
       navigate('/stop-doing-audit-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
     } catch (error) {
       console.error('[StopDoingAudit] save failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -196,7 +196,7 @@ export default function StopDoingAudit() {
       navigate('/my-plans');
     } catch (error) {
       console.error('[StopDoingAudit] draft save failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -240,7 +240,7 @@ export default function StopDoingAudit() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeading pageKey="stopDoingAudit" title="Time Allocation Audit" overline="Plan" rule={false} />
+          <PageHeader title="Time Allocation Audit" info={pageText.stopDoingAudit} />
         </div>
 
         <div className="plan-label-row">

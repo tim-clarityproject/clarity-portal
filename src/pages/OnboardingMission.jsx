@@ -121,7 +121,7 @@ export default function OnboardingMission() {
         navigate('/welcome');
       }, 500);
     } catch (error) {
-      showToast('Could not save your mission - please try again.');
+      showToast('Could not save your mission. Please try again.');
       setIsSaving(false);
     }
   };
@@ -266,7 +266,7 @@ export default function OnboardingMission() {
                 }}>
                   {charCount}/{MAX_GOAL_LENGTH} characters
                   {isOverLimit && (
-                    <div style={{ fontWeight: '600', marginTop: '4px' }}>Limit exceeded</div>
+                    <div style={{ marginTop: '4px' }}>Limit exceeded</div>
                   )}
                 </div>
 

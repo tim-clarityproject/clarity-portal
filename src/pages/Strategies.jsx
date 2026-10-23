@@ -5,6 +5,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
 import DesignHeader from '../components/DesignHeader';
+import { PageHeader } from '../components/design';
 
 export default function Strategies() {
   const navigate = useNavigate();
@@ -51,16 +52,10 @@ export default function Strategies() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          {location.state?.problemTitle && (
-            <p style={{ fontSize: '13px', color: 'var(--label)', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {location.state.problemTitle}
-            </p>
-          )}
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '24px' }}>
-            Now, what's your strategy?
-          </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ marginBottom: '48px' }}>
+          <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
+          <h2 className="ds-question">Now, what's your strategy?</h2>
+          <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
@@ -71,7 +66,7 @@ export default function Strategies() {
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: '16px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
-                The ways you could f*ck up
+                How you could fail
               </h2>
               <p style={{ fontSize: '12px', color: 'transparent', margin: 0, textAlign: 'center' }}>
                 placeholder
@@ -91,7 +86,6 @@ export default function Strategies() {
                   <span
                     style={{
                       color: 'var(--coral-text)',
-                      fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',
@@ -125,7 +119,7 @@ export default function Strategies() {
                 Your strategies
               </h2>
               <p style={{ fontSize: '12px', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
-                (Clue: It might be the exact opposite of the f*ck up)
+                Clue: it might be the exact opposite of how you could fail
               </p>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
@@ -134,7 +128,6 @@ export default function Strategies() {
                   <span
                     style={{
                       color: 'var(--coral-text)',
-                      fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',

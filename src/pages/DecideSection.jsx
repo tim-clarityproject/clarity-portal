@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
+import { PageHeader } from '../components/design';
 
 const DECIDE_ITEMS = [
   { id: 'tools', title: 'Decision Tools', description: 'Access all available decision-making frameworks', route: '/decision-tools' },
@@ -19,9 +20,7 @@ export default function DecideSection() {
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', marginTop: '0', marginBottom: '0' }}>Decide</h1>
-        </div>
+        <PageHeader title="Decide" />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '0' }}>
           {DECIDE_ITEMS.map((item) => (

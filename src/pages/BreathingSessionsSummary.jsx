@@ -8,8 +8,8 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Loading } from '../components/design';
-import PageHeading from '../components/PageHeading';
+import { Loading, PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 function formatMonthHeading(value) {
   const date = parseDbTimestamp(value);
@@ -49,7 +49,7 @@ export default function BreathingSessionsSummary() {
       showToast('Session deleted.');
     } catch (error) {
       console.error('[BreathingSessionsSummary] delete failed:', error);
-      showToast('Could not delete - please try again.');
+      showToast('Could not delete. Please try again.');
     }
   };
 
@@ -76,7 +76,7 @@ export default function BreathingSessionsSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/breathe')} label="Back to Breathe" /></div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="breathingSessionsSummary" title="Breathing Sessions" overline="Ground" subtitle="" rule={false} />
+          <PageHeader title="Breathing Sessions" info={pageText.breathingSessionsSummary} />
         </div>
 
         {sessions.length === 0 ? (

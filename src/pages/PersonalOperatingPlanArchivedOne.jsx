@@ -8,8 +8,8 @@ import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -99,7 +99,7 @@ export default function PersonalOperatingPlanArchivedOne() {
     } catch (error) {
       console.error('[PlanArchivedOne] restore failed:', error);
       setRestoreOpen(false);
-      showToast('Could not restore this plan - please try again.');
+      showToast('Could not restore this plan. Please try again.');
     } finally {
       setIsRestoring(false);
     }
@@ -134,13 +134,15 @@ export default function PersonalOperatingPlanArchivedOne() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-archived')} label="Back to archived plans" /></div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="personalOperatingPlanArchivedOne" title={mission.title} overline="Archived" subtitle={`Archived ${new Date(mission.archived_at).toLocaleDateString('en-GB')}`} rule={false} />
+          <PageHeader
+            title={mission.title}
+            info="You can read this plan but not change it."
+            meta={[
+              `Archived ${new Date(mission.archived_at).toLocaleDateString('en-GB')}`,
+              version ? `Last Version ${version.major}.${version.minor}` : null,
+            ]}
+          />
         </div>
-
-        <p className="pop-version-date">
-          {version ? `Last Version: ${version.major}.${version.minor}. ` : ''}
-          You can read this plan but not change it.
-        </p>
 
         {strategies.length === 0 ? (
           <p className="pop-empty">No strategies.</p>
@@ -157,7 +159,7 @@ export default function PersonalOperatingPlanArchivedOne() {
                   <div>
                     <div className="pop-view-tactic-text">{tactic.action}</div>
                     {tactic.type === 'measurable' && (
-                      <div className="pop-view-tactic-progress">{tactic.current_value ?? 0} / {tactic.target_value ?? '—'} {tactic.unit || ''}</div>
+                      <div className="pop-view-tactic-progress">{tactic.current_value ?? 0} / {tactic.target_value ?? 'No target'} {tactic.unit || ''}</div>
                     )}
                   </div>
                 </div>
@@ -179,7 +181,7 @@ export default function PersonalOperatingPlanArchivedOne() {
         message={hasLivePlan
           ? 'It becomes your current plan. Your current plan moves to Archived plans, with its Versions and reviews.'
           : 'It becomes your current plan again, with its Versions and reviews.'}
-        confirmLabel={isRestoring ? 'Restoring...' : 'Restore'}
+        confirmLabel={isRestoring ? 'Restoring' : 'Restore'}
         onCancel={() => setRestoreOpen(false)}
         onConfirm={handleRestore}
       />

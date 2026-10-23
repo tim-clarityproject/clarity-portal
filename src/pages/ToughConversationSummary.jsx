@@ -8,8 +8,8 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 export default function ToughConversationSummary() {
   const navigate = useNavigate();
@@ -93,14 +93,14 @@ export default function ToughConversationSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="toughConversationSummary" title={conversation.title || 'Tough conversation'} overline="Tough conversation" subtitle={`Created ${formatUkDate(conversation.created_at)}`} rule={false} />
+          <PageHeader title={conversation.title || 'Tough conversation'} info={pageText.toughConversationSummary} meta={[`Created ${formatUkDate(conversation.created_at)}`]} />
         </div>
 
         <div className="tc-script">
           <p className="tc-script-sent">
-            I've noticed <span className="tc-filled">{data.observation || '—'}</span>. The impact of that is{' '}
-            <span className="tc-filled">{data.impact || '—'}</span>. So, what I need from you is{' '}
-            <span className="tc-filled">{data.need || '—'}</span>.
+            I've noticed <span className="tc-filled">{data.observation || 'Not answered'}</span>. The impact of that is{' '}
+            <span className="tc-filled">{data.impact || 'Not answered'}</span>. So, what I need from you is{' '}
+            <span className="tc-filled">{data.need || 'Not answered'}</span>.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import { PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 const CARDS = [
   { title: 'Breathe', description: 'Calm your nervous system and ground yourself.', route: '/breathe' },
@@ -26,7 +27,7 @@ export default function GroundSection() {
 
       <div className="plan-page">
         <div className="plan-header">
-          <PageHeading pageKey="groundSection" title="Ground" overline="" rule={false} />
+          <PageHeader title="Ground" info={pageText.groundSection} />
         </div>
 
         <div className="dt-cards dt-cards--three">

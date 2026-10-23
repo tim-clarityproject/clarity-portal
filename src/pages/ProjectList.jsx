@@ -9,7 +9,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair } from '../components/design';
+import { Crosshair, PageHeader } from '../components/design';
 
 export default function ProjectList() {
   const navigate = useNavigate();
@@ -120,15 +120,10 @@ export default function ProjectList() {
           </button>
         </div>
 
-        <p style={{ fontSize: '13px', color: 'var(--label)', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Where my team should focus
-        </p>
+        <PageHeader title="Strategic alignment" meta={['Where my team should focus']} />
+        <h2 className="ds-question">List your projects</h2>
 
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '32px' }}>
-          List your projects
-        </h1>
-
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginTop: '24px', marginBottom: '32px' }}>
           <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '25%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
@@ -155,7 +150,6 @@ export default function ProjectList() {
                   <span
                     style={{
                       color: 'var(--coral-text)',
-                      fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',
@@ -193,7 +187,6 @@ export default function ProjectList() {
                   <span
                     style={{
                       color: 'var(--coral-text)',
-                      fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',

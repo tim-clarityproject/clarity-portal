@@ -8,19 +8,19 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 // "Fri, 2 Oct" - UK order, device local time. Plain input[type=date]
 // string ("YYYY-MM-DD"), so noon is used to dodge UTC/local day-shift.
 function formatMeetingDate(dateStr) {
-  if (!dateStr) return '—';
+  if (!dateStr) return 'Not set';
   const date = new Date(`${dateStr}T12:00:00`);
   return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 function calcEndTime(time, flowItems) {
-  if (!time || !flowItems?.length) return '—';
+  if (!time || !flowItems?.length) return 'Not set';
   const totalMinutes = flowItems.reduce((sum, item) => sum + (parseInt(item.length, 10) || 0), 0);
   const [hours, minutes] = time.split(':').map(Number);
   const start = new Date();
@@ -156,7 +156,7 @@ export default function MeetingSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="meetingSummary" title={data.title || 'Meeting plan'} overline="Meeting planner" subtitle="" rule={false} />
+          <PageHeader title={data.title || 'Meeting plan'} info={pageText.meetingSummary} />
         </div>
 
         <div className="plan-facts">
@@ -166,7 +166,7 @@ export default function MeetingSummary() {
           </div>
           <div>
             <b>Start time</b>
-            <span>{data.time || '—'}</span>
+            <span>{data.time || 'Not set'}</span>
           </div>
           <div>
             <b>End time</b>
@@ -174,7 +174,7 @@ export default function MeetingSummary() {
           </div>
           <div>
             <b>Chair</b>
-            <span>{data.chair || '—'}</span>
+            <span>{data.chair || 'Not set'}</span>
           </div>
         </div>
 
@@ -199,7 +199,7 @@ export default function MeetingSummary() {
         {objectives.length > 0 && (
           <div className="plan-sum">
             <div className="plan-sum-row">
-              <div className="plan-sum-label">Objectives (in priority order)</div>
+              <div className="plan-sum-label">Objectives in priority order</div>
               <ol className="plan-olist plan-sum-value plan-sum-value--list">
                 {objectives.map((o) => <li key={o.id}>{o.text}</li>)}
               </ol>

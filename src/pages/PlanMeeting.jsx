@@ -10,8 +10,8 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Crosshair, DatePicker } from '../components/design';
+import pageText from '../content/pageText';
+import { Crosshair, DatePicker, PageHeader } from '../components/design';
 
 const SECTION_OPTIONS = [
   { id: 'context', label: 'Meeting context' },
@@ -27,7 +27,7 @@ function BinIcon() {
 }
 
 function calcEndTime(time, totalMinutes) {
-  if (!time) return '—';
+  if (!time) return 'Not set';
   const [hours, minutes] = time.split(':').map(Number);
   const start = new Date();
   start.setHours(hours, minutes, 0, 0);
@@ -185,7 +185,7 @@ export default function PlanMeeting() {
       navigate('/meeting-summary', { state: { decisionId: savedId, toast: 'Saved.' } });
     } catch (error) {
       console.error('[PlanMeeting] Finish failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -202,7 +202,7 @@ export default function PlanMeeting() {
       navigate('/my-plans');
     } catch (error) {
       console.error('[PlanMeeting] Save as draft failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -239,7 +239,7 @@ export default function PlanMeeting() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeading pageKey="planMeeting" title="Meeting planner" overline="" rule={false} />
+          <PageHeader title="Meeting planner" info={pageText.planMeeting} />
         </div>
 
         <div className="plan-field">
@@ -331,7 +331,7 @@ export default function PlanMeeting() {
         )}
 
         <div className="plan-label-row">
-          <span className="ui-section-heading">Objectives (in priority order)</span>
+          <span className="ui-section-heading">Objectives in priority order</span>
         </div>
         {objectives.map((obj, index) => (
           <div className="plan-obj-row" key={obj.id}>
@@ -387,7 +387,7 @@ export default function PlanMeeting() {
               <AutoGrowTextarea singleLine className="plan-input" placeholder="Type here" value={item.lead} onChange={(v) => changeAgendaItem(item.id, 'lead', v)} />
             </div>
             <div className="plan-ag-field">
-              <label>Length (min)</label>
+              <label>Length in minutes</label>
               <input
                 className="plan-input"
                 type="number"

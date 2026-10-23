@@ -1,7 +1,8 @@
+import pageText from '../content/pageText';
 import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import { Button, useCoachName } from '../components/design';
+import { Button, PageHeader, useCoachName } from '../components/design';
 import { useStartChat } from '../components/coach/CoachChat';
 
 function ExternalLinkIcon() {
@@ -33,44 +34,6 @@ export default function About() {
         @media (min-width: 769px) {
           .about-page {
             padding: var(--space-6) var(--page-x-desktop) var(--space-6);
-          }
-        }
-
-        .about-title {
-          font-family: var(--font-display);
-          font-weight: 400;
-          text-transform: uppercase;
-          letter-spacing: var(--ls-title);
-          font-size: var(--fs-title-phone);
-          color: var(--text);
-          margin: 0;
-        }
-
-        @media (min-width: 769px) {
-          .about-title {
-            font-size: var(--fs-title-desktop);
-          }
-        }
-
-        .about-rule {
-          width: 28px;
-          height: 1px;
-          background: var(--coral-text);
-          margin: var(--space-4) auto var(--space-5);
-        }
-
-        .about-lead {
-          margin: 0 auto;
-          max-width: 24ch;
-          font-size: 23px;
-          line-height: 1.3;
-          color: var(--text);
-          font-weight: 400;
-        }
-
-        @media (min-width: 769px) {
-          .about-lead {
-            font-size: 28px;
           }
         }
 
@@ -169,10 +132,10 @@ export default function About() {
       `}</style>
 
       <div className="about-page">
-        <div className="about-title">About The Clarity Portal</div>
-        <div className="about-rule" />
-
-        <p className="about-lead">You won't find an AI chatbot here giving you the easy answers.</p>
+        <PageHeader
+          title="About The Clarity Portal"
+          info={pageText.about}
+        />
 
         <div className="about-two">
           <p>This is the place for high-performers who want to stay fully-engaged with their own thinking and make decisions with clarity and genuine conviction.</p>

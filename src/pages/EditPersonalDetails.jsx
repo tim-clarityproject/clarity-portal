@@ -4,8 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 
@@ -96,7 +96,7 @@ export default function EditPersonalDetails() {
       }, 1500);
     } catch (error) {
       console.error('Error saving profile:', error);
-      showToast('Could not save your details - please try again.');
+      showToast('Could not save your details. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -243,7 +243,7 @@ export default function EditPersonalDetails() {
             Back
           </button>
 
-          <PageHeading pageKey="editPersonalDetails" title="Edit Profile" />
+          <PageHeader title="Edit Profile" info={pageText.editPersonalDetails} />
 
           {isLoading ? (
             <div className="edit-profile-loading"><Loading label="Loading your profile" /></div>

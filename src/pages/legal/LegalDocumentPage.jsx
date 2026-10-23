@@ -1,6 +1,7 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { legalDocuments } from '../../content/legal';
 import LegalDocBody from '../../components/legal/LegalDocBody';
+import { PageHeader } from '../../components/design';
 
 // Standalone, publicly reachable pages for the same three documents the
 // sign-up reading pop-up shows (src/components/auth/ReadingPopup.jsx),
@@ -100,32 +101,9 @@ export default function LegalDocumentPage() {
           margin: 0 auto;
         }
 
-        .ui-root .legal-page-title {
-          font-family: var(--font-display);
-          font-weight: 400;
-          text-transform: uppercase;
-          letter-spacing: var(--ls-title);
-          font-size: var(--fs-title-phone) !important;
-          color: var(--text);
-          margin: 0 0 var(--space-2) !important;
-        }
-
-        @media (min-width: 769px) {
-          .ui-root .legal-page-title {
-            font-size: var(--fs-title-desktop) !important;
-          }
-        }
-
-        .legal-page-meta {
-          font-family: var(--font-body);
-          font-size: var(--fs-small);
-          color: var(--text-2);
-          margin: 0 0 var(--space-3);
-        }
-
         .ui-root .legal-page-doc-subheading {
           font-family: var(--font-body);
-          font-weight: 700;
+          font-weight: var(--fw-medium);
           font-size: var(--fs-body) !important;
           color: var(--text);
           margin: var(--space-4) 0 var(--space-2) !important;
@@ -168,8 +146,7 @@ export default function LegalDocumentPage() {
 
       <div className="legal-page-content">
         <div className="legal-page-column">
-          <h1 className="legal-page-title">{doc.title}</h1>
-          <p className="legal-page-meta">{doc.lastUpdated}</p>
+          <PageHeader title={doc.title} meta={[doc.lastUpdated]} />
           <LegalDocBody blocks={doc.blocks} classNames={PAGE_CLASS_NAMES} />
         </div>
       </div>

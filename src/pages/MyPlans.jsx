@@ -6,11 +6,12 @@ import { clearProgress } from '../lib/saveProgress';
 import { parseDbTimestamp, getLocalDateKey, formatReviewDate } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
+import pageText from '../content/pageText';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Loading } from '../components/design';
+import { Loading, PageHeader } from '../components/design';
 
 // Plan types with a "Review this plan" page (prompt 8). GROW and Stop
 // doing audit have no review target yet - see build summary point 4.
@@ -168,7 +169,7 @@ export default function MyPlans() {
       showDeletedToast(showToast);
     } catch (err) {
       console.error('[MyPlans] delete failed:', err);
-      showToast('Could not delete - please try again.');
+      showToast('Could not delete. Please try again.');
     }
   };
 
@@ -179,7 +180,7 @@ export default function MyPlans() {
       <div className="plan-page">
         {isLoading ? (
           <>
-            <div className="ui-title">My Plans</div>
+            <PageHeader title="My Plans" info={pageText.myPlans} />
             <Loading label="Loading your plans" className="ds-loading--page" />
           </>
         ) : (

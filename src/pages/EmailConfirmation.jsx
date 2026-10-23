@@ -199,7 +199,7 @@ export default function EmailConfirmation() {
         Log in
       </AuthPrimaryButton>
       <p className="auth-tip">
-        If you opened the link on a different device, your email may already be confirmed - try logging in.
+        If you opened the link on a different device, your email may already be confirmed. Try logging in.
       </p>
       <div>
         <AuthTextLink onClick={() => navigate('/auth/sign-up')} style={{ justifyContent: 'center' }}>

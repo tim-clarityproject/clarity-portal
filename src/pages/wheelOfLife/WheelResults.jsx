@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
-import PageHeading from '../../components/PageHeading';
+import pageText from '../../content/pageText';
 import DeleteDialog, { showDeletedToast } from '../../components/ui/DeleteDialog';
 import Toast from '../../components/ui/Toast';
 import useToast from '../../hooks/useToast';
-import { DatePicker } from '../../components/design';
+import { DatePicker, PageHeader } from '../../components/design';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
 import WheelRadar from '../../components/wheelOfLife/WheelRadar';
 import WheelDelta from '../../components/wheelOfLife/WheelDelta';
@@ -137,7 +137,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page wol-page wol-enter">
-          <div className="wol-head"><PageHeading pageKey="wheelOfLifeResults" title="Wheel of Life" /></div>
+          <div className="wol-head"><PageHeader title="Wheel of Life" info={pageText.wheelOfLifeResults} /></div>
           <p className="wol-empty wol-rv" style={{ '--i': 3 }}>No check-ins yet. Start your first check-in to see your wheel.</p>
           <div className="wol-acts wol-rv" style={{ '--i': 4 }}>
             <button type="button" className="ui-btn-primary" onClick={() => navigate('/wheel-of-life/check-in')}>Start check-in</button>
@@ -166,9 +166,8 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
 
   const header = (
     <>
-      <div className="wol-oph">
-        <div className="wol-head"><PageHeading pageKey="wheelOfLifeResults" title="Wheel of Life" /></div>
-        <span className="wol-opd">{`Latest check-in ${fd(newest.date)}`}</span>
+      <div className="wol-head">
+        <PageHeader title="Wheel of Life" info={pageText.wheelOfLifeResults} meta={[`Latest check-in ${fd(newest.date)}`]} />
       </div>
       <div className="wol-range wol-rv" style={{ '--i': 3 }}>
         <div className="wol-rtop">
@@ -180,13 +179,11 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
           </div>
         </div>
         <div className="wol-dates">
-          {/* DatePicker has no max yet, so a future day is ignored here,
-              as the old date inputs' max did. */}
           <div>
-            <DatePicker label="From" value={r.from} min="1900-01-01" onChange={(key) => { if (key <= today) setDate('from', key); }} />
+            <DatePicker label="From" value={r.from} min="1900-01-01" max={today} onChange={(key) => setDate('from', key)} />
           </div>
           <div>
-            <DatePicker label="To" value={r.to} min="1900-01-01" onChange={(key) => { if (key <= today) setDate('to', key); }} />
+            <DatePicker label="To" value={r.to} min="1900-01-01" max={today} onChange={(key) => setDate('to', key)} />
           </div>
         </div>
         <div className="wol-rsum">{summary}</div>
@@ -241,8 +238,8 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
     stats = (
       <>
         <Stat label="Average" value={oneDecimal(s.average)} note="out of 10" />
-        <Stat label="Highest" value={s.highest ? s.highest.score : '–'} note={name(s.highest)} />
-        <Stat label="Lowest" value={s.lowest ? s.lowest.score : '–'} note={name(s.lowest)} />
+        <Stat label="Highest" value={s.highest ? s.highest.score : 'None'} note={name(s.highest)} />
+        <Stat label="Lowest" value={s.lowest ? s.lowest.score : 'None'} note={name(s.lowest)} />
         {fourth || <Stat label="Areas at 7+" value={s.atSevenPlus.count} note={`of ${s.atSevenPlus.of}`} />}
       </>
     );
@@ -250,9 +247,9 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
     stats = (
       <>
         <Stat label="Average" value={oneDecimal(s.average)} note={`${s.averageUp ? 'Up ' : 'Down '}${oneDecimal(s.averageMove)} from ${oneDecimal(s.averageFrom)}`} />
-        <Stat label="Biggest rise" value={s.biggestRise ? `+${s.biggestRise.change}` : '–'} note={s.biggestRise ? name(s.biggestRise) : 'No rises'} />
-        <Stat label="Biggest drop" value={s.biggestDrop ? `${MINUS}${Math.abs(s.biggestDrop.change)}` : '–'} note={s.biggestDrop ? name(s.biggestDrop) : 'No drops'} />
-        {fourth || <Stat label="Lowest now" value={s.lowest ? s.lowest.score : '–'} note={name(s.lowest)} />}
+        <Stat label="Biggest rise" value={s.biggestRise ? `+${s.biggestRise.change}` : 'None'} note={s.biggestRise ? name(s.biggestRise) : 'No rises'} />
+        <Stat label="Biggest drop" value={s.biggestDrop ? `${MINUS}${Math.abs(s.biggestDrop.change)}` : 'None'} note={s.biggestDrop ? name(s.biggestDrop) : 'No drops'} />
+        {fourth || <Stat label="Lowest now" value={s.lowest ? s.lowest.score : 'None'} note={name(s.lowest)} />}
       </>
     );
   }
@@ -335,11 +332,11 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
                   {row.target != null ? <small className="wol-tgm">{`Target ${row.target}`}{tg ? <>{' · '}{tg}</> : null}</small> : null}
                 </span>
                 <span className="wol-ch">
-                  <span className="wol-v wol-v--s">{one ? '' : (row.isNew ? '–' : row.start)}</span>
-                  <span className="wol-v wol-v--n">{row.latest == null ? '–' : row.latest}</span>
+                  <span className="wol-v wol-v--s">{one ? '' : (row.isNew ? 'None' : row.start)}</span>
+                  <span className="wol-v wol-v--n">{row.latest == null ? 'None' : row.latest}</span>
                   <span className={`wol-dl wol-${row.changeClass}`}>{row.changeText}</span>
                 </span>
-                <span className="wol-tgc">{row.target == null ? <span className="wol-nt">–</span> : <><b>{row.target}</b>{tg}</>}</span>
+                <span className="wol-tgc">{row.target == null ? <span className="wol-nt">No target</span> : <><b>{row.target}</b>{tg}</>}</span>
                 <span className="wol-sp"><WheelSpark vals={row.history} w={phone ? 200 : 140} /></span>
               </div>
             );

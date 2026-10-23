@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import { PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 const LIVE_CARDS = [
   { id: 'tough-conversation', title: 'I need to give tough feedback', description: 'Create a script for giving feedback', route: '/tough-conversation-step-1' },
@@ -48,7 +49,7 @@ export default function DecisionTools() {
       <div className="plan-page">
         <div className="dt-hrow">
           <div>
-            <PageHeading pageKey="decisionTools" title="Decision tools" overline="" rule={false} />
+            <PageHeader title="Decision tools" info={pageText.decisionTools} />
           </div>
           <button type="button" className="ui-btn-ghost" onClick={() => navigate('/decision-history')}>
             My decisions

@@ -1,3 +1,4 @@
+import pageText from '../content/pageText';
 import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
@@ -5,7 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { supabase } from '../lib/supabase';
-import { Crosshair, Loading } from '../components/design';
+import { Crosshair, Loading, PageHeader } from '../components/design';
 
 export default function GrowStep3bPrioritize() {
   const navigate = useNavigate();
@@ -263,17 +264,16 @@ export default function GrowStep3bPrioritize() {
             My Decisions
           </button>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '32px' }}>
-          Prioritize your options
-        </h1>
+        <PageHeader
+          title="GROW"
+          info={pageText.growStep3bPrioritize}
+        />
+        <h2 className="ds-question">Prioritise your options</h2>
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+        <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
         </div>
 
-        <p style={{ fontSize: '14px', color: 'var(--text-2)', marginBottom: '24px', lineHeight: '1.6' }}>
-          Drag and drop your options to the right to place them in order of fit for your situation. You can leave any ideas you think are bad on the left.
-        </p>
 
         {isLoading && <Loading label="Loading your options" />}
 
@@ -555,7 +555,6 @@ export default function GrowStep3bPrioritize() {
                       cursor: editingIndex === originalIndex && editingSource === 'prioritized' ? 'text' : 'grab',
                       fontSize: '14px',
                       color: 'var(--on-coral)',
-                      fontWeight: '600',
                       transition: 'all 0.2s ease',
                       opacity: draggedItem?.item === option && draggedItem?.source === 'prioritized' ? 0.5 : 1,
                       display: 'flex',
@@ -591,7 +590,6 @@ export default function GrowStep3bPrioritize() {
                             border: 'none',
                             outline: 'none',
                             fontSize: '14px',
-                            fontWeight: '600',
                             fontFamily: 'inherit',
                             backgroundColor: 'transparent',
                             color: 'var(--on-coral)',
@@ -654,7 +652,7 @@ export default function GrowStep3bPrioritize() {
               })}
               {prioritizedOptions.length === 0 && (
                 <p style={{ color: 'var(--label)', fontSize: '13px', margin: 'auto 0', textAlign: 'center' }}>
-                  Drag options from the left to prioritize
+                  Drag options from the left to prioritise
                 </p>
               )}
             </div>

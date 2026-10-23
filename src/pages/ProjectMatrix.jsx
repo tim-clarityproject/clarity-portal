@@ -9,7 +9,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair } from '../components/design';
+import { Crosshair, PageHeader } from '../components/design';
 
 export default function ProjectMatrix() {
   const navigate = useNavigate();
@@ -105,11 +105,10 @@ export default function ProjectMatrix() {
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text)', lineHeight: '1.4', wordSpacing: '0.1em', marginBottom: '24px' }}>
-            How much does each project/line of effort contribute to your Critical Success Factors?
-          </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ marginBottom: '48px' }}>
+          <PageHeader title="Strategic alignment" />
+          <h2 className="ds-question">How much does each project/line of effort contribute to your Critical Success Factors?</h2>
+          <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '50%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
@@ -173,7 +172,7 @@ export default function ProjectMatrix() {
                       <td key={key} style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px' }}>
                           <button onClick={() => { if (currentValue > 0) { handleMatrixChange(projectIndex, factorIndex, currentValue - 1); } }} style={{ background: 'none', border: 'none', color: 'var(--label)', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.color = 'var(--text)'} onMouseLeave={(e) => e.target.style.color = 'var(--label)'} title="Decrease">−</button>
-                          <div style={{ width: '40px', height: '32px', backgroundColor: getColor(currentValue), border: currentValue === 0 ? '1px solid var(--line)' : 'none', boxSizing: 'border-box', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '10px', color: currentValue === 0 ? 'var(--label)' : currentValue === 1 ? 'var(--text)' : 'var(--on-coral)', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s', title: 'Click to cycle or use buttons', lineHeight: '1', letterSpacing: '-0.3px' }}>
+                          <div style={{ width: '40px', height: '32px', backgroundColor: getColor(currentValue), border: currentValue === 0 ? '1px solid var(--line)' : 'none', boxSizing: 'border-box', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: currentValue === 0 ? 'var(--label)' : currentValue === 1 ? 'var(--text)' : 'var(--on-coral)', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s', title: 'Click to cycle or use buttons', lineHeight: '1', letterSpacing: '-0.3px' }}>
                             {getLabel(currentValue)}
                           </div>
                           <button onClick={() => { if (currentValue < 3) { handleMatrixChange(projectIndex, factorIndex, currentValue + 1); } }} style={{ background: 'none', border: 'none', color: 'var(--label)', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold', display: 'flex', alignItems: 'center' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--label)'} title="Increase" aria-label="Increase"><Crosshair size="sm" /></button>
@@ -181,7 +180,7 @@ export default function ProjectMatrix() {
                       </td>
                     );
                   })}
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', textAlign: 'center', fontWeight: '600', color: 'var(--coral-text)' }}>
+                  <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', textAlign: 'center', color: 'var(--coral-text)' }}>
                     {factors.reduce((sum, _, factorIndex) => sum + (matrix[`${projectIndex}-${factorIndex}`] || 0), 0)}
                   </td>
                 </tr>

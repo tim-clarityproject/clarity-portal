@@ -9,8 +9,8 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Loading } from '../components/design';
-import PageHeading from '../components/PageHeading';
+import { Loading, PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 const TAG = {
   'after-action': 'After-Action Review',
@@ -95,7 +95,7 @@ export default function ReviewSummary() {
     } catch (error) {
       console.error('[ReviewSummary] delete failed:', error);
       setDeleteOpen(false);
-      showToast('Could not delete - please try again.');
+      showToast('Could not delete. Please try again.');
     }
   };
 
@@ -135,7 +135,7 @@ export default function ReviewSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-reviews')} label="Back to Reviews" /></div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="reviewSummary" title={review.title || TAG[reviewType]} overline={TAG[reviewType] || 'Review'} subtitle={formatUkDate(review.entry_date)} rule={false} />
+          <PageHeader title={review.title || TAG[reviewType]} info={pageText.reviewSummary} meta={[formatUkDate(review.entry_date)]} />
         </div>
 
         <div className="plan-sum">

@@ -8,6 +8,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
+import { PageHeader } from '../components/design';
 
 export default function ProjectProgress() {
   const navigate = useNavigate();
@@ -69,22 +70,21 @@ export default function ProjectProgress() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text)', lineHeight: '1.4', marginBottom: '24px' }}>
-            What is the progress status of each project?
-          </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ marginBottom: '48px' }}>
+          <PageHeader title="Strategic alignment" />
+          <h2 className="ds-question">What is the progress status of each project?</h2>
+          <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
         {/* Scale Legend */}
         <div style={{ marginBottom: '48px', padding: '20px', backgroundColor: 'var(--raised)', borderRadius: '12px', display: 'flex', gap: '24px', justifyContent: 'center', fontSize: '13px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>1</span> Not Started</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>2</span> Planning</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>3</span> In Progress</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>4</span> Near Complete</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>5</span> Completed</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>1</span> Not Started</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>2</span> Planning</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>3</span> In Progress</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>4</span> Near Complete</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>5</span> Completed</div>
         </div>
 
         {/* Projects Progress */}
@@ -92,7 +92,7 @@ export default function ProjectProgress() {
           {projects.map((project, index) => (
             <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '20px', backgroundColor: 'var(--raised)', borderRadius: '12px' }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', fontSize: '16px', color: 'var(--text)', marginBottom: '12px' }}>
+                <div style={{ fontSize: '16px', color: 'var(--text)', marginBottom: '12px' }}>
                   {project}
                 </div>
                 <input

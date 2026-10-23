@@ -12,7 +12,8 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
+import { PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -115,7 +116,7 @@ export default function InversionStep3Plan() {
     } catch (error) {
       console.error('[InversionStep3Plan] save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -172,7 +173,8 @@ export default function InversionStep3Plan() {
         </div>
 
         <div className="plan-header">
-          <PageHeading pageKey="inversionStep3Plan" title="So what will you do?" overline="" rule={false} />
+          <PageHeader title="Pre-mortem" info={pageText.inversionStep3Plan} />
+          <h2 className="ds-question">So what will you do?</h2>
         </div>
 
         <div className="inv-recap">

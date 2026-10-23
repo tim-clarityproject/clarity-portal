@@ -12,7 +12,8 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
+import { PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -104,7 +105,7 @@ export default function ToughConversationStep1Feedback() {
     } catch (error) {
       console.error('[ToughConversationStep1Feedback] draft save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -150,7 +151,7 @@ export default function ToughConversationStep1Feedback() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeading pageKey="toughConversationStep1Feedback" title="Have a tough conversation" overline="" rule={false} />
+          <PageHeader title="Have a tough conversation" info={pageText.toughConversationStep1Feedback} />
         </div>
 
         <div className={`plan-dq${observation.trim() ? ' on' : ''}`}>

@@ -39,7 +39,7 @@ const TILES = [
   },
   {
     id: 'strategize',
-    label: 'Strategize',
+    label: 'Strategise',
     title: 'Refine my personal operating plan',
     description: 'Sharpen how you work best',
     route: '/personal-operating-plan',

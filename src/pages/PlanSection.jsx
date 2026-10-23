@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import { PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 const CARDS = [
   { title: 'Plan my day', description: 'Set your intentions and priorities.', route: '/plan-my-day' },
@@ -26,7 +27,7 @@ export default function PlanSection() {
 
       <div className="plan-page">
         <div className="plan-header">
-          <PageHeading pageKey="planSection" title="Plan" overline="" rule={false} />
+          <PageHeader title="Plan" info={pageText.planSection} />
         </div>
 
         <div className="dt-cards dt-cards--three">

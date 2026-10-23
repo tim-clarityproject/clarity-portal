@@ -8,7 +8,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Loading } from '../components/design';
+import { Loading, PageHeader } from '../components/design';
 
 export default function DailyJournalRead() {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ export default function DailyJournalRead() {
     } catch (error) {
       console.error('[DailyJournalRead] delete failed:', error);
       setDeleteOpen(false);
-      showToast('Could not delete - please try again.');
+      showToast('Could not delete. Please try again.');
     }
   };
 
@@ -76,9 +76,10 @@ export default function DailyJournalRead() {
       <div className="plan-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/daily-journals')} label="Back to My Journals" /></div>
 
-        <span className="plan-overline">Daily Journal</span>
-        <h1 className="jrn-date">{formatPlainDayLabel(dateObj)}<small>{dateObj.getFullYear()}</small></h1>
-        <p className="jrn-sub">{words} word{words === 1 ? '' : 's'}</p>
+        <PageHeader
+          title={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
+          meta={[`${words} word${words === 1 ? '' : 's'}`]}
+        />
 
         <div className="jrn-paper-wrap">
           {(journal.body || []).map((b, i) => (

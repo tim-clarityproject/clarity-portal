@@ -19,7 +19,7 @@ export default function WheelDelta({ range, areas, phone }) {
   if (!view) return null;
   const first = formatCheckinDate(view.firstDate);
   const last = formatCheckinDate(view.latestDate);
-  const startLatest = (r) => `${r.start == null ? '–' : r.start} → ${r.latest}`;
+  const startLatest = (r) => `${r.start == null ? 'None' : r.start} → ${r.latest}`;
 
   if (phone) {
     // each row's place in the whole list, for the bars' stagger (1, 2, 3...)

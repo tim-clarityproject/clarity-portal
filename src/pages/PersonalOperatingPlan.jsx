@@ -5,11 +5,11 @@ import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import { archivePlan, countArchivedMissions, formatVersion, loadLatestVersion } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import pageText from '../content/pageText';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { DisclosureArrow, Loading } from '../components/design';
+import { DisclosureArrow, Loading, PageHeader } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -42,7 +42,7 @@ function TacticRow({ tactic }) {
     <div className="pop-view-tactic">
       <div>
         <div className="pop-view-tactic-text">{tactic.action}</div>
-        <div className="pop-view-tactic-progress">{tactic.current_value ?? 0} / {tactic.target_value ?? '—'} {tactic.unit || ''}</div>
+        <div className="pop-view-tactic-progress">{tactic.current_value ?? 0} / {tactic.target_value ?? 'No target'} {tactic.unit || ''}</div>
         {tactic.last_reviewed_at && (
           <div className="pop-view-tactic-reviewed">Last reviewed {new Date(tactic.last_reviewed_at).toLocaleDateString('en-GB')}</div>
         )}
@@ -166,7 +166,7 @@ export default function PersonalOperatingPlan() {
     } catch (error) {
       console.error('[PersonalOperatingPlan] archive failed:', error);
       setArchiveOpen(false);
-      showToast('Could not archive this plan - please try again.');
+      showToast('Could not archive this plan. Please try again.');
     } finally {
       setIsArchiving(false);
     }
@@ -186,7 +186,7 @@ export default function PersonalOperatingPlan() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page">
-          <PageHeading pageKey="personalOperatingPlan" title="Personal operating plan" />
+          <PageHeader title="Personal operating plan" info={pageText.personalOperatingPlan} />
           <p className="pop-empty">
             You don't have a plan yet. Start with your mission, add the strategies that bring it to life, then the tactics you will do every day.
           </p>
@@ -213,7 +213,14 @@ export default function PersonalOperatingPlan() {
       <DesignHeader />
 
       <div className="plan-page">
-        <PageHeading pageKey="personalOperatingPlan" title="Personal operating plan" />
+        <PageHeader
+          title="Personal operating plan"
+          info={pageText.personalOperatingPlan}
+          meta={[
+            version ? formatVersion(version.major, version.minor) : null,
+            lastReviewedAt ? `Last reviewed ${formatUkDate(lastReviewedAt)}` : null,
+          ]}
+        />
 
         <div className="plan-actions">
           <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: mission.id } })}>
@@ -225,7 +232,7 @@ export default function PersonalOperatingPlan() {
           {version && (
             <button type="button" className="plan-link-btn" style={{ marginLeft: 'auto' }} onClick={() => navigate('/personal-operating-plan-history', { state: { missionId: mission.id } })}>
               <ClockIcon />
-              <span style={{ marginLeft: 'var(--space-2)' }}>Version history · {formatVersion(version.major, version.minor)}</span>
+              <span style={{ marginLeft: 'var(--space-2)' }}>Version history</span>
             </button>
           )}
         </div>
@@ -262,7 +269,6 @@ export default function PersonalOperatingPlan() {
           })
         )}
 
-        {lastReviewedAt && <p className="pop-last-reviewed">Last reviewed {formatUkDate(lastReviewedAt)}</p>}
 
         <div className="pop-links-row">
           {archivedCount > 0 && (
@@ -280,7 +286,7 @@ export default function PersonalOperatingPlan() {
         open={archiveOpen}
         title="Archive this plan?"
         message="It moves to Archived plans, where you can open it or restore it any time. Its Versions and reviews are kept. You can start a new plan straight away."
-        confirmLabel={isArchiving ? 'Archiving...' : 'Archive'}
+        confirmLabel={isArchiving ? 'Archiving' : 'Archive'}
         onCancel={() => setArchiveOpen(false)}
         onConfirm={handleArchive}
       />

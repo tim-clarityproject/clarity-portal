@@ -1,3 +1,4 @@
+import pageText from '../content/pageText';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -14,7 +15,7 @@ import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Crosshair, Loading, SaveStatus } from '../components/design';
+import { Crosshair, Loading, PageHeader, SaveStatus } from '../components/design';
 
 export default function DailyJournal() {
   const navigate = useNavigate();
@@ -153,7 +154,7 @@ export default function DailyJournal() {
       if (saved) navigate('/daily-journals', { state: { toast: 'Journal saved. It is in My Reviews too.' } });
     } catch (error) {
       console.error('[DailyJournal] save failed:', error);
-      showToast('Could not save - please try again.');
+      showToast('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -171,7 +172,7 @@ export default function DailyJournal() {
       }
     } catch (error) {
       console.error('[DailyJournal] draft save failed:', error);
-      showToast('Could not save - please try again.');
+      showToast('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -221,9 +222,10 @@ export default function DailyJournal() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        <span className="plan-overline">Daily Journal</span>
-        <h1 className="jrn-date">{formatPlainDayLabel(dateObj)}<small>{dateObj.getFullYear()}</small></h1>
-        <p className="ui-subtitle jrn-sub">Write whatever is on your mind. Do not edit, do not aim for good. Keep going until your head is clear.</p>
+        <PageHeader
+          title={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
+          info={pageText.dailyJournal}
+        />
 
         {pendingDraft && (
           <div className="jrn-draft-banner">

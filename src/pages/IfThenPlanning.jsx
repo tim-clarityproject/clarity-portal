@@ -12,8 +12,8 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Crosshair } from '../components/design';
+import pageText from '../content/pageText';
+import { Crosshair, PageHeader } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -143,7 +143,7 @@ export default function IfThenPlanning() {
     } catch (error) {
       console.error('[IfThenPlanning] save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -180,7 +180,7 @@ export default function IfThenPlanning() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeading pageKey="ifThenPlanning" title="If-Then plan" overline="" rule={false} />
+          <PageHeader title="If-Then plan" info={pageText.ifThenPlanning} />
         </div>
 
         <div className="plan-field">

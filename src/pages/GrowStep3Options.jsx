@@ -5,7 +5,7 @@ import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import OptionsTimer from '../components/OptionsTimer';
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, Loading } from '../components/design';
+import { Crosshair, Loading, PageHeader } from '../components/design';
 
 export default function GrowStep3Options() {
   const navigate = useNavigate();
@@ -102,9 +102,10 @@ export default function GrowStep3Options() {
             My Decisions
           </button>
         </div>
-        <h1 className="page-heading">What options do you have?</h1>
+        <PageHeader title="GROW" />
+        <h2 className="ds-question">What options do you have?</h2>
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+        <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
         </div>
 

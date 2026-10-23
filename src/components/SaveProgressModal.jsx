@@ -146,7 +146,7 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
               lineHeight: '1.6',
             }}
           >
-            Your progress has been saved. Redirecting to home...
+            Your progress has been saved. Redirecting to home
           </p>
         )}
       </div>

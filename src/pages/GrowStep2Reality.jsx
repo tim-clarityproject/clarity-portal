@@ -6,7 +6,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
-import { Loading } from '../components/design';
+import { Loading, PageHeader } from '../components/design';
 
 export default function GrowStep2Reality() {
   const navigate = useNavigate();
@@ -93,9 +93,10 @@ export default function GrowStep2Reality() {
             My Decisions
           </button>
         </div>
-        <h1 className="page-heading">What's the current situation?</h1>
+        <PageHeader title="GROW" />
+        <h2 className="ds-question">What's the current situation?</h2>
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+        <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '50%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
         </div>
 

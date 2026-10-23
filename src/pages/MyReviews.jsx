@@ -270,7 +270,7 @@ export default function MyReviews() {
       showToast('Deleted.');
     } catch (err) {
       console.error('[MyReviews] delete failed:', err);
-      showToast('Could not delete - please try again.');
+      showToast('Could not delete. Please try again.');
     }
   };
 

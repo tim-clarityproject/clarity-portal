@@ -9,8 +9,8 @@ import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -89,7 +89,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
     } catch (error) {
       console.error('[PlanHistoryVersion] restore failed:', error);
       setRestoreOpen(false);
-      showToast('Could not restore this version - please try again.');
+      showToast('Could not restore this version. Please try again.');
     } finally {
       setIsRestoring(false);
     }
@@ -126,10 +126,12 @@ export default function PersonalOperatingPlanHistoryVersion() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan-history', { state: { missionId } })} label="Back to version history" /></div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="personalOperatingPlanHistoryVersion" title={formatVersion(version.major, version.minor)} overline={formatShortDate(version.created_at)} subtitle={version.change_note} rule={false} />
+          <PageHeader
+            title={formatVersion(version.major, version.minor)}
+            info={isCurrent ? 'This is your current plan.' : 'This is an older Version. You can read it but not change it.'}
+            meta={[formatShortDate(version.created_at), version.change_note]}
+          />
         </div>
-
-        <p className="pop-version-date">{isCurrent ? 'This is your current plan.' : 'This is an older Version. You can read it but not change it.'}</p>
 
         <div className="pop-mission-card">
           <span className="ui-section-heading" style={{ marginTop: 0 }}>Your mission</span>
@@ -148,7 +150,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
                 <div>
                   <div className="pop-view-tactic-text">{tactic.action}</div>
                   {tactic.type === 'measurable' && (
-                    <div className="pop-view-tactic-progress">{tactic.current_value ?? 0} / {tactic.target_value ?? '—'} {tactic.unit || ''}</div>
+                    <div className="pop-view-tactic-progress">{tactic.current_value ?? 0} / {tactic.target_value ?? 'No target'} {tactic.unit || ''}</div>
                   )}
                 </div>
               </div>
@@ -169,7 +171,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
         open={restoreOpen}
         title={`Restore ${formatVersion(version.major, version.minor)}?`}
         message={`Your current plan stays in your history. ${formatVersion(version.major, version.minor)} is copied forward as a new main Version, so nothing is lost.`}
-        confirmLabel={isRestoring ? 'Restoring...' : 'Restore'}
+        confirmLabel={isRestoring ? 'Restoring' : 'Restore'}
         onCancel={() => setRestoreOpen(false)}
         onConfirm={handleRestore}
       />

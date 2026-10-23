@@ -106,9 +106,8 @@ export default function EmailVerificationBanner() {
           margin: 0;
         }
 
-        .ev-banner-message strong {
+        .ev-banner-email {
           color: var(--text);
-          font-weight: 500;
         }
 
         .ev-banner-status {
@@ -134,11 +133,11 @@ export default function EmailVerificationBanner() {
       <div className="ev-banner-text">
         <p className="ev-banner-label">Verify your email</p>
         <p className="ev-banner-message">
-          We sent a verification link to <strong>{user?.email}</strong>. Click it to confirm your email.
+          We sent a verification link to <span className="ev-banner-email">{user?.email}</span>. Click it to confirm your email.
         </p>
         <div className="ev-banner-actions">
           <button type="button" className="ui-btn-ghost" onClick={handleResendEmail} disabled={isLoading}>
-            {isLoading ? 'Sending...' : 'Resend email'}
+            {isLoading ? 'Sending' : 'Resend email'}
           </button>
         </div>
         {message && (

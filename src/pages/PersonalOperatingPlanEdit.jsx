@@ -4,17 +4,17 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { LIMITS, formatVersion, loadLatestVersion, previewNextVersion, recordVersionAfterSave, validatePlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import pageText from '../content/pageText';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import SavingOverlay from '../components/ui/SavingOverlay';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import { Crosshair, Loading } from '../components/design';
+import { Crosshair, Loading, PageHeader } from '../components/design';
 
-const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your mission. It's your overall direction - how you'll tackle things in a consistent, thoughtful way. Unlike tactics (which happen day-to-day), your strategies don't change frequently. They're the foundation that guides your daily actions.";
-const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do - the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
+const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your mission. It's your overall direction, how you'll tackle things in a consistent, thoughtful way. Unlike tactics, which happen day-to-day, your strategies don't change frequently. They're the foundation that guides your daily actions.";
+const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do: the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
 
 function BinIcon() {
   return (
@@ -354,7 +354,7 @@ export default function PersonalOperatingPlanEdit() {
       navigate('/personal-operating-plan', { state: { toast } });
     } catch (error) {
       console.error('[PlanEdit] save failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -389,7 +389,7 @@ export default function PersonalOperatingPlanEdit() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        <PageHeading pageKey="personalOperatingPlanEdit" title="Shape your personal operating plan" />
+        <PageHeader title="Shape your personal operating plan" info={pageText.personalOperatingPlanEdit} />
 
         {pendingDraft && !draftDismissed && (
           <div className="pop-draft-banner">

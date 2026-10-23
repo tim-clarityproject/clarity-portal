@@ -2,7 +2,8 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import PageHeading from '../../components/PageHeading';
+import { PageHeader } from '../../components/design';
+import pageText from '../../content/pageText';
 import Toast from '../../components/ui/Toast';
 import useToast from '../../hooks/useToast';
 import { activeAreas, areaName, formatCheckinDate, newestCheckin } from '../../lib/wheelOfLife';
@@ -38,7 +39,7 @@ export default function WheelStart() {
       <DesignHeader />
       <div className="plan-page wol-page wol-enter">
         <div className="wol-head">
-          <PageHeading pageKey="wheelOfLife" title="Wheel of Life" />
+          <PageHeader title="Wheel of Life" info={pageText.wheelOfLife} />
         </div>
 
         <div className="wol-facts wol-rv" style={{ '--i': 3 }}>
@@ -48,7 +49,7 @@ export default function WheelStart() {
         </div>
 
         <ol className="wol-how wol-rv" style={{ '--i': 4 }}>
-          <li><b>01</b><span>Rate each area from 0 (not at all satisfied) to 10 (completely satisfied).</span></li>
+          <li><b>01</b><span>Rate each area from 0, not at all satisfied, to 10, completely satisfied.</span></li>
           <li><b>02</b><span>Go with your first answer. Rate how it is right now, not how you think it should be.</span></li>
           <li><b>03</b><span>Your last score shows as a small dot under the scale, so you can see what has moved.</span></li>
         </ol>

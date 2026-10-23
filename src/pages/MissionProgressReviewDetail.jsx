@@ -9,8 +9,8 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -80,7 +80,7 @@ export default function MissionProgressReviewDetail() {
     } catch (error) {
       console.error('[MissionProgressReviewDetail] delete failed:', error);
       setDeleteOpen(false);
-      showToast('Could not delete this review - please try again.');
+      showToast('Could not delete this review. Please try again.');
     }
   };
 
@@ -116,10 +116,9 @@ export default function MissionProgressReviewDetail() {
 
         <div className="plan-summary-head">
           {/* "POP review" (Personal Operating Plan review), Tim's
-              explicit wording (patch 2d) overriding my-reviews.html's
-              own "Plan review" - matches My Reviews' filter/row label
-              for this same review type. */}
-          <PageHeading pageKey="missionProgressReviewDetail" title={`POP review, ${formatShortDate(review.created_at)}`} overline="POP review" subtitle="" rule={false} />
+              explicit wording (patch 2d) - matches My Reviews' filter/row
+              label for this same review type. */}
+          <PageHeader title={`POP review, ${formatShortDate(review.created_at)}`} info={pageText.missionProgressReviewDetail} />
         </div>
 
         {version && (
@@ -142,7 +141,7 @@ export default function MissionProgressReviewDetail() {
                 <div>
                   <div className="pop-view-tactic-text">{tactic.action}</div>
                   {tactic.type === 'measurable' && (
-                    <div className="pop-view-tactic-progress">{tactic.reviewed_value ?? 0} / {tactic.target_value ?? '—'} {tactic.unit || ''}</div>
+                    <div className="pop-view-tactic-progress">{tactic.reviewed_value ?? 0} / {tactic.target_value ?? 'No target'} {tactic.unit || ''}</div>
                   )}
                   {tactic.reviewed_note && <p className="pop-view-strategy-desc" style={{ marginTop: 'var(--space-2)' }}>{tactic.reviewed_note}</p>}
                 </div>

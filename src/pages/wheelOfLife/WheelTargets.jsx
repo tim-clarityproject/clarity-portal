@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
-import PageHeading from '../../components/PageHeading';
+import pageText from '../../content/pageText';
 import DiscardDialog from '../../components/ui/DiscardDialog';
 import Toast from '../../components/ui/Toast';
 import useToast from '../../hooks/useToast';
-import { Crosshair } from '../../components/design';
+import { Crosshair, PageHeader } from '../../components/design';
 import {
   activeAreas, areaName, newestCheckin, scoreOf, stepTarget, targetStatus,
 } from '../../lib/wheelOfLife';
@@ -77,7 +77,7 @@ function Targets({ areas, latest, toast }) {
       <DesignHeader />
       <div className="plan-page plan-page--form wol-page wol-page--footer wol-enter">
         <div className="wol-head">
-          <PageHeading pageKey="wheelOfLifeTargets" title="Your targets" />
+          <PageHeader title="Your targets" info={pageText.wheelOfLifeTargets} />
         </div>
 
         <span className="wol-lab">{`Targets · ${setCount} of ${areas.length} set`}</span>
@@ -92,13 +92,13 @@ function Targets({ areas, latest, toast }) {
                 <div className="wol-tgn">
                   <span>{name}</span>
                   <small>
-                    {`Latest ${l == null ? '–' : l}`}
+                    {l == null ? 'No score yet' : `Latest ${l}`}
                     {status ? <>{' · '}<em className={status.met ? 'wol-ok' : undefined}>{status.text}</em></> : null}
                   </small>
                 </div>
                 <div className="wol-stp" role="group" aria-label={`Target for ${name}`}>
                   <button type="button" aria-label="Lower target" disabled={t === 0} onClick={() => step(a, -1)}>−</button>
-                  <b className={t == null ? 'wol-none' : undefined}>{t == null ? '–' : t}</b>
+                  <b className={t == null ? 'wol-none' : undefined}>{t == null ? 'None' : t}</b>
                   <button type="button" aria-label="Raise target" disabled={t === 10} onClick={() => step(a, 1)}><Crosshair size="sm" /></button>
                 </div>
                 <button type="button" className="wol-clr" disabled={t == null} onClick={() => clear(a)}>Clear</button>

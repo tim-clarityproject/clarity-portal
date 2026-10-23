@@ -5,8 +5,8 @@ import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 // Types with their own dedicated, design-system summary page now - an
 // old bookmark/link that still points here gets sent on rather than
@@ -104,7 +104,7 @@ export default function DecisionSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="decisionSummary" title={decision.title || 'Untitled decision'} overline={TYPE_LABEL[toolType] || toolType} subtitle={`Created ${formatUkDate(decision.created_at)}`} rule={false} />
+          <PageHeader title={decision.title || 'Untitled decision'} info={pageText.decisionSummary} meta={[TYPE_LABEL[toolType] || toolType, `Created ${formatUkDate(decision.created_at)}`]} />
         </div>
 
         {toolType === 'grow' && (
@@ -193,7 +193,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
             {formData.risks.map((risk, idx) => (
               <div key={idx} style={{ marginBottom: idx < formData.risks.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: '14px' }}>
-                <span style={{ fontWeight: '600' }}>{idx + 1}.</span> {risk}
+                <span>{idx + 1}.</span> {risk}
               </div>
             ))}
           </div>
@@ -206,7 +206,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
             {formData.factors.map((factor, idx) => (
               <div key={idx} style={{ marginBottom: idx < formData.factors.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: '14px' }}>
-                <span style={{ fontWeight: '600' }}>{String.fromCharCode(65 + idx)}.</span> {factor}
+                <span>{String.fromCharCode(65 + idx)}.</span> {factor}
               </div>
             ))}
           </div>
@@ -219,7 +219,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
             {formData.projects.map((project, idx) => (
               <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: '14px' }}>
-                <span style={{ fontWeight: '600' }}>{String.fromCharCode(65 + idx)}.</span> {project}
+                <span>{String.fromCharCode(65 + idx)}.</span> {project}
               </div>
             ))}
           </div>
@@ -243,7 +243,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
                   return (
                     <tr key={projectIdx}>
                       <td style={{ paddingTop: '8px', paddingBottom: '8px', color: 'var(--text-2)' }}>{String.fromCharCode(65 + projectIdx)}. {project}</td>
-                      <td style={{ textAlign: 'center', paddingTop: '8px', paddingBottom: '8px', color: 'var(--coral-text)', fontWeight: '600' }}>{score}/{formData.factors.length * 3}</td>
+                      <td style={{ textAlign: 'center', paddingTop: '8px', paddingBottom: '8px', color: 'var(--coral-text)' }}>{score}/{formData.factors.length * 3}</td>
                     </tr>
                   );
                 })}
@@ -262,8 +262,8 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
               const progressLabels = ['Not started', 'Planning', 'In progress', 'Near complete', 'Completed'];
               return (
                 <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '16px' : 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-2)', marginBottom: '6px' }}>{String.fromCharCode(65 + idx)}. {project}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--label)' }}>{progressLabels[progress] || 'Not set'} ({progress}/5)</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-2)', marginBottom: '6px' }}>{String.fromCharCode(65 + idx)}. {project}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--label)' }}>{progressLabels[progress] || 'Not set'}, {progress}/5</div>
                 </div>
               );
             })}
@@ -340,19 +340,19 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>What does each quadrant mean?</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--mint-text)' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--label)' }} onMouseEnter={() => setHoveredQuadrant('bottomLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>
             </div>

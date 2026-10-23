@@ -4,7 +4,8 @@ import DesignHeader from '../components/DesignHeader';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { findTodaysDailyPlan } from '../lib/planReview';
-import PageHeading from '../components/PageHeading';
+import { PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 // "Review my day" now opens the prompt 8 review page for today's daily
 // plan (separated from "Review a situation", which still opens the
@@ -69,7 +70,7 @@ export default function ReviewSection() {
 
       <div className="plan-page">
         <div className="plan-header">
-          <PageHeading pageKey="reviewSection" title="Review" overline="" rule={false} />
+          <PageHeader title="Review" info={pageText.reviewSection} />
         </div>
 
         <div className="dt-cards">

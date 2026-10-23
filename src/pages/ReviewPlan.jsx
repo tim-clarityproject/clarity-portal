@@ -11,8 +11,8 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { DisclosureArrow, Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { DisclosureArrow, Loading, PageHeader } from '../components/design';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -117,7 +117,7 @@ function PanelBody({ planKind, plan }) {
       {DAILY_QUESTIONS.map((q) => (
         <div key={q.key}>
           <small>{q.label}</small>
-          <p>{formData[q.key] || '—'}</p>
+          <p>{formData[q.key] || 'Not answered'}</p>
         </div>
       ))}
     </div>
@@ -202,7 +202,7 @@ export default function ReviewPlan() {
       });
     } catch (error) {
       console.error('[ReviewPlan] save failed:', error);
-      setSaveError('Could not save - please try again. (This needs a database change the site owner has not run yet.)');
+      setSaveError('Could not save. Please try again. This needs a database change the site owner has not run yet.');
     } finally {
       setIsSaving(false);
     }
@@ -219,7 +219,7 @@ export default function ReviewPlan() {
       navigate('/my-reviews');
     } catch (error) {
       console.error('[ReviewPlan] draft save failed:', error);
-      setSaveError('Could not save - please try again. (This needs a database change the site owner has not run yet.)');
+      setSaveError('Could not save. Please try again. This needs a database change the site owner has not run yet.');
     } finally {
       setIsSaving(false);
     }
@@ -257,7 +257,7 @@ export default function ReviewPlan() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeading pageKey="reviewPlan" title={t.h} overline={formatReviewDayLabel(reviewDate)} subtitle={t.sub} rule={false} />
+          <PageHeader title={t.h} info={t.sub} meta={[formatReviewDayLabel(reviewDate)]} />
         </div>
 
         {isLoading ? (

@@ -5,14 +5,14 @@ import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
 import { LIMITS, loadLatestVersion, loadDraftReview, loadReview, saveReview, deleteReview } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import pageText from '../content/pageText';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { BackLink, DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { DisclosureArrow, Loading } from '../components/design';
+import { DisclosureArrow, Loading, PageHeader } from '../components/design';
 
 function NoteIcon() {
   return (
@@ -221,7 +221,7 @@ export default function PersonalOperatingPlanReview() {
       }
     } catch (error) {
       console.error('[PlanReview] save failed:', error);
-      setSaveError('Could not save - please try again. (This may need a database change the site owner has not run yet.)');
+      setSaveError('Could not save. Please try again. This may need a database change the site owner has not run yet.');
     } finally {
       setIsSubmitting(false);
     }
@@ -256,7 +256,7 @@ export default function PersonalOperatingPlanReview() {
         <DesignHeader />
         <div className="plan-page">
           <div className="plan-header">
-            <PageHeading pageKey="personalOperatingPlanReviewEmpty" title="Review your plan" rule={false} />
+            <PageHeader title="Review your plan" info={pageText.personalOperatingPlanReviewEmpty} />
           </div>
           <div className="plan-actions">
             <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}>
@@ -280,15 +280,8 @@ export default function PersonalOperatingPlanReview() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        {/* personal-operating-plan.html's own S.rev screen has no step
-            indicator and no rule/divider under the header - .ui-rule
-            (PageHeading's short coral underline) was sitting flush on
-            top of the first .pop-view-strategy card below, clashing
-            with its coral left border and rounded corner. Scoped to
-            just this page's heading (not a global PageHeading/ui-rule
-            change) so nothing else using PageHeading is affected. */}
         <div className="pop-review-heading">
-          <PageHeading pageKey="personalOperatingPlanReview" title="Review your plan" />
+          <PageHeader title="Review your plan" info={pageText.personalOperatingPlanReview} />
         </div>
 
         {continuingDraftDate && (

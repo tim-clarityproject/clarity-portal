@@ -7,8 +7,8 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 export default function InversionThinkingSummary() {
   const navigate = useNavigate();
@@ -85,7 +85,7 @@ export default function InversionThinkingSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="inversionThinkingSummary" title={thinking.title || 'Pre-Mortem'} overline="Pre-Mortem" subtitle={`Created ${formatUkDate(thinking.created_at)}`} rule={false} />
+          <PageHeader title={thinking.title || 'Pre-Mortem'} info={pageText.inversionThinkingSummary} meta={[`Created ${formatUkDate(thinking.created_at)}`]} />
         </div>
 
         <div className="plan-sum">

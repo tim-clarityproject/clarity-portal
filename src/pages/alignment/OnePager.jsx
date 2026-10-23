@@ -64,7 +64,7 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email,
             <span>
               <span className="al-card-name">Download a PDF</span>
               <span className="al-card-desc">
-                {pdf.busy ? 'Preparing your PDF…' : 'This one-pager, ready to print or share'}
+                {pdf.busy ? 'Preparing your PDF' : 'This one-pager, ready to print or share'}
               </span>
             </span>
             <DisclosureArrow open={menuOpen} />
@@ -83,7 +83,7 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email,
             <span>
               <span className="al-card-name">Email me a link to this page</span>
               <span className="al-card-desc">
-                {email.status === 'sending' ? 'Sending…' : 'So you can find your results again at any time'}
+                {email.status === 'sending' ? 'Sending' : 'So you can find your results again at any time'}
               </span>
             </span>
           </button>
@@ -262,7 +262,7 @@ export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAc
       )}
 
       <p className="al-note">
-        {`Strategic importance: a project’s contribution scores added together, divided by the highest possible score (${nf} Critical Success Factors × ${MAX_CONTRIBUTION} = ${nf * MAX_CONTRIBUTION}), shown as a percentage. Numbers match the dots on the chart.`}
+        {`Strategic importance: a project’s contribution scores added together, divided by the highest possible score, ${nf} Critical Success Factors × ${MAX_CONTRIBUTION} = ${nf * MAX_CONTRIBUTION}, shown as a percentage. Numbers match the dots on the chart.`}
       </p>
 
       <ProjectCards onDownloadPdf={onDownloadPdf} onEmailLink={onEmailLink} onCreateAccount={onCreateAccount} pdf={pdf} email={email} menuOpen={pdfMenuOpen} onMenu={onPdfMenu} />

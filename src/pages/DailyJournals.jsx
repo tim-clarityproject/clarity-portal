@@ -84,7 +84,7 @@ export default function DailyJournals() {
       showToast('Journal deleted.');
     } catch (err) {
       console.error('[DailyJournals] delete failed:', err);
-      showToast('Could not delete - please try again.');
+      showToast('Could not delete. Please try again.');
     }
   };
 

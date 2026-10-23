@@ -12,8 +12,8 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -125,7 +125,7 @@ export default function InversionStep1Goal() {
     } catch (error) {
       console.error('[InversionStep1Goal] draft save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -182,7 +182,8 @@ export default function InversionStep1Goal() {
         </div>
 
         <div className="plan-header">
-          <PageHeading pageKey="inversionStep1Goal" title="What are you trying to achieve?" overline="" subtitle="" rule={false} />
+          <PageHeader title="Pre-mortem" info={pageText.inversionStep1Goal} />
+          <h2 className="ds-question">What are you trying to achieve?</h2>
         </div>
 
         {isLoading ? (

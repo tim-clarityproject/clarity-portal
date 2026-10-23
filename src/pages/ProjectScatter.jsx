@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { PageHeader } from '../components/design';
 
 export default function ProjectScatter() {
   const navigate = useNavigate();
@@ -121,7 +122,7 @@ export default function ProjectScatter() {
       navigate('/decision-summary', { state: { decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
-      showToast('Could not save - please try again.');
+      showToast('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -240,14 +241,10 @@ export default function ProjectScatter() {
             My Decisions
           </button>
         </div>
-        <p style={{ fontSize: '13px', color: 'var(--label)', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Where my team should focus
-        </p>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '32px' }}>
-          Are you allocating your resources appropriately?
-        </h1>
+        <PageHeader title="Strategic alignment" meta={['Where my team should focus']} />
+        <h2 className="ds-question">Are you allocating your resources appropriately?</h2>
 
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginTop: '24px', marginBottom: '32px' }}>
           <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
@@ -400,7 +397,7 @@ export default function ProjectScatter() {
                 onMouseEnter={() => setHoveredQuadrant('topLeft')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resource to these projects?</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resource to these projects?</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
               <div
@@ -408,7 +405,7 @@ export default function ProjectScatter() {
                 onMouseEnter={() => setHoveredQuadrant('topRight')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
               <div
@@ -416,7 +413,7 @@ export default function ProjectScatter() {
                 onMouseEnter={() => setHoveredQuadrant('bottomLeft')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
               <div
@@ -424,7 +421,7 @@ export default function ProjectScatter() {
                 onMouseEnter={() => setHoveredQuadrant('bottomRight')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
+                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>
             </div>
@@ -449,19 +446,19 @@ export default function ProjectScatter() {
                       transform: isSelected ? 'scale(1.02)' : 'scale(1)',
                     }}
                   >
-                    <div style={{ fontWeight: '600', fontSize: '14px', color: isSelected ? 'var(--coral-text)' : 'var(--text)', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '14px', color: isSelected ? 'var(--coral-text)' : 'var(--text)', marginBottom: '12px' }}>
                       {project.name}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '13px' }}>
                       <div>
                         <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: '12px' }}>Project Progress</div>
-                        <div style={{ fontWeight: '600', color: 'var(--coral-text)', fontSize: '18px' }}>
+                        <div style={{ color: 'var(--coral-text)', fontSize: '18px' }}>
                           {project.progress}/5
                         </div>
                       </div>
                       <div>
                         <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: '12px' }}>Strategic Importance</div>
-                        <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '18px' }}>
+                        <div style={{ color: 'var(--text)', fontSize: '18px' }}>
                           {project.importance}
                         </div>
                       </div>

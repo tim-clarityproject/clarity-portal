@@ -8,11 +8,11 @@ import {
   loadLatestBreathingSession, formatSessionLength,
 } from '../lib/breathing';
 import DesignHeader from '../components/DesignHeader';
-import { Loading } from '../components/design';
+import { Loading, PageHeader } from '../components/design';
 import BreathingVisual, { useBreathingPhase, useDialSize } from '../components/ui/BreathingVisual';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
+import pageText from '../content/pageText';
 
 function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
@@ -137,7 +137,7 @@ export default function BreathingPage() {
       showToast('Session saved.');
     } catch (error) {
       console.error('[BreathingPage] session save failed:', error);
-      showToast('Could not save this session - please try again.');
+      showToast('Could not save this session. Please try again.');
     }
   };
 
@@ -170,7 +170,11 @@ export default function BreathingPage() {
       <div className="plan-page breathe-page">
         <div className={`breathe-resting${sessionActive ? ' hidden' : ''}`} aria-hidden={sessionActive}>
           <div className="plan-header">
-            <PageHeading pageKey="breathingPage" title="Breathe" overline="Ground" rule={false} />
+            <PageHeader
+              title="Breathe"
+              info={pageText.breathingPage}
+              meta={[lastSession ? `Last session: ${TECHNIQUES[lastSession.breathing_mode]?.label || lastSession.breathing_mode}, ${formatSessionLength(lastSession.duration) || 'length not recorded'}` : 'No sessions yet']}
+            />
           </div>
 
           <div className="breathe-shape-wrap">
@@ -202,9 +206,6 @@ export default function BreathingPage() {
           </div>
 
           <div className="breathe-meta-row">
-            <span className="breathe-meta-item">
-              {lastSession ? `Last session: ${TECHNIQUES[lastSession.breathing_mode]?.label || lastSession.breathing_mode}, ${formatSessionLength(lastSession.duration) || '—'}` : 'No sessions yet'}
-            </span>
             <button type="button" className="breathe-meta-item breathe-meta-link" onClick={() => navigate('/breathing-sessions-summary')}>
               Breathing Sessions{sessionCount !== null ? ` · ${sessionCount}` : ''}
             </button>

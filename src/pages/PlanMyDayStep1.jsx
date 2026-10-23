@@ -11,7 +11,8 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
+import pageText from '../content/pageText';
+import { PageHeader } from '../components/design';
 
 // Worded exactly per the approved mock-up - topPriority/showUp/notDo are
 // the real Supabase field names (unchanged); only the on-screen wording
@@ -138,7 +139,7 @@ export default function PlanMyDayStep1() {
       navigate('/daily-plan-summary', { state: { decisionId: savedId, toast: 'Saved.' } });
     } catch (error) {
       console.error('[PlanMyDayStep1] Finish failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -155,7 +156,7 @@ export default function PlanMyDayStep1() {
       navigate('/my-plans');
     } catch (error) {
       console.error('[PlanMyDayStep1] Save as draft failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -196,7 +197,7 @@ export default function PlanMyDayStep1() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeading pageKey="planMyDayStep1" title="Daily intentions" overline={todayLabel} rule={false} />
+          <PageHeader title="Daily intentions" info={pageText.planMyDayStep1} meta={[todayLabel]} />
         </div>
 
         {QUESTIONS.map((q, index) => {

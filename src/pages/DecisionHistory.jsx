@@ -10,8 +10,8 @@ import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 // Decision types with a "Review this plan" page (prompt 8).
 const REVIEWABLE_TYPES = new Set(['inversion', 'tough-conversation']);
@@ -143,7 +143,7 @@ export default function DecisionHistory() {
       showDeletedToast(showToast);
     } catch (err) {
       console.error('[DecisionHistory] delete failed:', err);
-      showToast('Could not delete - please try again.');
+      showToast('Could not delete. Please try again.');
     }
   };
 
@@ -153,7 +153,7 @@ export default function DecisionHistory() {
 
       <div className="plan-page">
         <div className="dt-hrow">
-          <PageHeading pageKey="decisionHistory" title="My decisions" overline="" subtitle="" rule={false} />
+          <PageHeader title="My decisions" info={pageText.decisionHistory} />
           <button type="button" className="ui-btn-primary" onClick={() => navigate('/decision-tools')}>
             Make a decision
           </button>

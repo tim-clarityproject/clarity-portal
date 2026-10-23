@@ -8,10 +8,10 @@ import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import pageText from '../content/pageText';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
-import { useCoachName, Crosshair } from '../components/design';
+import { useCoachName, Crosshair, PageHeader } from '../components/design';
 import { useStartChat } from '../components/coach/CoachChat';
 
 export default function MyAccount() {
@@ -397,7 +397,7 @@ export default function MyAccount() {
 
       <div className="account-content">
         <div className="account-column">
-          <PageHeading pageKey="myAccount" title="My Account" />
+          <PageHeader title="My Account" info={pageText.myAccount} />
 
           <EmailVerificationBanner />
 
@@ -513,7 +513,7 @@ export default function MyAccount() {
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
               >
-                {isDeleting ? 'Deleting...' : 'Delete'}
+                {isDeleting ? 'Deleting' : 'Delete'}
               </button>
             </div>
             {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}

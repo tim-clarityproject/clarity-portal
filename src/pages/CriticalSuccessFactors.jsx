@@ -8,6 +8,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import SaveProgressModal from '../components/SaveProgressModal';
 
 import DesignHeader from '../components/DesignHeader';
+import { PageHeader } from '../components/design';
 
 export default function CriticalSuccessFactors() {
   const navigate = useNavigate();
@@ -76,16 +77,10 @@ export default function CriticalSuccessFactors() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          {location.state?.problemTitle && (
-            <p style={{ fontSize: '13px', color: 'var(--label)', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {location.state.problemTitle}
-            </p>
-          )}
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '24px' }}>
-            List the factors you feel are critical to achieving your team's objective
-          </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ marginBottom: '48px' }}>
+          <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
+          <h2 className="ds-question">List the factors you feel are critical to achieving your team's objective</h2>
+          <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '40%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
@@ -111,7 +106,6 @@ export default function CriticalSuccessFactors() {
                   <span
                     style={{
                       color: 'var(--coral-text)',
-                      fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',
@@ -145,7 +139,7 @@ export default function CriticalSuccessFactors() {
                 Critical Success Factors
               </h2>
               <p style={{ fontSize: '12px', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
-                (Hint: The opposite of how you would fail)
+                Hint: the opposite of how you would fail
               </p>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
@@ -154,7 +148,6 @@ export default function CriticalSuccessFactors() {
                   <span
                     style={{
                       color: 'var(--coral-text)',
-                      fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
                       textAlign: 'center',

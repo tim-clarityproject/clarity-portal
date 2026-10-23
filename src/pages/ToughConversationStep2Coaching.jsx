@@ -13,7 +13,8 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
+import { PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -157,7 +158,7 @@ export default function ToughConversationStep2Coaching() {
     } catch (error) {
       console.error('[ToughConversationStep2Coaching] save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -207,7 +208,7 @@ export default function ToughConversationStep2Coaching() {
         </div>
 
         <div className="plan-header">
-          <PageHeading pageKey="toughConversationStep2Coaching" title="Have a tough conversation" overline="" rule={false} />
+          <PageHeader title="Have a tough conversation" info={pageText.toughConversationStep2Coaching} />
         </div>
 
         <div className="tc-script">

@@ -4,12 +4,12 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatPlanCounts, formatVersion, loadArchivedMissions, restoreArchivedPlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import pageText from '../content/pageText';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Loading } from '../components/design';
+import { Loading, PageHeader } from '../components/design';
 
 export default function PersonalOperatingPlanArchived() {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ export default function PersonalOperatingPlanArchived() {
     } catch (error) {
       console.error('[PlanArchived] restore failed:', error);
       setRestoreTarget(null);
-      showToast('Could not restore this plan - please try again.');
+      showToast('Could not restore this plan. Please try again.');
     } finally {
       setIsRestoring(false);
     }
@@ -65,7 +65,7 @@ export default function PersonalOperatingPlanArchived() {
       <div className="plan-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan')} label="Back to your plan" /></div>
 
-        <PageHeading pageKey="personalOperatingPlanArchived" title="Archived plans" />
+        <PageHeader title="Archived plans" info={pageText.personalOperatingPlanArchived} />
 
         {isLoading ? (
           <Loading label="Loading your archived plans" className="ds-loading--page" />
@@ -102,7 +102,7 @@ export default function PersonalOperatingPlanArchived() {
         message={hasLivePlan
           ? 'It becomes your current plan. Your current plan moves to Archived plans, with its Versions and reviews.'
           : 'It becomes your current plan again, with its Versions and reviews.'}
-        confirmLabel={isRestoring ? 'Restoring...' : 'Restore'}
+        confirmLabel={isRestoring ? 'Restoring' : 'Restore'}
         onCancel={() => setRestoreTarget(null)}
         onConfirm={handleRestore}
       />

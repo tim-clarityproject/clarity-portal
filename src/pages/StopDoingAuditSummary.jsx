@@ -7,8 +7,8 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 export default function StopDoingAuditSummary() {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ export default function StopDoingAuditSummary() {
     } catch (error) {
       console.error('[StopDoingAuditSummary] delete failed:', error);
       setDeleteOpen(false);
-      showToast('Could not delete - please try again.');
+      showToast('Could not delete. Please try again.');
     }
   };
 
@@ -102,7 +102,7 @@ export default function StopDoingAuditSummary() {
         <div className="plan-back-row"><BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" /></div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="stopDoingAuditSummary" title={audit.title} overline="Time Audit" subtitle={`${totalHours} hours a week to reclaim`} rule={false} />
+          <PageHeader title={audit.title} info={pageText.stopDoingAuditSummary} meta={[`${totalHours} hours a week to reclaim`]} />
         </div>
 
         <div className="plan-sum">
@@ -110,7 +110,7 @@ export default function StopDoingAuditSummary() {
             <p className="plan-sum-label">Time-sink activities</p>
             <div className="plan-sum-value">
               {items.map((item, index) => (
-                <p key={item.id || index}>{item.activity} &mdash; {item.action || 'No action chosen'} &mdash; {parseFloat(item.timePerWeek) || 0}h/week</p>
+                <p key={item.id || index}>{item.activity} · {item.action || 'No action chosen'} · {parseFloat(item.timePerWeek) || 0}h/week</p>
               ))}
             </div>
           </div>

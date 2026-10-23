@@ -5,6 +5,7 @@ import { useLoadDecision } from '../hooks/useLoadDecision';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
+import { PageHeader } from '../components/design';
 
 export default function GoalSetting() {
   const navigate = useNavigate();
@@ -60,14 +61,8 @@ export default function GoalSetting() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
           <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '8px' }}>
-              {path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}
-            </h1>
-            {location.state?.problemTitle && (
-              <p style={{ fontSize: '14px', color: 'var(--label)', fontWeight: '400', margin: 0, marginBottom: '24px' }}>
-                {location.state.problemTitle}
-              </p>
-            )}
+            <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
+            <h2 className="ds-question">{path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}</h2>
           </div>
           <button
             onClick={() => navigate('/decision-history')}

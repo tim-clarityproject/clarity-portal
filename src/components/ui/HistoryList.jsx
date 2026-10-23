@@ -1,8 +1,8 @@
 import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
-import PageHeading from '../PageHeading';
+import pageText from '../../content/pageText';
 import FilterPills from './FilterPills';
-import { Button } from '../design';
+import { Button, PageHeader } from '../design';
 
 // LIST ROW GUIDELINES (guidelines to apply by default; a mock-up wins
 // where it shows a detail). On phone every row of every list is built
@@ -107,7 +107,7 @@ export default function HistoryList({
         <HistoryListStyles />
         <div className="hlist-head">
           <div>
-            {title && <PageHeading pageKey={pageKey} title={title} overline="" rule={false} />}
+            {title && <PageHeader title={title} info={pageText[pageKey]} />}
           </div>
         </div>
         <div className="hlist-error" role="alert">
@@ -144,7 +144,7 @@ export default function HistoryList({
 
       <div className="hlist-head">
         <div>
-          {title && <PageHeading pageKey={pageKey} title={title} overline="" rule={false} />}
+          {title && <PageHeader title={title} info={pageText[pageKey]} />}
         </div>
         {newButton && (
           <Button icon="plus" className="hlist-new-desktop" onClick={newButton.onClick}>

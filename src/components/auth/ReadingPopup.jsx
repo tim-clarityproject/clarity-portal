@@ -232,7 +232,7 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
            h1/h2/h3 fixes elsewhere in this file. */
         .ui-root .reading-popup-doc-subheading {
           font-family: var(--font-body);
-          font-weight: 700;
+          font-weight: var(--fw-medium);
           font-size: 15px !important;
           color: var(--text);
           margin: 20px 0 8px !important;

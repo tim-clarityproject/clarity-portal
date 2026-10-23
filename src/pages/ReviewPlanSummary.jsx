@@ -6,21 +6,13 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DesignHeader from '../components/DesignHeader';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import PageHeading from '../components/PageHeading';
-import { Loading } from '../components/design';
+import pageText from '../content/pageText';
+import { Loading, PageHeader } from '../components/design';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
   { key: 'b', label: 'What would you do differently next time?' },
 ];
-
-const TAG = {
-  daily_plan: 'Day review',
-  plan_meeting: 'Meeting review',
-  if_then_planning: 'If-Then review',
-  inversion: 'Plan review',
-  'tough-conversation': 'Plan review',
-};
 
 const SUMMARY_ROUTE = {
   daily_plan: '/daily-plan-summary',
@@ -132,7 +124,7 @@ export default function ReviewPlanSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeading pageKey="reviewPlanSummary" title={entry.title} overline={TAG[planKind] || 'Plan review'} subtitle="" rule={false} />
+          <PageHeader title={entry.title} info={pageText.reviewPlanSummary} />
         </div>
 
         <div className="plan-sum">

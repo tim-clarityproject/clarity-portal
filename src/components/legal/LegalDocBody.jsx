@@ -3,8 +3,8 @@
 // pop-up (ReadingPopup.jsx) and the standalone /legal/* pages
 // (LegalDocumentPage.jsx), so the same **bold**/bare-link handling and
 // markdown-symbol stripping only has to be written once. Each paragraph's
-// raw text is run through the same inline formatter: "**text**" becomes a
-// <strong>, the handful of bare emails/domains that appear in the legal
+// raw text is run through the same inline formatter: "**text**" becomes plain
+// text (no bold, writing rules), the bare emails/domains that appear in the legal
 // copy become real links, and a single "\n" (used for short address
 // blocks in the source files) becomes a line break - nothing here invents
 // or changes a single word of the underlying text.
@@ -25,7 +25,7 @@ function renderInlineLine(line, keyPrefix, linkClassName) {
 
     const [whole, bold, email, domain] = match;
     if (bold !== undefined) {
-      nodes.push(<strong key={`${keyPrefix}-${partIndex}`}>{bold}</strong>);
+      nodes.push(<span key={`${keyPrefix}-${partIndex}`}>{bold}</span>);
     } else if (email !== undefined) {
       nodes.push(
         <a key={`${keyPrefix}-${partIndex}`} className={linkClassName} href={`mailto:${email}`}>

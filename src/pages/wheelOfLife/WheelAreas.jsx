@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
-import PageHeading from '../../components/PageHeading';
+import pageText from '../../content/pageText';
 import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import Toast from '../../components/ui/Toast';
 import useToast from '../../hooks/useToast';
-import { Crosshair } from '../../components/design';
+import { Crosshair, PageHeader } from '../../components/design';
 import {
   OWN_NAME_MAX, areaName, differsFromStandard, isDuplicateName, questionFor, sortAreas,
 } from '../../lib/wheelOfLife';
@@ -106,7 +106,7 @@ export default function WheelAreas() {
       <DesignHeader />
       <div className="plan-page plan-page--form wol-page wol-page--footer wol-enter">
         <div className="wol-head">
-          <PageHeading pageKey="wheelOfLifeAreas" title="Your areas" />
+          <PageHeader title="Your areas" info={pageText.wheelOfLifeAreas} />
         </div>
 
         <span className="wol-lab">{`On your wheel · ${n}`}</span>
@@ -164,7 +164,7 @@ export default function WheelAreas() {
             <div className="wol-arl">
               {removed.map((a) => (
                 <div className="wol-ar wol-ar--off" key={a.key}>
-                  <b>–</b>
+                  <b aria-hidden="true" />
                   <div className="wol-arin">
                     <span>{areaName(a)}</span>
                     <small>Past scores kept</small>

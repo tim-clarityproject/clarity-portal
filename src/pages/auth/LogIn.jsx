@@ -154,7 +154,7 @@ export default function LogIn() {
         {needsConfirmation && (
           <div className="auth-row2">
             <AuthTextLink onClick={handleResend} disabled={isResending}>
-              {isResending ? 'Sending...' : 'Resend confirmation email'}
+              {isResending ? 'Sending' : 'Resend confirmation email'}
             </AuthTextLink>
           </div>
         )}

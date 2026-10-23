@@ -5,9 +5,9 @@ import { supabase } from '../lib/supabase';
 import { formatShortDate } from '../lib/dateFormatter';
 import { CHANGE_KIND_LABEL, formatPlanCounts, formatVersion, loadReviewedVersionDates, loadVersions } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
-import PageHeading from '../components/PageHeading';
+import pageText from '../content/pageText';
 import { BackLink } from '../components/ui/DiscardLink';
-import { Loading } from '../components/design';
+import { Loading, PageHeader } from '../components/design';
 
 export default function PersonalOperatingPlanHistory() {
   const navigate = useNavigate();
@@ -66,7 +66,7 @@ export default function PersonalOperatingPlanHistory() {
       <div className="plan-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/personal-operating-plan')} label="Back to your plan" /></div>
 
-        <PageHeading pageKey="personalOperatingPlanHistory" title="Version history" />
+        <PageHeader title="Version history" info={pageText.personalOperatingPlanHistory} />
 
         {isLoading ? (
           <Loading label="Loading your version history" className="ds-loading--page" />

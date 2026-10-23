@@ -12,7 +12,7 @@ import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Loading } from '../components/design';
+import { Loading, PageHeader } from '../components/design';
 
 export default function GrowStep4WillDo() {
   const navigate = useNavigate();
@@ -211,7 +211,7 @@ export default function GrowStep4WillDo() {
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
-      showToast('Could not save - please try again.');
+      showToast('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -248,9 +248,10 @@ export default function GrowStep4WillDo() {
             My Decisions
           </button>
         </div>
-        <h1 className="page-heading">What will I do?</h1>
+        <PageHeader title="GROW" />
+        <h2 className="ds-question">What will I do?</h2>
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+        <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
         </div>
 
@@ -292,7 +293,6 @@ export default function GrowStep4WillDo() {
                     cursor: editingIndex === index ? 'text' : 'grab',
                     fontSize: '14px',
                     color: 'var(--on-coral)',
-                    fontWeight: '600',
                     transition: 'all 0.2s ease',
                     opacity: draggedItem?.item === option && draggedItem?.index === index ? 0.5 : 1,
                     display: 'flex',
@@ -328,7 +328,6 @@ export default function GrowStep4WillDo() {
                           border: 'none',
                           outline: 'none',
                           fontSize: '14px',
-                          fontWeight: '600',
                           fontFamily: 'inherit',
                           backgroundColor: 'transparent',
                           color: 'var(--on-coral)',

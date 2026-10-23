@@ -341,6 +341,26 @@
   background: var(--coral-text);
 }
 
+/* A question heading under the page header (a step in a tool): DM Sans,
+   sentence case (CLAUDE.md rule 4), the guided tools' question size. */
+.ui-root .ds-question {
+  margin: var(--space-4) 0 0 !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-question) !important;
+  line-height: var(--lh-question);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-question {
+    font-size: var(--fs-question-phone) !important;
+  }
+}
+
 /* ---------- Section ---------- */
 
 .ui-root .ds-section {

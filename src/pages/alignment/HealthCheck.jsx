@@ -38,7 +38,7 @@ const HINTS = {
 const SUBTITLE = {
   contrib: 'How much does this project contribute to your Critical Success Factors?',
   progress: 'How far along is it?',
-  resource: 'How much resource will it need to deliver? (time, people, money, technology)',
+  resource: 'How much resource will it need to deliver in time, people, money and technology?',
 };
 const SUB_LABEL = { contrib: 'Contribution', progress: 'Progress', resource: 'Resource required' };
 

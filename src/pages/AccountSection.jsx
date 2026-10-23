@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import DesignHeader from '../components/DesignHeader';
+import { PageHeader } from '../components/design';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearAppStorage } from '../lib/clearAppStorage';
@@ -94,7 +95,7 @@ export default function AccountSection() {
     border: '2px solid var(--line)',
     borderRadius: '12px',
     color: 'var(--text)',
-    fontWeight: '600',
+    fontWeight: 'var(--fw-medium)',
     cursor: 'pointer',
     fontSize: '16px',
     transition: 'all 0.2s',
@@ -111,7 +112,7 @@ export default function AccountSection() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', marginTop: '0', marginBottom: '0' }}>Account</h1>
+          <PageHeader title="Account" />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '32px' }}>
@@ -126,7 +127,7 @@ export default function AccountSection() {
             }}
           >
             <div>
-              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>My Account</div>
+              <div style={{ fontSize: '16px', fontWeight: 'var(--fw-medium)', marginBottom: '4px' }}>My Account</div>
               <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>Manage your profile and settings</div>
             </div>
           </button>
@@ -142,7 +143,7 @@ export default function AccountSection() {
             }}
           >
             <div>
-              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>About</div>
+              <div style={{ fontSize: '16px', fontWeight: 'var(--fw-medium)', marginBottom: '4px' }}>About</div>
               <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>Learn more about Clarity</div>
             </div>
           </button>
@@ -165,7 +166,7 @@ export default function AccountSection() {
             }}
           >
             <div>
-              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '2px' }}>Log Out</div>
+              <div style={{ fontSize: '16px', fontWeight: 'var(--fw-medium)', marginBottom: '2px' }}>Log Out</div>
               <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>Sign out of your account</div>
             </div>
           </button>
@@ -193,7 +194,7 @@ export default function AccountSection() {
             }}
           >
             <div>
-              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '2px' }}>Delete Account</div>
+              <div style={{ fontSize: '16px', fontWeight: 'var(--fw-medium)', marginBottom: '2px' }}>Delete Account</div>
               <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.9 }}>Permanently delete all data</div>
             </div>
           </button>

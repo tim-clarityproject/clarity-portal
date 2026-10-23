@@ -16,8 +16,8 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { DatePicker, Loading } from '../components/design';
-import PageHeading from '../components/PageHeading';
+import { DatePicker, Loading, PageHeader } from '../components/design';
+import pageText from '../content/pageText';
 
 export default function MyJournal() {
   const navigate = useNavigate();
@@ -120,7 +120,7 @@ export default function MyJournal() {
       navigate('/review-summary', { state: { entryId: savedId, reviewType, toast: 'Review saved.' } });
     } catch (error) {
       console.error('[MyJournal] save failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -160,7 +160,7 @@ export default function MyJournal() {
       navigate('/my-reviews');
     } catch (error) {
       console.error('[MyJournal] draft save failed:', error);
-      setSaveError('Could not save - please try again.');
+      setSaveError('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -207,7 +207,7 @@ export default function MyJournal() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeading pageKey="myJournal" title={pageTitle} overline="Review" subtitle="" rule={false} />
+          <PageHeader title={pageTitle} info={pageText.myJournal} />
         </div>
 
         {continuingDraftDate && (
@@ -217,13 +217,12 @@ export default function MyJournal() {
         )}
 
         <div className="plan-field">
-          {/* DatePicker has no max yet, so a future day is ignored here,
-              as the old date input's max did. */}
           <DatePicker
             label={dateLabel}
             value={dateKey}
             min="1900-01-01"
-            onChange={(key) => { if (key <= getLocalDateKey(new Date())) setDateKey(key); }}
+            max={getLocalDateKey(new Date())}
+            onChange={setDateKey}
           />
         </div>
 

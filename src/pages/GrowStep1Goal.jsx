@@ -7,7 +7,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
-import { Loading } from '../components/design';
+import { Loading, PageHeader } from '../components/design';
 
 export default function GrowStep1Goal() {
   const navigate = useNavigate();
@@ -132,8 +132,9 @@ export default function GrowStep1Goal() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
-          <div>
-            <h1 className="page-heading">Define your goal clearly</h1>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <PageHeader title="GROW" />
+            <h2 className="ds-question">Define your goal clearly</h2>
           </div>
           <button
             onClick={() => navigate('/decision-history')}
