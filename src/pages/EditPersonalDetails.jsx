@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, TextField, Button, useToast } from '../components/design';
+import { limitName, NAME_MAX, NAME_TOO_LONG } from '../lib/nameLimit';
 
 export default function EditPersonalDetails() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function EditPersonalDetails() {
   const { user } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [nameNote, setNameNote] = useState({ first: false, last: false });
   const [role, setRole] = useState('');
   const [organisation, setOrganisation] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -235,9 +237,16 @@ export default function EditPersonalDetails() {
                   id="edit-first-name"
                   label="First name"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={(e) => {
+                    const { value, over } = limitName(e.target.value);
+                    setFirstName(value);
+                    setNameNote((n) => ({ ...n, first: over }));
+                  }}
+                  maxLength={NAME_MAX + 1}
+                  aria-describedby={nameNote.first ? 'edit-first-name-note' : undefined}
                   placeholder="Type here"
                 />
+                {nameNote.first && <p id="edit-first-name-note" className="edit-profile-note" role="status">{NAME_TOO_LONG}</p>}
               </div>
 
               <div className="edit-profile-field">
@@ -245,9 +254,16 @@ export default function EditPersonalDetails() {
                   id="edit-last-name"
                   label="Last name"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={(e) => {
+                    const { value, over } = limitName(e.target.value);
+                    setLastName(value);
+                    setNameNote((n) => ({ ...n, last: over }));
+                  }}
+                  maxLength={NAME_MAX + 1}
+                  aria-describedby={nameNote.last ? 'edit-last-name-note' : undefined}
                   placeholder="Type here"
                 />
+                {nameNote.last && <p id="edit-last-name-note" className="edit-profile-note" role="status">{NAME_TOO_LONG}</p>}
               </div>
 
               <div className="edit-profile-field">

@@ -4,6 +4,7 @@ import AuthShell from '../../components/auth/AuthShell';
 import { AuthTextField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
+import { limitName, NAME_MAX, NAME_TOO_LONG } from '../../lib/nameLimit';
 
 export default function SignUpStep1() {
   const navigate = useNavigate();
@@ -51,7 +52,13 @@ export default function SignUpStep1() {
           <AuthTextField
             label="First name"
             value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            onChange={(e) => {
+              const { value, over } = limitName(e.target.value);
+              setFirstName(value);
+              if (over) setFirstNameError(NAME_TOO_LONG);
+              else if (firstNameError === NAME_TOO_LONG) setFirstNameError('');
+            }}
+            maxLength={NAME_MAX + 1}
             placeholder="John"
             error={firstNameError}
             shakeToken={shakeToken}
@@ -60,7 +67,13 @@ export default function SignUpStep1() {
           <AuthTextField
             label="Last name"
             value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            onChange={(e) => {
+              const { value, over } = limitName(e.target.value);
+              setLastName(value);
+              if (over) setLastNameError(NAME_TOO_LONG);
+              else if (lastNameError === NAME_TOO_LONG) setLastNameError('');
+            }}
+            maxLength={NAME_MAX + 1}
             placeholder="Doe"
             error={lastNameError}
             shakeToken={shakeToken}
