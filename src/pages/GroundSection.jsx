@@ -27,7 +27,7 @@ export default function GroundSection() {
 
       <div className="plan-page">
         <div className="plan-header">
-          <PageHeader title="Ground" info={pageText.groundSection} />
+          <PageHeader title="Reset" info={pageText.groundSection} />
         </div>
 
         <div className="dt-cards dt-cards--three">

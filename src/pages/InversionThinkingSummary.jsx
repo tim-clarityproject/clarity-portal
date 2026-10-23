@@ -83,7 +83,7 @@ export default function InversionThinkingSummary() {
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={thinking.title || 'Pre-Mortem'} info={pageText.inversionThinkingSummary} meta={[`Created ${formatUkDate(thinking.created_at)}`]} />
+          <PageHeader title={thinking.title || 'Pre-mortem'} info={pageText.inversionThinkingSummary} meta={[`Created ${formatUkDate(thinking.created_at)}`]} />
         </div>
 
         <div className="plan-sum">

@@ -789,7 +789,7 @@ export default function Welcome() {
 
             <div>
               <div className="home-section-label">
-                <span className="home-section-label-text">Ground</span>
+                <span className="home-section-label-text">Reset</span>
               </div>
 
               <div className="home-ground-panel">

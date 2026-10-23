@@ -26,11 +26,11 @@ const TYPE_LABEL = {
   plan_meeting: 'Meeting plan',
   if_then_planning: 'If-Then plan',
   stop_doing_audit: 'Time audit',
-  grow: 'GROW',
+  grow: 'Get unstuck',
   'tough-conversation': 'Tough feedback',
 };
 
-const DECISION_LABELS = ['If-Then plan', 'Time audit', 'GROW', 'Tough feedback'];
+const DECISION_LABELS = ['If-Then plan', 'Time audit', 'Get unstuck', 'Tough feedback'];
 
 const FILTERS = [
   { id: 'Daily plan', label: 'Daily plans' },
@@ -42,7 +42,7 @@ const SUB_FILTERS = {
   dec: [
     { id: 'If-Then plan', label: 'If-Then plan' },
     { id: 'Time audit', label: 'Time audit' },
-    { id: 'GROW', label: 'GROW' },
+    { id: 'Get unstuck', label: 'Get unstuck' },
     { id: 'Tough feedback', label: 'Tough feedback' },
   ],
 };

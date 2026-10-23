@@ -21,7 +21,7 @@ const REDIRECT_ROUTE = {
 };
 
 const TYPE_LABEL = {
-  grow: 'GROW',
+  grow: 'Get unstuck',
   'strategic-alignment': 'Strategic alignment',
 };
 

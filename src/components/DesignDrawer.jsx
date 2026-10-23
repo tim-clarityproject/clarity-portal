@@ -75,7 +75,7 @@ const SECTIONS = [
   },
   {
     id: 'ground',
-    label: 'Ground',
+    label: 'Reset',
     links: [
       {
         label: 'Breathe',

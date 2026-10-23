@@ -63,7 +63,7 @@ export default function GrowStep2Reality() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
         </div>
-        <PageHeader title="GROW" />
+        <PageHeader title="Get unstuck" />
         <h2 className="ds-question">What's the current situation?</h2>
 
         <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>

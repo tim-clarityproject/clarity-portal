@@ -34,7 +34,7 @@
 
 15. **The breathing tool (Breathe) is the showpiece of the portal.** Three techniques: Physiological sigh, Vagal breathing, Box breathing. A ring that swells and settles with faint echo rings for the first two techniques. For Box breathing, a coral line traces the rounded-square outline of the logo mark, one side per phase. The ring is coral on the in-breath and mint on the out-breath. The crosshair sits in the centre and rotates 45 degrees as the ring grows. All timings come from the Breathing Settings.
 
-16. Replaced by the overhaul: navigation is rebuilt in its own phase (Phase 4, with Home), and portal-overhaul-decisions.md describes the new design. Until then: **Navigation structure (planned for a later task).** Home, Plan (which combines everything currently under Plan AND everything currently under Decide, including Decision Tools, Grow steps, Inversion steps and Tough Conversation), Ground, Review, My Account (with About and Log Out inside it). No separate Decide section. On phone, no hamburger menu; the five bottom tabs are Home, Ground, Plan, Review, Account. On desktop, the drawer has three groups: (1) Home; (2) Plan, Ground, Review sections; (3) My Account with About and Log Out pages inside.
+16. Replaced by the overhaul: navigation is rebuilt in its own phase (Phase 4, with Home), and portal-overhaul-decisions.md describes the new design. Until then: **Navigation structure (planned for a later task).** Home, Plan (which combines everything currently under Plan AND everything currently under Decide, including Decision Tools, Grow steps, Inversion steps and Tough Conversation), Reset, Review, My Account (with About and Log Out inside it). No separate Decide section. On phone, no hamburger menu; the five bottom tabs are Home, Reset, Plan, Review, Account. On desktop, the drawer has three groups: (1) Home; (2) Plan, Reset, Review sections; (3) My Account with About and Log Out pages inside.
 
 17. **Every page sits inside .ui-root.** Never put global rules on html, body, #root or bare element selectors (input, button, textarea, select). All design variables (--bg, --text, --coral, etc.) and component classes live only inside .ui-root and its data-theme variants. Everything a page opens, including pop-ups, panels, toasts and overlays, renders inside .ui-root too: if it attaches to document.body, give that element the .ui-root class so it sees the design variables.
 
@@ -54,6 +54,12 @@
 
 25. **There is one "i", drawn the same everywhere** (InfoIcon in src/components/design): a 16px thin outlined circle with a small "i" inside, like ⓘ, in the current text colour, with no disc behind it and no thicker border. Its button gives the 44px tap area with padding; the icon never grows. When an "i" explains a sentence it sits at the end of that sentence, 6px after the last word (var(--info-gap)), lined up with the middle of the text. It opens its explanation and Escape closes it.
 
+26. **Names people see (Tim, 23 Oct).** The personal area once called Ground is **Reset** everywhere it shows. GROW is **Get unstuck**, and its first screen says "Uses the GROW model." in small text under the title. Inversion is **Pre-mortem** (the team version for strategy stays "Pre-mortem for an initiative" if it exists). Tools not built yet take their new names when they are built. Only the names people see change: routes, file names, database values and saved items keep their old names, and old saved items still open.
+
+27. **Times for a tool read "~5 minutes"** (Tim, 23 Oct), never "About 5 minutes" or "5 min". Ranges stay as they are, for example "1, 3 or 5 minutes".
+
+28. **Error messages say what happened, then what to do** (Tim's rule 15), for example "That didn’t save. Check your connection and try again." "Fail" and "failed" are never used in client text. After deleting something the message reads "Deleted" (with Undo where Undo exists), apart from deleting the whole account, which says "Your account has been deleted."
+
 ## List row guidelines
 
 These are guidelines, to apply by default to every list built from the shared row (`src/components/ui/HistoryList.jsx`: My Plans, My Reviews, My Journals, Decision History). Where a mock-up shows a detail, the mock-up wins. They are about layout only, not saving or navigation.
@@ -68,3 +74,7 @@ On phone every row is built the same way:
 6. **Filters:** filters sit behind one Filter button (the shared `FilterButton`), with one line saying what is applied and Clear (Tim, 22 Oct). This replaces the swipeable pill row.
 
 Note for mock-ups: Tim approved the type, status and version line in place of the mock-ups' version on the date line. His earlier approval of swipeable filter pills is replaced by guideline 6.
+
+## Go-live notes
+
+- **Terms accepted SQL** (`supabase/migrations/021_restore_terms_accepted_from_signup.sql`): run it on the live database only at go-live, after this branch's code is live. The old live code marks the terms as not accepted on every page load, so running it earlier would be undone straight away.

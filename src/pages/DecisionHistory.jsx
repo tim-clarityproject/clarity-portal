@@ -15,7 +15,7 @@ import { Loading, PageHeader, Button, useToast } from '../components/design';
 const REVIEWABLE_TYPES = new Set(['inversion', 'tough-conversation']);
 
 const TYPE_LABEL = {
-  grow: 'GROW',
+  grow: 'Get unstuck',
   inversion: 'Pre-mortem',
   'tough-conversation': 'Tough conversation',
   'strategic-alignment': 'Strategic alignment',

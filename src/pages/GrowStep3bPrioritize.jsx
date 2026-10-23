@@ -242,7 +242,7 @@ export default function GrowStep3bPrioritize() {
           <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
         </div>
         <PageHeader
-          title="GROW"
+          title="Get unstuck"
           info={pageText.growStep3bPrioritize}
         />
         <h2 className="ds-question">Prioritise your options</h2>

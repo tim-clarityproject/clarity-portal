@@ -16,7 +16,7 @@ const MAX_NAME_LENGTH = 60;
 
 function suggestNameFrom(goal) {
   const trimmed = (goal || '').trim();
-  if (!trimmed) return 'New Pre-Mortem';
+  if (!trimmed) return 'New pre-mortem';
   return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
 }
 

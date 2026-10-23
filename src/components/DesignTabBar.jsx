@@ -12,7 +12,7 @@ const TABS = [
   },
   {
     id: 'ground',
-    label: 'Ground',
+    label: 'Reset',
     path: '/ground-section',
     Icon: GroundIcon,
     sectionRoutes: [
