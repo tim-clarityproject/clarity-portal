@@ -1,7 +1,10 @@
-import { forwardRef, useId, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useId, useImperativeHandle, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import FieldLabel from './FieldLabel';
+import FocusWriter from './FocusWriter';
 import { SaveStatus } from './Status';
 import useCaretClear from './useCaretClear';
+import useIsPhone from './useIsPhone';
 import './design.css';
 
 // The steady text box (Tim, 21 Oct: the live journal bug; M6 and design
@@ -24,7 +27,13 @@ import './design.css';
 //               never adds a line and pasted line breaks become spaces.
 // who:          the who-sees lock label in the label row.
 // maxLength:    shows "112 of 120" once within 20 of the limit.
+// focusMode:    for long writing (journal, reflections, debrief answers):
+//               on a phone, tapping the box opens focus mode
+//               (FocusWriter.jsx), a full-screen writing page; Done puts
+//               people back in the same place. On a laptop the box stays
+//               in the page and grows.
 const COUNT_FROM = 20;
+const TAP_SLOP_PX = 10;
 
 const TextBox = forwardRef(function TextBox({
   label,
@@ -40,6 +49,7 @@ const TextBox = forwardRef(function TextBox({
   id,
   className = '',
   onKeyDown,
+  focusMode = false,
   ...rest
 }, forwardedRef) {
   const autoId = useId();
@@ -49,6 +59,51 @@ const TextBox = forwardRef(function TextBox({
   useCaretClear(ref);
   const one = lines === 'one';
   const text = value ?? '';
+
+  // Focus mode, on phone only.
+  const isPhone = useIsPhone();
+  const writer = focusMode && !one && isPhone;
+  const [writing, setWriting] = useState(false);
+  const writerRef = useRef(null);
+  const fieldRef = useRef(null);
+  const touch = useRef(null);
+
+  // Opened inside the tap itself, so iPhone shows the keyboard straight
+  // away for the writing page.
+  const openWriter = () => {
+    flushSync(() => setWriting(true));
+    const el = writerRef.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(el.value.length, el.value.length);
+  };
+
+  const closeWriter = () => {
+    writerRef.current?.blur();
+    setWriting(false);
+    // Back to this box's place on the page (not into the box, which would
+    // open the writing page again).
+    requestAnimationFrame(() => fieldRef.current?.focus({ preventScroll: true }));
+  };
+
+  const writerHandlers = writer ? {
+    'aria-haspopup': 'dialog',
+    onTouchStart: (e) => {
+      const t = e.touches[0];
+      touch.current = t ? { x: t.clientX, y: t.clientY } : null;
+    },
+    onTouchEnd: (e) => {
+      const start = touch.current;
+      const t = e.changedTouches[0];
+      touch.current = null;
+      if (!start || !t) return;
+      if (Math.abs(t.clientX - start.x) > TAP_SLOP_PX || Math.abs(t.clientY - start.y) > TAP_SLOP_PX) return;
+      e.preventDefault();
+      openWriter();
+    },
+    // Reached another way (a screen reader, a keyboard): open it too.
+    onFocus: () => { if (!writing) openWriter(); },
+  } : {};
 
   const change = (e) => {
     const next = one ? e.target.value.replace(/\r?\n/g, ' ') : e.target.value;
@@ -63,7 +118,7 @@ const TextBox = forwardRef(function TextBox({
   const showCount = maxLength && text.length >= maxLength - COUNT_FROM;
 
   return (
-    <div className={`ds-textbox-field ${className}`.trim()}>
+    <div ref={fieldRef} tabIndex={writer ? -1 : undefined} className={`ds-textbox-field ${className}`.trim()}>
       <FieldLabel label={label} htmlFor={label ? boxId : undefined} who={who} coachName={coachName} />
       {/* The trailing space keeps an empty last line its height. */}
       <div className={`ds-grow${one ? ' ds-grow--one' : ''}`} data-value={`${text} `}>
@@ -80,6 +135,7 @@ const TextBox = forwardRef(function TextBox({
           aria-label={label ? undefined : ariaLabel}
           enterKeyHint={one ? 'done' : undefined}
           {...rest}
+          {...writerHandlers}
         />
       </div>
       {(showCount || saveState) && (
@@ -87,6 +143,21 @@ const TextBox = forwardRef(function TextBox({
           {saveState ? <SaveStatus state={saveState} /> : <span />}
           {showCount && <span className="ds-count">{`${text.length} of ${maxLength}`}</span>}
         </div>
+      )}
+      {writer && (
+        <FocusWriter
+          ref={writerRef}
+          open={writing}
+          onClose={closeWriter}
+          question={label || ariaLabel}
+          who={who}
+          coachName={coachName}
+          value={text}
+          onChange={onChange}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          saveState={saveState}
+        />
       )}
     </div>
   );

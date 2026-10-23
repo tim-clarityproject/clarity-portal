@@ -57,7 +57,7 @@ import './designReference.css';
 const TOC = [
   ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Sections and questions'],
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
-  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c21', 'Filter'], ['c22', 'Show less'],
+  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c17', 'Breathe button'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
 ];
@@ -404,6 +404,26 @@ function SteadyBoxDemo({ mode }) {
   );
 }
 
+function FocusModeDemo({ mode }) {
+  const [answer, setAnswer] = useState('');
+  const [save] = useExampleSave();
+  const state = useAutosave(answer, save, { draftKey: `gallery-focus-${mode || 'page'}` });
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <TextBox
+        label="What would make the next sprint even better?"
+        who="me"
+        value={answer}
+        onChange={setAnswer}
+        placeholder="e.g. Finish by 18:30 on 4 nights a week"
+        saveState={state}
+        focusMode
+      />
+      <p className="dr-small dr-laptop-only">On a laptop the box stays in the page and grows. Narrow the window to phone width, or open this page on a phone, then tap the box.</p>
+    </div>
+  );
+}
+
 function FilterDemo() {
   const [type, setType] = useState('all');
   const [when, setWhen] = useState('any');
@@ -692,6 +712,15 @@ function Gallery() {
             <p><New /><b>Typing never jumps</b> (Tim, 21 Oct). The box grows smoothly as you type; the line being typed stays just above the keyboard, and the page never scrolls back and forth.</p>
             <p>Box colour, an edge that turns coral when you’re typing, 17px text, 20px of space each side, at least 88px tall when empty.</p>
             <p><b>It saves by itself</b>: Saving, then Saved. With no signal it says Will sync, keeps a copy on the device and tries again until it goes. Nothing is lost if the app closes.</p>
+          </>
+        )} />
+
+        <GallerySection id="c26" title="Focus mode" demo={FocusModeDemo} rules={(
+          <>
+            <p><New /><b>Writing on a phone opens a full-screen writing page</b>: the question at the top, the lock label, just the words, a quiet Saved, and Done.</p>
+            <p>Nothing else on the page moves. It fits the space above the keyboard, so the line being typed stays in sight.</p>
+            <p>Done, or a swipe down, closes it and puts you back in the same place, with what you wrote in the box. Nothing needs saving by hand.</p>
+            <p>For long writing only: journal, reflections and debrief answers. On a laptop the box stays in the page and grows smoothly.</p>
           </>
         )} />
 

@@ -472,3 +472,10 @@
     display: block;
   }
 }
+
+/* Notes for laptops only (the thing they describe happens on phone). */
+@media (max-width: 600px) {
+  .ui-root .dr-laptop-only {
+    display: none;
+  }
+}

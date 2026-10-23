@@ -2062,3 +2062,123 @@
   color: var(--label);
   font-variant-numeric: tabular-nums;
 }
+
+.ui-root .ds-textbox-field:focus {
+  outline: none;
+}
+
+/* ---------- Focus mode for writing on phone ---------- */
+
+/* Sized to the visible space above the keyboard (FocusWriter.jsx sets
+   --vv-top and --vv-height from the visual viewport). */
+.ui-root .ds-focus {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--vv-top, 0px);
+  height: var(--vv-height, 100dvh);
+  z-index: var(--z-dialog);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  letter-spacing: normal;
+  animation: ds-rise var(--dur-slow) var(--ease);
+}
+
+@keyframes ds-rise {
+  from { opacity: 0; transform: translateY(var(--space-2)); }
+}
+
+.ui-root .ds-focus-top {
+  flex: none;
+  padding: max(var(--space-2), env(safe-area-inset-top, 0px)) var(--space-px12) 0 var(--box-pad-x);
+}
+
+.ui-root .ds-focus-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+  min-height: var(--tap-min);
+}
+
+.ui-root .ds-focus-done {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min) !important;
+  padding: 0 var(--space-2) !important;
+  font-family: var(--font-display);
+  font-size: var(--fs-btn) !important;
+  letter-spacing: var(--ls-back);
+  text-transform: uppercase;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-focus-done:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  border-radius: var(--space-1);
+}
+
+.ui-root .ds-focus-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-px12);
+  padding: var(--space-px6) var(--space-2) var(--space-px10) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-focus-head .ds-focus-question {
+  margin: 0 !important;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-focus-question) !important;
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-option);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-2);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-focus-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Just the words: the box without its edge, filling the page. */
+.ui-root .ds-grow--bare > .ds-text,
+.ui-root .ds-grow--bare::after {
+  min-height: 100%;
+  border-color: transparent;
+  border-radius: 0;
+  padding-bottom: var(--space-6) !important;
+}
+
+.ui-root .ds-grow--bare > .ds-text {
+  background: transparent;
+}
+
+.ui-root .ds-grow--bare > .ds-text:focus {
+  border-color: transparent;
+}
+
+.ui-root .ds-focus-scroll .ds-grow--bare {
+  min-height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-focus {
+    animation: none;
+  }
+}
