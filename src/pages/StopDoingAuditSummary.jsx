@@ -57,7 +57,7 @@ export default function StopDoingAuditSummary() {
     try {
       const { error } = await supabase.from('decisions').delete().eq('id', audit.id).eq('user_id', user.id);
       if (error) throw error;
-      navigate('/my-plans', { state: { toast: 'Deleted. It is gone from My plans.' } });
+      navigate('/my-plans', { state: { toast: 'Deleted' } });
     } catch (error) {
       console.error('[StopDoingAuditSummary] delete failed:', error);
       setDeleteOpen(false);

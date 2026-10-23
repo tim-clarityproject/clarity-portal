@@ -44,7 +44,7 @@ export default function BreathingSessionsSummary() {
     try {
       await deleteBreathingSession(user.id, id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
-      toast.show('Session deleted.');
+      toast.show('Deleted');
     } catch (error) {
       console.error('[BreathingSessionsSummary] delete failed:', error);
       toast.error('Could not delete. Please try again.');

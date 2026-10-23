@@ -74,7 +74,7 @@ export default function MissionProgressReviewDetail() {
     try {
       await deleteReview(user.id, review.id);
       setDeleteOpen(false);
-      navigate('/my-reviews', { state: { toast: 'Review deleted.' } });
+      navigate('/my-reviews', { state: { toast: 'Deleted' } });
     } catch (error) {
       console.error('[MissionProgressReviewDetail] delete failed:', error);
       setDeleteOpen(false);

@@ -265,7 +265,7 @@ export default function MyReviews() {
         await deleteJournalEntryRow(user.id, id);
       }
       setRows((prev) => prev.filter((r) => r.id !== id));
-      toast.show('Deleted.');
+      toast.show('Deleted');
     } catch (err) {
       console.error('[MyReviews] delete failed:', err);
       toast.error('Could not delete. Please try again.');

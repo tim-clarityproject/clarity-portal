@@ -89,7 +89,7 @@ export default function ReviewSummary() {
   const handleDelete = async () => {
     try {
       await deleteReview(user.id, review.id);
-      navigate('/my-reviews', { state: { toast: 'Deleted. It is gone from My Reviews.' } });
+      navigate('/my-reviews', { state: { toast: 'Deleted' } });
     } catch (error) {
       console.error('[ReviewSummary] delete failed:', error);
       setDeleteOpen(false);

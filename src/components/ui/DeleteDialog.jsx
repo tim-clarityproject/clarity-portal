@@ -4,10 +4,10 @@ import { Button, Popup } from '../design';
 // choice, Cancel, is the coral button; Delete is outlined. Escape, the
 // close crosshair or a tap outside cancel.
 //
-// After the caller's onConfirm resolves, show "Deleted." with the shared
+// After the caller's onConfirm resolves, show "Deleted" with the shared
 // toast; showDeletedToast() is the one-line helper for that.
 export function showDeletedToast(showToast) {
-  showToast('Deleted.');
+  showToast('Deleted');
 }
 
 export default function DeleteDialog({

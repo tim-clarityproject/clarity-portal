@@ -138,7 +138,7 @@ export default function DecisionHistory() {
       if (deleteError) throw deleteError;
       setDecisions((prev) => prev.filter((d) => d.id !== id));
       clearProgress();
-      toast.show('Deleted.');
+      toast.show('Deleted');
     } catch (err) {
       console.error('[DecisionHistory] delete failed:', err);
       toast.error('Could not delete. Please try again.');

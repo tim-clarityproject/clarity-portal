@@ -79,7 +79,7 @@ export default function DailyJournals() {
     try {
       await deleteJournal(user.id, id);
       setJournals((prev) => prev.filter((j) => j.id !== id));
-      toast.show('Journal deleted.');
+      toast.show('Deleted');
     } catch (err) {
       console.error('[DailyJournals] delete failed:', err);
       toast.error('Could not delete. Please try again.');

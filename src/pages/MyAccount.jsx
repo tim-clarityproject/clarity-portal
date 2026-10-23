@@ -137,7 +137,7 @@ export default function MyAccount() {
       await logout();
       clearAppStorage();
 
-      toast.show('Your account has been permanently deleted.');
+      toast.show('Deleted');
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Delete account error:', error);

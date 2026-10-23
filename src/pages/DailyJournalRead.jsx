@@ -35,7 +35,7 @@ export default function DailyJournalRead() {
   const handleDelete = async () => {
     try {
       await deleteJournal(user.id, journal.id);
-      navigate('/daily-journals', { state: { toast: 'Journal deleted.' } });
+      navigate('/daily-journals', { state: { toast: 'Deleted' } });
     } catch (error) {
       console.error('[DailyJournalRead] delete failed:', error);
       setDeleteOpen(false);

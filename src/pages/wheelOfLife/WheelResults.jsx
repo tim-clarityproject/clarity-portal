@@ -119,7 +119,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
       return;
     }
     setCheckins((list) => list.filter((c) => c.id !== id));
-    toast.show('Deleted.');
+    toast.show('Deleted');
   };
   const deleteDialog = (
     <DeleteDialog

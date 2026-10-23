@@ -164,7 +164,7 @@ export default function MyPlans() {
       if (deleteError) throw deleteError;
       setPlans((prev) => prev.filter((p) => p.id !== id));
       clearProgress();
-      toast.show('Deleted.');
+      toast.show('Deleted');
     } catch (err) {
       console.error('[MyPlans] delete failed:', err);
       toast.error('Could not delete. Please try again.');
