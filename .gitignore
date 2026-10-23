@@ -29,3 +29,8 @@ dist-ssr
 .env
 .env.*
 *.env
+# Connection strings and test-account passwords live in the home folder
+# (~/.clarity-backup.env, ~/.clarity-test.env, ~/.clarity-test-accounts.env).
+# These lines stop a copy of any of them ever being committed.
+.clarity-*
+*clarity-test-accounts*
