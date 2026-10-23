@@ -121,7 +121,7 @@ const browser = await chromium.launch();
 
 // Phone.
 {
-  const { defaultBrowserType, ...iphone } = devices['iPhone 13'];
+  const { defaultBrowserType: _engine, ...iphone } = devices['iPhone 13'];
   const page = await (await browser.newContext(iphone)).newPage();
   await open(page);
 
