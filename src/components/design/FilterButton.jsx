@@ -1,10 +1,10 @@
 import { useId, useRef, useState } from 'react';
-import Crosshair from './Crosshair';
+import DisclosureArrow from './DisclosureArrow';
 import './design.css';
 
 // Filter: one Filter button that opens the dropdowns (children, usually
 // Choice or Dropdown), then one plain line saying what is applied, with a
-// Clear link. The crosshair plus turns 45° while the dropdowns are open.
+// Clear link. The disclosure arrow turns to point up while they are open.
 //
 // applied: words for what is applied ("day reviews from this month"), or
 //          empty when nothing is.
@@ -22,8 +22,8 @@ export default function FilterButton({ label = 'Filter', applied, onClear, child
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
       >
-        <Crosshair turned={open} />
         {label}
+        <DisclosureArrow open={open} />
       </button>
       <div id={panelId} className="ds-filter-panel" hidden={!open}>
         {children}

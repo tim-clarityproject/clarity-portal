@@ -1,7 +1,8 @@
 import './design.css';
 
 // The brand crosshair (public/brand/crosshair_white.png, used as a CSS
-// mask): every plus, and turned 45° every close. Never a typed + or ×,
+// mask): add (a plus) and, turned 45°, close. Nothing else: anything that
+// opens a list or a fold uses DisclosureArrow (Tim, 23 Oct). Never a typed + or ×,
 // never a redrawn icon, never smaller than 14px (the one exception is the
 // decorative 8px crosshair inside the Breathe orb, see --breathe-cross in
 // tokens.css). Always decorative: the
@@ -10,7 +11,7 @@ import './design.css';
 // variant: 'plus' (coral by default) or 'close' (grey, turned 45°).
 // size:    'sm' 14px, 'close' 18px, 'md' 22px, 'lg' 28px.
 // tone:    'coral' | 'grey' | 'label' | 'white' | 'dark' (on coral).
-// turned:  a plus that has turned into a close (Collapsible, Filter).
+// turned:  a plus that has turned into a close.
 // spin:    turning, for loading and saving (fades instead with reduced motion).
 export default function Crosshair({
   variant = 'plus',

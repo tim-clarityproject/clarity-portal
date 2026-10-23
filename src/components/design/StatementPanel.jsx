@@ -4,8 +4,9 @@ import './design.css';
 // the task, then the statement, then the answers). Used for the check-in's
 // software statements and later the 360 tool. The statement sits in a
 // soft panel: the surface colour, 16px corners, no border, no colour,
-// left-aligned, 21px on desktop and 19px on phone, as wide as the answer
-// rows. The who-sees label and the answer rows follow it.
+// left-aligned, 18px on desktop and 17px on phone, as wide as the answer
+// rows. The who-sees label and the answer rows follow it. The component
+// adds the curly quotation marks, so content never types them.
 export default function StatementPanel({ children }) {
-  return <p className="ds-statement">{children}</p>;
+  return <p className="ds-statement">{'“'}{children}{'”'}</p>;
 }

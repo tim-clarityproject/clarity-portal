@@ -70,6 +70,28 @@
   background-color: var(--text-2);
 }
 
+/* ---------- Disclosure arrow: anything that opens a list or a fold ----------
+   Half the standard crosshair (the same mask), clipped to its upper-right
+   half so only the corner and two arms are left, then turned so the corner
+   points down; open, it turns 180° to point up. The shift keeps it centred. */
+
+.ui-root .ds-arrow {
+  display: inline-block;
+  flex: none;
+  width: var(--arrow-size);
+  height: var(--arrow-size);
+  background-color: var(--text-2);
+  -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  mask: url('/brand/crosshair_white.png') center / contain no-repeat;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  transform: translateY(var(--arrow-shift)) rotate(-45deg);
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+.ui-root .ds-arrow--open {
+  transform: translateY(calc(-1 * var(--arrow-shift))) rotate(135deg);
+}
+
 .ui-root .ds-cross--spin {
   animation: ds-spin var(--dur-spin) var(--ease-spin) infinite;
 }
@@ -1406,7 +1428,7 @@
   overflow-wrap: break-word;
 }
 
-/* A fixed box, so the crosshair can turn without nudging the row wider. */
+/* A fixed box, so the arrow can turn without nudging the row wider. */
 .ui-root .ds-collapse-mark {
   flex: none;
   width: var(--cross-md);
@@ -3083,7 +3105,7 @@
   box-sizing: border-box;
   max-width: var(--row-max-w);
   margin: 0 0 var(--space-px22);
-  padding: var(--space-px18) var(--space-px20);
+  padding: var(--space-3) var(--space-px20);
   border-radius: var(--radius-card);
   background: var(--raised);
   font-family: var(--font-body);

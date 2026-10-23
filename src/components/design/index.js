@@ -4,6 +4,7 @@
 // development (src/pages/designReference).
 export { default as Crosshair } from './Crosshair';
 export { default as BoldCrosshair } from './BoldCrosshair';
+export { default as DisclosureArrow } from './DisclosureArrow';
 export { Button, IconButton, SystemLink } from './Button';
 export { default as PageHeader } from './PageHeader';
 export { default as Section } from './Section';

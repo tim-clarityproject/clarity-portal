@@ -155,6 +155,8 @@
   --cross-close: 18px;
   --cross-md: 22px;
   --cross-spin: 28px;
+  --arrow-size: 18px;        /* the disclosure arrow (half the crosshair) */
+  --arrow-shift: 22%;        /* keeps the half-crosshair centred as it turns */
   --info-size: 18px;         /* the small circled i */
   --onum-size: 22px;         /* circled objective numbers */
   --checkbox-box: 18px;      /* one tick box size everywhere (Tim, 23 Oct: 22px felt too large) */
@@ -235,9 +237,9 @@
   --fs-focus-question: 17px;
 
   /* The statement panel (writing rule 51) */
-  --fs-statement: 21px;
-  --fs-statement-phone: 19px;
-  --lh-statement: 1.4;
+  --fs-statement: 18px;
+  --fs-statement-phone: 17px;
+  --lh-statement: 1.45;
 
   /* Calendar */
   --cal-day-h: 44px;

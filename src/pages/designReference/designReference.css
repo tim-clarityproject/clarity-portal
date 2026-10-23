@@ -251,6 +251,23 @@
   align-items: center;
 }
 
+/* The arrow demo: a 44px target that turns the arrow. */
+.ui-root .dr-arrow-demo {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+}
+
+.ui-root .dr-arrow-demo:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
 .ui-root .dr-quiet {
   margin: 0;
   font-size: var(--fs-note);

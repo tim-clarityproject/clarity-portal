@@ -13,6 +13,7 @@ import {
   CoachContext,
   ColourModeChoice,
   Crosshair,
+  DisclosureArrow,
   DatePicker,
   Dropdown,
   EmptyState,
@@ -226,7 +227,7 @@ function ButtonsDemo() {
       <div className="dr-row">
         <Button variant="primary" onClick={() => toast.show('Saved')}>Save my mission</Button>
         <Button icon="plus" onClick={() => toast.show('This adds a to-do.')}>Add a to-do</Button>
-        <Button variant="text" onClick={() => toast.show('Sprint details open here.')}>Sprint details</Button>
+        <Button variant="text" onClick={() => toast.show('Sprint details open here.')}>See the sprint details</Button>
       </div>
       <span className="dr-small">The coral button on hover, then disabled, for comparison:</span>
       <div className="dr-row" aria-hidden="true">
@@ -239,13 +240,20 @@ function ButtonsDemo() {
 
 function CrosshairDemo() {
   const toast = useToast();
+  const [open, setOpen] = useState(false);
   return (
     <div className="dr-stack">
-      <span className="dr-small">Standard crosshair: every plus and close</span>
+      <span className="dr-small">Standard crosshair: add and close only</span>
       <div className="dr-row">
         <Crosshair size="md" />
         <Crosshair size="md" tone="white" />
         <IconButton label="Close" onClick={() => toast.show('Close closes what’s open.')} />
+      </div>
+      <span className="dr-small">DisclosureArrow: anything that opens (tap to turn it)</span>
+      <div className="dr-row">
+        <button type="button" className="dr-arrow-demo" aria-expanded={open} aria-label="Turn the arrow" onClick={() => setOpen((v) => !v)}>
+          <DisclosureArrow open={open} />
+        </button>
       </div>
     </div>
   );
@@ -488,7 +496,7 @@ function GuidedDemo({ mode }) {
     <div className="dr-stack dr-stack--fill">
       <Choice label="Which best describes you?" options={ROLE_OPTIONS} value={role} onChange={setRole} />
       <div className="dr-row">
-        <Button onClick={() => setFull(true)}>Open it full screen</Button>
+        <Button onClick={() => setFull(true)}>See it full screen</Button>
       </div>
       <div className="dr-tool-frame">
         <SprintTool demo={demo} layout="framed" role={role} onClose={closed} />
@@ -583,7 +591,7 @@ function LoadingDemo() {
       </div>
       <div className="dr-row">
         <Button variant="text" onClick={() => setKey((k) => k + 1)}>Load again</Button>
-        <Button variant="text" onClick={save}>Save an entry</Button>
+        <Button variant="text" onClick={save}>Save my entry</Button>
         <SaveStatus state={state} />
       </div>
     </div>
@@ -627,7 +635,7 @@ function PanelsDemo() {
         onClose={() => setPanel(false)}
         title="Add a to-do"
         initialFocusRef={box}
-        footer={<Button variant="primary" disabled={!todo.text.trim()} onClick={() => { setPanel(false); setTodo((t) => ({ ...t, text: '' })); toast.saved({ message: 'Added to this week.', onUndo: () => toast.show('Removed.') }); }}>Add a to-do</Button>}
+        footer={<Button variant="primary" disabled={!todo.text.trim()} onClick={() => { setPanel(false); setTodo((t) => ({ ...t, text: '' })); toast.saved({ message: 'Added to this week.', onUndo: () => toast.show('Removed.') }); }}>Add my to-do</Button>}
       >
         <div className="dr-panel-form">
           <TextBox ref={box} label="What needs doing?" who="me" value={todo.text} onChange={(text) => setTodo((t) => ({ ...t, text }))} placeholder="e.g. Send the board pack to the chair" />
@@ -641,7 +649,7 @@ function PanelsDemo() {
         onClose={() => setWinPanel(false)}
         title="Add an unplanned win"
         initialFocusRef={winBox}
-        footer={<Button variant="primary" disabled={!win.text.trim() || win.strategies.length === 0} onClick={() => { setWinPanel(false); setWin((w) => ({ ...w, text: '', strategies: [] })); toast.show('Added to your Performance Evidence.'); }}>Add the win</Button>}
+        footer={<Button variant="primary" disabled={!win.text.trim() || win.strategies.length === 0} onClick={() => { setWinPanel(false); setWin((w) => ({ ...w, text: '', strategies: [] })); toast.show('Added to your Performance Evidence.'); }}>Add my win</Button>}
       >
         <div className="dr-panel-form">
           <TextBox ref={winBox} label="What did you do?" who="me" value={win.text} onChange={(text) => setWin((w) => ({ ...w, text }))} placeholder="e.g. Closed the renewal with the biggest client" />
@@ -822,14 +830,15 @@ function Gallery() {
             <p>Outlined buttons for everything else; a text link for minor actions.</p>
             <p><New /><b>Hover never looks disabled</b> (23 Oct): a slightly brighter coral in dark and a slightly deeper coral in light, with black text in both.</p>
             <p>A disabled coral button is the coral at 35% opacity.</p>
-            <p><b>“My” where it’s theirs</b> (Save my mission), otherwise verb and thing (Add a to-do).</p>
+            <p><b>“My” where it’s theirs</b> (Save my mission, Add my win, Add my to-do), otherwise verb and thing (Add a to-do, See it full screen).</p>
             <p>Never Submit, OK or Go.</p>
           </>
         )} />
 
         <GallerySection id="c6" title="Crosshairs" demo={CrosshairDemo} rules={(
           <>
-            <p><b>Standard crosshair</b>: every plus and close, from the logo’s own crop.</p>
+            <p><New /><b>Standard crosshair for add and close only</b> (Tim, 23 Oct): a plus to add, turned 45° to close, from the logo’s own crop. Nowhere else.</p>
+            <p><New /><b>DisclosureArrow for anything that opens</b>: drop-downs, folded sections and expandable rows. It is one half of the same crosshair, its corner pointing down, and it turns to point up while open.</p>
             <p>Coral or white on dark; deep coral or black on light.</p>
             <p>Never a typed + or ×, never smaller than 14px.</p>
             <p>The bold crosshair has its own section below.</p>
@@ -884,7 +893,7 @@ function Gallery() {
             <p>Long choices wrap onto a second line rather than squeezing.</p>
             <p>Options are 16px and at least 52px high.</p>
             <p>The chosen option has a coral tick as well as a shade.</p>
-            <p>The crosshair turns 45° while the list is open.</p>
+            <p><New />The arrow points down, and turns to point up while the list is open.</p>
             <p>Arrow keys, Enter, Escape and typing to jump all work, and screen readers hear each option.</p>
           </>
         )} />
@@ -938,6 +947,7 @@ function Gallery() {
           <>
             <p><New /><b>Dates are picked from the portal’s own calendar</b>, never typed: the question as its title, the month with previous and next, today marked, past days greyed out, the chosen day filled.</p>
             <p>On a laptop it opens beside the field like the drop-down; on a phone it slides up from the bottom.</p>
+            <p><New />The box has the same arrow as a drop-down, pointing up while the calendar is open.</p>
             <p>Weeks start on Monday.</p>
             <p>Arrow keys move a day or a week, Page Up and Page Down change the month, Enter picks.</p>
             <p>Dates show as “Mon 26 Oct”.</p>
@@ -958,21 +968,22 @@ function Gallery() {
             <p>Steps slide across; with reduced motion they fade.</p>
             <p>Everything saves as you go, and the summary at the end lets you change any answer.</p>
             <p><New /><b>Statements people rate</b> (writing rule 51): the heading is the task, then the statement in a soft panel, then the who-sees label and the answers.</p>
+            <p><New /><b>Smaller, in quotation marks</b> (Tim, 23 Oct): 18px on desktop and 17px on phone, with curly quotation marks the panel adds itself.</p>
             <p>See the Bouncing back step.</p>
           </>
         )} />
 
         <GallerySection id="c21" title="Filter" demo={FilterDemo} rules={(
           <>
-            <p>One Filter button opens the drop-downs.</p>
+            <p>One Filter button opens the drop-downs; its arrow turns to point up while they are open.</p>
             <p>Underneath, one plain line says what is applied, with Clear.</p>
           </>
         )} />
 
         <GallerySection id="c22" title="Show less, reveal more" demo={CollapsibleDemo} rules={(
           <>
-            <p>One line with the key fact and the crosshair plus; tap to see the detail.</p>
-            <p>The plus turns 45° to close.</p>
+            <p>One line with the key fact and the arrow; tap to see the detail.</p>
+            <p><New />The arrow turns to point up while it is open.</p>
           </>
         )} />
 

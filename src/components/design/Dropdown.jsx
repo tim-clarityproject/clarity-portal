@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import Crosshair from './Crosshair';
+import DisclosureArrow from './DisclosureArrow';
 import FieldLabel from './FieldLabel';
 import Popover from './Popover';
 import useIsPhone from './useIsPhone';
@@ -209,7 +209,7 @@ export default function Dropdown({
         onKeyDown={onBoxKey}
       >
         <span className="ds-dd-value">{current ? current.label : placeholder}</span>
-        <Crosshair tone="grey" turned={open} />
+        <DisclosureArrow open={open} />
       </button>
       <Popover
         open={open}

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import DisclosureArrow from './DisclosureArrow';
 import FieldLabel from './FieldLabel';
 import Popover from './Popover';
 import { addDays, dayLabel, fromKey, fullDateLabel, MONTH_NAMES, todayKey, toKey } from './dates';
@@ -209,6 +210,7 @@ export default function DatePicker({ label, who, coachName, value, onChange, min
         onClick={() => setOpen((v) => !v)}
       >
         <span id={valueId} className="ds-dd-value">{value ? dayLabel(value) : placeholder}</span>
+        <DisclosureArrow open={open} />
       </button>
       <CalendarPopover
         open={open}
