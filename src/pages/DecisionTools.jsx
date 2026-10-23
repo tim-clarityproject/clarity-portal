@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader } from '../components/design';
+import { PageHeader, Button } from '../components/design';
 import pageText from '../content/pageText';
 
 const LIVE_CARDS = [
@@ -51,9 +51,9 @@ export default function DecisionTools() {
           <div>
             <PageHeader title="Decision tools" info={pageText.decisionTools} />
           </div>
-          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/decision-history')}>
+          <Button variant="outline" onClick={() => navigate('/decision-history')}>
             My decisions
-          </button>
+          </Button>
         </div>
 
         <div className="dt-cards">

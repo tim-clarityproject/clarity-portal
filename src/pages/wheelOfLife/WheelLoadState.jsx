@@ -1,11 +1,10 @@
 import DesignHeader from '../../components/DesignHeader';
-import Toast from '../../components/ui/Toast';
-import { Loading } from '../../components/design';
+import { Button, Loading } from '../../components/design';
 
 // Shown while a Wheel of Life screen loads, or when loading failed (with
 // a short message and Try again). Same loading crosshair as the other
 // Review tools.
-export default function WheelLoadState({ loading, error, onRetry, toast = null }) {
+export default function WheelLoadState({ loading, error, onRetry }) {
   return (
     <div className="ui-root">
       <DesignHeader />
@@ -16,12 +15,11 @@ export default function WheelLoadState({ loading, error, onRetry, toast = null }
           <>
             <p className="plan-save-error" role="alert">{error}</p>
             <div className="wol-acts">
-              <button type="button" className="ui-btn-ghost" onClick={onRetry}>Try again</button>
+              <Button variant="outline" onClick={onRetry}>Try again</Button>
             </div>
           </>
         )}
       </div>
-      <Toast message={toast} />
     </div>
   );
 }

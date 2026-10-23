@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import PhoneActionBar from '../../components/ui/PhoneActionBar';
 import { BackLink, DiscardLink } from '../../components/ui/DiscardLink';
+import { Button } from '../../components/design';
 
 // The footer action bar of the mock-up (Back and Discard on the left, the
 // main button on the right), built from the portal's shared parts:
@@ -8,7 +9,9 @@ import { BackLink, DiscardLink } from '../../components/ui/DiscardLink';
 // directly above the tab bar. On desktop the same row is pinned to the
 // bottom of the window, like the Breathe page's bar (the floating buttons
 // are hidden on these routes, as on /breathe). Its height is written to
-// --wol-bar-height so the page and the toast clear it.
+// --wol-bar-height so the page clears it, and the distance from the
+// bottom of the window to the bar's top edge is written to the shared
+// toast's --ds-toast-offset so toasts show above the bar, not over it.
 function Row({ onBack, onDiscard, primary }) {
   return (
     <div className="wol-ft-box">
@@ -17,15 +20,14 @@ function Row({ onBack, onDiscard, primary }) {
           <BackLink onClick={onBack} />
           {onDiscard ? <DiscardLink onClick={onDiscard} aria-label="Discard" /> : null}
         </div>
-        <button
-          type="button"
-          className="ui-btn-primary"
+        <Button
+          variant="primary"
           onClick={primary.onClick}
           disabled={primary.disabled || primary.busy}
           aria-busy={primary.busy ? 'true' : undefined}
         >
           {primary.busy ? primary.busyLabel || primary.label : primary.label}
-        </button>
+        </Button>
       </div>
       {primary.error ? <p className="wol-ft-err" role="alert">{primary.error}</p> : null}
     </div>
@@ -43,10 +45,18 @@ export default function WheelFooter(props) {
 
   useLayoutEffect(() => {
     const desk = deskRef.current;
+    const html = document.documentElement;
     const measure = () => {
       const phone = document.querySelector('.ui-phone-action-bar');
-      const h = Math.max(desk ? desk.getBoundingClientRect().height : 0, phone ? phone.getBoundingClientRect().height : 0);
-      document.documentElement.style.setProperty('--wol-bar-height', `${h}px`);
+      const deskBox = desk ? desk.getBoundingClientRect() : null;
+      const phoneBox = phone ? phone.getBoundingClientRect() : null;
+      const h = Math.max(deskBox ? deskBox.height : 0, phoneBox ? phoneBox.height : 0);
+      html.style.setProperty('--wol-bar-height', `${h}px`);
+      // On a phone the bar sits above the tab bar, so the toast clears
+      // both: everything from the bar's top edge to the window bottom.
+      const shown = [deskBox, phoneBox].filter((box) => box && box.height > 0);
+      const clear = shown.length ? Math.max(...shown.map((box) => window.innerHeight - box.top)) : 0;
+      html.style.setProperty('--ds-toast-offset', `${Math.max(0, clear)}px`);
     };
     measure();
     window.addEventListener('resize', measure);
@@ -60,6 +70,7 @@ export default function WheelFooter(props) {
     return () => {
       window.removeEventListener('resize', measure);
       observer?.disconnect();
+      html.style.removeProperty('--ds-toast-offset');
     };
   }, []);
 

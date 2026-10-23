@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
 import pageText from '../../content/pageText';
-import Toast from '../../components/ui/Toast';
-import useToast from '../../hooks/useToast';
-import { Crosshair, PageHeader, TextBox } from '../../components/design';
+import {
+  Button, PageHeader, TextBox, useToast,
+} from '../../components/design';
 import {
   OWN_NAME_MAX, areaName, differsFromStandard, isDuplicateName, questionFor, sortAreas,
 } from '../../lib/wheelOfLife';
@@ -32,15 +32,15 @@ export default function WheelAreas() {
   const navigate = useNavigate();
   const location = useLocation();
   const back = returnPath(location.state);
-  const { message, showToast } = useToast();
-  useArrivalToast(showToast);
+  const toast = useToast();
+  useArrivalToast(toast.show);
   const data = useWheelData();
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
 
   if (data.loading || data.error) {
-    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} toast={message} />;
+    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} />;
   }
 
   const { all, active, removed } = data.areas;
@@ -57,7 +57,7 @@ export default function WheelAreas() {
     if (res.error) {
       data.setAreas(before);
       if (res.error.code === 'duplicate' || res.error.code === 'invalid' || res.error.code === 'last_area') {
-        showToast(res.error.message);
+        toast.error(res.error.message);
       } else {
         setError(res.error.code === 'network' ? SAVE_FAILED : res.error.message);
       }
@@ -65,7 +65,7 @@ export default function WheelAreas() {
     }
     data.setAreas(res.data.areas);
     const t = toastOnSuccess || res.data.message;
-    if (t) showToast(t);
+    if (t) toast.show(t);
     return true;
   };
 
@@ -89,7 +89,7 @@ export default function WheelAreas() {
     if (!name || pending) return;
     const dup = isDuplicateName(name, all);
     if (dup.duplicate) {
-      showToast(dup.message);
+      toast.error(dup.message);
       return;
     }
     const optimistic = dup.restore ? all.map((a) => (a.key === dup.restore.key ? { ...a, active: true } : a)) : null;
@@ -149,9 +149,9 @@ export default function WheelAreas() {
               onChange={setDraft}
               onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
             />
-            <button type="button" className="ui-btn-ghost wol-add-btn" disabled={!draft.trim() || pending} onClick={add}>
-              <Crosshair size="sm" />Add
-            </button>
+            <Button variant="outline" icon="plus" className="wol-add-btn" disabled={!draft.trim() || pending} onClick={add}>
+              Add
+            </Button>
           </div>
           <small>New areas start with no history. Their question will read “…how satisfied are you with travel in your life right now?”</small>
         </div>
@@ -175,12 +175,11 @@ export default function WheelAreas() {
         ) : null}
 
         {differsFromStandard(all) ? (
-          <button type="button" className="wol-qlink wol-reset" disabled={pending} onClick={reset}>Go back to the ten standard areas</button>
+          <Button variant="text" className="wol-qlink wol-reset" disabled={pending} onClick={reset}>Go back to the ten standard areas</Button>
         ) : null}
       </div>
 
       <WheelFooter onBack={goBack} primary={{ label: 'Save areas', onClick: saveAreas }} />
-      <Toast message={message} clearBarVar="--wol-bar-height" />
     </div>
   );
 }

@@ -8,13 +8,11 @@ import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { PageHeader } from '../components/design';
+import { PageHeader, Button, useToast } from '../components/design';
 
 export default function ProjectScatter() {
   const navigate = useNavigate();
-  const { message: toastMessage, showToast } = useToast();
+  const toast = useToast();
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const { updateFormData } = useContext(FormContext);
@@ -58,7 +56,7 @@ export default function ProjectScatter() {
 
   const handleSaveToLogClick = () => {
     if (!user) {
-      showToast('Please log in to save decisions.');
+      toast.error('Please log in to save decisions.');
       return;
     }
     if (needsNaming) {
@@ -122,7 +120,7 @@ export default function ProjectScatter() {
       navigate('/decision-summary', { state: { decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
-      showToast('Could not save. Please try again.');
+      toast.error('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -216,30 +214,7 @@ export default function ProjectScatter() {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              borderRadius: '6px',
-              color: 'var(--text)',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
         </div>
         <PageHeader title="Strategic alignment" meta={['Where my team should focus']} />
         <h2 className="ds-question">Are you allocating your resources appropriately?</h2>
@@ -501,33 +476,11 @@ export default function ProjectScatter() {
           />
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center' }}>
-            <button
-              onClick={() => window.print()}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'transparent',
-                border: '2px solid var(--outline)',
-                borderRadius: '8px',
-                color: 'var(--text)',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.borderColor = 'var(--coral-text)';
-                e.target.style.backgroundColor = 'var(--raised)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.borderColor = 'var(--outline)';
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              Export as PDF
-            </button>
+            <Button variant="outline" onClick={() => window.print()}>Export as PDF</Button>
 
             {path === 'team' && (
-              <button
+              <Button
+                variant="outline"
                 onClick={() => {
                   if (navigator.share) {
                     navigator.share({
@@ -536,38 +489,18 @@ export default function ProjectScatter() {
                     });
                   } else {
                     navigator.clipboard.writeText(window.location.href);
-                    showToast('Link copied.');
+                    toast.show('Link copied.');
                   }
-                }}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: 'transparent',
-                  border: '2px solid var(--outline)',
-                  borderRadius: '8px',
-                  color: 'var(--text)',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.borderColor = 'var(--coral-text)';
-                  e.target.style.backgroundColor = 'var(--raised)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.borderColor = 'var(--outline)';
-                  e.target.style.backgroundColor = 'transparent';
                 }}
               >
                 Share
-              </button>
+              </Button>
             )}
           </div>
         </div>
 
       </div>
 
-      <Toast message={toastMessage} />
     </div>
   );
 }

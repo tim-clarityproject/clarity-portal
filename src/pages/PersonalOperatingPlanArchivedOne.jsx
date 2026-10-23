@@ -6,10 +6,8 @@ import { loadLatestVersion, restoreArchivedPlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -28,7 +26,7 @@ export default function PersonalOperatingPlanArchivedOne() {
   const [isLoading, setIsLoading] = useState(true);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +97,7 @@ export default function PersonalOperatingPlanArchivedOne() {
     } catch (error) {
       console.error('[PlanArchivedOne] restore failed:', error);
       setRestoreOpen(false);
-      showToast('Could not restore this plan. Please try again.');
+      toast.error('Could not restore this plan. Please try again.');
     } finally {
       setIsRestoring(false);
     }
@@ -145,7 +143,7 @@ export default function PersonalOperatingPlanArchivedOne() {
         </div>
 
         {strategies.length === 0 ? (
-          <p className="pop-empty">No strategies.</p>
+          <EmptyState question="No strategies." />
         ) : (
           strategies.map((strategy) => (
             <div className="pop-view-strategy" key={strategy.id}>
@@ -169,9 +167,9 @@ export default function PersonalOperatingPlanArchivedOne() {
         )}
 
         <div className="plan-actions">
-          <button type="button" className="ui-btn-primary" onClick={() => setRestoreOpen(true)}>
+          <Button type="button" variant="primary" onClick={() => setRestoreOpen(true)}>
             Restore this plan
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -185,7 +183,6 @@ export default function PersonalOperatingPlanArchivedOne() {
         onCancel={() => setRestoreOpen(false)}
         onConfirm={handleRestore}
       />
-      <Toast message={message} />
     </div>
   );
 }

@@ -1,13 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader } from '../components/design';
+import { PageHeader, HubCard, TileGrid, useToast } from '../components/design';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearAppStorage } from '../lib/clearAppStorage';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 
 export default function AccountSection() {
   const navigate = useNavigate();
@@ -16,10 +14,10 @@ export default function AccountSection() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteStage, setDeleteStage] = useState(0);
   const [deleteError, setDeleteError] = useState('');
-  const { message, showToast } = useToast();
+  const toast = useToast();
   const reportDeleteError = (text) => {
     setDeleteError(text);
-    showToast(text);
+    toast.error(text);
   };
 
   const handleLogout = async () => {
@@ -80,30 +78,13 @@ export default function AccountSection() {
       await logout();
       clearAppStorage();
 
-      showToast('Your account has been permanently deleted.');
+      toast.show('Your account has been permanently deleted.');
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Delete account error:', error);
       reportDeleteError('Failed to delete account. Please try again or contact support.');
       setIsDeleting(false);
     }
-  };
-
-  const cardStyle = {
-    padding: '16px',
-    backgroundColor: 'var(--raised)',
-    border: '2px solid var(--line)',
-    borderRadius: '12px',
-    color: 'var(--text)',
-    fontWeight: 'var(--fw-medium)',
-    cursor: 'pointer',
-    fontSize: '16px',
-    transition: 'all 0.2s',
-    textAlign: 'left',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-    minHeight: 'auto',
   };
 
   return (
@@ -115,89 +96,33 @@ export default function AccountSection() {
           <PageHeader title="Account" />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '32px' }}>
-          <button
+        <TileGrid>
+          <HubCard
+            name="My Account"
+            description="Manage your profile and settings"
             onClick={() => navigate('/my-account', { state: { ...location.state } })}
-            style={cardStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--coral-text)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--line)';
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '16px', fontWeight: 'var(--fw-medium)', marginBottom: '4px' }}>My Account</div>
-              <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>Manage your profile and settings</div>
-            </div>
-          </button>
-
-          <button
+          />
+          <HubCard
+            name="About"
+            description="Learn more about Clarity"
             onClick={() => navigate('/about', { state: { ...location.state } })}
-            style={cardStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--coral-text)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--line)';
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '16px', fontWeight: 'var(--fw-medium)', marginBottom: '4px' }}>About</div>
-              <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>Learn more about Clarity</div>
-            </div>
-          </button>
-        </div>
+          />
+        </TileGrid>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              ...cardStyle,
-              color: 'var(--coral-text)',
-              backgroundColor: 'var(--raised)',
-              borderColor: 'var(--coral-text)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--card)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--raised)';
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '16px', fontWeight: 'var(--fw-medium)', marginBottom: '2px' }}>Log Out</div>
-              <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>Sign out of your account</div>
-            </div>
-          </button>
-
-          <button
-            onClick={handleDeleteAccount}
-            disabled={isDeleting}
-            style={{
-              ...cardStyle,
-              color: 'var(--text)',
-              backgroundColor: 'var(--coral-soft-tint)',
-              borderColor: 'var(--coral-soft-text)',
-              opacity: isDeleting ? 0.6 : 1,
-              cursor: isDeleting ? 'not-allowed' : 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              if (!isDeleting) {
-                e.currentTarget.style.borderColor = 'var(--coral-text)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isDeleting) {
-                e.currentTarget.style.borderColor = 'var(--coral-soft-text)';
-              }
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '16px', fontWeight: 'var(--fw-medium)', marginBottom: '2px' }}>Delete Account</div>
-              <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.9 }}>Permanently delete all data</div>
-            </div>
-          </button>
+        <div style={{ marginTop: 'var(--space-5)' }}>
+          <TileGrid>
+            <HubCard
+              name="Log Out"
+              description="Sign out of your account"
+              onClick={handleLogout}
+            />
+            <HubCard
+              name="Delete Account"
+              description="Permanently delete all data"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+            />
+          </TileGrid>
           {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
         </div>
       </div>
@@ -218,7 +143,6 @@ export default function AccountSection() {
         }}
         onCancel={() => setDeleteStage(0)}
       />
-      <Toast message={message} />
     </div>
   );
 }

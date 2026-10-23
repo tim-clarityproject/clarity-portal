@@ -7,9 +7,7 @@ import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
 
 export default function PersonalOperatingPlanArchived() {
   const navigate = useNavigate();
@@ -19,7 +17,7 @@ export default function PersonalOperatingPlanArchived() {
   const [restoreTarget, setRestoreTarget] = useState(null);
   const [hasLivePlan, setHasLivePlan] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const load = async () => {
     try {
@@ -52,7 +50,7 @@ export default function PersonalOperatingPlanArchived() {
     } catch (error) {
       console.error('[PlanArchived] restore failed:', error);
       setRestoreTarget(null);
-      showToast('Could not restore this plan. Please try again.');
+      toast.error('Could not restore this plan. Please try again.');
     } finally {
       setIsRestoring(false);
     }
@@ -70,7 +68,7 @@ export default function PersonalOperatingPlanArchived() {
         {isLoading ? (
           <Loading label="Loading your archived plans" className="ds-loading--page" />
         ) : missions.length === 0 ? (
-          <p className="pop-empty">Nothing archived yet. When you archive a plan it will be kept here.</p>
+          <EmptyState question="Nothing archived yet. When you archive a plan it will be kept here." />
         ) : (
           missions.map((mission) => (
             <div className="pop-version-row" key={mission.id}>
@@ -84,12 +82,12 @@ export default function PersonalOperatingPlanArchived() {
                 </span>
               </span>
               <span style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                <button type="button" className="ui-btn-ghost" onClick={() => navigate(`/personal-operating-plan-archived/${mission.id}`)}>
+                <Button type="button" variant="outline" onClick={() => navigate(`/personal-operating-plan-archived/${mission.id}`)}>
                   View plan
-                </button>
-                <button type="button" className="ui-btn-ghost" onClick={() => setRestoreTarget(mission)}>
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setRestoreTarget(mission)}>
                   Restore
-                </button>
+                </Button>
               </span>
             </div>
           ))
@@ -106,7 +104,6 @@ export default function PersonalOperatingPlanArchived() {
         onCancel={() => setRestoreTarget(null)}
         onConfirm={handleRestore}
       />
-      <Toast message={message} />
     </div>
   );
 }

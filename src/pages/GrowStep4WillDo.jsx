@@ -8,15 +8,12 @@ import { clearProgress } from '../lib/saveProgress';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
-import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Loading, PageHeader, TextBox } from '../components/design';
+import { Loading, PageHeader, TextBox, Button, useToast } from '../components/design';
 
 export default function GrowStep4WillDo() {
   const navigate = useNavigate();
-  const { message: toastMessage, showToast } = useToast();
+  const toast = useToast();
   const location = useLocation();
   const { updateFormData, getFieldValue } = useContext(FormContext);
   const { user } = useContext(AuthContext);
@@ -40,7 +37,6 @@ export default function GrowStep4WillDo() {
   }, [isEditMode, location.state?.options, updateFormData]);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
   const [validationError, setValidationError] = useState('');
 
@@ -118,7 +114,7 @@ export default function GrowStep4WillDo() {
     if (!willDoValue.trim()) return;
 
     if (false) {
-      showToast('Please log in to save decisions.');
+      toast.error('Please log in to save decisions.');
       return;
     }
 
@@ -204,14 +200,14 @@ export default function GrowStep4WillDo() {
       setCurrentTitle(decisionName);
       clearProgress();
       clearDirty();
-      setSaved(true);
+      toast.show('Saved');
       setTimeout(() => {
         navigate('/decision-summary', { state: { decisionId } });
       }, 1500);
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
-      showToast('Could not save. Please try again.');
+      toast.error('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -223,30 +219,7 @@ export default function GrowStep4WillDo() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              borderRadius: '6px',
-              color: 'var(--text)',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
         </div>
         <PageHeader title="GROW" />
         <h2 className="ds-question">What will I do?</h2>
@@ -389,24 +362,7 @@ export default function GrowStep4WillDo() {
             <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
               {error}
             </p>
-            <button
-              onClick={onRetry}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'var(--coral)',
-                color: 'var(--on-coral)',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
-            >
-              Retry
-            </button>
+            <Button variant="outline" onClick={onRetry}>Retry</Button>
           </div>
         )}
 
@@ -440,11 +396,6 @@ export default function GrowStep4WillDo() {
         />
       </div>
 
-      <SavedConfirmation
-        isVisible={saved}
-        onDismiss={() => setSaved(false)}
-      />
-      <Toast message={toastMessage} />
     </div>
   );
 }

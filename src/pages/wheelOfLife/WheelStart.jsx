@@ -2,10 +2,8 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { PageHeader } from '../../components/design';
+import { Button, PageHeader, useToast } from '../../components/design';
 import pageText from '../../content/pageText';
-import Toast from '../../components/ui/Toast';
-import useToast from '../../hooks/useToast';
 import { activeAreas, areaName, formatCheckinDate, newestCheckin } from '../../lib/wheelOfLife';
 import { readInProgress } from '../../lib/wheelOfLifeApi';
 import useWheelData from './useWheelData';
@@ -20,12 +18,12 @@ import '../../styles/wheelOfLife.css';
 export default function WheelStart() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const { message, showToast } = useToast();
-  useArrivalToast(showToast);
+  const toast = useToast();
+  useArrivalToast(toast.show);
   const data = useWheelData();
 
   if (data.loading || data.error) {
-    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} toast={message} />;
+    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} />;
   }
 
   const areas = activeAreas(data.areas.all);
@@ -65,26 +63,25 @@ export default function WheelStart() {
         </div>
 
         <div className="wol-qrow wol-rv" style={{ '--i': 5 }}>
-          <button type="button" className="wol-qlink" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}>
+          <Button variant="text" className="wol-qlink" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}>
             <PenIcon />Change your areas
-          </button>
+          </Button>
           {count > 0 ? (
-            <button type="button" className="wol-qlink" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}>
+            <Button variant="text" className="wol-qlink" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}>
               <TargetIcon />Set targets
-            </button>
+            </Button>
           ) : null}
         </div>
 
         <div className="wol-acts wol-rv" style={{ '--i': 6 }}>
-          <button type="button" className="ui-btn-primary" onClick={() => navigate('/wheel-of-life/check-in')}>
+          <Button variant="primary" onClick={() => navigate('/wheel-of-life/check-in')}>
             {inProgress ? 'Continue check-in' : 'Start check-in'}
-          </button>
+          </Button>
           {count > 0 ? (
-            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/wheel-of-life/results')}>See your wheel</button>
+            <Button variant="outline" onClick={() => navigate('/wheel-of-life/results')}>See your wheel</Button>
           ) : null}
         </div>
       </div>
-      <Toast message={message} />
     </div>
   );
 }

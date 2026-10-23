@@ -6,7 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { supabase } from '../lib/supabase';
-import { Crosshair, Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button } from '../components/design';
 
 export default function GrowStep3bPrioritize() {
   const navigate = useNavigate();
@@ -239,30 +239,7 @@ export default function GrowStep3bPrioritize() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              borderRadius: '6px',
-              color: 'var(--text)',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
         </div>
         <PageHeader
           title="GROW"
@@ -282,24 +259,7 @@ export default function GrowStep3bPrioritize() {
             <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
               {error}
             </p>
-            <button
-              onClick={() => navigate(-1)}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'var(--coral)',
-                color: 'var(--on-coral)',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
-            >
-              Go Back
-            </button>
+            <Button variant="outline" onClick={() => navigate(-1)}>Go Back</Button>
           </div>
         )}
 
@@ -441,7 +401,9 @@ export default function GrowStep3bPrioritize() {
                   All options ranked
                 </p>
               )}
-              <button
+              <Button
+                variant="outline"
+                icon="plus"
                 onClick={() => {
                   const newAvailable = [...availableOptions, ''];
                   setAvailableOptions(newAvailable);
@@ -450,32 +412,10 @@ export default function GrowStep3bPrioritize() {
                   setEditingSource('available');
                   setEditingValue('');
                 }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--coral-text)',
-                  borderRadius: '6px',
-                  color: 'var(--coral-text)',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  alignSelf: 'flex-start',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--card)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
+                style={{ alignSelf: 'flex-start' }}
               >
-                <Crosshair />
                 Add Option
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -657,7 +597,8 @@ export default function GrowStep3bPrioritize() {
               )}
             </div>
             {prioritizedOptions.length > 0 && (
-              <button
+              <Button
+                variant="outline"
                 onClick={() => {
                   const resetAvailable = [...availableOptions, ...prioritizedOptions];
                   setAvailableOptions(resetAvailable);
@@ -665,29 +606,10 @@ export default function GrowStep3bPrioritize() {
                   updateFormData('availableOptions', resetAvailable);
                   updateFormData('prioritizedOptions', []);
                 }}
-                style={{
-                  marginTop: '12px',
-                  padding: '10px 16px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--outline)',
-                  borderRadius: '6px',
-                  color: 'var(--label)',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.borderColor = 'var(--coral-text)';
-                  e.target.style.color = 'var(--coral-text)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.borderColor = 'var(--outline)';
-                  e.target.style.color = 'var(--label)';
-                }}
+                style={{ marginTop: '12px' }}
               >
                 Reset All
-              </button>
+              </Button>
             )}
           </div>
         </div>

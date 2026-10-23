@@ -7,9 +7,7 @@ import { questionsFor, RATINGS, deleteReview } from '../lib/reviewTool';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Loading, PageHeader } from '../components/design';
+import { Button, Loading, PageHeader, useToast } from '../components/design';
 import pageText from '../content/pageText';
 
 const TAG = {
@@ -36,7 +34,7 @@ export default function ReviewSummary() {
   const [review, setReview] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const entryId = location.state?.entryId;
   const legacyReviewType = location.state?.reviewType;
@@ -82,7 +80,7 @@ export default function ReviewSummary() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { entryId: review?.id || entryId } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,7 +93,7 @@ export default function ReviewSummary() {
     } catch (error) {
       console.error('[ReviewSummary] delete failed:', error);
       setDeleteOpen(false);
-      showToast('Could not delete. Please try again.');
+      toast.error('Could not delete. Please try again.');
     }
   };
 
@@ -158,17 +156,16 @@ export default function ReviewSummary() {
 
         <div className="plan-actions">
           {!isProgress && (
-            <button
-              type="button"
-              className="ui-btn-ghost"
+            <Button
+              variant="outline"
               onClick={() => navigate('/my-journal', { state: { entryId: review.id, reviewType } })}
             >
               Edit review
-            </button>
+            </Button>
           )}
-          <button type="button" className="ui-btn-ghost ui-btn-ghost--danger" onClick={() => setDeleteOpen(true)}>
+          <Button variant="outline" onClick={() => setDeleteOpen(true)}>
             Delete review
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -179,7 +176,6 @@ export default function ReviewSummary() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />
-      <Toast message={message} />
     </div>
   );
 }

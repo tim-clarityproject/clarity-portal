@@ -7,7 +7,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, PageHeader, TextField } from '../components/design';
+import { PageHeader, TextField, Button } from '../components/design';
 
 export default function RisksAssessment() {
   const navigate = useNavigate();
@@ -129,37 +129,7 @@ export default function RisksAssessment() {
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={handleAddRisk}
-            style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-              padding: '12px 24px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              borderRadius: '8px',
-              color: 'var(--text)',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-              marginBottom: '32px',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--coral-text)';
-              e.currentTarget.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--outline)';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <Crosshair />
-            Add another
-          </button>
+          <Button variant="outline" icon="plus" type="button" onClick={handleAddRisk} style={{ marginBottom: '32px' }}>Add another</Button>
         </form>
 
         <SaveDiscardButtons

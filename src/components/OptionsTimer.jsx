@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Button } from './design';
 
 export default function OptionsTimer({ initialSeconds = null, onTimeChange = null }) {
   const DEFAULT_TIME = 6 * 60; // 6 minutes in seconds
@@ -126,54 +127,10 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
       </div>
 
         {/* Controls - Horizontal Layout */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <button
-            onClick={handleToggle}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: isRunning ? 'var(--card)' : 'var(--coral)',
-              color: isRunning ? 'var(--coral-text)' : 'var(--on-coral)',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: '600',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.opacity = '0.9';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.opacity = '1';
-            }}
-          >
-            {isRunning ? 'Pause' : 'Resume'}
-          </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          <Button variant="outline" onClick={handleToggle}>{isRunning ? 'Pause' : 'Resume'}</Button>
 
-          <button
-            onClick={handleReset}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: 'transparent',
-              color: 'var(--label)',
-              border: '1px solid var(--outline)',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: '600',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.color = 'var(--coral-text)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.color = 'var(--label)';
-            }}
-          >
-            Reset
-          </button>
+          <Button variant="outline" onClick={handleReset}>Reset</Button>
 
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <input
@@ -197,24 +154,7 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
               onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
             />
             <span style={{ fontSize: '11px', color: 'var(--label)', whiteSpace: 'nowrap' }}>min</span>
-            <button
-              onClick={handleSetTime}
-              style={{
-                padding: '5px 10px',
-                backgroundColor: 'var(--coral)',
-                color: 'var(--on-coral)',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: '600',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
-            >
-              Go
-            </button>
+            <Button variant="outline" onClick={handleSetTime}>Start timer</Button>
           </div>
         </div>
       </div>

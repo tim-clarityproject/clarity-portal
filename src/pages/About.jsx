@@ -105,17 +105,6 @@ export default function About() {
           margin-bottom: var(--space-5);
         }
 
-        /* Reuses the shared .ui-btn-ghost chrome (colour/border/radius/
-           hover) - scoped here only, since that class is otherwise used
-           as a plain text-only <button> elsewhere and this is the one
-           place it carries an icon too. */
-        .about-by .ui-btn-ghost {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-2);
-          text-decoration: none;
-        }
-
         .about-actions {
           display: flex;
           justify-content: center;
@@ -147,7 +136,7 @@ export default function About() {
           <p>The Clarity Project is a high performance consultancy and coaching practice led by Dr. Tim Dutton, BSc, MSc, DProf, CSCS.</p>
           <p>Tim is a trusted advisor to CEOs and head coaches in professional sport, supporting them to navigate the high-pressure demands of their roles.</p>
           <a
-            className="ui-btn-ghost"
+            className="ds-btn ds-btn--outline"
             href="https://theclarityproject.co.uk/"
             target="_blank"
             rel="noopener noreferrer"

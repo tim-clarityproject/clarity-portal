@@ -6,9 +6,7 @@ import { loadAllJournals, deleteJournal, wordCount } from '../lib/dailyJournal';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Loading } from '../components/design';
+import { Loading, useToast } from '../components/design';
 
 const FILTERS = [
   { id: 'final', label: 'Saved', match: (r) => !r.isDraft },
@@ -23,7 +21,7 @@ export default function DailyJournals() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const load = async () => {
     setError(null);
@@ -45,7 +43,7 @@ export default function DailyJournals() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: {} });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,10 +79,10 @@ export default function DailyJournals() {
     try {
       await deleteJournal(user.id, id);
       setJournals((prev) => prev.filter((j) => j.id !== id));
-      showToast('Journal deleted.');
+      toast.show('Journal deleted.');
     } catch (err) {
       console.error('[DailyJournals] delete failed:', err);
-      showToast('Could not delete. Please try again.');
+      toast.error('Could not delete. Please try again.');
     }
   };
 
@@ -123,7 +121,6 @@ export default function DailyJournals() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-      <Toast message={message} />
     </div>
   );
 }

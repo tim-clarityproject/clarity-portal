@@ -7,10 +7,8 @@ import { formatVersion, deleteReview } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -26,7 +24,7 @@ export default function MissionProgressReviewDetail() {
   const [version, setVersion] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +64,7 @@ export default function MissionProgressReviewDetail() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { reviewId } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,7 +78,7 @@ export default function MissionProgressReviewDetail() {
     } catch (error) {
       console.error('[MissionProgressReviewDetail] delete failed:', error);
       setDeleteOpen(false);
-      showToast('Could not delete this review. Please try again.');
+      toast.error('Could not delete this review. Please try again.');
     }
   };
 
@@ -123,9 +121,9 @@ export default function MissionProgressReviewDetail() {
 
         {version && (
           <div className="pop-links-row">
-            <button type="button" className="plan-link-btn" onClick={() => navigate(`/personal-operating-plan-history/${version.major}.${version.minor}`, { state: { missionId: review.mission_id } })}>
+            <Button type="button" variant="text" onClick={() => navigate(`/personal-operating-plan-history/${version.major}.${version.minor}`, { state: { missionId: review.mission_id } })}>
               Version reviewed: {formatVersion(version.major, version.minor)}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -151,15 +149,15 @@ export default function MissionProgressReviewDetail() {
         ))}
 
         <div className="plan-actions">
-          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: review.mission_id, reviewId: review.id } })}>
+          <Button type="button" variant="outline" onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: review.mission_id, reviewId: review.id } })}>
             Edit review
-          </button>
+          </Button>
         </div>
 
         <div className="plan-discard-row" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button type="button" className="ui-btn-ghost ui-btn-ghost--danger" onClick={() => setDeleteOpen(true)}>
+          <Button type="button" variant="outline" onClick={() => setDeleteOpen(true)}>
             Delete review
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -170,7 +168,6 @@ export default function MissionProgressReviewDetail() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />
-      <Toast message={message} />
     </div>
   );
 }

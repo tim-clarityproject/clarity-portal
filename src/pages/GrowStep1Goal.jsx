@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
-import { Loading, PageHeader, TextBox } from '../components/design';
+import { Loading, PageHeader, TextBox, Button } from '../components/design';
 
 export default function GrowStep1Goal() {
   const navigate = useNavigate();
@@ -133,31 +133,7 @@ export default function GrowStep1Goal() {
             <PageHeader title="GROW" />
             <h2 className="ds-question">Define your goal clearly</h2>
           </div>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              borderRadius: '6px',
-              color: 'var(--text)',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <Button variant="outline" onClick={() => navigate('/decision-history')} style={{ flexShrink: 0 }}>My Decisions</Button>
         </div>
 
         <div style={{ marginBottom: '32px' }}>

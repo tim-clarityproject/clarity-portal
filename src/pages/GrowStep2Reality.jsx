@@ -5,7 +5,7 @@ import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
-import { Loading, PageHeader, TextBox } from '../components/design';
+import { Loading, PageHeader, TextBox, Button } from '../components/design';
 
 export default function GrowStep2Reality() {
   const navigate = useNavigate();
@@ -62,30 +62,7 @@ export default function GrowStep2Reality() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              borderRadius: '6px',
-              color: 'var(--text)',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
         </div>
         <PageHeader title="GROW" />
         <h2 className="ds-question">What's the current situation?</h2>
@@ -119,24 +96,7 @@ export default function GrowStep2Reality() {
             <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
               {error}
             </p>
-            <button
-              onClick={onRetry}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'var(--coral)',
-                color: 'var(--on-coral)',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
-            >
-              Retry
-            </button>
+            <Button variant="outline" onClick={onRetry}>Retry</Button>
           </div>
         )}
 

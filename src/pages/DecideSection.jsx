@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader } from '../components/design';
+import { PageHeader, HubCard, TileGrid } from '../components/design';
 
 const DECIDE_ITEMS = [
   { id: 'tools', title: 'Decision Tools', description: 'Access all available decision-making frameworks', route: '/decision-tools' },
@@ -22,41 +22,16 @@ export default function DecideSection() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <PageHeader title="Decide" />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '0' }}>
+        <TileGrid>
           {DECIDE_ITEMS.map((item) => (
-            <button
+            <HubCard
               key={item.id}
+              name={item.title}
+              description={item.description}
               onClick={() => handleDecideSelect(item.route)}
-              style={{
-                padding: '20px',
-                backgroundColor: 'var(--raised)',
-                border: '2px solid var(--line)',
-                borderRadius: '12px',
-                color: 'var(--text)',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '16px',
-                transition: 'border-color 0.2s',
-                textAlign: 'left',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                minHeight: '140px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--coral-text)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--line)';
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>{item.title}</div>
-                <div style={{ fontSize: '13px', fontWeight: '400', color: 'var(--text-2)' }}>{item.description}</div>
-              </div>
-            </button>
+            />
           ))}
-        </div>
+        </TileGrid>
       </div>
     </div>
   );

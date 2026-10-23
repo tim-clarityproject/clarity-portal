@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { IconButton } from './design';
+import { IconButton, Button } from './design';
 
 export default function EmailVerificationBanner() {
   const { user } = useContext(AuthContext);
@@ -136,9 +136,9 @@ export default function EmailVerificationBanner() {
           We sent a verification link to <span className="ev-banner-email">{user?.email}</span>. Click it to confirm your email.
         </p>
         <div className="ev-banner-actions">
-          <button type="button" className="ui-btn-ghost" onClick={handleResendEmail} disabled={isLoading}>
+          <Button variant="outline" onClick={handleResendEmail} disabled={isLoading}>
             {isLoading ? 'Sending' : 'Resend email'}
-          </button>
+          </Button>
         </div>
         {message && (
           <p className={`ev-banner-status ${isError ? 'ev-banner-status--error' : 'ev-banner-status--success'}`}>

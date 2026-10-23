@@ -7,10 +7,8 @@ import { formatVersion, loadVersions, restorePlanFromVersion } from '../lib/miss
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -37,7 +35,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
   const [isLoading, setIsLoading] = useState(true);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const parsed = parseVersionParam(versionParam);
 
@@ -89,7 +87,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
     } catch (error) {
       console.error('[PlanHistoryVersion] restore failed:', error);
       setRestoreOpen(false);
-      showToast('Could not restore this version. Please try again.');
+      toast.error('Could not restore this version. Please try again.');
     } finally {
       setIsRestoring(false);
     }
@@ -160,9 +158,9 @@ export default function PersonalOperatingPlanHistoryVersion() {
 
         {!isCurrent && (
           <div className="plan-actions">
-            <button type="button" className="ui-btn-primary" onClick={() => setRestoreOpen(true)}>
+            <Button type="button" variant="primary" onClick={() => setRestoreOpen(true)}>
               Restore this Version
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -175,7 +173,6 @@ export default function PersonalOperatingPlanHistoryVersion() {
         onCancel={() => setRestoreOpen(false)}
         onConfirm={handleRestore}
       />
-      <Toast message={message} />
     </div>
   );
 }

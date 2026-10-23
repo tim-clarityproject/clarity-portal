@@ -6,9 +6,7 @@ import { loadJournalByDate, deleteJournal, wordCount } from '../lib/dailyJournal
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Loading, PageHeader } from '../components/design';
+import { Button, Loading, PageHeader, useToast } from '../components/design';
 
 export default function DailyJournalRead() {
   const navigate = useNavigate();
@@ -17,7 +15,7 @@ export default function DailyJournalRead() {
   const [journal, setJournal] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +39,7 @@ export default function DailyJournalRead() {
     } catch (error) {
       console.error('[DailyJournalRead] delete failed:', error);
       setDeleteOpen(false);
-      showToast('Could not delete. Please try again.');
+      toast.error('Could not delete. Please try again.');
     }
   };
 
@@ -95,15 +93,15 @@ export default function DailyJournalRead() {
         </div>
 
         <div className="plan-actions">
-          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/daily-journal', { state: { date: journal.journal_date } })}>
+          <Button variant="outline" onClick={() => navigate('/daily-journal', { state: { date: journal.journal_date } })}>
             Edit journal
-          </button>
+          </Button>
         </div>
 
         <div className="plan-discard-row">
-          <button type="button" className="plan-link-btn" onClick={() => setDeleteOpen(true)}>
+          <Button variant="text" onClick={() => setDeleteOpen(true)}>
             Delete journal
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -114,7 +112,6 @@ export default function DailyJournalRead() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />
-      <Toast message={message} />
     </div>
   );
 }

@@ -1,8 +1,7 @@
 import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import pageText from '../../content/pageText';
-import FilterPills from './FilterPills';
-import { Button, PageHeader } from '../design';
+import { Button, Dropdown, EmptyState, FilterButton, PageHeader } from '../design';
 
 // LIST ROW GUIDELINES (guidelines to apply by default; a mock-up wins
 // where it shows a detail). On phone every row of every list is built
@@ -73,6 +72,10 @@ function rowMatchesFilter(row, filterDef) {
   return row.typeLabel === filterDef.id;
 }
 
+function countText(n) {
+  return `${n} ${n === 1 ? 'entry' : 'entries'}`;
+}
+
 function countForFilter(rows, filterDef) {
   if (filterDef.id === 'all') return rows.length;
   return rows.filter((r) => rowMatchesFilter(r, filterDef)).length;
@@ -113,9 +116,7 @@ export default function HistoryList({
         <div className="hlist-error" role="alert">
           <p>{error.message || 'Something went wrong.'}</p>
           {error.onRetry && (
-            <button type="button" className="hlist-ghost-btn" onClick={error.onRetry}>
-              Try again
-            </button>
+            <Button onClick={error.onRetry}>Try again</Button>
           )}
         </div>
       </div>
@@ -136,6 +137,12 @@ export default function HistoryList({
   const visible = sorted.slice(0, visibleCount);
   const hasMore = sorted.length > visible.length;
 
+  // "Showing Decisions, GROW." under the Filter button, or nothing applied.
+  const appliedText = activeFilter === 'all' ? '' : [
+    activeFilterDef?.label,
+    activeSubFilter !== 'all' ? activeSubFilterDef?.label : null,
+  ].filter(Boolean).join(', ');
+
   let lastMonth = '';
 
   return (
@@ -154,25 +161,29 @@ export default function HistoryList({
       </div>
 
       {allFilters.length > 0 && (
-        <>
-          <FilterPills
-            label="Filter by type"
-            filters={allFilters}
-            active={activeFilter}
-            countFor={(f) => countForFilter(rows, f)}
-            onSelect={(id) => { setActiveFilter(id); setActiveSubFilter('all'); }}
+        <FilterButton
+          applied={appliedText}
+          onClear={() => { setActiveFilter('all'); setActiveSubFilter('all'); }}
+        >
+          <Dropdown
+            label="Which type?"
+            options={allFilters.map((f) => ({ value: f.id, label: f.label, hint: countText(countForFilter(rows, f)) }))}
+            value={activeFilter}
+            onChange={(id) => { setActiveFilter(id); setActiveSubFilter('all'); }}
           />
           {allSubFilters && (
-            <FilterPills
-              sub
-              label="Filter by decision type"
-              filters={allSubFilters}
-              active={activeSubFilter}
-              countFor={(f) => countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), f)}
-              onSelect={setActiveSubFilter}
+            <Dropdown
+              label={`Which kind of ${activeFilterDef.label.toLowerCase()}?`}
+              options={allSubFilters.map((f) => ({
+                value: f.id,
+                label: f.label,
+                hint: countText(countForFilter(rows.filter((r) => rowMatchesFilter(r, activeFilterDef)), f)),
+              }))}
+              value={activeSubFilter}
+              onChange={setActiveSubFilter}
             />
           )}
-        </>
+        </FilterButton>
       )}
 
       <div className="hlist-tools">
@@ -184,7 +195,7 @@ export default function HistoryList({
 
       {filtered.length === 0 ? (
         <div className="hlist-empty">
-          {rows.length === 0 ? emptyText : 'Nothing of this type yet.'}
+          <EmptyState as="p" question={rows.length === 0 ? emptyText : 'Nothing of this type yet.'} />
         </div>
       ) : (
         <>
@@ -256,9 +267,9 @@ export default function HistoryList({
 
           {hasMore && (
             <div className="hlist-show-more-wrap">
-              <button type="button" className="hlist-show-more" onClick={() => setVisibleCount(sorted.length)}>
+              <Button variant="text" onClick={() => setVisibleCount(sorted.length)}>
                 Show more
-              </button>
+              </Button>
             </div>
           )}
         </>

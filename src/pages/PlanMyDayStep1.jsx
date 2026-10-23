@@ -8,10 +8,8 @@ import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { PageHeader, TextBox } from '../components/design';
+import { PageHeader, TextBox, Button, useToast } from '../components/design';
 
 // Worded exactly per the approved mock-up - topPriority/showUp/notDo are
 // the real Supabase field names (unchanged); only the on-screen wording
@@ -57,7 +55,7 @@ export default function PlanMyDayStep1() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const values = { gratitude, topPriority, showUp, notDo };
   const setters = {
@@ -151,7 +149,7 @@ export default function PlanMyDayStep1() {
     try {
       const savedId = await persist(true);
       setDecisionId(savedId);
-      showToast('Draft saved.');
+      toast.show('Draft saved.');
       navigate('/my-plans');
     } catch (error) {
       console.error('[PlanMyDayStep1] Save as draft failed:', error);
@@ -181,12 +179,12 @@ export default function PlanMyDayStep1() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleFinish}>
+      <Button type="button" variant="primary" disabled={isSaving} onClick={handleFinish}>
         Finish
-      </button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>
+      </Button>
+      <Button type="button" variant="outline" disabled={isSaving} onClick={handleSaveDraft}>
         Save as draft
-      </button>
+      </Button>
     </>
   );
 
@@ -241,7 +239,6 @@ export default function PlanMyDayStep1() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

@@ -7,11 +7,9 @@ import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
-import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
+import DeleteDialog from '../components/ui/DeleteDialog';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 // Decision types with a "Review this plan" page (prompt 8).
 const REVIEWABLE_TYPES = new Set(['inversion', 'tough-conversation']);
@@ -50,7 +48,7 @@ export default function DecisionHistory() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (user) loadDecisions();
@@ -62,7 +60,7 @@ export default function DecisionHistory() {
   // router state so refreshing/going back doesn't repeat it.
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: {} });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,10 +138,10 @@ export default function DecisionHistory() {
       if (deleteError) throw deleteError;
       setDecisions((prev) => prev.filter((d) => d.id !== id));
       clearProgress();
-      showDeletedToast(showToast);
+      toast.show('Deleted.');
     } catch (err) {
       console.error('[DecisionHistory] delete failed:', err);
-      showToast('Could not delete. Please try again.');
+      toast.error('Could not delete. Please try again.');
     }
   };
 
@@ -154,9 +152,9 @@ export default function DecisionHistory() {
       <div className="plan-page">
         <div className="dt-hrow">
           <PageHeader title="My decisions" info={pageText.decisionHistory} />
-          <button type="button" className="ui-btn-primary" onClick={() => navigate('/decision-tools')}>
+          <Button variant="primary" onClick={() => navigate('/decision-tools')}>
             Make a decision
-          </button>
+          </Button>
         </div>
 
         {isLoading ? (
@@ -181,7 +179,6 @@ export default function DecisionHistory() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-      <Toast message={message} />
     </div>
   );
 }

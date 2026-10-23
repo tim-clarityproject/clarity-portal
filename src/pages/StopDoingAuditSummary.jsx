@@ -5,10 +5,8 @@ import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 export default function StopDoingAuditSummary() {
   const navigate = useNavigate();
@@ -19,7 +17,7 @@ export default function StopDoingAuditSummary() {
   const [audit, setAudit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +47,7 @@ export default function StopDoingAuditSummary() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { decisionId } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,7 +61,7 @@ export default function StopDoingAuditSummary() {
     } catch (error) {
       console.error('[StopDoingAuditSummary] delete failed:', error);
       setDeleteOpen(false);
-      showToast('Could not delete. Please try again.');
+      toast.error('Could not delete. Please try again.');
     }
   };
 
@@ -138,12 +136,12 @@ export default function StopDoingAuditSummary() {
         </div>
 
         <div className="plan-actions">
-          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/stop-doing-audit', { state: { decisionId: audit.id } })}>
+          <Button type="button" variant="outline" onClick={() => navigate('/stop-doing-audit', { state: { decisionId: audit.id } })}>
             Edit audit
-          </button>
-          <button type="button" className="ui-btn-ghost ui-btn-ghost--danger" onClick={() => setDeleteOpen(true)}>
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setDeleteOpen(true)}>
             Delete audit
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -154,7 +152,6 @@ export default function StopDoingAuditSummary() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />
-      <Toast message={message} />
     </div>
   );
 }

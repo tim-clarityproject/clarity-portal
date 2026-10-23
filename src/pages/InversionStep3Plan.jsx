@@ -9,9 +9,7 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { PageHeader, TextBox } from '../components/design';
+import { PageHeader, TextBox, Button, useToast } from '../components/design';
 import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
@@ -56,7 +54,7 @@ export default function InversionStep3Plan() {
   // the coral outline to the NEXT card the instant this one gained any
   // text, while the user was still typing in it.
   const [focusedIndex, setFocusedIndex] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const changeAnswer = (index, value) => {
     setRiskAnswers((prev) => prev.map((a, i) => (i === index ? value : a)));
@@ -106,7 +104,7 @@ export default function InversionStep3Plan() {
       if (mode === 'draft') {
         setDecisionId(savedId);
         clearProgress();
-        showToast(`Draft saved as ${name}.`);
+        toast.show(`Draft saved as ${name}.`);
         navigate('/decision-history');
       } else {
         clearProgress();
@@ -144,12 +142,12 @@ export default function InversionStep3Plan() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={!allAnswered || isSaving} onClick={() => setNameDialog('finish')}>
+      <Button variant="primary" disabled={!allAnswered || isSaving} onClick={() => setNameDialog('finish')}>
         Finish
-      </button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={() => setNameDialog('draft')}>
+      </Button>
+      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
         Save as draft
-      </button>
+      </Button>
     </>
   );
 
@@ -178,16 +176,16 @@ export default function InversionStep3Plan() {
 
         <div className="inv-recap">
           <p>{goal}</p>
-          <button type="button" className="plan-link-btn" onClick={() => goToStep('/inversion-step-1')}>
+          <Button variant="text" onClick={() => goToStep('/inversion-step-1')}>
             Change
-          </button>
+          </Button>
         </div>
 
         <div className="plan-section-top" style={{ marginBottom: 'var(--space-2)' }}>
           <span className="ui-section-heading">Risks</span>
-          <button type="button" className="plan-link-btn" onClick={() => goToStep('/inversion-step-2')}>
+          <Button variant="text" onClick={() => goToStep('/inversion-step-2')}>
             Change risks
-          </button>
+          </Button>
         </div>
 
         <div className="inv-cards">
@@ -244,7 +242,6 @@ export default function InversionStep3Plan() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

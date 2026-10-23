@@ -13,9 +13,7 @@ import { formatCheckinDate } from '../lib/wheelOfLife';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Loading } from '../components/design';
+import { Loading, useToast } from '../components/design';
 
 // Old 'progress' review_type has no filter pill of its own in the spec
 // (All, Day, Weekly momentum, After-action, Plan, Journals) - bucketed
@@ -54,7 +52,7 @@ export default function MyReviews() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const load = async () => {
     setError(null);
@@ -181,7 +179,7 @@ export default function MyReviews() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: {} });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -267,10 +265,10 @@ export default function MyReviews() {
         await deleteJournalEntryRow(user.id, id);
       }
       setRows((prev) => prev.filter((r) => r.id !== id));
-      showToast('Deleted.');
+      toast.show('Deleted.');
     } catch (err) {
       console.error('[MyReviews] delete failed:', err);
-      showToast('Could not delete. Please try again.');
+      toast.error('Could not delete. Please try again.');
     }
   };
 
@@ -309,7 +307,6 @@ export default function MyReviews() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-      <Toast message={message} />
     </div>
   );
 }

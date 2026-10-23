@@ -7,10 +7,8 @@ import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Crosshair, DatePicker, PageHeader, TextBox } from '../components/design';
+import { Crosshair, DatePicker, PageHeader, TextBox, Button, useToast } from '../components/design';
 
 const SECTION_OPTIONS = [
   { id: 'context', label: 'Meeting context' },
@@ -57,7 +55,7 @@ export default function PlanMeeting() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const menuRef = useRef(null);
 
@@ -197,7 +195,7 @@ export default function PlanMeeting() {
     try {
       const savedId = await persist(true);
       setDecisionId(savedId);
-      showToast('Draft saved.');
+      toast.show('Draft saved.');
       navigate('/my-plans');
     } catch (error) {
       console.error('[PlanMeeting] Save as draft failed:', error);
@@ -227,8 +225,8 @@ export default function PlanMeeting() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleFinish}>Finish</button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</button>
+      <Button type="button" variant="primary" disabled={isSaving} onClick={handleFinish}>Finish</Button>
+      <Button type="button" variant="outline" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</Button>
     </>
   );
 
@@ -268,7 +266,7 @@ export default function PlanMeeting() {
           <div className="plan-section">
             <div className="plan-section-top">
               <label htmlFor="meeting-context">Meeting context</label>
-              <button type="button" className="plan-link-btn" onClick={() => removeSection('context')}>Remove</button>
+              <Button type="button" variant="text" onClick={() => removeSection('context')}>Remove</Button>
             </div>
             <TextBox
               id="meeting-context"
@@ -284,7 +282,7 @@ export default function PlanMeeting() {
           <div className="plan-section">
             <div className="plan-section-top">
               <label htmlFor="meeting-prereads">Attendee preparation</label>
-              <button type="button" className="plan-link-btn" onClick={() => removeSection('pre-reads')}>Remove</button>
+              <Button type="button" variant="text" onClick={() => removeSection('pre-reads')}>Remove</Button>
             </div>
             <TextBox
               id="meeting-prereads"
@@ -298,16 +296,16 @@ export default function PlanMeeting() {
 
         {!bothAdded && (
           <div className="plan-menu" ref={menuRef}>
-            <button
+            <Button
               type="button"
-              className="plan-add-btn"
+              variant="outline"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
               onClick={() => setMenuOpen(!menuOpen)}
             >
               <Crosshair size="sm" turned={menuOpen} />
               Add section
-            </button>
+            </Button>
             {menuOpen && (
               <div className="plan-menu-list" role="menu">
                 {SECTION_OPTIONS.map((opt) => (
@@ -351,10 +349,9 @@ export default function PlanMeeting() {
             </button>
           </div>
         ))}
-        <button type="button" className="plan-add-btn" onClick={addObjective}>
-          <Crosshair size="sm" />
+        <Button type="button" variant="outline" icon="plus" onClick={addObjective}>
           Add objective
-        </button>
+        </Button>
 
         <div className="plan-label-row">
           <span className="ui-section-heading">Meeting agenda</span>
@@ -405,10 +402,9 @@ export default function PlanMeeting() {
             </button>
           </div>
         ))}
-        <button type="button" className="plan-add-btn" onClick={addAgendaItem}>
-          <Crosshair size="sm" />
+        <Button type="button" variant="outline" icon="plus" onClick={addAgendaItem}>
           Add agenda item
-        </button>
+        </Button>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 
@@ -428,7 +424,6 @@ export default function PlanMeeting() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

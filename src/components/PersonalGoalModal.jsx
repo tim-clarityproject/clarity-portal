@@ -1,8 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
-import PopupShell from './PopupShell';
-import { TextBox } from './design';
+import { Button, ErrorMessage, Popup, TextBox } from './design';
 
 export const MAX_GOAL_LENGTH = 70;
 
@@ -36,11 +35,20 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
   };
 
   return (
-    <PopupShell isOpen={isOpen} onClose={onClose} titleId="edit-mission-title">
-      <h2 id="edit-mission-title" className="popup-title">
-        Edit Your Mission
-      </h2>
-      <p className="popup-desc">
+    <Popup
+      open={isOpen}
+      onClose={onClose}
+      title="Edit Your Mission"
+      footer={(
+        <>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={handleSave} disabled={!goal.trim() || isSaving}>
+            {isSaving ? 'Saving' : 'Save'}
+          </Button>
+        </>
+      )}
+    >
+      <p className="ds-dialog-text">
         This will be displayed at the top of your screen to keep you focused and inspired.
       </p>
 
@@ -53,21 +61,7 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
         maxLength={MAX_GOAL_LENGTH}
       />
 
-      {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
-
-      <div className="popup-actions">
-        <button type="button" className="ui-btn-ghost" onClick={onClose}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="ui-btn-primary"
-          onClick={handleSave}
-          disabled={!goal.trim() || isSaving}
-        >
-          {isSaving ? 'Saving...' : 'Save'}
-        </button>
-      </div>
-    </PopupShell>
+      {saveError && <ErrorMessage>{saveError}</ErrorMessage>}
+    </Popup>
   );
 }

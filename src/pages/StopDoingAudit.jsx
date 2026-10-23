@@ -9,10 +9,8 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Crosshair, Loading, PageHeader, TextBox } from '../components/design';
+import { Crosshair, Loading, PageHeader, TextBox, Button, Choice, useToast } from '../components/design';
 
 const ACTIONS = ['Stop', 'Automate', 'Delegate', 'Defer'];
 const MAX_ACTIVITY = 80;
@@ -51,7 +49,7 @@ export default function StopDoingAudit() {
   // The saved title, so renaming an existing audit starts from its own
   // name instead of always suggesting "Reclaiming my time" (patch D1).
   const [currentTitle, setCurrentTitle] = useState('');
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (!decisionId || !user) {
@@ -191,7 +189,7 @@ export default function StopDoingAudit() {
       // (patch D1, same root cause as the empty name pop-up).
       const savedId = await persist(currentTitle || 'Reclaiming my time', 'draft');
       setDecisionId(savedId);
-      showToast('Draft saved.');
+      toast.show('Draft saved.');
       navigate('/my-plans');
     } catch (error) {
       console.error('[StopDoingAudit] draft save failed:', error);
@@ -228,8 +226,8 @@ export default function StopDoingAudit() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleFinish}>Finish</button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</button>
+      <Button type="button" variant="primary" disabled={isSaving} onClick={handleFinish}>Finish</Button>
+      <Button type="button" variant="outline" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</Button>
     </>
   );
 
@@ -277,10 +275,9 @@ export default function StopDoingAudit() {
           </div>
         ))}
         {items.length < 5 && (
-          <button type="button" className="plan-add-btn" onClick={addItem}>
-            <Crosshair size="sm" />
+          <Button type="button" variant="outline" icon="plus" onClick={addItem}>
             Add activity
-          </button>
+          </Button>
         )}
 
         <div className="tsa-total">
@@ -296,30 +293,24 @@ export default function StopDoingAudit() {
             {namedItems.map((item) => (
               <div className="tsa-activity-block" key={item.id}>
                 <p className="tsa-activity-name">{item.activity}</p>
-                <div className="tsa-pills" role="group" aria-label={`Action for ${item.activity}`}>
-                  {ACTIONS.map((action) => (
-                    <button
-                      key={action}
-                      type="button"
-                      className="tsa-pill"
-                      aria-pressed={item.action === action}
-                      onClick={() => updateItem(item.id, 'action', action)}
-                    >
-                      {action}
-                    </button>
-                  ))}
-                </div>
+                <Choice
+                  ariaLabel={`Action for ${item.activity}`}
+                  options={ACTIONS.map((action) => ({ value: action, label: action }))}
+                  value={item.action}
+                  onChange={(action) => updateItem(item.id, 'action', action)}
+                />
               </div>
             ))}
 
             <div className="plan-field">
-              <label htmlFor="tsa-first">Which one will you take action on first?</label>
-              <select id="tsa-first" className="plan-input" value={firstAction} onChange={(e) => { setFirstAction(e.target.value); setFirstActionError(''); }}>
-                <option value="">Choose an activity...</option>
-                {namedItems.map((item) => (
-                  <option key={item.id} value={item.id}>{item.activity} ({item.action || 'no action selected'})</option>
-                ))}
-              </select>
+              <Choice
+                form="dropdown"
+                label="Which one will you take action on first?"
+                placeholder="Choose an activity..."
+                options={namedItems.map((item) => ({ value: String(item.id), label: `${item.activity} (${item.action || 'no action selected'})` }))}
+                value={firstAction === '' ? null : String(firstAction)}
+                onChange={(value) => { setFirstAction(value); setFirstActionError(''); }}
+              />
               {firstActionItem && <p className="tsa-saves">Saves {parseInt(firstActionItem.timePerWeek, 10) || 0} hrs/wk</p>}
               {firstActionError && <p className="plan-save-error" role="alert">{firstActionError}</p>}
             </div>
@@ -361,7 +352,6 @@ export default function StopDoingAudit() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

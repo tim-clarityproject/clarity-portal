@@ -5,13 +5,11 @@ import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
 import { clearAppStorage } from '../lib/clearAppStorage';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
-import { useCoachName, Crosshair, PageHeader } from '../components/design';
+import { useCoachName, Crosshair, PageHeader, Button, useToast } from '../components/design';
 import { useStartChat } from '../components/coach/CoachChat';
 
 export default function MyAccount() {
@@ -28,10 +26,10 @@ export default function MyAccount() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteStage, setDeleteStage] = useState(0);
   const [deleteError, setDeleteError] = useState('');
-  const { message, showToast } = useToast();
+  const toast = useToast();
   const reportDeleteError = (text) => {
     setDeleteError(text);
-    showToast(text);
+    toast.error(text);
   };
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
@@ -139,7 +137,7 @@ export default function MyAccount() {
       await logout();
       clearAppStorage();
 
-      showToast('Your account has been permanently deleted.');
+      toast.show('Your account has been permanently deleted.');
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Delete account error:', error);
@@ -408,9 +406,9 @@ export default function MyAccount() {
               <div className="account-row-title">{fullName}</div>
               <div className="account-row-desc">{user?.email}</div>
             </div>
-            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/edit-profile')}>
+            <Button variant="outline" onClick={() => navigate('/edit-profile')}>
               Edit
-            </button>
+            </Button>
           </div>
 
           {/* Mission */}
@@ -421,9 +419,9 @@ export default function MyAccount() {
               <div className="account-row-desc">{personalGoal || 'No mission set yet'}</div>
               <div className="account-row-count">{personalGoal.length}/{MAX_GOAL_LENGTH} characters</div>
             </div>
-            <button type="button" className="ui-btn-ghost" onClick={() => setShowGoalModal(true)}>
+            <Button variant="outline" onClick={() => setShowGoalModal(true)}>
               Edit
-            </button>
+            </Button>
           </div>
           <div className="account-row account-switch-row">
             <div className="account-row-text">
@@ -461,9 +459,9 @@ export default function MyAccount() {
                 ) : `${archivedMissionsCount} archived`}
               </div>
             </div>
-            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/personal-operating-plan-archived')}>
+            <Button variant="outline" onClick={() => navigate('/personal-operating-plan-archived')}>
               Open
-            </button>
+            </Button>
           </div>
 
           {/* Portal */}
@@ -473,9 +471,9 @@ export default function MyAccount() {
               <div className="account-row-title">About</div>
               <div className="account-row-desc">Learn about The Clarity Project</div>
             </div>
-            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/about')}>
+            <Button variant="outline" onClick={() => navigate('/about')}>
               Open
-            </button>
+            </Button>
           </div>
           {/* Chat to the coach: in the header on desktop, here on phone. */}
           {coachName && (
@@ -484,9 +482,9 @@ export default function MyAccount() {
                 <div className="account-row-title">{`Chat to ${coachName}`}</div>
                 <div className="account-row-desc">A message on WhatsApp or iMessage</div>
               </div>
-              <button type="button" className="ui-btn-ghost" onClick={startChat}>
+              <Button variant="outline" onClick={startChat}>
                 Start a chat
-              </button>
+              </Button>
             </div>
           )}
           <div className="account-row">
@@ -494,9 +492,9 @@ export default function MyAccount() {
               <div className="account-row-title">Log out</div>
               <div className="account-row-desc">Sign out of this device</div>
             </div>
-            <button type="button" className="ui-btn-ghost" onClick={handleLogout}>
+            <Button variant="outline" onClick={handleLogout}>
               Log out
-            </button>
+            </Button>
           </div>
 
           {/* Danger zone */}
@@ -507,14 +505,13 @@ export default function MyAccount() {
                 <div className="account-row-title">Delete account</div>
                 <div className="account-row-desc">Permanently delete your account and all data</div>
               </div>
-              <button
-                type="button"
-                className="ui-btn-ghost ui-btn-ghost--danger"
+              <Button
+                variant="outline"
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
               >
                 {isDeleting ? 'Deleting' : 'Delete'}
-              </button>
+              </Button>
             </div>
             {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
           </div>
@@ -537,7 +534,6 @@ export default function MyAccount() {
         }}
         onCancel={() => setDeleteStage(0)}
       />
-      <Toast message={message} />
       <PersonalGoalModal
         isOpen={showGoalModal}
         onClose={() => setShowGoalModal(false)}

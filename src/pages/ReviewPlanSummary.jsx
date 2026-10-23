@@ -4,10 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { BackLink } from '../components/ui/DiscardLink';
 import DesignHeader from '../components/DesignHeader';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -41,7 +39,7 @@ export default function ReviewPlanSummary() {
   const [entry, setEntry] = useState(null);
   const [plan, setPlan] = useState(planFromState);
   const [isLoading, setIsLoading] = useState(true);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -86,7 +84,7 @@ export default function ReviewPlanSummary() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { entryId, planKind: planKindFromState, plan: planFromState } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -138,13 +136,13 @@ export default function ReviewPlanSummary() {
             <p className="plan-sum-label">{PLAN_LABEL[planKind] || 'Your plan'}</p>
             <div className="plan-sum-value">
               {hasPlan ? (
-                <button
+                <Button
                   type="button"
-                  className="ui-btn-ghost"
+                  variant="outline"
                   onClick={() => navigate(SUMMARY_ROUTE[planKind] || '/my-plans', { state: { decisionId: planId } })}
                 >
                   View my plan
-                </button>
+                </Button>
               ) : (
                 <span className="plan-none">No daily plan for this day.</span>
               )}
@@ -153,17 +151,15 @@ export default function ReviewPlanSummary() {
         </div>
 
         <div className="plan-actions">
-          <button
+          <Button
             type="button"
-            className="ui-btn-ghost"
+            variant="outline"
             onClick={() => navigate('/review-plan', { state: { planKind, plan } })}
           >
             Edit
-          </button>
+          </Button>
         </div>
       </div>
-
-      <Toast message={message} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { mergeFormData } from '../utils/mergeFormData';
 import DiscardDialog from './ui/DiscardDialog';
+import { Button } from './design';
 
 export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, onSaveAsDraft = null, nextLabel = 'Continue' }) {
   const navigate = useNavigate();
@@ -183,31 +184,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
   return (
     <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginTop: '24px' }}>
       {onBack && (
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: 'transparent',
-            border: '2px solid var(--outline)',
-            borderRadius: '8px',
-            color: 'var(--text)',
-            fontWeight: '600',
-            cursor: 'pointer',
-            fontSize: '14px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.borderColor = 'var(--coral-text)';
-            e.target.style.backgroundColor = 'var(--raised)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.borderColor = 'var(--outline)';
-            e.target.style.backgroundColor = 'transparent';
-          }}
-        >
-          Back
-        </button>
+        <Button variant="outline" type="button" onClick={onBack}>Back</Button>
       )}
 
       <button
@@ -227,68 +204,21 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           justifyContent: 'center',
         }}
         onMouseEnter={(e) => {
-          e.target.style.backgroundColor = 'var(--raised)';
-          e.target.style.color = 'var(--coral-hover)';
+          e.currentTarget.style.backgroundColor = 'var(--raised)';
+          e.currentTarget.style.color = 'var(--coral-hover)';
         }}
         onMouseLeave={(e) => {
-          e.target.style.backgroundColor = 'transparent';
-          e.target.style.color = 'var(--coral-text)';
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = 'var(--coral-text)';
         }}
       >
         <Trash2 size={20} />
       </button>
 
-      <button
-        type="button"
-        onClick={onSaveAsDraft || handleSaveAsDraft}
-        style={{
-          padding: '12px 24px',
-          backgroundColor: 'transparent',
-          color: 'var(--coral-text)',
-          fontWeight: '600',
-          border: '2px solid var(--coral-text)',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          transition: 'all 0.2s',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.backgroundColor = 'var(--raised)';
-          e.target.style.borderColor = 'var(--coral-hover)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.backgroundColor = 'transparent';
-          e.target.style.borderColor = 'var(--coral-text)';
-        }}
-      >
-        Save as Draft
-      </button>
+      <Button variant="outline" type="button" onClick={onSaveAsDraft || handleSaveAsDraft}>Save as Draft</Button>
 
       {onNext && (
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!canNext || isSaving}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: !canNext || isSaving ? 'var(--line)' : 'var(--coral)',
-            color: !canNext || isSaving ? 'var(--label)' : 'var(--on-coral)',
-            fontWeight: 'bold',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: !canNext || isSaving ? 'not-allowed' : 'pointer',
-            fontSize: '14px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = 'var(--coral-hover)')}
-          onMouseLeave={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = 'var(--coral)')}
-        >
-          {isSaving ? 'Saving' : nextLabel}
-        </button>
+        <Button variant="primary" type="button" onClick={handleNext} disabled={!canNext || isSaving}>{isSaving ? 'Saving' : nextLabel}</Button>
       )}
 
       <DiscardDialog

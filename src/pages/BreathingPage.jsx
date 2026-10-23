@@ -8,10 +8,8 @@ import {
   loadLatestBreathingSession, formatSessionLength,
 } from '../lib/breathing';
 import DesignHeader from '../components/DesignHeader';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, PillChoice, useToast } from '../components/design';
 import BreathingVisual, { useBreathingPhase, useDialSize } from '../components/ui/BreathingVisual';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
 
 function pad2(n) {
@@ -46,6 +44,11 @@ function StartBar({ children }) {
     if (!el) return undefined;
     const measure = () => {
       document.documentElement.style.setProperty('--breathe-bar-height', `${el.getBoundingClientRect().height}px`);
+      // Toasts rise above the bar while it is showing (it may sit above
+      // the phone tab bar, so clear from its top edge to the bottom).
+      const box = el.getBoundingClientRect();
+      const clear = box.height > 0 ? Math.max(0, window.innerHeight - box.top) : 0;
+      document.documentElement.style.setProperty('--ds-toast-offset', `${clear}px`);
     };
     measure();
     window.addEventListener('resize', measure);
@@ -58,6 +61,7 @@ function StartBar({ children }) {
     return () => {
       window.removeEventListener('resize', measure);
       observer?.disconnect();
+      document.documentElement.style.removeProperty('--ds-toast-offset');
     };
   }, []);
 
@@ -78,7 +82,7 @@ export default function BreathingPage() {
   const [sessionCount, setSessionCount] = useState(null);
   const sessionStartRef = useRef(null);
   const shapeSize = useShapeSize();
-  const { message, showToast } = useToast();
+  const toast = useToast();
   const { phaseLabel, countdown, elapsedSeconds, color: phaseColor } = useBreathingPhase(technique, sessionActive);
 
   const sessionHostRef = useRef(null);
@@ -127,17 +131,17 @@ export default function BreathingPage() {
     const durationSeconds = Math.round((Date.now() - sessionStartRef.current) / 1000);
     if (!user) return;
     if (durationSeconds < MIN_SESSION_SECONDS) {
-      showToast('Session ended. Sessions under 10 seconds are not saved.');
+      toast.show('Session ended. Sessions under 10 seconds are not saved.');
       return;
     }
     try {
       await saveBreathingSession(user.id, technique, durationSeconds);
       setLastSession({ breathing_mode: technique, duration: durationSeconds });
       setSessionCount((c) => (c === null ? null : c + 1));
-      showToast('Session saved.');
+      toast.show('Session saved.');
     } catch (error) {
       console.error('[BreathingPage] session save failed:', error);
-      showToast('Could not save this session. Please try again.');
+      toast.error('Could not save this session. Please try again.');
     }
   };
 
@@ -181,18 +185,13 @@ export default function BreathingPage() {
             <BreathingVisual technique={technique} active={false} size={shapeSize} />
           </div>
 
-          <div className="breathe-technique-select" role="group" aria-label="Breathing technique">
-            {TECHNIQUE_ORDER.map((key) => (
-              <button
-                key={key}
-                type="button"
-                className={`breathe-technique-option breathe-button${technique === key ? ' active' : ''}`}
-                aria-pressed={technique === key}
-                onClick={() => handleSwitchTechnique(key)}
-              >
-                {TECHNIQUES[key].label}
-              </button>
-            ))}
+          <div style={{ width: '100%', maxWidth: '760px', margin: '0 auto var(--space-6)' }}>
+            <PillChoice
+              ariaLabel="Breathing technique"
+              options={TECHNIQUE_ORDER.map((key) => ({ value: key, label: TECHNIQUES[key].label }))}
+              value={technique}
+              onChange={handleSwitchTechnique}
+            />
           </div>
 
           <div className="breathe-guidance">
@@ -215,7 +214,7 @@ export default function BreathingPage() {
 
       {!sessionActive && (
         <StartBar>
-          <button type="button" className="ui-btn-primary" onClick={handleStart}>Start breathing</button>
+          <Button variant="primary" onClick={handleStart}>Start breathing</Button>
         </StartBar>
       )}
 
@@ -228,11 +227,10 @@ export default function BreathingPage() {
             <div className="breathe-phase" aria-live="polite" style={{ color: phaseColor }}>{phaseLabel}</div>
             <div className="breathe-count">{countdown}</div>
             <div className="breathe-timer">{Math.floor(elapsedSeconds / 60)}:{pad2(elapsedSeconds % 60)}</div>
-            <button type="button" className="ui-btn-ghost breathe-session-done" onClick={handleDone}>Done</button>
+            <Button variant="outline" className="breathe-session-done" onClick={handleDone}>Done</Button>
           </div>
         </div>
       </div>
-      <Toast message={message} clearBarVar="--breathe-bar-height" />
     </div>
   );
 }

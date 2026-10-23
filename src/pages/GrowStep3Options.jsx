@@ -5,7 +5,7 @@ import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import OptionsTimer from '../components/OptionsTimer';
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, Loading, PageHeader, TextField } from '../components/design';
+import { Crosshair, Loading, PageHeader, TextField, Button } from '../components/design';
 
 export default function GrowStep3Options() {
   const navigate = useNavigate();
@@ -77,30 +77,7 @@ export default function GrowStep3Options() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              borderRadius: '6px',
-              color: 'var(--text)',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
         </div>
         <PageHeader title="GROW" />
         <h2 className="ds-question">What options do you have?</h2>
@@ -151,61 +128,14 @@ export default function GrowStep3Options() {
           ))}
         </div>
 
-        <button
-          onClick={handleAddOption}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '12px 24px',
-            backgroundColor: 'transparent',
-            border: '2px solid var(--outline)',
-            borderRadius: '8px',
-            color: 'var(--text)',
-            fontWeight: '600',
-            cursor: 'pointer',
-            fontSize: '14px',
-            transition: 'all 0.2s',
-            marginBottom: '32px',
-            alignSelf: 'flex-start',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--coral-text)';
-            e.currentTarget.style.backgroundColor = 'var(--raised)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--outline)';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          <Crosshair />
-          Add Option
-        </button>
+        <Button variant="outline" icon="plus" onClick={handleAddOption} style={{ marginBottom: '32px', alignSelf: 'flex-start' }}>Add Option</Button>
 
         {error && (
           <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
             <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
               {error}
             </p>
-            <button
-              onClick={onRetry}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'var(--coral)',
-                color: 'var(--on-coral)',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
-            >
-              Retry
-            </button>
+            <Button variant="outline" onClick={onRetry}>Retry</Button>
           </div>
         )}
 

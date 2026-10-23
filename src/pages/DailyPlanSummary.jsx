@@ -6,10 +6,8 @@ import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 // Headings repeat the four questions word for word - see
 // PlanMyDayStep1.jsx's QUESTIONS. Two of these were previously shortened
@@ -47,7 +45,7 @@ export default function DailyPlanSummary() {
   const [plan, setPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [reviewEntryId, setReviewEntryId] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
@@ -79,7 +77,7 @@ export default function DailyPlanSummary() {
   // drops it from history state so it doesn't reappear on back/forward.
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { decisionId } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,9 +119,9 @@ export default function DailyPlanSummary() {
         <div className="plan-page">
           <p className="ui-subtitle">Plan not found.</p>
           <div className="plan-actions">
-            <button type="button" className="ui-btn-primary" onClick={() => navigate('/plan-my-day')}>
+            <Button type="button" variant="primary" onClick={() => navigate('/plan-my-day')}>
               Plan my day
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -158,9 +156,9 @@ export default function DailyPlanSummary() {
         )}
 
         <div className="plan-actions">
-          <button
+          <Button
             type="button"
-            className="ui-btn-primary"
+            variant="primary"
             onClick={() => (
               reviewEntryId
                 ? navigate('/review-plan-summary', { state: { entryId: reviewEntryId, planKind: 'daily_plan', plan } })
@@ -168,18 +166,16 @@ export default function DailyPlanSummary() {
             )}
           >
             {reviewEntryId ? 'View my review' : 'Review my day'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="ui-btn-ghost"
+            variant="outline"
             onClick={() => navigate('/plan-my-day', { state: { decisionId: plan.id } })}
           >
             Edit
-          </button>
+          </Button>
         </div>
       </div>
-
-      <Toast message={message} />
     </div>
   );
 }

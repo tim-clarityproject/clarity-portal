@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
 import pageText from '../../content/pageText';
-import DeleteDialog, { showDeletedToast } from '../../components/ui/DeleteDialog';
-import Toast from '../../components/ui/Toast';
-import useToast from '../../hooks/useToast';
-import { DatePicker, PageHeader } from '../../components/design';
+import DeleteDialog from '../../components/ui/DeleteDialog';
+import {
+  Button, Choice, DatePicker, EmptyState, PageHeader, useToast,
+} from '../../components/design';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
 import WheelRadar from '../../components/wheelOfLife/WheelRadar';
 import WheelDelta from '../../components/wheelOfLife/WheelDelta';
@@ -28,6 +28,7 @@ import '../../styles/wheelOfLife.css';
 
 const fd = formatCheckinDate;
 const MINUS = '−';
+const PRESET_OPTIONS = RANGE_PRESETS.map((p) => ({ value: p.key, label: p.label }));
 
 // /wheel-of-life/results - the one-pager of the approved mock-up
 // (wheel-of-life.html R.onepager, legend, delta, spark), with real data
@@ -37,12 +38,12 @@ const MINUS = '−';
 // My Reviews) opens the six months up to that date.
 export default function WheelResults() {
   const location = useLocation();
-  const { message, showToast } = useToast();
-  useArrivalToast(showToast);
+  const toast = useToast();
+  useArrivalToast(toast.show);
   const data = useWheelData({ withChartStyle: true });
 
   if (data.loading || data.error) {
-    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} toast={message} />;
+    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} />;
   }
   const to = new URLSearchParams(location.search).get('to');
   return (
@@ -52,8 +53,6 @@ export default function WheelResults() {
       initialStyle={data.chartStyle}
       initialTo={/^\d{4}-\d{2}-\d{2}$/.test(to || '') ? to : null}
       savedId={location.state?.savedId || null}
-      toast={message}
-      showToast={showToast}
     />
   );
 }
@@ -90,7 +89,8 @@ function Stat({ label, value, note }) {
   return <div><b>{label}</b><strong>{value}</strong><span>{note}</span></div>;
 }
 
-function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toast, showToast }) {
+function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
+  const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const phone = useIsPhone();
@@ -104,9 +104,9 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
   const today = getLocalDateKey();
   const acts = (
     <div className="wol-acts">
-      <button type="button" className="ui-btn-primary" onClick={() => navigate('/wheel-of-life/check-in')}>New check-in</button>
-      <button type="button" className="wol-qlink" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}><TargetIcon />Set targets</button>
-      <button type="button" className="wol-qlink" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}><PenIcon />Change your areas</button>
+      <Button variant="primary" onClick={() => navigate('/wheel-of-life/check-in')}>New check-in</Button>
+      <Button variant="text" className="wol-qlink" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
+      <Button variant="text" className="wol-qlink" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}><PenIcon />Change your areas</Button>
     </div>
   );
 
@@ -115,11 +115,11 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
     setToDelete(null);
     const res = await deleteCheckin(id);
     if (res.error) {
-      showToast(res.error.message);
+      toast.error(res.error.message);
       return;
     }
     setCheckins((list) => list.filter((c) => c.id !== id));
-    showDeletedToast(showToast);
+    toast.show('Deleted.');
   };
   const deleteDialog = (
     <DeleteDialog
@@ -138,13 +138,14 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
         <DesignHeader />
         <div className="plan-page wol-page wol-enter">
           <div className="wol-head"><PageHeader title="Wheel of Life" info={pageText.wheelOfLifeResults} /></div>
-          <p className="wol-empty wol-rv" style={{ '--i': 3 }}>No check-ins yet. Start your first check-in to see your wheel.</p>
-          <div className="wol-acts wol-rv" style={{ '--i': 4 }}>
-            <button type="button" className="ui-btn-primary" onClick={() => navigate('/wheel-of-life/check-in')}>Start check-in</button>
+          <div className="wol-rv" style={{ '--i': 3 }}>
+            <EmptyState
+              question="No check-ins yet. Start your first check-in to see your wheel."
+              action={{ label: 'Start check-in', onClick: () => navigate('/wheel-of-life/check-in') }}
+            />
           </div>
         </div>
         {deleteDialog}
-        <Toast message={toast} />
       </div>
     );
   }
@@ -172,11 +173,13 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
       <div className="wol-range wol-rv" style={{ '--i': 3 }}>
         <div className="wol-rtop">
           <small>Date range</small>
-          <div className="wol-pre" role="group" aria-label="Date range">
-            {RANGE_PRESETS.map((p) => (
-              <button key={p.key} type="button" aria-pressed={rangeChoice.preset === p.key} onClick={() => setRangeChoice({ preset: p.key })}>{p.label}</button>
-            ))}
-          </div>
+          <Choice
+            className="wol-pre"
+            ariaLabel="Date range"
+            options={PRESET_OPTIONS}
+            value={rangeChoice.preset}
+            onChange={(key) => setRangeChoice({ preset: key })}
+          />
         </div>
         <div className="wol-dates">
           <div>
@@ -197,11 +200,10 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
         <DesignHeader />
         <div className="plan-page wol-page wol-enter">
           {header}
-          <p className="wol-empty">No check-ins between these dates. Choose a wider range, or start a new check-in.</p>
+          <EmptyState question="No check-ins between these dates. Choose a wider range, or start a new check-in." />
           {acts}
         </div>
         {deleteDialog}
-        <Toast message={toast} />
       </div>
     );
   }
@@ -306,7 +308,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
               <b>Set your targets</b>
               <p>Not every area needs to be a 10. Choose the score you’d be happy with in each area, and your wheel will show how close you are.</p>
             </div>
-            <button type="button" className="ui-btn-ghost" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}><TargetIcon />Set targets</button>
+            <Button variant="outline" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
           </div>
         ) : null}
 
@@ -346,7 +348,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
         {gone.length ? (
           <p className="wol-gone">
             {`Not on your wheel: ${gone.join(', ')}. Past scores are kept. `}
-            <button type="button" className="wol-qlink wol-qlink--in" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}>Change your areas</button>
+            <Button variant="text" className="wol-qlink wol-qlink--in" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}>Change your areas</Button>
           </p>
         ) : null}
 
@@ -370,7 +372,6 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
         {acts}
       </div>
       {deleteDialog}
-      <Toast message={toast} />
     </div>
   );
 }

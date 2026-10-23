@@ -1578,6 +1578,13 @@
   pointer-events: none;
 }
 
+/* On phone the toast also clears the tab bar along the bottom. */
+@media (max-width: 768px) {
+  .ui-root .ds-toast-region {
+    bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + max(var(--ds-toast-offset, 0px), var(--tabbar-height, 0px)));
+  }
+}
+
 .ui-root .ds-toast {
   pointer-events: auto;
   box-sizing: border-box;
@@ -1706,6 +1713,14 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--space-px6) var(--space-4) var(--space-4);
+}
+
+/* A pop-up's short message: one or two plain lines under its title. */
+.ui-root .ds-dialog-text {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
 }
 
 .ui-root .ds-dialog-foot {

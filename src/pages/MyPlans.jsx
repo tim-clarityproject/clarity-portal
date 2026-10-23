@@ -8,10 +8,8 @@ import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planR
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import HistoryList from '../components/ui/HistoryList';
-import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Loading, PageHeader } from '../components/design';
+import DeleteDialog from '../components/ui/DeleteDialog';
+import { Loading, PageHeader, useToast } from '../components/design';
 
 // Plan types with a "Review this plan" page (prompt 8). GROW and Stop
 // doing audit have no review target yet - see build summary point 4.
@@ -82,7 +80,7 @@ export default function MyPlans() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (user) loadPlans();
@@ -166,10 +164,10 @@ export default function MyPlans() {
       if (deleteError) throw deleteError;
       setPlans((prev) => prev.filter((p) => p.id !== id));
       clearProgress();
-      showDeletedToast(showToast);
+      toast.show('Deleted.');
     } catch (err) {
       console.error('[MyPlans] delete failed:', err);
-      showToast('Could not delete. Please try again.');
+      toast.error('Could not delete. Please try again.');
     }
   };
 
@@ -208,7 +206,6 @@ export default function MyPlans() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-      <Toast message={message} />
     </div>
   );
 }

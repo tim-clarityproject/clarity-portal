@@ -10,6 +10,7 @@ import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BreathingOrb from '../components/ui/BreathingOrb';
 import BreathingQuickOpen from '../components/BreathingQuickOpen';
+import { Button } from '../components/design';
 
 // Three top tiles. Routes/tools unchanged from the old ROUTE_MAP - only
 // the on-page copy and layout changed. problemTitle is the string
@@ -649,36 +650,6 @@ export default function Welcome() {
           margin: 0 0 20px;
         }
 
-        .home-root .home-breathe-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 12px;
-          min-height: 48px;
-          padding: 0 26px !important;
-          border-radius: var(--radius-pill);
-          background: var(--coral);
-          color: var(--on-coral);
-          border: none;
-          font-family: var(--font-display);
-          font-weight: 400;
-          font-size: 11px !important;
-          text-transform: uppercase;
-          letter-spacing: 0.16em;
-          text-decoration: none;
-          cursor: pointer;
-          transition: background var(--dur-fast) var(--ease);
-        }
-
-        .home-root .home-breathe-btn:hover,
-        .home-root .home-breathe-btn:focus-visible {
-          background: var(--coral-hover);
-        }
-
-        .home-root .home-breathe-btn:focus-visible {
-          outline: 2px solid var(--text);
-          outline-offset: 3px;
-        }
-
         /* Phone-only (prompt 7g): quiet link to About, matching the
            de-emphasised About link already in the burger drawer
            (prompt 7c) - DM Sans, small, t2, no uppercase Nekst, no box. */
@@ -825,10 +796,10 @@ export default function Welcome() {
                 <div className="home-ground-copy">
                   <p className="home-ground-title">Need a moment?</p>
                   <p className="home-ground-text">A short breathing reset, any time.</p>
-                  <button type="button" className="home-breathe-btn" onClick={() => setShowBreathingQuickOpen(true)}>
+                  <Button variant="primary" onClick={() => setShowBreathingQuickOpen(true)}>
                     <WaveIcon />
                     Breathe
-                  </button>
+                  </Button>
                 </div>
                 <BreathingOrb />
               </div>

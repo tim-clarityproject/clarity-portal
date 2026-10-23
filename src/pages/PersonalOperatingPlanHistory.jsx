@@ -7,7 +7,7 @@ import { CHANGE_KIND_LABEL, formatPlanCounts, formatVersion, loadReviewedVersion
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import { BackLink } from '../components/ui/DiscardLink';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, EmptyState } from '../components/design';
 
 export default function PersonalOperatingPlanHistory() {
   const navigate = useNavigate();
@@ -71,9 +71,9 @@ export default function PersonalOperatingPlanHistory() {
         {isLoading ? (
           <Loading label="Loading your version history" className="ds-loading--page" />
         ) : !missionId ? (
-          <p className="pop-empty">You do not have a personal operating plan yet.</p>
+          <EmptyState question="You do not have a personal operating plan yet." />
         ) : versions.length === 0 ? (
-          <p className="pop-empty">No Versions yet. Your first one is created when you save your plan.</p>
+          <EmptyState question="No Versions yet. Your first one is created when you save your plan." />
         ) : (
           versions.map((version, index) => {
             const reviewedAt = reviewedDates[version.id];
@@ -89,13 +89,13 @@ export default function PersonalOperatingPlanHistory() {
                     {reviewedAt ? ` · Reviewed ${formatShortDate(reviewedAt)}` : ''}
                   </span>
                 </span>
-                <button
+                <Button
                   type="button"
-                  className="ui-btn-ghost"
+                  variant="outline"
                   onClick={() => navigate(`/personal-operating-plan-history/${version.major}.${version.minor}`, { state: { missionId } })}
                 >
                   {isCurrent ? 'View' : 'View Version'}
-                </button>
+                </Button>
               </div>
             );
           })

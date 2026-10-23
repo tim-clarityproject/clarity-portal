@@ -6,10 +6,8 @@ import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 export default function IfThenPlanningSummary() {
   const navigate = useNavigate();
@@ -20,7 +18,7 @@ export default function IfThenPlanningSummary() {
   const [planning, setPlanning] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [reviewEntryId, setReviewEntryId] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
@@ -50,7 +48,7 @@ export default function IfThenPlanningSummary() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { decisionId } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,9 +137,8 @@ export default function IfThenPlanningSummary() {
         </div>
 
         <div className="plan-actions">
-          <button
-            type="button"
-            className="ui-btn-primary"
+          <Button
+            variant="primary"
             onClick={() => (
               reviewEntryId
                 ? navigate('/review-plan-summary', { state: { entryId: reviewEntryId, planKind: 'if_then_planning', plan: planning } })
@@ -149,18 +146,15 @@ export default function IfThenPlanningSummary() {
             )}
           >
             {reviewEntryId ? 'View my review' : 'Review this plan'}
-          </button>
-          <button
-            type="button"
-            className="ui-btn-ghost"
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => navigate('/if-then-planning', { state: { decisionId: planning.id } })}
           >
             Edit
-          </button>
+          </Button>
         </div>
       </div>
-
-      <Toast message={message} />
     </div>
   );
 }

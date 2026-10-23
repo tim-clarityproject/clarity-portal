@@ -9,10 +9,8 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Crosshair, PageHeader, TextBox } from '../components/design';
+import { PageHeader, TextBox, Button, useToast } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -45,7 +43,7 @@ export default function InversionStep2Risks() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'draft'
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const changeRisk = (index, value) => {
     setRisks((prev) => prev.map((r, i) => (i === index ? value : r)));
@@ -100,7 +98,7 @@ export default function InversionStep2Risks() {
       setCurrentTitle(name);
       setNameDialog(null);
       clearProgress();
-      showToast(`Draft saved as ${name}.`);
+      toast.show(`Draft saved as ${name}.`);
       navigate('/decision-history');
     } catch (error) {
       console.error('[InversionStep2Risks] draft save failed:', error);
@@ -141,12 +139,12 @@ export default function InversionStep2Risks() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={!canContinue || isSaving} onClick={goContinue}>
+      <Button variant="primary" disabled={!canContinue || isSaving} onClick={goContinue}>
         Continue
-      </button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={() => setNameDialog('draft')}>
+      </Button>
+      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
         Save as draft
-      </button>
+      </Button>
     </>
   );
 
@@ -194,10 +192,9 @@ export default function InversionStep2Risks() {
             </button>
           </div>
         ))}
-        <button type="button" className="plan-add-btn" onClick={addRisk}>
-          <Crosshair size="sm" />
+        <Button variant="outline" icon="plus" onClick={addRisk}>
           Add
-        </button>
+        </Button>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 
@@ -226,7 +223,6 @@ export default function InversionStep2Risks() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

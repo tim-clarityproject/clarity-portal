@@ -2,7 +2,7 @@ import { useContext, useLayoutEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { PageHeader, TextBox } from '../../components/design';
+import { Choice, PageHeader, TextBox } from '../../components/design';
 import pageText from '../../content/pageText';
 import DiscardDialog from '../../components/ui/DiscardDialog';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
@@ -207,17 +207,17 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
           <PageHeader title="Choose one area" info={pageText.wheelOfLifeCheckIn} meta={['Last step', 'Wheel of Life']} />
         </div>
         <p className="wol-qq wol-rv" style={{ '--i': 1 }}>If one area moved up by a single point, which would make the biggest difference to everything else?</p>
-        <div className="wol-chips wol-rv" style={{ '--i': 2 }} role="group" aria-label="Area to focus on">
-          {areas.map((a) => (
-            <button
-              key={a.key}
-              type="button"
-              aria-pressed={st.focusAreaKey === a.key}
-              onClick={() => update({ focusAreaKey: st.focusAreaKey === a.key ? null : a.key })}
-            >
-              <b>{st.scores[a.key] ?? 'None'}</b>{areaName(a)}
-            </button>
-          ))}
+        <div className="wol-chips wol-rv" style={{ '--i': 2 }}>
+          {/* Each area with its score from this check-in. Choosing the
+              chosen area again clears it, as before. More than five areas
+              are always rows (Choice would otherwise make a drop-down). */}
+          <Choice
+            ariaLabel="Area to focus on"
+            form={areas.length > 5 ? 'rows' : 'auto'}
+            options={areas.map((a) => ({ value: a.key, label: areaName(a), note: String(st.scores[a.key] ?? 'None') }))}
+            value={st.focusAreaKey}
+            onChange={(key) => update({ focusAreaKey: st.focusAreaKey === key ? null : key })}
+          />
         </div>
         <div className="wol-note wol-rv" style={{ '--i': 3 }}>
           <TextBox

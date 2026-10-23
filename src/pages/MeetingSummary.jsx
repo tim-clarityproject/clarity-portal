@@ -6,10 +6,8 @@ import { getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 // "Fri, 2 Oct" - UK order, device local time. Plain input[type=date]
 // string ("YYYY-MM-DD"), so noon is used to dodge UTC/local day-shift.
@@ -38,7 +36,7 @@ export default function MeetingSummary() {
   const [meeting, setMeeting] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [reviewEntryId, setReviewEntryId] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
@@ -68,7 +66,7 @@ export default function MeetingSummary() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { decisionId } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,9 +240,9 @@ export default function MeetingSummary() {
         )}
 
         <div className="plan-actions no-print">
-          <button
+          <Button
             type="button"
-            className="ui-btn-primary"
+            variant="primary"
             onClick={() => (
               reviewEntryId
                 ? navigate('/review-plan-summary', { state: { entryId: reviewEntryId, planKind: 'plan_meeting', plan: meeting } })
@@ -252,14 +250,12 @@ export default function MeetingSummary() {
             )}
           >
             {reviewEntryId ? 'View my review' : 'Review this meeting'}
-          </button>
-          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/plan-meeting', { state: { decisionId: meeting.id } })}>
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/plan-meeting', { state: { decisionId: meeting.id } })}>
             Edit
-          </button>
+          </Button>
         </div>
       </div>
-
-      <div className="no-print"><Toast message={message} /></div>
     </div>
   );
 }

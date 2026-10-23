@@ -9,7 +9,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, PageHeader, TextBox } from '../components/design';
+import { PageHeader, TextBox, Button } from '../components/design';
 
 export default function ProjectList() {
   const navigate = useNavigate();
@@ -94,30 +94,7 @@ export default function ProjectList() {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              borderRadius: '6px',
-              color: 'var(--text)',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
         </div>
 
         <PageHeader title="Strategic alignment" meta={['Where my team should focus']} />
@@ -229,31 +206,7 @@ export default function ProjectList() {
               ))}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
                 <span style={{ minWidth: '20px' }}></span>
-                <button
-                  type="button"
-                  onClick={handleAddProject}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    backgroundColor: 'transparent',
-                    color: 'var(--coral-text)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    transition: 'all 0.2s',
-                    textAlign: 'center',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--coral-hover)'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--coral-text)'}
-                >
-                  <Crosshair />
-                  Add another
-                </button>
+                <Button variant="outline" icon="plus" type="button" onClick={handleAddProject} style={{ flex: 1 }}>Add another</Button>
               </div>
             </form>
           </div>

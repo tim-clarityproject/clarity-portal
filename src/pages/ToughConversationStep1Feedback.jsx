@@ -9,9 +9,7 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { PageHeader, TextBox } from '../components/design';
+import { PageHeader, TextBox, Button, useToast } from '../components/design';
 import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
@@ -53,7 +51,7 @@ export default function ToughConversationStep1Feedback() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'draft'
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const displayObservation = cleanPhrase(observation, ['i\'ve noticed', 'i noticed', 'observed']);
   const displayImpact = cleanPhrase(impact, ['the impact of that is', 'the impact is', 'impact:', 'impacts:'], true);
@@ -99,7 +97,7 @@ export default function ToughConversationStep1Feedback() {
       setCurrentTitle(name);
       setNameDialog(null);
       clearProgress();
-      showToast(`Draft saved as ${name}.`);
+      toast.show(`Draft saved as ${name}.`);
       navigate('/decision-history');
     } catch (error) {
       console.error('[ToughConversationStep1Feedback] draft save failed:', error);
@@ -135,12 +133,12 @@ export default function ToughConversationStep1Feedback() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={goContinue}>
+      <Button variant="primary" disabled={isSaving} onClick={goContinue}>
         Continue
-      </button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={() => setNameDialog('draft')}>
+      </Button>
+      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
         Save as draft
-      </button>
+      </Button>
     </>
   );
 
@@ -228,7 +226,6 @@ export default function ToughConversationStep1Feedback() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

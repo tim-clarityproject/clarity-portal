@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PageHeader } from '../components/design';
+import { PageHeader, Button } from '../components/design';
 
 export default function CheckEmailConfirmation() {
   const location = useLocation();
@@ -23,30 +23,9 @@ export default function CheckEmailConfirmation() {
             OR
           </p>
 
-          <button
-            onClick={handleStartOver}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: 'transparent',
-              border: '2px solid var(--outline)',
-              color: 'var(--text)',
-              fontWeight: '600',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
-            }}
-          >
+          <Button variant="outline" onClick={handleStartOver}>
             Sign up with a different email
-          </button>
+          </Button>
         </div>
       </div>
     </div>

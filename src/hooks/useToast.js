@@ -1,21 +1,11 @@
-import { useCallback, useRef, useState } from 'react';
+import { useToast as useSharedToast } from '../components/design';
 
-// Pairs with src/components/ui/Toast.jsx. duration defaults to the 3.2s
-// spec'd for "Saved as Name.", "Draft saved.", "Discarded." messages.
-export default function useToast(duration = 3200) {
-  const [message, setMessage] = useState(null);
-  const timeoutRef = useRef(null);
-
-  const showToast = useCallback((text) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setMessage(text);
-    timeoutRef.current = setTimeout(() => setMessage(null), duration);
-  }, [duration]);
-
-  const hideToast = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setMessage(null);
-  }, []);
-
-  return { message, showToast, hideToast };
+// The old toast hook, now handing every message to the shared toast
+// (src/components/design/Toast.jsx, mounted once for the whole app).
+// Pages move to the shared useToast() directly in Phase 0c; this stays
+// only until none of them use it. `message` is always null, so the old
+// <Toast> component renders nothing.
+export default function useToast() {
+  const toast = useSharedToast();
+  return { message: null, showToast: toast.show, hideToast: toast.hide };
 }

@@ -4,7 +4,7 @@ import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader, TextBox } from '../components/design';
+import { PageHeader, TextBox, Button } from '../components/design';
 
 export default function GoalSetting() {
   const navigate = useNavigate();
@@ -61,32 +61,7 @@ export default function GoalSetting() {
             <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
             <h2 className="ds-question">{path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}</h2>
           </div>
-          <button
-            onClick={() => navigate('/decision-history')}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--outline)',
-              color: 'var(--text)',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '600',
-              borderRadius: '6px',
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-              marginTop: '4px',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--coral-text)';
-              e.currentTarget.style.backgroundColor = 'var(--raised)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--outline)';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            My Decisions
-          </button>
+          <Button variant="outline" onClick={() => navigate('/decision-history')} style={{ flexShrink: 0 }}>My Decisions</Button>
         </div>
         <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
           <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />

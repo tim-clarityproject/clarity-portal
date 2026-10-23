@@ -6,9 +6,7 @@ import { TECHNIQUES, loadBreathingSessions, deleteBreathingSession, formatSessio
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Loading, PageHeader } from '../components/design';
+import { EmptyState, Loading, PageHeader, useToast } from '../components/design';
 import pageText from '../content/pageText';
 
 function formatMonthHeading(value) {
@@ -22,7 +20,7 @@ export default function BreathingSessionsSummary() {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const load = async () => {
     try {
@@ -46,10 +44,10 @@ export default function BreathingSessionsSummary() {
     try {
       await deleteBreathingSession(user.id, id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
-      showToast('Session deleted.');
+      toast.show('Session deleted.');
     } catch (error) {
       console.error('[BreathingSessionsSummary] delete failed:', error);
-      showToast('Could not delete. Please try again.');
+      toast.error('Could not delete. Please try again.');
     }
   };
 
@@ -80,12 +78,10 @@ export default function BreathingSessionsSummary() {
         </div>
 
         {sessions.length === 0 ? (
-          <>
-            <p className="pop-empty">No sessions yet. Start a session and it will appear here.</p>
-            <div className="plan-actions">
-              <button type="button" className="ui-btn-primary" onClick={() => navigate('/breathe')}>Start breathing</button>
-            </div>
-          </>
+          <EmptyState
+            question="No sessions yet. Start a session and it will appear here."
+            action={{ label: 'Start breathing', onClick: () => navigate('/breathe') }}
+          />
         ) : (
           <>
             <div className="tsa-total" style={{ marginBottom: 'var(--space-5)' }}>
@@ -130,7 +126,6 @@ export default function BreathingSessionsSummary() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-      <Toast message={message} />
     </div>
   );
 }

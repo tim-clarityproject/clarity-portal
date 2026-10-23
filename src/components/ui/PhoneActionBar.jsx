@@ -28,6 +28,11 @@ export default function PhoneActionBar({ children }) {
 
     const measure = () => {
       document.documentElement.style.setProperty('--action-bar-height', `${el.getBoundingClientRect().height}px`);
+      // Toasts rise above the bar while it is showing (it may sit above
+      // the phone tab bar, so clear from its top edge to the bottom).
+      const box = el.getBoundingClientRect();
+      const clear = box.height > 0 ? Math.max(0, window.innerHeight - box.top) : 0;
+      document.documentElement.style.setProperty('--ds-toast-offset', `${clear}px`);
     };
     measure();
 
@@ -43,6 +48,7 @@ export default function PhoneActionBar({ children }) {
     return () => {
       window.removeEventListener('resize', measure);
       observer?.disconnect();
+      document.documentElement.style.removeProperty('--ds-toast-offset');
     };
   }, []);
 

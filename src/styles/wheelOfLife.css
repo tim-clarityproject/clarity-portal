@@ -5,8 +5,8 @@
    (tokens.css); animation times are multiples of the timing tokens, so
    they switch off with them under prefers-reduced-motion. The portal's
    shared parts are reused (PageHeader, BackLink, DiscardLink,
-   PhoneActionBar, DiscardDialog, Toast, AutoGrowTextarea, .ui-btn-primary,
-   .ui-btn-ghost, and the design Crosshair, DatePicker and Loading); the classes below are only what the mock-up
+   PhoneActionBar, DiscardDialog, and the design Button, Choice, Crosshair,
+   DatePicker, EmptyState, Loading, TextBox and toast); the classes below are only what the mock-up
    needs that they do not already give.
 
    src/styles/mobile.css puts padding / font-size / min-height with
@@ -303,14 +303,8 @@
   margin-top: var(--space-5);
 }
 
-.ui-root .wol-acts .ui-btn-primary,
-.ui-root .wol-acts .ui-btn-ghost {
-  min-height: 48px;
-}
-
 @media (max-width: 768px) {
-  .ui-root .wol-acts .ui-btn-primary,
-  .ui-root .wol-acts .ui-btn-ghost {
+  .ui-root .wol-acts .ds-btn {
     flex: 1 1 100%;
   }
 }
@@ -665,53 +659,7 @@
 }
 
 .ui-root .wol-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
   margin-top: 26px;
-}
-
-.ui-root .wol-chips button {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: var(--tap-min) !important;
-  padding: 0 var(--space-3) !important;
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 14px !important;
-  color: var(--text-2);
-  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
-}
-
-.ui-root .wol-chips button b {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-
-.ui-root .wol-chips button:hover {
-  border-color: var(--btn-line);
-  color: var(--text);
-}
-
-.ui-root .wol-chips button:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-}
-
-.ui-root .wol-chips button[aria-pressed="true"] {
-  border-color: var(--coral);
-  color: var(--text);
-}
-
-.ui-root .wol-chips button[aria-pressed="true"] b {
-  color: var(--coral);
 }
 
 @media (max-width: 768px) {
@@ -907,51 +855,10 @@
   color: var(--text-2);
 }
 
+/* the shared range Choice beside the "Date range" label */
 .ui-root .wol-pre {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* 36px pills as the mock-up, with a 44px tap area */
-.ui-root .wol-pre button {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px !important;
-  padding: 0 14px !important;
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: var(--fs-button) !important;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text-2);
-  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
-}
-
-.ui-root .wol-pre button::before {
-  content: "";
-  position: absolute;
-  inset: -4px 0;
-}
-
-.ui-root .wol-pre button:hover {
-  color: var(--text);
-  border-color: var(--btn-line);
-}
-
-.ui-root .wol-pre button:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-}
-
-.ui-root .wol-pre button[aria-pressed="true"] {
-  background: var(--coral);
-  border-color: var(--coral);
-  color: var(--on-coral);
+  flex: 1 1 260px;
+  min-width: 0;
 }
 
 .ui-root .wol-dates {
@@ -1199,14 +1106,14 @@
   color: var(--text-2);
 }
 
-.ui-root .wol-tgcard .ui-btn-ghost {
+.ui-root .wol-tgcard .ds-btn {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-height: 48px;
 }
 
-.ui-root .wol-tgcard .ui-btn-ghost svg {
+.ui-root .wol-tgcard .ds-btn svg {
   width: 15px;
   height: 15px;
   fill: none;
@@ -1439,15 +1346,6 @@
   font-family: var(--font-display);
   font-size: var(--fs-small);
   font-variant-numeric: tabular-nums;
-  color: var(--text-2);
-}
-
-.ui-root .wol-empty {
-  margin-top: 14px;
-  padding: var(--space-3) 18px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-card);
-  font-size: 14px;
   color: var(--text-2);
 }
 
@@ -1757,7 +1655,6 @@
     animation: none !important;
   }
 
-  .ui-root .wol-pre button,
   .ui-root .wol-seg button,
   .ui-root .wol-seg button::after {
     transition: none !important;
@@ -1796,7 +1693,7 @@
   gap: 20px;
 }
 
-.ui-root .wol-ft-in .ui-btn-primary {
+.ui-root .wol-ft-in .ds-btn {
   flex: none;
   min-height: 48px;
 }
@@ -1841,7 +1738,6 @@
 
   .ui-root .wol-steps i,
   .ui-root .wol-scale button,
-  .ui-root .wol-chips button,
   .ui-root .wol-stp button,
   .ui-root .wol-clr,
   .ui-root .wol-qlink,

@@ -2,16 +2,13 @@ import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
-import { Loading, PageHeader, TextField } from '../components/design';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
+import { Loading, PageHeader, TextField, Button, useToast } from '../components/design';
 
 export default function EditPersonalDetails() {
   const navigate = useNavigate();
-  const { message: toastMessage, showToast } = useToast();
+  const toast = useToast();
   const { user } = useContext(AuthContext);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -19,7 +16,6 @@ export default function EditPersonalDetails() {
   const [organisation, setOrganisation] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -76,7 +72,7 @@ export default function EditPersonalDetails() {
         throw new Error('Failed to save profile: profile not found or no changes made');
       }
 
-      setSaved(true);
+      toast.show('Saved');
 
       const { data: freshProfile } = await supabase
         .from('profiles')
@@ -96,7 +92,7 @@ export default function EditPersonalDetails() {
       }, 1500);
     } catch (error) {
       console.error('Error saving profile:', error);
-      showToast('Could not save your details. Please try again.');
+      toast.error('Could not save your details. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -215,23 +211,9 @@ export default function EditPersonalDetails() {
           margin-top: 6px;
         }
 
-        /* .ui-btn-primary (components.css) already sets padding and
-           font-size with !important (needed there to beat the legacy
-           mobile.css button rule). This page's Save button needs
-           different values (padding 14px 0 13px, font-size 11px, not
-           the shared pill's 12px 28px 11px / 10px), so this override
-           needs higher specificity AND its own !important to win over
-           .ui-btn-primary's. */
-        .edit-profile-root .ui-btn-primary.edit-profile-save {
-          display: block;
+        .ui-root .edit-profile-save {
           width: 100%;
-          padding: 14px 0 13px !important;
           margin-top: 26px;
-          font-family: var(--font-display);
-          font-weight: 400;
-          text-transform: uppercase;
-          font-size: 11px !important;
-          letter-spacing: 0.24em;
         }
       `}</style>
 
@@ -239,9 +221,9 @@ export default function EditPersonalDetails() {
 
       <div className="edit-profile-content">
         <div className="edit-profile-column">
-          <button type="button" className="ui-btn-ghost edit-profile-back" onClick={() => navigate(-1)}>
+          <Button variant="text" className="edit-profile-back" onClick={() => navigate(-1)}>
             Back
-          </button>
+          </Button>
 
           <PageHeader title="Edit Profile" info={pageText.editPersonalDetails} />
 
@@ -301,24 +283,19 @@ export default function EditPersonalDetails() {
                 />
               </div>
 
-              <button
-                type="button"
-                className="ui-btn-primary edit-profile-save"
+              <Button
+                variant="primary"
+                className="edit-profile-save"
                 onClick={handleSaveProfile}
                 disabled={isSaving}
               >
                 {isSaving ? 'Saving' : 'Save changes'}
-              </button>
+              </Button>
             </>
           )}
         </div>
       </div>
 
-      <SavedConfirmation
-        isVisible={saved}
-        onDismiss={() => setSaved(false)}
-      />
-      <Toast message={toastMessage} />
     </div>
   );
 }

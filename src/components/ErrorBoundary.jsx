@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { Button } from './design';
 
 // Catches a crash in any page and shows a calm, dark screen instead of a
 // blank one. The error itself is logged to the console for us (see
@@ -44,10 +45,10 @@ export class ErrorBoundary extends Component {
             This page hit a problem. Your saved work is safe. Reload the page, or head back to Home.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
-            <button type="button" className="ui-btn-primary" onClick={() => window.location.reload()}>
+            <Button variant="primary" onClick={() => window.location.reload()}>
               Reload
-            </button>
-            <a className="ui-btn-ghost" href="/welcome" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+            </Button>
+            <a className="ds-btn ds-btn--outline" href="/welcome">
               Go home
             </a>
           </div>

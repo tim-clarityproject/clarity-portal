@@ -9,10 +9,8 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Crosshair, PageHeader, TextBox } from '../components/design';
+import { PageHeader, TextBox, Button, useToast } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -47,7 +45,7 @@ export default function IfThenPlanning() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (!decisionId || !user) return;
@@ -127,7 +125,7 @@ export default function IfThenPlanning() {
       setNameDialog(null);
       if (mode === 'draft') {
         setDecisionId(savedId);
-        showToast(`Draft saved as ${name}.`);
+        toast.show(`Draft saved as ${name}.`);
         clearProgress();
         navigate('/my-plans');
       } else {
@@ -163,8 +161,8 @@ export default function IfThenPlanning() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={() => setNameDialog('finish')}>Finish</button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={() => setNameDialog('draft')}>Save as draft</button>
+      <Button variant="primary" disabled={isSaving} onClick={() => setNameDialog('finish')}>Finish</Button>
+      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>Save as draft</Button>
     </>
   );
 
@@ -199,7 +197,6 @@ export default function IfThenPlanning() {
                     id={`ift-if-${item.id}`}
                     label="If..."
                     lines="one"
-                    who="me"
                     placeholder="Type here"
                     value={item.ifCondition}
                     onChange={(v) => changeItem(item.id, 'ifCondition', v)}
@@ -210,7 +207,6 @@ export default function IfThenPlanning() {
                     id={`ift-then-${item.id}`}
                     label="Then I will"
                     lines="one"
-                    who="me"
                     placeholder="Type here"
                     value={item.thenAction}
                     onChange={(v) => changeItem(item.id, 'thenAction', v)}
@@ -229,10 +225,9 @@ export default function IfThenPlanning() {
             </div>
           );
         })}
-        <button type="button" className="plan-add-btn" onClick={addItem}>
-          <Crosshair size="sm" />
+        <Button variant="outline" icon="plus" onClick={addItem}>
           Add scenario
-        </button>
+        </Button>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 
@@ -261,7 +256,6 @@ export default function IfThenPlanning() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

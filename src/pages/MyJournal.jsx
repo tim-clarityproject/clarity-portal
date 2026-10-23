@@ -13,10 +13,10 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { DatePicker, Loading, PageHeader, TextBox } from '../components/design';
+import { Button, DatePicker, Loading, PageHeader, PillChoice, TextBox, useToast } from '../components/design';
 import pageText from '../content/pageText';
+
+const RATING_OPTIONS = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: String(n) }));
 
 export default function MyJournal() {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ export default function MyJournal() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialogOpen, setNameDialogOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const questions = reviewType === 'weekly-momentum' ? WEEKLY_QUESTIONS : AFTER_ACTION_QUESTIONS;
   const pageTitle = reviewType === 'weekly-momentum' ? 'Weekly Momentum Check-in' : 'After-Action Review';
@@ -142,7 +142,7 @@ export default function MyJournal() {
   const handleSaveDraft = async () => {
     const hasContent = Object.values(answers).some((v) => v.trim()) || Object.values(ratings).some((v) => v);
     if (!hasContent) {
-      showToast('Write something first.');
+      toast.error('Write something first.');
       return;
     }
     setSaveError('');
@@ -155,7 +155,7 @@ export default function MyJournal() {
       const title = reviewType === 'weekly-momentum' ? weeklyTitle(dateKey) : (currentTitle || afterActionTitle(''));
       await persist({ title, status: 'draft' });
       setExistingStatus('draft');
-      showToast('Draft saved.');
+      toast.show('Draft saved.');
       navigate('/my-reviews');
     } catch (error) {
       console.error('[MyJournal] draft save failed:', error);
@@ -193,9 +193,9 @@ export default function MyJournal() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleFinish}>Finish</button>
+      <Button variant="primary" disabled={isSaving} onClick={handleFinish}>Finish</Button>
       {canDraft && (
-        <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</button>
+        <Button variant="outline" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</Button>
       )}
     </>
   );
@@ -234,19 +234,12 @@ export default function MyJournal() {
               </div>
               {ratings[r.key] && <span className="rate-score">{ratings[r.key]} of 5</span>}
             </div>
-            <div className="rate-scale" role="group" aria-label={r.label}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className="rate-seg"
-                  aria-pressed={ratings[r.key] === n}
-                  onClick={() => updateRating(r.key, n)}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            <PillChoice
+              ariaLabel={r.label}
+              options={RATING_OPTIONS}
+              value={ratings[r.key]}
+              onChange={(n) => updateRating(r.key, n)}
+            />
             <div className="rate-scale-labels"><span>Low</span><span>High</span></div>
           </div>
         ))}
@@ -263,7 +256,7 @@ export default function MyJournal() {
                 label={q.label}
                 lines="many"
                 focusMode
-                who="me"
+                who={index === 0 ? 'me' : undefined}
                 placeholder="Type here"
                 value={answers[q.key]}
                 onChange={(v) => updateAnswer(q.key, v)}
@@ -299,7 +292,6 @@ export default function MyJournal() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

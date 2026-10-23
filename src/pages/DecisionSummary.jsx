@@ -6,7 +6,7 @@ import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button } from '../components/design';
 
 // Types with their own dedicated, design-system summary page now - an
 // old bookmark/link that still points here gets sent on rather than
@@ -171,13 +171,13 @@ export default function DecisionSummary() {
         )}
 
         <div className="plan-actions">
-          <button
+          <Button
+            variant="primary"
             type="button"
-            className="ui-btn-primary"
             onClick={() => navigate(EDIT_ROUTE[toolType] || '/decision-tools', { state: { decisionId: decision.id, ...formData, problemTitle: decision.title } })}
           >
             Edit
-          </button>
+          </Button>
         </div>
       </div>
     </div>

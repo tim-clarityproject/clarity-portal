@@ -5,10 +5,8 @@ import { supabase } from '../lib/supabase';
 import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 export default function InversionThinkingSummary() {
   const navigate = useNavigate();
@@ -17,7 +15,7 @@ export default function InversionThinkingSummary() {
   const [thinking, setThinking] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const decisionId = location.state?.decisionId;
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
@@ -30,7 +28,7 @@ export default function InversionThinkingSummary() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { decisionId } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,17 +137,14 @@ export default function InversionThinkingSummary() {
         </div>
 
         <div className="plan-actions">
-          <button
-            type="button"
-            className="ui-btn-primary"
+          <Button
+            variant="primary"
             onClick={() => navigate('/inversion-step-1', { state: { decisionId: thinking.id, goal: data.goal, risks, riskAnswers: data.riskAnswers, legacyPlan: hasRiskAnswers ? '' : data.plan, problemTitle: thinking.title } })}
           >
             Edit
-          </button>
+          </Button>
         </div>
       </div>
-
-      <Toast message={message} />
     </div>
   );
 }

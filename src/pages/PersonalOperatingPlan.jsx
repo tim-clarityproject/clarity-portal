@@ -7,9 +7,7 @@ import { archivePlan, countArchivedMissions, formatVersion, loadLatestVersion } 
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { DisclosureArrow, Loading, PageHeader } from '../components/design';
+import { DisclosureArrow, Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -66,7 +64,7 @@ export default function PersonalOperatingPlan() {
   const [isLoading, setIsLoading] = useState(true);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (user) loadPlan();
@@ -75,7 +73,7 @@ export default function PersonalOperatingPlan() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: {} });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,11 +160,11 @@ export default function PersonalOperatingPlan() {
       setTactics({});
       setVersion(null);
       setArchivedCount(await countArchivedMissions(user.id));
-      showToast('Plan archived. Find it in Archived plans.');
+      toast.show('Plan archived. Find it in Archived plans.');
     } catch (error) {
       console.error('[PersonalOperatingPlan] archive failed:', error);
       setArchiveOpen(false);
-      showToast('Could not archive this plan. Please try again.');
+      toast.error('Could not archive this plan. Please try again.');
     } finally {
       setIsArchiving(false);
     }
@@ -187,23 +185,18 @@ export default function PersonalOperatingPlan() {
         <DesignHeader />
         <div className="plan-page">
           <PageHeader title="Personal operating plan" info={pageText.personalOperatingPlan} />
-          <p className="pop-empty">
-            You don't have a plan yet. Start with your mission, add the strategies that bring it to life, then the tactics you will do every day.
-          </p>
-          <div className="plan-actions">
-            <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}>
-              Create your plan
-            </button>
-          </div>
+          <EmptyState
+            question="You don't have a plan yet. Start with your mission, add the strategies that bring it to life, then the tactics you will do every day."
+            action={{ label: 'Create your plan', onClick: () => navigate('/personal-operating-plan-edit', { state: { isNew: true } }) }}
+          />
           {archivedCount > 0 && (
             <div className="pop-links-row">
-              <button type="button" className="plan-link-btn" onClick={() => navigate('/personal-operating-plan-archived')}>
+              <Button type="button" variant="text" onClick={() => navigate('/personal-operating-plan-archived')}>
                 Archived plans · {archivedCount}
-              </button>
+              </Button>
             </div>
           )}
         </div>
-        <Toast message={message} />
       </div>
     );
   }
@@ -223,17 +216,17 @@ export default function PersonalOperatingPlan() {
         />
 
         <div className="plan-actions">
-          <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: mission.id } })}>
+          <Button type="button" variant="primary" onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: mission.id } })}>
             Review plan
-          </button>
-          <button type="button" className="ui-btn-ghost" onClick={() => navigate('/personal-operating-plan-edit', { state: { missionId: mission.id } })}>
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/personal-operating-plan-edit', { state: { missionId: mission.id } })}>
             Edit plan
-          </button>
+          </Button>
           {version && (
-            <button type="button" className="plan-link-btn" style={{ marginLeft: 'auto' }} onClick={() => navigate('/personal-operating-plan-history', { state: { missionId: mission.id } })}>
+            <Button type="button" variant="text" style={{ marginLeft: 'auto' }} onClick={() => navigate('/personal-operating-plan-history', { state: { missionId: mission.id } })}>
               <ClockIcon />
               <span style={{ marginLeft: 'var(--space-2)' }}>Version history</span>
-            </button>
+            </Button>
           )}
         </div>
 
@@ -243,7 +236,7 @@ export default function PersonalOperatingPlan() {
         </div>
 
         {strategies.length === 0 ? (
-          <p className="pop-empty">No strategies yet.</p>
+          <EmptyState question="No strategies yet." />
         ) : (
           strategies.map((strategy, index) => {
             const isOpen = !collapsed[strategy.id];
@@ -258,7 +251,7 @@ export default function PersonalOperatingPlan() {
                   <>
                     {strategy.description && <p className="pop-view-strategy-desc">{strategy.description}</p>}
                     {(tactics[strategy.id] || []).length === 0 ? (
-                      <p className="pop-empty" style={{ padding: 0 }}>No tactics yet.</p>
+                      <EmptyState question="No tactics yet." as="p" />
                     ) : (
                       (tactics[strategy.id] || []).map((tactic) => <TacticRow tactic={tactic} key={tactic.id} />)
                     )}
@@ -272,13 +265,13 @@ export default function PersonalOperatingPlan() {
 
         <div className="pop-links-row">
           {archivedCount > 0 && (
-            <button type="button" className="plan-link-btn" onClick={() => navigate('/personal-operating-plan-archived')}>
+            <Button type="button" variant="text" onClick={() => navigate('/personal-operating-plan-archived')}>
               Archived plans · {archivedCount}
-            </button>
+            </Button>
           )}
-          <button type="button" className="plan-link-btn" onClick={() => setArchiveOpen(true)}>
+          <Button type="button" variant="text" onClick={() => setArchiveOpen(true)}>
             Archive this plan
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -290,7 +283,6 @@ export default function PersonalOperatingPlan() {
         onCancel={() => setArchiveOpen(false)}
         onConfirm={handleArchive}
       />
-      <Toast message={message} />
     </div>
   );
 }

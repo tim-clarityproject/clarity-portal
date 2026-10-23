@@ -9,9 +9,7 @@ import pageText from '../content/pageText';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { BackLink, DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { DisclosureArrow, Loading, PageHeader, TextBox } from '../components/design';
+import { DisclosureArrow, Loading, PageHeader, TextBox, Button, Checkbox, useToast } from '../components/design';
 
 function NoteIcon() {
   return (
@@ -40,7 +38,7 @@ export default function PersonalOperatingPlanReview() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -215,7 +213,7 @@ export default function PersonalOperatingPlanReview() {
         navigate('/mission-progress-review', { state: { reviewId: savedId, toast: 'Review saved.' } });
       } else {
         setExistingReviewId(savedId);
-        showToast('Draft saved.');
+        toast.show('Draft saved.');
         navigate('/my-reviews');
       }
     } catch (error) {
@@ -258,9 +256,9 @@ export default function PersonalOperatingPlanReview() {
             <PageHeader title="Review your plan" info={pageText.personalOperatingPlanReviewEmpty} />
           </div>
           <div className="plan-actions">
-            <button type="button" className="ui-btn-primary" onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}>
+            <Button type="button" variant="primary" onClick={() => navigate('/personal-operating-plan-edit', { state: { isNew: true } })}>
               Create your plan
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -269,13 +267,14 @@ export default function PersonalOperatingPlanReview() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSubmitting} onClick={() => submit(false)}>Finish review</button>
-      <button type="button" className="ui-btn-ghost" disabled={isSubmitting} onClick={() => submit(true)}>Save as draft</button>
+      <Button type="button" variant="primary" disabled={isSubmitting} onClick={() => submit(false)}>Finish review</Button>
+      <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => submit(true)}>Save as draft</Button>
     </>
   );
 
   return (
     <div className="ui-root">
+      <style>{`.ui-root .pop-review-check { flex: 1; min-width: 0; }`}</style>
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
@@ -306,13 +305,11 @@ export default function PersonalOperatingPlanReview() {
                 <div key={tactic.id} style={{ marginTop: 'var(--space-4)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     {tactic.type === 'tickable' ? (
-                      <label style={{ display: 'flex', alignItems: 'center', flex: 1, gap: 'var(--space-2)', cursor: 'pointer' }}>
-                        <span className={`pop-tick${reviewData[tactic.id]?.isDone ? ' pop-tick--done' : ''}`} aria-hidden="true">
-                          <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
-                        </span>
-                        <input type="checkbox" checked={Boolean(reviewData[tactic.id]?.isDone)} onChange={(e) => updateReview(tactic.id, 'isDone', e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }} />
-                        {tactic.action}
-                      </label>
+                      <div className="pop-review-check">
+                        <Checkbox checked={Boolean(reviewData[tactic.id]?.isDone)} onChange={(done) => updateReview(tactic.id, 'isDone', done)}>
+                          {tactic.action}
+                        </Checkbox>
+                      </div>
                     ) : (
                       <p className="pop-view-tactic-text" style={{ flex: 1, margin: 0 }}>{tactic.action}</p>
                     )}
@@ -364,7 +361,6 @@ export default function PersonalOperatingPlanReview() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

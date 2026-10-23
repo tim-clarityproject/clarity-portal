@@ -12,15 +12,26 @@ import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { Crosshair, Loading, PageHeader, SaveStatus, TextBox } from '../components/design';
+import {
+  Button, ChipRow, Chip, Crosshair, Loading, PageHeader, SaveStatus, TextBox, useToast,
+} from '../components/design';
 
 // The writing boxes and prompt questions sit in one column with the
 // shared gap (each box has its own edge, so the old ruled lines above
 // and below are not needed). The last box stays a tall page to write
-// on, as before.
+// on, as before. On a phone the prompt chips are full-width rows, so
+// they never wrap.
 const JOURNAL_CSS = `
+@media (max-width: 768px) {
+  .ui-root .jrn-prompts {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ui-root .jrn-prompts .ds-chip {
+    display: flex;
+    width: 100%;
+  }
+}
 .ui-root .jrn-paper-wrap {
   display: flex;
   flex-direction: column;
@@ -55,7 +66,7 @@ export default function DailyJournal() {
   const [isSaving, setIsSaving] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [pendingDraft, setPendingDraft] = useState(null);
-  const { message, showToast } = useToast();
+  const toast = useToast();
   const lastInputRef = useRef(null);
   const focusLastRef = useRef(false);
 
@@ -149,11 +160,11 @@ export default function DailyJournal() {
   const persist = async (draft) => {
     const text = textOf(blocks);
     if (!text) {
-      showToast('Write something first.');
+      toast.error('Write something first.');
       return null;
     }
     if (text.length > MAX_CHARS) {
-      showToast(`Keep your writing under ${MAX_CHARS.toLocaleString()} characters.`);
+      toast.error(`Keep your writing under ${MAX_CHARS.toLocaleString()} characters.`);
       return null;
     }
     const saved = await saveJournal({ userId: user.id, journalDate: dateKey, blocks, status: draft ? 'draft' : 'final', existingId });
@@ -171,7 +182,7 @@ export default function DailyJournal() {
       if (saved) navigate('/daily-journals', { state: { toast: 'Journal saved. It is in My Reviews too.' } });
     } catch (error) {
       console.error('[DailyJournal] save failed:', error);
-      showToast('Could not save. Please try again.');
+      toast.error('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -184,12 +195,12 @@ export default function DailyJournal() {
       const saved = await persist(true);
       if (saved) {
         setSaveStatus('Draft saved');
-        showToast('Draft saved.');
+        toast.show('Draft saved.');
         navigate('/daily-journals');
       }
     } catch (error) {
       console.error('[DailyJournal] draft save failed:', error);
-      showToast('Could not save. Please try again.');
+      toast.error('Could not save. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -226,8 +237,8 @@ export default function DailyJournal() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleSaveJournal}>Save journal</button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</button>
+      <Button variant="primary" disabled={isSaving} onClick={handleSaveJournal}>Save journal</Button>
+      <Button variant="outline" disabled={isSaving} onClick={handleSaveDraft}>Save as draft</Button>
     </>
   );
 
@@ -249,17 +260,18 @@ export default function DailyJournal() {
           <div className="jrn-draft-banner">
             <span>We kept your unsaved writing from earlier.</span>
             <span style={{ display: 'flex', gap: 'var(--space-3)' }}>
-              <button type="button" className="plan-link-btn" onClick={applyDraft}>Use it</button>
-              <button type="button" className="plan-link-btn" onClick={discardDraft}>Discard it</button>
+              <Button variant="text" onClick={applyDraft}>Use it</Button>
+              <Button variant="text" onClick={discardDraft}>Discard it</Button>
             </span>
           </div>
         )}
 
-        <div className="jrn-prompts" aria-label="Need a way in?">
+        <ChipRow className="jrn-prompts" label="Need a way in?">
           {PROMPTS.map((p) => (
-            <button type="button" className="jrn-prompt-btn" key={p} onClick={() => handlePrompt(p)}>{p}</button>
+            // An action, not an on/off choice, so no aria-pressed.
+            <Chip key={p} aria-pressed={undefined} onClick={() => handlePrompt(p)}>{p}</Chip>
           ))}
-        </div>
+        </ChipRow>
 
         <div className="jrn-paper-wrap">
           {blocks.map((b, i) => (
@@ -308,7 +320,6 @@ export default function DailyJournal() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

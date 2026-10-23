@@ -10,7 +10,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import SavingOverlay from '../components/ui/SavingOverlay';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import { Crosshair, Loading, PageHeader, TextBox, TextField } from '../components/design';
+import { Crosshair, Loading, PageHeader, TextBox, TextField, Button, SegmentedControl } from '../components/design';
 
 const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your mission. It's your overall direction, how you'll tackle things in a consistent, thoughtful way. Unlike tactics, which happen day-to-day, your strategies don't change frequently. They're the foundation that guides your daily actions.";
 const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do: the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
@@ -376,9 +376,9 @@ export default function PersonalOperatingPlanEdit() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={savePlan}>
+      <Button type="button" variant="primary" disabled={isSaving} onClick={savePlan}>
         {isSaving ? 'Saving' : 'Save plan'}
-      </button>
+      </Button>
       <span className="pop-save-preview">{previewLine}</span>
     </>
   );
@@ -398,8 +398,8 @@ export default function PersonalOperatingPlanEdit() {
           <div className="pop-draft-banner">
             <span>We kept your unsaved changes from earlier.</span>
             <span style={{ display: 'flex', gap: 'var(--space-3)' }}>
-              <button type="button" className="plan-link-btn" onClick={applyDraft}>Use them</button>
-              <button type="button" className="plan-link-btn" onClick={discardDraft}>Discard them</button>
+              <Button type="button" variant="text" onClick={applyDraft}>Use them</Button>
+              <Button type="button" variant="text" onClick={discardDraft}>Discard them</Button>
             </span>
           </div>
         )}
@@ -411,15 +411,15 @@ export default function PersonalOperatingPlanEdit() {
 
         <div className="plan-label-row">
           <span className="ui-section-heading">Strategies</span>
-          <button type="button" className="plan-link-btn" onClick={() => setInfoOpen('strategy')}>What is a strategy?</button>
+          <Button type="button" variant="text" onClick={() => setInfoOpen('strategy')}>What is a strategy?</Button>
         </div>
 
         {strategies.map((strategy, sIndex) => (
           <div className="pop-strategy" key={strategy.id}>
             <div className="pop-strategy-top">
               <div className="pop-strategy-fields">
-                <TextBox lines="one" who="me" placeholder="Strategy name" ariaLabel={`Strategy ${sIndex + 1} name`} value={strategy.name} onChange={(v) => updateStrategy(sIndex, 'name', v)} maxLength={LIMITS.strategyName} />
-                <TextBox lines="many" who="me" placeholder="Why does this matter? How does it support your mission?" ariaLabel={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} maxLength={LIMITS.strategyDescription} />
+                <TextBox lines="one" placeholder="Strategy name" ariaLabel={`Strategy ${sIndex + 1} name`} value={strategy.name} onChange={(v) => updateStrategy(sIndex, 'name', v)} maxLength={LIMITS.strategyName} />
+                <TextBox lines="many" placeholder="Why does this matter? How does it support your mission?" ariaLabel={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} maxLength={LIMITS.strategyDescription} />
                 {fieldError?.field === `strategy-${sIndex}` && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
               </div>
               <button type="button" className="plan-bin-btn" aria-label={`Remove strategy ${sIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'strategy', sIndex })}>
@@ -430,28 +430,26 @@ export default function PersonalOperatingPlanEdit() {
             <div className="pop-tactics">
               <div className="plan-label-row" style={{ marginTop: 0 }}>
                 <span className="pop-tactic-label" style={{ marginBottom: 0 }}>Tactics</span>
-                <button type="button" className="plan-link-btn" onClick={() => setInfoOpen('tactic')}>What is a tactic?</button>
+                <Button type="button" variant="text" onClick={() => setInfoOpen('tactic')}>What is a tactic?</Button>
               </div>
               {strategy.tactics.map((tactic, tIndex) => {
                 const targetWidth = `${Math.max(3, String(tactic.target_value ?? '').replace(/[^0-9]/g, '').length + 2)}ch`;
                 return (
                   <div key={tactic.id} className="pop-tactic-editor">
                     <div className="pop-tactic-action-row">
-                      <TextBox className="pop-grow" lines="one" who="me" placeholder="What's the specific action?" ariaLabel={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} maxLength={LIMITS.tacticAction} />
+                      <TextBox className="pop-grow" lines="one" placeholder="What's the specific action?" ariaLabel={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} maxLength={LIMITS.tacticAction} />
                       <button type="button" className="plan-bin-btn" aria-label={`Remove tactic ${tIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'tactic', sIndex, tIndex })}>
                         <BinIcon />
                       </button>
                     </div>
 
                     <div className="pop-tactic-controls">
-                      <div className="pop-tactic-toggle" role="group" aria-label={`Tactic ${tIndex + 1} tracking type`}>
-                        <button type="button" className={`pop-tactic-toggle-btn${tactic.type === 'tickable' ? ' active' : ''}`} aria-pressed={tactic.type === 'tickable'} onClick={() => updateTactic(sIndex, tIndex, 'type', 'tickable')}>
-                          Tick off
-                        </button>
-                        <button type="button" className={`pop-tactic-toggle-btn${tactic.type === 'measurable' ? ' active' : ''}`} aria-pressed={tactic.type === 'measurable'} onClick={() => updateTactic(sIndex, tIndex, 'type', 'measurable')}>
-                          Measure
-                        </button>
-                      </div>
+                      <SegmentedControl
+                        label={`Tactic ${tIndex + 1} tracking type`}
+                        options={[{ value: 'tickable', label: 'Tick off' }, { value: 'measurable', label: 'Measure' }]}
+                        value={tactic.type}
+                        onChange={(type) => updateTactic(sIndex, tIndex, 'type', type)}
+                      />
 
                       {tactic.type === 'measurable' && (
                         <>
@@ -479,18 +477,16 @@ export default function PersonalOperatingPlanEdit() {
                   </div>
                 );
               })}
-              <button type="button" className="plan-add-btn" onClick={() => addTactic(sIndex)}>
-                <Crosshair size="sm" />
+              <Button type="button" variant="outline" icon="plus" onClick={() => addTactic(sIndex)}>
                 Add tactic
-              </button>
+              </Button>
             </div>
           </div>
         ))}
 
-        <button type="button" className="plan-add-btn" onClick={addStrategy}>
-          <Crosshair size="sm" />
+        <Button type="button" variant="outline" icon="plus" onClick={addStrategy}>
           Add strategy
-        </button>
+        </Button>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 

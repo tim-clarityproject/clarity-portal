@@ -3,15 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
-import Toast from '../components/ui/Toast';
-import { TextBox } from '../components/design';
-import useToast from '../hooks/useToast';
+import { TextBox, Button, useToast } from '../components/design';
 
 const MAX_GOAL_LENGTH = 70;
 
 export default function OnboardingMission() {
   const navigate = useNavigate();
-  const { message: toastMessage, showToast } = useToast();
+  const toast = useToast();
   const { user } = useContext(AuthContext);
   const { updateMission } = useContext(MissionContext);
   const [greeting, setGreeting] = useState('');
@@ -104,7 +102,7 @@ export default function OnboardingMission() {
 
   const handleSaveMission = async () => {
     if (!mission.trim()) {
-      showToast('Please enter your mission.');
+      toast.error('Please enter your mission.');
       return;
     }
 
@@ -122,7 +120,7 @@ export default function OnboardingMission() {
         navigate('/welcome');
       }, 500);
     } catch (error) {
-      showToast('Could not save your mission. Please try again.');
+      toast.error('Could not save your mission. Please try again.');
       setIsSaving(false);
     }
   };
@@ -262,64 +260,23 @@ export default function OnboardingMission() {
                   alignItems: 'center',
                   gap: '12px',
                 }}>
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={handleSaveMission}
                     disabled={!mission.trim() || isSaving || isOverLimit}
-                    style={{
-                      padding: '12px 32px',
-                      backgroundColor: 'var(--coral)',
-                      opacity: !mission.trim() || isSaving || isOverLimit ? 'var(--disabled-opacity)' : 1,
-                      color: 'var(--on-coral)',
-                      fontWeight: '600',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: !mission.trim() || isSaving || isOverLimit ? 'not-allowed' : 'pointer',
-                      fontSize: '14px',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (mission.trim() && !isSaving && !isOverLimit) {
-                        e.target.style.backgroundColor = 'var(--coral-hover)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (mission.trim() && !isSaving && !isOverLimit) {
-                        e.target.style.backgroundColor = 'var(--coral)';
-                      }
-                    }}
                   >
                     {isSaving ? 'Saving' : 'Get Started'}
-                  </button>
+                  </Button>
 
-                  <button
-                    onClick={() => navigate('/welcome')}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: 'transparent',
-                      color: 'var(--label)',
-                      fontWeight: '500',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.color = 'var(--text-2)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.color = 'var(--label)';
-                    }}
-                  >
+                  <Button variant="text" onClick={() => navigate('/welcome')}>
                     I'll do this later in settings
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </div>
         )}
       </div>
-      <Toast message={toastMessage} />
     </div>
   );
 }

@@ -9,7 +9,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, PageHeader } from '../components/design';
+import { Crosshair, PageHeader, Button } from '../components/design';
 
 export default function ProjectMatrix() {
   const navigate = useNavigate();
@@ -189,10 +189,7 @@ export default function ProjectMatrix() {
           </table>
         </div>
 
-        <button type="button" onClick={handleAddProject} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: 'var(--coral-text)', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--coral-hover)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--coral-text)'}>
-          <Crosshair />
-          Add another
-        </button>
+        <Button variant="outline" icon="plus" type="button" onClick={handleAddProject} style={{ width: '100%', marginBottom: '48px' }}>Add another</Button>
 
         <SaveDiscardButtons
           formData={{ matrix }}

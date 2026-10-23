@@ -7,7 +7,7 @@ import {
   loadBreathingPreference, saveBreathingPreference, saveBreathingSession,
 } from '../lib/breathing';
 import BreathingVisual, { useBreathingPhase, useDialSize } from './ui/BreathingVisual';
-import { IconButton } from './design';
+import { IconButton, Button, PillChoice } from './design';
 
 function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
@@ -207,25 +207,20 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
 
             <BreathingVisual technique={technique} active={false} size={120} />
 
-            <div className="breathe-technique-select bqo-select" role="group" aria-label="Breathing technique">
-              {TECHNIQUE_ORDER.map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`breathe-technique-option${technique === key ? ' active' : ''}`}
-                  aria-pressed={technique === key}
-                  onClick={() => handleSwitchTechnique(key)}
-                >
-                  {TECHNIQUES[key].label}
-                </button>
-              ))}
+            <div className="bqo-select">
+              <PillChoice
+                ariaLabel="Breathing technique"
+                options={TECHNIQUE_ORDER.map((key) => ({ value: key, label: TECHNIQUES[key].label }))}
+                value={technique}
+                onChange={handleSwitchTechnique}
+              />
             </div>
 
-            <button type="button" className="ui-btn-primary" style={{ width: '100%' }} onClick={handleStart}>Start breathing</button>
+            <Button variant="primary" style={{ width: '100%' }} onClick={handleStart}>Start breathing</Button>
 
             <div className="bqo-links">
-              <button type="button" className="plan-link-btn" onClick={() => goTo('/breathe')}>All breathing tools</button>
-              <button type="button" className="plan-link-btn" onClick={() => goTo('/breathing-sessions-summary')}>Breathing Sessions</button>
+              <Button variant="text" onClick={() => goTo('/breathe')}>All breathing tools</Button>
+              <Button variant="text" onClick={() => goTo('/breathing-sessions-summary')}>Breathing Sessions</Button>
             </div>
           </>
         ) : (
@@ -239,7 +234,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
                   <div className="breathe-phase" aria-live="polite" style={{ color: phaseColor }}>{phaseLabel}</div>
                   <div className="breathe-count">{countdown}</div>
                   <div className="breathe-timer">{Math.floor(elapsedSeconds / 60)}:{pad2(elapsedSeconds % 60)}</div>
-                  <button type="button" className="ui-btn-ghost breathe-session-done" onClick={finishSession}>Done</button>
+                  <Button variant="outline" className="breathe-session-done" onClick={finishSession}>Done</Button>
                 </div>
               </div>
             </div>

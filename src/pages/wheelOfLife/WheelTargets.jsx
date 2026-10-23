@@ -3,9 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
 import pageText from '../../content/pageText';
 import DiscardDialog from '../../components/ui/DiscardDialog';
-import Toast from '../../components/ui/Toast';
-import useToast from '../../hooks/useToast';
-import { Crosshair, PageHeader } from '../../components/design';
+import { Crosshair, PageHeader, useToast } from '../../components/design';
 import {
   activeAreas, areaName, newestCheckin, scoreOf, stepTarget, targetStatus,
 } from '../../lib/wheelOfLife';
@@ -23,17 +21,17 @@ const SAVE_FAILED = 'Your targets haven’t saved yet. Check your connection and
 // wheel; Save targets saves every change in one go and returns to where
 // the person came from. Back with unsaved changes asks first.
 export default function WheelTargets() {
-  const { message, showToast } = useToast();
-  useArrivalToast(showToast);
+  const toast = useToast();
+  useArrivalToast(toast.show);
   const data = useWheelData();
 
   if (data.loading || data.error) {
-    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} toast={message} />;
+    return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} />;
   }
-  return <Targets areas={activeAreas(data.areas.all)} latest={newestCheckin(data.checkins)} toast={message} />;
+  return <Targets areas={activeAreas(data.areas.all)} latest={newestCheckin(data.checkins)} />;
 }
 
-function Targets({ areas, latest, toast }) {
+function Targets({ areas, latest }) {
   const navigate = useNavigate();
   const location = useLocation();
   const back = returnPath(location.state);
@@ -120,7 +118,6 @@ function Targets({ areas, latest, toast }) {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={() => { setDiscardOpen(false); navigate(back); }}
       />
-      <Toast message={toast} clearBarVar="--wol-bar-height" />
     </div>
   );
 }

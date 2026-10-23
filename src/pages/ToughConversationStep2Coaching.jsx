@@ -10,29 +10,10 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
-import { PageHeader, TextBox } from '../components/design';
+import { PageHeader, TextBox, Button, useToast, Checkbox } from '../components/design';
 import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
-
-function CopyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="8" y="8" width="12" height="12" rx="2" />
-      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
-    </svg>
-  );
-}
-
-function CheckGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m5 12.5 4.5 4.5L19 7.5" />
-    </svg>
-  );
-}
 
 function cleanPhrase(text, phrasesToRemove, lowercaseFirst = false) {
   let cleaned = (text || '').trim();
@@ -72,7 +53,7 @@ export default function ToughConversationStep2Coaching() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   const displayObservation = cleanPhrase(observation, ['i\'ve noticed', 'i noticed', 'observed']);
   const displayImpact = cleanPhrase(impact, ['the impact of that is', 'the impact is', 'impact:', 'impacts:'], true);
@@ -148,7 +129,7 @@ export default function ToughConversationStep2Coaching() {
       if (mode === 'draft') {
         setDecisionId(savedId);
         clearProgress();
-        showToast(`Draft saved as ${name}.`);
+        toast.show(`Draft saved as ${name}.`);
         navigate('/decision-history');
       } else {
         clearProgress();
@@ -188,12 +169,12 @@ export default function ToughConversationStep2Coaching() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={() => setNameDialog('finish')}>
+      <Button variant="primary" disabled={isSaving} onClick={() => setNameDialog('finish')}>
         Finish
-      </button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={() => setNameDialog('draft')}>
+      </Button>
+      <Button variant="outline" disabled={isSaving} onClick={() => setNameDialog('draft')}>
         Save as draft
-      </button>
+      </Button>
     </>
   );
 
@@ -213,10 +194,9 @@ export default function ToughConversationStep2Coaching() {
         <div className="tc-script">
           <div className="tc-script-head">
             <span className="plan-overline" style={{ marginBottom: 0 }}>Your conversation script</span>
-            <button type="button" className="tc-copy-btn" onClick={copyScriptToClipboard}>
-              <CopyIcon />
+            <Button variant="outline" onClick={copyScriptToClipboard}>
               {copied ? 'Copied' : 'Copy'}
-            </button>
+            </Button>
           </div>
 
           {editingField && (
@@ -230,8 +210,8 @@ export default function ToughConversationStep2Coaching() {
                 onChange={setEditValue}
               />
               <div className="tc-edit-actions">
-                <button type="button" className="tc-edit-save" onClick={saveEdit}>Save</button>
-                <button type="button" className="tc-edit-cancel" onClick={() => setEditingField(null)}>Cancel</button>
+                <Button variant="outline" onClick={saveEdit}>Save</Button>
+                <Button variant="text" onClick={() => setEditingField(null)}>Cancel</Button>
               </div>
             </div>
           )}
@@ -285,17 +265,9 @@ export default function ToughConversationStep2Coaching() {
           {COACHING_QUESTIONS.map((question, index) => {
             const checked = selectedQuestions.includes(index);
             return (
-              <button
-                key={index}
-                type="button"
-                className="tc-ck"
-                role="checkbox"
-                aria-checked={checked}
-                onClick={() => toggleQuestion(index)}
-              >
-                <span className="tc-ck-box" aria-hidden="true"><CheckGlyph /></span>
-                <span className="tc-ck-text">{question}</span>
-              </button>
+              <Checkbox key={index} checked={checked} onChange={() => toggleQuestion(index)}>
+                {question}
+              </Checkbox>
             );
           })}
         </div>
@@ -338,7 +310,6 @@ export default function ToughConversationStep2Coaching() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

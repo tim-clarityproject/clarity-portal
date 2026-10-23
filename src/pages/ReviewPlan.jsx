@@ -8,10 +8,8 @@ import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { DisclosureArrow, Loading, PageHeader, TextBox } from '../components/design';
+import { DisclosureArrow, Loading, PageHeader, TextBox, Button, useToast } from '../components/design';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -148,7 +146,7 @@ export default function ReviewPlan() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -214,7 +212,7 @@ export default function ReviewPlan() {
       const savedId = await persist(true);
       setEntryId(savedId);
       setExistingIsDraft(true);
-      showToast('Draft saved.');
+      toast.show('Draft saved.');
       navigate('/my-reviews');
     } catch (error) {
       console.error('[ReviewPlan] draft save failed:', error);
@@ -241,12 +239,12 @@ export default function ReviewPlan() {
 
   const actionButtons = (
     <>
-      <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={handleFinish}>
+      <Button type="button" variant="primary" disabled={isSaving} onClick={handleFinish}>
         Finish
-      </button>
-      <button type="button" className="ui-btn-ghost" disabled={isSaving} onClick={handleSaveDraft}>
+      </Button>
+      <Button type="button" variant="outline" disabled={isSaving} onClick={handleSaveDraft}>
         Save as draft
-      </button>
+      </Button>
     </>
   );
 
@@ -266,18 +264,18 @@ export default function ReviewPlan() {
             {!plan && planKind === 'daily_plan' ? (
               <div className="rp-no-plan">
                 <span>There is no daily plan for this day. You can still review it.</span>
-                <button type="button" className="plan-link-btn" onClick={() => navigate('/plan-my-day')}>
+                <Button type="button" variant="text" onClick={() => navigate('/plan-my-day')}>
                   Plan my day
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="rp-panel-wrap">
                 <div className="rp-panel-head">
                   <span className="rp-panel-label">{t.panel}</span>
-                  <button type="button" className="plan-link-btn" aria-expanded={showPanel} onClick={() => setShowPanel((s) => !s)} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <Button type="button" variant="text" aria-expanded={showPanel} onClick={() => setShowPanel((s) => !s)} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     {showPanel ? 'Hide' : 'Show'}
                     <DisclosureArrow open={showPanel} />
-                  </button>
+                  </Button>
                 </div>
                 {showPanel && <PanelBody planKind={planKind} plan={plan} />}
               </div>
@@ -319,7 +317,6 @@ export default function ReviewPlan() {
         onKeep={() => setDiscardOpen(false)}
         onDiscard={handleDiscard}
       />
-      <Toast message={message} />
     </div>
   );
 }

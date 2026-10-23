@@ -6,10 +6,8 @@ import { formatUkDate } from '../lib/dateFormatter';
 import { COACHING_QUESTIONS } from '../content/coachingQuestions';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import Toast from '../components/ui/Toast';
-import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, Button, useToast } from '../components/design';
 
 export default function ToughConversationSummary() {
   const navigate = useNavigate();
@@ -19,7 +17,7 @@ export default function ToughConversationSummary() {
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const decisionId = location.state?.decisionId;
-  const { message, showToast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     if (decisionId && user) {
@@ -32,7 +30,7 @@ export default function ToughConversationSummary() {
 
   useEffect(() => {
     if (location.state?.toast) {
-      showToast(location.state.toast);
+      toast.show(location.state.toast);
       navigate(location.pathname, { replace: true, state: { decisionId } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,20 +125,17 @@ export default function ToughConversationSummary() {
         </div>
 
         <div className="plan-actions">
-          <button type="button" className="ui-btn-primary" onClick={copyScript}>
+          <Button variant="primary" onClick={copyScript}>
             {copied ? 'Copied' : 'Copy script'}
-          </button>
-          <button
-            type="button"
-            className="ui-btn-ghost"
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => navigate('/tough-conversation-step-1', { state: { decisionId: conversation.id, ...data, problemTitle: conversation.title } })}
           >
             Edit
-          </button>
+          </Button>
         </div>
       </div>
-
-      <Toast message={message} />
     </div>
   );
 }
