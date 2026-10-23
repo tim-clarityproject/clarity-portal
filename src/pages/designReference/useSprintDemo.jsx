@@ -50,14 +50,39 @@ function startingAnswers() {
   };
 }
 
-const pretendSave = () => new Promise((resolve) => { setTimeout(resolve, 500); });
+// The pretend server: answers "saved" here stand in for the database, so
+// a reload carries on where it was (the device copy is cleared once saved).
+const SAVED_PREFIX = 'gallery-saved:';
+
+function readSaved(key) {
+  try {
+    return JSON.parse(window.localStorage.getItem(SAVED_PREFIX + key) || 'null');
+  } catch {
+    return null;
+  }
+}
 
 function useSprintAnswers(key) {
-  const [answers, setAnswers] = useState(() => ({ ...startingAnswers(), ...(readDraft(key) || {}) }));
-  const state = useAutosave(answers, pretendSave, { draftKey: key });
+  const [answers, setAnswers] = useState(() => ({ ...startingAnswers(), ...(readSaved(key) || {}), ...(readDraft(key) || {}) }));
+  const save = useCallback((value) => new Promise((resolve) => {
+    setTimeout(() => {
+      try {
+        window.localStorage.setItem(SAVED_PREFIX + key, JSON.stringify(value));
+      } catch {
+        // Storage blocked: the demo just forgets on reload.
+      }
+      resolve();
+    }, 500);
+  }), [key]);
+  const state = useAutosave(answers, save, { draftKey: key });
   const set = useCallback((patch) => setAnswers((a) => ({ ...a, ...patch })), []);
   const reset = useCallback(() => {
     clearDraft(key);
+    try {
+      window.localStorage.removeItem(SAVED_PREFIX + key);
+    } catch {
+      // Nothing to clear.
+    }
     setAnswers(startingAnswers());
   }, [key]);
   return [answers, set, state, reset];
@@ -185,18 +210,22 @@ function sprintSteps(a, set, role, openCalendar) {
       name: 'Ready',
       title: 'Performance Sprint 5',
       nudges: ['Check it, then start.'],
-      render: (tool) => (
-        <GuidedSummary
-          onChange={tool.go}
-          rows={[
-            { label: 'Length', value: `${weeks} weeks${a.tpl ? ' · first 90 days in a new role' : ''}`, step: 0 },
-            { label: 'Label', value: a.label.trim() || 'None', step: 0 },
-            { label: 'Starts', value: dayLabel(a.start), step: 1 },
-            { label: 'Performance standard', value: standard != null ? `${standard}%` : '', step: 2 },
-            { label: 'Next time', value: a.better.trim(), step: 3 },
-          ]}
-        />
-      ),
+      render: (tool) => {
+        // Skipped steps show "Not yet", to fill in later.
+        const unless = (key, value) => (tool.skipped.has(key) ? '' : value);
+        return (
+          <GuidedSummary
+            onChange={tool.go}
+            rows={[
+              { label: 'Length', value: unless('length', `${weeks} weeks${a.tpl ? ' · first 90 days in a new role' : ''}`), step: 0 },
+              { label: 'Label', value: unless('length', a.label.trim() || 'None'), step: 0 },
+              { label: 'Starts', value: unless('start', dayLabel(a.start)), step: 1 },
+              { label: 'Performance standard', value: unless('standard', standard != null ? `${standard}%` : ''), step: 2 },
+              { label: 'Next time', value: unless('better', a.better.trim()), step: 3 },
+            ]}
+          />
+        );
+      },
     },
   ];
 }

@@ -51,6 +51,8 @@ import './design.css';
 //   render: (tool) => content; tool has go(i), index, skipped, steps
 // }]
 // layout:   'fullscreen' (real pages) or 'framed' (fills its box; gallery).
+// autoFocus: framed only, move focus to the question when it appears
+//           (e.g. when a finished tool starts again in place).
 // progress: 'steps' or 'percent'.
 
 const NEXT_GUARD_MS = 400;     // a second tap this soon after a move is ignored
@@ -85,7 +87,7 @@ const ARROW = (
   <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7 4L3 8l4 4" /></svg>
 );
 
-function Tip({ tip }) {
+function Tip({ tip, onClosed }) {
   const [shown, setShown] = useState(() => !readJson(TIP_PREFIX + tip.key, false));
   if (!shown) return null;
   return (
@@ -96,6 +98,8 @@ function Tip({ tip }) {
         onClick={() => {
           writeJson(TIP_PREFIX + tip.key, true);
           setShown(false);
+          // The close button goes with the tip; focus moves to the question.
+          onClosed?.();
         }}
       />
     </div>
@@ -156,7 +160,7 @@ function StepHead({ step, headingRef, positionId, role }) {
           {exampleOpen && <div id={exampleId} className="ds-guide-example">{`For example: ${example}`}</div>}
         </>
       )}
-      {step.tip && <Tip tip={step.tip} />}
+      {step.tip && <Tip tip={step.tip} onClosed={() => headingRef.current?.focus({ preventScroll: true })} />}
     </>
   );
 }
@@ -175,6 +179,7 @@ export default function GuidedTool({
   onSkip,
   onClose,
   onFinish,
+  autoFocus = false,
 }) {
   const scope = useThemeScope();
   const fullscreen = layout === 'fullscreen';
@@ -229,7 +234,7 @@ export default function GuidedTool({
   useEffect(() => {
     if (!shown) return;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    if (direction !== 'none' || fullscreen) headingRef.current?.focus({ preventScroll: true });
+    if (direction !== 'none' || fullscreen || autoFocus) headingRef.current?.focus({ preventScroll: true });
     // Only when the step changes or the tool opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, shown]);
@@ -307,9 +312,9 @@ export default function GuidedTool({
           <li key={s.key}>
             <button
               type="button"
-              className={j < i ? 'ds-guide-done' : undefined}
+              className={j < i && !skipped.has(s.key) ? 'ds-guide-done' : undefined}
               aria-current={j === i ? 'step' : undefined}
-              aria-label={`${n + 1}. ${s.name}${j < i ? ', done' : ''}`}
+              aria-label={`${n + 1}. ${s.name}${j < i && !skipped.has(s.key) ? ', done' : ''}${skipped.has(s.key) ? ', skipped' : ''}`}
               onClick={() => go(j, 'jump')}
             >
               <b aria-hidden="true">{n + 1}</b>

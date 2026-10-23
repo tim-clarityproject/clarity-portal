@@ -2714,6 +2714,13 @@
     display: none;
   }
 
+  /* The slim segment is 28px; its tap area reaches 44px. */
+  .ui-root .ds-guide-steps button::before {
+    content: '';
+    position: absolute;
+    inset: calc((var(--steps-h-phone) - var(--tap-min)) / 2) 0;
+  }
+
   .ui-root .ds-guide-steps button::after {
     content: '';
     position: absolute;

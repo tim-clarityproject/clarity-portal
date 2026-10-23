@@ -17,6 +17,7 @@ export default function SprintTool({ demo, layout, open, onClose, role }) {
       role={role}
       draftKey={stepDraft(demo.key, layout)}
       onClose={onClose}
+      autoFocus={layout === 'framed' && demo.run > 0}
       onFinish={() => { demo.finish(); onClose?.('finished'); }}
     />
   );
