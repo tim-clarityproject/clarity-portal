@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { SystemLink } from './Button';
 import './design.css';
 
@@ -15,6 +15,16 @@ import './design.css';
 export default function PageHeader({ title, meta = [], info, onSystemLink, as: Heading = 'h1', className = '' }) {
   const infoId = useId();
   const [infoOpen, setInfoOpen] = useState(false);
+
+  // Escape closes the explanation, like every other panel.
+  useEffect(() => {
+    if (!infoOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setInfoOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [infoOpen]);
   const items = meta.filter(Boolean);
   const hasMeta = items.length > 0 || onSystemLink;
   return (

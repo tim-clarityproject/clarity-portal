@@ -263,11 +263,46 @@ export default function GrowStep3bPrioritize() {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', flex: 1 }}>
+        <style>{`
+          .ui-root .gp-cols {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: var(--space-5);
+            flex: 1;
+          }
+          .ui-root .gp-col-title {
+            margin: 0 0 var(--space-3) !important;
+            font-family: var(--font-display);
+            font-weight: var(--fw-regular);
+            font-size: var(--fs-section-title) !important;
+            line-height: var(--lh-text);
+            letter-spacing: var(--ls-section-title);
+            text-transform: uppercase;
+            color: var(--text);
+          }
+          .ui-root .gp-option {
+            min-width: 0;
+            overflow-wrap: anywhere;
+          }
+          .ui-root .gp-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: var(--tap-min) !important;
+            min-height: var(--tap-min) !important;
+            padding: 0 !important;
+          }
+          @media (max-width: 600px) {
+            .ui-root .gp-cols {
+              grid-template-columns: minmax(0, 1fr);
+            }
+          }
+        `}</style>
+        <div className="gp-cols">
           {/* Available Options */}
           <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Your Options
+            <h2 className="gp-col-title">
+              Your options
             </h2>
             <div
               onDragOver={handleDragOver}
@@ -322,7 +357,7 @@ export default function GrowStep3bPrioritize() {
                     }
                   }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div className="gp-option" style={{ flex: 1 }}>
                     {editingIndex === index && editingSource === 'available' ? (
                       <input
                         type="text"
@@ -350,10 +385,11 @@ export default function GrowStep3bPrioritize() {
                   </div>
                   <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                     <button
+                      className="gp-icon"
+                      aria-label={`Edit ${option || 'option'}`}
                       onClick={() => handleEditStart(index, option, 'available')}
                       style={{
-                        padding: '4px',
-                        backgroundColor: 'transparent',
+                                                backgroundColor: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
                         color: 'var(--label)',
@@ -369,14 +405,15 @@ export default function GrowStep3bPrioritize() {
                       </svg>
                     </button>
                     <button
+                      className="gp-icon"
+                      aria-label={`Remove ${option || 'option'}`}
                       onClick={() => {
                         const newAvailable = availableOptions.filter((_, i) => i !== index);
                         setAvailableOptions(newAvailable);
                         updateFormData('availableOptions', newAvailable);
                       }}
                       style={{
-                        padding: '4px',
-                        backgroundColor: 'transparent',
+                                                backgroundColor: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
                         color: 'var(--label)',
@@ -421,8 +458,8 @@ export default function GrowStep3bPrioritize() {
 
           {/* Prioritized List */}
           <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Priority Order
+            <h2 className="gp-col-title">
+              Priority order
             </h2>
             <div
               onDragOver={(e) => {
@@ -513,7 +550,7 @@ export default function GrowStep3bPrioritize() {
                       }
                     }}
                   >
-                    <div style={{ flex: 1 }}>
+                    <div className="gp-option" style={{ flex: 1 }}>
                       {editingIndex === originalIndex && editingSource === 'prioritized' ? (
                         <input
                           type="text"
@@ -541,10 +578,11 @@ export default function GrowStep3bPrioritize() {
                     </div>
                     <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                       <button
+                        className="gp-icon"
+                        aria-label={`Edit ${option || 'option'}`}
                         onClick={() => handleEditStart(originalIndex, option, 'prioritized')}
                         style={{
-                          padding: '4px',
-                          backgroundColor: 'transparent',
+                                                    backgroundColor: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
                           color: 'var(--on-coral)',
@@ -561,14 +599,15 @@ export default function GrowStep3bPrioritize() {
                         </svg>
                       </button>
                       <button
+                        className="gp-icon"
+                        aria-label={`Remove ${option || 'option'}`}
                         onClick={() => {
                           const newPrioritized = prioritizedOptions.filter((_, i) => i !== originalIndex);
                           setPrioritizedOptions(newPrioritized);
                           updateFormData('prioritizedOptions', newPrioritized);
                         }}
                         style={{
-                          padding: '4px',
-                          backgroundColor: 'transparent',
+                                                    backgroundColor: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
                           color: 'var(--on-coral)',

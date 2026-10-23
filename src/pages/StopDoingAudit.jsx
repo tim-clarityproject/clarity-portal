@@ -318,7 +318,7 @@ export default function StopDoingAudit() {
                 placeholder="Choose an activity..."
                 options={namedItems.map((item) => ({ value: String(item.id), label: `${item.activity} (${item.action || 'no action selected'})` }))}
                 value={firstAction === '' ? null : String(firstAction)}
-                onChange={(value) => { setFirstAction(value); setFirstActionError(''); }}
+                onChange={(value) => { setFirstAction(namedItems.find((item) => String(item.id) === value)?.id ?? ''); setFirstActionError(''); }}
               />
               {firstActionItem && <p className="tsa-saves">Saves {parseInt(firstActionItem.timePerWeek, 10) || 0} hrs/wk</p>}
               {firstActionError && <p className="plan-save-error" role="alert">{firstActionError}</p>}
