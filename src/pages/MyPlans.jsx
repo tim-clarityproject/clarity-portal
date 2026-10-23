@@ -110,7 +110,7 @@ export default function MyPlans() {
       }
     } catch (err) {
       console.error('[MyPlans] load failed:', err);
-      setError({ message: 'Could not load your plans.', onRetry: loadPlans });
+      setError({ message: 'Your plans didn’t load. Check your connection and try again.', onRetry: loadPlans });
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +167,7 @@ export default function MyPlans() {
       toast.show('Deleted');
     } catch (err) {
       console.error('[MyPlans] delete failed:', err);
-      toast.error('Could not delete. Please try again.');
+      toast.error('That didn’t delete. Check your connection and try again.');
     }
   };
 

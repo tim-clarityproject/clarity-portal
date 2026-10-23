@@ -122,7 +122,7 @@ export default function InversionStep1Goal() {
     } catch (error) {
       console.error('[InversionStep1Goal] draft save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

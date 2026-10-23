@@ -40,14 +40,14 @@ export default function ForgotPassword() {
       });
 
       if (error) {
-        setFormError('Something went wrong. Please try again.');
+        setFormError('That email didn’t send. Check your connection and try again.');
         setShakeToken((t) => t + 1);
         return;
       }
 
       navigate('/forgot-password/check-email', { state: { email: trimmed } });
     } catch (err) {
-      setFormError('Something went wrong. Please try again.');
+      setFormError('That email didn’t send. Check your connection and try again.');
       setShakeToken((t) => t + 1);
     } finally {
       setIsSubmitting(false);

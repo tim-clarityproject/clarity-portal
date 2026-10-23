@@ -135,7 +135,7 @@ export default function IfThenPlanning() {
     } catch (error) {
       console.error('[IfThenPlanning] save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

@@ -51,13 +51,13 @@ export default function CheckYourEmail() {
         options: { emailRedirectTo: `${window.location.origin}/auth/mission` },
       });
       if (error) {
-        setResendMessage(error.message || 'Could not resend the email. Please try again.');
+        setResendMessage(error.message || 'That email didn’t send. Check your connection and try again.');
       } else {
         setResendMessage('Email resent.');
         setSecondsLeft(RESEND_SECONDS);
       }
     } catch (err) {
-      setResendMessage(err.message || 'Could not resend the email. Please try again.');
+      setResendMessage(err.message || 'That email didn’t send. Check your connection and try again.');
     } finally {
       setResending(false);
     }

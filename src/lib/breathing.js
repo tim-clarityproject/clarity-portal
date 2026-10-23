@@ -25,7 +25,7 @@ import { supabase } from './supabase';
 export const TECHNIQUES = {
   sigh: {
     key: 'sigh',
-    label: 'Physiological Sigh',
+    label: 'Physiological sigh',
     shape: 'circle',
     phases: [
       { name: 'inhale', seconds: 3.5, color: 'coral', phaseLabel: 'Inhale', from: 0, to: 0.72 },
@@ -35,7 +35,7 @@ export const TECHNIQUES = {
   },
   vagal: {
     key: 'vagal',
-    label: 'Vagal Breathing',
+    label: 'Vagal breathing',
     shape: 'circle',
     phases: [
       { name: 'inhale', seconds: 4, color: 'coral', phaseLabel: 'Inhale', from: 0, to: 1 },
@@ -44,7 +44,7 @@ export const TECHNIQUES = {
   },
   box: {
     key: 'box',
-    label: 'Box Breathing',
+    label: 'Box breathing',
     shape: 'box',
     phases: [
       { name: 'inhale', seconds: 4, color: 'coral', phaseLabel: 'Inhale', from: 0, to: 1 },

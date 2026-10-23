@@ -124,7 +124,7 @@ export function AuthPasswordField({
           aria-pressed={visible}
           onClick={toggleVisible}
         >
-          {visible ? 'HIDE' : 'SHOW'}
+          {visible ? 'Hide' : 'Show'}
         </button>
       </div>
       {error && (

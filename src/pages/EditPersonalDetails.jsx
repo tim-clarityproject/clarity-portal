@@ -92,7 +92,7 @@ export default function EditPersonalDetails() {
       }, 1500);
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast.error('Could not save your details. Please try again.');
+      toast.error('Your details didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

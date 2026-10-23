@@ -218,7 +218,7 @@ export default function PersonalOperatingPlanReview() {
       }
     } catch (error) {
       console.error('[PlanReview] save failed:', error);
-      setSaveError('Could not save. Please try again. This may need a database change the site owner has not run yet.');
+      setSaveError('That didn’t save. Check your connection and try again. If it keeps happening, let your coach know.');
     } finally {
       setIsSubmitting(false);
     }

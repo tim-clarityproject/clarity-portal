@@ -99,7 +99,7 @@ export default function SignUpStep2() {
         if (error.message?.includes('already registered') || error.status === 422) {
           setFormError('An account with this email already exists. Try logging in instead.');
         } else {
-          setFormError(error.message || 'Could not create your account. Please try again.');
+          setFormError(error.message || 'Your account wasn’t created. Check your connection and try again.');
         }
         setShakeToken((t) => t + 1);
         return;
@@ -107,7 +107,7 @@ export default function SignUpStep2() {
 
       navigate('/auth/check-email', { state: { email: email.trim(), firstName, lastName } });
     } catch (err) {
-      setFormError(err.message || 'Could not create your account. Please try again.');
+      setFormError(err.message || 'Your account wasn’t created. Check your connection and try again.');
       setShakeToken((t) => t + 1);
     } finally {
       setIsSubmitting(false);

@@ -103,7 +103,7 @@ export default function InversionStep2Risks() {
     } catch (error) {
       console.error('[InversionStep2Risks] draft save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

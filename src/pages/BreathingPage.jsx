@@ -141,7 +141,7 @@ export default function BreathingPage() {
       toast.show('Session saved.');
     } catch (error) {
       console.error('[BreathingPage] session save failed:', error);
-      toast.error('Could not save this session. Please try again.');
+      toast.error('This session didn’t save. Check your connection and try again.');
     }
   };
 

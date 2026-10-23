@@ -93,7 +93,7 @@ export default function ReviewSummary() {
     } catch (error) {
       console.error('[ReviewSummary] delete failed:', error);
       setDeleteOpen(false);
-      toast.error('Could not delete. Please try again.');
+      toast.error('That didn’t delete. Check your connection and try again.');
     }
   };
 

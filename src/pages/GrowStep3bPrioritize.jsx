@@ -59,7 +59,7 @@ export default function GrowStep3bPrioritize() {
             .single();
 
           if (fetchError) {
-            throw new Error(fetchError.message || 'Failed to load options');
+            throw new Error(fetchError.message || 'Your options didn’t load. Check your connection and try again.');
           }
 
           const options = data?.form_data?.options || [];
@@ -74,7 +74,7 @@ export default function GrowStep3bPrioritize() {
           setIsLoading(false);
         } catch (err) {
           console.error('Error loading options:', err);
-          setError(err.message || 'Failed to load options');
+          setError(err.message || 'Your options didn’t load. Check your connection and try again.');
           setIsLoading(false);
         }
       };

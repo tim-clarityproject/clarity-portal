@@ -152,7 +152,7 @@ export default function GrowStep4WillDo() {
       if (!willDo.trim()) missingFields.push('Will Do');
 
       if (missingFields.length > 0) {
-        setValidationError(`Cannot mark as completed. Missing: ${missingFields.join(', ')}`);
+        setValidationError(`This isn’t finished yet. Add ${missingFields.join(', ')} and try again.`);
         setIsSaving(false);
         return;
       }
@@ -206,7 +206,7 @@ export default function GrowStep4WillDo() {
     } catch (error) {
       console.error('Error saving decision:', error);
       console.error('Error details:', error.message);
-      toast.error('Could not save. Please try again.');
+      toast.error('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

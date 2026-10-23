@@ -50,7 +50,7 @@ export default function PersonalOperatingPlanArchived() {
     } catch (error) {
       console.error('[PlanArchived] restore failed:', error);
       setRestoreTarget(null);
-      toast.error('Could not restore this plan. Please try again.');
+      toast.error('That plan didn’t restore. Check your connection and try again.');
     } finally {
       setIsRestoring(false);
     }

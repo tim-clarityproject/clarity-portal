@@ -238,11 +238,11 @@ export function AuthProvider({ children }) {
       console.error('Login error:', err);
       // Provide user-facing error messages
       if (err.status === 400 || err.message?.includes('Invalid login credentials')) {
-        return { success: false, error: 'Invalid email or password. Please try again.' };
+        return { success: false, error: 'That email and password didn’t match. Check them and try again.' };
       } else if (err.status === 401) {
         return { success: false, error: 'Email not confirmed. Check your email for verification link.' };
       } else {
-        return { success: false, error: err.message || 'Login failed. Please try again.' };
+        return { success: false, error: err.message || 'That didn’t sign you in. Check your connection and try again.' };
       }
     } finally {
       setIsLoading(false);
@@ -290,16 +290,16 @@ export function AuthProvider({ children }) {
         if (signupErr.message?.includes('already registered') || signupErr.status === 422) {
           return { success: false, error: 'An account with this email already exists. Try logging in instead.' };
         } else if (signupErr.status === 400) {
-          return { success: false, error: 'Invalid email or password. Please try again.' };
+          return { success: false, error: 'That email and password didn’t match. Check them and try again.' };
         } else if (signupErr.status === 429) {
-          return { success: false, error: 'Too many requests. Please wait a moment and try again.' };
+          return { success: false, error: 'That was tried too many times. Wait a moment and try again.' };
         } else {
-          return { success: false, error: signupErr.message || 'Signup failed. Please try again.' };
+          return { success: false, error: signupErr.message || 'Your account wasn’t created. Check your connection and try again.' };
         }
       }
     } catch (err) {
       console.error('Signup exception:', err);
-      return { success: false, error: err.message || 'An error occurred. Please try again.' };
+      return { success: false, error: err.message || 'That didn’t work. Check your connection and try again.' };
     } finally {
       setIsLoading(false);
     }

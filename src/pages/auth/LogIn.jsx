@@ -90,9 +90,9 @@ export default function LogIn() {
         setNeedsConfirmation(true);
         setError('Your email address has not been confirmed yet. Open the link we sent you, or send it again below.');
       } else if (signInError.status === 400 || signInError.message?.includes('Invalid login credentials')) {
-        setError('Invalid email or password. Please try again.');
+        setError('That email and password didn’t match. Check them and try again.');
       } else {
-        setError(signInError.message || 'Login failed. Please try again.');
+        setError(signInError.message || 'That didn’t sign you in. Check your connection and try again.');
       }
       setShakeToken((t) => t + 1);
     } finally {
@@ -113,10 +113,10 @@ export default function LogIn() {
         options: { emailRedirectTo: `${window.location.origin}/auth/mission` },
       });
       setResendNote(resendError
-        ? (resendError.message || 'Could not send the email. Please try again.')
+        ? (resendError.message || 'That email didn’t send. Check your connection and try again.')
         : 'Done. If this address needs confirming, a new link is on its way.');
     } catch (err) {
-      setResendNote(err.message || 'Could not send the email. Please try again.');
+      setResendNote(err.message || 'That email didn’t send. Check your connection and try again.');
     } finally {
       setIsResending(false);
     }

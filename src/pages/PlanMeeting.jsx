@@ -182,7 +182,7 @@ export default function PlanMeeting() {
       navigate('/meeting-summary', { state: { decisionId: savedId, toast: 'Saved.' } });
     } catch (error) {
       console.error('[PlanMeeting] Finish failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -199,7 +199,7 @@ export default function PlanMeeting() {
       navigate('/my-plans');
     } catch (error) {
       console.error('[PlanMeeting] Save as draft failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

@@ -349,13 +349,13 @@ export default function PersonalOperatingPlanEdit() {
         toast = result.created ? `Saved as ${formatVersion(result.major, result.minor)}.` : 'Plan saved. Nothing changed.';
       } catch (error) {
         console.error('[PlanEdit] version save failed:', error);
-        toast = 'Plan saved, but your version history could not be updated.';
+        toast = 'Plan saved, but its version history didn’t update. Save the plan again to try once more.';
       }
 
       navigate('/personal-operating-plan', { state: { toast } });
     } catch (error) {
       console.error('[PlanEdit] save failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

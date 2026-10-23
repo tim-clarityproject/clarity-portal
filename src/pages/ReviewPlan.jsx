@@ -198,7 +198,7 @@ export default function ReviewPlan() {
       });
     } catch (error) {
       console.error('[ReviewPlan] save failed:', error);
-      setSaveError('Could not save. Please try again. This needs a database change the site owner has not run yet.');
+      setSaveError('That didn’t save. Check your connection and try again. If it keeps happening, let your coach know.');
     } finally {
       setIsSaving(false);
     }
@@ -215,7 +215,7 @@ export default function ReviewPlan() {
       navigate('/my-reviews');
     } catch (error) {
       console.error('[ReviewPlan] draft save failed:', error);
-      setSaveError('Could not save. Please try again. This needs a database change the site owner has not run yet.');
+      setSaveError('That didn’t save. Check your connection and try again. If it keeps happening, let your coach know.');
     } finally {
       setIsSaving(false);
     }

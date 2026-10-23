@@ -185,7 +185,7 @@ export default function DailyJournal() {
       if (saved) navigate('/daily-journals', { state: { toast: 'Journal saved. It is in My Reviews too.' } });
     } catch (error) {
       console.error('[DailyJournal] save failed:', error);
-      toast.error('Could not save. Please try again.');
+      toast.error('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -203,7 +203,7 @@ export default function DailyJournal() {
       }
     } catch (error) {
       console.error('[DailyJournal] draft save failed:', error);
-      toast.error('Could not save. Please try again.');
+      toast.error('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

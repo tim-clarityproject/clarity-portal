@@ -453,7 +453,7 @@ export default function HealthCheck() {
       await downloadPdf(draftRef.current, variant, done);
       setPdf({ busy: false, message: '' });
     } catch {
-      setPdf({ busy: false, message: 'We could not make the PDF just now. Please try again.' });
+      setPdf({ busy: false, message: 'Your PDF wasn’t made. Check your connection and try again.' });
     }
   };
   const handleEmailLink = async () => {
@@ -512,7 +512,7 @@ export default function HealthCheck() {
       columnClassName: 'al-col-welcome',
     };
     body = [
-      !returning && <p key="dur" className="al-dur">This will take about 15 minutes.</p>,
+      !returning && <p key="dur" className="al-dur">This will take ~15 minutes.</p>,
       <form key="form" onSubmit={begin} noValidate>
         <AuthTextField
           label="Email"

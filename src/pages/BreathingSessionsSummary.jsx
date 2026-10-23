@@ -47,7 +47,7 @@ export default function BreathingSessionsSummary() {
       toast.show('Deleted');
     } catch (error) {
       console.error('[BreathingSessionsSummary] delete failed:', error);
-      toast.error('Could not delete. Please try again.');
+      toast.error('That didn’t delete. Check your connection and try again.');
     }
   };
 

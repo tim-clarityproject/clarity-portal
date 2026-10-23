@@ -77,7 +77,7 @@ export const useLoadDecisionStep = (fields = []) => {
           .single();
 
         if (fetchError) {
-          throw new Error(fetchError.message || 'Failed to load decision');
+          throw new Error(fetchError.message || 'Your decision didn’t load. Check your connection and try again.');
         }
 
         if (data && data.form_data) {
@@ -95,7 +95,7 @@ export const useLoadDecisionStep = (fields = []) => {
         setIsLoading(false);
       } catch (err) {
         console.error('Error loading decision:', err);
-        setError(err.message || 'Failed to load decision');
+        setError(err.message || 'Your decision didn’t load. Check your connection and try again.');
         setIsLoading(false);
       }
     };
@@ -118,7 +118,7 @@ export const useLoadDecisionStep = (fields = []) => {
         .single();
 
       if (fetchError) {
-        throw new Error(fetchError.message || 'Failed to load decision');
+        throw new Error(fetchError.message || 'Your decision didn’t load. Check your connection and try again.');
       }
 
       if (data && data.form_data) {
@@ -133,7 +133,7 @@ export const useLoadDecisionStep = (fields = []) => {
       setIsLoading(false);
     } catch (err) {
       console.error('Error loading decision on retry:', err);
-      setError(err.message || 'Failed to load decision');
+      setError(err.message || 'Your decision didn’t load. Check your connection and try again.');
       setIsLoading(false);
     }
   };

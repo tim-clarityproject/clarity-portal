@@ -28,7 +28,7 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
       onClose();
     } catch (error) {
       console.error('[PersonalGoalModal] save failed:', error);
-      setSaveError('Could not save your mission. Please try again.');
+      setSaveError('Your mission didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

@@ -46,7 +46,7 @@ export default function EmailConfirmation() {
           setMessage(
             errorCode === 'otp_expired'
               ? 'The confirmation link has expired. Please sign up again.'
-              : error || 'Email confirmation failed. Please try signing up again.'
+              : error || 'Your email wasn’t confirmed. Try signing up again.'
           );
           return;
         }
@@ -123,7 +123,7 @@ export default function EmailConfirmation() {
           console.error('[EmailConfirmation] Session error or timeout:', sessionError);
           setStatus('error');
           setMessage(
-            sessionError || 'Email confirmation timed out. The link may have expired. Please try signing up again.'
+            sessionError || 'Your email wasn’t confirmed in time, and the link may have run out. Try signing up again.'
           );
           return;
         }
@@ -139,7 +139,7 @@ export default function EmailConfirmation() {
       } catch (err) {
         console.error('Email confirmation exception:', err);
         setStatus('error');
-        setMessage(err.message || 'An error occurred during email confirmation. Please try again.');
+        setMessage(err.message || 'Your email wasn’t confirmed. Check your connection and try again.');
       }
     };
 
@@ -193,7 +193,7 @@ export default function EmailConfirmation() {
       headline={isExpired ? 'THAT LINK HAS EXPIRED.' : 'WE COULD NOT CONFIRM YOUR EMAIL.'}
       sub={isExpired
         ? 'Confirmation links only work for a little while. If you have not confirmed yet, go back to sign up and we will send you a fresh one.'
-        : (message || 'Something went wrong while confirming your email.')}
+        : (message || 'Your email wasn’t confirmed. Open the link in the email again.')}
     >
       <AuthPrimaryButton onClick={() => navigate('/auth/login')}>
         Log in

@@ -159,7 +159,7 @@ export default function StopDoingAudit() {
       navigate('/stop-doing-audit-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
     } catch (error) {
       console.error('[StopDoingAudit] save failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -193,7 +193,7 @@ export default function StopDoingAudit() {
       navigate('/my-plans');
     } catch (error) {
       console.error('[StopDoingAudit] draft save failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

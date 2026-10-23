@@ -119,7 +119,7 @@ export default function MyJournal() {
       navigate('/review-summary', { state: { entryId: savedId, reviewType, toast: 'Review saved.' } });
     } catch (error) {
       console.error('[MyJournal] save failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -159,7 +159,7 @@ export default function MyJournal() {
       navigate('/my-reviews');
     } catch (error) {
       console.error('[MyJournal] draft save failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

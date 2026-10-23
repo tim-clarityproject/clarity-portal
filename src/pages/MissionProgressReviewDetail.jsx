@@ -78,7 +78,7 @@ export default function MissionProgressReviewDetail() {
     } catch (error) {
       console.error('[MissionProgressReviewDetail] delete failed:', error);
       setDeleteOpen(false);
-      toast.error('Could not delete this review. Please try again.');
+      toast.error('That review didn’t delete. Check your connection and try again.');
     }
   };
 

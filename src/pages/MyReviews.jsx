@@ -167,7 +167,7 @@ export default function MyReviews() {
 
     setRows(built);
     if (!anySucceeded) {
-      setError({ message: 'Could not load your reviews.', onRetry: load });
+      setError({ message: 'Your reviews didn’t load. Check your connection and try again.', onRetry: load });
     }
     setIsLoading(false);
   };
@@ -268,7 +268,7 @@ export default function MyReviews() {
       toast.show('Deleted');
     } catch (err) {
       console.error('[MyReviews] delete failed:', err);
-      toast.error('Could not delete. Please try again.');
+      toast.error('That didn’t delete. Check your connection and try again.');
     }
   };
 

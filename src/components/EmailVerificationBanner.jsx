@@ -50,7 +50,7 @@ export default function EmailVerificationBanner() {
       setTimeout(() => setMessage(''), 5000);
     } catch (err) {
       console.error('Resend email error:', err);
-      setMessage('Failed to resend email. Please try again.');
+      setMessage('That email didn’t send. Check your connection and try again.');
       setTimeout(() => setMessage(''), 5000);
     } finally {
       setIsLoading(false);
@@ -59,7 +59,7 @@ export default function EmailVerificationBanner() {
 
   if (!isVisible) return null;
 
-  const isError = message.startsWith('Failed');
+  const isError = message.startsWith('That email didn’t');
 
   return (
     <div className="ev-banner">

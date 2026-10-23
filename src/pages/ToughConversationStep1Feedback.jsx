@@ -102,7 +102,7 @@ export default function ToughConversationStep1Feedback() {
     } catch (error) {
       console.error('[ToughConversationStep1Feedback] draft save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

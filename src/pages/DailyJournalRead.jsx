@@ -39,7 +39,7 @@ export default function DailyJournalRead() {
     } catch (error) {
       console.error('[DailyJournalRead] delete failed:', error);
       setDeleteOpen(false);
-      toast.error('Could not delete. Please try again.');
+      toast.error('That didn’t delete. Check your connection and try again.');
     }
   };
 

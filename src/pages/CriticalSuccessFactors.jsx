@@ -95,7 +95,7 @@ export default function CriticalSuccessFactors() {
           {/* Left Column - Risks */}
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
-              How you would fail
+              How it could go wrong
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {risks.map((risk, index) => (
@@ -144,7 +144,7 @@ export default function CriticalSuccessFactors() {
                 Critical Success Factors
               </h2>
               <p style={{ fontSize: '12px', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
-                Hint: the opposite of how you would fail
+                Hint: the opposite of how it could go wrong
               </p>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>

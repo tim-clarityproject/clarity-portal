@@ -71,7 +71,7 @@ export default function Strategies() {
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: '16px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
-                How you could fail
+                How it could go wrong
               </h2>
               <p style={{ fontSize: '12px', color: 'transparent', margin: 0, textAlign: 'center' }}>
                 placeholder
@@ -124,7 +124,7 @@ export default function Strategies() {
                 Your strategies
               </h2>
               <p style={{ fontSize: '12px', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
-                Clue: it might be the exact opposite of how you could fail
+                Clue: it might be the exact opposite of how it could go wrong
               </p>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>

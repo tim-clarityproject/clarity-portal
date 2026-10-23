@@ -84,7 +84,7 @@ export default function DecisionHistory() {
       }
     } catch (err) {
       console.error('[DecisionHistory] load failed:', err);
-      setError({ message: 'Could not load your decisions.', onRetry: loadDecisions });
+      setError({ message: 'Your decisions didn’t load. Check your connection and try again.', onRetry: loadDecisions });
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +141,7 @@ export default function DecisionHistory() {
       toast.show('Deleted');
     } catch (err) {
       console.error('[DecisionHistory] delete failed:', err);
-      toast.error('Could not delete. Please try again.');
+      toast.error('That didn’t delete. Check your connection and try again.');
     }
   };
 

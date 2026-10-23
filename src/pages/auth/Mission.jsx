@@ -291,7 +291,7 @@ export default function Mission() {
       localStorage.removeItem('justConfirmedEmail');
       navigate('/auth/finished');
     } catch (err) {
-      setMissionError('Could not save your mission. Please try again.');
+      setMissionError('Your mission didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

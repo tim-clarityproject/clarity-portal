@@ -138,7 +138,7 @@ export default function ToughConversationStep2Coaching() {
     } catch (error) {
       console.error('[ToughConversationStep2Coaching] save failed:', error);
       setNameDialog(null);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

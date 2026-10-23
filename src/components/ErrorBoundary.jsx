@@ -40,9 +40,9 @@ export class ErrorBoundary extends Component {
         }}
       >
         <div style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }} role="alert">
-          <div className="ui-title">Something went wrong</div>
+          <div className="ui-title">This page hit a problem</div>
           <p className="ui-subtitle" style={{ marginBottom: 'var(--space-5)' }}>
-            This page hit a problem. Your saved work is safe. Reload the page, or head back to Home.
+            Your saved work is safe. Reload the page, or go back to Home.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
             <Button variant="primary" onClick={() => window.location.reload()}>

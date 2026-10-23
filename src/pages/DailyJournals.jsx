@@ -30,7 +30,7 @@ export default function DailyJournals() {
       setJournals(data);
     } catch (err) {
       console.error('[DailyJournals] load failed:', err);
-      setError({ message: 'Could not load your journals.', onRetry: load });
+      setError({ message: 'Your journals didn’t load. Check your connection and try again.', onRetry: load });
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +82,7 @@ export default function DailyJournals() {
       toast.show('Deleted');
     } catch (err) {
       console.error('[DailyJournals] delete failed:', err);
-      toast.error('Could not delete. Please try again.');
+      toast.error('That didn’t delete. Check your connection and try again.');
     }
   };
 

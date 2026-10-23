@@ -154,7 +154,7 @@ export default function ResetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
-        setFormError(error.message || 'Could not update your password. Please try again.');
+        setFormError(error.message || 'Your password didn’t update. Check your connection and try again.');
         setShakeToken((t) => t + 1);
         return;
       }
@@ -162,7 +162,7 @@ export default function ResetPassword() {
       await supabase.auth.signOut();
       setStatus('updated');
     } catch (err) {
-      setFormError(err.message || 'Could not update your password. Please try again.');
+      setFormError(err.message || 'Your password didn’t update. Check your connection and try again.');
       setShakeToken((t) => t + 1);
     } finally {
       setIsSubmitting(false);

@@ -189,7 +189,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
     <>
       {formData.risks?.length > 0 && (
         <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>How you would fail</h2>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>How it could go wrong</h2>
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
             {formData.risks.map((risk, idx) => (
               <div key={idx} style={{ marginBottom: idx < formData.risks.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: '14px' }}>

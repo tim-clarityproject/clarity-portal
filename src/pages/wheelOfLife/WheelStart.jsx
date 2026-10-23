@@ -41,7 +41,7 @@ export default function WheelStart() {
         </div>
 
         <div className="wol-facts wol-rv" style={{ '--i': 3 }}>
-          <div><b>Takes</b><span>About 3 minutes</span></div>
+          <div><b>Takes</b><span>~3 minutes</span></div>
           <div><b>Last check-in</b><span>{newest ? formatCheckinDate(newest.date) : 'None yet'}</span></div>
           <div><b>Check-ins so far</b><span>{count}</span></div>
         </div>

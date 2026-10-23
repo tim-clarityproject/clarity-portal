@@ -119,7 +119,7 @@ export default function ProjectScatter() {
       navigate('/decision-summary', { state: { decisionId: savedDecisionId } });
     } catch (error) {
       console.error('Error saving decision:', error);
-      toast.error('Could not save. Please try again.');
+      toast.error('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }

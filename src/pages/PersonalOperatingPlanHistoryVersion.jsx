@@ -86,7 +86,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
     } catch (error) {
       console.error('[PlanHistoryVersion] restore failed:', error);
       setRestoreOpen(false);
-      toast.error('Could not restore this version. Please try again.');
+      toast.error('That version didn’t restore. Check your connection and try again.');
     } finally {
       setIsRestoring(false);
     }

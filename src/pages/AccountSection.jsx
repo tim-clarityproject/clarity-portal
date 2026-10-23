@@ -41,7 +41,7 @@ export default function AccountSection() {
 
       const { error: profileError } = await supabase.from('profiles').delete().eq('id', user.id);
       if (profileError) {
-        reportDeleteError('Failed to delete account: ' + profileError.message);
+        reportDeleteError('Your account didn’t delete. Check your connection and try again.');
         setIsDeleting(false);
         return;
       }
@@ -71,18 +71,18 @@ export default function AccountSection() {
       } catch (authError) {
         console.error('Error deleting auth user:', authError);
         setIsDeleting(false);
-        reportDeleteError('Failed to delete account: ' + (authError.message || 'Unknown error occurred'));
+        reportDeleteError('Your account didn’t delete. Check your connection and try again.');
         return;
       }
 
       await logout();
       clearAppStorage();
 
-      toast.show('Deleted');
+      toast.show('Your account has been deleted.');
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Delete account error:', error);
-      reportDeleteError('Failed to delete account. Please try again or contact support.');
+      reportDeleteError('Your account didn’t delete. Check your connection and try again.');
       setIsDeleting(false);
     }
   };

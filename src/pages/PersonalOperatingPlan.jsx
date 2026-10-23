@@ -164,7 +164,7 @@ export default function PersonalOperatingPlan() {
     } catch (error) {
       console.error('[PersonalOperatingPlan] archive failed:', error);
       setArchiveOpen(false);
-      toast.error('Could not archive this plan. Please try again.');
+      toast.error('That plan didn’t archive. Check your connection and try again.');
     } finally {
       setIsArchiving(false);
     }

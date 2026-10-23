@@ -114,7 +114,7 @@ export default function HistoryList({
           </div>
         </div>
         <div className="hlist-error" role="alert">
-          <p>{error.message || 'Something went wrong.'}</p>
+          <p>{error.message || 'That didn’t load. Check your connection and try again.'}</p>
           {error.onRetry && (
             <Button onClick={error.onRetry}>Try again</Button>
           )}

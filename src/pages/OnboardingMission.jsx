@@ -102,7 +102,7 @@ export default function OnboardingMission() {
 
   const handleSaveMission = async () => {
     if (!mission.trim()) {
-      toast.error('Please enter your mission.');
+      toast.error('Your mission is empty. Type your mission, then save.');
       return;
     }
 
@@ -120,7 +120,7 @@ export default function OnboardingMission() {
         navigate('/welcome');
       }, 500);
     } catch (error) {
-      toast.error('Could not save your mission. Please try again.');
+      toast.error('Your mission didn’t save. Check your connection and try again.');
       setIsSaving(false);
     }
   };

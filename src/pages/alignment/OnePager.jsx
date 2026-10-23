@@ -45,7 +45,7 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email,
   const emailNote = {
     sent: `Sent to ${email.sentTo}`,
     limit: 'You have asked for this a few times already. Please try again tomorrow.',
-    error: 'We could not send that just now. Please try again in a moment.',
+    error: 'That didn’t send. Check your connection and try again in a moment.',
   }[email.status];
   return (
     <div className="al-keep">

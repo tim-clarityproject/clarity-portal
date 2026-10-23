@@ -82,7 +82,7 @@ export default function RisksAssessment() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px' }}>
           <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
-          <h2 className="ds-question">If you wanted to make sure you failed, what would you do?</h2>
+          <h2 className="ds-question">If you wanted to make sure it went wrong, what would you do?</h2>
           <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '50%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
@@ -103,7 +103,7 @@ export default function RisksAssessment() {
                 </span>
                 <div style={{ flexGrow: 1, flexBasis: 0, minWidth: 0 }}>
                   <TextField
-                    aria-label={`Way to fail ${index + 1}`}
+                    aria-label={`Way it could go wrong ${index + 1}`}
                     value={risk}
                     onChange={(e) => handleRiskChange(index, e.target.value)}
                     placeholder="Type here"

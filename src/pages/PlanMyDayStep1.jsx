@@ -136,7 +136,7 @@ export default function PlanMyDayStep1() {
       navigate('/daily-plan-summary', { state: { decisionId: savedId, toast: 'Saved.' } });
     } catch (error) {
       console.error('[PlanMyDayStep1] Finish failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -153,7 +153,7 @@ export default function PlanMyDayStep1() {
       navigate('/my-plans');
     } catch (error) {
       console.error('[PlanMyDayStep1] Save as draft failed:', error);
-      setSaveError('Could not save. Please try again.');
+      setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
