@@ -45,6 +45,8 @@ import {
 } from '../../components/design';
 import { GallerySection, New } from './galleryKit';
 import { contrast, ViewContext, useGalleryView } from './galleryUtils';
+import SprintTool from './SprintTool';
+import { useSprintDemo } from './useSprintDemo';
 import './designReference.css';
 
 // The design gallery: every shared component from src/components/design,
@@ -57,7 +59,7 @@ import './designReference.css';
 const TOC = [
   ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Sections and questions'],
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
-  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c21', 'Filter'], ['c22', 'Show less'],
+  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c17', 'Breathe button'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
 ];
@@ -96,6 +98,13 @@ const WHEN_OPTIONS = [
   { value: 'week', label: 'This week' },
   { value: 'month', label: 'This month' },
   { value: 'year', label: 'This year' },
+];
+
+const ROLE_OPTIONS = [
+  { value: 'ceo', label: 'CEO or executive' },
+  { value: 'coach', label: 'Head coach' },
+  { value: 'leader', label: 'Leader' },
+  { value: 'other', label: 'Other' },
 ];
 
 const STRATEGY_OPTIONS = [
@@ -424,6 +433,27 @@ function FocusModeDemo({ mode }) {
   );
 }
 
+function GuidedDemo({ mode }) {
+  const toast = useToast();
+  const [role, setRole] = useState('ceo');
+  const [full, setFull] = useState(false);
+  const openCalendar = useCallback(() => toast.show('The calendar opens here.'), [toast]);
+  const demo = useSprintDemo(mode || 'page', role, openCalendar);
+  const closed = (why) => { if (why !== 'finished') toast.show('Saved. Carry on whenever you like.'); };
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <Choice label="Which best describes you?" options={ROLE_OPTIONS} value={role} onChange={setRole} />
+      <div className="dr-row">
+        <Button onClick={() => setFull(true)}>Open it full screen</Button>
+      </div>
+      <div className="dr-tool-frame">
+        <SprintTool demo={demo} layout="framed" role={role} onClose={closed} />
+      </div>
+      <SprintTool demo={demo} layout="fullscreen" open={full} role={role} onClose={(why) => { setFull(false); closed(why); }} />
+    </div>
+  );
+}
+
 function FilterDemo() {
   const [type, setType] = useState('all');
   const [when, setWhen] = useState('any');
@@ -721,6 +751,16 @@ function Gallery() {
             <p>Nothing else on the page moves. It fits the space above the keyboard, so the line being typed stays in sight.</p>
             <p>Done, or a swipe down, closes it and puts you back in the same place, with what you wrote in the box. Nothing needs saving by hand.</p>
             <p>For long writing only: journal, reflections and debrief answers. On a laptop the box stays in the page and grows smoothly.</p>
+          </>
+        )} />
+
+        <GallerySection id="c27" title="Guided tools" wide demo={GuidedDemo} rules={(
+          <>
+            <p><New /><b>One shared component for every tool people work through in order</b>, one question per screen, as M6’s set-up flows. This demo uses M6’s Start a sprint wording.</p>
+            <p>Desktop opens focused, full screen: the header and menu step back. The top bar has the tool’s name, Saving and Saved, and the rotated crosshair to close, which returns you to where you came from.</p>
+            <p>The step list shows where you are (tap any step to jump); on phone it becomes the slim line under the top bar. Question tools use the % complete bar instead. Never a “Step 1 of 3” line.</p>
+            <p>Each step: a small label with an optional “i”, the question in sentence case, a short nudge, an optional “See an example” for your role, a one-off tip, then the step itself.</p>
+            <p>Back on the left (the arrow alone on phone), a quiet Skip, and the coral button. Steps slide across; with reduced motion they fade. Everything saves as you go, and the summary at the end lets you change any answer.</p>
           </>
         )} />
 

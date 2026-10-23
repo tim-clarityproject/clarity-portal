@@ -121,8 +121,11 @@
   transition: background-color var(--dur) var(--ease);
 }
 
-.ui-root .ds-btn--primary:hover {
-  background: var(--coral-soft);
+/* Hover only where there is a mouse, so a tap never leaves it lit. */
+@media (hover: hover) {
+  .ui-root .ds-btn--primary:hover {
+    background: var(--coral-soft);
+  }
 }
 
 .ui-root .ds-btn--primary:focus-visible {
@@ -2181,4 +2184,662 @@
   .ui-root .ds-focus {
     animation: none;
   }
+}
+
+/* ---------- Guided tools (M6 set-up flows, version 21) ---------- */
+
+/* The tool: full screen on real pages (sized to the visible space, so
+   on phone the footer rides above the keyboard), or filling its box in
+   the gallery. It lays itself out for phone or desktop by its own width,
+   so it is right in both places. */
+.ui-root .ds-guide {
+  container: guide / inline-size;
+  box-sizing: border-box;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  outline: none;
+}
+
+.ui-root .ds-guide--fullscreen {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--vv-top, 0px);
+  height: var(--vv-height, 100dvh);
+  z-index: var(--z-dialog);
+}
+
+.ui-root .ds-guide--framed {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.ui-root .ds-guide-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Top bar: the tool's name, Saving and Saved, the close crosshair. */
+.ui-root .ds-guide-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-px14);
+  box-sizing: border-box;
+  height: calc(var(--guide-bar-h) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--space-px20) 0 var(--space-px28);
+  border-bottom: var(--line-w) solid var(--line);
+  background: var(--bg);
+}
+
+.ui-root .ds-guide-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-tool-name);
+  letter-spacing: var(--ls-tool-name);
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-root .ds-guide-close .ds-cross--close {
+  width: var(--cross-tool);
+  height: var(--cross-tool);
+}
+
+.ui-root .ds-guide-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5) var(--space-5) var(--space-7);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.ui-root .ds-guide-page {
+  max-width: var(--guide-page-max);
+  margin-inline: auto;
+}
+
+/* Steps slide across: Next from the right, Back from the left. */
+.ui-root .ds-guide-page--next {
+  animation: ds-from-right var(--dur-slow) var(--ease) both;
+}
+
+.ui-root .ds-guide-page--back {
+  animation: ds-from-left var(--dur-slow) var(--ease) both;
+}
+
+@keyframes ds-from-right {
+  from { opacity: 0; transform: translateX(var(--slide-dist)); }
+}
+
+@keyframes ds-from-left {
+  from { opacity: 0; transform: translateX(calc(-1 * var(--slide-dist))); }
+}
+
+@keyframes ds-fade {
+  from { opacity: 0; }
+}
+
+/* With reduced motion they fade instead (tokens.css makes the durations
+   0 under reduced motion, so the fade has its own fixed length). */
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-guide-page--next,
+  .ui-root .ds-guide-page--back {
+    animation: ds-fade var(--dur-fade-still) linear both;
+  }
+}
+
+/* Where you are: the step list (desktop). */
+.ui-root .ds-guide-steps ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .ds-guide-steps li {
+  margin: 0;
+  padding: 0;
+}
+
+.ui-root .ds-guide-steps button {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px6);
+  min-height: var(--steps-h) !important;
+  padding: 0 var(--space-px12) !important;
+  border: var(--line-w) solid transparent;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--fs-meta) !important;
+  line-height: var(--lh-title);
+  letter-spacing: normal;
+  color: var(--label);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-guide-steps button b {
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-step-num);
+}
+
+.ui-root .ds-guide-steps button[aria-current='step'] {
+  color: var(--text);
+  border-color: var(--quiet-line);
+}
+
+.ui-root .ds-guide-steps button.ds-guide-done {
+  color: var(--text-2);
+}
+
+.ui-root .ds-guide-steps button:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+/* The % complete bar (question tools, phone and desktop). */
+.ui-root .ds-guide-pct {
+  display: flex;
+  align-items: center;
+  gap: var(--space-px12);
+}
+
+.ui-root .ds-guide-pct-track {
+  flex: 1;
+  height: var(--steps-line);
+  border-radius: var(--radius-bar);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.ui-root .ds-guide-pct-track > span {
+  display: block;
+  height: 100%;
+  background: var(--text);
+  transition: width var(--dur-slow) var(--ease);
+}
+
+.ui-root .ds-guide-pct-text {
+  min-width: var(--pct-text-w);
+  font-size: var(--fs-meta);
+  text-align: right;
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The step's head. */
+.ui-root .ds-guide-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-px20);
+  margin-top: var(--space-px28);
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ds-guide-i {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  box-sizing: border-box;
+  width: var(--info-size-step);
+  height: var(--info-size-step);
+  min-height: var(--info-size-step) !important;
+  padding: 0 !important;
+  border: var(--line-w) solid currentColor;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-glyph) !important;
+  line-height: 1;
+  color: var(--text-2);
+}
+
+/* 22px circle, 44px to tap. */
+.ui-root .ds-guide-i::after {
+  content: '';
+  position: absolute;
+  inset: calc((var(--tap-min) - var(--info-size-step)) / -2);
+}
+
+.ui-root .ds-guide-i:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-guide-info {
+  max-width: var(--nudge-max);
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+.ui-root .ds-guide .ds-guide-question {
+  margin: var(--space-2) 0 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-question) !important;
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-question);
+  letter-spacing: normal;
+  text-transform: none;
+  text-wrap: balance;
+  color: var(--text);
+  outline: none;
+}
+
+.ui-root .ds-guide .ds-guide-title {
+  margin: var(--space-2) 0 0 !important;
+  font-family: var(--font-display);
+  font-size: var(--fs-question) !important;
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-page-title);
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--text);
+  outline: none;
+}
+
+.ui-root .ds-guide-label + .ds-guide-question,
+.ui-root .ds-guide-label + .ds-guide-title,
+.ui-root .ds-guide-info + .ds-guide-question,
+.ui-root .ds-guide-info + .ds-guide-title {
+  margin-top: var(--space-2) !important;
+}
+
+/* With no small label, the question keeps the label's space above it. */
+.ui-root .ds-guide-steps + .ds-sr + .ds-guide-question,
+.ui-root .ds-guide-steps + .ds-sr + .ds-guide-title,
+.ui-root .ds-guide-pct + .ds-sr + .ds-guide-question,
+.ui-root .ds-guide-pct + .ds-sr + .ds-guide-title {
+  margin-top: calc(var(--space-px28) + var(--space-px20) + var(--space-2)) !important;
+}
+
+.ui-root .ds-guide-nudge {
+  max-width: var(--nudge-max);
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-nudge);
+  color: var(--text-2);
+}
+
+.ui-root .ds-guide-nudge + .ds-guide-nudge {
+  margin-top: var(--space-1);
+}
+
+.ui-root .ds-guide-example-link {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--space-px20) !important;
+  padding: var(--space-px10) 0 !important;
+  margin-top: var(--space-1);
+  font-family: var(--font-body);
+  font-size: var(--fs-note) !important;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  text-decoration-color: var(--quiet-line);
+}
+
+.ui-root .ds-guide-example-link:hover {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-guide-example-link:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  border-radius: var(--space-1);
+}
+
+.ui-root .ds-guide-example {
+  max-width: var(--example-max);
+  margin-top: var(--space-1);
+  padding: var(--space-px14) var(--space-3);
+  border-radius: var(--radius-example);
+  background: var(--raised);
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+/* The one-off tip, with the crosshair to close. */
+.ui-root .ds-guide-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-px10);
+  margin-top: var(--space-px20);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-px18);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+.ui-root .ds-guide-tip .ds-icon-btn {
+  width: var(--tip-close);
+  height: var(--tip-close);
+  min-height: var(--tip-close) !important;
+}
+
+.ui-root .ds-guide-tip .ds-cross--close {
+  width: var(--cross-tip);
+  height: var(--cross-tip);
+}
+
+.ui-root .ds-guide-body {
+  margin-top: var(--space-4);
+}
+
+/* The head arrives a moment before the content, as in M6. */
+.ui-root .ds-guide-page--next .ds-guide-rv,
+.ui-root .ds-guide-page--back .ds-guide-rv {
+  animation: ds-fade var(--dur-slow) var(--ease) both;
+}
+
+/* Footer: Back, then Skip and the coral button. */
+.ui-root .ds-guide-foot {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px10);
+  padding: var(--space-px14) var(--space-px28) max(var(--space-px18), env(safe-area-inset-bottom, 0px));
+  border-top: var(--line-w) solid var(--line);
+  background: var(--bg);
+}
+
+.ui-root .ds-guide--framed .ds-guide-foot {
+  padding-bottom: var(--space-px18);
+}
+
+.ui-root .ds-guide-foot-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-px6);
+}
+
+.ui-root .ds-guide-back {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--btn-h) !important;
+  padding: 0 var(--space-px6) !important;
+  font-family: var(--font-display);
+  font-size: var(--fs-btn) !important;
+  letter-spacing: var(--ls-back);
+  text-transform: uppercase;
+  color: var(--text-2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-guide-back svg {
+  width: var(--cross-sm);
+  height: var(--cross-sm);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.ui-root .ds-guide-back:hover {
+  color: var(--text);
+}
+
+.ui-root .ds-guide-back:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+.ui-root .ds-guide-skip {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--btn-h) !important;
+  padding: 0 var(--space-px10) !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-secondary) !important;
+  color: var(--label);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-guide-skip:hover {
+  color: var(--text);
+}
+
+.ui-root .ds-guide-skip:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  border-radius: var(--space-1);
+}
+
+.ui-root .ds-btn.ds-guide-next {
+  min-height: var(--btn-h-tool) !important;
+  padding: 0 var(--space-px28) !important;
+}
+
+/* The editable summary. */
+.ui-root .ds-guide-summary {
+  margin-top: var(--space-4);
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-guide-summary-row {
+  display: grid;
+  grid-template-columns: var(--summary-label-w) minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: start;
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-guide-summary-label {
+  font-size: var(--fs-note);
+  color: var(--label);
+}
+
+.ui-root .ds-guide-summary-value {
+  font-size: var(--fs-option);
+  color: var(--text);
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.ui-root .ds-guide-summary-value--empty {
+  color: var(--label);
+}
+
+.ui-root .ds-guide-summary-change {
+  all: unset;
+  cursor: pointer;
+  min-height: var(--space-5) !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-note) !important;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  text-decoration-color: var(--quiet-line);
+}
+
+.ui-root .ds-guide-summary-change:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+/* Phone (by the tool's own width). */
+@container guide (max-width: 600px) {
+  .ui-root .ds-guide-bar {
+    height: auto;
+    min-height: var(--guide-bar-h-phone);
+    padding: max(var(--space-3), env(safe-area-inset-top, 0px)) var(--space-px12) 0 var(--space-px22);
+    border-bottom: 0;
+  }
+
+  .ui-root .ds-guide-scroll {
+    padding: var(--space-2) var(--space-px20) var(--space-6);
+  }
+
+  /* The step list becomes the slim segmented line. */
+  .ui-root .ds-guide-steps ol {
+    flex-wrap: nowrap;
+    gap: var(--space-1);
+  }
+
+  .ui-root .ds-guide-steps li {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ui-root .ds-guide-steps button {
+    position: relative;
+    width: 100%;
+    min-height: var(--steps-h-phone) !important;
+    padding: 0 !important;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .ui-root .ds-guide-steps button b,
+  .ui-root .ds-guide-steps button span {
+    display: none;
+  }
+
+  .ui-root .ds-guide-steps button::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: var(--steps-line);
+    margin-top: calc(var(--steps-line) / -2);
+    border-radius: var(--radius-bar);
+    background: var(--line);
+  }
+
+  .ui-root .ds-guide-steps button.ds-guide-done::after {
+    background: var(--label);
+  }
+
+  .ui-root .ds-guide-steps button[aria-current='step']::after {
+    background: var(--text);
+  }
+
+  .ui-root .ds-guide-label {
+    margin-top: var(--space-px18);
+  }
+
+  .ui-root .ds-guide-steps + .ds-sr + .ds-guide-question,
+  .ui-root .ds-guide-steps + .ds-sr + .ds-guide-title,
+  .ui-root .ds-guide-pct + .ds-sr + .ds-guide-question,
+  .ui-root .ds-guide-pct + .ds-sr + .ds-guide-title {
+    margin-top: calc(var(--space-px18) + var(--space-px20) + var(--space-2)) !important;
+  }
+
+  .ui-root .ds-guide .ds-guide-question {
+    font-size: var(--fs-question-phone) !important;
+  }
+
+  .ui-root .ds-guide .ds-guide-title {
+    font-size: var(--fs-title-phone) !important;
+  }
+
+  /* Footer: the arrow alone, then Skip and a wide button under the thumb. */
+  .ui-root .ds-guide-foot {
+    gap: var(--space-px6);
+    padding: var(--space-px12) var(--space-px20) max(var(--space-px26), env(safe-area-inset-bottom, 0px));
+  }
+
+  .ui-root .ds-guide-back {
+    flex: none;
+    justify-content: center;
+    width: var(--tap-min);
+    padding: 0 !important;
+  }
+
+  .ui-root .ds-guide-back svg {
+    width: var(--space-px18);
+    height: var(--space-px18);
+  }
+
+  .ui-root .ds-guide-back span {
+    display: none;
+  }
+
+  .ui-root .ds-guide-foot-right {
+    flex: 1;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
+  .ui-root .ds-btn.ds-guide-next {
+    flex: 1;
+    min-width: 0;
+    padding: 0 var(--space-px14) !important;
+    letter-spacing: var(--ls-btn-phone);
+  }
+
+  .ui-root .ds-guide-summary-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ui-root .ds-guide-summary-value {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* ---------- Help panel: one line, then an example (M6) ---------- */
+
+.ui-root .ds-help-panel {
+  max-width: var(--example-max);
+  margin-top: var(--space-px20);
+  padding: var(--space-px18) var(--space-px20);
+  border-radius: var(--radius-card);
+  background: var(--raised);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+}
+
+.ui-root .ds-help-panel p {
+  margin: 0;
+}
+
+.ui-root .ds-help-panel p + p {
+  margin-top: var(--space-px6);
+}
+
+.ui-root .ds-help-panel .ds-help-panel-example {
+  color: var(--text);
+}
+
+/* A short hint under a box ("Optional.", "Any figure from 50 to 100."). */
+.ui-root .ds-hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
 }

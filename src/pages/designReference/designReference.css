@@ -17,6 +17,8 @@
   --dr-loadbox-h: 150px;
   --dr-swatch: 28px;
   --dr-type-label-w: 170px;
+  --dr-tool-h: 780px;
+  --dr-tool-h-phone: 720px;
 
   box-sizing: border-box;
   min-height: 100dvh;
@@ -478,4 +480,80 @@
   .ui-root .dr-laptop-only {
     display: none;
   }
+}
+
+/* The guided-tool demo's frame (as M6's product frame) and the bits of
+   its Start a sprint content that aren't shared components. */
+.ui-root .dr-tool-frame {
+  height: var(--dr-tool-h);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-sheet-desktop);
+  overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .ui-root .dr-tool-frame {
+    height: var(--dr-tool-h-phone);
+  }
+}
+
+.ui-root .dr-tmpl {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  padding: var(--space-3) var(--space-px18) !important;
+  border-radius: var(--radius-card);
+  background: var(--raised);
+  font-family: var(--font-body);
+  letter-spacing: normal;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .dr-tmpl span {
+  display: block;
+  font-size: var(--fs-option);
+  color: var(--text);
+}
+
+.ui-root .dr-tmpl small {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .dr-tmpl[aria-pressed='true'] {
+  outline: var(--line-w) solid var(--text);
+}
+
+.ui-root .dr-tmpl:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+.ui-root .dr-rows-tail {
+  max-width: var(--row-max-w);
+  margin-top: var(--space-2);
+}
+
+.ui-root .dr-pct {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .dr-pct-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-px10);
+}
+
+.ui-root .dr-pct-row .ds-textbox-field {
+  width: 110px;
+}
+
+.ui-root .dr-pct-row > span {
+  padding-bottom: var(--space-3);
+  font-size: var(--fs-text);
+  color: var(--text-2);
 }

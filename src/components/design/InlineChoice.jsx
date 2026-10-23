@@ -82,9 +82,11 @@ export default function InlineChoice({
             ))}
           </div>
         )}
+        {/* Keyed by form, so switching between pills and rows is instant
+            (a reused button would fade from one look to the other). */}
         {form === 'pills'
-          ? <div className={`ds-seg${isPhone ? ' ds-seg--equal' : ''}`} {...groupProps}>{buttons}</div>
-          : <div className="ds-rows" {...groupProps}>{buttons}</div>}
+          ? <div key="pills" className={`ds-seg${isPhone ? ' ds-seg--equal' : ''}`} {...groupProps}>{buttons}</div>
+          : <div key="rows" className="ds-rows" {...groupProps}>{buttons}</div>}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { pushLayer } from './layers';
 import { lockPage, unlockPage } from './pageLock';
 import { SaveStatus } from './Status';
 import { themeProps, useThemeScope } from './themeScope';
+import useViewportFit from './useViewportFit';
 import WhoSees from './WhoSees';
 import './design.css';
 
@@ -53,28 +54,8 @@ const FocusWriter = forwardRef(function FocusWriter({
     };
   }, [open]);
 
-  // Fill exactly the visible space above the keyboard, following it as
-  // the keyboard opens and closes and the phone rotates.
-  useLayoutEffect(() => {
-    const page = pageRef.current;
-    if (!open || !page) return undefined;
-    const vv = window.visualViewport;
-    const fit = () => {
-      const top = vv ? vv.offsetTop : 0;
-      const height = vv ? vv.height : window.innerHeight;
-      page.style.setProperty('--vv-top', `${top}px`);
-      page.style.setProperty('--vv-height', `${height}px`);
-    };
-    fit();
-    vv?.addEventListener('resize', fit);
-    vv?.addEventListener('scroll', fit);
-    window.addEventListener('resize', fit);
-    return () => {
-      vv?.removeEventListener('resize', fit);
-      vv?.removeEventListener('scroll', fit);
-      window.removeEventListener('resize', fit);
-    };
-  }, [open]);
+  // Fill exactly the visible space above the keyboard.
+  useViewportFit(pageRef, open);
 
   if (!open) return null;
 

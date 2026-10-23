@@ -225,6 +225,9 @@
   --cross-tip: 16px;
   --tip-close: 40px;
   --slide-dist: 24px;        /* how far a step slides in */
+  --summary-label-w: 190px;  /* the summary's label column */
+  --pct-text-w: 38px;
+  --dur-fade-still: 250ms;   /* the fade used instead of motion with reduced motion (not zeroed) */
 
   /* Steady text box and focus mode */
   --fs-focus-question: 17px;
