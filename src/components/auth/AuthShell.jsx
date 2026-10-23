@@ -107,7 +107,7 @@ export default function AuthShell({
         }
 
         .ui-root .auth-back:focus-visible {
-          outline: 2px solid var(--coral);
+          outline: 2px solid var(--coral-text);
           outline-offset: 2px;
         }
 
@@ -131,7 +131,7 @@ export default function AuthShell({
         }
 
         .auth-mark-link:focus-visible {
-          outline: 2px solid var(--coral);
+          outline: 2px solid var(--coral-text);
           outline-offset: 2px;
         }
 
@@ -175,7 +175,7 @@ export default function AuthShell({
           content: '';
           position: absolute;
           inset: 0;
-          background: var(--coral);
+          background: var(--coral-text);
           transform: scaleX(0);
           transform-origin: left;
         }
@@ -278,7 +278,7 @@ export default function AuthShell({
         .auth-rule {
           width: 56px;
           height: 1px;
-          background: var(--coral);
+          background: var(--coral-text);
           margin-top: 16px;
           transform: scaleX(0);
           animation: auth-rule-draw 900ms var(--ease) 350ms forwards;
@@ -334,7 +334,7 @@ export default function AuthShell({
         }
 
         .ui-root .auth-progress-hit:focus-visible {
-          outline: 2px solid var(--coral);
+          outline: 2px solid var(--coral-text);
           outline-offset: -2px;
           border-radius: 4px;
         }
@@ -371,7 +371,7 @@ export default function AuthShell({
 
         .auth-headline-aside {
           font-size: var(--fs-small);
-          color: var(--placeholder);
+          color: var(--label);
         }
 
         .auth-footer {

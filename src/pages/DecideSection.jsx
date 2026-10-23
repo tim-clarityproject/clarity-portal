@@ -1,6 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
-import { designTokens } from '../lib/designTokens';
 
 const DECIDE_ITEMS = [
   { id: 'tools', title: 'Decision Tools', description: 'Access all available decision-making frameworks', route: '/decision-tools' },
@@ -16,12 +15,12 @@ export default function DecideSection() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '0' }}>Decide</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', marginTop: '0', marginBottom: '0' }}>Decide</h1>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '0' }}>
@@ -31,14 +30,14 @@ export default function DecideSection() {
               onClick={() => handleDecideSelect(item.route)}
               style={{
                 padding: '20px',
-                backgroundColor: 'white',
-                border: '2px solid #e5e5e5',
+                backgroundColor: 'var(--raised)',
+                border: '2px solid var(--line)',
                 borderRadius: '12px',
-                color: '#333',
+                color: 'var(--text)',
                 fontWeight: '600',
                 cursor: 'pointer',
                 fontSize: '16px',
-                transition: 'all 0.2s',
+                transition: 'border-color 0.2s',
                 textAlign: 'left',
                 display: 'flex',
                 flexDirection: 'column',
@@ -46,17 +45,15 @@ export default function DecideSection() {
                 minHeight: '140px',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#F08571';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(240, 133, 113, 0.1)';
+                e.currentTarget.style.borderColor = 'var(--coral-text)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#e5e5e5';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = 'var(--line)';
               }}
             >
               <div>
                 <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>{item.title}</div>
-                <div style={{ fontSize: '13px', fontWeight: '400', opacity: 0.7 }}>{item.description}</div>
+                <div style={{ fontSize: '13px', fontWeight: '400', color: 'var(--text-2)' }}>{item.description}</div>
               </div>
             </button>
           ))}

@@ -1,7 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import DesignHeader from '../components/DesignHeader';
-import { designTokens } from '../lib/designTokens';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearAppStorage } from '../lib/clearAppStorage';
@@ -91,10 +90,10 @@ export default function AccountSection() {
 
   const cardStyle = {
     padding: '16px',
-    backgroundColor: 'white',
-    border: '2px solid #e5e5e5',
+    backgroundColor: 'var(--raised)',
+    border: '2px solid var(--line)',
     borderRadius: '12px',
-    color: '#333',
+    color: 'var(--text)',
     fontWeight: '600',
     cursor: 'pointer',
     fontSize: '16px',
@@ -107,12 +106,12 @@ export default function AccountSection() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: designTokens.colors.text.primary, marginTop: '0', marginBottom: '0' }}>Account</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', marginTop: '0', marginBottom: '0' }}>Account</h1>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '32px' }}>
@@ -120,12 +119,10 @@ export default function AccountSection() {
             onClick={() => navigate('/my-account', { state: { ...location.state } })}
             style={cardStyle}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(240, 133, 113, 0.1)';
+              e.currentTarget.style.borderColor = 'var(--coral-text)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.borderColor = 'var(--line)';
             }}
           >
             <div>
@@ -138,12 +135,10 @@ export default function AccountSection() {
             onClick={() => navigate('/about', { state: { ...location.state } })}
             style={cardStyle}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(240, 133, 113, 0.1)';
+              e.currentTarget.style.borderColor = 'var(--coral-text)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
-              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.borderColor = 'var(--line)';
             }}
           >
             <div>
@@ -158,17 +153,15 @@ export default function AccountSection() {
             onClick={handleLogout}
             style={{
               ...cardStyle,
-              color: '#F08571',
-              backgroundColor: '#fafafa',
-              borderColor: '#F08571',
+              color: 'var(--coral-text)',
+              backgroundColor: 'var(--raised)',
+              borderColor: 'var(--coral-text)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(240, 133, 113, 0.1)';
+              e.currentTarget.style.backgroundColor = 'var(--card)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#fafafa';
-              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.backgroundColor = 'var(--raised)';
             }}
           >
             <div>
@@ -182,22 +175,20 @@ export default function AccountSection() {
             disabled={isDeleting}
             style={{
               ...cardStyle,
-              color: '#ffffff',
-              backgroundColor: '#d32f2f',
-              borderColor: '#d32f2f',
+              color: 'var(--text)',
+              backgroundColor: 'var(--coral-soft-tint)',
+              borderColor: 'var(--coral-soft-text)',
               opacity: isDeleting ? 0.6 : 1,
               cursor: isDeleting ? 'not-allowed' : 'pointer',
             }}
             onMouseEnter={(e) => {
               if (!isDeleting) {
-                e.currentTarget.style.backgroundColor = '#b71c1c';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(211, 47, 47, 0.2)';
+                e.currentTarget.style.borderColor = 'var(--coral-text)';
               }
             }}
             onMouseLeave={(e) => {
               if (!isDeleting) {
-                e.currentTarget.style.backgroundColor = '#d32f2f';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = 'var(--coral-soft-text)';
               }
             }}
           >

@@ -158,7 +158,7 @@ export default function LegalDocumentPage() {
         }
 
         .legal-page-doc-link {
-          color: var(--coral);
+          color: var(--coral-text);
         }
       `}</style>
 

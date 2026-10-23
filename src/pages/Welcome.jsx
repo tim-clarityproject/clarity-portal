@@ -326,7 +326,7 @@ export default function Welcome() {
           grid-template-rows: auto auto 1fr;
           row-gap: 18px;
           align-content: start;
-          background: var(--surface);
+          background: var(--card);
           border: 1px solid var(--line);
           border-radius: var(--radius-card);
           padding: 22px var(--space-4) var(--space-4);
@@ -338,11 +338,11 @@ export default function Welcome() {
 
         .home-tile:hover,
         .home-tile:focus-visible {
-          border-color: var(--coral);
+          border-color: var(--coral-text);
         }
 
         .home-tile:focus-visible {
-          outline: 2px solid var(--coral);
+          outline: 2px solid var(--coral-text);
           outline-offset: 3px;
         }
 
@@ -366,7 +366,7 @@ export default function Welcome() {
         .home-root .home-tile-cross {
           width: 14px;
           height: 14px;
-          color: var(--coral);
+          color: var(--coral-text);
           flex-shrink: 0;
           transition: transform var(--dur) var(--ease);
         }
@@ -425,13 +425,13 @@ export default function Welcome() {
         }
 
         .home-root .home-all-tools-link:focus-visible {
-          outline: 2px solid var(--coral);
+          outline: 2px solid var(--coral-text);
           outline-offset: 2px;
           border-radius: 4px;
         }
 
         .home-root .home-all-tools-mark {
-          color: var(--coral);
+          color: var(--coral-text);
         }
 
         /* ---- Weekly momentum card ---- */
@@ -442,7 +442,7 @@ export default function Welcome() {
           align-items: center;
           gap: var(--space-3);
           margin-top: var(--space-5);
-          border: 1px solid var(--coral);
+          border: 1px solid var(--coral-text);
           border-radius: var(--radius-card);
           padding: 20px 22px;
           text-decoration: none;
@@ -481,7 +481,7 @@ export default function Welcome() {
         }
 
         .home-root .home-weekly-cross {
-          color: var(--coral);
+          color: var(--coral-text);
           flex-shrink: 0;
         }
 
@@ -542,7 +542,7 @@ export default function Welcome() {
         .home-root .home-section-link-cross {
           width: 14px;
           height: 14px;
-          color: var(--coral);
+          color: var(--coral-text);
         }
 
         .home-plans-list {
@@ -564,7 +564,7 @@ export default function Welcome() {
           bottom: 0;
           left: -1px;
           width: 3px;
-          background: var(--coral);
+          background: var(--coral-text);
           opacity: 0;
           transition: opacity var(--dur-fast) var(--ease);
         }
@@ -583,7 +583,7 @@ export default function Welcome() {
         }
 
         .home-plan-row-main:focus-visible {
-          outline: 2px solid var(--coral);
+          outline: 2px solid var(--coral-text);
           outline-offset: -2px;
           border-radius: 4px;
         }
@@ -599,7 +599,7 @@ export default function Welcome() {
 
         .home-plan-row:hover .home-plan-title,
         .home-plan-row:focus-within .home-plan-title {
-          color: var(--coral-soft);
+          color: var(--coral-soft-text);
         }
 
         .home-plan-meta {
@@ -636,7 +636,7 @@ export default function Welcome() {
 
         /* ---- Ground panel ---- */
         .home-ground-panel {
-          background: var(--surface);
+          background: var(--card);
           border: 1px solid var(--line);
           border-radius: var(--radius-card);
           padding: 28px var(--space-4);
@@ -653,7 +653,7 @@ export default function Welcome() {
         }
 
         .home-ground-panel:hover {
-          border-color: var(--coral);
+          border-color: var(--coral-text);
         }
 
         .home-ground-copy {
@@ -699,7 +699,7 @@ export default function Welcome() {
 
         .home-root .home-breathe-btn:hover,
         .home-root .home-breathe-btn:focus-visible {
-          background: var(--coral-soft);
+          background: var(--coral-hover);
         }
 
         .home-root .home-breathe-btn:focus-visible {
@@ -736,7 +736,7 @@ export default function Welcome() {
         }
 
         .home-root .home-about-link:focus-visible {
-          outline: 2px solid var(--coral);
+          outline: 2px solid var(--coral-text);
           outline-offset: 2px;
         }
       `}</style>

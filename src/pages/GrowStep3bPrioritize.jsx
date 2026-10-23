@@ -232,7 +232,7 @@ export default function GrowStep3bPrioritize() {
   const canSubmit = prioritizedOptions.length > 0;
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -242,55 +242,55 @@ export default function GrowStep3bPrioritize() {
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--outline)',
               borderRadius: '6px',
-              color: '#333',
+              color: 'var(--text)',
               fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.borderColor = 'var(--coral-text)';
+              e.target.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.borderColor = 'var(--outline)';
               e.target.style.backgroundColor = 'transparent';
             }}
           >
             My Decisions
           </button>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '32px' }}>
           Prioritize your options
         </h1>
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '75%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
         </div>
 
-        <p style={{ fontSize: '14px', color: '#666', marginBottom: '24px', lineHeight: '1.6' }}>
+        <p style={{ fontSize: '14px', color: 'var(--text-2)', marginBottom: '24px', lineHeight: '1.6' }}>
           Drag and drop your options to the right to place them in order of fit for your situation. You can leave any ideas you think are bad on the left.
         </p>
 
         {isLoading && (
-          <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px', marginBottom: '24px' }}>
+          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--label)', fontSize: '14px', marginBottom: '24px' }}>
             Loading saved options...
           </div>
         )}
 
         {error && (
-          <div style={{ padding: '16px', marginBottom: '24px', backgroundColor: '#ffebee', borderRadius: '8px', border: '1px solid #ef5350' }}>
-            <p style={{ fontSize: '14px', color: '#c62828', margin: '0 0 12px 0', fontWeight: '500' }}>
+          <div style={{ padding: '16px', marginBottom: '24px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
+            <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
               {error}
             </p>
             <button
               onClick={() => navigate(-1)}
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#ef5350',
-                color: 'white',
+                backgroundColor: 'var(--coral)',
+                color: 'var(--on-coral)',
                 border: 'none',
                 borderRadius: '6px',
                 fontSize: '13px',
@@ -298,8 +298,8 @@ export default function GrowStep3bPrioritize() {
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e53935'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#ef5350'}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
             >
               Go Back
             </button>
@@ -309,7 +309,7 @@ export default function GrowStep3bPrioritize() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', flex: 1 }}>
           {/* Available Options */}
           <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Your Options
             </h2>
             <div
@@ -320,10 +320,10 @@ export default function GrowStep3bPrioritize() {
                 flexDirection: 'column',
                 gap: '8px',
                 padding: '16px',
-                backgroundColor: '#fafafa',
+                backgroundColor: 'var(--raised)',
                 borderRadius: '8px',
                 minHeight: '400px',
-                border: '2px dashed #e5e5e5',
+                border: '2px dashed var(--line)',
               }}
             >
               {availableOptions.map((option, index) => (
@@ -332,19 +332,19 @@ export default function GrowStep3bPrioritize() {
                   draggable={editingSource !== 'available' || editingIndex !== index}
                   onDragStart={(e) => handleDragStart(e, option, 'available', index)}
                   onDragEnd={(e) => {
-                    e.currentTarget.style.backgroundColor = 'white';
-                    e.currentTarget.style.borderColor = '#e5e5e5';
+                    e.currentTarget.style.backgroundColor = 'var(--card)';
+                    e.currentTarget.style.borderColor = 'var(--line)';
                     setDraggedItem(null);
                     setDragOverIndex(null);
                   }}
                   style={{
                     padding: '12px 16px',
-                    backgroundColor: editingIndex === index && editingSource === 'available' ? '#f0f0f0' : 'white',
-                    border: '1px solid #e5e5e5',
+                    backgroundColor: editingIndex === index && editingSource === 'available' ? 'var(--line-soft)' : 'var(--card)',
+                    border: '1px solid var(--line)',
                     borderRadius: '6px',
                     cursor: editingIndex === index && editingSource === 'available' ? 'text' : 'grab',
                     fontSize: '14px',
-                    color: '#333',
+                    color: 'var(--text)',
                     transition: 'all 0.2s',
                     opacity: draggedItem?.item === option && draggedItem?.source === 'available' && draggedItem?.sourceIndex === index ? 0.5 : 1,
                     display: 'flex',
@@ -354,14 +354,14 @@ export default function GrowStep3bPrioritize() {
                   }}
                   onMouseEnter={(e) => {
                     if (!draggedItem && !(editingIndex === index && editingSource === 'available')) {
-                      e.currentTarget.style.backgroundColor = '#f9f9f9';
-                      e.currentTarget.style.borderColor = '#F08571';
+                      e.currentTarget.style.backgroundColor = 'var(--line-soft)';
+                      e.currentTarget.style.borderColor = 'var(--coral-text)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!(editingIndex === index && editingSource === 'available')) {
-                      e.currentTarget.style.backgroundColor = 'white';
-                      e.currentTarget.style.borderColor = '#e5e5e5';
+                      e.currentTarget.style.backgroundColor = 'var(--card)';
+                      e.currentTarget.style.borderColor = 'var(--line)';
                     }
                   }}
                 >
@@ -384,6 +384,7 @@ export default function GrowStep3bPrioritize() {
                           fontSize: '14px',
                           fontFamily: 'inherit',
                           backgroundColor: 'transparent',
+                          color: 'var(--text)',
                         }}
                       />
                     ) : (
@@ -398,12 +399,12 @@ export default function GrowStep3bPrioritize() {
                         backgroundColor: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
-                        color: '#999',
+                        color: 'var(--label)',
                         transition: 'color 0.2s',
                         flexShrink: 0,
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#F08571'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#999'}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--coral-text)'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--label)'}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -421,12 +422,12 @@ export default function GrowStep3bPrioritize() {
                         backgroundColor: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
-                        color: '#999',
+                        color: 'var(--label)',
                         transition: 'color 0.2s',
                         flexShrink: 0,
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#F08571'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#999'}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--coral-text)'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--label)'}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="3 6 5 6 21 6"></polyline>
@@ -439,7 +440,7 @@ export default function GrowStep3bPrioritize() {
                 </div>
               ))}
               {availableOptions.length === 0 && (
-                <p style={{ color: '#999', fontSize: '13px', margin: 'auto 0', textAlign: 'center' }}>
+                <p style={{ color: 'var(--label)', fontSize: '13px', margin: 'auto 0', textAlign: 'center' }}>
                   All options ranked
                 </p>
               )}
@@ -455,9 +456,9 @@ export default function GrowStep3bPrioritize() {
                 style={{
                   padding: '8px 16px',
                   backgroundColor: 'transparent',
-                  border: '1px solid #F08571',
+                  border: '1px solid var(--coral-text)',
                   borderRadius: '6px',
-                  color: '#F08571',
+                  color: 'var(--coral-text)',
                   fontSize: '13px',
                   fontWeight: '600',
                   cursor: 'pointer',
@@ -465,7 +466,7 @@ export default function GrowStep3bPrioritize() {
                   alignSelf: 'flex-start',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#f9f9f9';
+                  e.target.style.backgroundColor = 'var(--card)';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.backgroundColor = 'transparent';
@@ -478,7 +479,7 @@ export default function GrowStep3bPrioritize() {
 
           {/* Prioritized List */}
           <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Priority Order
             </h2>
             <div
@@ -523,10 +524,10 @@ export default function GrowStep3bPrioritize() {
                 flexDirection: 'column',
                 gap: '8px',
                 padding: '16px',
-                backgroundColor: '#fafafa',
+                backgroundColor: 'var(--raised)',
                 borderRadius: '8px',
                 minHeight: '400px',
-                border: '2px dashed #e5e5e5',
+                border: '2px dashed var(--line)',
               }}
             >
               {getDisplayPrioritizedOptions().map((option, index) => {
@@ -539,19 +540,19 @@ export default function GrowStep3bPrioritize() {
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDropOnSlot(e, index)}
                     onDragEnd={(e) => {
-                      e.currentTarget.style.backgroundColor = '#F08571';
-                      e.currentTarget.style.color = 'white';
+                      e.currentTarget.style.backgroundColor = 'var(--coral)';
+                      e.currentTarget.style.color = 'var(--on-coral)';
                       setDraggedItem(null);
                       setDragOverIndex(null);
                     }}
                     style={{
                       padding: '12px 16px',
-                      backgroundColor: editingIndex === originalIndex && editingSource === 'prioritized' ? '#e07560' : '#F08571',
-                      border: '1px solid #F08571',
+                      backgroundColor: editingIndex === originalIndex && editingSource === 'prioritized' ? 'var(--coral-hover)' : 'var(--coral)',
+                      border: '1px solid var(--coral)',
                       borderRadius: '6px',
                       cursor: editingIndex === originalIndex && editingSource === 'prioritized' ? 'text' : 'grab',
                       fontSize: '14px',
-                      color: 'white',
+                      color: 'var(--on-coral)',
                       fontWeight: '600',
                       transition: 'all 0.2s ease',
                       opacity: draggedItem?.item === option && draggedItem?.source === 'prioritized' ? 0.5 : 1,
@@ -562,12 +563,12 @@ export default function GrowStep3bPrioritize() {
                     }}
                     onMouseEnter={(e) => {
                       if (!(editingIndex === originalIndex && editingSource === 'prioritized')) {
-                        e.currentTarget.style.backgroundColor = '#e07560';
+                        e.currentTarget.style.backgroundColor = 'var(--coral-hover)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!(editingIndex === originalIndex && editingSource === 'prioritized')) {
-                        e.currentTarget.style.backgroundColor = '#F08571';
+                        e.currentTarget.style.backgroundColor = 'var(--coral)';
                       }
                     }}
                   >
@@ -591,7 +592,7 @@ export default function GrowStep3bPrioritize() {
                             fontWeight: '600',
                             fontFamily: 'inherit',
                             backgroundColor: 'transparent',
-                            color: 'white',
+                            color: 'var(--on-coral)',
                           }}
                         />
                       ) : (
@@ -606,12 +607,13 @@ export default function GrowStep3bPrioritize() {
                           backgroundColor: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          transition: 'color 0.2s',
+                          color: 'var(--on-coral)',
+                          opacity: 0.7,
+                          transition: 'opacity 0.2s',
                           flexShrink: 0,
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -629,12 +631,13 @@ export default function GrowStep3bPrioritize() {
                           backgroundColor: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          transition: 'color 0.2s',
+                          color: 'var(--on-coral)',
+                          opacity: 0.7,
+                          transition: 'opacity 0.2s',
                           flexShrink: 0,
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="3 6 5 6 21 6"></polyline>
@@ -648,7 +651,7 @@ export default function GrowStep3bPrioritize() {
                 );
               })}
               {prioritizedOptions.length === 0 && (
-                <p style={{ color: '#999', fontSize: '13px', margin: 'auto 0', textAlign: 'center' }}>
+                <p style={{ color: 'var(--label)', fontSize: '13px', margin: 'auto 0', textAlign: 'center' }}>
                   Drag options from the left to prioritize
                 </p>
               )}
@@ -666,21 +669,21 @@ export default function GrowStep3bPrioritize() {
                   marginTop: '12px',
                   padding: '10px 16px',
                   backgroundColor: 'transparent',
-                  border: '1px solid #e5e5e5',
+                  border: '1px solid var(--outline)',
                   borderRadius: '6px',
-                  color: '#999',
+                  color: 'var(--label)',
                   fontSize: '13px',
                   fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.borderColor = '#F08571';
-                  e.target.style.color = '#F08571';
+                  e.target.style.borderColor = 'var(--coral-text)';
+                  e.target.style.color = 'var(--coral-text)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.borderColor = '#e5e5e5';
-                  e.target.style.color = '#999';
+                  e.target.style.borderColor = 'var(--outline)';
+                  e.target.style.color = 'var(--label)';
                 }}
               >
                 Reset All

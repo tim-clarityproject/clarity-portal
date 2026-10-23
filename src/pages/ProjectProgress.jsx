@@ -64,35 +64,35 @@ export default function ProjectProgress() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', lineHeight: '1.4', marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text)', lineHeight: '1.4', marginBottom: '24px' }}>
             What is the progress status of each project?
           </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '75%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
         {/* Scale Legend */}
-        <div style={{ marginBottom: '48px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '12px', display: 'flex', gap: '24px', justifyContent: 'center', fontSize: '13px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: '#333', fontSize: '14px' }}>1</span> Not Started</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: '#333', fontSize: '14px' }}>2</span> Planning</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: '#333', fontSize: '14px' }}>3</span> In Progress</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: '#333', fontSize: '14px' }}>4</span> Near Complete</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: '#333', fontSize: '14px' }}>5</span> Completed</div>
+        <div style={{ marginBottom: '48px', padding: '20px', backgroundColor: 'var(--raised)', borderRadius: '12px', display: 'flex', gap: '24px', justifyContent: 'center', fontSize: '13px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>1</span> Not Started</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>2</span> Planning</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>3</span> In Progress</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>4</span> Near Complete</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '14px' }}>5</span> Completed</div>
         </div>
 
         {/* Projects Progress */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '32px', marginBottom: '48px' }}>
           {projects.map((project, index) => (
-            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '12px' }}>
+            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '20px', backgroundColor: 'var(--raised)', borderRadius: '12px' }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', fontSize: '16px', color: '#333', marginBottom: '12px' }}>
+                <div style={{ fontWeight: '600', fontSize: '16px', color: 'var(--text)', marginBottom: '12px' }}>
                   {project}
                 </div>
                 <input
@@ -104,7 +104,7 @@ export default function ProjectProgress() {
                   style={{
                     width: '100%',
                     cursor: 'pointer',
-                    accentColor: '#F08571',
+                    accentColor: 'var(--coral)',
                     height: '6px',
                   }}
                 />
@@ -112,10 +112,10 @@ export default function ProjectProgress() {
               <div style={{
                 textAlign: 'center',
                 fontWeight: '500',
-                color: '#000',
+                color: 'var(--text)',
                 fontSize: '14px',
                 flexShrink: 0,
-                border: '2px solid #F08571',
+                border: '2px solid var(--coral-text)',
                 borderRadius: '8px',
                 padding: '8px 12px',
                 minWidth: '50px',

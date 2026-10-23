@@ -46,7 +46,7 @@
 }
 
 .ui-root .al-mark:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: 2px;
 }
 
@@ -97,7 +97,7 @@
 .ui-root .al-dur {
   margin: var(--space-2) 0 0;
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 /* The email field starts 40px below the "about 15 minutes" line (the
@@ -128,7 +128,7 @@
 .ui-root .al-eg {
   margin: var(--space-2) 0 0;
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 .ui-root .al-eg i {
@@ -175,8 +175,8 @@
   justify-content: center;
   height: 54px;
   box-sizing: border-box;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--card);
+  border: 1px solid var(--field-line);
   border-radius: var(--radius-input);
   font-family: var(--font-display);
   font-weight: 400;
@@ -194,7 +194,7 @@
 }
 
 .ui-root .al-otp-box--active {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 /* The thin blinking caret in the box where the next character goes. */
@@ -205,7 +205,7 @@
   width: 1px;
   height: 24px;
   margin-top: -12px;
-  background: var(--coral);
+  background: var(--coral-text);
   animation: al-caret calc(var(--dur-slow) * 2.75) steps(1) infinite;
 }
 
@@ -255,7 +255,7 @@
   font-size: var(--fs-title-phone);
   line-height: 1.45;
   letter-spacing: -0.005em;
-  caret-color: var(--coral);
+  caret-color: var(--coral-text);
   min-height: var(--space-5);
 }
 
@@ -266,7 +266,7 @@
 }
 
 .ui-root .al-objective::placeholder {
-  color: var(--btn-line);
+  color: var(--label);
 }
 
 /* Long unbroken words in a project name wrap instead of running off. */
@@ -289,7 +289,7 @@
   font-weight: 400;
   font-size: var(--fs-label);
   letter-spacing: var(--ls-label);
-  color: var(--placeholder);
+  color: var(--label);
   transition: color var(--dur) var(--ease);
 }
 
@@ -308,8 +308,8 @@
   box-sizing: border-box;
   min-height: 52px;
   padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--card);
+  border: 1px solid var(--field-line);
   border-radius: var(--radius-input);
   color: var(--text);
   font-family: var(--font-body);
@@ -322,15 +322,15 @@
 }
 
 .ui-root .al-box::placeholder {
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 .ui-root .al-box:hover {
-  border-color: var(--btn-line);
+  border-color: var(--label);
 }
 
 .ui-root .al-box:focus {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 .ui-root .al-icon {
@@ -362,7 +362,7 @@
 }
 
 .ui-root .al-icon:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: -4px;
 }
 
@@ -393,14 +393,14 @@
 .ui-root .al-add .ui-cross {
   width: 16px;
   height: 16px;
-  color: var(--coral);
+  color: var(--coral-text);
   transition: transform var(--dur-slow) var(--ease);
 }
 
 .ui-root .al-add:hover,
 .ui-root .al-add:focus-visible {
   color: var(--text);
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 .ui-root .al-add:hover .ui-cross {
@@ -408,14 +408,14 @@
 }
 
 .ui-root .al-add:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: 2px;
 }
 
 .ui-root .al-count {
   margin: var(--space-4) 0 0 var(--space-5);
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 /* ---- contribution --------------------------------------------------------- */
@@ -438,7 +438,7 @@
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-label);
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 /* A Critical Success Factor added after projects were rated: the screens
@@ -524,7 +524,7 @@
   padding: var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
-  background: var(--surface);
+  background: var(--card);
 }
 
 .ui-root .al-score-top {
@@ -583,7 +583,7 @@
   align-items: center;
   min-height: 58px;
   padding: 0 var(--space-3) 0 var(--space-4);
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   transition: border-color var(--dur) var(--ease);
@@ -593,7 +593,7 @@
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 .ui-root .al-opt span {
@@ -607,12 +607,12 @@
 }
 
 .ui-root .al-opt:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: 2px;
 }
 
 .ui-root .al-opt[aria-checked="true"] {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 /* ---- footer: Back left, hint and Continue right ---------------------------- */
@@ -658,14 +658,14 @@
 }
 
 .ui-root .al-back:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 .ui-root .al-hint {
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--label);
   opacity: 0;
   transition: opacity var(--dur) var(--ease);
 }
@@ -714,11 +714,11 @@
 
 .ui-root .al-opd {
   font-size: var(--fs-small);
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 .ui-root .al-faint {
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 .ui-root .al-opobj {
@@ -790,7 +790,7 @@
 .ui-root .al-csfg > div {
   display: grid;
   grid-template-columns: var(--space-4) 1fr;
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-input);
   padding: var(--space-3);
@@ -814,7 +814,7 @@
 }
 
 .ui-root .al-panel {
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   padding: var(--space-4) var(--space-3) var(--space-3);
@@ -980,7 +980,7 @@
   font-size: var(--fs-tab);
   letter-spacing: var(--ls-overline);
   text-transform: uppercase;
-  color: var(--placeholder);
+  color: var(--label);
   transition: color var(--dur) var(--ease);
 }
 
@@ -990,7 +990,7 @@
 }
 
 .ui-root .al-hb:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: 2px;
 }
 
@@ -1002,7 +1002,7 @@
   margin: -5px 0 0 var(--space-2);
   width: 10px;
   height: 10px;
-  stroke: var(--coral);
+  stroke: var(--coral-text);
 }
 
 /* ---- project table: adapts to the space it has, not the device ---- */
@@ -1090,7 +1090,7 @@
   font-size: var(--fs-tab);
   letter-spacing: var(--ls-overline);
   text-transform: uppercase;
-  color: var(--placeholder);
+  color: var(--label);
   line-height: 1.35;
   min-height: 2.7em;
   display: flex;
@@ -1192,7 +1192,7 @@
     font-size: var(--fs-tab);
     letter-spacing: var(--ls-overline);
     text-transform: uppercase;
-    color: var(--placeholder);
+    color: var(--label);
   }
 
   .ui-root .al-rh > .al-hb:nth-of-type(1),
@@ -1225,7 +1225,7 @@
 .ui-root .al-onepager .al-note {
   margin-top: var(--space-4);
   line-height: 1.65;
-  color: var(--placeholder);
+  color: var(--label);
   max-width: 72ch;
 }
 
@@ -1256,7 +1256,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   width: 100%;
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   padding: var(--space-3) var(--space-3);
@@ -1270,7 +1270,7 @@
   top: var(--space-3);
   bottom: var(--space-3);
   width: 3px;
-  background: var(--coral);
+  background: var(--coral-text);
   transform: scaleY(0);
   transition: transform var(--dur) var(--ease);
 }
@@ -1286,7 +1286,7 @@
 }
 
 .ui-root .al-card:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: 2px;
 }
 
@@ -1303,7 +1303,7 @@
 .ui-root .al-card-name em {
   font-style: normal;
   margin-left: var(--space-2);
-  color: var(--placeholder);
+  color: var(--label);
   font-size: var(--fs-tab);
 }
 
@@ -1318,7 +1318,7 @@
 .ui-root .al-card .ui-cross {
   width: 20px;
   height: 20px;
-  color: var(--coral);
+  color: var(--coral-text);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1374,7 +1374,7 @@
 }
 
 .ui-root .al-edit:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -1384,7 +1384,7 @@
 }
 
 .ui-root .al-rr:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: -2px;
   border-radius: var(--radius-input);
 }
@@ -1449,7 +1449,7 @@
 }
 
 .ui-root .al-sort:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: 2px;
 }
 
@@ -1477,7 +1477,7 @@
   align-items: stretch;
   gap: var(--space-2);
   min-width: 0;
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   transition: border-color var(--dur) var(--ease);
@@ -1522,7 +1522,7 @@
   z-index: 30;
   box-sizing: border-box;
   padding: var(--space-3);
-  background: var(--surface);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   animation: al-pop-up var(--dur) var(--ease) both;
@@ -1561,7 +1561,7 @@
 
 .ui-root .al-pdfopt:hover,
 .ui-root .al-pdfopt:focus-visible {
-  border-color: var(--coral);
+  border-color: var(--coral-text);
 }
 
 .ui-root .al-pdfopt:focus-visible {
@@ -1602,7 +1602,7 @@
   z-index: 40;
   box-sizing: border-box;
   padding: var(--space-4) var(--page-x-phone) var(--space-3);
-  background: var(--surface);
+  background: var(--card);
   border-top: 1px solid var(--line);
   border-radius: var(--radius-card) var(--radius-card) 0 0;
   animation: al-sheet-up var(--dur-slow) var(--ease) both;
@@ -1637,7 +1637,7 @@
 }
 
 .ui-root .al-pdfcancel:focus-visible {
-  outline: 2px solid var(--coral);
+  outline: 2px solid var(--coral-text);
   outline-offset: -2px;
   border-radius: var(--radius-input);
 }

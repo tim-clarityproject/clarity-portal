@@ -69,7 +69,7 @@ export default function BreathingOrb({ size } = {}) {
           width: 100%;
           height: 100%;
           border: 1.6px solid var(--coral);
-          background: rgba(255, 111, 92, 0.07);
+          background: var(--orb-tint);
           animation: breathing-orb-pulse 10s infinite cubic-bezier(.45,0,.55,1);
         }
 

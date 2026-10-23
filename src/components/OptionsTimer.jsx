@@ -71,16 +71,15 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
       flexDirection: 'column',
       gap: '12px',
       padding: '16px 24px',
-      backgroundColor: '#fafafa',
+      backgroundColor: 'var(--raised)',
       borderRadius: '12px',
       marginBottom: '24px',
       position: 'sticky',
       top: '20px',
       zIndex: '10',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
     }}>
       {/* Instruction Text */}
-      <p style={{ fontSize: '13px', color: '#666', margin: '0 0 4px 0', lineHeight: '1.5' }}>
+      <p style={{ fontSize: '13px', color: 'var(--text-2)', margin: '0 0 4px 0', lineHeight: '1.5' }}>
         Create a list of options you have. There are no bad ideas at this point. Write them all down. You can reset the timer if you need more time, but don't give up before the 6 minutes is up.
       </p>
 
@@ -94,7 +93,7 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
             cy="50"
             r="45"
             fill="none"
-            stroke="#e5e5e5"
+            stroke="var(--line)"
             strokeWidth="4"
           />
           <circle
@@ -102,7 +101,7 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
             cy="50"
             r="45"
             fill="none"
-            stroke="#F08571"
+            stroke="var(--coral-text)"
             strokeWidth="4"
             strokeDasharray={`${(progress / 100) * 282.7} 282.7`}
             style={{ transition: 'stroke-dasharray 1s linear' }}
@@ -117,10 +116,10 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#1a1a1a' }}>
+          <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text)' }}>
             {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
           </div>
-          <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--label)', marginTop: '2px' }}>
             {isRunning ? 'running' : 'paused'}
           </div>
         </div>
@@ -132,8 +131,8 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
             onClick={handleToggle}
             style={{
               padding: '6px 12px',
-              backgroundColor: isRunning ? '#f9f9f9' : '#F08571',
-              color: isRunning ? '#F08571' : 'white',
+              backgroundColor: isRunning ? 'var(--card)' : 'var(--coral)',
+              color: isRunning ? 'var(--coral-text)' : 'var(--on-coral)',
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
@@ -156,8 +155,8 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
             style={{
               padding: '6px 12px',
               backgroundColor: 'transparent',
-              color: '#999',
-              border: '1px solid #e5e5e5',
+              color: 'var(--label)',
+              border: '1px solid var(--outline)',
               borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '11px',
@@ -165,12 +164,12 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.color = '#F08571';
+              e.target.style.borderColor = 'var(--coral-text)';
+              e.target.style.color = 'var(--coral-text)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
-              e.target.style.color = '#999';
+              e.target.style.borderColor = 'var(--outline)';
+              e.target.style.color = 'var(--label)';
             }}
           >
             Reset
@@ -186,22 +185,24 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
               style={{
                 width: '40px',
                 padding: '5px 6px',
-                border: '1px solid #e5e5e5',
+                border: '1px solid var(--field-line)',
                 borderRadius: '6px',
+                backgroundColor: 'var(--card)',
+                color: 'var(--text)',
                 fontSize: '11px',
                 textAlign: 'center',
                 outline: 'none',
               }}
-              onFocus={(e) => e.target.style.borderColor = '#F08571'}
-              onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+              onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
             />
-            <span style={{ fontSize: '11px', color: '#999', whiteSpace: 'nowrap' }}>min</span>
+            <span style={{ fontSize: '11px', color: 'var(--label)', whiteSpace: 'nowrap' }}>min</span>
             <button
               onClick={handleSetTime}
               style={{
                 padding: '5px 10px',
-                backgroundColor: '#F08571',
-                color: 'white',
+                backgroundColor: 'var(--coral)',
+                color: 'var(--on-coral)',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
@@ -209,8 +210,8 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
                 fontWeight: '600',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e07560'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#F08571'}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
             >
               Go
             </button>

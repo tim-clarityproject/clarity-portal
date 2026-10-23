@@ -28,14 +28,14 @@ export default function AuthCallback() {
   }, [navigate, user]);
 
   return (
-    <div style={{
+    <div className="ui-root" style={{
       minHeight: '100vh', paddingTop: 'var(--header-height)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'white',
+      backgroundColor: 'var(--bg)',
     }}>
-      <p style={{ color: '#999', fontSize: '14px' }}>Completing sign in...</p>
+      <p style={{ color: 'var(--label)', fontSize: '14px' }}>Completing sign in...</p>
     </div>
   );
 }

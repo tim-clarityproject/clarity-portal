@@ -133,7 +133,7 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           max-height: calc(100vh - 40px);
           display: flex;
           flex-direction: column;
-          background: var(--surface);
+          background: var(--card);
           border: 1px solid var(--line);
           border-radius: 16px;
           box-sizing: border-box;
@@ -182,7 +182,7 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
         .reading-popup-close-cross {
           width: 18px;
           height: 18px;
-          background-color: var(--coral);
+          background-color: var(--coral-text);
           -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
           mask: url('/brand/crosshair_white.png') center / contain no-repeat;
           transform: rotate(45deg);
@@ -221,7 +221,7 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
 
         .ui-root .reading-popup-tab.active {
           background: var(--coral);
-          color: #000;
+          color: var(--on-coral);
         }
 
         .reading-popup-body {
@@ -288,7 +288,7 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
         }
 
         .reading-popup-doc-link {
-          color: var(--coral);
+          color: var(--coral-text);
         }
 
         .reading-popup-footer {

@@ -40,28 +40,28 @@ export default function Strategies() {
   };
 
   const getNumberColor = (index) => {
-    if (index === 0) return '#F08571';
-    if (index === 1) return '#5ECCC0';
-    return '#666';
+    if (index === 0) return 'var(--coral-text)';
+    if (index === 1) return 'var(--mint-text)';
+    return 'var(--text-2)';
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
           {location.state?.problemTitle && (
-            <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--label)', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {location.state.problemTitle}
             </p>
           )}
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '24px' }}>
             Now, what's your strategy?
           </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '75%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
@@ -70,7 +70,7 @@ export default function Strategies() {
           {/* Left Column - Risks */}
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '4px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
                 The ways you could f*ck up
               </h2>
               <p style={{ fontSize: '12px', color: 'transparent', margin: 0, textAlign: 'center' }}>
@@ -90,7 +90,7 @@ export default function Strategies() {
                 >
                   <span
                     style={{
-                      color: '#F08571',
+                      color: 'var(--coral-text)',
                       fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
@@ -104,11 +104,11 @@ export default function Strategies() {
                     style={{
                       flex: 1,
                       padding: '12px 16px',
-                      backgroundColor: '#f5f5f5',
-                      border: '1px solid #e5e5e5',
+                      backgroundColor: 'var(--raised)',
+                      border: '1px solid var(--line)',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      color: '#333',
+                      color: 'var(--text)',
                     }}
                   >
                     {risk}
@@ -121,10 +121,10 @@ export default function Strategies() {
           {/* Right Column - Strategies */}
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '4px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
                 Your strategies
               </h2>
-              <p style={{ fontSize: '12px', color: '#999', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
+              <p style={{ fontSize: '12px', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
                 (Clue: It might be the exact opposite of the f*ck up)
               </p>
             </div>
@@ -133,7 +133,7 @@ export default function Strategies() {
                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '80px' }}>
                   <span
                     style={{
-                      color: '#F08571',
+                      color: 'var(--coral-text)',
                       fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
@@ -149,9 +149,11 @@ export default function Strategies() {
                     onChange={(e) => handleStrategyChange(index, e.target.value)}
                     placeholder="Type here"
                     style={{
+                      backgroundColor: 'var(--card)',
+                      color: 'var(--text)',
                       flex: 1,
                       padding: '12px 16px',
-                      border: '2px solid #e5e5e5',
+                      border: '2px solid var(--field-line)',
                       borderRadius: '8px',
                       fontSize: '14px',
                       fontFamily: 'inherit',
@@ -159,8 +161,8 @@ export default function Strategies() {
                       outline: 'none',
                       minHeight: '80px',
                     }}
-                    onFocus={(e) => e.target.style.borderColor = '#F08571'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+                    onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
                   />
                 </div>
               ))}

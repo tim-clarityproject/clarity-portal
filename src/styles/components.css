@@ -1,27 +1,10 @@
 /* UI Components - all unused for now, to be applied page by page */
 
-/* The one deliberate global rule in this file. src/index.css sets the
-   html element's background to white via :root { --bg: #fff; background:
-   var(--bg); } - the old light design's canvas colour. Every protected
-   page now has the new dark header and/or tab bar (both wrapped in
-   .ui-root) mounted on it, old pages included, via ProtectedLayout. On
-   phone that white html background was showing through on rubber-band
-   overscroll (pulling past the top or bottom) and in the body
-   padding-bottom gap reserved for the fixed tab bar. This selector only
-   fires when a .ui-root element actually exists in the page - i.e. only
-   on the new dark app shell - so public pages (Login, Terms, Privacy)
-   that never render .ui-root are completely unaffected, and it never
-   touches src/index.css or src/styles/mobile.css. Old page CONTENT is
-   untouched; only the canvas behind/around it turns black.
-   overscroll-behavior-y removes the rubber-band stretch itself where
-   the browser supports it (not supported everywhere, hence the
-   background-color fix above still being needed as the real fix). */
-html:has(.ui-root),
-html:has(.ui-root) body,
-html:has(.ui-root) #root {
-  background-color: #000;
-}
-
+/* The canvas behind the app (html and body) takes the page background of
+   the current colour mode from src/lib/colourMode/boot.js, set before the
+   first paint, so overscroll and the gap above the phone tab bar always
+   match the page. overscroll-behavior-y removes the rubber-band stretch
+   where the browser supports it. */
 html:has(.ui-root) {
   overscroll-behavior-y: none;
 }
@@ -220,7 +203,7 @@ html:has(.ui-root) {
 
 .ui-root .ui-btn-ghost--danger {
   color: var(--coral-text);
-  border-color: rgba(255, 111, 92, 0.45);
+  border-color: var(--outline);
 }
 
 .ui-root .ui-btn-ghost:disabled {
@@ -342,7 +325,7 @@ html:has(.ui-root) {
 }
 
 .ui-root .ui-switch--on::after {
-  background: #000000;
+  background: var(--on-coral);
   transform: translateX(18px);
 }
 
@@ -379,7 +362,7 @@ html:has(.ui-root) {
 
 .ui-root .ui-segmented-option.active {
   background: var(--coral);
-  color: #000000;
+  color: var(--on-coral);
 }
 
 .ui-segmented-bg {
@@ -643,7 +626,7 @@ html:has(.ui-root) {
   margin-top: 32px;
   border-radius: 999px;
   background: var(--coral);
-  color: #000;
+  color: var(--on-coral);
   border: none;
   font-family: var(--font-display);
   font-weight: 400;
@@ -660,7 +643,7 @@ html:has(.ui-root) {
 }
 
 .ui-root .auth-btn-primary:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--text);
   outline-offset: 3px;
 }
 
@@ -676,7 +659,7 @@ html:has(.ui-root) {
 .auth-btn-spinner {
   width: 18px;
   height: 18px;
-  background-color: #000;
+  background-color: var(--on-coral);
   -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
   mask: url('/brand/crosshair_white.png') center / contain no-repeat;
   animation: auth-btn-spin var(--dur-slow) linear infinite;
@@ -1612,8 +1595,7 @@ html:has(.ui-root) {
    pattern as above. Sizes/letter-spacing (48px min-height, 0.16em) are
    deliberately different from .ui-btn-primary/.ui-btn-ghost (44px,
    0.24em) per this task's spec, so new classes rather than reusing
-   those. rgba(255,111,92,*) alpha values have no existing token,
-   hardcoded the same way .ui-btn-ghost--danger already does above.
+   those. Every colour is a token (Phase 0c).
    ============================================================ */
 .ui-root .discard-dialog-keep {
   border-radius: var(--radius-pill);
@@ -1649,7 +1631,7 @@ html:has(.ui-root) {
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--coral-text);
-  border: 1px solid rgba(255, 111, 92, 0.35);
+  border: 1px solid var(--outline);
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-button) !important;
@@ -1666,7 +1648,7 @@ html:has(.ui-root) {
 .ui-root .dng:hover,
 .ui-root .dng:focus-visible {
   border-color: var(--coral);
-  background: rgba(255, 111, 92, 0.07);
+  background: var(--coral-soft-tint);
 }
 
 .ui-root .discard-dialog-discard:focus-visible,
@@ -3781,7 +3763,7 @@ span.tc-editable:focus-visible {
 
 .ui-root .pop-tactic-toggle-btn.active {
   background: var(--coral);
-  color: #000000;
+  color: var(--on-coral);
 }
 
 .ui-root .pop-tactic-toggle-btn:focus-visible {

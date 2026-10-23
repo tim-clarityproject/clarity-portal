@@ -298,7 +298,7 @@ export default function MyAccount() {
           text-transform: uppercase;
           letter-spacing: 0.22em;
           font-size: 11px;
-          color: var(--coral);
+          color: var(--coral-text);
           margin: 38px 0 6px;
         }
 
@@ -337,7 +337,7 @@ export default function MyAccount() {
         .account-row-count {
           font-family: var(--font-body);
           font-size: 12px;
-          color: var(--placeholder);
+          color: var(--label);
           margin-top: 6px;
         }
 

@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { designTokens } from '../lib/designTokens';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
@@ -127,7 +126,7 @@ export default function GrowStep1Goal() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -140,9 +139,9 @@ export default function GrowStep1Goal() {
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--outline)',
               borderRadius: '6px',
-              color: '#333',
+              color: 'var(--text)',
               fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
@@ -150,11 +149,11 @@ export default function GrowStep1Goal() {
               flexShrink: 0,
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.borderColor = 'var(--coral-text)';
+              e.target.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.borderColor = 'var(--outline)';
               e.target.style.backgroundColor = 'transparent';
             }}
           >
@@ -163,11 +162,11 @@ export default function GrowStep1Goal() {
         </div>
 
         <div style={{ marginBottom: '32px' }}>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '24px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '25%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '24px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '25%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
 
-          {isLoading && <p style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>Loading decision...</p>}
+          {isLoading && <p style={{ fontSize: '13px', color: 'var(--label)', marginBottom: '16px' }}>Loading decision...</p>}
 
           <textarea
             ref={refGoal}
@@ -175,10 +174,12 @@ export default function GrowStep1Goal() {
             onChange={handleChange}
             placeholder="Type here"
             style={{
+              backgroundColor: 'var(--card)',
+              color: 'var(--text)',
               width: '100%',
               minHeight: '300px',
               padding: '16px',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--field-line)',
               borderRadius: '8px',
               fontSize: '14px',
               fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -187,8 +188,8 @@ export default function GrowStep1Goal() {
               resize: 'none',
               overflow: 'hidden',
             }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+            onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+            onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
           />
         </div>
 

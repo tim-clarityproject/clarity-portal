@@ -133,9 +133,9 @@ export default function OnboardingMission() {
   };
 
   return (
-    <div style={{
+    <div className="ui-root" style={{
       minHeight: '100vh',
-      backgroundColor: 'white',
+      backgroundColor: 'var(--bg)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -177,7 +177,7 @@ export default function OnboardingMission() {
             <h1 style={{
               fontSize: '56px',
               fontWeight: 'bold',
-              color: 'black',
+              color: 'var(--text)',
               margin: 0,
               lineHeight: '1.2',
             }}>
@@ -201,7 +201,7 @@ export default function OnboardingMission() {
             <h2 style={{
               fontSize: '48px',
               fontWeight: 'bold',
-              color: 'black',
+              color: 'var(--text)',
               margin: '0 0 24px 0',
               lineHeight: '1.3',
               minHeight: '100px',
@@ -229,6 +229,7 @@ export default function OnboardingMission() {
                   onChange={(e) => setMission(e.target.value.slice(0, MAX_GOAL_LENGTH))}
                   onKeyPress={handleKeyPress}
                   placeholder="Type here"
+                  className="onboarding-mission-input"
                   style={{
                     width: '100%',
                     minHeight: '80px',
@@ -243,14 +244,15 @@ export default function OnboardingMission() {
                     resize: 'none',
                     transition: 'all 0.2s',
                     backgroundColor: 'transparent',
-                    borderBottom: '1px solid #f0f0f0',
+                    color: 'var(--text)',
+                    borderBottom: '1px solid var(--field-line)',
                     textAlign: 'center',
                   }}
                   autoFocus
                 />
                 <style>{`
-                  textarea::placeholder {
-                    color: #999;
+                  .ui-root .onboarding-mission-input::placeholder {
+                    color: var(--label);
                     text-align: center;
                   }
                 `}</style>
@@ -260,7 +262,7 @@ export default function OnboardingMission() {
                   textAlign: 'center',
                   marginBottom: '32px',
                   fontSize: '12px',
-                  color: isOverLimit ? '#F08571' : '#999',
+                  color: isOverLimit ? 'var(--coral-soft-text)' : 'var(--label)',
                 }}>
                   {charCount}/{MAX_GOAL_LENGTH} characters
                   {isOverLimit && (
@@ -279,8 +281,9 @@ export default function OnboardingMission() {
                     disabled={!mission.trim() || isSaving || isOverLimit}
                     style={{
                       padding: '12px 32px',
-                      backgroundColor: !mission.trim() || isSaving || isOverLimit ? '#ccc' : '#F08571',
-                      color: 'white',
+                      backgroundColor: 'var(--coral)',
+                      opacity: !mission.trim() || isSaving || isOverLimit ? 'var(--disabled-opacity)' : 1,
+                      color: 'var(--on-coral)',
                       fontWeight: '600',
                       border: 'none',
                       borderRadius: '8px',
@@ -290,12 +293,12 @@ export default function OnboardingMission() {
                     }}
                     onMouseEnter={(e) => {
                       if (mission.trim() && !isSaving && !isOverLimit) {
-                        e.target.style.backgroundColor = '#e07560';
+                        e.target.style.backgroundColor = 'var(--coral-hover)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (mission.trim() && !isSaving && !isOverLimit) {
-                        e.target.style.backgroundColor = '#F08571';
+                        e.target.style.backgroundColor = 'var(--coral)';
                       }
                     }}
                   >
@@ -307,7 +310,7 @@ export default function OnboardingMission() {
                     style={{
                       padding: '8px 16px',
                       backgroundColor: 'transparent',
-                      color: '#999',
+                      color: 'var(--label)',
                       fontWeight: '500',
                       border: 'none',
                       borderRadius: '4px',
@@ -316,10 +319,10 @@ export default function OnboardingMission() {
                       transition: 'all 0.2s',
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.color = '#666';
+                      e.target.style.color = 'var(--text-2)';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.color = '#999';
+                      e.target.style.color = 'var(--label)';
                     }}
                   >
                     I'll do this later in settings

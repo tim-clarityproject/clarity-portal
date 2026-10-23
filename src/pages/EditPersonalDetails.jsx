@@ -188,25 +188,25 @@ export default function EditPersonalDetails() {
           margin-top: 8px;
           width: 100%;
           box-sizing: border-box;
-          border: 1px solid var(--line);
+          border: 1px solid var(--field-line);
           border-radius: 12px;
           padding: 13px 14px !important;
           font-family: var(--font-body);
           font-size: 16px;
           color: var(--text);
-          background: var(--surface);
-          caret-color: var(--coral);
+          background: var(--card);
+          caret-color: var(--coral-text);
           outline: none;
           transition: border-color var(--dur-fast) var(--ease);
         }
 
         .edit-profile-input:focus {
-          border-color: var(--coral);
+          border-color: var(--coral-text);
           outline: none;
         }
 
         .edit-profile-input:disabled {
-          color: var(--placeholder);
+          color: var(--label);
           background: var(--bg);
           cursor: default;
         }
@@ -214,7 +214,7 @@ export default function EditPersonalDetails() {
         .edit-profile-note {
           font-family: var(--font-body);
           font-size: 12px;
-          color: var(--placeholder);
+          color: var(--label);
           margin-top: 6px;
         }
 

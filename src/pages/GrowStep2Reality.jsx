@@ -62,7 +62,7 @@ export default function GrowStep2Reality() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -72,20 +72,20 @@ export default function GrowStep2Reality() {
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--outline)',
               borderRadius: '6px',
-              color: '#333',
+              color: 'var(--text)',
               fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.borderColor = 'var(--coral-text)';
+              e.target.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.borderColor = 'var(--outline)';
               e.target.style.backgroundColor = 'transparent';
             }}
           >
@@ -94,12 +94,12 @@ export default function GrowStep2Reality() {
         </div>
         <h1 className="page-heading">What's the current situation?</h1>
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '50%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '50%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
         </div>
 
         <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '12px' }}>
             What are your constraints?
           </label>
           <textarea
@@ -108,10 +108,12 @@ export default function GrowStep2Reality() {
             onChange={handleConstraintsChange}
             placeholder="Type here"
             style={{
+              backgroundColor: 'var(--card)',
+              color: 'var(--text)',
               width: '100%',
               minHeight: '150px',
               padding: '16px',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--field-line)',
               borderRadius: '8px',
               fontSize: '14px',
               fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -121,11 +123,11 @@ export default function GrowStep2Reality() {
               overflow: 'hidden',
               marginBottom: '24px',
             }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+            onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+            onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
           />
 
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '12px' }}>
             What opportunities do you have?
           </label>
           <textarea
@@ -134,10 +136,12 @@ export default function GrowStep2Reality() {
             onChange={handleOpportunitiesChange}
             placeholder="Type here"
             style={{
+              backgroundColor: 'var(--card)',
+              color: 'var(--text)',
               width: '100%',
               minHeight: '150px',
               padding: '16px',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--field-line)',
               borderRadius: '8px',
               fontSize: '14px',
               fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -146,22 +150,22 @@ export default function GrowStep2Reality() {
               resize: 'none',
               overflow: 'hidden',
             }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+            onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+            onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
           />
         </div>
 
         {error && (
-          <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: '#ffebee', borderRadius: '8px', border: '1px solid #ef5350' }}>
-            <p style={{ fontSize: '14px', color: '#c62828', margin: '0 0 12px 0', fontWeight: '500' }}>
+          <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
+            <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
               {error}
             </p>
             <button
               onClick={onRetry}
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#ef5350',
-                color: 'white',
+                backgroundColor: 'var(--coral)',
+                color: 'var(--on-coral)',
                 border: 'none',
                 borderRadius: '6px',
                 fontSize: '13px',
@@ -169,8 +173,8 @@ export default function GrowStep2Reality() {
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e53935'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#ef5350'}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
             >
               Retry
             </button>
@@ -178,7 +182,7 @@ export default function GrowStep2Reality() {
         )}
 
         {isLoading ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--label)', fontSize: '14px' }}>
             Loading saved data...
           </div>
         ) : (

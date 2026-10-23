@@ -158,7 +158,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
         }
         .bqo-card {
           position: fixed; top: 50%; left: 50%; width: 100%; max-width: 440px;
-          box-sizing: border-box; background: var(--surface); border: 1px solid var(--line);
+          box-sizing: border-box; background: var(--card); border: 1px solid var(--line);
           border-radius: var(--radius-card); z-index: 5102;
           opacity: ${isOpen ? 1 : 0};
           transform: translate(-50%, -50%) translateY(${isOpen ? '0' : '8px'});

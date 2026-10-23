@@ -28,7 +28,7 @@ function Checkbox({ checked, onChange, error, shakeToken }) {
       onClick={() => onChange(!checked)}
     >
       <svg viewBox="0 0 20 20" width="12" height="12" className="auth-checkbox-tick" aria-hidden="true">
-        <path d="M4 10.5l3.5 3.5L16 6" fill="none" stroke="#000" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 10.5l3.5 3.5L16 6" fill="none" style={{ stroke: 'var(--on-coral)' }} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
   );

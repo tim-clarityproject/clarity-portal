@@ -69,28 +69,28 @@ export default function RisksAssessment() {
   const canSubmit = filledCount >= 1;
 
   const getNumberColor = (index) => {
-    if (index === 0) return '#F08571';
-    if (index === 1) return '#5ECCC0';
-    return '#666';
+    if (index === 0) return 'var(--coral-text)';
+    if (index === 1) return 'var(--mint-text)';
+    return 'var(--text-2)';
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1024px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
           {location.state?.problemTitle && (
-            <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--label)', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {location.state.problemTitle}
             </p>
           )}
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '24px' }}>
             If you wanted to make sure you failed, what would you do?
           </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '50%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '50%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
@@ -100,7 +100,7 @@ export default function RisksAssessment() {
               <div key={index} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px', height: '48px' }}>
                 <span
                   style={{
-                    color: '#F08571',
+                    color: 'var(--coral-text)',
                     fontWeight: 'bold',
                     fontSize: '20px',
                     minWidth: '24px',
@@ -114,17 +114,19 @@ export default function RisksAssessment() {
                   onChange={(e) => handleRiskChange(index, e.target.value)}
                   placeholder="Type here"
                   style={{
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text)',
                     flex: 1,
                     padding: '12px 16px',
-                    border: '2px solid #e5e5e5',
+                    border: '2px solid var(--field-line)',
                     borderRadius: '8px',
                     fontSize: '16px',
                     outline: 'none',
                     fontFamily: 'inherit',
                     transition: 'border-color 0.2s',
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#F08571'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                  onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+                  onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
                 />
                 {index >= 0 && (
                   <button
@@ -134,7 +136,7 @@ export default function RisksAssessment() {
                       backgroundColor: 'transparent',
                       border: 'none',
                       cursor: 'pointer',
-                      color: '#F08571',
+                      color: 'var(--coral-text)',
                       padding: '4px',
                     }}
                   >
@@ -151,9 +153,9 @@ export default function RisksAssessment() {
             style={{
               padding: '12px 24px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--outline)',
               borderRadius: '8px',
-              color: '#333',
+              color: 'var(--text)',
               fontWeight: '600',
               cursor: 'pointer',
               fontSize: '14px',
@@ -161,11 +163,11 @@ export default function RisksAssessment() {
               marginBottom: '32px',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.borderColor = 'var(--coral-text)';
+              e.target.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.borderColor = 'var(--outline)';
               e.target.style.backgroundColor = 'transparent';
             }}
           >

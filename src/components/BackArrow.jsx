@@ -14,7 +14,7 @@ export default function BackArrow() {
         padding: '8px 12px',
         backgroundColor: 'transparent',
         border: 'none',
-        color: '#F08571',
+        color: 'var(--coral-text)',
         cursor: 'pointer',
         borderRadius: '6px',
         transition: 'all 0.2s',

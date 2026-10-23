@@ -87,7 +87,7 @@ export default function ProjectList() {
   const canSubmit = filledProjects >= 1;
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       {/* Main Content */}
@@ -98,20 +98,20 @@ export default function ProjectList() {
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--outline)',
               borderRadius: '6px',
-              color: '#333',
+              color: 'var(--text)',
               fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.borderColor = 'var(--coral-text)';
+              e.target.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.borderColor = 'var(--outline)';
               e.target.style.backgroundColor = 'transparent';
             }}
           >
@@ -119,17 +119,17 @@ export default function ProjectList() {
           </button>
         </div>
 
-        <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <p style={{ fontSize: '13px', color: 'var(--label)', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Where my team should focus
         </p>
 
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '32px' }}>
           List your projects
         </h1>
 
         <div style={{ marginBottom: '32px' }}>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '25%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '25%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
@@ -137,7 +137,7 @@ export default function ProjectList() {
         <div style={{ display: 'flex', gap: '48px', flex: 1 }}>
           {/* Left Column - Critical Success Factors */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '16px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
               Critical Success Factors
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -153,7 +153,7 @@ export default function ProjectList() {
                 >
                   <span
                     style={{
-                      color: '#F08571',
+                      color: 'var(--coral-text)',
                       fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
@@ -167,11 +167,11 @@ export default function ProjectList() {
                     style={{
                       flex: 1,
                       padding: '12px 16px',
-                      backgroundColor: '#f5f5f5',
-                      border: '1px solid #e5e5e5',
+                      backgroundColor: 'var(--raised)',
+                      border: '1px solid var(--line)',
                       borderRadius: '8px',
                       fontSize: '14px',
-                      color: '#333',
+                      color: 'var(--text)',
                     }}
                   >
                     {factor}
@@ -183,7 +183,7 @@ export default function ProjectList() {
 
           {/* Right Column - Projects */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'black', marginBottom: '16px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
               Projects / Lines of Effort
             </h2>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
@@ -191,7 +191,7 @@ export default function ProjectList() {
                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '80px' }}>
                   <span
                     style={{
-                      color: '#F08571',
+                      color: 'var(--coral-text)',
                       fontWeight: 'bold',
                       fontSize: '16px',
                       minWidth: '20px',
@@ -207,9 +207,11 @@ export default function ProjectList() {
                     onChange={(e) => handleProjectChange(index, e.target.value)}
                     placeholder="Type here"
                     style={{
+                      backgroundColor: 'var(--card)',
+                      color: 'var(--text)',
                       flex: 1,
                       padding: '12px 16px',
-                      border: '2px solid #e5e5e5',
+                      border: '2px solid var(--field-line)',
                       borderRadius: '8px',
                       fontSize: '14px',
                       fontFamily: 'inherit',
@@ -217,8 +219,8 @@ export default function ProjectList() {
                       outline: 'none',
                       minHeight: '80px',
                     }}
-                    onFocus={(e) => e.target.style.borderColor = '#F08571'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+                    onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
                   />
                   <button
                     type="button"
@@ -226,7 +228,7 @@ export default function ProjectList() {
                     style={{
                       padding: '4px',
                       backgroundColor: 'transparent',
-                      color: '#F08571',
+                      color: 'var(--coral-text)',
                       border: 'none',
                       cursor: 'pointer',
                       display: 'flex',
@@ -235,8 +237,8 @@ export default function ProjectList() {
                       flexShrink: 0,
                       marginTop: '50px',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#e07560'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#F08571'}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--coral-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--coral-text)'}
                   >
                     <Trash2 size={20} />
                   </button>
@@ -251,7 +253,7 @@ export default function ProjectList() {
                     flex: 1,
                     padding: '12px',
                     backgroundColor: 'transparent',
-                    color: '#F08571',
+                    color: 'var(--coral-text)',
                     border: 'none',
                     cursor: 'pointer',
                     fontSize: '14px',
@@ -259,8 +261,8 @@ export default function ProjectList() {
                     transition: 'all 0.2s',
                     textAlign: 'center',
                   }}
-                  onMouseEnter={(e) => e.target.style.color = '#e07560'}
-                  onMouseLeave={(e) => e.target.style.color = '#F08571'}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--coral-hover)'}
+                  onMouseLeave={(e) => e.target.style.color = 'var(--coral-text)'}
                 >
                   Add another
                 </button>

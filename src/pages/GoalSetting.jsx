@@ -53,18 +53,18 @@ export default function GoalSetting() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
           <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '8px' }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '8px' }}>
               {path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}
             </h1>
             {location.state?.problemTitle && (
-              <p style={{ fontSize: '14px', color: '#999', fontWeight: '400', margin: 0, marginBottom: '24px' }}>
+              <p style={{ fontSize: '14px', color: 'var(--label)', fontWeight: '400', margin: 0, marginBottom: '24px' }}>
                 {location.state.problemTitle}
               </p>
             )}
@@ -74,8 +74,8 @@ export default function GoalSetting() {
             style={{
               padding: '10px 16px',
               backgroundColor: 'transparent',
-              border: '1px solid #e5e5e5',
-              color: '#333',
+              border: '1px solid var(--outline)',
+              color: 'var(--text)',
               cursor: 'pointer',
               fontSize: '13px',
               fontWeight: '600',
@@ -85,19 +85,19 @@ export default function GoalSetting() {
               marginTop: '4px',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#F08571';
-              e.currentTarget.style.backgroundColor = '#f9f9f9';
+              e.currentTarget.style.borderColor = 'var(--coral-text)';
+              e.currentTarget.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#e5e5e5';
+              e.currentTarget.style.borderColor = 'var(--outline)';
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
             My Decisions
           </button>
         </div>
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
-          <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
+          <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -115,8 +115,10 @@ export default function GoalSetting() {
             }}
             placeholder="Type here"
             style={{
+              backgroundColor: 'var(--card)',
+              color: 'var(--text)',
               padding: '16px',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--field-line)',
               borderRadius: '8px',
               fontSize: '16px',
               minHeight: '100px',
@@ -127,8 +129,8 @@ export default function GoalSetting() {
               outline: 'none',
               marginBottom: '48px',
             }}
-            onFocus={(e) => e.target.style.borderColor = '#F08571'}
-            onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+            onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+            onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
           />
         </form>
 

@@ -100,34 +100,34 @@ export default function ProjectMatrix() {
   const canSubmit = filledProjects >= 1;
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ marginBottom: '48px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'black', lineHeight: '1.4', wordSpacing: '0.1em', marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text)', lineHeight: '1.4', wordSpacing: '0.1em', marginBottom: '24px' }}>
             How much does each project/line of effort contribute to your Critical Success Factors?
           </h1>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '50%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '50%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
-        <div style={{ marginBottom: '24px', display: 'flex', gap: '24px', justifyContent: 'center', fontSize: '13px', color: '#666' }}>
+        <div style={{ marginBottom: '24px', display: 'flex', gap: '24px', justifyContent: 'center', fontSize: '13px', color: 'var(--text-2)' }}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <div style={{ width: '16px', height: '16px', borderRadius: '2px', backgroundColor: '#e5e5e5' }} />
+            <div style={{ width: '16px', height: '16px', borderRadius: '2px', backgroundColor: 'var(--card)', border: '1px solid var(--line)', boxSizing: 'border-box' }} />
             <span>None</span>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <div style={{ width: '16px', height: '16px', borderRadius: '2px', backgroundColor: '#F0A89E' }} />
+            <div style={{ width: '16px', height: '16px', borderRadius: '2px', backgroundColor: 'var(--line)' }} />
             <span>Low</span>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <div style={{ width: '16px', height: '16px', borderRadius: '2px', backgroundColor: '#D07560' }} />
+            <div style={{ width: '16px', height: '16px', borderRadius: '2px', backgroundColor: 'var(--coral-soft-text)' }} />
             <span>Medium</span>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <div style={{ width: '16px', height: '16px', borderRadius: '2px', backgroundColor: '#C0574C' }} />
+            <div style={{ width: '16px', height: '16px', borderRadius: '2px', backgroundColor: 'var(--coral)' }} />
             <span>High</span>
           </div>
         </div>
@@ -136,16 +136,16 @@ export default function ProjectMatrix() {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
             <thead>
               <tr>
-                <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '2px solid #333', fontWeight: 'bold', backgroundColor: '#f9f9f9', minWidth: '150px' }}>
+                <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '2px solid var(--quiet-line)', fontWeight: 'bold', backgroundColor: 'var(--raised)', minWidth: '150px' }}>
                   Project
                 </th>
                 {factors.map((factor, index) => (
-                  <th key={index} style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '2px solid #333', fontWeight: 'bold', backgroundColor: '#f9f9f9', minWidth: '140px', borderLeft: '1px solid #e5e5e5' }}>
-                    <div style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>CSF</div>
+                  <th key={index} style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '2px solid var(--quiet-line)', fontWeight: 'bold', backgroundColor: 'var(--raised)', minWidth: '140px', borderLeft: '1px solid var(--line)' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--label)', marginBottom: '4px' }}>CSF</div>
                     {factor}
                   </th>
                 ))}
-                <th style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '2px solid #333', fontWeight: 'bold', backgroundColor: '#f9f9f9', minWidth: '120px', borderLeft: '1px solid #e5e5e5', fontSize: '14px', color: '#333' }}>
+                <th style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '2px solid var(--quiet-line)', fontWeight: 'bold', backgroundColor: 'var(--raised)', minWidth: '120px', borderLeft: '1px solid var(--line)', fontSize: '14px', color: 'var(--text)' }}>
                   Strategic Importance Score
                 </th>
               </tr>
@@ -153,11 +153,11 @@ export default function ProjectMatrix() {
             <tbody>
               {projects.map((project, projectIndex) => (
                 <tr key={projectIndex}>
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #e5e5e5', position: 'relative' }}>
+                  <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', position: 'relative' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
-                      <input type="text" value={project} onChange={(e) => handleProjectChange(projectIndex, e.target.value)} placeholder="Type here" style={{ width: '100%', padding: '12px 28px', border: '2px solid #e5e5e5', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} onFocus={(e) => e.target.style.borderColor = '#F08571'} onBlur={(e) => e.target.style.borderColor = '#e5e5e5'} />
+                      <input type="text" value={project} onChange={(e) => handleProjectChange(projectIndex, e.target.value)} placeholder="Type here" style={{ backgroundColor: 'var(--card)', color: 'var(--text)', width: '100%', padding: '12px 28px', border: '2px solid var(--field-line)', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }} onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'} onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'} />
                       {projectIndex >= 1 && (
-                        <button type="button" onClick={() => handleRemoveProject(projectIndex)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', padding: '4px', backgroundColor: 'transparent', color: '#999', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#F08571'} onMouseLeave={(e) => e.target.style.color = '#999'}>
+                        <button type="button" onClick={() => handleRemoveProject(projectIndex)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', padding: '4px', backgroundColor: 'transparent', color: 'var(--label)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'var(--coral-text)'} onMouseLeave={(e) => e.target.style.color = 'var(--label)'}>
                           <Trash2 size={18} />
                         </button>
                       )}
@@ -166,21 +166,21 @@ export default function ProjectMatrix() {
                   {factors.map((factor, factorIndex) => {
                     const key = `${projectIndex}-${factorIndex}`;
                     const currentValue = matrix[key] || 0;
-                    const getColor = (val) => { if (val === 0) return '#e5e5e5'; if (val === 1) return '#F0A89E'; if (val === 2) return '#D07560'; return '#C0574C'; };
+                    const getColor = (val) => { if (val === 0) return 'var(--card)'; if (val === 1) return 'var(--line)'; if (val === 2) return 'var(--coral-soft-text)'; return 'var(--coral)'; };
                     const getLabel = (val) => { const labels = ['None', 'Low', 'Medium', 'High']; return labels[val]; };
                     return (
-                      <td key={key} style={{ padding: '12px 16px', borderBottom: '1px solid #e5e5e5', borderLeft: '1px solid #e5e5e5', textAlign: 'center' }}>
+                      <td key={key} style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '40px' }}>
-                          <button onClick={() => { if (currentValue > 0) { handleMatrixChange(projectIndex, factorIndex, currentValue - 1); } }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.color = '#333'} onMouseLeave={(e) => e.target.style.color = '#999'} title="Decrease">−</button>
-                          <div style={{ width: '40px', height: '32px', backgroundColor: getColor(currentValue), borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '10px', color: currentValue === 0 ? '#999' : 'white', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s', title: 'Click to cycle or use buttons', lineHeight: '1', letterSpacing: '-0.3px' }}>
+                          <button onClick={() => { if (currentValue > 0) { handleMatrixChange(projectIndex, factorIndex, currentValue - 1); } }} style={{ background: 'none', border: 'none', color: 'var(--label)', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.color = 'var(--text)'} onMouseLeave={(e) => e.target.style.color = 'var(--label)'} title="Decrease">−</button>
+                          <div style={{ width: '40px', height: '32px', backgroundColor: getColor(currentValue), border: currentValue === 0 ? '1px solid var(--line)' : 'none', boxSizing: 'border-box', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '10px', color: currentValue === 0 ? 'var(--label)' : currentValue === 1 ? 'var(--text)' : 'var(--on-coral)', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s', title: 'Click to cycle or use buttons', lineHeight: '1', letterSpacing: '-0.3px' }}>
                             {getLabel(currentValue)}
                           </div>
-                          <button onClick={() => { if (currentValue < 3) { handleMatrixChange(projectIndex, factorIndex, currentValue + 1); } }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.color = '#333'} onMouseLeave={(e) => e.target.style.color = '#999'} title="Increase">+</button>
+                          <button onClick={() => { if (currentValue < 3) { handleMatrixChange(projectIndex, factorIndex, currentValue + 1); } }} style={{ background: 'none', border: 'none', color: 'var(--label)', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.color = 'var(--text)'} onMouseLeave={(e) => e.target.style.color = 'var(--label)'} title="Increase">+</button>
                         </div>
                       </td>
                     );
                   })}
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #e5e5e5', borderLeft: '1px solid #e5e5e5', textAlign: 'center', fontWeight: '600', color: '#F08571' }}>
+                  <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', textAlign: 'center', fontWeight: '600', color: 'var(--coral-text)' }}>
                     {factors.reduce((sum, _, factorIndex) => sum + (matrix[`${projectIndex}-${factorIndex}`] || 0), 0)}
                   </td>
                 </tr>
@@ -189,7 +189,7 @@ export default function ProjectMatrix() {
           </table>
         </div>
 
-        <button type="button" onClick={handleAddProject} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#F08571', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', marginBottom: '48px' }} onMouseEnter={(e) => e.target.style.color = '#e07560'} onMouseLeave={(e) => e.target.style.color = '#F08571'}>
+        <button type="button" onClick={handleAddProject} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: 'var(--coral-text)', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', marginBottom: '48px' }} onMouseEnter={(e) => e.target.style.color = 'var(--coral-hover)'} onMouseLeave={(e) => e.target.style.color = 'var(--coral-text)'}>
           Add another
         </button>
 

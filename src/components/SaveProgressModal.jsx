@@ -23,32 +23,31 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(2px)',
-      }}
-    >
+    <div className="ui-root save-progress-overlay">
+      <style>{`
+        .ui-root.save-progress-overlay {
+          position: fixed;
+          inset: 0;
+          background-color: var(--scrim);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+      `}</style>
       <div
         style={{
-          backgroundColor: 'white',
+          backgroundColor: 'var(--raised)',
           borderRadius: '16px',
           padding: '40px',
           maxWidth: '420px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)',
         }}
       >
         <h2
           style={{
             fontSize: '24px',
             fontWeight: 'bold',
-            color: '#1a1a1a',
+            color: 'var(--text)',
             marginBottom: '12px',
             marginTop: 0,
           }}
@@ -59,7 +58,7 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
           <>
             <p
               style={{
-                color: '#666',
+                color: 'var(--text-2)',
                 fontSize: '15px',
                 marginBottom: '32px',
                 lineHeight: '1.6',
@@ -80,8 +79,8 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
                 onClick={handleSave}
                 style={{
                   padding: '12px 24px',
-                  backgroundColor: '#F08571',
-                  color: 'white',
+                  backgroundColor: 'var(--coral)',
+                  color: 'var(--on-coral)',
                   fontWeight: '600',
                   border: 'none',
                   borderRadius: '8px',
@@ -89,8 +88,8 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
                   fontSize: '14px',
                   transition: 'all 0.2s',
                 }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = '#e07560')}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = '#F08571')}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = 'var(--coral-hover)')}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = 'var(--coral)')}
               >
                 Save & Exit
               </button>
@@ -99,21 +98,21 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
                 style={{
                   padding: '12px 24px',
                   backgroundColor: 'transparent',
-                  color: '#666',
+                  color: 'var(--text-2)',
                   fontWeight: '600',
-                  border: '1px solid #e5e5e5',
+                  border: '1px solid var(--outline)',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#f5f5f5';
-                  e.target.style.borderColor = '#ccc';
+                  e.target.style.backgroundColor = 'var(--card)';
+                  e.target.style.borderColor = 'var(--quiet-line)';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.backgroundColor = 'transparent';
-                  e.target.style.borderColor = '#e5e5e5';
+                  e.target.style.borderColor = 'var(--outline)';
                 }}
               >
                 Discard
@@ -123,15 +122,15 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
                 style={{
                   padding: '12px 24px',
                   backgroundColor: 'transparent',
-                  color: '#999',
+                  color: 'var(--label)',
                   fontWeight: '600',
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '14px',
                   transition: 'all 0.2s',
                 }}
-                onMouseEnter={(e) => (e.target.style.color = '#333')}
-                onMouseLeave={(e) => (e.target.style.color = '#999')}
+                onMouseEnter={(e) => (e.target.style.color = 'var(--text)')}
+                onMouseLeave={(e) => (e.target.style.color = 'var(--label)')}
               >
                 Keep Editing
               </button>
@@ -141,7 +140,7 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
         {saved && (
           <p
             style={{
-              color: '#666',
+              color: 'var(--text-2)',
               fontSize: '15px',
               marginBottom: '0',
               lineHeight: '1.6',

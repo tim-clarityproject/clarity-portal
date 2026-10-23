@@ -55,7 +55,7 @@ export default function About() {
         .about-rule {
           width: 28px;
           height: 1px;
-          background: var(--coral);
+          background: var(--coral-text);
           margin: var(--space-4) auto var(--space-5);
         }
 

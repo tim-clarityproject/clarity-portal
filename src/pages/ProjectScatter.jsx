@@ -174,7 +174,7 @@ export default function ProjectScatter() {
   const scaleY = (importanceValue) => svgHeight - bottomPadding - (importanceValue / (maxImportance + 2)) * plotHeight;
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @page {
           margin: 0.3in 0.5in;
@@ -220,42 +220,42 @@ export default function ProjectScatter() {
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--outline)',
               borderRadius: '6px',
-              color: '#333',
+              color: 'var(--text)',
               fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.borderColor = 'var(--coral-text)';
+              e.target.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.borderColor = 'var(--outline)';
               e.target.style.backgroundColor = 'transparent';
             }}
           >
             My Decisions
           </button>
         </div>
-        <p style={{ fontSize: '13px', color: '#999', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <p style={{ fontSize: '13px', color: 'var(--label)', fontWeight: '500', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Where my team should focus
         </p>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'black', margin: 0, marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text)', margin: 0, marginBottom: '32px' }}>
           Are you allocating your resources appropriately?
         </h1>
 
         <div style={{ marginBottom: '32px' }}>
-          <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '100%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+          <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
         {/* Gartner Magic Quadrant */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '48px' }}>
-          <svg width={svgWidth} height={svgHeight} style={{ backgroundColor: 'white' }} onClick={() => setSelectedProjectIdx(null)}>
+          <svg width={svgWidth} height={svgHeight} style={{ backgroundColor: 'var(--raised)' }} onClick={() => setSelectedProjectIdx(null)}>
             {/* Click-to-deselect background */}
             <rect x={leftPadding} y={topPadding} width={plotWidth} height={plotHeight} fill="transparent" pointerEvents="none" />
 
@@ -266,7 +266,7 @@ export default function ProjectScatter() {
               y={topPadding}
               width={plotWidth / 2}
               height={plotHeight / 2}
-              fill="#F08571"
+              fill="var(--coral)"
               opacity={hoveredQuadrant === 'topLeft' ? '0.15' : '0.08'}
               style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
               onMouseEnter={() => setHoveredQuadrant('topLeft')}
@@ -278,7 +278,7 @@ export default function ProjectScatter() {
               y={topPadding}
               width={plotWidth / 2}
               height={plotHeight / 2}
-              fill="#5ECCC0"
+              fill="var(--mint-text)"
               opacity={hoveredQuadrant === 'topRight' ? '0.2' : '0.12'}
               style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
               onMouseEnter={() => setHoveredQuadrant('topRight')}
@@ -290,7 +290,7 @@ export default function ProjectScatter() {
               y={midY}
               width={plotWidth / 2}
               height={plotHeight / 2}
-              fill="#e5e5e5"
+              fill="var(--label)"
               opacity={hoveredQuadrant === 'bottomLeft' ? '0.15' : '0.08'}
               style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
               onMouseEnter={() => setHoveredQuadrant('bottomLeft')}
@@ -302,7 +302,7 @@ export default function ProjectScatter() {
               y={midY}
               width={plotWidth / 2}
               height={plotHeight / 2}
-              fill="#F08571"
+              fill="var(--coral)"
               opacity={hoveredQuadrant === 'bottomRight' ? '0.12' : '0.05'}
               style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
               onMouseEnter={() => setHoveredQuadrant('bottomRight')}
@@ -311,14 +311,14 @@ export default function ProjectScatter() {
 
 
             {/* Axis lines */}
-            <line x1={leftPadding} y1={midY} x2={svgWidth - rightPadding} y2={midY} stroke="#333" strokeWidth="2" />
-            <line x1={midX} y1={topPadding} x2={midX} y2={svgHeight - bottomPadding} stroke="#333" strokeWidth="2" />
+            <line x1={leftPadding} y1={midY} x2={svgWidth - rightPadding} y2={midY} stroke="var(--text-2)" strokeWidth="2" />
+            <line x1={midX} y1={topPadding} x2={midX} y2={svgHeight - bottomPadding} stroke="var(--text-2)" strokeWidth="2" />
 
             {/* X-axis scale and ticks */}
             {[1, 2, 3, 4, 5].map((tick) => (
               <g key={`x-tick-${tick}`}>
-                <line x1={scaleX(tick)} y1={midY} x2={scaleX(tick)} y2={midY + 6} stroke="#333" strokeWidth="1" />
-                <text x={scaleX(tick)} y={midY + 22} textAnchor="middle" fontSize="12" fill="#333" fontWeight="500" pointerEvents="none" style={{ textShadow: '0 0 3px rgba(255,255,255,0.8)' }}>
+                <line x1={scaleX(tick)} y1={midY} x2={scaleX(tick)} y2={midY + 6} stroke="var(--text-2)" strokeWidth="1" />
+                <text x={scaleX(tick)} y={midY + 22} textAnchor="middle" fontSize="12" fill="var(--text)" fontWeight="500" pointerEvents="none">
                   {tick}
                 </text>
               </g>
@@ -327,18 +327,18 @@ export default function ProjectScatter() {
             {/* Y-axis scale and ticks - centered on vertical line */}
             {Array.from({ length: Math.ceil(maxImportance + 2) + 1 }, (_, i) => i).map((tick, idx) => (
               <g key={`y-tick-${idx}`}>
-                <line x1={midX - 4} y1={scaleY(tick)} x2={midX + 4} y2={scaleY(tick)} stroke="#333" strokeWidth="1" />
-                <text x={midX - 15} y={scaleY(tick) + 4} textAnchor="end" fontSize="12" fill="#333" fontWeight="500" pointerEvents="none" style={{ textShadow: '0 0 3px rgba(255,255,255,0.8)' }}>
+                <line x1={midX - 4} y1={scaleY(tick)} x2={midX + 4} y2={scaleY(tick)} stroke="var(--text-2)" strokeWidth="1" />
+                <text x={midX - 15} y={scaleY(tick) + 4} textAnchor="end" fontSize="12" fill="var(--text)" fontWeight="500" pointerEvents="none">
                   {tick}
                 </text>
               </g>
             ))}
 
             {/* Axis titles */}
-            <text x={svgWidth - rightPadding + 15} y={midY - 8} fontSize="12" fill="#333" fontWeight="bold">
+            <text x={svgWidth - rightPadding + 15} y={midY - 8} fontSize="12" fill="var(--text)" fontWeight="bold">
               Project Progress
             </text>
-            <text x={midX} y={topPadding - 15} textAnchor="middle" fontSize="12" fill="#333" fontWeight="bold">
+            <text x={midX} y={topPadding - 15} textAnchor="middle" fontSize="12" fill="var(--text)" fontWeight="bold">
               Strategic Importance
             </text>
 
@@ -358,7 +358,7 @@ export default function ProjectScatter() {
                     cx={x}
                     cy={y}
                     r={isSelected ? 10 : 7}
-                    fill="#F08571"
+                    fill="var(--coral)"
                     opacity={isSelected ? 1 : 0.8}
                     style={{ transition: 'all 0.2s ease' }}
                   />
@@ -367,7 +367,7 @@ export default function ProjectScatter() {
                     cy={y}
                     r={isSelected ? 10 : 7}
                     fill="none"
-                    stroke="#F08571"
+                    stroke="var(--coral-text)"
                     strokeWidth={isSelected ? 3 : 2}
                     opacity={isSelected ? 0.8 : 0.4}
                     style={{ transition: 'all 0.2s ease' }}
@@ -377,7 +377,7 @@ export default function ProjectScatter() {
                     x={labelX}
                     y={labelY}
                     fontSize={isSelected ? '12' : '11'}
-                    fill={isSelected ? '#F08571' : '#333'}
+                    fill={isSelected ? 'var(--coral-text)' : 'var(--text)'}
                     fontWeight={isSelected ? '700' : '500'}
                     pointerEvents="none"
                     style={{ transition: 'all 0.2s ease' }}
@@ -390,42 +390,42 @@ export default function ProjectScatter() {
           </svg>
 
           {/* Quadrant Tips */}
-          <div style={{ marginTop: '48px', marginBottom: '48px', width: '100%', maxWidth: '850px', padding: '24px', backgroundColor: '#f9f9f9', borderRadius: '12px', border: '1px solid #e5e5e5' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textAlign: 'center' }}>
+          <div style={{ marginTop: '48px', marginBottom: '48px', width: '100%', maxWidth: '850px', padding: '24px', backgroundColor: 'var(--raised)', borderRadius: '12px', border: '1px solid var(--line)' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
               What does each quadrant mean?
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
               <div
-                style={{ padding: '12px', backgroundColor: 'rgba(240, 133, 113, 0.1)', borderRadius: '8px', borderLeft: '3px solid #F08571', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={() => setHoveredQuadrant('topLeft')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Do you need to allocate resource to these projects?</div>
-                <div style={{ fontSize: '11px', color: '#666' }}>High importance, low progress</div>
+                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resource to these projects?</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
               <div
-                style={{ padding: '12px', backgroundColor: 'rgba(94, 204, 192, 0.1)', borderRadius: '8px', borderLeft: '3px solid #5ECCC0', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--mint-text)', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={() => setHoveredQuadrant('topRight')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>These projects are doing great.</div>
-                <div style={{ fontSize: '11px', color: '#666' }}>High importance, high progress</div>
+                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
               <div
-                style={{ padding: '12px', backgroundColor: 'rgba(229, 229, 229, 0.3)', borderRadius: '8px', borderLeft: '3px solid #999', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--label)', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={() => setHoveredQuadrant('bottomLeft')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
-                <div style={{ fontSize: '11px', color: '#666' }}>Low importance, low progress</div>
+                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
               <div
-                style={{ padding: '12px', backgroundColor: 'rgba(240, 133, 113, 0.05)', borderRadius: '8px', borderLeft: '3px solid #F08571', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={() => setHoveredQuadrant('bottomRight')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontWeight: '600', fontSize: '12px', color: '#333', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
-                <div style={{ fontSize: '11px', color: '#666' }}>Low importance, high progress</div>
+                <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>
             </div>
           </div>
@@ -441,38 +441,37 @@ export default function ProjectScatter() {
                     onClick={() => setSelectedProjectIdx(isSelected ? null : idx)}
                     style={{
                       padding: '16px',
-                      backgroundColor: isSelected ? '#f9f9f9' : '#f9f9f9',
+                      backgroundColor: isSelected ? 'var(--raised)' : 'var(--raised)',
                       borderRadius: '8px',
-                      borderLeft: '4px solid #F08571',
+                      borderLeft: '4px solid var(--coral-text)',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
-                      boxShadow: isSelected ? '0 4px 12px rgba(240, 133, 113, 0.15)' : 'none',
                       transform: isSelected ? 'scale(1.02)' : 'scale(1)',
                     }}
                   >
-                    <div style={{ fontWeight: '600', fontSize: '14px', color: isSelected ? '#F08571' : '#333', marginBottom: '12px' }}>
+                    <div style={{ fontWeight: '600', fontSize: '14px', color: isSelected ? 'var(--coral-text)' : 'var(--text)', marginBottom: '12px' }}>
                       {project.name}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '13px' }}>
                       <div>
-                        <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Project Progress</div>
-                        <div style={{ fontWeight: '600', color: '#F08571', fontSize: '18px' }}>
+                        <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: '12px' }}>Project Progress</div>
+                        <div style={{ fontWeight: '600', color: 'var(--coral-text)', fontSize: '18px' }}>
                           {project.progress}/5
                         </div>
                       </div>
                       <div>
-                        <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>Strategic Importance</div>
-                        <div style={{ fontWeight: '600', color: '#000', fontSize: '18px' }}>
+                        <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: '12px' }}>Strategic Importance</div>
+                        <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '18px' }}>
                           {project.importance}
                         </div>
                       </div>
                     </div>
                     {/* Visual progress bar */}
-                    <div style={{ marginTop: '12px', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ marginTop: '12px', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
                       <div
                         style={{
                           height: '100%',
-                          backgroundColor: '#F08571',
+                          backgroundColor: 'var(--coral)',
                           width: `${(project.progress / 5) * 100}%`,
                           transition: 'width 0.3s ease',
                         }}
@@ -510,20 +509,20 @@ export default function ProjectScatter() {
               style={{
                 padding: '12px 24px',
                 backgroundColor: 'transparent',
-                border: '2px solid #e5e5e5',
+                border: '2px solid var(--outline)',
                 borderRadius: '8px',
-                color: '#333',
+                color: 'var(--text)',
                 fontWeight: '600',
                 cursor: 'pointer',
                 fontSize: '14px',
                 transition: 'all 0.2s',
               }}
               onMouseEnter={(e) => {
-                e.target.style.borderColor = '#F08571';
-                e.target.style.backgroundColor = '#f9f9f9';
+                e.target.style.borderColor = 'var(--coral-text)';
+                e.target.style.backgroundColor = 'var(--raised)';
               }}
               onMouseLeave={(e) => {
-                e.target.style.borderColor = '#e5e5e5';
+                e.target.style.borderColor = 'var(--outline)';
                 e.target.style.backgroundColor = 'transparent';
               }}
             >
@@ -546,20 +545,20 @@ export default function ProjectScatter() {
                 style={{
                   padding: '12px 24px',
                   backgroundColor: 'transparent',
-                  border: '2px solid #e5e5e5',
+                  border: '2px solid var(--outline)',
                   borderRadius: '8px',
-                  color: '#333',
+                  color: 'var(--text)',
                   fontWeight: '600',
                   cursor: 'pointer',
                   fontSize: '14px',
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.borderColor = '#F08571';
-                  e.target.style.backgroundColor = '#f9f9f9';
+                  e.target.style.borderColor = 'var(--coral-text)';
+                  e.target.style.backgroundColor = 'var(--raised)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.borderColor = '#e5e5e5';
+                  e.target.style.borderColor = 'var(--outline)';
                   e.target.style.backgroundColor = 'transparent';
                 }}
               >

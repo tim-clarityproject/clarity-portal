@@ -71,7 +71,7 @@ export default function GrowStep3Options() {
   const canSubmit = filledCount >= 1;
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <DesignHeader />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
@@ -81,20 +81,20 @@ export default function GrowStep3Options() {
             style={{
               padding: '8px 16px',
               backgroundColor: 'transparent',
-              border: '2px solid #e5e5e5',
+              border: '2px solid var(--outline)',
               borderRadius: '6px',
-              color: '#333',
+              color: 'var(--text)',
               fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = '#F08571';
-              e.target.style.backgroundColor = '#f9f9f9';
+              e.target.style.borderColor = 'var(--coral-text)';
+              e.target.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#e5e5e5';
+              e.target.style.borderColor = 'var(--outline)';
               e.target.style.backgroundColor = 'transparent';
             }}
           >
@@ -103,8 +103,8 @@ export default function GrowStep3Options() {
         </div>
         <h1 className="page-heading">What options do you have?</h1>
 
-        <div style={{ width: '100%', height: '4px', backgroundColor: '#e5e5e5', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '75%', backgroundColor: '#F08571', transition: 'width 0.3s ease' }} />
+        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
         </div>
 
         <OptionsTimer
@@ -121,17 +121,19 @@ export default function GrowStep3Options() {
                 onChange={(e) => handleOptionChange(index, e.target.value)}
                 placeholder="Type here"
                 style={{
+                  backgroundColor: 'var(--card)',
+                  color: 'var(--text)',
                   flex: 1,
                   padding: '12px 16px',
-                  border: '2px solid #e5e5e5',
+                  border: '2px solid var(--field-line)',
                   borderRadius: '8px',
                   fontSize: '14px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#F08571'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e5e5'}
+                onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
               />
               <button
                 onClick={() => handleRemoveOption(index)}
@@ -139,7 +141,7 @@ export default function GrowStep3Options() {
                 style={{
                   padding: '8px',
                   backgroundColor: 'transparent',
-                  color: '#F08571',
+                  color: 'var(--coral-text)',
                   border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -149,7 +151,7 @@ export default function GrowStep3Options() {
                   justifyContent: 'center',
                   marginTop: '2px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--raised)'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -165,9 +167,9 @@ export default function GrowStep3Options() {
           style={{
             padding: '12px 24px',
             backgroundColor: 'transparent',
-            border: '2px solid #e5e5e5',
+            border: '2px solid var(--outline)',
             borderRadius: '8px',
-            color: '#333',
+            color: 'var(--text)',
             fontWeight: '600',
             cursor: 'pointer',
             fontSize: '14px',
@@ -176,11 +178,11 @@ export default function GrowStep3Options() {
             alignSelf: 'flex-start',
           }}
           onMouseEnter={(e) => {
-            e.target.style.borderColor = '#F08571';
-            e.target.style.backgroundColor = '#f9f9f9';
+            e.target.style.borderColor = 'var(--coral-text)';
+            e.target.style.backgroundColor = 'var(--raised)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.borderColor = '#e5e5e5';
+            e.target.style.borderColor = 'var(--outline)';
             e.target.style.backgroundColor = 'transparent';
           }}
         >
@@ -188,16 +190,16 @@ export default function GrowStep3Options() {
         </button>
 
         {error && (
-          <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: '#ffebee', borderRadius: '8px', border: '1px solid #ef5350' }}>
-            <p style={{ fontSize: '14px', color: '#c62828', margin: '0 0 12px 0', fontWeight: '500' }}>
+          <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
+            <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
               {error}
             </p>
             <button
               onClick={onRetry}
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#ef5350',
-                color: 'white',
+                backgroundColor: 'var(--coral)',
+                color: 'var(--on-coral)',
                 border: 'none',
                 borderRadius: '6px',
                 fontSize: '13px',
@@ -205,8 +207,8 @@ export default function GrowStep3Options() {
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#e53935'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#ef5350'}
+              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--coral-hover)'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--coral)'}
             >
               Retry
             </button>
@@ -214,7 +216,7 @@ export default function GrowStep3Options() {
         )}
 
         {isLoading ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--label)', fontSize: '14px' }}>
             Loading saved data...
           </div>
         ) : (

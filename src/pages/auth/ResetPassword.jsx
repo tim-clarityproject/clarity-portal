@@ -198,7 +198,7 @@ export default function ResetPassword() {
         beforeHeadline={(
           <div className="auth-confirmed-row">
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M3 8.5l3.2 3.2L13 4.5" fill="none" stroke="var(--mint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="auth-confirmed-tick" />
+              <path d="M3 8.5l3.2 3.2L13 4.5" fill="none" stroke="var(--mint-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="auth-confirmed-tick" />
             </svg>
             <span>Password updated</span>
           </div>

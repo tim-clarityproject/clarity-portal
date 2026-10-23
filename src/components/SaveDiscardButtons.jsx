@@ -189,20 +189,20 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           style={{
             padding: '12px 24px',
             backgroundColor: 'transparent',
-            border: '2px solid #e5e5e5',
+            border: '2px solid var(--outline)',
             borderRadius: '8px',
-            color: '#333',
+            color: 'var(--text)',
             fontWeight: '600',
             cursor: 'pointer',
             fontSize: '14px',
             transition: 'all 0.2s',
           }}
           onMouseEnter={(e) => {
-            e.target.style.borderColor = '#F08571';
-            e.target.style.backgroundColor = '#f9f9f9';
+            e.target.style.borderColor = 'var(--coral-text)';
+            e.target.style.backgroundColor = 'var(--raised)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.borderColor = '#e5e5e5';
+            e.target.style.borderColor = 'var(--outline)';
             e.target.style.backgroundColor = 'transparent';
           }}
         >
@@ -217,7 +217,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
         style={{
           padding: '12px',
           backgroundColor: 'transparent',
-          color: '#F08571',
+          color: 'var(--coral-text)',
           border: 'none',
           borderRadius: '8px',
           cursor: 'pointer',
@@ -227,12 +227,12 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           justifyContent: 'center',
         }}
         onMouseEnter={(e) => {
-          e.target.style.backgroundColor = '#f9f9f9';
-          e.target.style.color = '#e07560';
+          e.target.style.backgroundColor = 'var(--raised)';
+          e.target.style.color = 'var(--coral-hover)';
         }}
         onMouseLeave={(e) => {
           e.target.style.backgroundColor = 'transparent';
-          e.target.style.color = '#F08571';
+          e.target.style.color = 'var(--coral-text)';
         }}
       >
         <Trash2 size={20} />
@@ -244,9 +244,9 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
         style={{
           padding: '12px 24px',
           backgroundColor: 'transparent',
-          color: '#F08571',
+          color: 'var(--coral-text)',
           fontWeight: '600',
-          border: '2px solid #F08571',
+          border: '2px solid var(--coral-text)',
           borderRadius: '8px',
           cursor: 'pointer',
           fontSize: '14px',
@@ -257,12 +257,12 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           gap: '8px',
         }}
         onMouseEnter={(e) => {
-          e.target.style.backgroundColor = '#f9f9f9';
-          e.target.style.borderColor = '#e07560';
+          e.target.style.backgroundColor = 'var(--raised)';
+          e.target.style.borderColor = 'var(--coral-hover)';
         }}
         onMouseLeave={(e) => {
           e.target.style.backgroundColor = 'transparent';
-          e.target.style.borderColor = '#F08571';
+          e.target.style.borderColor = 'var(--coral-text)';
         }}
       >
         Save as Draft
@@ -275,8 +275,8 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           disabled={!canNext || isSaving}
           style={{
             padding: '12px 24px',
-            backgroundColor: !canNext || isSaving ? '#ccc' : '#F08571',
-            color: 'white',
+            backgroundColor: !canNext || isSaving ? 'var(--line)' : 'var(--coral)',
+            color: !canNext || isSaving ? 'var(--label)' : 'var(--on-coral)',
             fontWeight: 'bold',
             border: 'none',
             borderRadius: '8px',
@@ -284,8 +284,8 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
             fontSize: '14px',
             transition: 'all 0.2s',
           }}
-          onMouseEnter={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = '#e07560')}
-          onMouseLeave={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = '#F08571')}
+          onMouseEnter={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = 'var(--coral-hover)')}
+          onMouseLeave={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = 'var(--coral)')}
         >
           {isSaving ? 'Saving...' : nextLabel}
         </button>

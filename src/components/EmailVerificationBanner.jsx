@@ -69,8 +69,8 @@ export default function EmailVerificationBanner() {
           justify-content: space-between;
           align-items: flex-start;
           gap: 16px;
-          background: var(--surface);
-          border: 1px solid var(--coral);
+          background: var(--card);
+          border: 1px solid var(--coral-text);
           border-radius: var(--radius-card);
           padding: 20px;
           margin: 0 20px 24px;
@@ -94,7 +94,7 @@ export default function EmailVerificationBanner() {
           font-size: var(--fs-button);
           text-transform: uppercase;
           letter-spacing: 0.16em;
-          color: var(--coral);
+          color: var(--coral-text);
           margin: 0 0 8px;
         }
 
@@ -123,7 +123,7 @@ export default function EmailVerificationBanner() {
         }
 
         .ev-banner-status--error {
-          color: var(--coral-soft);
+          color: var(--coral-soft-text);
         }
 
         .ev-banner-actions {
