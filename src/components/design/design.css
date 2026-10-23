@@ -856,69 +856,271 @@
   border-color: var(--coral-text);
 }
 
-/* Dropdown: the native picker (the phone's own wheel on iPhone), with
-   the crosshair as its "choose" mark (CLAUDE.md rule 6). The chosen
-   option is shown as ordinary text that wraps, so long wording is never
-   cut off (Safari can't wrap or shorten text inside a select); the real
-   select sits invisibly on top and takes every tap, click and key. */
-.ui-root .ds-select {
-  position: relative;
+/* ---------- Label row (M6): the question above a box ---------- */
+
+.ui-root .ds-label-row {
   display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  max-width: 100%;
-  min-height: var(--tap-min);
-  padding: var(--space-px10) calc(var(--tap-min) + var(--space-1)) var(--space-px10) var(--space-3);
-  border: var(--line-w) solid var(--field-line);
-  border-radius: var(--radius-input);
-  background: var(--card);
-  transition: border-color var(--dur) var(--ease);
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-px12);
+  margin: 0 0 var(--space-px10);
+  letter-spacing: normal;
 }
 
-.ui-root .ds-select-value {
+.ui-root .ds-label-row--solo {
+  justify-content: flex-end;
+}
+
+.ui-root .ds-label-row-text {
   min-width: 0;
   font-family: var(--font-body);
-  font-size: var(--fs-text);
-  line-height: var(--lh-tile);
-  letter-spacing: normal;
-  color: var(--text);
+  font-size: var(--fs-label-row) !important;
+  line-height: var(--lh-text);
+  color: var(--text-2);
   overflow-wrap: break-word;
 }
 
-.ui-root .ds-select select {
+/* ---------- The branded drop-down (Tim, 22 Oct; M6) ---------- */
+
+/* The box: room to breathe, long choices wrap onto a second line. */
+.ui-root .ds-dd {
   all: unset;
-  position: absolute;
-  inset: 0;
   cursor: pointer;
   box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px20);
   width: 100%;
-  height: 100%;
-  min-height: 0 !important;
-  padding: 0 !important;
-  opacity: 0;
-  font-size: var(--fs-text);
-}
-
-.ui-root .ds-select select option {
+  min-height: var(--box-min-h) !important;
+  padding: var(--box-pad-y) var(--box-pad-x) !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-field);
   background: var(--card);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  line-height: var(--lh-option);
+  letter-spacing: normal;
+  text-align: left;
   color: var(--text);
+  transition: border-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.ui-root .ds-select:focus-within {
+.ui-root .ds-dd-value {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-dd--empty .ds-dd-value {
+  color: var(--label);
+}
+
+.ui-root .ds-dd[aria-expanded='true'] {
   border-color: var(--coral-text);
 }
 
-.ui-root .ds-select:has(select:focus-visible) {
+.ui-root .ds-dd:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }
 
-.ui-root .ds-select .ds-cross {
-  position: absolute;
-  right: var(--space-3);
-  top: 50%;
-  margin-top: calc(var(--cross-sm) / -2);
-  pointer-events: none;
+/* The list: the same in the laptop pop-out and the phone panel. */
+.ui-root .ds-listbox {
+  box-sizing: border-box;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--card);
+  outline: none;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-option {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--option-min-h);
+  padding: var(--option-pad-y) var(--box-pad-x);
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-family: var(--font-body);
+  font-size: var(--fs-option);
+  line-height: var(--lh-option);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-option:first-child {
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+.ui-root .ds-option:last-child {
+  border-bottom: 0;
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+.ui-root .ds-option-text {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-option small {
+  display: block;
+  margin-top: var(--space-px2);
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ds-option--active {
+  color: var(--text);
+}
+
+.ui-root .ds-option[aria-selected='true'] {
+  color: var(--text);
+  background: var(--raised);
+}
+
+/* The chosen option has a coral tick as well as a shade. */
+.ui-root .ds-option[aria-selected='true']::after {
+  content: '';
+  flex: none;
+  width: var(--tick-option);
+  height: var(--tick-option);
+  background: var(--coral-text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Moved to by the keyboard: the coral focus ring, inside the row. */
+.ui-root .ds-option--keyboard {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc(-1 * var(--focus-w));
+}
+
+/* Laptop: the pop-out beside its box. Positioned by Popover.jsx. */
+.ui-root .ds-pop {
+  position: fixed;
+  z-index: var(--z-pop);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+  opacity: 0;
+  transform: translateY(var(--space-2));
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.ui-root .ds-pop--up {
+  transform: translateY(calc(-1 * var(--space-2)));
+}
+
+.ui-root .ds-pop--shown {
+  opacity: 1;
+  transform: none;
+}
+
+.ui-root .ds-pop--list {
+  border-radius: var(--radius-field);
+}
+
+.ui-root .ds-pop--panel {
+  padding: var(--space-3) var(--space-px18) var(--space-px20);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-sheet-desktop);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  letter-spacing: normal;
+}
+
+/* Phone: the panel that slides up from the bottom. */
+.ui-root .ds-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-pop);
+  background: var(--scrim);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root.ds-sheet--shown .ds-sheet-scrim {
+  opacity: 1;
+}
+
+.ui-root .ds-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-pop);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-height: 88dvh;
+  padding: var(--space-px10) var(--space-px18) max(var(--space-5), env(safe-area-inset-bottom, 0px));
+  border-top: var(--line-w) solid var(--line);
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  letter-spacing: normal;
+  outline: none;
+  transform: translateY(100%);
+  transition: transform var(--dur-slow) var(--ease);
+  overscroll-behavior: contain;
+}
+
+.ui-root.ds-sheet--shown .ds-sheet {
+  transform: none;
+}
+
+.ui-root .ds-sheet.ds-sheet--dragging {
+  transition: none;
+}
+
+.ui-root .ds-sheet-grab {
+  flex: none;
+  width: var(--grab-w);
+  height: var(--grab-h);
+  margin: 0 auto var(--space-px10);
+  border-radius: var(--radius-bar);
+  background: var(--line);
+}
+
+.ui-root .ds-sheet-head {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+}
+
+.ui-root .ds-sheet-head .ds-sheet-title {
+  margin: 0 !important;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-option);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: var(--space-px10);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .ui-root .ds-choice {
