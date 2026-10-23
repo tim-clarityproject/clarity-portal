@@ -11,7 +11,7 @@ import './design.css';
 
 // Focus mode for writing on phone (decisions: "Writing on phone: focus
 // mode"). A full-screen writing page: the question at the top with the
-// who-sees lock label, just the words, a quiet Saved, and Done. The page
+// who-sees label, just the words, a quiet Saved, and Done. The page
 // underneath is pinned, so nothing else moves. It fits the space above
 // the keyboard (sized to the visual viewport), so the line being typed
 // stays in sight as the browser keeps the caret in view inside it.

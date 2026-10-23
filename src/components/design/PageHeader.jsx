@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import { SystemLink } from './Button';
+import InfoIcon from './InfoIcon';
 import './design.css';
 
 // Page header (design reference v3: Page header). The title in Nekst
@@ -40,7 +41,7 @@ export default function PageHeader({ title, meta = [], info, onSystemLink, as: H
             aria-label={`About ${typeof title === 'string' ? title : 'this page'}`}
             onClick={() => setInfoOpen((open) => !open)}
           >
-            <span className="ds-info" aria-hidden="true">i</span>
+            <InfoIcon />
           </button>
         )}
       </div>

@@ -157,7 +157,8 @@
   --cross-spin: 28px;
   --arrow-size: 18px;        /* the disclosure arrow (half the crosshair) */
   --arrow-shift: 22%;        /* keeps the half-crosshair centred as it turns */
-  --info-size: 18px;         /* the small circled i */
+  --info-size: 16px;         /* the one "i", drawn like ⓘ */
+  --info-gap: 6px;           /* from the last word of a sentence to its "i" */
   --onum-size: 22px;         /* circled objective numbers */
   --checkbox-box: 18px;      /* one tick box size everywhere (Tim, 23 Oct: 22px felt too large) */
   --tick-size: 12px;
@@ -217,7 +218,6 @@
   --ls-tool-name: 0.14em;
   --ls-back: 0.16em;
   --ls-btn-phone: 0.14em;
-  --info-size-step: 22px;    /* the "i" beside a step label */
   --steps-h: 36px;           /* the step list on desktop */
   --steps-h-phone: 28px;     /* the slim line on phone */
   --steps-line: 3px;

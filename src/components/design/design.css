@@ -239,14 +239,15 @@
   outline: var(--focus-w) solid var(--coral-text);
 }
 
-/* "How the system fits together", with its small circled i. */
+/* "How the system fits together", with the "i" 6px after the last word,
+   lined up with the middle of the text. */
 .ui-root .ds-info-link {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--info-gap);
   min-height: var(--tap-min) !important;
   padding: 0 !important;
   font-family: var(--font-body);
@@ -268,21 +269,28 @@
   border-radius: var(--space-1);
 }
 
+/* The one "i" (InfoIcon): a thin ring with a small i, like ⓘ, in the
+   current text colour. No disc behind it and no thicker border. */
 .ui-root .ds-info {
   flex: none;
-  box-sizing: border-box;
+  display: block;
   width: var(--info-size);
   height: var(--info-size);
-  border: var(--line-w) solid currentColor;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: var(--fs-glyph);
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
+  overflow: visible;
+}
+.ui-root .ds-info-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+.ui-root .ds-info-dot {
+  fill: currentColor;
+  stroke: none;
+}
+.ui-root .ds-info-stem {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
 }
 
 /* ---------- Page header ---------- */
@@ -2473,38 +2481,30 @@
 .ui-root .ds-guide-label {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--info-gap);
   min-height: var(--space-px20);
   margin-top: var(--space-px28);
   font-size: var(--fs-meta);
   color: var(--label);
 }
 
+/* The one "i", 16px, in a 44px button whose padding gives the tap area.
+   The negative margins keep the label line its own height. */
 .ui-root .ds-guide-i {
   all: unset;
   cursor: pointer;
-  position: relative;
   box-sizing: border-box;
-  width: var(--info-size-step);
-  height: var(--info-size-step);
-  min-height: var(--info-size-step) !important;
-  padding: 0 !important;
-  border: var(--line-w) solid currentColor;
-  border-radius: 50%;
+  flex: none;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: calc((var(--tap-min) - var(--info-size)) / 2) !important;
+  margin: calc((var(--tap-min) - var(--info-size)) / -2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-size: var(--fs-glyph) !important;
-  line-height: 1;
+  border-radius: var(--radius-pill);
   color: var(--text-2);
-}
-
-/* 22px circle, 44px to tap. */
-.ui-root .ds-guide-i::after {
-  content: '';
-  position: absolute;
-  inset: calc((var(--tap-min) - var(--info-size-step)) / -2);
 }
 
 .ui-root .ds-guide-i:focus-visible {

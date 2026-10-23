@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import Crosshair from './Crosshair';
+import InfoIcon from './InfoIcon';
 import './design.css';
 
 // Buttons (design reference: Buttons). Nekst capitals, labels are verb
@@ -43,13 +44,13 @@ export const IconButton = forwardRef(function IconButton(
   );
 });
 
-// "How the system fits together", with its small circled i. Used in the
-// page header's meta line and in empty states.
+// "How the system fits together", with the small "i" at the end of the
+// words. Used in the page header's meta line and in empty states.
 export function SystemLink({ children = 'How the system fits together', className = '', ...rest }) {
   return (
     <button type="button" className={`ds-info-link ${className}`.trim()} {...rest}>
-      <span className="ds-info" aria-hidden="true">i</span>
       {children}
+      <InfoIcon />
     </button>
   );
 }

@@ -50,6 +50,10 @@
 
 23. **Wording and spelling: always write The Clarity Portal with a capital T on The, everywhere it is named.** Never "the Clarity Portal" or "a Clarity Portal account", even mid-sentence, in headings, buttons, legal text, emails, aria-labels, titles and toasts. Code identifiers, file names, CSS classes, URLs, environment variables and database values are not changed.
 
+24. **The eye means "who can see this".** Anything personal shows the shared WhoSees label (src/components/design): a 14px line eye in the current text colour, then the words ("Only you", "You and [coach's first name]", "Your team"), with "Who can see this:" for screen readers. The eye is the only who-sees icon; nothing uses a lock for who sees something.
+
+25. **There is one "i", drawn the same everywhere** (InfoIcon in src/components/design): a 16px thin outlined circle with a small "i" inside, like ⓘ, in the current text colour, with no disc behind it and no thicker border. Its button gives the 44px tap area with padding; the icon never grows. When an "i" explains a sentence it sits at the end of that sentence, 6px after the last word (var(--info-gap)), lined up with the middle of the text. It opens its explanation and Escape closes it.
+
 ## List row guidelines
 
 These are guidelines, to apply by default to every list built from the shared row (`src/components/ui/HistoryList.jsx`: My Plans, My Reviews, My Journals, Decision History). Where a mock-up shows a detail, the mock-up wins. They are about layout only, not saving or navigation.

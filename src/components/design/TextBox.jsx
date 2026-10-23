@@ -25,7 +25,7 @@ import './design.css';
 // lines 'many': a long answer (Enter starts a new line).
 // lines 'one':  a short answer that still grows if it's long, but Enter
 //               never adds a line and pasted line breaks become spaces.
-// who:          the who-sees lock label in the label row.
+// who:          the who-sees label (the eye) in the label row.
 // maxLength:    shows "112 of 120" once within 20 of the limit.
 // focusMode:    for long writing (journal, reflections, debrief answers):
 //               on a phone, tapping the box opens focus mode

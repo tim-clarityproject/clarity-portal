@@ -910,7 +910,7 @@ function Gallery() {
 
         <GallerySection id="c24" title="Who can see this" demo={WhoSeesDemo} rules={(
           <>
-            <p><New /><b>Every box that holds something personal shows a small lock and who can see it</b>: “Only you”, “You and [coach’s first name]” or “Your team” (Tim, 23 Oct; experience rule 44).</p>
+            <p><New /><b>Every box that holds something personal shows a small eye and who can see it</b>: “Only you”, “You and [coach’s first name]” or “Your team” (Tim, 23 Oct; experience rule 44).</p>
             <p>It sits at the right of the question above the box, 13px, in the label colour.</p>
             <p>Screen readers hear “Who can see this: Only you”.</p>
             <p>It changes the moment something is shared, and back if sharing is undone.</p>
@@ -933,7 +933,7 @@ function Gallery() {
 
         <GallerySection id="c26" title="Focus mode" demo={FocusModeDemo} rules={(
           <>
-            <p><New /><b>Writing on a phone opens a full-screen writing page</b>: the question at the top, the lock label, just the words, a quiet Saved, and Done.</p>
+            <p><New /><b>Writing on a phone opens a full-screen writing page</b>: the question at the top, the who-sees label, just the words, a quiet Saved, and Done.</p>
             <p>Nothing else on the page moves.</p>
             <p>It fits the space above the keyboard, so the line being typed stays in sight.</p>
             <p>Done, or a swipe down, closes it and puts you back in the same place, with what you wrote in the box.</p>

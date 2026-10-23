@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import InfoIcon from './InfoIcon';
 import './design.css';
 
 const SEEN_PREFIX = 'ds-help-seen:';
@@ -48,7 +49,7 @@ export default function Section({ title, line, helpKey, as: Heading = 'h2', id, 
             aria-label={`About ${title}`}
             onClick={() => setHelpOpen((open) => !open)}
           >
-            <span className="ds-info" aria-hidden="true">i</span>
+            <InfoIcon />
           </button>
         )}
       </div>

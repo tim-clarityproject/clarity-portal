@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from './Button';
+import InfoIcon from './InfoIcon';
 import { useEscapeLayer, pushLayer } from './layers';
 import { lockPage, openerOf, returnFocus, trapTab, unlockPage } from './pageLock';
 import { SaveStatus } from './Status';
@@ -132,7 +133,7 @@ function StepHead({ step, headingRef, positionId, role }) {
               aria-label="Why we ask"
               onClick={() => setInfoOpen((v) => !v)}
             >
-              i
+              <InfoIcon />
             </button>
           )}
         </div>
