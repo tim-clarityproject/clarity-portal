@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { announceMissionChange } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
 import { LIMITS, formatVersion, loadLatestVersion, previewNextVersion, recordVersionAfterSave, validatePlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
@@ -340,6 +341,7 @@ export default function PersonalOperatingPlanEdit() {
       }
 
       try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+      announceMissionChange();
 
       let toast = 'Plan saved. Nothing changed.';
       try {

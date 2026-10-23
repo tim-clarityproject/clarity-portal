@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { announceMissionChange } from '../context/MissionContext';
 
 // Personal Operating Plan version history + plan reviews (prompt 9,
 // per clarity-specs-9-to-11.md section A).
@@ -308,6 +309,7 @@ export async function restorePlanFromVersion({ userId, missionId, version }) {
     changeNote: `Restored from ${formatVersion(version.major, version.minor)}.`,
     snapshot, restoredFrom: version.id,
   });
+  announceMissionChange();
   if (error) throw error;
   return { major, minor: 0 };
 }
@@ -354,6 +356,7 @@ export async function archivePlan({ userId, missionId }) {
     .eq('id', missionId)
     .eq('user_id', userId);
   if (error) throw error;
+  announceMissionChange();
 }
 
 // Restore an archived plan (spec 3.4): if a live plan already exists
@@ -384,6 +387,7 @@ export async function restoreArchivedPlan({ userId, missionId }) {
   if (error) throw error;
 
   await supabase.from('profiles').update({ personal_goal: restored.title }).eq('id', userId);
+  announceMissionChange();
   return restored;
 }
 

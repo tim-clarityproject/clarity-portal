@@ -16,12 +16,13 @@ export default function MyAccount() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isLoading } = useContext(AuthContext);
-  const { showInHeader, updateShowInHeader } = useContext(MissionContext);
+  // The mission shown here is the same one the header pill shows (the
+  // missions table, through MissionContext), never a separate copy.
+  const { mission: personalGoal, showInHeader, updateShowInHeader } = useContext(MissionContext);
   const coachName = useCoachName();
   const startChat = useStartChat();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [personalGoal, setPersonalGoal] = useState('');
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteStage, setDeleteStage] = useState(0);
@@ -156,14 +157,13 @@ export default function MyAccount() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('first_name, last_name, personal_goal')
+          .select('first_name, last_name')
           .eq('id', user.id)
           .single();
 
         if (profile) {
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
-          setPersonalGoal(profile.personal_goal || '');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -197,32 +197,6 @@ export default function MyAccount() {
       }
     })();
   }, [user?.id]);
-
-  // Re-fetch goal when modal closes (to show updated value immediately).
-  // show_mission_in_header is no longer read here: it lives in
-  // MissionContext (showInHeader), the same shared source of truth the
-  // header pill reads from.
-  useEffect(() => {
-    if (!showGoalModal && user) {
-      const refetchGoal = async () => {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('personal_goal')
-            .eq('id', user.id)
-            .single();
-
-          if (profile) {
-            setPersonalGoal(profile.personal_goal || '');
-          }
-        } catch (error) {
-          console.error('Error refetching goal:', error);
-        }
-      };
-
-      refetchGoal();
-    }
-  }, [showGoalModal, user]);
 
   const handleToggleGoalVisibility = () => {
     updateShowInHeader(!showInHeader);
@@ -537,7 +511,7 @@ export default function MyAccount() {
         isOpen={showGoalModal}
         onClose={() => setShowGoalModal(false)}
         currentGoal={personalGoal}
-        onGoalSaved={(newGoal) => setPersonalGoal(newGoal)}
+        onGoalSaved={() => {}}
       />
     </div>
   );

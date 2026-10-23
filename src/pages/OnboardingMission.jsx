@@ -114,7 +114,7 @@ export default function OnboardingMission() {
         .eq('id', user.id);
 
       // Update mission in context after successful save
-      updateMission(mission.trim());
+      await updateMission(mission.trim());
 
       setTimeout(() => {
         navigate('/welcome');
