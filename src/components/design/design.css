@@ -1975,3 +1975,90 @@
   stroke-width: 1.4;
   stroke-linejoin: round;
 }
+
+/* ---------- The steady text box (Tim, 21 Oct; v3, M6) ---------- */
+
+.ui-root .ds-textbox-field {
+  min-width: 0;
+  letter-spacing: normal;
+}
+
+/* Grow-wrap: the box and an invisible copy of its text share one grid
+   cell, so the copy sets the height and the box simply follows it. */
+.ui-root .ds-grow {
+  display: grid;
+}
+
+.ui-root .ds-grow::after {
+  content: attr(data-value);
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+}
+
+.ui-root .ds-grow > .ds-text,
+.ui-root .ds-grow::after {
+  grid-area: 1 / 1 / 2 / 2;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--textbox-min-h);
+  margin: 0;
+  padding: var(--box-pad-y) var(--box-pad-x) !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-field);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-box);
+  letter-spacing: normal;
+  word-spacing: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 4;
+}
+
+.ui-root .ds-grow--one > .ds-text,
+.ui-root .ds-grow--one::after {
+  min-height: var(--box-min-h);
+}
+
+.ui-root .ds-grow > .ds-text {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: hidden;
+  resize: none;
+  background: var(--card);
+  color: var(--text);
+  caret-color: var(--coral-text);
+  outline: none;
+  white-space: pre-wrap;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-grow > .ds-text::placeholder {
+  color: var(--label);
+  opacity: 1;
+}
+
+.ui-root .ds-grow > .ds-text:focus {
+  border-color: var(--coral-text);
+}
+
+.ui-root .ds-textbox-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+  min-height: var(--space-px20);
+  margin-top: var(--space-px6);
+}
+
+.ui-root .ds-count {
+  font-size: var(--fs-meta);
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+}

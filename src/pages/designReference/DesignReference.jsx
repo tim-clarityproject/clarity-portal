@@ -1,5 +1,4 @@
-import { useId, useRef, useState } from 'react';
-import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
+import { useCallback, useRef, useState } from 'react';
 import {
   BrandMark,
   Button,
@@ -33,6 +32,7 @@ import {
   Section,
   SegmentedControl,
   SlidePanel,
+  TextBox,
   SmallWin,
   Stat,
   StatGroup,
@@ -40,6 +40,7 @@ import {
   TileGrid,
   ToastProvider,
   useToast,
+  useAutosave,
   WillSyncIndicator,
 } from '../../components/design';
 import { GallerySection, New } from './galleryKit';
@@ -56,7 +57,7 @@ import './designReference.css';
 const TOC = [
   ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Sections and questions'],
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
-  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c21', 'Filter'], ['c22', 'Show less'],
+  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c17', 'Breathe button'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
 ];
@@ -285,7 +286,6 @@ function ControlsDemo() {
   const [week, setWeek] = useState('today');
   const [todo, setTodo] = useState('');
   const [done, setDone] = useState(true);
-  const todoId = useId();
   return (
     <div className="dr-stack dr-stack--fill">
       <SegmentedControl
@@ -299,10 +299,7 @@ function ControlsDemo() {
           <Chip key={value} pressed={week === value} onClick={() => setWeek(value)}>{label}</Chip>
         ))}
       </ChipRow>
-      <div>
-        <label className="ds-field-label" htmlFor={todoId}>What needs doing?</label>
-        <AutoGrowTextarea id={todoId} className="ds-textbox" value={todo} onChange={setTodo} placeholder="e.g. Book a physio assessment" />
-      </div>
+      <TextBox label="What needs doing?" value={todo} onChange={setTodo} placeholder="e.g. Book a physio assessment" lines="one" />
       <Checkbox checked={done} onChange={setDone} after={<ImpactTag editing>High impact</ImpactTag>}>Draft the case study</Checkbox>
     </div>
   );
@@ -365,20 +362,44 @@ function WhoSeesDemo() {
   const [shared, setShared] = useState(true);
   const [mission, setMission] = useState('Lead with clarity so the business grows and the best people want to stay.');
   const [well, setWell] = useState('');
-  const missionId = useId();
-  const wellId = useId();
   return (
     <div className="dr-stack dr-stack--fill">
-      <div>
-        <FieldLabel label="What’s your mission?" htmlFor={missionId} who={shared ? 'coach' : 'me'} />
-        <AutoGrowTextarea id={missionId} className="ds-textbox" value={mission} onChange={setMission} />
-      </div>
+      <TextBox label="What’s your mission?" who={shared ? 'coach' : 'me'} value={mission} onChange={setMission} maxLength={120} />
       <Checkbox checked={shared} onChange={setShared}>My coach sees my mission</Checkbox>
-      <div>
-        <FieldLabel label="What went well today?" htmlFor={wellId} who="me" />
-        <AutoGrowTextarea id={wellId} className="ds-textbox" value={well} onChange={setWell} placeholder="e.g. I held the line in the board meeting" />
-      </div>
+      <TextBox label="What went well today?" who="me" value={well} onChange={setWell} placeholder="e.g. I held the line in the board meeting" />
       <FieldLabel label="Team strategy" who="team" />
+    </div>
+  );
+}
+
+// Pretends to save, as the real portal would (no database here). With
+// "Lose the signal" ticked it fails, so the box shows Will sync and keeps
+// trying until the signal is back.
+function useExampleSave() {
+  const offline = useRef(false);
+  const save = useCallback(() => new Promise((resolve, reject) => {
+    setTimeout(() => (offline.current ? reject(new Error('offline')) : resolve()), 600);
+  }), []);
+  const setOffline = useCallback((v) => { offline.current = v; }, []);
+  return [save, setOffline];
+}
+
+function SteadyBoxDemo({ mode }) {
+  const [entry, setEntry] = useState('');
+  const [noSignal, setNoSignal] = useState(false);
+  const [save, setOffline] = useExampleSave();
+  const state = useAutosave(entry, save, { draftKey: `gallery-journal-${mode || 'page'}` });
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <TextBox
+        label="What’s on your mind?"
+        who="me"
+        value={entry}
+        onChange={setEntry}
+        placeholder="Write anything. It saves as you go."
+        saveState={state}
+      />
+      <Checkbox checked={noSignal} onChange={(v) => { setNoSignal(v); setOffline(v); }}>Lose the signal</Checkbox>
     </div>
   );
 }
@@ -484,8 +505,7 @@ function PanelsDemo() {
         initialFocusRef={box}
         footer={<Button variant="primary" disabled={!draft.trim()} onClick={() => { setPanel(false); setDraft(''); toast.saved({ message: 'Added to this week.', onUndo: () => toast.show('Removed.') }); }}>Add a to-do</Button>}
       >
-        <label className="ds-field-label" htmlFor="dr-panel-box">What needs doing?</label>
-        <AutoGrowTextarea ref={box} id="dr-panel-box" className="ds-textbox" value={draft} onChange={setDraft} placeholder="e.g. Send the board pack to Sam" />
+        <TextBox ref={box} label="What needs doing?" who="me" value={draft} onChange={setDraft} placeholder="e.g. Send the board pack to Sam" />
       </SlidePanel>
       <SystemPopup open={popup} onClose={() => setPopup(false)} />
     </div>
@@ -664,6 +684,14 @@ function Gallery() {
             <p>It sits at the right of the question above the box, 13px, in the label colour. Screen readers hear “Who can see this: Only you”.</p>
             <p>It changes the moment something is shared, and back if sharing is undone. Tick and untick the box to see it.</p>
             <p>The coach’s first name comes from the client’s own coach, never typed into the code. Here it is example data.</p>
+          </>
+        )} />
+
+        <GallerySection id="c25" title="The steady text box" demo={SteadyBoxDemo} rules={(
+          <>
+            <p><New /><b>Typing never jumps</b> (Tim, 21 Oct). The box grows smoothly as you type; the line being typed stays just above the keyboard, and the page never scrolls back and forth.</p>
+            <p>Box colour, an edge that turns coral when you’re typing, 17px text, 20px of space each side, at least 88px tall when empty.</p>
+            <p><b>It saves by itself</b>: Saving, then Saved. With no signal it says Will sync, keeps a copy on the device and tries again until it goes. Nothing is lost if the app closes.</p>
           </>
         )} />
 
