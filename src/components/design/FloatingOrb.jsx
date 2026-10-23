@@ -1,16 +1,18 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import useColourMode from '../../lib/colourMode/useColourMode';
 import Crosshair from './Crosshair';
 import { useThemeScope } from './themeScope';
 import './design.css';
 
-// The one floating button (decisions: "One floating button: a breathing
-// mini orb"). A miniature of the breathing orb: it breathes slowly at
-// rest (4 seconds in, 4 out, eased), coral on the in-breath and mint on
-// the out-breath, with echo rings and the brand crosshair turning in the
-// centre. Tapping it offers Breathe or Chat to Dr. Tim. Still with reduced
-// motion. Desktop only, never on phone (hidden by design.css wherever
-// there is no mouse).
+// The one floating button (Tim, 23 Oct: option 3, Breathe only). On
+// desktop only, bottom right: the small breathing orb with the word
+// "Breathe" beside it; one click opens Breathe. The orb is a miniature of
+// the Breathe page's: it breathes slowly at rest (4 seconds in, 4 out,
+// eased), coral on the in-breath and mint on the out-breath (deeper in
+// light mode), with echo rings and the brand crosshair turning in the
+// centre. Still with reduced motion. Never on phone (hidden by design.css
+// wherever there is no mouse), where Breathe is in the menu. Chat to the
+// coach is in the header (ChatButton).
 //
 // placement 'fixed': bottom right of the screen (real pages).
 // placement 'inline': in the flow (the design gallery).
@@ -82,70 +84,15 @@ function useOrbDrawing(artRef, mode) {
   }, [artRef, mode]);
 }
 
-export default function FloatingOrb({ onBreathe, onChat, placement = 'fixed' }) {
-  const [open, setOpen] = useState(false);
-  const menuId = useId();
-  const wrapRef = useRef(null);
-  const buttonRef = useRef(null);
-  const menuRef = useRef(null);
+export default function FloatingOrb({ onBreathe, placement = 'fixed' }) {
   const artRef = useRef(null);
   const scope = useThemeScope();
   const { mode } = useColourMode();
   useOrbDrawing(artRef, scope || mode);
 
-  // Open: focus the first choice. Escape or a click elsewhere closes.
-  useEffect(() => {
-    if (!open) return undefined;
-    menuRef.current?.querySelector('button')?.focus();
-    const onPointer = (e) => {
-      if (!wrapRef.current?.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointer);
-    return () => document.removeEventListener('pointerdown', onPointer);
-  }, [open]);
-
-  const choose = (action) => {
-    setOpen(false);
-    buttonRef.current?.focus();
-    action?.();
-  };
-
   return (
-    <div
-      ref={wrapRef}
-      className={`ds-orb${placement === 'fixed' ? ' ds-orb--fixed' : ''}`}
-      onKeyDown={(e) => {
-        // Tab moves between the orb and its two choices; tabbing past either
-        // end closes the menu and carries on through the page. Handled here
-        // because Safari leaves buttons out of its own Tab order.
-        if (e.key === 'Tab' && open) {
-          const stops = [buttonRef.current, ...(menuRef.current?.querySelectorAll('button') || [])];
-          const at = stops.indexOf(document.activeElement);
-          const next = at + (e.shiftKey ? -1 : 1);
-          if (at === -1 || next < 0 || next >= stops.length) {
-            setOpen(false);
-          } else {
-            e.preventDefault();
-            stops[next].focus();
-          }
-          return;
-        }
-        if (e.key === 'Escape' && open) {
-          e.stopPropagation();
-          setOpen(false);
-          buttonRef.current?.focus();
-        }
-      }}
-    >
-      <button
-        ref={buttonRef}
-        type="button"
-        className="ds-orb-btn"
-        aria-label="Breathe or chat to Dr. Tim"
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        onClick={() => setOpen((v) => !v)}
-      >
+    <div className={`ds-orb${placement === 'fixed' ? ' ds-orb--fixed' : ''}`}>
+      <button type="button" className="ds-breathe" onClick={onBreathe}>
         <span ref={artRef} className="ds-orb-art" aria-hidden="true">
           <svg viewBox="-30 -30 60 60">
             <circle r="27" fill="none" stroke="var(--line)" strokeWidth=".8" />
@@ -155,13 +102,8 @@ export default function FloatingOrb({ onBreathe, onChat, placement = 'fixed' }) 
           </svg>
           <Crosshair />
         </span>
+        Breathe
       </button>
-      {open && (
-        <div ref={menuRef} id={menuId} className="ds-orb-menu" role="group" aria-label="Breathe or chat">
-          <button type="button" className="ds-orb-item" onClick={() => choose(onBreathe)}>Breathe</button>
-          <button type="button" className="ds-orb-item" onClick={() => choose(onChat)}>Chat to Dr. Tim</button>
-        </div>
-      )}
     </div>
   );
 }

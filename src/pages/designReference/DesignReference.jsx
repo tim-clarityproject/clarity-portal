@@ -1,7 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 import {
+  BoldCrosshair,
   BrandMark,
   CalendarPopover,
+  ChatButton,
   Button,
   Checkbox,
   Chip,
@@ -63,7 +65,7 @@ const TOC = [
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
   ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
-  ['c17', 'Breathe button'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
+  ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
 ];
 
 // The colour table (design-reference-v3.html): name, what it's for, dark,
@@ -600,10 +602,38 @@ function EmptyDemo() {
 function OrbDemo() {
   const toast = useToast();
   return (
-    <>
-      <FloatingOrb placement="inline" onBreathe={() => toast.show('Breathe opens here.')} onChat={() => toast.show('Chat opens here.')} />
+    <div className="dr-stack">
+      <FloatingOrb placement="inline" onBreathe={() => toast.show('Breathe opens here.')} />
       <p className="dr-phone-only dr-quiet">The Breathe button is desktop only, so it isn’t shown on a phone.</p>
-    </>
+      <span className="dr-small">In the desktop header, top right:</span>
+      <ChatButton onClick={() => toast.show('A message to your coach opens here.')} />
+    </div>
+  );
+}
+
+function BoldCrossDemo() {
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <span className="dr-small">Desktop menu button</span>
+      <div className="dr-hdr" aria-hidden="true">
+        <BoldCrosshair size={26} />
+        <span className="dr-hdr-pill">My Mission</span>
+        <span className="dr-hdr-space" />
+      </div>
+      <span className="dr-small">Phone bar, centre button</span>
+      <div className="dr-pbar" aria-hidden="true">
+        <i />
+        <i />
+        <BoldCrosshair size={36} />
+        <i />
+        <i />
+      </div>
+      <span className="dr-small">Home Screen icon and favicon: white on black in both modes</span>
+      <div className="dr-row" aria-hidden="true">
+        <span className="dr-icon"><BoldCrosshair tone="icon" className="dr-icon-cross" /></span>
+        <span className="dr-icon dr-icon--small"><BoldCrosshair tone="icon" className="dr-icon-cross" /></span>
+      </div>
+    </div>
   );
 }
 
@@ -695,7 +725,7 @@ function Gallery() {
         <GallerySection id="c6" title="Crosshairs" demo={CrosshairDemo} rules={(
           <>
             <p><b>Standard crosshair</b>: every plus and close, from the logo’s own crop. Coral or white on dark; deep coral or black on light.</p>
-            <p>Never a typed + or ×, never smaller than 14px.</p>
+            <p>Never a typed + or ×, never smaller than 14px. The bold crosshair has its own section below.</p>
           </>
         )} />
 
@@ -829,7 +859,20 @@ function Gallery() {
         )} />
 
         <GallerySection id="c17" title="Breathe button" demo={OrbDemo} rules={(
-          <p>Coral on the in-breath, mint on the out-breath; deeper coral and green in light.</p>
+          <>
+            <p><New /><b>Breathe only, with its name</b> (Tim, 23 Oct). A slim pill, bottom right, desktop only: the small breathing orb and the word “Breathe”. One click opens Breathe.</p>
+            <p><b>Chat to [coach’s first name] sits in the desktop header</b>, top right, as a quiet labelled button, e.g. “Chat to Tim”. Always the client’s own coach, never “Dr.”. Phone has no floating button.</p>
+            <p>Coral on the in-breath, mint on the out-breath; deeper coral and green in light.</p>
+          </>
+        )} />
+
+        <GallerySection id="c29" title="The bold crosshair" demo={BoldCrossDemo} rules={(
+          <>
+            <p><New /><b>Two crosshairs, never mixed up</b> (Tim, 22 Oct). The bold one is its own component, so a build can never swap one for the other.</p>
+            <p>Drawn as clean lines at 2 times the standard line, with the gap between the two halves the same size as the standard crosshair’s.</p>
+            <p>Only four places: the Home Screen icon, the favicon, the desktop menu button and the phone bar’s centre button. The menus get it in Phase 0c.</p>
+            <p>White in dark mode and black in light mode. The app icons stay white on black, filling about 69% of the square.</p>
+          </>
         )} />
 
         <GallerySection id="c18" title="Sign in" demo={SignInDemo} rules={(

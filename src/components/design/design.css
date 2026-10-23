@@ -1759,30 +1759,48 @@
   }
 }
 
-.ui-root .ds-orb-btn {
+/* The Breathe pill (design reference v3): the orb and the word. */
+.ui-root .ds-breathe {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
-  width: var(--orb-btn);
-  height: var(--orb-btn);
-  min-height: var(--orb-btn) !important;
-  padding: 0 !important;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-px10);
+  height: var(--breathe-h);
+  min-height: var(--breathe-h) !important;
+  padding: 0 var(--space-px20) 0 var(--space-px6) !important;
   border: var(--line-w) solid var(--line);
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--bg);
+  font-family: var(--font-body);
+  font-size: var(--fs-secondary) !important;
+  line-height: 1;
+  letter-spacing: normal;
+  color: var(--text);
   transition: border-color var(--dur) var(--ease);
 }
 
-.ui-root .ds-orb-btn:hover {
-  border-color: var(--outline);
+@media (hover: hover) {
+  .ui-root .ds-breathe:hover {
+    border-color: var(--outline);
+  }
 }
 
-.ui-root .ds-orb-btn:focus-visible {
+.ui-root .ds-breathe:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px3);
+}
+
+.ui-root .ds-breathe .ds-orb-art {
+  width: var(--breathe-orb);
+  height: var(--breathe-orb);
+}
+
+.ui-root .ds-breathe .ds-orb-art .ds-cross {
+  width: var(--breathe-cross);
+  height: var(--breathe-cross);
+  margin: calc(var(--breathe-cross) / -2) 0 0 calc(var(--breathe-cross) / -2);
 }
 
 .ui-root .ds-orb-art {
@@ -1805,45 +1823,6 @@
   margin: calc(var(--cross-sm) / -2) 0 0 calc(var(--cross-sm) / -2);
   background-color: var(--text);
   transition: none;
-}
-
-.ui-root .ds-orb-menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + var(--space-2));
-  min-width: var(--tile-min);
-  padding: var(--space-2);
-  border: var(--line-w) solid var(--line);
-  border-radius: var(--radius-card);
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-}
-
-.ui-root .ds-orb-item {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  min-height: var(--tap-min) !important;
-  padding: 0 var(--space-px12) !important;
-  border-radius: var(--radius-input);
-  font-family: var(--font-body);
-  font-size: var(--fs-text) !important;
-  line-height: var(--lh-text);
-  letter-spacing: normal;
-  color: var(--text);
-  white-space: nowrap;
-  transition: color var(--dur) var(--ease);
-}
-
-.ui-root .ds-orb-item:hover {
-  color: var(--coral-text);
-}
-
-.ui-root .ds-orb-item:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
 }
 
 /* ---------- Small win and calm error (v3 Messages) ---------- */
@@ -2962,4 +2941,21 @@
 .ui-root .ds-cal-day:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: calc(-1 * var(--focus-w));
+}
+
+/* ---------- The bold crosshair (only four places) ---------- */
+
+.ui-root .ds-bold-cross {
+  display: block;
+  flex: none;
+}
+
+.ui-root .ds-bold-cross--text g {
+  stroke: var(--text);
+  transition: stroke var(--dur-slow) var(--ease);
+}
+
+/* The app icons: white on black in both modes. */
+.ui-root .ds-bold-cross--icon g {
+  stroke: var(--icon-cross);
 }

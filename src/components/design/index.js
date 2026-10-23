@@ -3,6 +3,7 @@
 // their own. Shown live at /design-reference on previews and local
 // development (src/pages/designReference).
 export { default as Crosshair } from './Crosshair';
+export { default as BoldCrosshair } from './BoldCrosshair';
 export { Button, IconButton, SystemLink } from './Button';
 export { default as PageHeader } from './PageHeader';
 export { default as Section } from './Section';
@@ -34,6 +35,7 @@ export { useToast, ERROR_MESSAGE } from './toastContext';
 export { SlidePanel, Popup } from './Dialogs';
 export { default as EmptyState } from './EmptyState';
 export { default as FloatingOrb } from './FloatingOrb';
+export { default as ChatButton } from './ChatButton';
 export { BrandMark, GoogleButton } from './Brand';
 export { default as ColourModeChoice } from './ColourModeChoice';
 export { ThemeScopeContext, useThemeScope } from './themeScope';

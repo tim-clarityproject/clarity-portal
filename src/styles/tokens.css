@@ -244,6 +244,10 @@
   --breathe-h: 52px;
   --breathe-orb: 34px;
   --breathe-cross: 8px;      /* as design-reference-v3's Breathe pill */
+  /* The app icons (Home Screen icon, favicon): white on black in both modes */
+  --icon-tile: #000000;
+  --icon-cross: #FFFFFF;
+  --icon-preview: 64px;
 
   /* Motion (--ease, --dur 250ms and --dur-slow 400ms above) */
   --dur-spin: 1.1s;

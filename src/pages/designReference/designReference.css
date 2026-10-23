@@ -18,6 +18,8 @@
   --dr-swatch: 28px;
   --dr-type-label-w: 170px;
   --dr-tool-h: 780px;
+  --dr-hdr-h: 64px;
+  --dr-pbar-h: 72px;
   --dr-tool-h-phone: 720px;
 
   box-sizing: border-box;
@@ -556,4 +558,80 @@
   padding-bottom: var(--space-3);
   font-size: var(--fs-text);
   color: var(--text-2);
+}
+
+/* Bold crosshair illustrations (design-reference-v3: the header, the
+   phone bar and the app icons). */
+.ui-root .dr-hdr {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-px14);
+  height: var(--dr-hdr-h);
+  padding: 0 var(--space-px14);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--bg);
+}
+
+.ui-root .dr-hdr-pill {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  height: var(--chip-h);
+  width: min(260px, 100%);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  font-family: var(--font-display);
+  font-size: var(--fs-glyph);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .dr-hdr-space {
+  width: var(--tap-min);
+}
+
+.ui-root .dr-pbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: var(--dr-pbar-h);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--bg);
+}
+
+.ui-root .dr-pbar i {
+  display: block;
+  width: var(--checkbox-box);
+  height: var(--checkbox-box);
+  border: var(--line-w-strong) solid var(--label);
+  border-radius: var(--radius-box);
+}
+
+.ui-root .dr-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-preview);
+  height: var(--icon-preview);
+  border-radius: var(--radius-card);
+  background: var(--icon-tile);
+  /* Only so the black square shows on the dark panel. */
+  box-shadow: inset 0 0 0 var(--line-w) var(--line);
+}
+
+.ui-root .dr-icon--small {
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--space-2);
+}
+
+/* The crosshair fills about 69% of the square (Tim, 22 Oct). */
+.ui-root .dr-icon-cross {
+  width: 69%;
+  height: 69%;
 }
