@@ -94,12 +94,37 @@ if ! live_counts=$(psql_live_read "$ERR" <<< "$STRUCTURE_COUNTS_SQL"); then
   fail "could not read the live database (see the message above)."
 fi
 
-# Extensions the structure may need. Each one is created on test only if the
-# test project does not already have it.
+# Every statement this script writes itself (rather than pg_dump) is read
+# from live with search_path empty, so Postgres writes every function, table
+# and type name in full (for example public.create_profile_on_signup()).
+# Each statement also starts with a "-- Name: ...; Type: ..." line, like
+# pg_dump's own, so a failure can name the object it stopped at.
+
+# Extensions (such as pgcrypto and pg_cron), each in the schema live uses.
+# Created on test only if missing, before the public schema that needs them.
+# If test has one in a different schema from live, the copy stops: functions
+# copied from live would not find it.
 if ! psql_live_read "$ERR" > "$EXT_SQL" <<'SQL'
+set local search_path = '';
 select format(
-  $f$do $ext$ begin if not exists (select 1 from pg_extension where extname = %L) then create schema if not exists %I; create extension %I with schema %I; end if; end $ext$;$f$,
-  e.extname, n.nspname, e.extname, n.nspname)
+  $f$-- Name: %s; Type: EXTENSION; Schema: %s
+do $ext$
+begin
+  if not exists (select 1 from pg_catalog.pg_extension where extname = %L) then
+    create schema if not exists %I;
+    create extension %I with schema %I cascade;
+  elsif (select n.nspname from pg_catalog.pg_extension e
+           join pg_catalog.pg_namespace n on n.oid = e.extnamespace
+          where e.extname = %L) <> %L then
+    raise exception 'The extension %% is in a different schema in the test project from live (%%), so the copy was stopped.', %L, %L;
+  end if;
+end
+$ext$;$f$,
+  e.extname, n.nspname,
+  e.extname,
+  n.nspname, e.extname, n.nspname,
+  e.extname, n.nspname,
+  e.extname, n.nspname)
 from pg_extension e join pg_namespace n on n.oid = e.extnamespace
 where e.extname <> 'plpgsql'
 order by e.extname;
@@ -110,9 +135,26 @@ then
 fi
 
 # Triggers on auth tables (such as auth.users) that call functions in public.
+# Each is created only after its function is confirmed to be in the test
+# project; if it is not, the copy stops and names it.
 if ! psql_live_read "$ERR" > "$AUTH_SQL" <<'SQL'
-select format('drop trigger if exists %I on %I.%I;', t.tgname, n.nspname, c.relname)
-       || ' ' || pg_get_triggerdef(t.oid) || ';'
+set local search_path = '';
+select format(
+  $f$-- Name: %s; Type: TRIGGER; Schema: %s; Table: %s; Function: %s
+do $chk$
+begin
+  if pg_catalog.to_regprocedure(%L) is null then
+    raise exception 'The sign-up trigger %% needs the function %%, which is not in the test project, so the copy was stopped.', %L, %L;
+  end if;
+end
+$chk$;
+drop trigger if exists %I on %I.%I;
+%s;$f$,
+  t.tgname, n.nspname, c.relname, p.oid::regprocedure::text,
+  p.oid::regprocedure::text,
+  t.tgname, p.oid::regprocedure::text,
+  t.tgname, n.nspname, c.relname,
+  pg_get_triggerdef(t.oid))
 from pg_trigger t
 join pg_class c on c.oid = t.tgrelid
 join pg_namespace n on n.oid = c.relnamespace
@@ -142,13 +184,17 @@ fi
 
 # Storage buckets (empty: no files are copied) and storage rules.
 if ! psql_live_read "$ERR" > "$STORAGE_SQL" <<'SQL'
+set local search_path = '';
 select format(
+  E'-- Name: %s; Type: BUCKET; Schema: storage\n' ||
   'insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values (%L, %L, %L, %L, %L) on conflict (id) do update set name = excluded.name, public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;',
-  id, name, public, file_size_limit, allowed_mime_types)
+  id, id, name, public, file_size_limit, allowed_mime_types)
 from storage.buckets
 order by id;
 select format(
+  E'-- Name: %s; Type: POLICY; Schema: %s; Table: %s\n' ||
   'drop policy if exists %I on %I.%I; create policy %I on %I.%I as %s for %s to %s%s%s;',
+  policyname, schemaname, tablename,
   policyname, schemaname, tablename,
   policyname, schemaname, tablename,
   permissive, cmd,
@@ -212,12 +258,17 @@ if ! "$PG_BIN/pg_restore" --use-list="$LIST" --no-owner --file="$PUBLIC_SQL" "$D
 fi
 
 {
+  # Nothing below relies on search_path: every name is written in full.
+  # It is set empty here, as pg_dump's own part also does, so a name that
+  # was not written in full fails at once instead of finding the wrong thing.
+  printf '%s\n' "set search_path = '';"
   if [ "$START_OVER" -eq 1 ]; then
     # Empties the TEST project's public schema (the schema itself, and
     # Supabase's grants on it, stay). Objects that belong to extensions are
     # left alone. Dropping the functions also drops the sign-up triggers on
     # auth.users that call them.
     cat <<'SQL'
+-- Name: the test project's public schema; Type: START OVER; Schema: public
 do $start_over$
 declare
   r record;
@@ -284,6 +335,9 @@ SQL
   # servers do not understand. It is not needed here.
   sed '/^SET transaction_timeout = /d' "$PUBLIC_SQL"
   printf '\n'
+  # The auth triggers come after pg_dump's part, so every public function
+  # they call already exists.
+  printf '%s\n' "set search_path = '';"
   cat "$AUTH_SQL"
   cat "$STORAGE_SQL"
 } > "$ALL_SQL"
@@ -299,6 +353,15 @@ fi
 if ! psql_test "$ERR" --single-transaction --file="$ALL_SQL" > /dev/null; then
   echo "The test project reported:"
   show_errors "$ERR"
+  # Name the object it stopped at, from the "-- Name:" line before the
+  # failing line of copy.sql.
+  failed_line=$(sed -n -E 's/.*copy\.sql:([0-9]+): (ERROR|FATAL).*/\1/p' "$ERR" | head -n 1 || true)
+  if [ -n "$failed_line" ]; then
+    failed_object=$(head -n "$failed_line" "$ALL_SQL" | grep -E '^-- Name: ' | tail -n 1 | sed 's/^-- Name: //' || true)
+    if [ -n "$failed_object" ]; then
+      redact "It stopped while creating: $failed_object"
+    fi
+  fi
   fail "the copy was stopped and undone, so the test project is as it was (see the message above)."
 fi
 
