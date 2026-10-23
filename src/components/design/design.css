@@ -727,7 +727,9 @@
 /* ---------- Controls ---------- */
 
 .ui-root .ds-seg {
+  box-sizing: border-box;
   display: inline-flex;
+  flex-wrap: nowrap;
   max-width: 100%;
   border: var(--line-w) solid var(--line);
   border-radius: var(--radius-pill);
@@ -763,7 +765,8 @@
   inset: calc(-1 * var(--space-px3)) 0;
 }
 
-.ui-root .ds-seg-btn[aria-pressed='true'] {
+.ui-root .ds-seg-btn[aria-pressed='true'],
+.ui-root .ds-seg-btn[aria-checked='true'] {
   background: var(--text);
   color: var(--on-text);
 }
@@ -1124,11 +1127,114 @@
 }
 
 .ui-root .ds-choice {
+  box-sizing: border-box;
+  width: 100%;
   border: 0;
   margin: 0;
   padding: 0;
   min-width: 0;
   letter-spacing: normal;
+}
+
+/* ---------- Pills or answer rows (Tim, 23 Oct) ---------- */
+
+/* The space the pills must fit in (measured by useInlineForm.js). */
+.ui-root .ds-inline {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+/* A hidden copy of the pills at their natural widths, for measuring. */
+.ui-root .ds-seg-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.ui-root .ds-seg-measure-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--fs-note);
+  white-space: nowrap;
+}
+
+/* Phone: pills on one line with equal-width buttons, never wrapping. */
+.ui-root .ds-seg.ds-seg--equal {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  width: 100%;
+}
+
+.ui-root .ds-seg--equal .ds-seg-btn {
+  padding: 0 var(--space-px6) !important;
+}
+
+/* Full-width answer rows (M6 "Which best describes you?"). */
+.ui-root .ds-rows {
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--row-max-w);
+}
+
+.ui-root .ds-answer {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-px12);
+  width: 100%;
+  min-height: var(--row-min-h) !important;
+  padding: var(--space-px12) var(--row-pad-x) !important;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  font-family: var(--font-body);
+  font-size: var(--fs-option) !important;
+  line-height: var(--lh-option);
+  letter-spacing: normal;
+  text-align: left;
+  color: var(--text-2);
+  overflow-wrap: break-word;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-answer:hover {
+  color: var(--text);
+  border-color: var(--quiet-line);
+}
+
+.ui-root .ds-answer[aria-checked='true'],
+.ui-root .ds-answer[aria-pressed='true'] {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--raised);
+}
+
+.ui-root .ds-answer:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-answer > span {
+  min-width: 0;
+}
+
+.ui-root .ds-answer-note {
+  margin-left: var(--space-px10);
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ds-seg-btn .ds-answer-note {
+  margin-left: var(--space-px6);
 }
 
 /* Checkbox: 22px square in a 44px target. */

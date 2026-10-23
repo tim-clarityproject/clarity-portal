@@ -1,23 +1,20 @@
-import { useId, useRef } from 'react';
+import { useId } from 'react';
+import InlineChoice from './InlineChoice';
 import './design.css';
 
 // Segmented control (design reference: Controls): switches between views
-// of the same thing ("Today" / "This week").
+// of the same thing ("Today" / "This week"). Pills when they fit on one
+// line (equal widths on phone), otherwise full-width rows (Tim, 23 Oct).
 export function SegmentedControl({ label, options, value, onChange, className = '' }) {
   return (
-    <div className={`ds-seg ${className}`.trim()} role="group" aria-label={label}>
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          className="ds-seg-btn"
-          aria-pressed={option.value === value}
-          onClick={() => onChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
+    <InlineChoice
+      ariaLabel={label}
+      options={options}
+      value={value}
+      onChange={onChange}
+      semantics="pressed"
+      className={className}
+    />
   );
 }
 
@@ -73,42 +70,8 @@ export function ImpactTag({ editing, children }) {
   return <span className="ds-impact">{children}</span>;
 }
 
-// A group of pills where exactly one is chosen (radio buttons that look
-// like chips). Arrow keys move and choose, as people expect.
-export function PillChoice({ label, options, value, onChange }) {
-  const labelId = useId();
-  const refs = useRef([]);
-  const selectedIndex = Math.max(0, options.findIndex((o) => o.value === value));
-
-  const move = (from, step) => {
-    const next = (from + step + options.length) % options.length;
-    onChange(options[next].value);
-    refs.current[next]?.focus();
-  };
-
-  return (
-    <div className="ds-choice">
-      <span id={labelId} className="ds-field-label">{label}</span>
-      <div className="ds-chips" role="radiogroup" aria-labelledby={labelId}>
-        {options.map((option, i) => (
-          <button
-            key={option.value}
-            ref={(el) => { refs.current[i] = el; }}
-            type="button"
-            role="radio"
-            className="ds-chip"
-            aria-checked={option.value === value}
-            tabIndex={i === selectedIndex ? 0 : -1}
-            onClick={() => onChange(option.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); move(i, 1); }
-              if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(i, -1); }
-            }}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+// A group of pills (or rows, when they don't fit) where exactly one is
+// chosen: radio buttons. Arrow keys move and choose, as people expect.
+export function PillChoice(props) {
+  return <InlineChoice {...props} semantics="radio" />;
 }

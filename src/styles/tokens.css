@@ -150,7 +150,7 @@
   /* Component sizes */
   --btn-h: 48px;             /* primary and outlined buttons */
   --chip-h: 40px;
-  --seg-h: 38px;
+  --seg-h: 40px;             /* pills, as M6 */
   --cross-sm: 14px;          /* never smaller than this */
   --cross-close: 18px;
   --cross-md: 22px;

@@ -54,7 +54,7 @@ import './designReference.css';
 const TOC = [
   ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Sections and questions'],
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
-  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Choices'], ['c21', 'Filter'], ['c22', 'Show less'],
+  ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c17', 'Breathe button'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
 ];
@@ -306,9 +306,29 @@ function ControlsDemo() {
   );
 }
 
+const MEASURE_OPTIONS = [
+  { value: 'cnt', label: 'Count', hint: 'e.g. training sessions' },
+  { value: 'amt', label: 'Amount with a unit', hint: 'e.g. steps or litres of water' },
+  { value: 'yn', label: 'Yes or no', hint: 'e.g. phone off by 21:00' },
+  { value: 'lim', label: 'Keep under a limit', hint: 'e.g. no more than 2 late finishes' },
+  { value: 'rate', label: 'Rating 1 to 5', hint: 'e.g. focus, rated each day' },
+];
+
 function ChoicesDemo() {
-  const [when, setWhen] = useState('today');
   const [strategy, setStrategy] = useState('s2');
+  const [measure, setMeasure] = useState('cnt');
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <Choice label="Which Strategy?" options={STRATEGY_OPTIONS} value={strategy} onChange={setStrategy} />
+      <Choice label="How will you measure it?" options={MEASURE_OPTIONS} value={measure} onChange={setMeasure} />
+    </div>
+  );
+}
+
+function PillsDemo() {
+  const [when, setWhen] = useState('today');
+  const [recovery, setRecovery] = useState(2);
+  const [role, setRole] = useState('ceo');
   return (
     <div className="dr-stack dr-stack--fill">
       <Choice
@@ -317,7 +337,24 @@ function ChoicesDemo() {
         value={when}
         onChange={setWhen}
       />
-      <Choice label="Which Strategy does it serve?" options={STRATEGY_OPTIONS} value={strategy} onChange={setStrategy} />
+      <Choice
+        label="How long a Recovery?"
+        options={[1, 2, 3, 4].map((n) => ({ value: n, label: `${n} week${n > 1 ? 's' : ''}` }))}
+        value={recovery}
+        onChange={setRecovery}
+      />
+      <Choice
+        label="Which best describes you?"
+        form="rows"
+        options={[
+          { value: 'ceo', label: 'CEO or executive' },
+          { value: 'coach', label: 'Head coach' },
+          { value: 'leader', label: 'Leader' },
+          { value: 'other', label: 'Other' },
+        ]}
+        value={role}
+        onChange={setRole}
+      />
     </div>
   );
 }
@@ -579,8 +616,22 @@ function Gallery() {
           </>
         )} />
 
-        <GallerySection id="c20" title="Choices" demo={ChoicesDemo} rules={(
-          <p><b>Pills only when every option fits on one line on a phone.</b> Otherwise a drop-down.</p>
+        <GallerySection id="c20" title="Drop-downs" demo={ChoicesDemo} rules={(
+          <>
+            <p><New /><b>Branded drop-downs</b> (Tim, 22 Oct): the list opens just below the box in the portal’s style, or above it only when there isn’t room. It never covers the box. On a phone a panel slides up with the question as its title.</p>
+            <p><New /><b>Room to breathe</b>: 20px of space at each side, 15px top and bottom, at least 58px high, 14px corners. Long choices wrap onto a second line rather than squeezing.</p>
+            <p>Options are 16px and at least 52px high. The chosen option has a coral tick as well as a shade. The crosshair turns 45° while the list is open.</p>
+            <p>Arrow keys, Enter, Escape and typing to jump all work, and screen readers hear each option.</p>
+          </>
+        )} />
+
+        <GallerySection id="c23" title="Pills on phones" demo={PillsDemo} rules={(
+          <>
+            <p><New /><b>On a phone, a row of pills always sits on one line with equal-width buttons and never wraps</b> (Tim, 23 Oct).</p>
+            <p>If the choices can’t fit that way, they become full-width answer rows: “How long a Recovery?” is rows on a phone and pills on a laptop.</p>
+            <p>Decided by measuring the real space, again on every resize and at larger text sizes. Long or many choices use the drop-down.</p>
+            <p>One-tap answer lists, like “Which best describes you?”, are always rows.</p>
+          </>
         )} />
 
         <GallerySection id="c21" title="Filter" demo={FilterDemo} rules={(
