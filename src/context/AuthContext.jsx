@@ -99,43 +99,47 @@ export function AuthProvider({ children }) {
             const firstName = metadata.first_name || metadata.given_name || metadata.name?.split(' ')[0] || metadata.full_name?.split(' ')[0] || '';
             const lastName = metadata.last_name || metadata.family_name || metadata.name?.split(' ').slice(1).join(' ') || metadata.full_name?.split(' ').slice(1).join(' ') || '';
 
-            // Use UPSERT to atomically create or update profile
-            // If profile exists (e.g., created by trigger), update it
-            // If it doesn't exist, create it
-            // This avoids 409 Conflict errors
+            // Fill in the profile only where it is still empty. A name the
+            // person has changed in Edit profile is never put back to the
+            // sign-up name, and loading a page never changes whether the
+            // terms are accepted: terms_accepted is only ever set to true,
+            // and only straight after confirming a new sign-up.
             const justConfirmedEmail = localStorage.getItem('justConfirmedEmail');
-            const termsAccepted = justConfirmedEmail ? true : false; // New signups accept terms, existing logins default to false
-
-            // Build the upsert payload - only include name fields if we have actual data
-            // This prevents overwriting existing names with empty strings from stale user_metadata
-            const upsertPayload = {
-              id: session.user.id,
-              email: session.user.email || '',
-              terms_accepted: termsAccepted,
-            };
-
-            // Only update names if we have actual data to write
-            // If firstName or lastName are empty, skip them so we don't erase existing data
-            if (firstName) upsertPayload.first_name = firstName;
-            if (lastName) upsertPayload.last_name = lastName;
-
-            // For new signups (justConfirmedEmail), ensure we have at least empty strings for names
-            // so the columns are initialized, but only if they're truly new
-            if (justConfirmedEmail) {
-              upsertPayload.first_name = firstName || '';
-              upsertPayload.last_name = lastName || '';
-            }
-
-            const upsertResult = await supabase
+            const { data: existing, error: readError } = await supabase
               .from('profiles')
-              .upsert(upsertPayload, {
-                onConflict: ['id']
-              });
+              .select('email, first_name, last_name, terms_accepted')
+              .eq('id', session.user.id)
+              .maybeSingle();
 
-            if (upsertResult.error) {
-              console.error('[AuthContext] Profile upsert error:', upsertResult.error);
+            if (readError) {
+              console.error('[AuthContext] Profile read error:', readError);
+            } else if (!existing) {
+              // No row yet (the sign-up trigger normally makes one). If the
+              // trigger wins the race, the row it made is left alone.
+              const insertPayload = {
+                id: session.user.id,
+                email: session.user.email || '',
+                first_name: firstName,
+                last_name: lastName,
+              };
+              if (justConfirmedEmail) insertPayload.terms_accepted = true;
+              const { error: insertError } = await supabase
+                .from('profiles')
+                .upsert(insertPayload, { onConflict: 'id', ignoreDuplicates: true });
+              if (insertError) console.error('[AuthContext] Profile create error:', insertError);
             } else {
-              console.log('[AuthContext] Profile upserted successfully');
+              const changes = {};
+              if (session.user.email && existing.email !== session.user.email) changes.email = session.user.email;
+              if (!existing.first_name && firstName) changes.first_name = firstName;
+              if (!existing.last_name && lastName) changes.last_name = lastName;
+              if (justConfirmedEmail && existing.terms_accepted !== true) changes.terms_accepted = true;
+              if (Object.keys(changes).length > 0) {
+                const { error: updateError } = await supabase
+                  .from('profiles')
+                  .update(changes)
+                  .eq('id', session.user.id);
+                if (updateError) console.error('[AuthContext] Profile update error:', updateError);
+              }
             }
 
             // Wait 500ms for session to fully settle before querying other tables
