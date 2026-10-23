@@ -2,7 +2,6 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
-import BackArrow from '../components/BackArrow';
 import SaveProgressModal from '../components/SaveProgressModal';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';

@@ -5,7 +5,6 @@ import { AuthContext } from '../context/AuthContext';
 import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import DesignHeader from '../components/DesignHeader';

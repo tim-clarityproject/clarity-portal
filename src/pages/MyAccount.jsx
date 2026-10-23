@@ -10,7 +10,7 @@ import pageText from '../content/pageText';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import { useCoachName, Crosshair, PageHeader, Button, useToast } from '../components/design';
-import { useStartChat } from '../components/coach/CoachChat';
+import { useStartChat } from '../components/coach/startChat';
 
 export default function MyAccount() {
   const navigate = useNavigate();

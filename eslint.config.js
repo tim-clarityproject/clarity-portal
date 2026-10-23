@@ -28,6 +28,17 @@ export default [
         cancelAnimationFrame: 'readonly',
         URL: 'readonly',
         navigator: 'readonly',
+        // Standard browser features the app uses (they were missing, so
+        // ESLint reported them as undefined).
+        ResizeObserver: 'readonly',
+        URLSearchParams: 'readonly',
+        performance: 'readonly',
+        getComputedStyle: 'readonly',
+        crypto: 'readonly',
+        CustomEvent: 'readonly',
+        CSS: 'readonly',
+        Element: 'readonly',
+        queueMicrotask: 'readonly',
       },
     },
     rules: {

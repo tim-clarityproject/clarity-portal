@@ -9,15 +9,6 @@ html:has(.ui-root) {
   overscroll-behavior-y: none;
 }
 
-.ui-overline {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--fs-overline);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-overline);
-  color: var(--coral-text);
-}
-
 .ui-title {
   font-family: var(--font-display);
   font-weight: 400;
@@ -34,80 +25,12 @@ html:has(.ui-root) {
   }
 }
 
-.ui-greeting {
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  font-size: var(--fs-greeting-phone);
-  letter-spacing: var(--ls-greeting);
-  line-height: 1.25;
-  text-align: center;
-  color: var(--text);
-}
-
-@media (min-width: 769px) {
-  .ui-greeting {
-    font-size: var(--fs-greeting-desktop);
-  }
-}
-
 .ui-subtitle {
   font-family: var(--font-body);
   font-weight: 400;
   font-size: var(--fs-body-sub);
   color: var(--text-2);
   margin-top: var(--space-2);
-}
-
-.ui-rule {
-  width: 32px;
-  height: 2px;
-  background: var(--coral);
-  margin-top: var(--space-3);
-}
-
-.ui-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  padding: var(--space-3);
-}
-
-.ui-label {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-label);
-  color: var(--text);
-}
-
-.ui-input {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: var(--fs-input);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-input);
-  padding: 13px 14px;
-  min-height: var(--tap-min);
-  color: var(--text);
-  box-sizing: border-box;
-}
-
-.ui-input::placeholder {
-  color: var(--placeholder);
-}
-
-.ui-input:focus-visible {
-  border-color: var(--coral);
-  outline: 2px solid var(--text);
-  outline-offset: 3px;
-}
-
-.ui-input:disabled {
-  color: var(--placeholder);
-  background: var(--surface);
 }
 
 /* ============================================================
@@ -122,19 +45,6 @@ html:has(.ui-root) {
    declared here would just overwrite theirs, not merge with it, since
    it is a shorthand property.
    ============================================================ */
-.ui-autogrow {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  resize: none;
-  overflow: hidden;
-}
-
-@media (max-width: 768px) {
-  .ui-autogrow {
-    scroll-margin-bottom: calc(var(--action-bar-height, 96px) + var(--space-3));
-  }
-}
 
 /* .ui-btn-primary and .ui-btn-ghost (below) are real <button> elements.
    src/styles/mobile.css has button:not(.breathe-button) { padding: 12px
@@ -201,52 +111,10 @@ html:has(.ui-root) {
   outline-offset: 2px;
 }
 
-.ui-root .ui-btn-ghost--danger {
-  color: var(--coral-text);
-  border-color: var(--outline);
-}
-
 .ui-root .ui-btn-ghost:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   pointer-events: none;
-}
-
-.ui-link-quiet {
-  font-family: var(--font-body);
-  font-size: var(--fs-small);
-  color: var(--placeholder);
-  text-decoration: none;
-}
-
-.ui-link-quiet:hover {
-  text-decoration: underline;
-}
-
-.ui-saved {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: var(--ls-button);
-  color: var(--mint-text);
-}
-
-.ui-select {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--fs-label);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-input);
-  padding: 13px 14px;
-  min-height: var(--tap-min);
-  color: var(--text-2);
-  box-sizing: border-box;
-  cursor: pointer;
-  appearance: none;
 }
 
 .ui-section-heading {
@@ -257,30 +125,6 @@ html:has(.ui-root) {
   letter-spacing: var(--ls-section);
   color: var(--coral-text);
   margin-top: var(--space-5);
-}
-
-.ui-setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-4);
-  padding: 20px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.ui-setting-title {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 16px;
-  color: var(--text);
-}
-
-.ui-setting-desc {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 14px;
-  color: var(--text-2);
-  margin-top: var(--space-1);
 }
 
 /* .ui-switch is a real <button>, scoped under .ui-root (0,2,0) for the
@@ -329,67 +173,8 @@ html:has(.ui-root) {
   transform: translateX(18px);
 }
 
-.ui-segmented {
-  display: flex;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  padding: 3px;
-  background: transparent;
-  position: relative;
-}
-
 /* .ui-segmented-option is a real <button>, scoped under .ui-root
    (0,2,0) for the same reason as the other button classes above. */
-.ui-root .ui-segmented-option {
-  flex: 1;
-  min-height: 0;
-  padding: 9px 0 8px !important;
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 10px !important;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text-2);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  position: relative;
-  z-index: 1;
-  transition: color var(--dur-slow) var(--ease);
-}
-
-.ui-root .ui-segmented-option.active {
-  background: var(--coral);
-  color: var(--on-coral);
-}
-
-.ui-segmented-bg {
-  position: absolute;
-  background: var(--coral);
-  border-radius: var(--radius-pill);
-  height: 100%;
-  top: 0;
-  left: 0;
-  transition: transform var(--dur-slow) var(--ease), width var(--dur-slow) var(--ease);
-  z-index: 0;
-}
-
-.ui-modal {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  padding: 26px 24px;
-  max-width: 460px;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) translateY(8px);
-  opacity: 0;
-  animation: ui-modal-in var(--dur-slow) var(--ease) forwards;
-  z-index: 3000;
-}
 
 @keyframes ui-modal-in {
   to {
@@ -398,182 +183,10 @@ html:has(.ui-root) {
   }
 }
 
-.ui-modal-title {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 15px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text);
-  margin: 0 0 var(--space-3);
-}
-
-.ui-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--scrim);
-  opacity: 0;
-  animation: ui-modal-backdrop-in var(--dur-slow) var(--ease) forwards;
-  z-index: 2999;
-}
-
 @keyframes ui-modal-backdrop-in {
   to {
     opacity: 1;
   }
-}
-
-.ui-slider {
-  width: 100%;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--line);
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  outline: none;
-}
-
-.ui-slider::-webkit-slider-thumb {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--coral);
-  cursor: pointer;
-}
-
-.ui-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--coral);
-  cursor: pointer;
-  border: none;
-}
-
-.ui-slider::-moz-range-track {
-  background: transparent;
-  border: none;
-}
-
-.ui-action-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  padding: 14px 16px;
-  position: relative;
-}
-
-.ui-action-card-title {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text);
-}
-
-.ui-action-card-desc {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.ui-action-card--suggested {
-  border-color: var(--coral);
-}
-
-.ui-action-card--suggested::before {
-  content: 'Suggested for now';
-  position: absolute;
-  top: -12px;
-  left: 16px;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--coral-text);
-  background: var(--bg);
-  padding: 0 8px;
-}
-
-@media (min-width: 769px) {
-  .ui-action-card-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-3);
-    max-width: 780px;
-    margin: 0 auto;
-  }
-}
-
-.ui-tabbar {
-  background: var(--bg);
-  border-top: 1px solid var(--line);
-  padding: 14px 4px 22px;
-  padding-bottom: max(22px, calc(22px + env(safe-area-inset-bottom)));
-  display: flex;
-  justify-content: space-around;
-  position: relative;
-}
-
-.ui-tabbar-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  color: var(--text-2);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 0;
-  flex: 1;
-  position: relative;
-}
-
-.ui-tabbar-item.active {
-  color: var(--coral-text);
-}
-
-.ui-tabbar-item.active::before {
-  content: '';
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 22px;
-  height: 2px;
-  background: var(--coral);
-}
-
-.ui-tabbar-icon {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.15;
-  stroke-linecap: butt;
-  stroke-linejoin: round;
-}
-
-.ui-tabbar-label {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-tab);
-  color: currentColor;
 }
 
 .ui-cross {
@@ -584,24 +197,6 @@ html:has(.ui-root) {
   -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
   mask: url('/brand/crosshair_white.png') center / contain no-repeat;
   flex-shrink: 0;
-}
-
-.ui-cross--sm {
-  width: 14px;
-  height: 14px;
-}
-
-.ui-cross--lg {
-  width: 24px;
-  height: 24px;
-}
-
-.ui-cross--open {
-  transition: transform var(--dur) var(--ease);
-}
-
-.ui-cross--open.open {
-  transform: rotate(45deg);
 }
 
 /* ============================================================
@@ -1301,70 +896,11 @@ html:has(.ui-root) {
   }
 }
 
-.auth-mission-card-placeholder {
-  color: var(--placeholder);
-}
-
 /* Mission page (/auth/mission): one coral-outlined card IS the input -
    no separate preview card, no separate text box. Modifier on the same
    .auth-mission-card used by Finished.jsx/WelcomeBack.jsx (unchanged,
    static-display use there); only this variant turns it into a live
    textarea. */
-.auth-mission-card--input {
-  width: 100%;
-  min-width: 0;
-  margin: 30px auto 0;
-  padding: 14px 22px 16px;
-  transition: border-color var(--dur-fast) var(--ease);
-}
-
-.auth-mission-card--input.error {
-  border-color: var(--coral-soft);
-}
-
-.auth-mission-card--input:focus-within .auth-mission-card-label {
-  color: var(--coral-soft);
-}
-
-.ui-root .auth-mission-card-input {
-  display: block;
-  width: 100%;
-  background: transparent;
-  border: 0;
-  outline: 0;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 18px;
-  line-height: 1.45;
-  text-align: center;
-  resize: none;
-  overflow: hidden;
-  padding: 0;
-  min-height: 30px;
-}
-
-@media (min-width: 769px) {
-  .ui-root .auth-mission-card-input {
-    font-size: 20px;
-  }
-}
-
-.ui-root .auth-mission-card-input::placeholder {
-  color: var(--placeholder);
-}
-
-.auth-mission-counter-row {
-  display: flex;
-  justify-content: center;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--placeholder);
-  margin-top: 14px;
-}
-
-.auth-mission-counter-row .at-limit {
-  color: var(--coral-soft);
-}
 
 .auth-mission-error {
   text-align: center;
@@ -1597,36 +1133,10 @@ html:has(.ui-root) {
    0.24em) per this task's spec, so new classes rather than reusing
    those. Every colour is a token (Phase 0c).
    ============================================================ */
-.ui-root .discard-dialog-keep {
-  border-radius: var(--radius-pill);
-  background: var(--coral);
-  color: var(--on-coral);
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 11px !important;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  padding: 0 28px !important;
-  min-height: 48px;
-  border: none;
-  cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
-}
-
-.ui-root .discard-dialog-keep:hover,
-.ui-root .discard-dialog-keep:focus-visible {
-  background: var(--coral-soft);
-}
-
-.ui-root .discard-dialog-keep:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 3px;
-}
 
 /* .dng (DeleteDialog.jsx's danger button, "class dng" per the brief)
    shares this exact recipe rather than duplicating it - same coral-
    tinted ghost pill as the approved Discard pop-up. */
-.ui-root .discard-dialog-discard,
 .ui-root .dng {
   border-radius: var(--radius-pill);
   background: transparent;
@@ -1643,15 +1153,12 @@ html:has(.ui-root) {
   transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 
-.ui-root .discard-dialog-discard:hover,
-.ui-root .discard-dialog-discard:focus-visible,
 .ui-root .dng:hover,
 .ui-root .dng:focus-visible {
   border-color: var(--coral);
   background: var(--coral-soft-tint);
 }
 
-.ui-root .discard-dialog-discard:focus-visible,
 .ui-root .dng:focus-visible {
   outline: 2px solid var(--coral);
   outline-offset: 2px;
@@ -1819,37 +1326,6 @@ html:has(.ui-root) {
   line-height: 1.5;
 }
 
-.ui-root .plan-dq-textarea {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 18px !important;
-  line-height: 1.6;
-  padding: 10px 0 14px !important;
-  min-height: 58px;
-  outline: none;
-  transition: height var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-
-.ui-root .plan-dq-textarea::placeholder {
-  color: var(--placeholder);
-}
-
-.ui-root .plan-dq-textarea:hover {
-  border-bottom-color: var(--btn-line);
-}
-
-.ui-root .plan-dq-textarea:focus {
-  border-bottom-color: var(--coral);
-  outline: none;
-}
-
 /* ---- Generic field rows (meeting title/chair/date/time etc) ---- */
 
 .plan-field {
@@ -1982,38 +1458,6 @@ html:has(.ui-root) {
 }
 
 /* ---- Add-section/objective/agenda/scenario pill buttons ---- */
-
-.ui-root .plan-add-btn {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: var(--tap-min);
-  padding: 0 var(--space-3) !important;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: var(--fs-button) !important;
-  color: var(--text-2);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
-}
-
-.ui-root .plan-add-btn:hover,
-.ui-root .plan-add-btn:focus-visible,
-.ui-root .plan-add-btn[aria-expanded="true"] {
-  color: var(--text);
-  border-color: var(--coral);
-}
-
-.ui-root .plan-add-btn:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-}
 
 .plan-menu {
   position: relative;
@@ -2755,32 +2199,6 @@ html:has(.ui-root) {
   opacity: 1;
 }
 
-.ui-root .inv-card-textarea {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: var(--space-3);
-  background: var(--bg);
-  border: 1px solid var(--btn-line);
-  border-radius: var(--radius-input);
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: var(--fs-input);
-  line-height: 1.55;
-  padding: 14px 16px !important;
-  min-height: 56px;
-  outline: none;
-  transition: border-color var(--dur) var(--ease);
-}
-
-.ui-root .inv-card-textarea:focus {
-  border-color: var(--coral);
-}
-
-.ui-root .inv-card-textarea::placeholder {
-  color: var(--placeholder);
-}
-
 /* ---- Summary: risk + what-you'll-do side by side ---- */
 
 .inv-sum-risk-row {
@@ -2878,44 +2296,6 @@ span.tc-editable:focus-visible {
   border-radius: 4px;
 }
 
-.ui-root .tc-copy-btn {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: var(--tap-min);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 10px;
-  color: var(--text-2);
-  transition: color var(--dur) var(--ease);
-  flex-shrink: 0;
-}
-
-.ui-root .tc-copy-btn:hover,
-.ui-root .tc-copy-btn:focus-visible {
-  color: var(--text);
-}
-
-.ui-root .tc-copy-btn:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-}
-
-.ui-root .tc-copy-btn svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .tc-edit-row {
   margin-bottom: var(--space-3);
   padding-bottom: var(--space-3);
@@ -2926,40 +2306,6 @@ span.tc-editable:focus-visible {
   display: flex;
   gap: var(--space-2);
   margin-top: var(--space-2);
-}
-
-.ui-root .tc-edit-save,
-.ui-root .tc-edit-cancel {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: 40px;
-  padding: 0 var(--space-3) !important;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 10px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.ui-root .tc-edit-save {
-  background: var(--coral);
-  color: var(--on-coral);
-}
-
-.ui-root .tc-edit-cancel {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--btn-line);
-}
-
-.ui-root .tc-edit-save:focus-visible,
-.ui-root .tc-edit-cancel:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
 }
 
 /* ---- Coaching questions: tick rows (mint = chosen) ---- */
@@ -2991,70 +2337,6 @@ span.tc-editable:focus-visible {
   display: grid;
   gap: var(--space-2);
   margin-bottom: var(--space-4);
-}
-
-.ui-root .tc-ck {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: var(--tap-min);
-  padding: var(--space-2) !important;
-  border-radius: var(--radius-input);
-  transition: background-color var(--dur-fast) var(--ease);
-}
-
-.ui-root .tc-ck:hover {
-  background: var(--surface);
-}
-
-.ui-root .tc-ck:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-}
-
-.tc-ck-box {
-  width: 24px;
-  height: 24px;
-  flex: none;
-  margin-top: 1px;
-  border: 1px solid var(--btn-line);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
-}
-
-.tc-ck-box svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: var(--on-coral);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0;
-  transition: opacity var(--dur-fast) var(--ease);
-}
-
-.tc-ck[aria-checked="true"] .tc-ck-box {
-  background: var(--mint);
-  border-color: var(--mint);
-}
-
-.tc-ck[aria-checked="true"] .tc-ck-box svg {
-  opacity: 1;
-}
-
-.tc-ck-text {
-  font-size: var(--fs-body-sub);
-  line-height: 1.5;
-  color: var(--text);
-  padding-top: 2px;
 }
 
 /* ---- Decision tools hub (prompt 7) ---- */
@@ -3170,12 +2452,6 @@ span.tc-editable:focus-visible {
 .ui-root .dt-card:hover .dt-card-text,
 .ui-root .dt-card:focus-visible .dt-card-text {
   transform: translateX(6px);
-}
-
-.dt-card-mark {
-  color: var(--coral);
-  flex-shrink: 0;
-  margin-top: 2px;
 }
 
 /* ---- "Your history" card: My Plans / My reviews ---- */
@@ -3332,27 +2608,6 @@ span.tc-editable:focus-visible {
   color: var(--text-2);
 }
 
-.ptl-row-mark {
-  flex-shrink: 0;
-  color: var(--coral);
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
-}
-
-@media (max-width: 768px) {
-  .ptl-row-mark {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.ui-root .ptl-row:hover .ptl-row-mark,
-.ui-root .ptl-row:focus-visible .ptl-row-mark {
-  opacity: 1;
-  transform: none;
-}
-
 .ui-root .ptl-row--locked {
   cursor: default;
   color: var(--placeholder);
@@ -3405,8 +2660,7 @@ span.tc-editable:focus-visible {
   .hub-history-card-icon,
   .ptl-row,
   .ptl-row::before,
-  .ptl-row-desc,
-  .ptl-row-mark {
+  .ptl-row-desc {
     transition: none !important;
   }
 }
@@ -3477,12 +2731,7 @@ span.tc-editable:focus-visible {
   .inv-card,
   .inv-card-check,
   .inv-card-check svg,
-  .inv-card-textarea,
-  span.tc-editable,
-  .tc-copy-btn,
-  .tc-ck,
-  .tc-ck-box,
-  .tc-ck-box svg {
+  span.tc-editable {
     transition: none !important;
   }
 }
@@ -3657,12 +2906,6 @@ span.tc-editable:focus-visible {
   margin-top: 2px;
 }
 
-.pop-empty {
-  padding: var(--space-5) 0;
-  color: var(--text-2);
-  font-size: var(--fs-body-sub);
-}
-
 /* ---- Edit plan: strategy/tactic editing ---- */
 
 .pop-strategy {
@@ -3735,42 +2978,6 @@ span.tc-editable:focus-visible {
   margin-top: var(--space-3);
 }
 
-.ui-root .pop-tactic-toggle {
-  display: inline-flex;
-  flex-shrink: 0;
-  border: 1px solid var(--btn-line);
-  border-radius: var(--radius-pill);
-  padding: 3px;
-}
-
-.ui-root .pop-tactic-toggle-btn {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: 36px;
-  padding: 0 16px !important;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 10px !important;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text-2);
-  display: inline-flex;
-  align-items: center;
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
-}
-
-.ui-root .pop-tactic-toggle-btn.active {
-  background: var(--coral);
-  color: var(--on-coral);
-}
-
-.ui-root .pop-tactic-toggle-btn:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-}
-
 .pop-tactic-field {
   display: flex;
   flex-direction: column;
@@ -3782,13 +2989,6 @@ span.tc-editable:focus-visible {
   display: block;
   font-size: 12px;
   color: var(--text-2);
-}
-
-.ui-root .pop-unit-input {
-  width: auto;
-  min-width: 90px;
-  max-width: 160px;
-  flex: none;
 }
 
 /* Target stepper input, phone only: src/styles/mobile.css forces
@@ -3870,10 +3070,6 @@ span.tc-editable:focus-visible {
   margin-bottom: var(--space-6);
 }
 
-.pop-review-heading .ui-rule {
-  display: none;
-}
-
 .pop-mission-card {
   margin-top: var(--space-5);
   border-top: 1px solid var(--line);
@@ -3929,12 +3125,6 @@ span.tc-editable:focus-visible {
   color: var(--coral-text);
 }
 
-.pop-last-reviewed {
-  font-size: var(--fs-small);
-  color: var(--text-2);
-  margin: var(--space-4) 0 0;
-}
-
 .pop-draft-banner {
   display: flex;
   justify-content: space-between;
@@ -3967,56 +3157,11 @@ span.tc-editable:focus-visible {
    rule is one 1px line per 30px tile (no gradient).
    ============================================================ */
 
-.jrn-date {
-  margin: 0;
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 32px;
-  line-height: 1.2;
-  color: var(--text);
-}
-
-@media (min-width: 769px) {
-  .jrn-date {
-    font-size: 40px;
-  }
-}
-
-.jrn-date small {
-  font-size: 18px;
-  color: var(--text-2);
-  margin-left: var(--space-2);
-}
-
-.jrn-sub {
-  margin: var(--space-3) 0 var(--space-5);
-  max-width: 46ch;
-}
-
 .jrn-prompts {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   margin: 0 0 var(--space-5);
-}
-
-.ui-root .jrn-prompt-btn {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: 36px;
-  padding: 0 var(--space-3) !important;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-small);
-  color: var(--text-2);
-  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
-}
-
-.ui-root .jrn-prompt-btn:hover,
-.ui-root .jrn-prompt-btn:focus-visible {
-  color: var(--text);
-  border-color: var(--btn-line);
 }
 
 .jrn-paper-wrap {
@@ -4177,48 +3322,6 @@ span.tc-editable:focus-visible {
   white-space: nowrap;
 }
 
-.rate-scale {
-  display: flex;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-}
-
-.ui-root .rate-seg {
-  all: unset;
-  box-sizing: border-box;
-  flex: 1;
-  text-align: center;
-  cursor: pointer;
-  min-height: var(--tap-min);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-right: 1px solid var(--line);
-  color: var(--text-2);
-  font-family: var(--font-body);
-  font-size: 15px;
-  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-}
-
-.ui-root .rate-seg:last-child {
-  border-right: 0;
-}
-
-.ui-root .rate-seg:hover {
-  color: var(--text);
-}
-
-.ui-root .rate-seg[aria-pressed="true"] {
-  background: var(--coral);
-  color: var(--on-coral);
-}
-
-.ui-root .rate-seg:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: -2px;
-}
-
 .rate-scale-labels {
   display: flex;
   justify-content: space-between;
@@ -4370,36 +3473,6 @@ span.tc-editable:focus-visible {
   margin: 0 0 var(--space-2);
 }
 
-.tsa-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.ui-root .tsa-pill {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: var(--tap-min);
-  padding: 0 var(--space-4) !important;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-small);
-  color: var(--text-2);
-  transition: all var(--dur-fast) var(--ease);
-}
-
-.ui-root .tsa-pill:hover {
-  border-color: var(--btn-line);
-  color: var(--text);
-}
-
-.ui-root .tsa-pill[aria-pressed="true"] {
-  background: var(--coral);
-  border-color: var(--coral);
-  color: var(--on-coral);
-}
-
 .tsa-saves {
   font-size: var(--fs-small);
   color: var(--coral-text);
@@ -4541,51 +3614,6 @@ span.tc-editable:focus-visible {
    into three. max-width raised from 420px to 760px to match the
    mock-up's own (unconstrained) width and this page's guidance row
    below it. */
-.breathe-technique-select {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
-  margin: 0 auto var(--space-6);
-  width: 100%;
-  max-width: 760px;
-  box-sizing: border-box;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  padding: 3px;
-}
-
-@media (max-width: 768px) {
-  .breathe-technique-select {
-    grid-template-columns: 1fr;
-    border-radius: 20px;
-  }
-}
-
-.ui-root .breathe-technique-option {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: var(--tap-min);
-  padding: 6px 8px;
-  border-radius: var(--radius-pill);
-  border: 1px solid transparent;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 10px;
-  line-height: 1.35;
-  color: var(--text-2);
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-
-.ui-root .breathe-technique-option:hover {
-  color: var(--text);
-}
 
 /* Dark lifted capsule (patch 3B area B) - no coral anywhere in the
    selector, so Start breathing stays the only coral block on the
@@ -4593,22 +3621,6 @@ span.tc-editable:focus-visible {
    matching token in tokens.css; --surface (#0B0B0B) is the nearest
    existing one, so that's what this uses (flagged to Tim as
    instructed rather than adding a new token). */
-.ui-root .breathe-technique-option.active {
-  background: var(--surface);
-  border-color: var(--btn-line);
-  color: var(--text);
-}
-
-.ui-root .breathe-technique-option:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 2px;
-}
-
-@media (max-width: 768px) {
-  .ui-root .breathe-technique-option {
-    border-radius: 16px;
-  }
-}
 
 .breathe-guidance {
   /* Flex-wrap, not a fixed grid: if the cards ever wrap onto a second

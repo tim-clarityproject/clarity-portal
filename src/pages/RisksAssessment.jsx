@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
-import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
 import DesignHeader from '../components/DesignHeader';

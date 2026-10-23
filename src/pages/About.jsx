@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import { Button, PageHeader, useCoachName } from '../components/design';
-import { useStartChat } from '../components/coach/CoachChat';
+import { useStartChat } from '../components/coach/startChat';
 
 function ExternalLinkIcon() {
   return (

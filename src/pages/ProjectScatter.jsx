@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useContext, useEffect } from 'react';
-import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import NamingModal from '../components/NamingModal';
 import { AuthContext } from '../context/AuthContext';

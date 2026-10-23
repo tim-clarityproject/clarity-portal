@@ -2,7 +2,6 @@ import { useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
-import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { Loading, PageHeader, TextBox, Button } from '../components/design';

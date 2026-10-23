@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
 import { BoldCrosshair, ChatButton } from './design';
-import { useStartChat } from './coach/CoachChat';
+import { useStartChat } from './coach/startChat';
 import DesignDrawer from './DesignDrawer';
 
 // The header (approved Home mock-up M2, version 3; decisions "Header").

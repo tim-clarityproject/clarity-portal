@@ -6,7 +6,6 @@ import { loadLatestVersion, restoreArchivedPlan } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import pageText from '../content/pageText';
 import { Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
 
 function CheckIcon() {

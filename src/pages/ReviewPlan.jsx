@@ -8,7 +8,6 @@ import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import pageText from '../content/pageText';
 import { DisclosureArrow, Loading, PageHeader, TextBox, Button, useToast } from '../components/design';
 
 const RQ = [
