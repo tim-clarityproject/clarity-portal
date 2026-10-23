@@ -35,6 +35,8 @@ import {
   Section,
   SegmentedControl,
   SlidePanel,
+  StatusAction,
+  MultiChoice,
   TextBox,
   TextField,
   SmallWin,
@@ -65,7 +67,7 @@ const TOC = [
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
   ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
-  ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
+  ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
 ];
 
 // The colour table (design-reference-v3.html): name, what it's for, dark,
@@ -178,11 +180,28 @@ function PageHeaderDemo() {
 }
 
 function SystemPopup({ open, onClose }) {
+  const [part, setPart] = useState('plan');
   return (
     <Popup open={open} onClose={onClose} title="How it fits together">
-      <div className="dr-stack">
-        <p className="dr-quiet">My Mission sits at the top. Under it, a few Outcome Objectives say what you want to be true.</p>
-        <p className="dr-quiet">Strategies are how you’ll get there, and Tactics are the habits and to-dos you log in each Performance Sprint.</p>
+      <div className="dr-stack dr-stack--fill">
+        <Choice
+          label="Which part would you like to read about?"
+          options={[{ value: 'plan', label: 'The plan' }, { value: 'sprint', label: 'The sprint' }]}
+          value={part}
+          onChange={setPart}
+        />
+        {part === 'plan' ? (
+          <div>
+            <p className="dr-quiet">My Mission sits at the top.</p>
+            <p className="dr-quiet">Under it, a few Outcome Objectives say what you want to be true.</p>
+            <p className="dr-quiet">Strategies are how you’ll get there.</p>
+          </div>
+        ) : (
+          <div>
+            <p className="dr-quiet">Each Performance Sprint holds the habits and to-dos you log.</p>
+            <p className="dr-quiet">Your Performance score shows how much of the week’s plan you did.</p>
+          </div>
+        )}
       </div>
     </Popup>
   );
@@ -203,10 +222,17 @@ function SectionDemo() {
 function ButtonsDemo() {
   const toast = useToast();
   return (
-    <div className="dr-row">
-      <Button variant="primary" onClick={() => toast.show('Saved')}>Save my mission</Button>
-      <Button icon="plus" onClick={() => toast.show('This adds a to-do.')}>Add a to-do</Button>
-      <Button variant="text" onClick={() => toast.show('Sprint details open here.')}>Sprint details</Button>
+    <div className="dr-stack">
+      <div className="dr-row">
+        <Button variant="primary" onClick={() => toast.show('Saved')}>Save my mission</Button>
+        <Button icon="plus" onClick={() => toast.show('This adds a to-do.')}>Add a to-do</Button>
+        <Button variant="text" onClick={() => toast.show('Sprint details open here.')}>Sprint details</Button>
+      </div>
+      <span className="dr-small">The coral button on hover, then disabled, for comparison:</span>
+      <div className="dr-row" aria-hidden="true">
+        <span className="ds-btn ds-btn--primary dr-hover-sample">Save my mission</span>
+        <span className="ds-btn ds-btn--primary" aria-disabled="true">Save my mission</span>
+      </div>
     </div>
   );
 }
@@ -228,7 +254,13 @@ function CrosshairDemo() {
 function StatsDemo() {
   return (
     <StatGroup>
-      <Stat label="Performance score this week" value="78%" live note="Your usual 72 to 84%. Standard 85%." bar={0.78} />
+      <Stat
+        label="Performance score this week"
+        value="78%"
+        live
+        note={<><span className="ds-line">Your usual 72 to 84%.</span><span className="ds-line">Standard 85%.</span></>}
+        bar={0.78}
+      />
       <Stat label="Training sessions" value="3 of 4" note="This week" />
     </StatGroup>
   );
@@ -298,7 +330,8 @@ function ControlsDemo() {
   const [view, setView] = useState('today');
   const [week, setWeek] = useState('today');
   const [todo, setTodo] = useState('');
-  const [done, setDone] = useState(true);
+  const [ticked, setTicked] = useState(['case']);
+  const tick = (key) => (on) => setTicked((t) => (on ? [...t, key] : t.filter((k) => k !== key)));
   return (
     <div className="dr-stack dr-stack--fill">
       <SegmentedControl
@@ -313,7 +346,11 @@ function ControlsDemo() {
         ))}
       </ChipRow>
       <TextBox label="What needs doing?" who="me" value={todo} onChange={setTodo} placeholder="e.g. Book a physio assessment" lines="one" />
-      <Checkbox checked={done} onChange={setDone} after={<ImpactTag editing>High impact</ImpactTag>}>Draft the case study</Checkbox>
+      <ul className="dr-ticks" aria-label="To-dos this week">
+        <li><Checkbox checked={ticked.includes('case')} onChange={tick('case')} after={<ImpactTag editing>High impact</ImpactTag>}>Draft the case study</Checkbox></li>
+        <li><Checkbox checked={ticked.includes('board')} onChange={tick('board')}>Send the board pack</Checkbox></li>
+        <li><Checkbox checked={ticked.includes('phone')} onChange={tick('phone')}>Phone off by 21:00</Checkbox></li>
+      </ul>
     </div>
   );
 }
@@ -379,7 +416,9 @@ function WhoSeesDemo() {
   return (
     <div className="dr-stack dr-stack--fill">
       <TextBox label="What’s your mission?" who={shared ? 'coach' : 'me'} value={mission} onChange={setMission} maxLength={120} />
-      <Checkbox checked={shared} onChange={setShared}>My coach sees my mission</Checkbox>
+      <ChipRow label="Sharing">
+        <Chip pressed={shared} onClick={() => setShared((v) => !v)}>Share my mission with my coach</Chip>
+      </ChipRow>
       <TextBox label="What went well today?" who="me" value={well} onChange={setWell} placeholder="e.g. I held the line in the board meeting" />
       <TextBox label="What’s the team’s one priority this quarter?" who="team" value={team} onChange={setTeam} lines="one" />
     </div>
@@ -399,10 +438,12 @@ function SteadyBoxDemo({ mode }) {
         who="me"
         value={entry}
         onChange={setEntry}
-        placeholder="Write anything. It saves as you go."
+        placeholder="Write anything, and it saves as you go."
         saveState={state}
       />
-      <Checkbox checked={noSignal} onChange={(v) => { setNoSignal(v); setOffline(v); }}>Lose the signal</Checkbox>
+      <ChipRow label="Example">
+        <Chip pressed={noSignal} onClick={() => { setNoSignal(!noSignal); setOffline(!noSignal); }}>Lose the signal</Chip>
+      </ChipRow>
     </div>
   );
 }
@@ -423,7 +464,10 @@ function FocusModeDemo({ mode }) {
         saveState={state}
         focusMode
       />
-      <p className="dr-small dr-laptop-only">On a laptop the box stays in the page and grows. Narrow the window to phone width, or open this page on a phone, then tap the box.</p>
+      <div className="dr-laptop-only">
+        <p className="dr-small">On a laptop the box stays in the page and grows.</p>
+        <p className="dr-small">To see focus mode, open this page on a phone and tap the box.</p>
+      </div>
     </div>
   );
 }
@@ -439,7 +483,7 @@ function GuidedDemo({ mode }) {
     setCalendar(true);
   }, []);
   const demo = useSprintDemo(mode || 'page', role, openCalendar);
-  const closed = (why) => { if (why !== 'finished') toast.show('Saved. Carry on whenever you like.'); };
+  const closed = (why) => { if (why !== 'finished') toast.show('Saved for later.'); };
   return (
     <div className="dr-stack dr-stack--fill">
       <Choice label="Which best describes you?" options={ROLE_OPTIONS} value={role} onChange={setRole} />
@@ -500,13 +544,16 @@ function MessagesDemo() {
   return (
     <div className="dr-stack">
       <SavedIndicator />
-      <SmallWin>Done. 3 of 4 this week.</SmallWin>
+      <SmallWin>Done, 3 of 4 this week.</SmallWin>
       <span className="ds-toast ds-toast--shown dr-static-toast" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
         <span className="ds-toast-text">Deleted</span>
         <span className="ds-toast-undo">Undo</span>
       </span>
-      <ErrorMessage>That didn’t save. Check your connection and try again.</ErrorMessage>
+      <ErrorMessage>
+        <span className="ds-line">That didn’t save.</span>
+        <span className="ds-line">Check your connection and try again.</span>
+      </ErrorMessage>
       <div className="dr-row">
         <Button onClick={() => toast.show('Added to this week.')}>Show a toast</Button>
         <Button onClick={() => toast.saved({ message: 'Deleted', onUndo: () => toast.show('Back again.') })}>Show Deleted with Undo</Button>
@@ -543,12 +590,21 @@ function LoadingDemo() {
   );
 }
 
+// Add panels keep one order (Tim, 23 Oct): what it is, which Strategy,
+// how much it helped or will help, then when, last.
+const IMPACT_OPTIONS = [{ value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }];
+const WEEK_OPTIONS = [{ value: 'this', label: 'This week' }, { value: 'next', label: 'Next week' }];
+const DAY_OPTIONS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((d) => ({ value: d, label: d }));
+
 function PanelsDemo() {
   const toast = useToast();
   const [panel, setPanel] = useState(false);
+  const [winPanel, setWinPanel] = useState(false);
   const [popup, setPopup] = useState(false);
-  const [draft, setDraft] = useState('');
+  const [todo, setTodo] = useState({ text: '', strategy: 's1', impact: 'medium', week: 'this' });
+  const [win, setWin] = useState({ text: '', strategies: [], impact: 'medium', day: 'Friday' });
   const box = useRef(null);
+  const winBox = useRef(null);
   return (
     <div className="dr-stack dr-stack--fill">
       <div className="dr-mini" aria-hidden="true">
@@ -563,6 +619,7 @@ function PanelsDemo() {
       </div>
       <div className="dr-row">
         <Button icon="plus" onClick={() => setPanel(true)}>Add a to-do</Button>
+        <Button icon="plus" onClick={() => setWinPanel(true)}>Add an unplanned win</Button>
         <Button onClick={() => setPopup(true)}>See how it fits together</Button>
       </div>
       <SlidePanel
@@ -570,11 +627,47 @@ function PanelsDemo() {
         onClose={() => setPanel(false)}
         title="Add a to-do"
         initialFocusRef={box}
-        footer={<Button variant="primary" disabled={!draft.trim()} onClick={() => { setPanel(false); setDraft(''); toast.saved({ message: 'Added to this week.', onUndo: () => toast.show('Removed.') }); }}>Add a to-do</Button>}
+        footer={<Button variant="primary" disabled={!todo.text.trim()} onClick={() => { setPanel(false); setTodo((t) => ({ ...t, text: '' })); toast.saved({ message: 'Added to this week.', onUndo: () => toast.show('Removed.') }); }}>Add a to-do</Button>}
       >
-        <TextBox ref={box} label="What needs doing?" who="me" value={draft} onChange={setDraft} placeholder="e.g. Send the board pack to Sam" />
+        <div className="dr-panel-form">
+          <TextBox ref={box} label="What needs doing?" who="me" value={todo.text} onChange={(text) => setTodo((t) => ({ ...t, text }))} placeholder="e.g. Send the board pack to the chair" />
+          <Choice label="Which Strategy does it serve?" options={STRATEGY_OPTIONS} value={todo.strategy} onChange={(strategy) => setTodo((t) => ({ ...t, strategy }))} />
+          <Choice label="How much will it help?" options={IMPACT_OPTIONS} value={todo.impact} onChange={(impact) => setTodo((t) => ({ ...t, impact }))} />
+          <Choice label="Which week?" options={WEEK_OPTIONS} value={todo.week} onChange={(week) => setTodo((t) => ({ ...t, week }))} />
+        </div>
+      </SlidePanel>
+      <SlidePanel
+        open={winPanel}
+        onClose={() => setWinPanel(false)}
+        title="Add an unplanned win"
+        initialFocusRef={winBox}
+        footer={<Button variant="primary" disabled={!win.text.trim() || win.strategies.length === 0} onClick={() => { setWinPanel(false); setWin((w) => ({ ...w, text: '', strategies: [] })); toast.show('Added to your Performance Evidence.'); }}>Add the win</Button>}
+      >
+        <div className="dr-panel-form">
+          <TextBox ref={winBox} label="What did you do?" who="me" value={win.text} onChange={(text) => setWin((w) => ({ ...w, text }))} placeholder="e.g. Closed the renewal with the biggest client" />
+          <MultiChoice
+            label="Which Strategies did it help?"
+            hint="Pick all that apply."
+            options={STRATEGY_OPTIONS}
+            values={win.strategies}
+            onChange={(strategies) => setWin((w) => ({ ...w, strategies }))}
+          />
+          <Choice label="How much did it help?" options={IMPACT_OPTIONS} value={win.impact} onChange={(impact) => setWin((w) => ({ ...w, impact }))} />
+          <Choice label="Which day?" options={DAY_OPTIONS} value={win.day} onChange={(day) => setWin((w) => ({ ...w, day }))} />
+        </div>
       </SlidePanel>
       <SystemPopup open={popup} onClose={() => setPopup(false)} />
+    </div>
+  );
+}
+
+function MilestoneDemo() {
+  const [done, setDone] = useState(false);
+  return (
+    <div className="dr-milestone">
+      <p className="dr-milestone-title">Publish my coaching book</p>
+      <p className="dr-milestone-meta">Objective 4 · milestone · by 30 Jun 2027</p>
+      <StatusAction done={done} onChange={setDone} />
     </div>
   );
 }
@@ -659,8 +752,9 @@ function Gallery() {
     <ViewContext.Provider value={view}>
       <div className="dr-wrap">
         <h1 className="dr-title">Clarity Design Reference</h1>
-        <p className="dr-lead">Version 3: dark and light. Every part of the portal is shown in both modes side by side, with its rules beside it.</p>
-        <p className="dr-lead">Phase 0b. Items marked “new” were added or changed in this phase.</p>
+        <p className="dr-lead">Version 3: dark and light.</p>
+        <p className="dr-lead">Every part of the portal is shown in both modes side by side, with its rules beside it.</p>
+        <p className="dr-lead">Items marked “new” were added or changed in Phase 0b.</p>
         <div className="dr-rule" aria-hidden="true" />
         <div className="dr-switches">
           <ColourModeChoice label="How should the portal look?" />
@@ -680,10 +774,13 @@ function Gallery() {
           title="Colour"
           rules={(
             <>
-              <p><New /><b>Every colour has a dark and a light value.</b> Pages only ever use the names, never a colour code, so both modes always match.</p>
+              <p><New /><b>Every colour has a dark and a light value.</b></p>
+              <p>Pages only ever use the names, never a colour code, so both modes always match.</p>
               <p><b>Light mode is built on the brand off-white</b> (#F9F8F5) with brand black text.</p>
-              <p><b>Coral and mint are too pale to read as text on off-white</b>, so light mode uses deeper versions for text, lines and numbers. Coral buttons keep their black text in both modes.</p>
-              <p>Every text colour passes WCAG AA (4.5 to 1); box edges pass 3 to 1. The last column shows each light colour against the background.</p>
+              <p><b>Coral and mint are too pale to read as text on off-white</b>, so light mode uses deeper versions for text, lines and numbers.</p>
+              <p>Coral buttons keep their black text in both modes.</p>
+              <p>Every text colour passes WCAG AA (4.5 to 1); box edges pass 3 to 1.</p>
+              <p>The last column shows each light colour against the background.</p>
               <p><b>Below-standard weeks are neutral grey</b> in both modes, never coral, soft coral or red.</p>
               <p>No gradients, no shadows, in either mode.</p>
             </>
@@ -696,13 +793,17 @@ function Gallery() {
           <>
             <p><b>Nekst capitals only for short names:</b> page titles, section names and buttons.</p>
             <p><b>Screen questions are sentence case in DM Sans</b>, so long questions read easily.</p>
-            <p>Nekst Light for numbers 24px and up. Body 17px. Nothing below 12px. No bold text anywhere.</p>
+            <p>Nekst Light for numbers 24px and up.</p>
+            <p>Body 17px.</p>
+            <p>Nothing below 12px.</p>
+            <p>No bold text anywhere.</p>
           </>
         )} />
 
         <GallerySection id="c3" title="Page header" demo={PageHeaderDemo} rules={(
           <>
-            <p><New /><b>No intro line under the title.</b> The title is enough; any explanation sits behind the small “i”.</p>
+            <p><New /><b>No intro line under the title.</b></p>
+            <p>The title is enough; any explanation sits behind the small “i”.</p>
             <p>A quiet meta line, then the coral rule, once per page.</p>
           </>
         )} />
@@ -718,27 +819,34 @@ function Gallery() {
           <>
             <p><b>One coral button per screen</b>, the same coral with black text in both modes.</p>
             <p>Outlined buttons for everything else; a text link for minor actions.</p>
-            <p><b>“My” where it’s theirs</b> (Save my mission), otherwise verb and thing (Add a to-do). Never Submit, OK or Go.</p>
+            <p><New /><b>Hover never looks disabled</b> (23 Oct): a slightly brighter coral in dark and a slightly deeper coral in light, with black text in both.</p>
+            <p>A disabled coral button is the coral at 35% opacity.</p>
+            <p><b>“My” where it’s theirs</b> (Save my mission), otherwise verb and thing (Add a to-do).</p>
+            <p>Never Submit, OK or Go.</p>
           </>
         )} />
 
         <GallerySection id="c6" title="Crosshairs" demo={CrosshairDemo} rules={(
           <>
-            <p><b>Standard crosshair</b>: every plus and close, from the logo’s own crop. Coral or white on dark; deep coral or black on light.</p>
-            <p>Never a typed + or ×, never smaller than 14px. The bold crosshair has its own section below.</p>
+            <p><b>Standard crosshair</b>: every plus and close, from the logo’s own crop.</p>
+            <p>Coral or white on dark; deep coral or black on light.</p>
+            <p>Never a typed + or ×, never smaller than 14px.</p>
+            <p>The bold crosshair has its own section below.</p>
           </>
         )} />
 
         <GallerySection id="c7" title="Stats" demo={StatsDemo} rules={(
           <>
             <p><b>Label first, then the number</b>, then one line saying what it means.</p>
-            <p>The live score is coral in dark and deep coral in light. Counts read “3 of 4”.</p>
+            <p>The live score is coral in dark and deep coral in light.</p>
+            <p>Counts read “3 of 4”.</p>
           </>
         )} />
 
         <GallerySection id="c9" title="Lists" demo={ListDemo} rules={(
           <>
-            <p>Title and date only, the type as a small grey word. The whole row opens it.</p>
+            <p>Title and date only, the type as a small grey word.</p>
+            <p>The whole row opens it.</p>
             <p>Dates: Today, Yesterday, then “Mon 19 Oct”.</p>
           </>
         )} />
@@ -760,15 +868,22 @@ function Gallery() {
         <GallerySection id="c12" title="Controls" demo={ControlsDemo} rules={(
           <>
             <p>Segmented control for views; chips for on and off; large text boxes for anything written.</p>
-            <p><New />Checkbox edges use the edges colour so an empty box is easy to see in both modes.</p>
+            <p><New /><b>One tick box size everywhere</b> (Tim, 23 Oct): an 18px box with a 1.5px edge in the box-edge colour, 5px corners and a 12px tick, in a 44px tap area.</p>
+            <p>Tick boxes are only for lists: to-dos, yes-or-no habits and the terms box at sign-up.</p>
+            <p>A ticked box has a deep coral edge in light mode, so it passes 3 to 1.</p>
           </>
         )} />
 
         <GallerySection id="c20" title="Drop-downs" demo={ChoicesDemo} rules={(
           <>
-            <p><New /><b>Branded drop-downs</b> (Tim, 22 Oct): the list opens just below the box in the portal’s style, or above it only when there isn’t room. It never covers the box. On a phone a panel slides up with the question as its title.</p>
-            <p><New /><b>Room to breathe</b>: 20px of space at each side, 15px top and bottom, at least 58px high, 14px corners. Long choices wrap onto a second line rather than squeezing.</p>
-            <p>Options are 16px and at least 52px high. The chosen option has a coral tick as well as a shade. The crosshair turns 45° while the list is open.</p>
+            <p><New /><b>Branded drop-downs</b> (Tim, 22 Oct): the list opens just below the box in the portal’s style, or above it only when there isn’t room.</p>
+            <p>It never covers the box.</p>
+            <p>On a phone a panel slides up with the question as its title.</p>
+            <p><New /><b>Room to breathe</b>: 20px of space at each side, 15px top and bottom, at least 58px high, 14px corners.</p>
+            <p>Long choices wrap onto a second line rather than squeezing.</p>
+            <p>Options are 16px and at least 52px high.</p>
+            <p>The chosen option has a coral tick as well as a shade.</p>
+            <p>The crosshair turns 45° while the list is open.</p>
             <p>Arrow keys, Enter, Escape and typing to jump all work, and screen readers hear each option.</p>
           </>
         )} />
@@ -777,7 +892,8 @@ function Gallery() {
           <>
             <p><New /><b>On a phone, a row of pills always sits on one line with equal-width buttons and never wraps</b> (Tim, 23 Oct).</p>
             <p>If the choices can’t fit that way, they become full-width answer rows: “How long a Recovery?” is rows on a phone and pills on a laptop.</p>
-            <p>Decided by measuring the real space, again on every resize and at larger text sizes. Long or many choices use the drop-down.</p>
+            <p>Decided by measuring the real space, again on every resize and at larger text sizes.</p>
+            <p>Long or many choices use the drop-down.</p>
             <p>One-tap answer lists, like “Which best describes you?”, are always rows.</p>
           </>
         )} />
@@ -785,93 +901,147 @@ function Gallery() {
         <GallerySection id="c24" title="Who can see this" demo={WhoSeesDemo} rules={(
           <>
             <p><New /><b>Every box that holds something personal shows a small lock and who can see it</b>: “Only you”, “You and [coach’s first name]” or “Your team” (Tim, 23 Oct; experience rule 44).</p>
-            <p>It sits at the right of the question above the box, 13px, in the label colour. Screen readers hear “Who can see this: Only you”.</p>
-            <p>It changes the moment something is shared, and back if sharing is undone. Tick and untick the box to see it.</p>
-            <p>The coach’s first name comes from the client’s own coach, never typed into the code. Here it is example data.</p>
+            <p>It sits at the right of the question above the box, 13px, in the label colour.</p>
+            <p>Screen readers hear “Who can see this: Only you”.</p>
+            <p>It changes the moment something is shared, and back if sharing is undone.</p>
+            <p>Turn the sharing chip on and off to see it.</p>
+            <p>The coach’s first name comes from the client’s own coach, never typed into the code.</p>
+            <p>Here it is example data.</p>
           </>
         )} />
 
         <GallerySection id="c25" title="The steady text box" demo={SteadyBoxDemo} rules={(
           <>
-            <p><New /><b>Typing never jumps</b> (Tim, 21 Oct). The box grows smoothly as you type; the line being typed stays just above the keyboard, and the page never scrolls back and forth.</p>
+            <p><New /><b>Typing never jumps</b> (Tim, 21 Oct).</p>
+            <p>The box grows smoothly as you type; the line being typed stays just above the keyboard, and the page never scrolls back and forth.</p>
             <p>Box colour, an edge that turns coral when you’re typing, 17px text, 20px of space each side, at least 88px tall when empty.</p>
-            <p><b>It saves by itself</b>: Saving, then Saved. With no signal it says Will sync, keeps a copy on the device and tries again until it goes. Nothing is lost if the app closes.</p>
+            <p><b>It saves by itself</b>: Saving, then Saved.</p>
+            <p>With no signal it says Will sync, keeps a copy on the device and tries again until it goes.</p>
+            <p>Nothing is lost if the app closes.</p>
           </>
         )} />
 
         <GallerySection id="c26" title="Focus mode" demo={FocusModeDemo} rules={(
           <>
             <p><New /><b>Writing on a phone opens a full-screen writing page</b>: the question at the top, the lock label, just the words, a quiet Saved, and Done.</p>
-            <p>Nothing else on the page moves. It fits the space above the keyboard, so the line being typed stays in sight.</p>
-            <p>Done, or a swipe down, closes it and puts you back in the same place, with what you wrote in the box. Nothing needs saving by hand.</p>
-            <p>For long writing only: journal, reflections and debrief answers. On a laptop the box stays in the page and grows smoothly.</p>
+            <p>Nothing else on the page moves.</p>
+            <p>It fits the space above the keyboard, so the line being typed stays in sight.</p>
+            <p>Done, or a swipe down, closes it and puts you back in the same place, with what you wrote in the box.</p>
+            <p>Nothing needs saving by hand.</p>
+            <p>For long writing only: journal, reflections and debrief answers.</p>
+            <p>On a laptop the box stays in the page and grows smoothly.</p>
           </>
         )} />
 
         <GallerySection id="c28" title="Calendar" demo={CalendarDemo} rules={(
           <>
             <p><New /><b>Dates are picked from the portal’s own calendar</b>, never typed: the question as its title, the month with previous and next, today marked, past days greyed out, the chosen day filled.</p>
-            <p>On a laptop it opens beside the field like the drop-down; on a phone it slides up from the bottom. Weeks start on Monday.</p>
-            <p>Arrow keys move a day or a week, Page Up and Page Down change the month, Enter picks. Dates show as “Mon 26 Oct”.</p>
+            <p>On a laptop it opens beside the field like the drop-down; on a phone it slides up from the bottom.</p>
+            <p>Weeks start on Monday.</p>
+            <p>Arrow keys move a day or a week, Page Up and Page Down change the month, Enter picks.</p>
+            <p>Dates show as “Mon 26 Oct”.</p>
           </>
         )} />
 
         <GallerySection id="c27" title="Guided tools" wide demo={GuidedDemo} rules={(
           <>
-            <p><New /><b>One shared component for every tool people work through in order</b>, one question per screen, as M6’s set-up flows. This demo uses M6’s Start a sprint wording.</p>
-            <p>Desktop opens focused, full screen: the header and menu step back. The top bar has the tool’s name, Saving and Saved, and the rotated crosshair to close, which returns you to where you came from.</p>
-            <p>The step list shows where you are (tap any step to jump); on phone it becomes the slim line under the top bar. Question tools use the % complete bar instead. Never a “Step 1 of 3” line.</p>
+            <p><New /><b>One shared component for every tool people work through in order</b>, one question per screen, as M6’s set-up flows.</p>
+            <p>This demo uses M6’s Start a sprint wording.</p>
+            <p>Desktop opens focused, full screen: the header and menu step back.</p>
+            <p>The top bar has the tool’s name, Saving and Saved, and the rotated crosshair to close, which returns you to where you came from.</p>
+            <p>The step list shows where you are (tap any step to jump); on phone it becomes the slim line under the top bar.</p>
+            <p>Question tools use the % complete bar instead.</p>
+            <p>Never a “Step 1 of 3” line.</p>
             <p>Each step: a small label with an optional “i”, the question in sentence case, a short nudge, an optional “See an example” for your role, a one-off tip, then the step itself.</p>
-            <p>Back on the left (the arrow alone on phone), a quiet Skip, and the coral button. Steps slide across; with reduced motion they fade. Everything saves as you go, and the summary at the end lets you change any answer.</p>
+            <p>Back on the left (the arrow alone on phone), a quiet Skip, and the coral button.</p>
+            <p>Steps slide across; with reduced motion they fade.</p>
+            <p>Everything saves as you go, and the summary at the end lets you change any answer.</p>
+            <p><New /><b>Statements people rate</b> (writing rule 51): the heading is the task, then the statement in a soft panel, then the who-sees label and the answers.</p>
+            <p>See the Bouncing back step.</p>
           </>
         )} />
 
         <GallerySection id="c21" title="Filter" demo={FilterDemo} rules={(
-          <p>One Filter button opens the drop-downs. Underneath, one plain line says what is applied, with Clear.</p>
+          <>
+            <p>One Filter button opens the drop-downs.</p>
+            <p>Underneath, one plain line says what is applied, with Clear.</p>
+          </>
         )} />
 
         <GallerySection id="c22" title="Show less, reveal more" demo={CollapsibleDemo} rules={(
-          <p>One line with the key fact and the crosshair plus; tap to see the detail. The plus turns 45° to close.</p>
+          <>
+            <p>One line with the key fact and the crosshair plus; tap to see the detail.</p>
+            <p>The plus turns 45° to close.</p>
+          </>
         )} />
 
         <GallerySection id="c13" title="Messages" demo={MessagesDemo} rules={(
           <>
             <p><b>Saved</b> is just “Saved”, in mint (deep green in light).</p>
             <p><New /><b>Small wins</b>: the tick fills coral and a few words show.</p>
-            <p><New /><b>Toasts</b> are black with white text in both modes. Deleting shows “Deleted” with Undo; no “Are you sure?”.</p>
+            <p><New /><b>Toasts</b> are black with white text in both modes.</p>
+            <p>Deleting shows “Deleted” with Undo; no “Are you sure?”.</p>
             <p><New /><b>Errors</b> say what happened, then what to do, on a soft coral tint.</p>
           </>
         )} />
 
         <GallerySection id="c14" title="Loading" demo={LoadingDemo} rules={(
-          <p>The rotating crosshair, after about 0.3 seconds, with one short line. With reduced motion it fades instead.</p>
+          <>
+            <p>The rotating crosshair, after about 0.3 seconds, with one short line.</p>
+            <p>With reduced motion it fades instead.</p>
+          </>
         )} />
 
         <GallerySection id="c15" title="Panels" demo={PanelsDemo} rules={(
           <>
             <p><New />The page underneath dims: strongly in dark, lightly in light, so it never looks muddy.</p>
             <p>Full screen on phone; swipe down or Escape closes.</p>
+            <p><New /><b>Panels never jump</b> (Tim, 23 Oct).</p>
+            <p>A panel animates only when it opens.</p>
+            <p>Changing anything inside it updates only that part, and it keeps its place and focus.</p>
+            <p><New /><b>Add panels keep one order</b>: what it is, which Strategy, how much it helped or will help, then when.</p>
+            <p>An unplanned win can help several Strategies, and counts as done in each one picked.</p>
           </>
         )} />
 
         <GallerySection id="c16" title="Empty space" demo={EmptyDemo} rules={(
-          <p><New /><b>A question, then the button.</b> No tours, no long explanations.</p>
+          <>
+            <p><New /><b>A question, then the button.</b></p>
+            <p>No tours, no long explanations.</p>
+          </>
         )} />
 
         <GallerySection id="c17" title="Breathe button" demo={OrbDemo} rules={(
           <>
-            <p><New /><b>Breathe only, with its name</b> (Tim, 23 Oct). A slim pill, bottom right, desktop only: the small breathing orb and the word “Breathe”. One click opens Breathe.</p>
-            <p><b>Chat to [coach’s first name] sits in the desktop header</b>, top right, as a quiet labelled button, e.g. “Chat to Tim”. Always the client’s own coach, never “Dr.”. Phone has no floating button.</p>
+            <p><New /><b>Breathe only, with its name</b> (Tim, 23 Oct).</p>
+            <p>A slim pill, bottom right, desktop only: the small breathing orb and the word “Breathe”.</p>
+            <p>One click opens Breathe.</p>
+            <p><b>Chat to [coach’s first name] sits in the desktop header</b>, top right, as a quiet labelled button, e.g. “Chat to Tim”.</p>
+            <p>Always the client’s own coach, never “Dr.”.</p>
+            <p>Phone has no floating button.</p>
             <p>Coral on the in-breath, mint on the out-breath; deeper coral and green in light.</p>
           </>
         )} />
 
         <GallerySection id="c29" title="The bold crosshair" demo={BoldCrossDemo} rules={(
           <>
-            <p><New /><b>Two crosshairs, never mixed up</b> (Tim, 22 Oct). The bold one is its own component, so a build can never swap one for the other.</p>
+            <p><New /><b>Two crosshairs, never mixed up</b> (Tim, 22 Oct).</p>
+            <p>The bold one is its own component, so a build can never swap one for the other.</p>
             <p>Drawn as clean lines at 2 times the standard line, with the gap between the two halves the same size as the standard crosshair’s.</p>
-            <p>Only four places: the Home Screen icon, the favicon, the desktop menu button and the phone bar’s centre button. The menus get it in Phase 0c.</p>
-            <p>White in dark mode and black in light mode. The app icons stay white on black, filling about 69% of the square.</p>
+            <p>Only four places: the Home Screen icon, the favicon, the desktop menu button and the phone bar’s centre button.</p>
+            <p>The menus get it in Phase 0c.</p>
+            <p>White in dark mode and black in light mode.</p>
+            <p>The app icons stay white on black, filling about 69% of the square.</p>
+          </>
+        )} />
+
+        <GallerySection id="c30" title="Status changes" demo={MilestoneDemo} rules={(
+          <>
+            <p><New /><b>A quiet link for a single status change</b> (Tim, 23 Oct), such as a milestone.</p>
+            <p>The status sits on its own line, “Not yet” or “Done” in mint.</p>
+            <p>Under it, a quiet underlined link says what it does.</p>
+            <p>Never a tick box beside a title, and nothing beside a title bigger than the title.</p>
+            <p>The link is 13px with a 44px tap area that doesn’t push the layout.</p>
           </>
         )} />
 
@@ -879,14 +1049,17 @@ function Gallery() {
           <>
             <p><New /><b>Google’s button follows Google’s rules</b>: their four-colour “G”, the words “Continue with Google”, their light version on light and their dark version on dark, never recoloured.</p>
             <p>The logo uses Emblem NEGATIVE (white crosshair) on dark and Emblem POSITIVE (black crosshair) on light.</p>
-            <p>The one coral button is Sign in. The sign-in boxes are labelled “Email” and “Password”, an approved exception to “labels are questions” (Tim, 23 Oct).</p>
+            <p>The one coral button is Sign in.</p>
+            <p>The sign-in boxes are labelled “Email” and “Password”, an approved exception to “labels are questions” (Tim, 23 Oct).</p>
           </>
         )} />
 
         <GallerySection id="c19" title="Choosing a mode" demo={ModeDemo} rules={(
           <>
-            <p><New /><b>In My Account: Light, Dark or Match my device.</b> Match my device is the starting choice; it follows the phone or laptop, including switching at night.</p>
-            <p>The phone’s top bar matches: black in dark, off-white in light. Emails and PDFs stay light.</p>
+            <p><New /><b>In My Account: Light, Dark or Match my device.</b></p>
+            <p>Match my device is the starting choice; it follows the phone or laptop, including switching at night.</p>
+            <p>The phone’s top bar matches: black in dark, off-white in light.</p>
+            <p>Emails and PDFs stay light.</p>
           </>
         )} />
       </div>

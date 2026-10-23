@@ -124,7 +124,7 @@
 /* Hover only where there is a mouse, so a tap never leaves it lit. */
 @media (hover: hover) {
   .ui-root .ds-btn--primary:hover {
-    background: var(--coral-soft);
+    background: var(--coral-hover);
   }
 }
 
@@ -152,7 +152,7 @@
 .ui-root .ds-btn[aria-disabled='true'],
 .ui-root .ds-btn:disabled {
   cursor: default;
-  opacity: 0.5;
+  opacity: var(--disabled-opacity);
 }
 
 .ui-root .ds-btn--primary[aria-disabled='true']:hover,
@@ -1290,7 +1290,8 @@
 
 .ui-root .ds-check-box[aria-checked='true'] > span {
   background: var(--coral);
-  border-color: var(--coral);
+  /* Deep coral in light mode, so the ticked box passes 3 to 1. */
+  border-color: var(--tick-edge);
 }
 
 .ui-root .ds-check-box svg {
@@ -1808,6 +1809,9 @@
   height: var(--breathe-orb);
 }
 
+/* The one exception to the 14px crosshair minimum: 8px inside the
+   Breathe orb (decorative, aria-hidden, part of the approved orb in
+   design-reference-v3). Nowhere else goes below 14px. */
 .ui-root .ds-breathe .ds-orb-art .ds-cross {
   width: var(--breathe-cross);
   height: var(--breathe-cross);
@@ -1856,6 +1860,7 @@
   margin: var(--space-px3);
   border-radius: var(--radius-box);
   background: var(--coral);
+  border: var(--line-w-strong) solid var(--tick-edge);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3006,4 +3011,124 @@
 
 .ui-root .ds-field:focus {
   border-color: var(--coral-text);
+}
+
+/* ---------- A quiet action for a single status change ---------- */
+
+.ui-root .ds-status-action {
+  letter-spacing: normal;
+}
+
+.ui-root .ds-status-action .ds-status-action-state {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-status-action .ds-status-action-state--done {
+  color: var(--mint-text);
+}
+
+/* 13px and quiet; its 44px tap area reaches beyond it without moving
+   anything around it. */
+.ui-root .ds-status-action-link {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+  margin-top: var(--space-1);
+  min-height: 0 !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-meta) !important;
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: var(--space-px3);
+  text-decoration-color: var(--quiet-line);
+  transition: color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-status-action-link::after {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-2));
+  right: calc(-1 * var(--space-2));
+  top: 50%;
+  height: var(--tap-min);
+  transform: translateY(-50%);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-status-action-link:hover {
+    color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-status-action-link:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-1);
+}
+
+/* ---------- The statement panel (writing rule 51) ---------- */
+
+.ui-root .ds-statement {
+  box-sizing: border-box;
+  max-width: var(--row-max-w);
+  margin: 0 0 var(--space-px22);
+  padding: var(--space-px18) var(--space-px20);
+  border-radius: var(--radius-card);
+  background: var(--raised);
+  font-family: var(--font-body);
+  font-size: var(--fs-statement);
+  line-height: var(--lh-statement);
+  letter-spacing: normal;
+  text-align: left;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-statement {
+    font-size: var(--fs-statement-phone);
+  }
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-statement {
+    font-size: var(--fs-statement-phone);
+  }
+}
+
+/* ---------- Pick several ---------- */
+
+.ui-root .ds-hint--above {
+  margin: calc(-1 * var(--space-1)) 0 var(--space-px10);
+}
+
+.ui-root .ds-answer--multi {
+  justify-content: space-between;
+}
+
+.ui-root .ds-answer--multi[aria-pressed='true']::after {
+  content: '';
+  flex: none;
+  width: var(--tick-option);
+  height: var(--tick-option);
+  background: var(--coral-text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* One sentence per line, inside a message or note. */
+.ui-root .ds-line {
+  display: block;
+}
+
+/* After a statement, the who-sees label lines up with the answer rows. */
+.ui-root .ds-statement + .ds-label-row {
+  max-width: var(--row-max-w);
 }

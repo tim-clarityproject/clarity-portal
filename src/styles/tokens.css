@@ -144,7 +144,7 @@
   /* Radii (--radius-input 12px, --radius-card 16px and --radius-pill
      are defined above) */
   --radius-tile: 16px;
-  --radius-box: 6px;         /* the checkbox square */
+  --radius-box: 5px;         /* the tick box square (Tim, 23 Oct) */
   --radius-bar: 2px;
 
   /* Component sizes */
@@ -157,8 +157,8 @@
   --cross-spin: 28px;
   --info-size: 18px;         /* the small circled i */
   --onum-size: 22px;         /* circled objective numbers */
-  --checkbox-box: 22px;
-  --tick-size: 14px;
+  --checkbox-box: 18px;      /* one tick box size everywhere (Tim, 23 Oct: 22px felt too large) */
+  --tick-size: 12px;
   --num-input-w: 104px;
   --bar-h: 4px;
   --bar-w: 200px;
@@ -233,6 +233,11 @@
   /* Steady text box and focus mode */
   --fs-focus-question: 17px;
 
+  /* The statement panel (writing rule 51) */
+  --fs-statement: 21px;
+  --fs-statement-phone: 19px;
+  --lh-statement: 1.4;
+
   /* Calendar */
   --cal-day-h: 44px;
   --radius-day: 12px;
@@ -244,7 +249,11 @@
   --bold-cross-bar: 36px;
   --breathe-h: 52px;
   --breathe-orb: 34px;
-  --breathe-cross: 8px;      /* as design-reference-v3's Breathe pill */
+  /* The ONE exception to the 14px crosshair minimum (Claude's call on the
+     0b report, 23 Oct): the crosshair inside the Breathe orb stays 8px, as
+     design-reference-v3, because it is decorative, aria-hidden and part of
+     the approved orb. Nowhere else may a crosshair go below 14px. */
+  --breathe-cross: 8px;
   /* The app icons (Home Screen icon, favicon): white on black in both modes */
   --icon-tile: #000000;
   --icon-cross: #FFFFFF;
@@ -285,6 +294,9 @@
   --to-come: #262626;        /* weeks to come on the dial */
   --dial-done: #7F7F7C;
   --day-off: #3A3A39;        /* past days in the calendar */
+  --coral-hover: #FF8A7A;    /* the coral button on hover: a slightly brighter coral, never like disabled */
+  --tick-edge: #FF6F5C;      /* the edge of a ticked tick box */
+  --disabled-opacity: 0.35;  /* a disabled coral button */
   --toast-bg: #0B0B0B;
   --toast-text: #FFFFFF;
   --toast-line: #262626;
@@ -333,6 +345,8 @@
      same in both modes. Coral and mint are too pale to read as text on
      off-white, so text, lines and numbers use deeper versions. */
   --coral-text: #C2412E;
+  --coral-hover: #E0533F;    /* a slightly deeper coral on hover in light, black text */
+  --tick-edge: #C2412E;      /* a ticked box's 1px deep coral edge: 3 to 1 on the page */
   --coral-soft-text: #A84E28;
   --coral-soft-tint: #FFE7DB;
   --mint-text: #0B7A52;

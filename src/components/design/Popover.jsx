@@ -64,10 +64,20 @@ export default function Popover({
   initialFocusRef,
   children,
 }) {
-  const isPhone = useIsPhone();
+  const livePhone = useIsPhone();
   const scope = useThemeScope();
   const titleId = useId();
   const [mounted, setMounted] = useState(open);
+  // Panels never jump (Tim, 23 Oct): it keeps the form it opened in (the
+  // phone panel or the laptop list) until it closes, even if the phone
+  // turns, so it is never rebuilt, re-animated or scrolled back.
+  const [openedAsPhone, setOpenedAsPhone] = useState(livePhone);
+  const isPhone = mounted ? openedAsPhone : livePhone;
+  useEffect(() => {
+    if (open && !mounted) setOpenedAsPhone(livePhone);
+    // Decided once, at the moment it opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   const [shown, setShown] = useState(false);
   const [pos, setPos] = useState(null);
   const popRef = useRef(null);

@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 // Shared by <ToastProvider> (Toast.jsx) and the pages that call useToast().
 export const ToastContext = createContext(null);
 
-export const ERROR_MESSAGE = 'Couldn\u2019t save just now. We\u2019ll keep trying.';
+export const ERROR_MESSAGE = 'Couldn\u2019t save just now, so we\u2019ll keep trying.';
 
 export function useToast() {
   const api = useContext(ToastContext);

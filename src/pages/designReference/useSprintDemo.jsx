@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   Choice,
+  FieldLabel,
+  StatementPanel,
   clearGuideDraft,
   dayLabel,
   GuidedSummary,
@@ -19,6 +21,7 @@ import { forgetSaved, startingValue, usePretendServer } from './galleryUtils';
 // so an unfinished demo carries on as a draft.
 
 const LENGTHS = [4, 6, 8, 12, 16];
+const HOW_OFTEN = ['Never', 'Rarely', 'Sometimes', 'Often', 'Always'];
 const STANDARDS = [75, 80, 85, 90];
 
 // Examples follow the role picked at sign-up (M6); Other gets Leader's.
@@ -46,6 +49,7 @@ function startingAnswers() {
     other: false,
     otherStd: '',
     better: '',
+    bounce: null,
   };
 }
 
@@ -115,7 +119,7 @@ function sprintSteps(a, set, role, openCalendar) {
       key: 'start',
       name: 'Start',
       question: 'When does it start?',
-      nudges: ['Pick any day. You can move it before it starts.'],
+      nudges: ['Pick any day.', 'You can move it before it starts.'],
       render: () => (
         <div>
           <Choice ariaLabel="When does it start?" form="rows" options={startOptions} value={a.start} onChange={(start) => set({ start })} />
@@ -180,6 +184,27 @@ function sprintSteps(a, set, role, openCalendar) {
       ),
     },
     {
+      // The statement panel (writing rule 51): the heading is the task,
+      // then the statement, then the answers.
+      key: 'bounce',
+      name: 'Bouncing back',
+      label: 'Software · Bouncing back',
+      question: 'In the past month, on average, how often was this true?',
+      render: () => (
+        <div>
+          <StatementPanel>When things went wrong, I bounced back quickly.</StatementPanel>
+          <FieldLabel who="coach" />
+          <Choice
+            ariaLabel="When things went wrong, I bounced back quickly."
+            form="rows"
+            options={HOW_OFTEN.map((v) => ({ value: v, label: v }))}
+            value={a.bounce}
+            onChange={(bounce) => set({ bounce })}
+          />
+        </div>
+      ),
+    },
+    {
       key: 'ready',
       name: 'Ready',
       title: 'Performance Sprint 5',
@@ -196,6 +221,7 @@ function sprintSteps(a, set, role, openCalendar) {
               { label: 'Starts', value: unless('start', dayLabel(a.start)), step: 1 },
               { label: 'Performance standard', value: unless('standard', standard != null ? `${standard}%` : ''), step: 2 },
               { label: 'Next time', value: unless('better', a.better.trim()), step: 3 },
+              { label: 'Bouncing back', value: unless('bounce', a.bounce || ''), step: 4 },
             ]}
           />
         );
@@ -215,7 +241,7 @@ export function useSprintDemo(key, role, openCalendar) {
     [answers, set, role, openCalendar],
   );
   const finish = () => {
-    toast.show(`Saved. Performance Sprint 5 starts ${dayLabel(answers.start)}.`);
+    toast.show(`Performance Sprint 5 starts ${dayLabel(answers.start)}.`);
     clearGuideDraft(stepDraft(key, 'framed'));
     clearGuideDraft(stepDraft(key, 'fullscreen'));
     reset();

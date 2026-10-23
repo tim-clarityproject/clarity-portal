@@ -681,3 +681,48 @@
   width: 69%;
   height: 69%;
 }
+
+/* The coral button shown in its hover colour, beside disabled. */
+.ui-root .ds-btn.dr-hover-sample {
+  background: var(--coral-hover);
+  cursor: default;
+}
+
+/* A to-do list: tick boxes are only for lists. */
+.ui-root .dr-ticks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .dr-ticks li {
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+/* The milestone card (Status changes). */
+.ui-root .dr-milestone {
+  padding: var(--space-px18);
+  border-radius: var(--radius-tile);
+  background: var(--raised);
+}
+
+.ui-root .dr-milestone p {
+  margin: 0;
+  line-height: var(--lh-text);
+}
+
+.ui-root .dr-milestone .dr-milestone-title {
+  font-size: var(--fs-text);
+  color: var(--text);
+}
+
+.ui-root .dr-milestone .dr-milestone-meta {
+  margin-bottom: var(--space-px10);
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .dr-panel-form {
+  display: grid;
+  gap: var(--space-4);
+}

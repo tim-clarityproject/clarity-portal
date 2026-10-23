@@ -2,7 +2,9 @@ import './design.css';
 
 // The brand crosshair (public/brand/crosshair_white.png, used as a CSS
 // mask): every plus, and turned 45° every close. Never a typed + or ×,
-// never a redrawn icon, never smaller than 14px. Always decorative: the
+// never a redrawn icon, never smaller than 14px (the one exception is the
+// decorative 8px crosshair inside the Breathe orb, see --breathe-cross in
+// tokens.css). Always decorative: the
 // button around it carries the words (aria-label).
 //
 // variant: 'plus' (coral by default) or 'close' (grey, turned 45°).

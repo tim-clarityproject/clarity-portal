@@ -10,7 +10,8 @@ import './design.css';
 // the Breathe page's: it breathes slowly at rest (4 seconds in, 4 out,
 // eased), coral on the in-breath and mint on the out-breath (deeper in
 // light mode), with echo rings and the brand crosshair turning in the
-// centre. Still with reduced motion. Never on phone (hidden by design.css
+// centre (8px: the one exception to the 14px minimum, as it is decorative,
+// aria-hidden and part of the approved orb). Still with reduced motion. Never on phone (hidden by design.css
 // wherever there is no mouse), where Breathe is in the menu. Chat to the
 // coach is in the header (ChatButton).
 //
