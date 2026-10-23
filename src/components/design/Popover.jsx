@@ -133,7 +133,13 @@ export default function Popover({
       const focusInside = pop?.contains(document.activeElement) || sheet?.contains(document.activeElement);
       // After React has finished this update (it would otherwise put focus
       // back on what was focused when the update began, inside here).
-      if (isPhone || !keepFocus || focusInside) queueMicrotask(() => returnFocus(anchor));
+      // Also when focus has nowhere to be (Safari doesn't focus a box that
+      // is clicked), so it never ends up on the page itself.
+      queueMicrotask(() => {
+        const now = document.activeElement;
+        const lost = !now || now === document.body || now.classList?.contains('ds-dialog');
+        if (isPhone || !keepFocus || focusInside || lost) returnFocus(anchor);
+      });
     };
     // initialFocusRef is read once, when it opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps

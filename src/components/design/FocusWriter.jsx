@@ -4,6 +4,7 @@ import { pushLayer } from './layers';
 import { lockPage, unlockPage } from './pageLock';
 import { SaveStatus } from './Status';
 import { themeProps, useThemeScope } from './themeScope';
+import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
 import WhoSees from './WhoSees';
 import './design.css';
@@ -34,6 +35,7 @@ const FocusWriter = forwardRef(function FocusWriter({
 }, forwardedRef) {
   const scope = useThemeScope();
   const pageRef = useRef(null);
+  const scrollRef = useRef(null);
   const boxRef = useRef(null);
   const drag = useRef(null);
   const onCloseRef = useRef(onClose);
@@ -56,6 +58,7 @@ const FocusWriter = forwardRef(function FocusWriter({
 
   // Fill exactly the visible space above the keyboard.
   useViewportFit(pageRef, open);
+  useKeepScroll(scrollRef, open);
 
   if (!open) return null;
 
@@ -73,7 +76,7 @@ const FocusWriter = forwardRef(function FocusWriter({
 
   return createPortal(
     <div className="ui-root ds-portal" {...themeProps(scope)}>
-      <div ref={pageRef} className="ds-focus" role="dialog" aria-modal="true" aria-label={question}>
+      <div ref={pageRef} className="ds-focus" tabIndex={-1} role="dialog" aria-modal="true" aria-label={question}>
         <div
           className="ds-focus-top"
           onTouchStart={onTouchStart}
@@ -89,7 +92,7 @@ const FocusWriter = forwardRef(function FocusWriter({
             {who && <WhoSees audience={who} coachName={coachName} />}
           </div>
         </div>
-        <div className="ds-focus-scroll">
+        <div ref={scrollRef} className="ds-focus-scroll">
           <div className="ds-grow ds-grow--bare" data-value={`${value ?? ''} `}>
             <textarea
               ref={boxRef}

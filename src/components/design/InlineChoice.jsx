@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useId, useLayoutEffect, useRef } from 'react';
 import FieldLabel from './FieldLabel';
 import useInlineForm from './useInlineForm';
 import './design.css';
@@ -32,6 +32,18 @@ export default function InlineChoice({
   const radio = semantics === 'radio';
   const selectedIndex = Math.max(0, options.findIndex((o) => o.value === value));
 
+  // When the space changes (the phone turns) and pills become rows or
+  // back, the buttons are new; if one had focus, the same one gets it.
+  const focused = useRef(null);
+  useLayoutEffect(() => {
+    const at = focused.current;
+    if (at == null) return;
+    const el = refs.current[at];
+    const lost = !document.activeElement || document.activeElement === document.body
+      || !boxRef.current?.contains(document.activeElement);
+    if (el && lost) el.focus({ preventScroll: true });
+  }, [form, boxRef]);
+
   const moveTo = (next) => {
     onChange(options[next].value);
     const el = refs.current[next];
@@ -61,6 +73,8 @@ export default function InlineChoice({
         className={form === 'pills' ? 'ds-seg-btn' : 'ds-answer'}
         {...stateProps}
         onClick={() => onChange(option.value)}
+        onFocus={() => { focused.current = i; }}
+        onBlur={(e) => { if (e.relatedTarget) focused.current = null; }}
         onKeyDown={radio ? (e) => {
           if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); move(i, 1); }
           if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(i, -1); }

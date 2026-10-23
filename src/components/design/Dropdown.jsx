@@ -200,7 +200,12 @@ export default function Dropdown({
         aria-controls={open ? listId : undefined}
         aria-labelledby={labelId}
         aria-activedescendant={open && !isPhone && active >= 0 ? optionId(active) : undefined}
-        onClick={() => (open ? close() : openList(selected, false))}
+        onClick={() => {
+          // Safari doesn't focus a clicked button; the box needs focus for
+          // the keys to work while the list is open.
+          boxRef.current?.focus({ preventScroll: true });
+          if (open) close(); else openList(selected, false);
+        }}
         onKeyDown={onBoxKey}
       >
         <span className="ds-dd-value">{current ? current.label : placeholder}</span>

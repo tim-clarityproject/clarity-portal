@@ -24,6 +24,8 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
   const scope = useThemeScope();
   const [mounted, setMounted] = useState(open);
   const [shown, setShown] = useState(false);
+  // Phone or laptop form, decided when it opens and kept until it closes.
+  const [phoneForm, setPhoneForm] = useState(false);
   const dialogRef = useRef(null);
   const bodyRef = useRef(null);
   const drag = useRef(null);
@@ -38,6 +40,7 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
   // motion has finished. Quick open-close-open just reverses.
   useEffect(() => {
     if (open) {
+      if (!mounted) setPhoneForm(isPhoneWidth());
       setMounted(true);
       // Reopened mid-close after a swipe: forget where the finger left it.
       if (dialogRef.current) dialogRef.current.style.transform = '';
@@ -46,6 +49,8 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
     setShown(false);
     const timer = setTimeout(() => setMounted(false), prefersReducedMotion() ? 0 : ms);
     return () => clearTimeout(timer);
+    // `mounted` is only read to tell a fresh open from a reopen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, ms]);
 
   // Shown only once it is in the page and its closed position has been
@@ -91,7 +96,7 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
   // Phone: drag down to close. Not from inside a text box (that's for
   // selecting text), and not while the content is scrolled down.
   const onTouchStart = (e) => {
-    if (!isPhoneWidth() || e.touches.length !== 1) return;
+    if (!phoneForm || e.touches.length !== 1) return;
     if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
     const body = bodyRef.current;
     if (body && body.contains(e.target) && body.scrollTop > 0) return;
@@ -140,7 +145,7 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
       <div className="ds-scrim" aria-hidden="true" onClick={() => onCloseRef.current?.()} />
       <div
         ref={dialogRef}
-        className={`ds-dialog ${kind === 'panel' ? 'ds-panel' : 'ds-popup'}`}
+        className={`ds-dialog ${kind === 'panel' ? 'ds-panel' : 'ds-popup'}${phoneForm ? ' ds-dialog--phone' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

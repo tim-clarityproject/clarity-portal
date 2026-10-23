@@ -169,7 +169,8 @@
   --field-min: 200px;        /* dropdowns in the filter wrap below this */
   --textbox-min-h: 88px;     /* a long text box when empty (v3, M6) */
   --panel-w: 480px;          /* slide-across panel on desktop */
-  --popup-w: 520px;          /* centred pop-up on desktop */
+  --popup-w: 520px;          /* pop-up on desktop */
+  --popup-top: max(48px, 12dvh); /* where the pop-up sits on desktop */
   --line-w: 1px;
   --line-w-strong: 1.5px;
   --focus-w: 2px;

@@ -1668,55 +1668,53 @@
 
 /* Centred pop-up: fades and rises a little. */
 .ui-root .ds-popup {
+  /* Anchored at the top, not centred, so when what's inside changes
+     height it grows downwards and nothing moves under the pointer. */
   left: 50%;
-  top: 50%;
+  top: var(--popup-top);
   width: min(var(--popup-w), calc(100% - 2 * var(--space-3)));
-  max-height: calc(100dvh - 2 * var(--space-6));
+  max-height: calc(100dvh - 2 * var(--popup-top));
   border: var(--line-w) solid var(--line);
   border-radius: var(--radius-card);
   opacity: 0;
-  transform: translate(-50%, calc(-50% + var(--space-2)));
+  transform: translate(-50%, var(--space-2));
   transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 
 .ui-root.ds-modal--shown .ds-popup {
   opacity: 1;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 0);
 }
 
-/* Phone: both are full screen; swipe down closes them. */
-@media (max-width: 600px) {
-  .ui-root .ds-panel,
-  .ui-root .ds-popup {
-    inset: 0;
-    width: 100%;
-    max-height: none;
-    border: 0;
-    border-radius: 0;
-    padding-top: env(safe-area-inset-top, 0px);
-  }
+/* Phone: both are full screen; swipe down closes them. The form is
+   decided when it opens (ds-dialog--phone), so turning the phone never
+   changes it or slides it again (panels never jump, Tim 23 Oct). */
+.ui-root .ds-dialog--phone.ds-panel,
+.ui-root .ds-dialog--phone.ds-popup {
+  inset: 0;
+  width: 100%;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+}
 
-  .ui-root .ds-popup {
-    transform: translateY(var(--space-2));
-  }
+.ui-root .ds-dialog--phone.ds-popup {
+  transform: translateY(var(--space-2));
+}
 
-  .ui-root.ds-modal--shown .ds-popup {
-    transform: none;
-  }
+.ui-root.ds-modal--shown .ds-dialog--phone.ds-popup {
+  transform: none;
+}
 
-  .ui-root .ds-dialog-head {
-    padding-left: var(--space-3);
-  }
+.ui-root .ds-dialog--phone .ds-dialog-head {
+  padding-left: var(--space-3);
+}
 
-  .ui-root .ds-dialog-body {
-    padding-left: var(--space-3);
-    padding-right: var(--space-3);
-  }
-
-  .ui-root .ds-dialog-foot {
-    padding-left: var(--space-3);
-    padding-right: var(--space-3);
-  }
+.ui-root .ds-dialog--phone .ds-dialog-body,
+.ui-root .ds-dialog--phone .ds-dialog-foot {
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
 }
 
 /* While a finger drags the dialog down, it follows with no easing. */
@@ -2196,6 +2194,11 @@
   font-size: var(--fs-text);
   line-height: var(--lh-text);
   letter-spacing: normal;
+  outline: none;
+}
+
+.ui-root .ds-guide--fullscreen,
+.ui-root .ds-focus {
   outline: none;
 }
 

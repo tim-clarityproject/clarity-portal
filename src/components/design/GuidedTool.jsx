@@ -6,6 +6,7 @@ import { lockPage, openerOf, returnFocus, trapTab, unlockPage } from './pageLock
 import { SaveStatus } from './Status';
 import { themeProps, useThemeScope } from './themeScope';
 import { STEP_PREFIX } from './guideDraft';
+import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
 import './design.css';
 
@@ -229,6 +230,7 @@ export default function GuidedTool({
   }, [fullscreen, open]);
 
   useViewportFit(rootRef, fullscreen && open);
+  useKeepScroll(scrollRef, shown);
 
   // Each step: back to the top, and focus on the new question.
   useEffect(() => {
@@ -335,6 +337,7 @@ export default function GuidedTool({
       role={fullscreen ? 'dialog' : 'region'}
       aria-modal={fullscreen ? 'true' : undefined}
       aria-label={name}
+      tabIndex={fullscreen ? -1 : undefined}
       onKeyDown={fullscreen ? (e) => trapTab(e, rootRef.current) : undefined}
     >
       <div className="ds-guide-frame">
