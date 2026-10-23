@@ -2959,3 +2959,33 @@
 .ui-root .ds-bold-cross--icon g {
   stroke: var(--icon-cross);
 }
+
+/* ---------- One-line field (email, password, numbers) ---------- */
+
+.ui-root .ds-field {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: var(--box-min-h) !important;
+  padding: var(--box-pad-y) var(--box-pad-x) !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-field);
+  background: var(--card);
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  line-height: var(--lh-box);
+  letter-spacing: normal;
+  color: var(--text);
+  caret-color: var(--coral-text);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-field::placeholder {
+  color: var(--label);
+  opacity: 1;
+}
+
+.ui-root .ds-field:focus {
+  border-color: var(--coral-text);
+}

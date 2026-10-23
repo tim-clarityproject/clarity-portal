@@ -37,6 +37,7 @@ import {
   SegmentedControl,
   SlidePanel,
   TextBox,
+  TextField,
   SmallWin,
   Stat,
   StatGroup,
@@ -639,12 +640,21 @@ function BoldCrossDemo() {
 
 function SignInDemo() {
   const toast = useToast();
+  const [email, setEmail] = useState('');
   return (
     <div className="dr-signin">
       <BrandMark size={48} />
       <div className="dr-signin-brand">The Clarity Portal</div>
       <div className="dr-signin-core">Clarity drives performance.</div>
       <GoogleButton onClick={() => toast.show('Google sign-in starts here.')} />
+      <div className="dr-or">or</div>
+      <div className="dr-signin-fields">
+        <TextField label="Email" type="email" autoComplete="email" placeholder="name@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <TextField label="Password" type="password" autoComplete="current-password" defaultValue="password" />
+      </div>
+      <Button variant="primary" className="dr-signin-btn" onClick={() => toast.show('Signing in happens here.')}>Sign in</Button>
+      <Button variant="text" onClick={() => toast.show('The password reset opens here.')}>Forgotten your password?</Button>
+      <span className="dr-signin-alt">New here? <Button variant="text" onClick={() => toast.show('Create my account opens here.')}>Create my account</Button></span>
     </div>
   );
 }
@@ -879,6 +889,7 @@ function Gallery() {
           <>
             <p><New /><b>Google’s button follows Google’s rules</b>: their four-colour “G”, the words “Continue with Google”, their light version on light and their dark version on dark, never recoloured.</p>
             <p>The logo uses Emblem NEGATIVE (white crosshair) on dark and Emblem POSITIVE (black crosshair) on light.</p>
+            <p>The one coral button is Sign in. The sign-in boxes are labelled “Email” and “Password”, an approved exception to “labels are questions” (Tim, 23 Oct).</p>
           </>
         )} />
 

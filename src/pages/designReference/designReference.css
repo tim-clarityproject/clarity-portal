@@ -466,6 +466,50 @@
   color: var(--text-2);
 }
 
+.ui-root .dr-signin > * {
+  width: 100%;
+}
+
+.ui-root .dr-signin > .ds-link,
+.ui-root .dr-signin > .dr-signin-alt,
+.ui-root .dr-signin > .ds-brand-mark,
+.ui-root .dr-signin > .dr-signin-brand,
+.ui-root .dr-signin > .dr-signin-core {
+  width: auto;
+}
+
+.ui-root .dr-or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-px12);
+  margin: var(--space-px10) 0;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .dr-or::before,
+.ui-root .dr-or::after {
+  content: '';
+  flex: 1;
+  height: var(--line-w);
+  background: var(--line);
+}
+
+.ui-root .dr-signin-fields {
+  display: grid;
+  gap: var(--space-px12);
+  text-align: left;
+}
+
+.ui-root .dr-signin .dr-signin-btn {
+  margin-top: var(--space-px10);
+}
+
+.ui-root .dr-signin-alt {
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
 /* The Breathe button is desktop only; on phone the gallery says so instead. */
 .ui-root .dr-phone-only {
   display: none;
@@ -621,7 +665,8 @@
   border-radius: var(--radius-card);
   background: var(--icon-tile);
   /* Only so the black square shows on the dark panel. */
-  box-shadow: inset 0 0 0 var(--line-w) var(--line);
+  outline: var(--line-w) solid var(--line);
+  outline-offset: calc(-1 * var(--line-w));
 }
 
 .ui-root .dr-icon--small {

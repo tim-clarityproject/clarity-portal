@@ -17,6 +17,7 @@ export { needsDropdown } from './choiceFit';
 export { default as InlineChoice } from './InlineChoice';
 export { default as FieldLabel } from './FieldLabel';
 export { default as TextBox } from './TextBox';
+export { default as TextField } from './TextField';
 export { default as HelpPanel } from './HelpPanel';
 export { default as DatePicker, CalendarPopover } from './Calendar';
 export { dayLabel, fullDateLabel, todayKey, nextMondayKey, toKey, fromKey, addDays } from './dates';
