@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { X } from 'lucide-react';
+import { IconButton } from './design';
 
 export default function EmailVerificationBanner() {
   const { user } = useContext(AuthContext);
@@ -129,32 +129,6 @@ export default function EmailVerificationBanner() {
         .ev-banner-actions {
           margin-top: 12px;
         }
-
-        /* A global rule in src/styles/mobile.css, button:not(.breathe-button),
-           targets every <button> with !important padding/min-height/font-size
-           (specificity 0,1,1). A single class alone would not reliably beat
-           that, so the dismiss control is scoped under .ui-root (the banner
-           only ever renders inside a page that already carries that class)
-           for (0,2,0) specificity, with matching !important. */
-        .ui-root .ev-dismiss {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          width: 44px !important;
-          height: 44px;
-          min-height: 44px !important;
-          padding: 0 !important;
-          background: transparent;
-          border: none;
-          color: var(--text-2);
-          cursor: pointer;
-        }
-
-        .ui-root .ev-dismiss:hover,
-        .ui-root .ev-dismiss:focus-visible {
-          color: var(--text);
-        }
       `}</style>
 
       <div className="ev-banner-text">
@@ -173,9 +147,7 @@ export default function EmailVerificationBanner() {
           </p>
         )}
       </div>
-      <button type="button" className="ev-dismiss" onClick={() => setIsVisible(false)} aria-label="Dismiss banner">
-        <X size={18} />
-      </button>
+      <IconButton label="Dismiss banner" onClick={() => setIsVisible(false)} />
     </div>
   );
 }

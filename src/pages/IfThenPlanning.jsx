@@ -13,6 +13,7 @@ import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Crosshair } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -240,7 +241,7 @@ export default function IfThenPlanning() {
           );
         })}
         <button type="button" className="plan-add-btn" onClick={addItem}>
-          <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+          <Crosshair size="sm" />
           Add scenario
         </button>
 

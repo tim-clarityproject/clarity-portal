@@ -5,6 +5,7 @@ import PageHeading from '../../components/PageHeading';
 import DeleteDialog, { showDeletedToast } from '../../components/ui/DeleteDialog';
 import Toast from '../../components/ui/Toast';
 import useToast from '../../hooks/useToast';
+import { DatePicker } from '../../components/design';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
 import WheelRadar from '../../components/wheelOfLife/WheelRadar';
 import WheelDelta from '../../components/wheelOfLife/WheelDelta';
@@ -179,13 +180,13 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId, toas
           </div>
         </div>
         <div className="wol-dates">
+          {/* DatePicker has no max yet, so a future day is ignored here,
+              as the old date inputs' max did. */}
           <div>
-            <label htmlFor="wol-from">From</label>
-            <input type="date" id="wol-from" value={r.from} max={today} onChange={(e) => setDate('from', e.target.value)} />
+            <DatePicker label="From" value={r.from} min="1900-01-01" onChange={(key) => { if (key <= today) setDate('from', key); }} />
           </div>
           <div>
-            <label htmlFor="wol-to">To</label>
-            <input type="date" id="wol-to" value={r.to} max={today} onChange={(e) => setDate('to', e.target.value)} />
+            <DatePicker label="To" value={r.to} min="1900-01-01" onChange={(key) => { if (key <= today) setDate('to', key); }} />
           </div>
         </div>
         <div className="wol-rsum">{summary}</div>

@@ -7,6 +7,7 @@ import DesignHeader from '../components/DesignHeader';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Loading } from '../components/design';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -103,7 +104,7 @@ export default function ReviewPlanSummary() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <div className="plan-page"><Loading label="Loading your review" className="ds-loading--page" /></div>
       </div>
     );
   }

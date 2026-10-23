@@ -13,6 +13,7 @@ import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Loading } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -185,7 +186,7 @@ export default function InversionStep1Goal() {
         </div>
 
         {isLoading ? (
-          <p className="ui-subtitle">Loading...</p>
+          <Loading label="Loading your pre-mortem" />
         ) : (
           <div className="plan-field">
             <AutoGrowTextarea

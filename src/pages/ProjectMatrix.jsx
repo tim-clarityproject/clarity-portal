@@ -9,6 +9,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
+import { Crosshair } from '../components/design';
 
 export default function ProjectMatrix() {
   const navigate = useNavigate();
@@ -175,7 +176,7 @@ export default function ProjectMatrix() {
                           <div style={{ width: '40px', height: '32px', backgroundColor: getColor(currentValue), border: currentValue === 0 ? '1px solid var(--line)' : 'none', boxSizing: 'border-box', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '10px', color: currentValue === 0 ? 'var(--label)' : currentValue === 1 ? 'var(--text)' : 'var(--on-coral)', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s', title: 'Click to cycle or use buttons', lineHeight: '1', letterSpacing: '-0.3px' }}>
                             {getLabel(currentValue)}
                           </div>
-                          <button onClick={() => { if (currentValue < 3) { handleMatrixChange(projectIndex, factorIndex, currentValue + 1); } }} style={{ background: 'none', border: 'none', color: 'var(--label)', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.color = 'var(--text)'} onMouseLeave={(e) => e.target.style.color = 'var(--label)'} title="Increase">+</button>
+                          <button onClick={() => { if (currentValue < 3) { handleMatrixChange(projectIndex, factorIndex, currentValue + 1); } }} style={{ background: 'none', border: 'none', color: 'var(--label)', cursor: 'pointer', fontSize: '16px', padding: '2px 4px', transition: 'all 0.2s', lineHeight: '1', fontWeight: 'bold', display: 'flex', alignItems: 'center' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--label)'} title="Increase" aria-label="Increase"><Crosshair size="sm" /></button>
                         </div>
                       </td>
                     );
@@ -189,7 +190,8 @@ export default function ProjectMatrix() {
           </table>
         </div>
 
-        <button type="button" onClick={handleAddProject} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: 'var(--coral-text)', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', marginBottom: '48px' }} onMouseEnter={(e) => e.target.style.color = 'var(--coral-hover)'} onMouseLeave={(e) => e.target.style.color = 'var(--coral-text)'}>
+        <button type="button" onClick={handleAddProject} style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: 'var(--coral-text)', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--coral-hover)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--coral-text)'}>
+          <Crosshair />
           Add another
         </button>
 

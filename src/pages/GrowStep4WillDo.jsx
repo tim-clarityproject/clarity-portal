@@ -12,6 +12,7 @@ import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { Loading } from '../components/design';
 
 export default function GrowStep4WillDo() {
   const navigate = useNavigate();
@@ -425,9 +426,7 @@ export default function GrowStep4WillDo() {
         )}
 
         {isLoading ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--label)', fontSize: '14px' }}>
-            Loading saved data...
-          </div>
+          <Loading label="Loading your decision" />
         ) : (
           <SaveDiscardButtons
             formData={{ will_do: willDoValue, options: optionsValue }}
@@ -436,7 +435,7 @@ export default function GrowStep4WillDo() {
             onNext={handleSaveClick}
             canNext={!error && willDoValue.trim() && !isSaving && !isLoading}
             onBack={() => navigate('/grow-step-3b-prioritize', { state: { decisionId: location.state?.decisionId } })}
-            nextLabel={isSaving ? 'Saving...' : 'Finish'}
+            nextLabel={isSaving ? 'Saving' : 'Finish'}
           />
         )}
 

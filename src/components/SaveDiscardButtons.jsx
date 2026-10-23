@@ -287,7 +287,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           onMouseEnter={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = 'var(--coral-hover)')}
           onMouseLeave={(e) => (!canNext || isSaving) || (e.target.style.backgroundColor = 'var(--coral)')}
         >
-          {isSaving ? 'Saving...' : nextLabel}
+          {isSaving ? 'Saving' : nextLabel}
         </button>
       )}
 

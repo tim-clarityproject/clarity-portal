@@ -7,6 +7,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
+import { Loading } from '../components/design';
 
 export default function GrowStep1Goal() {
   const navigate = useNavigate();
@@ -166,7 +167,7 @@ export default function GrowStep1Goal() {
             <div style={{ height: '100%', width: '25%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
           </div>
 
-          {isLoading && <p style={{ fontSize: '13px', color: 'var(--label)', marginBottom: '16px' }}>Loading decision...</p>}
+          {isLoading && <Loading label="Loading your decision" />}
 
           <textarea
             ref={refGoal}

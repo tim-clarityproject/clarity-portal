@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { legalDocuments, legalDocumentOrder } from '../../content/legal';
 import { AuthPrimaryButton, AuthGhostButton } from './AuthButton';
 import LegalDocBody from '../legal/LegalDocBody';
+import { IconButton } from '../design';
 
 const DOC_CLASS_NAMES = {
   heading: 'reading-popup-doc-subheading',
@@ -165,29 +166,6 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           margin: 0 !important;
         }
 
-        .ui-root .reading-popup-close {
-          width: 44px;
-          height: 44px;
-          min-height: 44px !important;
-          padding: 0 !important;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-
-        .reading-popup-close-cross {
-          width: 18px;
-          height: 18px;
-          background-color: var(--coral-text);
-          -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
-          mask: url('/brand/crosshair_white.png') center / contain no-repeat;
-          transform: rotate(45deg);
-        }
-
         .reading-popup-tabs {
           display: flex;
           gap: 2px;
@@ -322,9 +300,7 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
       >
         <div className="reading-popup-head">
           <h2 id="reading-popup-title" className="reading-popup-title">Before you join</h2>
-          <button type="button" className="reading-popup-close" aria-label="Close" onClick={onClose}>
-            <span className="reading-popup-close-cross" />
-          </button>
+          <IconButton label="Close" onClick={onClose} />
         </div>
 
         <div className="reading-popup-tabs" role="tablist" aria-label="Legal documents">

@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Loading } from '../components/design';
 
 // "Fri, 2 Oct" - UK order, device local time. Plain input[type=date]
 // string ("YYYY-MM-DD"), so noon is used to dodge UTC/local day-shift.
@@ -95,7 +96,7 @@ export default function MeetingSummary() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page">
-          <p className="ui-subtitle">Loading...</p>
+          <Loading label="Loading your meeting plan" className="ds-loading--page" />
         </div>
       </div>
     );

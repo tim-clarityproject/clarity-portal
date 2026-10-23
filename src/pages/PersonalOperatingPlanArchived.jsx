@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { Loading } from '../components/design';
 
 export default function PersonalOperatingPlanArchived() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export default function PersonalOperatingPlanArchived() {
         <PageHeading pageKey="personalOperatingPlanArchived" title="Archived plans" />
 
         {isLoading ? (
-          <p className="ui-subtitle">Loading...</p>
+          <Loading label="Loading your archived plans" className="ds-loading--page" />
         ) : missions.length === 0 ? (
           <p className="pop-empty">Nothing archived yet. When you archive a plan it will be kept here.</p>
         ) : (

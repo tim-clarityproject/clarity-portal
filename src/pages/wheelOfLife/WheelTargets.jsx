@@ -5,6 +5,7 @@ import PageHeading from '../../components/PageHeading';
 import DiscardDialog from '../../components/ui/DiscardDialog';
 import Toast from '../../components/ui/Toast';
 import useToast from '../../hooks/useToast';
+import { Crosshair } from '../../components/design';
 import {
   activeAreas, areaName, newestCheckin, scoreOf, stepTarget, targetStatus,
 } from '../../lib/wheelOfLife';
@@ -98,7 +99,7 @@ function Targets({ areas, latest, toast }) {
                 <div className="wol-stp" role="group" aria-label={`Target for ${name}`}>
                   <button type="button" aria-label="Lower target" disabled={t === 0} onClick={() => step(a, -1)}>−</button>
                   <b className={t == null ? 'wol-none' : undefined}>{t == null ? '–' : t}</b>
-                  <button type="button" aria-label="Raise target" disabled={t === 10} onClick={() => step(a, 1)}>+</button>
+                  <button type="button" aria-label="Raise target" disabled={t === 10} onClick={() => step(a, 1)}><Crosshair size="sm" /></button>
                 </div>
                 <button type="button" className="wol-clr" disabled={t == null} onClick={() => clear(a)}>Clear</button>
               </div>

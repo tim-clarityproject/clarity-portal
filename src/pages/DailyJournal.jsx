@@ -14,6 +14,7 @@ import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { Crosshair, Loading, SaveStatus } from '../components/design';
 
 export default function DailyJournal() {
   const navigate = useNavigate();
@@ -200,7 +201,7 @@ export default function DailyJournal() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <Loading label="Loading your journal" className="ds-loading--page" />
       </div>
     );
   }
@@ -246,7 +247,7 @@ export default function DailyJournal() {
               <div className="jrn-qrow" key={i}>
                 <span className="jrn-qdash" aria-hidden="true" />
                 <span className="jrn-qtext">{b.v}</span>
-                <button type="button" className="jrn-qremove" aria-label="Remove this question" onClick={() => handleRemoveBlock(i)}>×</button>
+                <button type="button" className="jrn-qremove" aria-label="Remove this question" onClick={() => handleRemoveBlock(i)}><Crosshair variant="close" size="sm" /></button>
               </div>
             ) : (
               <AutoGrowTextarea
@@ -265,7 +266,7 @@ export default function DailyJournal() {
 
         <div className="jrn-meta">
           <span>{words} word{words === 1 ? '' : 's'}</span>
-          <span>{saveStatus ? <span className="ok">{saveStatus}</span> : 'Not saved yet'}</span>
+          <SaveStatus state={isSaving ? 'saving' : (saveStatus ? 'saved' : 'idle')} />
         </div>
 
         <div className="plan-actions plan-actions--desktop" style={{ marginTop: 'var(--space-6)' }}>{actionButtons}</div>

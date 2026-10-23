@@ -1534,6 +1534,12 @@
   color: var(--label);
 }
 
+ /* A whole page loading: the crosshair sits in the middle of the space
+   the page will fill, not at the top. */
+.ui-root .ds-loading--page {
+  min-height: var(--loading-page-h);
+}
+
 .ui-root .ds-loading-inner {
   display: contents;
 }

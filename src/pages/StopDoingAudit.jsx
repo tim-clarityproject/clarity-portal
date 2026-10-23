@@ -13,6 +13,7 @@ import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Crosshair, Loading } from '../components/design';
 
 const ACTIONS = ['Stop', 'Automate', 'Delegate', 'Defer'];
 const MAX_ACTIVITY = 80;
@@ -221,7 +222,7 @@ export default function StopDoingAudit() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <div className="plan-page"><Loading label="Loading your audit" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -269,7 +270,7 @@ export default function StopDoingAudit() {
                 value={item.timePerWeek}
                 onChange={(e) => updateItem(item.id, 'timePerWeek', e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
               />
-              <button type="button" className="tsa-stepper-btn" aria-label="More hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.min(999, (parseInt(item.timePerWeek, 10) || 0) + 1)))}>+</button>
+              <button type="button" className="tsa-stepper-btn" aria-label="More hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.min(999, (parseInt(item.timePerWeek, 10) || 0) + 1)))}><Crosshair size="sm" /></button>
               <span className="tsa-hrs-label">hrs/wk</span>
             </div>
             <button type="button" className="plan-bin-btn" aria-label={`Remove activity ${index + 1}`} disabled={items.length <= 1} onClick={() => removeItem(item.id)}>
@@ -279,7 +280,7 @@ export default function StopDoingAudit() {
         ))}
         {items.length < 5 && (
           <button type="button" className="plan-add-btn" onClick={addItem}>
-            <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+            <Crosshair size="sm" />
             Add activity
           </button>
         )}

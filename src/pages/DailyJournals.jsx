@@ -8,6 +8,7 @@ import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { Loading } from '../components/design';
 
 const FILTERS = [
   { id: 'final', label: 'Saved', match: (r) => !r.isDraft },
@@ -91,7 +92,7 @@ export default function DailyJournals() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <Loading label="Loading your journals" className="ds-loading--page" />
       </div>
     );
   }

@@ -18,10 +18,6 @@ const CARDS = [
   { title: 'Review my personal operating plan', description: 'Check it still fits how you work.', route: '/personal-operating-plan-review', needsMissionLookup: true },
 ];
 
-function CrossMark() {
-  return <span className="dt-card-mark ui-cross ui-cross--sm" aria-hidden="true" />;
-}
-
 function ClockIcon() {
   return (
     <svg className="hub-history-card-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -83,7 +79,6 @@ export default function ReviewSection() {
                 <span className="dt-card-title">{card.title}</span>
                 <span className="dt-card-desc">{card.description}</span>
               </span>
-              <CrossMark />
             </button>
           ))}
         </div>

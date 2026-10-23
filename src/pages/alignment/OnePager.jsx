@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import AlignmentChart from './AlignmentChart';
 import PdfChoice from './PdfChoice';
+import { DisclosureArrow } from '../../components/design';
 import { cleanItems } from './alignmentFlow';
 import { quadrant } from './chartLayout';
 import { rankProjects, roundPct, MAX_CONTRIBUTION } from '../../lib/alignmentScore';
@@ -66,7 +67,7 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email,
                 {pdf.busy ? 'Preparing your PDF…' : 'This one-pager, ready to print or share'}
               </span>
             </span>
-            <span className="ui-cross" aria-hidden="true" />
+            <DisclosureArrow open={menuOpen} />
           </button>
           <PdfChoice
             open={menuOpen}
@@ -85,7 +86,6 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email,
                 {email.status === 'sending' ? 'Sending…' : 'So you can find your results again at any time'}
               </span>
             </span>
-            <span className="ui-cross" aria-hidden="true" />
           </button>
           {emailNote && (
             <p className={`al-cardnote${email.status === 'sent' ? ' al-cardnote--done' : ''}`} role="status">{emailNote}</p>
@@ -97,7 +97,6 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email,
             <span className="al-card-name">Create your account on The Clarity Portal<em>Optional</em></span>
             <span className="al-card-desc">Your own login to The Clarity Portal: daily planning, decision tools and reviews, in one place</span>
           </span>
-          <span className="ui-cross" aria-hidden="true" />
         </button>
         </div>
       </div>

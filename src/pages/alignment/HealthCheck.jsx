@@ -9,6 +9,7 @@ import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import OnePager from './OnePager';
 import AccessCodeInput, { cleanCode } from './AccessCodeInput';
 import PdfChoice from './PdfChoice';
+import { Crosshair, Loading } from '../../components/design';
 import { formatUkDate } from '../../lib/dateFormatter';
 import { requestAlignmentEmail } from '../../lib/alignmentEmail';
 import { downloadPdf } from './pdf/generatePdf';
@@ -132,7 +133,7 @@ function NumberedRows({ rows, kind, label, placeholder, max, focusId, onChange, 
       ))}
       {rows.length < max && (
         <button type="button" className="al-add" onClick={onAdd} data-kind={kind}>
-          <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+          <Crosshair size="sm" />
           Add another
         </button>
       )}
@@ -495,7 +496,11 @@ export default function HealthCheck() {
   let body;
 
   if (phase === 'boot') {
-    return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
+    return (
+      <div className="ui-root" style={{ minHeight: '100dvh', background: 'var(--bg)' }}>
+        <Loading label="Loading your health check" className="ds-loading--page" />
+      </div>
+    );
   }
 
   if (onWelcome) {

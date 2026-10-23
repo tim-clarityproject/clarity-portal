@@ -6,6 +6,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
+import { Loading } from '../components/design';
 
 export default function GrowStep2Reality() {
   const navigate = useNavigate();
@@ -182,9 +183,7 @@ export default function GrowStep2Reality() {
         )}
 
         {isLoading ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--label)', fontSize: '14px' }}>
-            Loading saved data...
-          </div>
+          <Loading label="Loading your decision" />
         ) : (
           <SaveDiscardButtons
             formData={{ constraints: getFieldValue('constraints'), opportunities: getFieldValue('opportunities') }}

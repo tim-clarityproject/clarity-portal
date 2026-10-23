@@ -12,6 +12,7 @@ import { BackLink, DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { DisclosureArrow, Loading } from '../components/design';
 
 function NoteIcon() {
   return (
@@ -244,7 +245,7 @@ export default function PersonalOperatingPlanReview() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <div className="plan-page"><Loading label="Loading your review" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -298,12 +299,12 @@ export default function PersonalOperatingPlanReview() {
 
         {strategies.map((strategy) => (
           <div className="pop-view-strategy" key={strategy.id}>
-            <button type="button" className="plan-link-btn" onClick={() => toggleStrategy(strategy.id)} style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+            <button type="button" className="plan-link-btn" aria-expanded={Boolean(expandedStrategies[strategy.id])} onClick={() => toggleStrategy(strategy.id)} style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
               <span>
                 <span className="pop-view-strategy-name" style={{ display: 'block' }}>{strategy.name}</span>
                 {strategy.description && <span className="pop-view-strategy-desc" style={{ display: 'block' }}>{strategy.description}</span>}
               </span>
-              <span className={`ui-cross ui-cross--sm ui-cross--open${expandedStrategies[strategy.id] ? ' open' : ''}`} aria-hidden="true" />
+              <DisclosureArrow open={Boolean(expandedStrategies[strategy.id])} />
             </button>
 
             {expandedStrategies[strategy.id] && strategy.tactics.map((tactic) => {

@@ -15,6 +15,7 @@ import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { Loading } from '../components/design';
 
 // Old 'progress' review_type has no filter pill of its own in the spec
 // (All, Day, Weekly momentum, After-action, Plan, Journals) - bucketed
@@ -277,7 +278,7 @@ export default function MyReviews() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <Loading label="Loading your reviews" className="ds-loading--page" />
       </div>
     );
   }

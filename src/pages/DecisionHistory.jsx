@@ -11,6 +11,7 @@ import DeleteDialog, { showDeletedToast } from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Loading } from '../components/design';
 
 // Decision types with a "Review this plan" page (prompt 8).
 const REVIEWABLE_TYPES = new Set(['inversion', 'tough-conversation']);
@@ -159,7 +160,7 @@ export default function DecisionHistory() {
         </div>
 
         {isLoading ? (
-          <p className="ui-subtitle">Loading...</p>
+          <Loading label="Loading your decisions" className="ds-loading--page" />
         ) : (
           <HistoryList
             rows={rows}

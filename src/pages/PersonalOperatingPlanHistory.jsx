@@ -7,6 +7,7 @@ import { CHANGE_KIND_LABEL, formatPlanCounts, formatVersion, loadReviewedVersion
 import DesignHeader from '../components/DesignHeader';
 import PageHeading from '../components/PageHeading';
 import { BackLink } from '../components/ui/DiscardLink';
+import { Loading } from '../components/design';
 
 export default function PersonalOperatingPlanHistory() {
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ export default function PersonalOperatingPlanHistory() {
         <PageHeading pageKey="personalOperatingPlanHistory" title="Version history" />
 
         {isLoading ? (
-          <p className="ui-subtitle">Loading...</p>
+          <Loading label="Loading your version history" className="ds-loading--page" />
         ) : !missionId ? (
           <p className="pop-empty">You do not have a personal operating plan yet.</p>
         ) : versions.length === 0 ? (

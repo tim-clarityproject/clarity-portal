@@ -2,6 +2,7 @@ import { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { Loading } from '../components/design';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function AuthCallback() {
       justifyContent: 'center',
       backgroundColor: 'var(--bg)',
     }}>
-      <p style={{ color: 'var(--label)', fontSize: '14px' }}>Completing sign in...</p>
+      <Loading label="Signing you in" />
     </div>
   );
 }

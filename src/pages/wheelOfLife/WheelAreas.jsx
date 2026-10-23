@@ -5,6 +5,7 @@ import PageHeading from '../../components/PageHeading';
 import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import Toast from '../../components/ui/Toast';
 import useToast from '../../hooks/useToast';
+import { Crosshair } from '../../components/design';
 import {
   OWN_NAME_MAX, areaName, differsFromStandard, isDuplicateName, questionFor, sortAreas,
 } from '../../lib/wheelOfLife';
@@ -151,7 +152,7 @@ export default function WheelAreas() {
               onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
             />
             <button type="button" className="ui-btn-ghost wol-add-btn" disabled={!draft.trim() || pending} onClick={add}>
-              <span className="ui-cross ui-cross--sm" aria-hidden="true" />Add
+              <Crosshair size="sm" />Add
             </button>
           </div>
           <small>New areas start with no history. Their question will read “…how satisfied are you with travel in your life right now?”</small>

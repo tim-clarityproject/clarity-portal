@@ -8,6 +8,7 @@ import {
   loadLatestBreathingSession, formatSessionLength,
 } from '../lib/breathing';
 import DesignHeader from '../components/DesignHeader';
+import { Loading } from '../components/design';
 import BreathingVisual, { useBreathingPhase, useDialSize } from '../components/ui/BreathingVisual';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
@@ -155,7 +156,7 @@ export default function BreathingPage() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <div className="plan-page"><Loading label="Loading your breathing practice" className="ds-loading--page" /></div>
       </div>
     );
   }

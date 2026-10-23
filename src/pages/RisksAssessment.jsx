@@ -7,6 +7,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
 import DesignHeader from '../components/DesignHeader';
+import { Crosshair } from '../components/design';
 
 export default function RisksAssessment() {
   const navigate = useNavigate();
@@ -151,6 +152,10 @@ export default function RisksAssessment() {
             type="button"
             onClick={handleAddRisk}
             style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
               padding: '12px 24px',
               backgroundColor: 'transparent',
               border: '2px solid var(--outline)',
@@ -163,15 +168,16 @@ export default function RisksAssessment() {
               marginBottom: '32px',
             }}
             onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--coral-text)';
-              e.target.style.backgroundColor = 'var(--raised)';
+              e.currentTarget.style.borderColor = 'var(--coral-text)';
+              e.currentTarget.style.backgroundColor = 'var(--raised)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = 'var(--outline)';
-              e.target.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderColor = 'var(--outline)';
+              e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            + Add another
+            <Crosshair />
+            Add another
           </button>
         </form>
 

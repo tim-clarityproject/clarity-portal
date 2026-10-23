@@ -302,7 +302,7 @@ export default function OnboardingMission() {
                       }
                     }}
                   >
-                    {isSaving ? 'Saving...' : 'Get Started'}
+                    {isSaving ? 'Saving' : 'Get Started'}
                   </button>
 
                   <button

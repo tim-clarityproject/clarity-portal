@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Loading } from '../components/design';
 
 export default function IfThenPlanningSummary() {
   const navigate = useNavigate();
@@ -77,7 +78,7 @@ export default function IfThenPlanningSummary() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page">
-          <p className="ui-subtitle">Loading...</p>
+          <Loading label="Loading your plan" className="ds-loading--page" />
         </div>
       </div>
     );

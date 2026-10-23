@@ -11,6 +11,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Crosshair, DatePicker } from '../components/design';
 
 const SECTION_OPTIONS = [
   { id: 'context', label: 'Meeting context' },
@@ -253,8 +254,7 @@ export default function PlanMeeting() {
 
         <div className="plan-field-row">
           <div className="plan-field">
-            <label htmlFor="meeting-date">Date</label>
-            <input id="meeting-date" type="date" className="plan-input" value={date} onChange={(e) => setDate(e.target.value)} />
+            <DatePicker label="Date" value={date} onChange={(key) => setDate(key)} min="1900-01-01" />
           </div>
           <div className="plan-field">
             <label htmlFor="meeting-time">Start time</label>
@@ -308,7 +308,7 @@ export default function PlanMeeting() {
               aria-haspopup="menu"
               onClick={() => setMenuOpen(!menuOpen)}
             >
-              <span className={`ui-cross ui-cross--sm ui-cross--open${menuOpen ? ' open' : ''}`} aria-hidden="true" />
+              <Crosshair size="sm" turned={menuOpen} />
               Add section
             </button>
             {menuOpen && (
@@ -356,7 +356,7 @@ export default function PlanMeeting() {
           </div>
         ))}
         <button type="button" className="plan-add-btn" onClick={addObjective}>
-          <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+          <Crosshair size="sm" />
           Add objective
         </button>
 
@@ -410,7 +410,7 @@ export default function PlanMeeting() {
           </div>
         ))}
         <button type="button" className="plan-add-btn" onClick={addAgendaItem}>
-          <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+          <Crosshair size="sm" />
           Add agenda item
         </button>
 

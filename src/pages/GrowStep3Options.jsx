@@ -5,6 +5,7 @@ import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import OptionsTimer from '../components/OptionsTimer';
 import DesignHeader from '../components/DesignHeader';
+import { Crosshair, Loading } from '../components/design';
 
 export default function GrowStep3Options() {
   const navigate = useNavigate();
@@ -151,12 +152,11 @@ export default function GrowStep3Options() {
                   justifyContent: 'center',
                   marginTop: '2px',
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--raised)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--raised)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                aria-label="Remove option"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 6L18 18M6 18L18 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <Crosshair variant="close" />
               </button>
             </div>
           ))}
@@ -165,6 +165,10 @@ export default function GrowStep3Options() {
         <button
           onClick={handleAddOption}
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
             padding: '12px 24px',
             backgroundColor: 'transparent',
             border: '2px solid var(--outline)',
@@ -178,15 +182,16 @@ export default function GrowStep3Options() {
             alignSelf: 'flex-start',
           }}
           onMouseEnter={(e) => {
-            e.target.style.borderColor = 'var(--coral-text)';
-            e.target.style.backgroundColor = 'var(--raised)';
+            e.currentTarget.style.borderColor = 'var(--coral-text)';
+            e.currentTarget.style.backgroundColor = 'var(--raised)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.borderColor = 'var(--outline)';
-            e.target.style.backgroundColor = 'transparent';
+            e.currentTarget.style.borderColor = 'var(--outline)';
+            e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
-          + Add Option
+          <Crosshair />
+          Add Option
         </button>
 
         {error && (
@@ -216,9 +221,7 @@ export default function GrowStep3Options() {
         )}
 
         {isLoading ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--label)', fontSize: '14px' }}>
-            Loading saved data...
-          </div>
+          <Loading label="Loading your decision" />
         ) : (
           <SaveDiscardButtons
             formData={{ options: optionsValue }}

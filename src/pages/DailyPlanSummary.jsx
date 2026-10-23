@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Loading } from '../components/design';
 
 // Headings repeat the four questions word for word - see
 // PlanMyDayStep1.jsx's QUESTIONS. Two of these were previously shortened
@@ -107,7 +108,7 @@ export default function DailyPlanSummary() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page">
-          <p className="ui-subtitle">Loading...</p>
+          <Loading label="Loading your daily plan" className="ds-loading--page" />
         </div>
       </div>
     );

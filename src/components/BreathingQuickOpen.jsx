@@ -7,6 +7,7 @@ import {
   loadBreathingPreference, saveBreathingPreference, saveBreathingSession,
 } from '../lib/breathing';
 import BreathingVisual, { useBreathingPhase, useDialSize } from './ui/BreathingVisual';
+import { IconButton } from './design';
 
 function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
@@ -174,12 +175,8 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
         @media (max-width: 768px) {
           .bqo-card.running { height: 560px; }
         }
-        .bqo-close {
-          all: unset; cursor: pointer; width: 36px; height: 36px;
-          display: flex; align-items: center; justify-content: center;
-          color: var(--text-2); font-size: 20px; border-radius: 50%; flex: none;
-        }
-        .bqo-close:hover, .bqo-close:focus-visible { color: var(--text); }
+        /* Keeps the 36px header row the dial spacing above is measured against. */
+        .ui-root .ds-icon-btn.bqo-close { width: 36px; height: 36px; min-height: 36px !important; }
         .bqo-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: var(--space-3); }
         .bqo-header h2 { margin: 0; }
         .bqo-intro { font-size: var(--fs-small); color: var(--text-2); margin: 0 0 var(--space-3); }
@@ -204,7 +201,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
           <>
             <div className="bqo-header">
               <h2 id={titleId} className="plan-overline">Take a breath</h2>
-              <button type="button" className="bqo-close" onClick={handleClose} aria-label="Close">×</button>
+              <IconButton className="bqo-close" label="Close" onClick={handleClose} />
             </div>
             <p className="bqo-intro">Pick a technique and breathe for as long as you need.</p>
 
@@ -248,7 +245,7 @@ export default function BreathingQuickOpen({ isOpen, onClose }) {
             </div>
             <div className="bqo-run-header">
               <h3 id={titleId} className="plan-overline">{TECHNIQUES[technique].label}</h3>
-              <button type="button" className="bqo-close" onClick={finishSession} aria-label="Close">×</button>
+              <IconButton className="bqo-close" label="Close" onClick={finishSession} />
             </div>
           </>
         )}

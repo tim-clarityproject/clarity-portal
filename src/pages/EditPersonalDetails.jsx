@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
 import PageHeading from '../components/PageHeading';
+import { Loading } from '../components/design';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 
@@ -153,11 +154,7 @@ export default function EditPersonalDetails() {
         }
 
         .edit-profile-loading {
-          font-family: var(--font-body);
-          font-size: 14px;
-          color: var(--text-2);
           padding: 80px 0;
-          text-align: center;
         }
 
         .edit-profile-field {
@@ -249,7 +246,7 @@ export default function EditPersonalDetails() {
           <PageHeading pageKey="editPersonalDetails" title="Edit Profile" />
 
           {isLoading ? (
-            <div className="edit-profile-loading">Loading profile...</div>
+            <div className="edit-profile-loading"><Loading label="Loading your profile" /></div>
           ) : (
             <>
               <div className="edit-profile-field" style={{ marginTop: '32px' }}>
@@ -318,7 +315,7 @@ export default function EditPersonalDetails() {
                 onClick={handleSaveProfile}
                 disabled={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save changes'}
+                {isSaving ? 'Saving' : 'Save changes'}
               </button>
             </>
           )}

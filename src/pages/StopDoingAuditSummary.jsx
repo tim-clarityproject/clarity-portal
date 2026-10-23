@@ -8,6 +8,7 @@ import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { Loading } from '../components/design';
 
 export default function StopDoingAuditSummary() {
   const navigate = useNavigate();
@@ -70,7 +71,7 @@ export default function StopDoingAuditSummary() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <div className="plan-page"><Loading label="Loading your audit" className="ds-loading--page" /></div>
       </div>
     );
   }

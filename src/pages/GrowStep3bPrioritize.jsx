@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { supabase } from '../lib/supabase';
+import { Crosshair, Loading } from '../components/design';
 
 export default function GrowStep3bPrioritize() {
   const navigate = useNavigate();
@@ -274,11 +275,7 @@ export default function GrowStep3bPrioritize() {
           Drag and drop your options to the right to place them in order of fit for your situation. You can leave any ideas you think are bad on the left.
         </p>
 
-        {isLoading && (
-          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--label)', fontSize: '14px', marginBottom: '24px' }}>
-            Loading saved options...
-          </div>
-        )}
+        {isLoading && <Loading label="Loading your options" />}
 
         {error && (
           <div style={{ padding: '16px', marginBottom: '24px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
@@ -454,6 +451,10 @@ export default function GrowStep3bPrioritize() {
                   setEditingValue('');
                 }}
                 style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
                   padding: '8px 16px',
                   backgroundColor: 'transparent',
                   border: '1px solid var(--coral-text)',
@@ -466,13 +467,14 @@ export default function GrowStep3bPrioritize() {
                   alignSelf: 'flex-start',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = 'var(--card)';
+                  e.currentTarget.style.backgroundColor = 'var(--card)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                + Add Option
+                <Crosshair />
+                Add Option
               </button>
             </div>
           </div>

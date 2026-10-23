@@ -52,9 +52,16 @@ function weeksOf(key) {
   return weeks;
 }
 
-function CalendarGrid({ value, min, onPick, focusRef }) {
+// min and max ('YYYY-MM-DD', optional): days outside them are greyed out.
+function CalendarGrid({ value, min, max, onPick, focusRef }) {
   const today = todayKey();
-  const startAt = value && value >= min ? value : (today >= min ? today : min);
+  const clamp = (key) => {
+    if (key < min) return min;
+    if (max && key > max) return max;
+    return key;
+  };
+  const outside = (key) => key < min || Boolean(max && key > max);
+  const startAt = value && !outside(value) ? value : clamp(today);
   const [focusKey, setFocusKey] = useState(startAt);
   const moved = useRef(false);
   const gridRef = useRef(null);
@@ -63,6 +70,7 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
   const view = monthStart(focusKey);
   const viewKey = toKey(view);
   const atMin = toKey(monthStart(min)) >= viewKey;
+  const atMax = Boolean(max) && toKey(monthStart(max)) <= viewKey;
   const weeks = weeksOf(viewKey);
 
   // On opening, the focused day is in sight even when a short window cuts
@@ -91,7 +99,7 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
   }, [focusKey]);
 
   const moveTo = (key) => {
-    const next = key < min ? min : key;
+    const next = clamp(key);
     moved.current = true;
     setFocusKey(next);
   };
@@ -114,13 +122,13 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
       moveTo(map[e.key]());
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      if (focusKey >= min) onPick(focusKey);
+      if (!outside(focusKey)) onPick(focusKey);
     }
   };
 
   const changeMonth = (n) => {
     const next = addMonths(focusKey, n);
-    setFocusKey(next < min ? min : next);
+    setFocusKey(clamp(next));
   };
 
   return (
@@ -130,7 +138,7 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
           {CHEVRON_LEFT}
         </button>
         <span id={titleId} aria-live="polite">{`${MONTH_NAMES[view.getMonth()]} ${view.getFullYear()}`}</span>
-        <button type="button" className="ds-cal-nav" aria-label="Next month" onClick={() => changeMonth(1)}>
+        <button type="button" className="ds-cal-nav" aria-label="Next month" disabled={atMax} onClick={() => changeMonth(1)}>
           {CHEVRON_RIGHT}
         </button>
       </div>
@@ -153,9 +161,9 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
                       className={`ds-cal-day${key === today ? ' ds-cal-day--today' : ''}`}
                       tabIndex={key === focusKey ? 0 : -1}
                       aria-pressed={key === value}
-                      aria-disabled={key < min || undefined}
+                      aria-disabled={outside(key) || undefined}
                       aria-label={`${fullDateLabel(key)}${key === today ? ', today' : ''}`}
-                      onClick={() => { if (key >= min) onPick(key); }}
+                      onClick={() => { if (!outside(key)) onPick(key); }}
                       onFocus={() => { if (key !== focusKey) setFocusKey(key); }}
                     >
                       {fromKey(key).getDate()}
@@ -173,7 +181,7 @@ function CalendarGrid({ value, min, onPick, focusRef }) {
 
 // The calendar on its own, opened from any control (anchorRef), e.g. the
 // "Another day" row.
-export function CalendarPopover({ open, onClose, anchorRef, title, value, onChange, min = todayKey() }) {
+export function CalendarPopover({ open, onClose, anchorRef, title, value, onChange, min = todayKey(), max }) {
   const focusRef = useRef(null);
   return (
     <Popover
@@ -185,14 +193,14 @@ export function CalendarPopover({ open, onClose, anchorRef, title, value, onChan
       width="css"
       initialFocusRef={focusRef}
     >
-      <CalendarGrid value={value} min={min} focusRef={focusRef} onPick={(key) => { onChange(key); onClose(); }} />
+      <CalendarGrid value={value} min={min} max={max} focusRef={focusRef} onPick={(key) => { onChange(key); onClose(); }} />
     </Popover>
   );
 }
 
 // A date field: the box shows the date as "Mon 26 Oct" (or "Pick a
 // date"), and opens the calendar with the question as its title.
-export default function DatePicker({ label, who, coachName, value, onChange, min, placeholder = 'Pick a date' }) {
+export default function DatePicker({ label, who, coachName, value, onChange, min, max, placeholder = 'Pick a date' }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
   const labelId = useId();
@@ -220,6 +228,7 @@ export default function DatePicker({ label, who, coachName, value, onChange, min
         value={value}
         onChange={onChange}
         min={min}
+        max={max}
       />
     </div>
   );

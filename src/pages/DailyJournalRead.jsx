@@ -8,6 +8,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { Loading } from '../components/design';
 
 export default function DailyJournalRead() {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function DailyJournalRead() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <Loading label="Loading your journal" className="ds-loading--page" />
       </div>
     );
   }

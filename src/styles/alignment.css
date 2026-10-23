@@ -2,7 +2,7 @@
    lazy-loaded page, so none of this is in the portal's main bundle. Every rule
    lives inside .ui-root and uses tokens only (tokens.css). The portal's shared
    parts are reused (AuthShell, BigLogo, AuthTextField, AuthPrimaryButton,
-   AutoGrowTextarea, .ui-cross, .ui-saved, .auth-field-error); the classes
+   AutoGrowTextarea, Crosshair, .ui-saved, .auth-field-error); the classes
    below are only what the mock-up needs that they do not already give.
 
    src/styles/mobile.css puts padding / font-size / min-height with !important
@@ -390,10 +390,7 @@
   transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
-.ui-root .al-add .ui-cross {
-  width: 16px;
-  height: 16px;
-  color: var(--coral-text);
+.ui-root .al-add .ds-cross {
   transition: transform var(--dur-slow) var(--ease);
 }
 
@@ -403,7 +400,7 @@
   border-color: var(--coral-text);
 }
 
-.ui-root .al-add:hover .ui-cross {
+.ui-root .al-add:hover .ds-cross {
   transform: rotate(90deg);
 }
 
@@ -697,7 +694,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ui-root .al-save,
-  .ui-root .al-add .ui-cross,
+  .ui-root .al-add .ds-cross,
   .ui-root .al-score-fill {
     transition: none;
   }
@@ -1315,10 +1312,8 @@
   color: var(--text-2);
 }
 
-.ui-root .al-card .ui-cross {
-  width: 20px;
-  height: 20px;
-  color: var(--coral-text);
+.ui-root .al-card .ds-arrow {
+  margin-top: var(--space-px2);
 }
 
 @media (prefers-reduced-motion: reduce) {

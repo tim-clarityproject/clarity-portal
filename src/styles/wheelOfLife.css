@@ -6,7 +6,7 @@
    they switch off with them under prefers-reduced-motion. The portal's
    shared parts are reused (PageHeading, BackLink, DiscardLink,
    PhoneActionBar, DiscardDialog, Toast, AutoGrowTextarea, .ui-btn-primary,
-   .ui-btn-ghost, .ui-cross); the classes below are only what the mock-up
+   .ui-btn-ghost, and the design Crosshair, DatePicker and Loading); the classes below are only what the mock-up
    needs that they do not already give.
 
    src/styles/mobile.css puts padding / font-size / min-height with
@@ -1097,42 +1097,6 @@
   gap: 12px;
 }
 
-.ui-root .wol-dates label {
-  display: block;
-  margin-bottom: 6px;
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--placeholder);
-}
-
-.ui-root .wol-dates input {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  min-height: 46px;
-  padding: 0 12px !important;
-  box-sizing: border-box;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-input);
-  outline: none;
-  font-family: var(--font-body);
-  font-size: var(--fs-input);
-  color: var(--text);
-  color-scheme: dark;
-  transition: border-color var(--dur) var(--ease);
-}
-
-.ui-root .wol-dates input:hover {
-  border-color: var(--btn-line);
-}
-
-.ui-root .wol-dates input:focus {
-  border-color: var(--coral);
-}
-
 .ui-root .wol-rsum {
   font-size: 14px;
   color: var(--text-2);
@@ -1937,8 +1901,7 @@
 
   .ui-root .wol-pre button,
   .ui-root .wol-seg button,
-  .ui-root .wol-seg button::after,
-  .ui-root .wol-dates input {
+  .ui-root .wol-seg button::after {
     transition: none !important;
   }
 }

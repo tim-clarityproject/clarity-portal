@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { Loading } from '../components/design';
 import PageHeading from '../components/PageHeading';
 
 const TAG = {
@@ -102,7 +103,7 @@ export default function ReviewSummary() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <Loading label="Loading your review" className="ds-loading--page" />
       </div>
     );
   }

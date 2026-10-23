@@ -363,19 +363,6 @@ export default function Welcome() {
           color: var(--coral-text);
         }
 
-        .home-root .home-tile-cross {
-          width: 14px;
-          height: 14px;
-          color: var(--coral-text);
-          flex-shrink: 0;
-          transition: transform var(--dur) var(--ease);
-        }
-
-        .home-tile:hover .home-tile-cross,
-        .home-tile:focus-visible .home-tile-cross {
-          transform: rotate(45deg);
-        }
-
         .home-tile-title {
           font-family: var(--font-display);
           font-weight: 400;
@@ -430,10 +417,6 @@ export default function Welcome() {
           border-radius: 4px;
         }
 
-        .home-root .home-all-tools-mark {
-          color: var(--coral-text);
-        }
-
         /* ---- Weekly momentum card ---- */
         .home-weekly-card {
           position: relative;
@@ -478,11 +461,6 @@ export default function Welcome() {
           font-size: 13px;
           color: var(--text-2);
           margin: 0;
-        }
-
-        .home-root .home-weekly-cross {
-          color: var(--coral-text);
-          flex-shrink: 0;
         }
 
         /* ---- Lower section ---- */
@@ -537,12 +515,6 @@ export default function Welcome() {
           color: var(--coral-text);
           text-decoration: none;
           cursor: pointer;
-        }
-
-        .home-root .home-section-link-cross {
-          width: 14px;
-          height: 14px;
-          color: var(--coral-text);
         }
 
         .home-plans-list {
@@ -763,7 +735,6 @@ export default function Welcome() {
               >
                 <div className="home-tile-top">
                   <span className="home-tile-label">{tile.label}</span>
-                  <span className="home-tile-cross ui-cross" aria-hidden="true" />
                 </div>
                 <div className="home-tile-title">{tile.title}</div>
                 <div className="home-tile-desc">{tile.description}</div>
@@ -773,7 +744,6 @@ export default function Welcome() {
 
           <Link to="/planning-tools" className="home-all-tools-link" onClick={handleOptionClick}>
             All planning tools
-            <span className="home-all-tools-mark ui-cross ui-cross--sm" aria-hidden="true" />
           </Link>
 
           {showWeeklyCard && (
@@ -788,7 +758,6 @@ export default function Welcome() {
                 <p className="home-weekly-title">Weekly momentum check-in</p>
                 <p className="home-weekly-text">Look back on your week and set up the next.</p>
               </div>
-              <span className="home-weekly-cross ui-cross" aria-hidden="true" />
             </Link>
           )}
 
@@ -798,7 +767,6 @@ export default function Welcome() {
                 <span className="home-section-label-text">Your recent plans</span>
                 <Link to="/my-plans" className="home-section-link">
                   My Plans
-                  <span className="home-section-link-cross ui-cross" aria-hidden="true" />
                 </Link>
               </div>
 

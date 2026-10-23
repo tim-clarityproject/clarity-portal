@@ -12,6 +12,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import PageHeading from '../components/PageHeading';
+import { DisclosureArrow, Loading } from '../components/design';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -260,7 +261,7 @@ export default function ReviewPlan() {
         </div>
 
         {isLoading ? (
-          <p className="ui-subtitle">Loading...</p>
+          <Loading label="Loading your review" className="ds-loading--page" />
         ) : (
           <>
             {!plan && planKind === 'daily_plan' ? (
@@ -274,8 +275,9 @@ export default function ReviewPlan() {
               <div className="rp-panel-wrap">
                 <div className="rp-panel-head">
                   <span className="rp-panel-label">{t.panel}</span>
-                  <button type="button" className="plan-link-btn" onClick={() => setShowPanel((s) => !s)}>
+                  <button type="button" className="plan-link-btn" aria-expanded={showPanel} onClick={() => setShowPanel((s) => !s)} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     {showPanel ? 'Hide' : 'Show'}
+                    <DisclosureArrow open={showPanel} />
                   </button>
                 </div>
                 {showPanel && <PanelBody planKind={planKind} plan={plan} />}

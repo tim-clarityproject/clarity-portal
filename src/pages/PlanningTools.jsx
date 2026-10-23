@@ -27,10 +27,6 @@ const COMING_SOON_ROWS = [
   { title: 'I want to set meaningful goals', description: 'Turn your mission into goals you can act on.' },
 ];
 
-function CrossMark() {
-  return <span className="ptl-row-mark ui-cross ui-cross--sm" aria-hidden="true" />;
-}
-
 function LockIcon() {
   return (
     <svg className="ptl-lock-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -60,7 +56,6 @@ export default function PlanningTools() {
                 <span className="ptl-row-title">{row.title}</span>
                 <span className="ptl-row-desc">{row.description}</span>
               </span>
-              <CrossMark />
             </button>
           ))}
         </div>
@@ -73,7 +68,6 @@ export default function PlanningTools() {
                 <span className="ptl-row-title">{row.title}</span>
                 <span className="ptl-row-desc">{row.description}</span>
               </span>
-              <CrossMark />
             </button>
           ))}
         </div>

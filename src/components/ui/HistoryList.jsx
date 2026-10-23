@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import PageHeading from '../PageHeading';
 import FilterPills from './FilterPills';
+import { Button } from '../design';
 
 // LIST ROW GUIDELINES (guidelines to apply by default; a mock-up wins
 // where it shows a detail). On phone every row of every list is built
@@ -146,9 +147,9 @@ export default function HistoryList({
           {title && <PageHeading pageKey={pageKey} title={title} overline="" rule={false} />}
         </div>
         {newButton && (
-          <button type="button" className="hlist-ghost-btn hlist-new-desktop" onClick={newButton.onClick}>
-            + {newButton.label}
-          </button>
+          <Button icon="plus" className="hlist-new-desktop" onClick={newButton.onClick}>
+            {newButton.label}
+          </Button>
         )}
       </div>
 
@@ -265,9 +266,9 @@ export default function HistoryList({
 
       {newButton && (
         <div className="hlist-new-phone-wrap">
-          <button type="button" className="hlist-ghost-btn" onClick={newButton.onClick}>
-            + {newButton.label}
-          </button>
+          <Button icon="plus" onClick={newButton.onClick}>
+            {newButton.label}
+          </Button>
         </div>
       )}
     </div>

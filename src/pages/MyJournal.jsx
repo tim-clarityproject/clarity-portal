@@ -16,6 +16,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { DatePicker, Loading } from '../components/design';
 import PageHeading from '../components/PageHeading';
 
 export default function MyJournal() {
@@ -184,7 +185,7 @@ export default function MyJournal() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <Loading label="Loading your review" className="ds-loading--page" />
       </div>
     );
   }
@@ -216,14 +217,13 @@ export default function MyJournal() {
         )}
 
         <div className="plan-field">
-          <label htmlFor="review-date">{dateLabel}</label>
-          <input
-            id="review-date"
-            type="date"
-            className="plan-input"
+          {/* DatePicker has no max yet, so a future day is ignored here,
+              as the old date input's max did. */}
+          <DatePicker
+            label={dateLabel}
             value={dateKey}
-            max={getLocalDateKey(new Date())}
-            onChange={(e) => setDateKey(e.target.value)}
+            min="1900-01-01"
+            onChange={(key) => { if (key <= getLocalDateKey(new Date())) setDateKey(key); }}
           />
         </div>
 

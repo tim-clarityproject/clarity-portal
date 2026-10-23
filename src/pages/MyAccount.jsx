@@ -11,7 +11,7 @@ import DesignHeader from '../components/DesignHeader';
 import PageHeading from '../components/PageHeading';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
-import { useCoachName } from '../components/design';
+import { useCoachName, Crosshair } from '../components/design';
 import { useStartChat } from '../components/coach/CoachChat';
 
 export default function MyAccount() {
@@ -453,7 +453,12 @@ export default function MyAccount() {
             <div className="account-row-text">
               <div className="account-row-title">Archived plans</div>
               <div className="account-row-desc">
-                {loadingArchivedMissions ? 'Loading...' : `${archivedMissionsCount} archived`}
+                {loadingArchivedMissions ? (
+                  <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <Crosshair size="sm" tone="label" spin />
+                    Loading
+                  </span>
+                ) : `${archivedMissionsCount} archived`}
               </div>
             </div>
             <button type="button" className="ui-btn-ghost" onClick={() => navigate('/personal-operating-plan-archived')}>

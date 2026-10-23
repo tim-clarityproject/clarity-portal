@@ -9,6 +9,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
+import { Crosshair } from '../components/design';
 
 export default function ProjectList() {
   const navigate = useNavigate();
@@ -260,10 +261,15 @@ export default function ProjectList() {
                     fontWeight: 'bold',
                     transition: 'all 0.2s',
                     textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
                   }}
-                  onMouseEnter={(e) => e.target.style.color = 'var(--coral-hover)'}
-                  onMouseLeave={(e) => e.target.style.color = 'var(--coral-text)'}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--coral-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--coral-text)'}
                 >
+                  <Crosshair />
                   Add another
                 </button>
               </div>

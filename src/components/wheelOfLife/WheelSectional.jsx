@@ -7,7 +7,7 @@ import { WheelLabels } from './WheelLabels';
 // middle, ten bands per slice in a tonal coral ramp, empty bands as faint
 // dots, the start of the range as a white hairline arc, the target as a
 // dashed arc just outside its band (soft coral, mint once reached), a
-// dial rim with ticks, and the average number in the centre (or the crosshair
+// dial rim with ticks, and the average number in the centre (or an empty hub
 // when there are no labels). Animations live in wheelOfLife.css
 // (.wol-enter .wol-sw .wol-sl), switched off under reduced motion.
 
@@ -113,9 +113,11 @@ export default function WheelSectional({
     );
   }
 
-  // centre: average score, set in Nekst (with labels); otherwise the crosshair
+  // centre: average score, set in Nekst (with labels); otherwise the
+  // empty hub circle alone (the drawn crosshair was removed: crosshairs
+  // are only for add, close and loading, CLAUDE.md rule 6)
   const vals = (now || []).filter((x) => x != null);
-  let centre;
+  let centre = null;
   if (labels && vals.length) {
     centre = (
       <>
@@ -123,16 +125,6 @@ export default function WheelSectional({
             it was Nekst below 10px (CLAUDE.md rule 4). */}
         <text x={cx} y={cy - 1} textAnchor="middle" style={{ fontFamily: 'var(--font-display)', fill: 'var(--text)' }} fontSize={R > 100 ? 18 : 13}>{oneDecimal(average(vals))}</text>
       </>
-    );
-  } else {
-    const g = H * 0.32;
-    centre = (
-      <g style={{ stroke: 'var(--coral)' }} strokeWidth="1.2" strokeLinecap="round">
-        <line x1={cx - g} y1={cy} x2={cx - g / 3} y2={cy} />
-        <line x1={cx + g / 3} y1={cy} x2={cx + g} y2={cy} />
-        <line x1={cx} y1={cy - g} x2={cx} y2={cy - g / 3} />
-        <line x1={cx} y1={cy + g / 3} x2={cx} y2={cy + g} />
-      </g>
     );
   }
 

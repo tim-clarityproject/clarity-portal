@@ -11,6 +11,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import SavingOverlay from '../components/ui/SavingOverlay';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
+import { Crosshair, Loading } from '../components/design';
 
 const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your mission. It's your overall direction - how you'll tackle things in a consistent, thoughtful way. Unlike tactics (which happen day-to-day), your strategies don't change frequently. They're the foundation that guides your daily actions.";
 const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do - the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
@@ -369,7 +370,7 @@ export default function PersonalOperatingPlanEdit() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <div className="plan-page"><Loading label="Loading your plan" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -377,7 +378,7 @@ export default function PersonalOperatingPlanEdit() {
   const actionButtons = (
     <>
       <button type="button" className="ui-btn-primary" disabled={isSaving} onClick={savePlan}>
-        {isSaving ? 'Saving...' : 'Save plan'}
+        {isSaving ? 'Saving' : 'Save plan'}
       </button>
       <span className="pop-save-preview">{previewLine}</span>
     </>
@@ -465,7 +466,7 @@ export default function PersonalOperatingPlanEdit() {
                                 const current = Number(tactic.target_value) || 0;
                                 const next = Math.min(999999999999, current + stepBy(current));
                                 updateTactic(sIndex, tIndex, 'target_value', next);
-                              }}>+</button>
+                              }}><Crosshair size="sm" /></button>
                             </div>
                           </div>
                           <div className="pop-tactic-field">
@@ -480,7 +481,7 @@ export default function PersonalOperatingPlanEdit() {
                 );
               })}
               <button type="button" className="plan-add-btn" onClick={() => addTactic(sIndex)}>
-                <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+                <Crosshair size="sm" />
                 Add tactic
               </button>
             </div>
@@ -488,7 +489,7 @@ export default function PersonalOperatingPlanEdit() {
         ))}
 
         <button type="button" className="plan-add-btn" onClick={addStrategy}>
-          <span className="ui-cross ui-cross--sm" aria-hidden="true" />
+          <Crosshair size="sm" />
           Add strategy
         </button>
 

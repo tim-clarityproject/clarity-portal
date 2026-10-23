@@ -9,6 +9,7 @@ import PageHeading from '../components/PageHeading';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
+import { DisclosureArrow, Loading } from '../components/design';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -175,7 +176,7 @@ export default function PersonalOperatingPlan() {
     return (
       <div className="ui-root">
         <DesignHeader />
-        <div className="plan-page"><p className="ui-subtitle">Loading...</p></div>
+        <div className="plan-page"><Loading label="Loading your plan" className="ds-loading--page" /></div>
       </div>
     );
   }
@@ -244,7 +245,7 @@ export default function PersonalOperatingPlan() {
                 <button type="button" className="pop-strategy-header" aria-expanded={isOpen} onClick={() => toggleStrategy(strategy.id)}>
                   <span className="pop-strategy-number">{String(index + 1).padStart(2, '0')}</span>
                   <h3 className="pop-view-strategy-name">{strategy.name}</h3>
-                  <span className={`ui-cross ui-cross--sm ui-cross--open${isOpen ? ' open' : ''}`} aria-hidden="true" />
+                  <span style={{ marginLeft: 'auto', display: 'inline-flex' }}><DisclosureArrow open={isOpen} /></span>
                 </button>
                 {isOpen && (
                   <>
