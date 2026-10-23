@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
 import Toast from '../components/ui/Toast';
+import { TextBox } from '../components/design';
 import useToast from '../hooks/useToast';
 
 const MAX_GOAL_LENGTH = 70;
@@ -224,36 +225,21 @@ export default function OnboardingMission() {
             {/* Input Section - Shows after question types in */}
             {showInput && (
               <div style={{ animation: 'fadeIn 0.6s ease-in' }}>
-                <textarea
+                <TextBox
+                  className="onboarding-mission-box"
+                  ariaLabel="Your mission"
+                  who="me"
+                  lines="one"
                   value={mission}
-                  onChange={(e) => setMission(e.target.value.slice(0, MAX_GOAL_LENGTH))}
-                  onKeyPress={handleKeyPress}
+                  onChange={(text) => setMission(text.slice(0, MAX_GOAL_LENGTH))}
+                  onKeyDown={handleKeyPress}
                   placeholder="Type here"
-                  className="onboarding-mission-input"
-                  style={{
-                    width: '100%',
-                    minHeight: '80px',
-                    padding: '16px',
-                    border: 'none',
-                    borderRadius: '0px',
-                    fontSize: '16px',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    marginBottom: '24px',
-                    resize: 'none',
-                    transition: 'all 0.2s',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text)',
-                    borderBottom: '1px solid var(--field-line)',
-                    textAlign: 'center',
-                  }}
                   autoFocus
                 />
                 <style>{`
-                  .ui-root .onboarding-mission-input::placeholder {
-                    color: var(--label);
-                    text-align: center;
+                  .ui-root .onboarding-mission-box {
+                    margin-bottom: 24px;
+                    text-align: left;
                   }
                 `}</style>
 

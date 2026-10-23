@@ -6,12 +6,11 @@ import { LIMITS, formatVersion, loadLatestVersion, previewNextVersion, recordVer
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import SavingOverlay from '../components/ui/SavingOverlay';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import { Crosshair, Loading, PageHeader } from '../components/design';
+import { Crosshair, Loading, PageHeader, TextBox, TextField } from '../components/design';
 
 const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your mission. It's your overall direction, how you'll tackle things in a consistent, thoughtful way. Unlike tactics, which happen day-to-day, your strategies don't change frequently. They're the foundation that guides your daily actions.";
 const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do: the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
@@ -386,6 +385,10 @@ export default function PersonalOperatingPlanEdit() {
 
   return (
     <div className="ui-root">
+      <style>{`
+        .ui-root .pop-grow { flex: 1; min-width: 0; }
+        .ui-root .pop-unit-field { width: 160px; max-width: 100%; }
+      `}</style>
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
@@ -402,8 +405,7 @@ export default function PersonalOperatingPlanEdit() {
         )}
 
         <div className="plan-field">
-          <label htmlFor="pop-title">Your mission statement</label>
-          <AutoGrowTextarea id="pop-title" className="plan-input" placeholder="Define your mission in clear, compelling language..." value={missionTitle} onChange={setMissionTitle} maxLength={LIMITS.mission} />
+          <TextBox id="pop-title" label="Your mission statement" who="me" lines="many" placeholder="Define your mission in clear, compelling language..." value={missionTitle} onChange={setMissionTitle} maxLength={LIMITS.mission} />
           {fieldError?.field === 'mission' && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
         </div>
 
@@ -416,8 +418,8 @@ export default function PersonalOperatingPlanEdit() {
           <div className="pop-strategy" key={strategy.id}>
             <div className="pop-strategy-top">
               <div className="pop-strategy-fields">
-                <AutoGrowTextarea singleLine className="plan-input" placeholder="Strategy name" aria-label={`Strategy ${sIndex + 1} name`} value={strategy.name} onChange={(v) => updateStrategy(sIndex, 'name', v)} maxLength={LIMITS.strategyName} />
-                <AutoGrowTextarea className="plan-input" placeholder="Why does this matter? How does it support your mission?" aria-label={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} maxLength={LIMITS.strategyDescription} />
+                <TextBox lines="one" who="me" placeholder="Strategy name" ariaLabel={`Strategy ${sIndex + 1} name`} value={strategy.name} onChange={(v) => updateStrategy(sIndex, 'name', v)} maxLength={LIMITS.strategyName} />
+                <TextBox lines="many" who="me" placeholder="Why does this matter? How does it support your mission?" ariaLabel={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} maxLength={LIMITS.strategyDescription} />
                 {fieldError?.field === `strategy-${sIndex}` && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
               </div>
               <button type="button" className="plan-bin-btn" aria-label={`Remove strategy ${sIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'strategy', sIndex })}>
@@ -435,7 +437,7 @@ export default function PersonalOperatingPlanEdit() {
                 return (
                   <div key={tactic.id} className="pop-tactic-editor">
                     <div className="pop-tactic-action-row">
-                      <AutoGrowTextarea singleLine className="plan-input" placeholder="What's the specific action?" aria-label={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} maxLength={LIMITS.tacticAction} />
+                      <TextBox className="pop-grow" lines="one" who="me" placeholder="What's the specific action?" ariaLabel={`Tactic ${tIndex + 1}`} value={tactic.action} onChange={(v) => updateTactic(sIndex, tIndex, 'action', v)} maxLength={LIMITS.tacticAction} />
                       <button type="button" className="plan-bin-btn" aria-label={`Remove tactic ${tIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'tactic', sIndex, tIndex })}>
                         <BinIcon />
                       </button>
@@ -469,10 +471,7 @@ export default function PersonalOperatingPlanEdit() {
                               }}><Crosshair size="sm" /></button>
                             </div>
                           </div>
-                          <div className="pop-tactic-field">
-                            <label className="pop-tactic-label">Unit</label>
-                            <input type="text" className="plan-input pop-unit-input" placeholder="£, hours..." maxLength={LIMITS.unit} value={tactic.unit || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'unit', e.target.value)} />
-                          </div>
+                          <TextField className="pop-unit-field" label="Unit" placeholder="£, hours..." maxLength={LIMITS.unit} value={tactic.unit || ''} onChange={(e) => updateTactic(sIndex, tIndex, 'unit', e.target.value)} />
                         </>
                       )}
                     </div>

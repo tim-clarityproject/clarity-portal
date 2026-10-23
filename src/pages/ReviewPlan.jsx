@@ -6,13 +6,12 @@ import { loadPlanReviews, findPlanReview, savePlanReview, isPlanReviewDraft } fr
 import { discardPlanReviewDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { DisclosureArrow, Loading, PageHeader } from '../components/design';
+import { DisclosureArrow, Loading, PageHeader, TextBox } from '../components/design';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -294,8 +293,7 @@ export default function ReviewPlan() {
                     <svg className="plan-dq-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
                   </div>
                   <div>
-                    <label className="plan-dq-label" htmlFor={`rp-${q.key}`}>{q.label}</label>
-                    <AutoGrowTextarea id={`rp-${q.key}`} className="plan-dq-textarea" placeholder="Type here" value={value} onChange={setter} />
+                    <TextBox id={`rp-${q.key}`} label={q.label} who="me" lines="many" focusMode placeholder="Type here" value={value} onChange={setter} />
                   </div>
                 </div>
               );

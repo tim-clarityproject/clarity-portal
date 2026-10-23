@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 import AuthShell from '../../components/auth/AuthShell';
 import { AuthPrimaryButton, AuthTextLink } from '../../components/auth/AuthButton';
 import { useShake } from '../../components/auth/AuthField';
+import { TextBox } from '../../components/design';
 import { ClockIcon } from './ResetPassword';
 
 const MAX_MISSION_LENGTH = 70;
@@ -257,13 +258,6 @@ export default function Mission() {
     checkMission();
   }, [linkStatus, user, checkedExistingMission, navigate]);
 
-  useEffect(() => {
-    if (!textareaRef.current) return;
-    textareaRef.current.style.height = 'auto';
-    const next = Math.min(Math.max(textareaRef.current.scrollHeight, 30), 150);
-    textareaRef.current.style.height = `${next}px`;
-  }, [missionValue]);
-
   const handleExampleClick = (text) => {
     setMissionValue(text.slice(0, MAX_MISSION_LENGTH));
     setMissionError('');
@@ -303,7 +297,6 @@ export default function Mission() {
     }
   };
 
-  const atLimit = missionValue.length >= MAX_MISSION_LENGTH;
   const visibleIdeas = Array.from({ length: IDEAS_PER_GROUP }, (_, i) => {
     return EXAMPLE_MISSIONS[(ideaGroup * IDEAS_PER_GROUP + i) % EXAMPLE_MISSIONS.length];
   });
@@ -375,27 +368,30 @@ export default function Mission() {
       sub="One sentence about what you are here to do."
     >
       <form id="mission-form" onSubmit={handleSave} noValidate style={{ paddingBottom: saveBarHeight ? `${saveBarHeight + 16}px` : undefined }}>
-        <div className={`auth-mission-card auth-mission-card--input${missionError ? ' error' : ''}${cardShaking ? ' shake' : ''}`}>
-          <label htmlFor="mission-textarea" className="auth-mission-card-label">Your Mission</label>
-          <textarea
-            id="mission-textarea"
-            ref={textareaRef}
-            className="auth-mission-card-input"
-            value={missionValue}
-            onChange={(e) => {
-              setMissionValue(e.target.value.slice(0, MAX_MISSION_LENGTH));
-              if (missionError) setMissionError('');
-            }}
-            placeholder="Type your mission here"
-            maxLength={MAX_MISSION_LENGTH}
-            rows={1}
-            aria-label="Your mission"
-          />
-        </div>
-
-        <div className="auth-mission-counter-row">
-          <span className={atLimit ? 'at-limit' : ''}>{missionValue.length}/{MAX_MISSION_LENGTH}</span>
-        </div>
+        <style>{`
+          .ui-root .auth-mission-box {
+            margin-top: 30px;
+            text-align: left;
+          }
+          .ui-root .auth-mission-box--error .ds-grow > .ds-text {
+            border-color: var(--coral-soft-text);
+          }
+        `}</style>
+        <TextBox
+          id="mission-textarea"
+          ref={textareaRef}
+          className={`auth-mission-box${missionError ? ' auth-mission-box--error' : ''}${cardShaking ? ' shake' : ''}`}
+          label="Your Mission"
+          who="me"
+          lines="one"
+          value={missionValue}
+          onChange={(text) => {
+            setMissionValue(text.slice(0, MAX_MISSION_LENGTH));
+            if (missionError) setMissionError('');
+          }}
+          placeholder="Type your mission here"
+          maxLength={MAX_MISSION_LENGTH}
+        />
 
         {missionError && <p className="auth-field-error auth-mission-error" role="alert">{missionError}</p>}
 

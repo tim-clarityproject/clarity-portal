@@ -10,13 +10,12 @@ import {
 import { discardReviewDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { DatePicker, Loading, PageHeader } from '../components/design';
+import { DatePicker, Loading, PageHeader, TextBox } from '../components/design';
 import pageText from '../content/pageText';
 
 export default function MyJournal() {
@@ -259,8 +258,16 @@ export default function MyJournal() {
               <svg className="plan-dq-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
             </div>
             <div>
-              <label className="plan-dq-label" htmlFor={`rt-${q.key}`}>{q.label}</label>
-              <AutoGrowTextarea id={`rt-${q.key}`} className="plan-dq-textarea" placeholder="Type here" value={answers[q.key]} onChange={(v) => updateAnswer(q.key, v)} />
+              <TextBox
+                id={`rt-${q.key}`}
+                label={q.label}
+                lines="many"
+                focusMode
+                who="me"
+                placeholder="Type here"
+                value={answers[q.key]}
+                onChange={(v) => updateAnswer(q.key, v)}
+              />
             </div>
           </div>
         ))}

@@ -1,19 +1,16 @@
-import { useState, useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
-import { PageHeader } from '../components/design';
+import { PageHeader, TextBox } from '../components/design';
 
 export default function GoalSetting() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formData, updateFormData, getFieldValue } = useContext(FormContext);
   const [goal, setGoal] = useState(() => location.state?.goal || '');
-  const refGoal = useRef(null);
-  useAutoExpandTextarea(refGoal, goal);
 
   useLoadDecision(updateFormData);
 
@@ -96,10 +93,12 @@ export default function GoalSetting() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <textarea
-            ref={refGoal}
+          <div style={{ marginBottom: '48px' }}>
+          <TextBox
+            ariaLabel={path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}
+            lines="one"
             value={goal}
-            onChange={handleChange}
+            onChange={(text) => handleChange({ target: { value: text } })}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -109,24 +108,8 @@ export default function GoalSetting() {
               }
             }}
             placeholder="Type here"
-            style={{
-              backgroundColor: 'var(--card)',
-              color: 'var(--text)',
-              padding: '16px',
-              border: '2px solid var(--field-line)',
-              borderRadius: '8px',
-              fontSize: '16px',
-              minHeight: '100px',
-              textAlign: 'left',
-              fontFamily: 'inherit',
-              resize: 'none',
-              overflow: 'hidden',
-              outline: 'none',
-              marginBottom: '48px',
-            }}
-            onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-            onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
           />
+          </div>
         </form>
 
         <SaveDiscardButtons

@@ -102,7 +102,11 @@ const TextBox = forwardRef(function TextBox({
       openWriter();
     },
     // Reached another way (a screen reader, a keyboard): open it too.
-    onFocus: () => { if (!writing) openWriter(); },
+    // The page's own onFocus still runs.
+    onFocus: (e) => {
+      rest.onFocus?.(e);
+      if (!writing) openWriter();
+    },
   } : {};
 
   const change = (e) => {

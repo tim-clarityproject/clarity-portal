@@ -6,13 +6,12 @@ import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { PageHeader } from '../components/design';
+import { PageHeader, TextBox } from '../components/design';
 
 // Worded exactly per the approved mock-up - topPriority/showUp/notDo are
 // the real Supabase field names (unchanged); only the on-screen wording
@@ -209,10 +208,12 @@ export default function PlanMyDayStep1() {
                 <CheckIcon />
               </div>
               <div>
-                <label className="plan-dq-label" htmlFor={`dq-${q.key}`}>{q.label}</label>
-                <AutoGrowTextarea
+                <TextBox
                   id={`dq-${q.key}`}
-                  className="plan-dq-textarea"
+                  label={q.label}
+                  who="me"
+                  lines="many"
+                  focusMode
                   value={values[q.key]}
                   placeholder="Type here"
                   onChange={(v) => setters[q.key](v)}

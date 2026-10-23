@@ -8,7 +8,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import SaveProgressModal from '../components/SaveProgressModal';
 
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader } from '../components/design';
+import { PageHeader, TextBox } from '../components/design';
 
 export default function CriticalSuccessFactors() {
   const navigate = useNavigate();
@@ -144,7 +144,7 @@ export default function CriticalSuccessFactors() {
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
               {risks.map((risk, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '80px' }}>
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '80px' }}>
                   <span
                     style={{
                       color: 'var(--coral-text)',
@@ -157,26 +157,15 @@ export default function CriticalSuccessFactors() {
                   >
                     {String.fromCharCode(65 + index)}
                   </span>
-                  <textarea
-                    value={factors[index] || ''}
-                    onChange={(e) => handleFactorChange(index, e.target.value)}
-                    placeholder="Type here"
-                    style={{
-                      backgroundColor: 'var(--card)',
-                      color: 'var(--text)',
-                      flex: 1,
-                      padding: '12px 16px',
-                      border: '2px solid var(--field-line)',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      resize: 'none',
-                      outline: 'none',
-                      minHeight: '80px',
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-                    onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
-                  />
+                  <div style={{ flexGrow: 1, flexBasis: 0, minWidth: 0 }}>
+                    <TextBox
+                      ariaLabel={`Critical success factor ${String.fromCharCode(65 + index)}`}
+                      lines="one"
+                      value={factors[index] || ''}
+                      onChange={(text) => handleFactorChange(index, text)}
+                      placeholder="Type here"
+                    />
+                  </div>
                 </div>
               ))}
             </form>

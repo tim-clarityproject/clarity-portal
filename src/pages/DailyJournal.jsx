@@ -10,12 +10,29 @@ import {
 import { discardJournalDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Crosshair, Loading, PageHeader, SaveStatus } from '../components/design';
+import { Crosshair, Loading, PageHeader, SaveStatus, TextBox } from '../components/design';
+
+// The writing boxes and prompt questions sit in one column with the
+// shared gap (each box has its own edge, so the old ruled lines above
+// and below are not needed). The last box stays a tall page to write
+// on, as before.
+const JOURNAL_CSS = `
+.ui-root .jrn-paper-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-top: 0;
+  border-bottom: 0;
+}
+.ui-root .jrn-box--last .ds-grow > .ds-text,
+.ui-root .jrn-box--last .ds-grow::after {
+  min-height: 480px;
+}
+`;
 
 export default function DailyJournal() {
   const navigate = useNavigate();
@@ -219,6 +236,7 @@ export default function DailyJournal() {
 
   return (
     <div className="ui-root">
+      <style>{JOURNAL_CSS}</style>
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
@@ -252,15 +270,17 @@ export default function DailyJournal() {
                 <button type="button" className="jrn-qremove" aria-label="Remove this question" onClick={() => handleRemoveBlock(i)}><Crosshair variant="close" size="sm" /></button>
               </div>
             ) : (
-              <AutoGrowTextarea
+              <TextBox
                 key={i}
                 ref={i === lastTIndex ? lastInputRef : undefined}
-                className="jrn-paper"
+                className={i === lastTIndex ? 'jrn-box jrn-box--last' : 'jrn-box'}
+                lines="many"
+                focusMode
+                who={i === 0 ? 'me' : undefined}
                 placeholder={i === lastTIndex ? 'Start writing...' : undefined}
-                aria-label={i === 0 ? 'Daily Journal' : 'Daily Journal, continued'}
+                ariaLabel={i === 0 ? 'Daily Journal' : 'Daily Journal, continued'}
                 value={b.v}
                 onChange={(v) => changeBlock(i, v)}
-                minPixelHeight={i === lastTIndex ? 480 : 40}
               />
             )
           ))}

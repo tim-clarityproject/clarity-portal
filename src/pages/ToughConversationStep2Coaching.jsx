@@ -7,13 +7,12 @@ import { clearProgress } from '../lib/saveProgress';
 import { COACHING_QUESTIONS } from '../content/coachingQuestions';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { PageHeader } from '../components/design';
+import { PageHeader, TextBox } from '../components/design';
 import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
@@ -222,9 +221,10 @@ export default function ToughConversationStep2Coaching() {
 
           {editingField && (
             <div className="tc-edit-row">
-              <AutoGrowTextarea
-                className="plan-dq-textarea"
+              <TextBox
+                lines="many"
                 autoFocus
+                ariaLabel="Edit your script"
                 placeholder="Type here"
                 value={editValue}
                 onChange={setEditValue}
@@ -301,10 +301,10 @@ export default function ToughConversationStep2Coaching() {
         </div>
 
         <div className="plan-field">
-          <label htmlFor="tc-custom-question">Add your own question</label>
-          <AutoGrowTextarea
+          <TextBox
             id="tc-custom-question"
-            className="plan-dq-textarea"
+            label="Add your own question"
+            lines="many"
             placeholder="Type here"
             value={customQuestion}
             onChange={setCustomQuestion}

@@ -5,11 +5,10 @@ import BigLogo from '../../components/auth/BigLogo';
 import { AuthTextField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
-import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import OnePager from './OnePager';
 import AccessCodeInput, { cleanCode } from './AccessCodeInput';
 import PdfChoice from './PdfChoice';
-import { Crosshair, Loading } from '../../components/design';
+import { Crosshair, Loading, TextBox } from '../../components/design';
 import { formatUkDate } from '../../lib/dateFormatter';
 import { requestAlignmentEmail } from '../../lib/alignmentEmail';
 import { downloadPdf } from './pdf/generatePdf';
@@ -104,14 +103,13 @@ function NumberedRows({ rows, kind, label, placeholder, max, focusId, onChange, 
       {rows.map((row, i) => (
         <div key={row.id} className={`al-row${row.text.trim() ? ' al-row--done' : ''}`}>
           <b>{pad(i + 1)}</b>
-          <AutoGrowTextarea
+          <TextBox
             ref={(el) => { refs.current[row.id] = el; }}
-            singleLine
-            className="al-box"
+            lines="one"
             value={row.text}
             maxLength={MAX_ITEM}
             placeholder={i === 0 ? placeholder : ''}
-            aria-label={`${label} ${i + 1}`}
+            ariaLabel={`${label} ${i + 1}`}
             autoComplete="off"
             onChange={(v) => onChange(row.id, v)}
             onKeyDown={(e) => {
@@ -542,13 +540,12 @@ export default function HealthCheck() {
     shellProps = { align: 'left', headline: 'What is your team trying to achieve?', headlineSize: 'md', columnClassName: 'al-col', letterStaggerMs: 28 };
     body = [
       <div key="o" className="al-body">
-        <AutoGrowTextarea
-          singleLine
-          className="al-objective"
+        <TextBox
+          lines="one"
           value={draft.objective}
           maxLength={MAX_OBJECTIVE}
           placeholder="Type your objective here"
-          aria-label="Your team’s objective"
+          ariaLabel="Your team’s objective"
           autoFocus
           onChange={(v) => commit({ ...draftRef.current, objective: v }, stepRef.current, false)}
           onKeyDown={(e) => { if (e.key === 'Enter' && valid) { e.preventDefault(); goNext(); } }}

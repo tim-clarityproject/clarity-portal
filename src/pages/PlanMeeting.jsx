@@ -5,13 +5,12 @@ import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Crosshair, DatePicker, PageHeader } from '../components/design';
+import { Crosshair, DatePicker, PageHeader, TextBox } from '../components/design';
 
 const SECTION_OPTIONS = [
   { id: 'context', label: 'Meeting context' },
@@ -243,13 +242,11 @@ export default function PlanMeeting() {
         </div>
 
         <div className="plan-field">
-          <label htmlFor="meeting-title">Meeting title</label>
-          <AutoGrowTextarea id="meeting-title" singleLine className="plan-input" placeholder="Type here" value={title} onChange={setTitle} />
+          <TextBox id="meeting-title" label="Meeting title" lines="one" placeholder="Type here" value={title} onChange={setTitle} />
         </div>
 
         <div className="plan-field">
-          <label htmlFor="meeting-chair">Chair</label>
-          <AutoGrowTextarea id="meeting-chair" singleLine className="plan-input" placeholder="Type here" value={chair} onChange={setChair} />
+          <TextBox id="meeting-chair" label="Chair" lines="one" placeholder="Type here" value={chair} onChange={setChair} />
         </div>
 
         <div className="plan-field-row">
@@ -273,9 +270,9 @@ export default function PlanMeeting() {
               <label htmlFor="meeting-context">Meeting context</label>
               <button type="button" className="plan-link-btn" onClick={() => removeSection('context')}>Remove</button>
             </div>
-            <AutoGrowTextarea
+            <TextBox
               id="meeting-context"
-              className="plan-input"
+              lines="many"
               placeholder="Type here"
               value={meetingContext}
               onChange={setMeetingContext}
@@ -289,9 +286,9 @@ export default function PlanMeeting() {
               <label htmlFor="meeting-prereads">Attendee preparation</label>
               <button type="button" className="plan-link-btn" onClick={() => removeSection('pre-reads')}>Remove</button>
             </div>
-            <AutoGrowTextarea
+            <TextBox
               id="meeting-prereads"
-              className="plan-input"
+              lines="many"
               placeholder="Type here"
               value={preReads}
               onChange={setPreReads}
@@ -336,11 +333,10 @@ export default function PlanMeeting() {
         {objectives.map((obj, index) => (
           <div className="plan-obj-row" key={obj.id}>
             <span className="plan-obj-num">{index + 1}.</span>
-            <AutoGrowTextarea
-              singleLine
-              className="plan-input"
+            <TextBox
+              lines="one"
               placeholder="Type here"
-              aria-label={`Objective ${index + 1}`}
+              ariaLabel={`Objective ${index + 1}`}
               value={obj.text}
               onChange={(v) => changeObjective(obj.id, v)}
             />
@@ -376,15 +372,15 @@ export default function PlanMeeting() {
           <div className="plan-ag-row" key={item.id}>
             <div className="plan-ag-field plan-ag-field--item">
               <label>Item</label>
-              <AutoGrowTextarea singleLine className="plan-input" placeholder="Type here" value={item.item} onChange={(v) => changeAgendaItem(item.id, 'item', v)} />
+              <TextBox lines="one" ariaLabel={`Agenda item ${index + 1}`} placeholder="Type here" value={item.item} onChange={(v) => changeAgendaItem(item.id, 'item', v)} />
             </div>
             <div className="plan-ag-field plan-ag-field--aim">
               <label>Aim</label>
-              <AutoGrowTextarea singleLine className="plan-input" placeholder="Type here" value={item.aim} onChange={(v) => changeAgendaItem(item.id, 'aim', v)} />
+              <TextBox lines="one" ariaLabel={`Aim of agenda item ${index + 1}`} placeholder="Type here" value={item.aim} onChange={(v) => changeAgendaItem(item.id, 'aim', v)} />
             </div>
             <div className="plan-ag-field">
               <label>Lead</label>
-              <AutoGrowTextarea singleLine className="plan-input" placeholder="Type here" value={item.lead} onChange={(v) => changeAgendaItem(item.id, 'lead', v)} />
+              <TextBox lines="one" ariaLabel={`Lead for agenda item ${index + 1}`} placeholder="Type here" value={item.lead} onChange={(v) => changeAgendaItem(item.id, 'lead', v)} />
             </div>
             <div className="plan-ag-field">
               <label>Length in minutes</label>

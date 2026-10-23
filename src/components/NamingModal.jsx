@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { TextField } from './design';
 
 export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, defaultName = '' }) {
   const [name, setName] = useState(defaultName);
@@ -35,7 +36,6 @@ export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, def
           justify-content: center;
           z-index: 1000;
         }
-        .ui-root.naming-modal-overlay input::placeholder { color: var(--label); }
       `}</style>
       <div
         style={{
@@ -50,29 +50,16 @@ export default function NamingModal({ isOpen, itemType, onConfirm, onCancel, def
         <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '24px' }}>
           Give your {itemType} a name
         </h2>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type here"
-          autoFocus
-          style={{
-            width: '100%',
-            padding: '12px 16px',
-            border: '2px solid var(--field-line)',
-            borderRadius: '8px',
-            backgroundColor: 'var(--card)',
-            color: 'var(--text)',
-            fontSize: '14px',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            boxSizing: 'border-box',
-            marginBottom: '32px',
-            outline: 'none',
-          }}
-          onFocus={(e) => (e.target.style.borderColor = 'var(--coral-text)')}
-          onBlur={(e) => (e.target.style.borderColor = 'var(--field-line)')}
-        />
+        <div style={{ marginBottom: '32px' }}>
+          <TextField
+            aria-label={`Name for your ${itemType}`}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type here"
+            autoFocus
+          />
+        </div>
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
           <button
             onClick={onCancel}

@@ -1,25 +1,19 @@
-import { useContext, useCallback, useEffect, useRef } from 'react';
+import { useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, TextBox } from '../components/design';
 
 export default function GrowStep2Reality() {
   const navigate = useNavigate();
   const location = useLocation();
   const { updateFormData, getFieldValue } = useContext(FormContext);
-  const refConstraints = useRef(null);
-  const refOpportunities = useRef(null);
 
   // Load decision data for edit mode; returns values from FormContext
   const { isLoading, isEditMode, error, onRetry, markDirty, constraints, opportunities } = useLoadDecisionStep(['constraints', 'opportunities']);
-
-  useAutoExpandTextarea(refConstraints, constraints);
-  useAutoExpandTextarea(refOpportunities, opportunities);
 
   // Only clear on mount if starting fresh (no decisionId)
   useEffect(() => {
@@ -101,59 +95,22 @@ export default function GrowStep2Reality() {
         </div>
 
         <div style={{ marginBottom: '32px' }}>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '12px' }}>
-            What are your constraints?
-          </label>
-          <textarea
-            ref={refConstraints}
+          <TextBox
+            label="What are your constraints?"
+            lines="many"
+            focusMode
             value={constraints}
-            onChange={handleConstraintsChange}
+            onChange={(text) => handleConstraintsChange({ target: { value: text } })}
             placeholder="Type here"
-            style={{
-              backgroundColor: 'var(--card)',
-              color: 'var(--text)',
-              width: '100%',
-              minHeight: '150px',
-              padding: '16px',
-              border: '2px solid var(--field-line)',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              boxSizing: 'border-box',
-              outline: 'none',
-              resize: 'none',
-              overflow: 'hidden',
-              marginBottom: '24px',
-            }}
-            onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-            onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
           />
-
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '12px' }}>
-            What opportunities do you have?
-          </label>
-          <textarea
-            ref={refOpportunities}
+          <div style={{ height: '24px' }} />
+          <TextBox
+            label="What opportunities do you have?"
+            lines="many"
+            focusMode
             value={opportunities}
-            onChange={handleOpportunitiesChange}
+            onChange={(text) => handleOpportunitiesChange({ target: { value: text } })}
             placeholder="Type here"
-            style={{
-              backgroundColor: 'var(--card)',
-              color: 'var(--text)',
-              width: '100%',
-              minHeight: '150px',
-              padding: '16px',
-              border: '2px solid var(--field-line)',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              boxSizing: 'border-box',
-              outline: 'none',
-              resize: 'none',
-              overflow: 'hidden',
-            }}
-            onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-            onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
           />
         </div>
 

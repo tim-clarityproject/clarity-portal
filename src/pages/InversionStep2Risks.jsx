@@ -6,14 +6,13 @@ import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Crosshair, PageHeader } from '../components/design';
+import { Crosshair, PageHeader, TextBox } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -177,11 +176,10 @@ export default function InversionStep2Risks() {
         {risks.map((risk, index) => (
           <div className="plan-obj-row" key={index}>
             <span className="plan-obj-num">{index + 1}.</span>
-            <AutoGrowTextarea
-              singleLine
-              className="plan-input"
+            <TextBox
+              lines="one"
               placeholder="Type here"
-              aria-label={`Risk ${index + 1}`}
+              ariaLabel={`Risk ${index + 1}`}
               value={risk}
               onChange={(v) => changeRisk(index, v)}
             />

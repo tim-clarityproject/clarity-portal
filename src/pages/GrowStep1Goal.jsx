@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useCallback, useRef } from 'react';
+import { useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
 import { AuthContext } from '../context/AuthContext';
@@ -6,8 +6,7 @@ import { supabase } from '../lib/supabase';
 import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
-import { useAutoExpandTextarea } from '../hooks/useAutoExpandTextarea';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, TextBox } from '../components/design';
 
 export default function GrowStep1Goal() {
   const navigate = useNavigate();
@@ -16,8 +15,6 @@ export default function GrowStep1Goal() {
   const { user } = useContext(AuthContext);
   const [goal, setGoal] = useState(location.state?.goal || '');
   const [isLoading, setIsLoading] = useState(false);
-  const refGoal = useRef(null);
-  useAutoExpandTextarea(refGoal, goal);
 
   // Reset FormContext when creating fresh decision (no decisionId)
   // This prevents data leaks from previous decisions across browser refreshes
@@ -170,28 +167,12 @@ export default function GrowStep1Goal() {
 
           {isLoading && <Loading label="Loading your decision" />}
 
-          <textarea
-            ref={refGoal}
+          <TextBox
+            ariaLabel="Define your goal clearly"
+            lines="many"
             value={goal}
-            onChange={handleChange}
+            onChange={(text) => handleChange({ target: { value: text } })}
             placeholder="Type here"
-            style={{
-              backgroundColor: 'var(--card)',
-              color: 'var(--text)',
-              width: '100%',
-              minHeight: '300px',
-              padding: '16px',
-              border: '2px solid var(--field-line)',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              boxSizing: 'border-box',
-              outline: 'none',
-              resize: 'none',
-              overflow: 'hidden',
-            }}
-            onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-            onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
           />
         </div>
 

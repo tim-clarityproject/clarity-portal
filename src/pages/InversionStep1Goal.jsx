@@ -6,14 +6,13 @@ import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, TextBox } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -190,10 +189,10 @@ export default function InversionStep1Goal() {
           <Loading label="Loading your pre-mortem" />
         ) : (
           <div className="plan-field">
-            <AutoGrowTextarea
-              className="plan-dq-textarea"
+            <TextBox
+              lines="many"
               placeholder="Type here"
-              aria-label="What are you trying to achieve?"
+              ariaLabel="What are you trying to achieve?"
               value={goal}
               onChange={setGoal}
             />

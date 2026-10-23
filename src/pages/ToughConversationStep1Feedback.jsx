@@ -6,13 +6,12 @@ import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { PageHeader } from '../components/design';
+import { PageHeader, TextBox } from '../components/design';
 import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
@@ -162,7 +161,7 @@ export default function ToughConversationStep1Feedback() {
           <div>
             <label className="plan-dq-label" htmlFor="tc-observation">I've noticed...</label>
             <p className="plan-dq-help">Name the thing you've observed. This can either be one big thing, or a pattern of 3+ smaller things.</p>
-            <AutoGrowTextarea id="tc-observation" className="plan-dq-textarea" placeholder="Type here" value={observation} onChange={setObservation} />
+            <TextBox id="tc-observation" lines="many" focusMode ariaLabel="I've noticed..." placeholder="Type here" value={observation} onChange={setObservation} />
           </div>
         </div>
 
@@ -174,7 +173,7 @@ export default function ToughConversationStep1Feedback() {
           <div>
             <label className="plan-dq-label" htmlFor="tc-impact">The impact of that is...</label>
             <p className="plan-dq-help">Describe in a non-emotional manner the tangible impact of their actions.</p>
-            <AutoGrowTextarea id="tc-impact" className="plan-dq-textarea" placeholder="Type here" value={impact} onChange={setImpact} />
+            <TextBox id="tc-impact" lines="many" focusMode ariaLabel="The impact of that is..." placeholder="Type here" value={impact} onChange={setImpact} />
           </div>
         </div>
 
@@ -186,7 +185,7 @@ export default function ToughConversationStep1Feedback() {
           <div>
             <label className="plan-dq-label" htmlFor="tc-need">So, what I need from you is...</label>
             <p className="plan-dq-help">Name the change or outcome that is required.</p>
-            <AutoGrowTextarea id="tc-need" className="plan-dq-textarea" placeholder="Type here" value={need} onChange={setNeed} />
+            <TextBox id="tc-need" lines="many" focusMode ariaLabel="So, what I need from you is..." placeholder="Type here" value={need} onChange={setNeed} />
           </div>
         </div>
 

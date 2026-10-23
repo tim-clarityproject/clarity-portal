@@ -12,7 +12,7 @@ import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, TextBox } from '../components/design';
 
 export default function GrowStep4WillDo() {
   const navigate = useNavigate();
@@ -370,30 +370,16 @@ export default function GrowStep4WillDo() {
             <p style={{ fontSize: '13px', color: 'var(--text-2)', marginBottom: '16px', lineHeight: '1.5' }}>
               Be specific about how and when you will take action.
             </p>
-            <textarea
+            <TextBox
+              ariaLabel="What will you do?"
+              lines="many"
+              focusMode
               value={willDoValue}
-              onChange={(e) => {
-                updateFormData('will_do', e.target.value);
+              onChange={(text) => {
+                updateFormData('will_do', text);
                 markDirty('will_do');
               }}
               placeholder="Type here"
-              style={{
-                backgroundColor: 'var(--card)',
-                color: 'var(--text)',
-                width: '100%',
-                height: '100%',
-                minHeight: '400px',
-                padding: '16px',
-                border: '2px solid var(--field-line)',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                boxSizing: 'border-box',
-                outline: 'none',
-                resize: 'none',
-              }}
-              onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-              onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
             />
           </div>
         </div>

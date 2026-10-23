@@ -7,7 +7,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, PageHeader } from '../components/design';
+import { Crosshair, PageHeader, TextField } from '../components/design';
 
 export default function RisksAssessment() {
   const navigate = useNavigate();
@@ -92,7 +92,7 @@ export default function RisksAssessment() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', flex: 1, maxWidth: '512px', margin: '0 auto 24px', width: '100%' }}>
             {risks.map((risk, index) => (
-              <div key={index} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px', height: '48px' }}>
+              <div key={index} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px', minHeight: '58px' }}>
                 <span
                   style={{
                     color: 'var(--coral-text)',
@@ -102,26 +102,14 @@ export default function RisksAssessment() {
                 >
                   {index + 1}.
                 </span>
-                <input
-                  type="text"
-                  value={risk}
-                  onChange={(e) => handleRiskChange(index, e.target.value)}
-                  placeholder="Type here"
-                  style={{
-                    backgroundColor: 'var(--card)',
-                    color: 'var(--text)',
-                    flex: 1,
-                    padding: '12px 16px',
-                    border: '2px solid var(--field-line)',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    outline: 'none',
-                    fontFamily: 'inherit',
-                    transition: 'border-color 0.2s',
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-                  onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
-                />
+                <div style={{ flexGrow: 1, flexBasis: 0, minWidth: 0 }}>
+                  <TextField
+                    aria-label={`Way to fail ${index + 1}`}
+                    value={risk}
+                    onChange={(e) => handleRiskChange(index, e.target.value)}
+                    placeholder="Type here"
+                  />
+                </div>
                 {index >= 0 && (
                   <button
                     type="button"

@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import SavedConfirmation from '../components/SavedConfirmation';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
-import { Loading, PageHeader } from '../components/design';
+import { Loading, PageHeader, TextField } from '../components/design';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
 
@@ -250,11 +250,9 @@ export default function EditPersonalDetails() {
           ) : (
             <>
               <div className="edit-profile-field" style={{ marginTop: '32px' }}>
-                <label className="edit-profile-label" htmlFor="edit-first-name">First name</label>
-                <input
+                <TextField
                   id="edit-first-name"
-                  type="text"
-                  className="edit-profile-input"
+                  label="First name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Type here"
@@ -262,11 +260,9 @@ export default function EditPersonalDetails() {
               </div>
 
               <div className="edit-profile-field">
-                <label className="edit-profile-label" htmlFor="edit-last-name">Last name</label>
-                <input
+                <TextField
                   id="edit-last-name"
-                  type="text"
-                  className="edit-profile-input"
+                  label="Last name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Type here"
@@ -286,11 +282,9 @@ export default function EditPersonalDetails() {
               </div>
 
               <div className="edit-profile-field">
-                <label className="edit-profile-label" htmlFor="edit-role">Role, optional</label>
-                <input
+                <TextField
                   id="edit-role"
-                  type="text"
-                  className="edit-profile-input"
+                  label="Role, optional"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   placeholder="Type here"
@@ -298,11 +292,9 @@ export default function EditPersonalDetails() {
               </div>
 
               <div className="edit-profile-field">
-                <label className="edit-profile-label" htmlFor="edit-organisation">Organisation, optional</label>
-                <input
+                <TextField
                   id="edit-organisation"
-                  type="text"
-                  className="edit-profile-input"
+                  label="Organisation, optional"
                   value={organisation}
                   onChange={(e) => setOrganisation(e.target.value)}
                   placeholder="Type here"

@@ -479,52 +479,11 @@
   margin-top: 28px;
 }
 
-.ui-root .wol-addw label {
-  display: block;
-  margin-bottom: 10px;
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--text-2);
-  transition: color var(--dur) var(--ease);
-}
-
-.ui-root .wol-addw:focus-within label {
-  color: var(--coral);
-}
-
 .ui-root .wol-addr {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: end;
   gap: 10px;
-}
-
-.ui-root .wol-add-input {
-  min-height: 48px;
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-input);
-  outline: none;
-  font-family: var(--font-body);
-  font-size: var(--fs-input);
-  line-height: 22px;
-  color: var(--text);
-  transition: border-color var(--dur) var(--ease), height var(--dur) var(--ease);
-}
-
-.ui-root .wol-add-input::placeholder {
-  color: var(--placeholder);
-}
-
-.ui-root .wol-add-input:hover {
-  border-color: var(--btn-line);
-}
-
-.ui-root .wol-add-input:focus {
-  border-color: var(--coral);
 }
 
 .ui-root .wol-add-btn {
@@ -670,53 +629,12 @@
   margin-top: 28px;
 }
 
-.ui-root .wol-note label {
+/* "Optional" under a note box (TextBox's label row holds only the question) */
+.ui-root .wol-opt {
   display: block;
-  margin-bottom: 10px;
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--text-2);
-  transition: color var(--dur) var(--ease);
-}
-
-.ui-root .wol-note:focus-within label {
-  color: var(--coral);
-}
-
-.ui-root .wol-note label em {
-  margin-left: var(--space-2);
-  font-style: normal;
-  letter-spacing: 0.12em;
-  color: var(--placeholder);
-}
-
-.ui-root .wol-note-input {
-  min-height: 46px;
-  padding: var(--space-2) 0 12px;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  outline: none;
-  font-family: var(--font-body);
-  font-size: var(--fs-input);
-  line-height: 1.55;
-  color: var(--text);
-  transition: border-color var(--dur) var(--ease), height var(--dur) var(--ease);
-}
-
-.ui-root .wol-note-input::placeholder {
-  color: var(--placeholder);
-}
-
-.ui-root .wol-note-input:hover {
-  border-bottom-color: var(--btn-line);
-}
-
-.ui-root .wol-note-input:focus {
-  border-bottom-color: var(--coral);
+  margin-top: var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--label);
 }
 
 /* the small live wheel beside the rating screens (desktop only) */
@@ -1923,16 +1841,12 @@
 
   .ui-root .wol-steps i,
   .ui-root .wol-scale button,
-  .ui-root .wol-note label,
-  .ui-root .wol-note-input,
   .ui-root .wol-chips button,
   .ui-root .wol-stp button,
   .ui-root .wol-clr,
   .ui-root .wol-qlink,
   .ui-root .wol-ib,
-  .ui-root .wol-rest,
-  .ui-root .wol-addw label,
-  .ui-root .wol-add-input {
+  .ui-root .wol-rest {
     transition: none !important;
   }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import AutoGrowTextarea from './AutoGrowTextarea';
+import { TextBox } from '../design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -242,27 +242,22 @@ export default function NameDialog({
         <p className="name-dialog-message">{message}</p>
 
         <form onSubmit={handleConfirm} noValidate>
-          <AutoGrowTextarea
+          <TextBox
             ref={inputRef}
-            singleLine
-            className={`name-dialog-input${error ? ' error' : ''}`}
+            lines="one"
+            ariaLabel="Name"
             value={name}
             maxLength={MAX_NAME_LENGTH}
-            aria-label="Name"
             aria-invalid={error ? 'true' : undefined}
             onChange={(next) => {
               setName(next);
               if (error) setError('');
             }}
             onKeyDown={(e) => {
-              // A single-line <input> inside a <form> submits on Enter
-              // natively; AutoGrowTextarea's singleLine mode blocks the
-              // newline a <textarea> would otherwise insert, so this
-              // keeps that same Enter-to-save behaviour explicitly.
+              // Enter saves, as a one-line field in a form does.
               if (e.key === 'Enter') handleConfirm(e);
             }}
           />
-          <p className="name-dialog-counter">{name.length}/{MAX_NAME_LENGTH}</p>
           {error && <p className="name-dialog-hint" role="status">{error}</p>}
 
           <div className="name-dialog-actions">

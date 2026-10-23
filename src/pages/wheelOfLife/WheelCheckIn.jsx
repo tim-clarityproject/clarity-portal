@@ -2,9 +2,8 @@ import { useContext, useLayoutEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
-import { PageHeader } from '../../components/design';
+import { PageHeader, TextBox } from '../../components/design';
 import pageText from '../../content/pageText';
-import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import DiscardDialog from '../../components/ui/DiscardDialog';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
 import WheelRadar from '../../components/wheelOfLife/WheelRadar';
@@ -177,15 +176,18 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
             </div>
           ) : null}
           <div className="wol-note wol-rv" style={{ '--i': 3 }}>
-            <label htmlFor={`wol-note-${area.key}`}>A note to yourself<em>Optional</em></label>
-            <AutoGrowTextarea
+            <TextBox
               id={`wol-note-${area.key}`}
-              className="wol-note-input"
+              label="A note to yourself"
+              lines="many"
+              focusMode
+              who="me"
               maxLength={NOTE_MAX}
               placeholder="What’s behind this score?"
               value={st.notes[area.key] || ''}
               onChange={setNote}
             />
+            <small className="wol-opt">Optional</small>
           </div>
         </div>
         <aside className="wol-mini">
@@ -218,15 +220,18 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
           ))}
         </div>
         <div className="wol-note wol-rv" style={{ '--i': 3 }}>
-          <label htmlFor="wol-focus-note">What is one small thing you could do about it?<em>Optional</em></label>
-          <AutoGrowTextarea
+          <TextBox
             id="wol-focus-note"
-            className="wol-note-input"
+            label="What is one small thing you could do about it?"
+            lines="many"
+            focusMode
+            who="me"
             maxLength={FOCUS_NOTE_MAX}
             placeholder="One small, specific step"
             value={st.focusNote}
             onChange={(v) => update({ focusNote: v })}
           />
+          <small className="wol-opt">Optional</small>
         </div>
       </>
     );

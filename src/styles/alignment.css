@@ -2,7 +2,7 @@
    lazy-loaded page, so none of this is in the portal's main bundle. Every rule
    lives inside .ui-root and uses tokens only (tokens.css). The portal's shared
    parts are reused (AuthShell, BigLogo, AuthTextField, AuthPrimaryButton,
-   AutoGrowTextarea, Crosshair, .ui-saved, .auth-field-error); the classes
+   TextBox, Crosshair, .ui-saved, .auth-field-error); the classes
    below are only what the mock-up needs that they do not already give.
 
    src/styles/mobile.css puts padding / font-size / min-height with !important
@@ -239,36 +239,6 @@
   cursor: text;
 }
 
-/* ---- objective: borderless, large type, coral cursor ---------------------- */
-.ui-root .al-objective {
-  display: block;
-  width: 100%;
-  background: transparent;
-  border: 0;
-  outline: 0;
-  resize: none;
-  overflow: hidden;
-  padding: 0;
-  margin: 0;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: var(--fs-title-phone);
-  line-height: 1.45;
-  letter-spacing: -0.005em;
-  caret-color: var(--coral-text);
-  min-height: var(--space-5);
-}
-
-@media (min-width: 769px) {
-  .ui-root .al-objective {
-    font-size: var(--fs-title-desktop);
-  }
-}
-
-.ui-root .al-objective::placeholder {
-  color: var(--label);
-}
-
 /* Long unbroken words in a project name wrap instead of running off. */
 .ui-root .al-col .auth-headline-word {
   white-space: normal;
@@ -299,38 +269,6 @@
 
 .ui-root .al-row.al-row--done > b {
   color: var(--mint-text);
-}
-
-/* The text box: the portal's input skin, as a growing textarea. */
-.ui-root .al-box {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 52px;
-  padding: 14px 16px;
-  background: var(--card);
-  border: 1px solid var(--field-line);
-  border-radius: var(--radius-input);
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: var(--fs-input);
-  line-height: 1.4;
-  resize: none;
-  overflow: hidden;
-  outline: none;
-  transition: border-color var(--dur-fast) var(--ease);
-}
-
-.ui-root .al-box::placeholder {
-  color: var(--label);
-}
-
-.ui-root .al-box:hover {
-  border-color: var(--label);
-}
-
-.ui-root .al-box:focus {
-  border-color: var(--coral-text);
 }
 
 .ui-root .al-icon {

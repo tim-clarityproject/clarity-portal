@@ -7,12 +7,11 @@ import { LIMITS, loadLatestVersion, loadDraftReview, loadReview, saveReview, del
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { BackLink, DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { DisclosureArrow, Loading, PageHeader } from '../components/design';
+import { DisclosureArrow, Loading, PageHeader, TextBox } from '../components/design';
 
 function NoteIcon() {
   return (
@@ -330,13 +329,15 @@ export default function PersonalOperatingPlanReview() {
 
                   {tactic.type === 'measurable' && (
                     <div className="plan-field" style={{ marginTop: 'var(--space-2)' }}>
-                      <label>Current value ({tactic.unit}) · target {tactic.target_value} {tactic.unit}</label>
+                      <label>Current value · target {tactic.target_value} {tactic.unit}</label>
                       <input type="number" className="plan-input" value={reviewData[tactic.id]?.value ?? ''} onChange={(e) => updateReview(tactic.id, 'value', e.target.value ? parseFloat(e.target.value) : '')} />
                     </div>
                   )}
 
                   {noteIsOpen && (
-                    <AutoGrowTextarea className="plan-input" style={{ marginTop: 'var(--space-2)' }} placeholder="Add a reflection or comment..." value={reviewData[tactic.id]?.note || ''} onChange={(v) => updateReview(tactic.id, 'note', v)} maxLength={LIMITS.reviewNote} />
+                    <div style={{ marginTop: 'var(--space-2)' }}>
+                      <TextBox ariaLabel={`Reflection or comment on ${tactic.action}`} who="me" lines="many" focusMode placeholder="Add a reflection or comment..." value={reviewData[tactic.id]?.note || ''} onChange={(v) => updateReview(tactic.id, 'note', v)} maxLength={LIMITS.reviewNote} />
+                    </div>
                   )}
                 </div>
               );

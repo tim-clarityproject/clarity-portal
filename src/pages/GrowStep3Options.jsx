@@ -5,7 +5,7 @@ import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import OptionsTimer from '../components/OptionsTimer';
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, Loading, PageHeader } from '../components/design';
+import { Crosshair, Loading, PageHeader, TextField } from '../components/design';
 
 export default function GrowStep3Options() {
   const navigate = useNavigate();
@@ -116,27 +116,15 @@ export default function GrowStep3Options() {
 
         <div style={{ marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {optionsValue.map((option, index) => (
-            <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-              <input
-                type="text"
-                value={option}
-                onChange={(e) => handleOptionChange(index, e.target.value)}
-                placeholder="Type here"
-                style={{
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--text)',
-                  flex: 1,
-                  padding: '12px 16px',
-                  border: '2px solid var(--field-line)',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
-              />
+            <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ flexGrow: 1, flexBasis: 0, minWidth: 0 }}>
+                <TextField
+                  aria-label={`Option ${index + 1}`}
+                  value={option}
+                  onChange={(e) => handleOptionChange(index, e.target.value)}
+                  placeholder="Type here"
+                />
+              </div>
               <button
                 onClick={() => handleRemoveOption(index)}
                 title="Remove option"

@@ -6,13 +6,12 @@ import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
-import AutoGrowTextarea from '../components/ui/AutoGrowTextarea';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import Toast from '../components/ui/Toast';
 import useToast from '../hooks/useToast';
-import { PageHeader } from '../components/design';
+import { PageHeader, TextBox } from '../components/design';
 import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
@@ -203,10 +202,11 @@ export default function InversionStep3Plan() {
                   <p>{risk}</p>
                   <span className="inv-card-check" aria-hidden="true"><CheckIcon /></span>
                 </div>
-                <AutoGrowTextarea
-                  className="inv-card-textarea"
+                <TextBox
+                  lines="many"
+                  focusMode
                   placeholder="Type here"
-                  aria-label={`What will you do about risk ${index + 1}?`}
+                  ariaLabel={`What will you do about risk ${index + 1}?`}
                   value={answer}
                   onChange={(v) => changeAnswer(index, v)}
                   onFocus={() => setFocusedIndex(index)}

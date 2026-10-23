@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import PopupShell from './PopupShell';
-import AutoTextarea from './AutoTextarea';
+import { TextBox } from './design';
 
 export const MAX_GOAL_LENGTH = 70;
 
@@ -44,7 +44,9 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
         This will be displayed at the top of your screen to keep you focused and inspired.
       </p>
 
-      <AutoTextarea
+      <TextBox
+        ariaLabel="Your mission"
+        who="me"
         value={goal}
         onChange={(v) => setGoal(v.slice(0, MAX_GOAL_LENGTH))}
         placeholder="Type here"

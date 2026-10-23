@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
 import pageText from '../../content/pageText';
-import AutoGrowTextarea from '../../components/ui/AutoGrowTextarea';
 import Toast from '../../components/ui/Toast';
 import useToast from '../../hooks/useToast';
-import { Crosshair, PageHeader } from '../../components/design';
+import { Crosshair, PageHeader, TextBox } from '../../components/design';
 import {
   OWN_NAME_MAX, areaName, differsFromStandard, isDuplicateName, questionFor, sortAreas,
 } from '../../lib/wheelOfLife';
@@ -138,12 +137,11 @@ export default function WheelAreas() {
         {error ? <p className="plan-save-error" role="alert">{error}</p> : null}
 
         <div className="wol-addw">
-          <label htmlFor="wol-add">Add your own area</label>
           <div className="wol-addr">
-            <AutoGrowTextarea
+            <TextBox
               id="wol-add"
-              className="wol-add-input"
-              singleLine
+              label="Add your own area"
+              lines="one"
               maxLength={OWN_NAME_MAX}
               autoComplete="off"
               placeholder="e.g. Travel"

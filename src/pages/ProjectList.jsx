@@ -9,7 +9,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, PageHeader } from '../components/design';
+import { Crosshair, PageHeader, TextBox } from '../components/design';
 
 export default function ProjectList() {
   const navigate = useNavigate();
@@ -183,7 +183,7 @@ export default function ProjectList() {
             </h2>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
               {projects.map((project, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '80px' }}>
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '80px' }}>
                   <span
                     style={{
                       color: 'var(--coral-text)',
@@ -196,26 +196,15 @@ export default function ProjectList() {
                   >
                     {String.fromCharCode(65 + index)}
                   </span>
-                  <textarea
-                    value={project}
-                    onChange={(e) => handleProjectChange(index, e.target.value)}
-                    placeholder="Type here"
-                    style={{
-                      backgroundColor: 'var(--card)',
-                      color: 'var(--text)',
-                      flex: 1,
-                      padding: '12px 16px',
-                      border: '2px solid var(--field-line)',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      resize: 'none',
-                      outline: 'none',
-                      minHeight: '80px',
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-                    onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
-                  />
+                  <div style={{ flexGrow: 1, flexBasis: 0, minWidth: 0 }}>
+                    <TextBox
+                      ariaLabel={`Project ${String.fromCharCode(65 + index)}`}
+                      lines="one"
+                      value={project}
+                      onChange={(text) => handleProjectChange(index, text)}
+                      placeholder="Type here"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleRemoveProject(index)}

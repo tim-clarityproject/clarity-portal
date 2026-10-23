@@ -5,7 +5,7 @@ import BackArrow from '../components/BackArrow';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader } from '../components/design';
+import { PageHeader, TextBox } from '../components/design';
 
 export default function Strategies() {
   const navigate = useNavigate();
@@ -80,7 +80,7 @@ export default function Strategies() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
-                    height: '80px',
+                    minHeight: '88px',
                   }}
                 >
                   <span
@@ -124,7 +124,7 @@ export default function Strategies() {
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
               {risks.map((risk, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '80px' }}>
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '88px' }}>
                   <span
                     style={{
                       color: 'var(--coral-text)',
@@ -137,26 +137,15 @@ export default function Strategies() {
                   >
                     {String.fromCharCode(65 + index)}
                   </span>
-                  <textarea
-                    value={strategies[index] || ''}
-                    onChange={(e) => handleStrategyChange(index, e.target.value)}
-                    placeholder="Type here"
-                    style={{
-                      backgroundColor: 'var(--card)',
-                      color: 'var(--text)',
-                      flex: 1,
-                      padding: '12px 16px',
-                      border: '2px solid var(--field-line)',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      resize: 'none',
-                      outline: 'none',
-                      minHeight: '80px',
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
-                    onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
-                  />
+                  <div style={{ flexGrow: 1, flexBasis: 0, minWidth: 0 }}>
+                    <TextBox
+                      ariaLabel={`Strategy ${String.fromCharCode(65 + index)}`}
+                      lines="many"
+                      value={strategies[index] || ''}
+                      onChange={(text) => handleStrategyChange(index, text)}
+                      placeholder="Type here"
+                    />
+                  </div>
                 </div>
               ))}
             </form>
