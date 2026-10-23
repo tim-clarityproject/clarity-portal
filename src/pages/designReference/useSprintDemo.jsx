@@ -101,6 +101,7 @@ function sprintSteps(a, set, role, openCalendar) {
           <div>
             <TextBox
               label="What would you like to call it?"
+              who="me"
               lines="one"
               value={a.label}
               onChange={(label) => set({ label })}

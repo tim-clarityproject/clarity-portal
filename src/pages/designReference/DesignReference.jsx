@@ -17,7 +17,6 @@ import {
   Dropdown,
   EmptyState,
   ErrorMessage,
-  FieldLabel,
   FilterButton,
   FloatingOrb,
   GoogleButton,
@@ -313,7 +312,7 @@ function ControlsDemo() {
           <Chip key={value} pressed={week === value} onClick={() => setWeek(value)}>{label}</Chip>
         ))}
       </ChipRow>
-      <TextBox label="What needs doing?" value={todo} onChange={setTodo} placeholder="e.g. Book a physio assessment" lines="one" />
+      <TextBox label="What needs doing?" who="me" value={todo} onChange={setTodo} placeholder="e.g. Book a physio assessment" lines="one" />
       <Checkbox checked={done} onChange={setDone} after={<ImpactTag editing>High impact</ImpactTag>}>Draft the case study</Checkbox>
     </div>
   );
@@ -376,12 +375,13 @@ function WhoSeesDemo() {
   const [shared, setShared] = useState(true);
   const [mission, setMission] = useState('Lead with clarity so the business grows and the best people want to stay.');
   const [well, setWell] = useState('');
+  const [team, setTeam] = useState('Win back the two key accounts');
   return (
     <div className="dr-stack dr-stack--fill">
       <TextBox label="What’s your mission?" who={shared ? 'coach' : 'me'} value={mission} onChange={setMission} maxLength={120} />
       <Checkbox checked={shared} onChange={setShared}>My coach sees my mission</Checkbox>
       <TextBox label="What went well today?" who="me" value={well} onChange={setWell} placeholder="e.g. I held the line in the board meeting" />
-      <FieldLabel label="Team strategy" who="team" />
+      <TextBox label="What’s the team’s one priority this quarter?" who="team" value={team} onChange={setTeam} lines="one" />
     </div>
   );
 }

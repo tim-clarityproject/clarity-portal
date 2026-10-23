@@ -1212,9 +1212,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.ui-root .ds-answer:hover {
-  color: var(--text);
-  border-color: var(--quiet-line);
+@media (hover: hover) {
+  .ui-root .ds-answer:hover {
+    color: var(--text);
+    border-color: var(--quiet-line);
+  }
 }
 
 .ui-root .ds-answer[aria-checked='true'],
@@ -1241,6 +1243,12 @@
 
 .ui-root .ds-seg-btn .ds-answer-note {
   margin-left: var(--space-px6);
+}
+
+/* On a chosen (filled) pill the note takes the pill's own text colour. */
+.ui-root .ds-seg-btn[aria-checked='true'] .ds-answer-note,
+.ui-root .ds-seg-btn[aria-pressed='true'] .ds-answer-note {
+  color: var(--on-text);
 }
 
 /* Checkbox: 22px square in a 44px target. */

@@ -139,10 +139,7 @@ export function ToastProvider({ children }) {
                 }}
               >
                 {toast.kind !== 'error' && <Tick />}
-                <span className="ds-toast-text">
-                  {toast.message}
-                  {hasUndo && <span aria-hidden="true"> ·</span>}
-                </span>
+                <span className="ds-toast-text">{toast.message}</span>
                 {hasUndo && (
                   <button type="button" className="ds-toast-undo" onClick={undo}>Undo</button>
                 )}
