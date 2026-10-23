@@ -294,6 +294,7 @@
   --to-come: #262626;        /* weeks to come on the dial */
   --dial-done: #7F7F7C;
   --day-off: #3A3A39;        /* past days in the calendar */
+  --coral-text-raised: #FF6F5C; /* coral words on the raised surface */
   --coral-hover: #FF8A7A;    /* the coral button on hover: a slightly brighter coral, never like disabled */
   --tick-edge: #FF6F5C;      /* the edge of a ticked tick box */
   --disabled-opacity: 0.35;  /* a disabled coral button */
@@ -345,6 +346,7 @@
      same in both modes. Coral and mint are too pale to read as text on
      off-white, so text, lines and numbers use deeper versions. */
   --coral-text: #C2412E;
+  --coral-text-raised: #B93D2B; /* deeper on the raised surface in light, 4.8 to 1 */
   --coral-hover: #E0533F;    /* a slightly deeper coral on hover in light, black text */
   --tick-edge: #C2412E;      /* a ticked box's 1px deep coral edge: 3 to 1 on the page */
   --coral-soft-text: #A84E28;

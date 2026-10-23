@@ -345,7 +345,7 @@ function ControlsDemo() {
           <Chip key={value} pressed={week === value} onClick={() => setWeek(value)}>{label}</Chip>
         ))}
       </ChipRow>
-      <TextBox label="What needs doing?" who="me" value={todo} onChange={setTodo} placeholder="e.g. Book a physio assessment" lines="one" />
+      <TextBox label="What needs doing?" who="me" value={todo} onChange={setTodo} placeholder="e.g. Prepare the board pack for Thursday" lines="one" />
       <ul className="dr-ticks" aria-label="To-dos this week">
         <li><Checkbox checked={ticked.includes('case')} onChange={tick('case')} after={<ImpactTag editing>High impact</ImpactTag>}>Draft the case study</Checkbox></li>
         <li><Checkbox checked={ticked.includes('board')} onChange={tick('board')}>Send the board pack</Checkbox></li>
@@ -737,7 +737,8 @@ function SignInDemo() {
       </div>
       <Button variant="primary" className="dr-signin-btn" onClick={() => toast.show('Signing in happens here.')}>Sign in</Button>
       <Button variant="text" onClick={() => toast.show('The password reset opens here.')}>Forgotten your password?</Button>
-      <span className="dr-signin-alt">New here? <Button variant="text" onClick={() => toast.show('Create my account opens here.')}>Create my account</Button></span>
+      <span className="dr-signin-alt">New here?</span>
+      <Button variant="text" onClick={() => toast.show('Create my account opens here.')}>Create my account</Button>
     </div>
   );
 }

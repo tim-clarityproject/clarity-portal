@@ -3056,14 +3056,14 @@
   position: absolute;
   left: calc(-1 * var(--space-2));
   right: calc(-1 * var(--space-2));
-  top: 50%;
+  /* Reaches down, not up, so it never covers the status line above. */
+  top: 0;
   height: var(--tap-min);
-  transform: translateY(-50%);
 }
 
 @media (hover: hover) {
   .ui-root .ds-status-action-link:hover {
-    color: var(--coral-text);
+    color: var(--coral-text-raised);
   }
 }
 
