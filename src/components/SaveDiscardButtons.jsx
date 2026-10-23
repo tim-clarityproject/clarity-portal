@@ -182,7 +182,14 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
   };
 
   return (
-    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginTop: '24px' }}>
+    <div className="g1-save-row" style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', marginTop: '24px' }}>
+      <style>{`
+        .ui-root .g1-save-row { flex-wrap: wrap; }
+        .ui-root .g1-save-row .ds-btn { white-space: nowrap; }
+        @media (max-width: 768px) {
+          .ui-root .g1-save-row .ds-btn--primary { flex: 1 1 100%; order: 10; }
+        }
+      `}</style>
       {onBack && (
         <Button variant="outline" type="button" onClick={onBack}>Back</Button>
       )}

@@ -56,7 +56,7 @@ export default function GoalSetting() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
-        <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+        <div style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ flex: 1 }}>
             <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
             <h2 className="ds-question">{path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}</h2>

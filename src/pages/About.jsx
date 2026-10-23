@@ -31,6 +31,10 @@ export default function About() {
           text-align: center;
         }
 
+        .ui-root .about-page .ds-page-header {
+          text-align: left;
+        }
+
         @media (min-width: 769px) {
           .about-page {
             padding: var(--space-6) var(--page-x-desktop) var(--space-6);
@@ -84,12 +88,11 @@ export default function About() {
 
         .about-by-label {
           display: block;
-          font-family: var(--font-display);
+          font-family: var(--font-body);
           font-weight: 400;
-          text-transform: uppercase;
-          letter-spacing: 0.22em;
-          font-size: var(--fs-overline);
-          color: var(--coral-text);
+          letter-spacing: normal;
+          font-size: var(--fs-meta);
+          color: var(--label);
           margin-bottom: var(--space-3);
         }
 

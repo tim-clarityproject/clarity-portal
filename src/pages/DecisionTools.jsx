@@ -44,6 +44,7 @@ export default function DecisionTools() {
 
   return (
     <div className="ui-root">
+      <style>{`.ui-root .dtl-soon-quiet { font-family: var(--font-body); text-transform: none; letter-spacing: normal; font-size: var(--fs-small); font-weight: 400; color: var(--label); }`}</style>
       <DesignHeader />
 
       <div className="plan-page">
@@ -71,7 +72,7 @@ export default function DecisionTools() {
         </div>
 
         <div className="dt-soon">
-          <p className="dt-soon-label">Coming soon</p>
+          <p className="dt-soon-label dtl-soon-quiet">Coming soon</p>
           <div className="dt-soon-list">
             {COMING_SOON.map((item) => (
               <div className="dt-soon-item" key={item.title}>

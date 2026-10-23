@@ -156,21 +156,19 @@ export default function InversionStep3Plan() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        <div className="inv-stepper">
-          <div className="inv-stepper-lines" aria-hidden="true">
-            <i className="on" />
-            <i className="on" />
-            <i className="on" />
-          </div>
-          <span className="inv-stepper-label">Step 3 of 3</span>
-        </div>
-
         <div className="plan-back-row">
           <BackLink onClick={() => goToStep('/inversion-step-2')} />
         </div>
 
         <div className="plan-header">
-          <PageHeader title="Pre-mortem" info={pageText.inversionStep3Plan} />
+          <PageHeader title="Pre-mortem" info={pageText.inversionStep3Plan} meta={['Step 3 of 3']} />
+          <div className="inv-stepper">
+            <div className="inv-stepper-lines" aria-hidden="true">
+              <i className="on" />
+              <i className="on" />
+              <i className="on" />
+            </div>
+          </div>
           <h2 className="ds-question">So what will you do?</h2>
         </div>
 

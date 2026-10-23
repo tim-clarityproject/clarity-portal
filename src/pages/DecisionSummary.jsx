@@ -277,7 +277,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
             Are you allocating your resources appropriately?
           </h2>
 
-          <svg width={850} height={600} style={{ backgroundColor: 'var(--raised)', display: 'block', margin: '0 auto', marginBottom: '32px', maxWidth: '100%', height: 'auto' }} onClick={() => setSelectedProjectIdx(null)}>
+          <svg viewBox="0 0 850 600" width="100%" style={{ backgroundColor: 'var(--raised)', display: 'block', margin: '0 auto', marginBottom: '32px', maxWidth: '100%', height: 'auto' }} onClick={() => setSelectedProjectIdx(null)}>
             {(() => {
               const svgWidth = 850, svgHeight = 600;
               const topPadding = 60, bottomPadding = 80, leftPadding = 90, rightPadding = 130;
@@ -341,19 +341,19 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, low progress</div>
+                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--mint-text)' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, high progress</div>
+                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--label)' }} onMouseEnter={() => setHoveredQuadrant('bottomLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, low progress</div>
+                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, high progress</div>
+                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>
             </div>
           </div>

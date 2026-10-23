@@ -105,7 +105,7 @@ export default function DailyJournals() {
           pageKey="dailyJournals"
           rows={rows}
           filters={FILTERS}
-          newButton={{ label: hasTodayRow ? 'Continue today' : 'New journal', onClick: () => navigate('/daily-journal') }}
+          newButton={{ label: hasTodayRow ? 'Continue today' : 'New journal', icon: hasTodayRow ? null : 'plus', onClick: () => navigate('/daily-journal') }}
           emptyText="Nothing here. Your first journal is one tap away."
           error={error}
           onOpen={openRow}

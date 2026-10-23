@@ -42,6 +42,7 @@ export default function PlanningTools() {
 
   return (
     <div className="ui-root">
+      <style>{`.ui-root .ptl-lock-tag--quiet { font-family: var(--font-body); text-transform: none; letter-spacing: normal; font-size: var(--fs-small); font-weight: 400; color: var(--label); }`}</style>
       <DesignHeader />
 
       <div className="plan-page">
@@ -81,7 +82,7 @@ export default function PlanningTools() {
                 <span className="ptl-row-title">{row.title}</span>
                 <span className="ptl-row-desc">{row.description}</span>
               </span>
-              <span className="ptl-lock-tag">
+              <span className="ptl-lock-tag ptl-lock-tag--quiet">
                 <LockIcon />
                 Coming soon
               </span>

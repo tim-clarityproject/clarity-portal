@@ -365,12 +365,11 @@ export default function MyAccount() {
         }
 
         .account-switch-state-label {
-          font-family: var(--font-display);
+          font-family: var(--font-body);
           font-weight: 400;
-          text-transform: uppercase;
-          font-size: 10px;
-          letter-spacing: 0.18em;
-          color: var(--text-2);
+          font-size: var(--fs-meta);
+          letter-spacing: normal;
+          color: var(--label);
         }
 
         .account-danger-zone {

@@ -61,6 +61,19 @@ export default function PersonalOperatingPlanHistory() {
 
   return (
     <div className="ui-root">
+      <style>{`
+        .ui-root .pop-version-label {
+          font-family: var(--font-body);
+          text-transform: none;
+          letter-spacing: normal;
+          font-size: var(--fs-label-row);
+        }
+        .ui-root .pop-version-current {
+          text-transform: none;
+          letter-spacing: normal;
+          font-size: var(--fs-meta);
+        }
+      `}</style>
       <DesignHeader />
 
       <div className="plan-page">

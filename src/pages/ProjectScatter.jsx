@@ -226,7 +226,7 @@ export default function ProjectScatter() {
 
         {/* Gartner Magic Quadrant */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '48px' }}>
-          <svg width={svgWidth} height={svgHeight} style={{ backgroundColor: 'var(--raised)' }} onClick={() => setSelectedProjectIdx(null)}>
+          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" style={{ backgroundColor: 'var(--raised)', maxWidth: `${svgWidth}px`, height: 'auto', display: 'block' }} onClick={() => setSelectedProjectIdx(null)}>
             {/* Click-to-deselect background */}
             <rect x={leftPadding} y={topPadding} width={plotWidth} height={plotHeight} fill="transparent" pointerEvents="none" />
 
@@ -372,7 +372,7 @@ export default function ProjectScatter() {
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resource to these projects?</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, low progress</div>
+                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
               <div
                 style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--mint-text)', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -380,7 +380,7 @@ export default function ProjectScatter() {
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>High importance, high progress</div>
+                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
               <div
                 style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--label)', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -388,7 +388,7 @@ export default function ProjectScatter() {
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, low progress</div>
+                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
               <div
                 style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -396,7 +396,7 @@ export default function ProjectScatter() {
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>Low importance, high progress</div>
+                <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>
             </div>
           </div>

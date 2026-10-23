@@ -168,17 +168,15 @@ export default function InversionStep1Goal() {
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
-        <div className="inv-stepper">
-          <div className="inv-stepper-lines" aria-hidden="true">
-            <i className="on" />
-            <i />
-            <i />
-          </div>
-          <span className="inv-stepper-label">Step 1 of 3</span>
-        </div>
-
         <div className="plan-header">
-          <PageHeader title="Pre-mortem" info={pageText.inversionStep1Goal} />
+          <PageHeader title="Pre-mortem" info={pageText.inversionStep1Goal} meta={['Step 1 of 3']} />
+          <div className="inv-stepper">
+            <div className="inv-stepper-lines" aria-hidden="true">
+              <i className="on" />
+              <i />
+              <i />
+            </div>
+          </div>
           <h2 className="ds-question">What are you trying to achieve?</h2>
         </div>
 

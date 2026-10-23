@@ -170,12 +170,10 @@
 .ui-root .wol-facts b {
   display: block;
   margin-bottom: 6px;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 400;
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--placeholder);
+  font-size: var(--fs-meta);
+  color: var(--label);
 }
 
 .ui-root .wol-facts span {
@@ -215,7 +213,7 @@
   padding-top: 3px;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: var(--fs-label);
+  font-size: var(--fs-min);
   color: var(--coral);
 }
 
@@ -643,12 +641,11 @@
 
 .ui-root .wol-mini small {
   display: block;
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
   text-align: center;
-  color: var(--placeholder);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-meta);
+  color: var(--label);
 }
 
 .ui-root .wol-mini svg {
@@ -715,7 +712,7 @@
 
 .ui-root .wol-tgn em {
   font-style: normal;
-  font-size: var(--fs-label);
+  font-size: var(--fs-min);
   color: var(--coral-soft);
 }
 
@@ -848,10 +845,8 @@
 }
 
 .ui-root .wol-rtop small {
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
   color: var(--text-2);
 }
 
@@ -1051,12 +1046,10 @@
 .ui-root .wol-stats b {
   display: block;
   margin-bottom: var(--space-2);
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 400;
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--placeholder);
+  font-size: var(--fs-meta);
+  color: var(--label);
 }
 
 .ui-root .wol-stats strong {
@@ -1168,12 +1161,10 @@
 .ui-root .wol-th {
   padding: 14px 0 12px;
   border-bottom: 1px solid var(--line);
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
   white-space: nowrap;
-  color: var(--placeholder);
+  color: var(--label);
 }
 
 .ui-root .wol-th span:nth-child(n+2):nth-child(-n+5) {
@@ -1260,7 +1251,7 @@
 .ui-root .wol-tgc em,
 .ui-root .wol-tgm em {
   font-style: normal;
-  font-size: var(--fs-label);
+  font-size: var(--fs-min);
   color: var(--coral-soft);
 }
 
@@ -1471,7 +1462,7 @@
 
 .ui-root .wol-dv small {
   font-family: var(--font-body);
-  font-size: var(--fs-label);
+  font-size: var(--fs-min);
   letter-spacing: 0;
   text-transform: none;
   color: var(--placeholder);

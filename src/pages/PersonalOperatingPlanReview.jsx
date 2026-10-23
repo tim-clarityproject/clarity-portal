@@ -274,7 +274,16 @@ export default function PersonalOperatingPlanReview() {
 
   return (
     <div className="ui-root">
-      <style>{`.ui-root .pop-review-check { flex: 1; min-width: 0; }`}</style>
+      <style>{`
+        .ui-root .pop-review-check { flex: 1; min-width: 0; }
+        .ui-root .plan-field label {
+          font-family: var(--font-body);
+          text-transform: none;
+          letter-spacing: normal;
+          font-size: var(--fs-label-row);
+          color: var(--text-2);
+        }
+      `}</style>
       <DesignHeader />
 
       <div className="plan-page plan-page--form">

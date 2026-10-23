@@ -151,28 +151,33 @@ export default function InversionStep2Risks() {
   return (
     <div className="ui-root">
       <DesignHeader />
+      <style>{`
+        .ui-root .inv-risk-row { display: flex; align-items: flex-start; gap: var(--space-2); }
+        .ui-root .inv-risk-row .plan-obj-num { flex: 0 0 28px; padding-top: 19px; }
+        .ui-root .inv-risk-row > .ds-textbox-field { flex: 1 1 auto; min-width: 0; }
+        .ui-root .inv-risk-row .ds-text { min-width: 0; width: 100%; box-sizing: border-box; }
+        .ui-root .inv-risk-row .plan-bin-btn { flex: 0 0 44px; margin-top: 7px; }
+      `}</style>
 
       <div className="plan-page plan-page--form">
-        <div className="inv-stepper">
-          <div className="inv-stepper-lines" aria-hidden="true">
-            <i className="on" />
-            <i className="on" />
-            <i />
-          </div>
-          <span className="inv-stepper-label">Step 2 of 3</span>
-        </div>
-
         <div className="plan-back-row">
           <BackLink onClick={handleBack} />
         </div>
 
         <div className="plan-header">
-          <PageHeader title="Pre-mortem" info={pageText.inversionStep2Risks} />
+          <PageHeader title="Pre-mortem" info={pageText.inversionStep2Risks} meta={['Step 2 of 3']} />
+          <div className="inv-stepper">
+            <div className="inv-stepper-lines" aria-hidden="true">
+              <i className="on" />
+              <i className="on" />
+              <i />
+            </div>
+          </div>
           <h2 className="ds-question">List all the ways you could mess this up</h2>
         </div>
 
         {risks.map((risk, index) => (
-          <div className="plan-obj-row" key={index}>
+          <div className="plan-obj-row inv-risk-row" key={index}>
             <span className="plan-obj-num">{index + 1}.</span>
             <TextBox
               lines="one"

@@ -154,7 +154,7 @@ export default function HistoryList({
           {title && <PageHeader title={title} info={pageText[pageKey]} />}
         </div>
         {newButton && (
-          <Button icon="plus" className="hlist-new-desktop" onClick={newButton.onClick}>
+          <Button icon={newButton.icon === undefined ? 'plus' : newButton.icon} className="hlist-new-desktop" onClick={newButton.onClick}>
             {newButton.label}
           </Button>
         )}
@@ -277,7 +277,7 @@ export default function HistoryList({
 
       {newButton && (
         <div className="hlist-new-phone-wrap">
-          <Button icon="plus" onClick={newButton.onClick}>
+          <Button icon={newButton.icon === undefined ? 'plus' : newButton.icon} onClick={newButton.onClick}>
             {newButton.label}
           </Button>
         </div>

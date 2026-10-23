@@ -103,7 +103,7 @@ export default function BreathingSessionsSummary() {
                   {showMonth && <p className="hlist-month" style={{ marginTop: 'var(--space-4)' }}>{mm}</p>}
                   <div className="pop-version-row">
                     <span>
-                      <span className="pop-version-label">{TECHNIQUES[s.breathing_mode]?.label || s.breathing_mode}</span>
+                      <span className="pop-version-label" style={{ fontFamily: 'var(--font-body)', textTransform: 'none', letterSpacing: 'normal' }}>{TECHNIQUES[s.breathing_mode]?.label || s.breathing_mode}</span>
                       <span className="pop-version-date" style={{ display: 'block' }}>{formatDayMonthTime(s.date)}{length ? ` · ${length}` : ''}</span>
                     </span>
                     <button type="button" className="plan-bin-btn" aria-label="Delete session" onClick={() => setDeleteTarget(s.id)}>

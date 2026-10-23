@@ -388,6 +388,13 @@ export default function PersonalOperatingPlanEdit() {
       <style>{`
         .ui-root .pop-grow { flex: 1; min-width: 0; }
         .ui-root .pop-unit-field { width: 160px; max-width: 100%; }
+        .ui-root .plan-field label {
+          font-family: var(--font-body);
+          text-transform: none;
+          letter-spacing: normal;
+          font-size: var(--fs-label-row);
+          color: var(--text-2);
+        }
       `}</style>
       <DesignHeader />
 

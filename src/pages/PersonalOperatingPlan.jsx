@@ -203,6 +203,9 @@ export default function PersonalOperatingPlan() {
 
   return (
     <div className="ui-root">
+      <style>{`
+        .ui-root .pop-view-tactic-reviewed { font-size: var(--fs-meta); }
+      `}</style>
       <DesignHeader />
 
       <div className="plan-page">

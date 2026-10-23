@@ -22,6 +22,9 @@ import {
 // on, as before. On a phone the prompt chips are full-width rows, so
 // they never wrap.
 const JOURNAL_CSS = `
+.ui-root .jrn-prompts {
+  margin-top: var(--space-4);
+}
 @media (max-width: 768px) {
   .ui-root .jrn-prompts {
     flex-direction: column;

@@ -83,7 +83,7 @@ export default function WheelRadar({
   // ring values: DM Sans at 10px (the mock-up's Nekst at fs-2 went below
   // Nekst's 10px minimum on phone)
   const tickLabels = ticks ? [2, 4, 6, 8].map((k) => (
-    <text key={k} x={o.cx + 4} y={(o.cy - (k / 10) * o.R - 3).toFixed(1)} fontSize="10" style={{ fill: 'var(--placeholder)', fontFamily: 'var(--font-body)' }}>{k}</text>
+    <text key={k} x={o.cx + 4} y={(o.cy - (k / 10) * o.R - 3).toFixed(1)} fontSize="12" style={{ fill: 'var(--placeholder)', fontFamily: 'var(--font-body)' }}>{k}</text>
   )) : null;
 
   // series

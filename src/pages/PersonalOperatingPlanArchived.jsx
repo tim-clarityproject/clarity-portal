@@ -58,6 +58,14 @@ export default function PersonalOperatingPlanArchived() {
 
   return (
     <div className="ui-root">
+      <style>{`
+        .ui-root .pop-version-label {
+          font-family: var(--font-body);
+          text-transform: none;
+          letter-spacing: normal;
+          font-size: var(--fs-label-row);
+        }
+      `}</style>
       <DesignHeader />
 
       <div className="plan-page">

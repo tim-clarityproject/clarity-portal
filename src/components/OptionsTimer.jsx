@@ -120,7 +120,7 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
           <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text)' }}>
             {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--label)', marginTop: '2px' }}>
+          <div style={{ fontSize: 'var(--fs-min)', color: 'var(--label)', marginTop: '2px' }}>
             {isRunning ? 'running' : 'paused'}
           </div>
         </div>
@@ -146,14 +146,14 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
                 borderRadius: '6px',
                 backgroundColor: 'var(--card)',
                 color: 'var(--text)',
-                fontSize: '11px',
+                fontSize: 'var(--fs-min)',
                 textAlign: 'center',
                 outline: 'none',
               }}
               onFocus={(e) => e.target.style.borderColor = 'var(--coral-text)'}
               onBlur={(e) => e.target.style.borderColor = 'var(--field-line)'}
             />
-            <span style={{ fontSize: '11px', color: 'var(--label)', whiteSpace: 'nowrap' }}>min</span>
+            <span style={{ fontSize: 'var(--fs-min)', color: 'var(--label)', whiteSpace: 'nowrap' }}>min</span>
             <Button variant="outline" onClick={handleSetTime}>Start timer</Button>
           </div>
         </div>

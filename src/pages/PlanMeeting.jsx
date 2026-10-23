@@ -8,7 +8,7 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import pageText from '../content/pageText';
-import { Crosshair, DatePicker, PageHeader, TextBox, Button, useToast } from '../components/design';
+import { DatePicker, DisclosureArrow, PageHeader, TextBox, Button, useToast } from '../components/design';
 
 const SECTION_OPTIONS = [
   { id: 'context', label: 'Meeting context' },
@@ -232,6 +232,31 @@ export default function PlanMeeting() {
 
   return (
     <div className="ui-root">
+      <style>{`
+        .ui-root .plan-field label {
+          font-family: var(--font-body);
+          text-transform: none;
+          letter-spacing: normal;
+          font-size: var(--fs-label-row);
+          color: var(--text-2);
+        }
+        .ui-root .plan-ag-head {
+          font-family: var(--font-body);
+          text-transform: none;
+          letter-spacing: normal;
+          font-size: var(--fs-meta);
+          color: var(--label);
+        }
+        .ui-root .plan-obj-row {
+          grid-template-columns: 28px minmax(0, 1fr) 44px;
+        }
+        .ui-root .plan-obj-row .plan-bin-btn,
+        .ui-root .plan-ag-row .plan-bin-btn {
+          box-sizing: border-box;
+          width: 44px;
+          padding: 0 !important;
+        }
+      `}</style>
       <DesignHeader />
 
       <div className="plan-page plan-page--form">
@@ -303,8 +328,8 @@ export default function PlanMeeting() {
               aria-haspopup="menu"
               onClick={() => setMenuOpen(!menuOpen)}
             >
-              <Crosshair size="sm" turned={menuOpen} />
               Add section
+              <DisclosureArrow open={menuOpen} />
             </Button>
             {menuOpen && (
               <div className="plan-menu-list" role="menu">

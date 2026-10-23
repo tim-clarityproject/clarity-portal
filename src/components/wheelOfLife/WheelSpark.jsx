@@ -41,7 +41,7 @@ export default function WheelSpark({ vals, w }) {
                 x={(x + bw / 2).toFixed(1)}
                 y={(base - bh - 3).toFixed(1)}
                 textAnchor="middle"
-                fontSize="10"
+                fontSize="12"
                 paintOrder="stroke"
                 strokeWidth="3"
                 style={{ fontFamily: 'var(--font-body)', stroke: 'var(--surface)', fill: colour }}

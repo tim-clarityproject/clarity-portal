@@ -59,8 +59,14 @@ export default function Strategies() {
           </div>
         </div>
 
+        <style>{`
+          .ui-root .g1-two-col { display: flex; gap: 48px; flex: 1; }
+          @media (max-width: 768px) {
+            .ui-root .g1-two-col { flex-direction: column; gap: 32px; }
+          }
+        `}</style>
         {/* Two Column Layout */}
-        <div style={{ display: 'flex', gap: '48px', flex: 1 }}>
+        <div className="g1-two-col">
           {/* Left Column - Risks */}
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: '16px' }}>

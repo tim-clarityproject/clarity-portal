@@ -10,7 +10,7 @@ import { areaName } from '../../lib/wheelOfLife';
  */
 export const WHEEL_SIZES = {
   desktop: { w: 680, h: 440, cx: 340, cy: 220, R: 140, fs: 13, lg: 16, wrap: 18 },
-  phone: { w: 340, h: 300, cx: 170, cy: 150, R: 74, fs: 10, lg: 10, wrap: 12 },
+  phone: { w: 340, h: 300, cx: 170, cy: 150, R: 74, fs: 12, lg: 10, wrap: 12 },
   mini: { w: 230, h: 230, cx: 115, cy: 115, R: 86, fs: 10, lg: 0 },
 };
 

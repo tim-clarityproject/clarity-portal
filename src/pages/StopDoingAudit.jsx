@@ -233,6 +233,15 @@ export default function StopDoingAudit() {
 
   return (
     <div className="ui-root">
+      <style>{`
+        .ui-root .plan-field label {
+          font-family: var(--font-body);
+          text-transform: none;
+          letter-spacing: normal;
+          font-size: var(--fs-label-row);
+          color: var(--text-2);
+        }
+      `}</style>
       <DesignHeader />
 
       <div className="plan-page plan-page--form">

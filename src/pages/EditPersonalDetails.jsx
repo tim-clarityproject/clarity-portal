@@ -163,12 +163,11 @@ export default function EditPersonalDetails() {
 
         .edit-profile-label {
           display: block;
-          font-family: var(--font-display);
+          font-family: var(--font-body);
           font-weight: 400;
-          text-transform: uppercase;
-          letter-spacing: 0.16em;
-          font-size: 10px;
-          color: var(--text);
+          letter-spacing: normal;
+          font-size: var(--fs-meta);
+          color: var(--label);
         }
 
         /* src/styles/mobile.css has input, select { min-height: 44px;
