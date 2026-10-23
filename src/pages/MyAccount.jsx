@@ -274,10 +274,6 @@ export default function MyAccount() {
           margin: 38px 0 6px;
         }
 
-        .account-section-label--muted {
-          color: var(--text-2);
-        }
-
 
         .account-row {
           display: flex;
@@ -472,7 +468,7 @@ export default function MyAccount() {
 
           {/* Danger zone */}
           <div className="account-danger-zone">
-            <div className="account-section-label account-section-label--muted">Danger zone</div>
+            <div className="account-section-label">Danger zone</div>
             <div className="account-row">
               <div className="account-row-text">
                 <div className="account-row-title">Delete account</div>
