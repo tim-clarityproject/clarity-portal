@@ -7,7 +7,8 @@ import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planR
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import pageText from '../content/pageText';
-import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { Loading, PageHeader, Button, PdfDownload, useToast } from '../components/design';
+import { meetingPlanPdf, meetingEndTime } from '../lib/pdf/docs/meetingPlan';
 
 // "Fri, 2 Oct" - UK order, device local time. Plain input[type=date]
 // string ("YYYY-MM-DD"), so noon is used to dodge UTC/local day-shift.
@@ -15,16 +16,6 @@ function formatMeetingDate(dateStr) {
   if (!dateStr) return 'Not set';
   const date = new Date(`${dateStr}T12:00:00`);
   return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-}
-
-function calcEndTime(time, flowItems) {
-  if (!time || !flowItems?.length) return 'Not set';
-  const totalMinutes = flowItems.reduce((sum, item) => sum + (parseInt(item.length, 10) || 0), 0);
-  const [hours, minutes] = time.split(':').map(Number);
-  const start = new Date();
-  start.setHours(hours, minutes, 0, 0);
-  const end = new Date(start.getTime() + totalMinutes * 60000);
-  return `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
 }
 
 export default function MeetingSummary() {
@@ -116,36 +107,21 @@ export default function MeetingSummary() {
   const agenda = (data.flowItems || []).filter((r) => `${r.item || ''}${r.aim || ''}${r.lead || ''}${r.length || ''}`.trim());
   const total = agenda.reduce((sum, item) => sum + (parseInt(item.length, 10) || 0), 0);
 
-  return (
-    <div className="ui-root meeting-summary-root">
-      {/* Printing the dark theme would waste ink and read poorly, so these
-          tokens are overridden to print-safe light values for @media print
-          only - every .plan-* class below already reads off these vars, so
-          nothing else needs a print-specific rule. */}
-      <style>{`
-        @page {
-          size: A4 landscape;
-          margin: 0.5in;
-        }
-        @media print {
-          .meeting-summary-root {
-            --bg: #ffffff;
-            --surface: #ffffff;
-            --line: #dddddd;
-            --text: #000000;
-            --text-2: #333333;
-            --placeholder: #666666;
-            --coral-text: #000000;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .design-tabbar {
-            display: none !important;
-          }
-        }
-      `}</style>
+  // The PDF names whose plan it is; it still downloads if the name can't load.
+  const getMeetingPdf = async () => {
+    let personName = '';
+    try {
+      const { data: profile } = await supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single();
+      personName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
+    } catch (error) {
+      console.error('[MeetingSummary] name for the PDF did not load:', error);
+    }
+    if (!personName) personName = [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(' ');
+    return meetingPlanPdf({ meeting, personName });
+  };
 
+  return (
+    <div className="ui-root">
       <div className="no-print"><DesignHeader /></div>
 
       <div className="plan-page">
@@ -168,7 +144,7 @@ export default function MeetingSummary() {
           </div>
           <div>
             <b>End time</b>
-            <span>{calcEndTime(data.time, data.flowItems)}</span>
+            <span>{meetingEndTime(data.time, data.flowItems) || 'Not set'}</span>
           </div>
           <div>
             <b>Chair</b>
@@ -254,6 +230,7 @@ export default function MeetingSummary() {
           <Button type="button" variant="outline" onClick={() => navigate('/plan-meeting', { state: { decisionId: meeting.id } })}>
             Edit
           </Button>
+          <PdfDownload getDocument={getMeetingPdf} />
         </div>
       </div>
     </div>
