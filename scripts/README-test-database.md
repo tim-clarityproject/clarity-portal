@@ -254,6 +254,28 @@ To refresh only the invented data, without copying the structure, run the data s
 
 ---
 
+## Trying SQL on the test project without keeping it
+
+To try a migration (and its test) on the test project, with nothing kept:
+
+```
+bash scripts/dry-run-on-test.sh supabase/migrations/024_baseline_live_structure.sql supabase/024_baseline_test.sql
+```
+
+It runs the files in order inside one transaction that is always rolled back, and ends with "Dry run finished and rolled back: nothing was kept." It reads only `~/.clarity-test.env`, checks it is the test project, and refuses a file that could end the transaction early (one with its own begin, commit or a psql command). Those are run by Tim in the SQL editor instead.
+
+`npm run test:rules` uses the same tool (see `tests/rules/README.md`).
+
+## Grants on the test project are wider than live's
+
+The copy makes each function and table in the test project with Supabase's default grants (everyone, including signed-out visitors, may call every function), then applies live's grants on top. Grants that live *doesn't* have are never taken away. So on the test project, functions that 018 and 020 closed (`alignment_list`, `create_alignment_session` and others) can be called by anyone, which is most likely not true on live. The rules test reports this as a known gap. To check live (read only), in live's SQL editor:
+
+```
+select has_function_privilege('anon', 'public.alignment_list()', 'execute');
+```
+
+`false` is the good answer. Making the copy match live's grants exactly is a later fix to the copy script.
+
 ## Not copied yet: the Edge Function and email settings
 
 The copy script doesn't copy these. They need setting up separately before the matching features work in the previews.

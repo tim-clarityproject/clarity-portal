@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test:panels": "node tests/design-reference/panels-never-jump.mjs",
-    "test:typing": "node tests/typing-never-jumps.mjs"
+    "test:typing": "node tests/typing-never-jumps.mjs",
+    "test:rules": "node tests/rules/run.mjs"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",

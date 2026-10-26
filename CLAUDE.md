@@ -170,8 +170,15 @@ On phone every row is built the same way:
 
 Note for mock-ups: Tim approved the type, status and version line in place of the mock-ups' version on the date line. His earlier approval of swipeable filter pills is replaced by guideline 6.
 
+## Migrations and the rules test
+
+- **Every migration from 025 on ends with the line that records itself**: `select public.record_migration(26, '026_what_it_does');`. `public.migration_log` lists what has run on each database; `supabase/MIGRATION_LOG.md` is the same list as Tim's checklist. Migrations are safe to run twice and are dry-run first with `bash scripts/dry-run-on-test.sh FILE.sql [TEST.sql]` (test project only, always rolled back).
+- **`supabase/migrations/024_baseline_live_structure.sql` is live's structure**, and `supabase/024_baseline_test.sql` checks a database against it. A later migration that changes something in the baseline adds it to `later_version` (or `later_addition`) in that test.
+- **`npm run test:rules`** checks every personal table's rules for each test account and for someone signed out (`tests/rules/`). Every new table, role and rule in Phase 1 is added to `tests/rules/config.mjs`, and the test must pass before Tim runs the migration.
+
 ## Go-live notes
 
+- **Baseline and migration log** (`024_baseline_live_structure.sql`, then `025_migration_log.sql`): safe on live at any time, as they only add what is missing (on live, only the log). Run `supabase/024_baseline_test.sql` on live after 024.
 - **Terms accepted SQL** (`supabase/migrations/021_restore_terms_accepted_from_signup.sql`): run it on the live database only at go-live, after this branch's code is live. The old live code marks the terms as not accepted on every page load, so running it earlier would be undone straight away.
 - **POP review drafts SQL** (`supabase/migrations/023_mission_progress_reviews_update.sql`, test: `supabase/mission_progress_reviews_update_test.sql`): adds the missing rule that lets a person change their own POP reviews, so a draft can be saved over itself. Run it on the test project now. It changes nothing the live code relies on, so it can run on live at go-live or earlier if Tim wants the fix there sooner.
 - **`supabase/schema.sql` is never run**: it is an old sketch, and it would re-open `guest_sessions` (closed on live today: row security on, no rules).
