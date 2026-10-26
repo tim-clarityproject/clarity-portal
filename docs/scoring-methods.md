@@ -511,10 +511,61 @@ The same figure for each team, then for each team below it. Shown at any team si
 
 ## M20. Tools that already score today
 
-The live portal already scores two tools. Their rules are not changing in the overhaul, so Phase 1 documents them here from the code, word for word, with test cases.
-- **Strategic Alignment Health Check:** strategic importance (0 to 100%) against progress (Embryonic, Bad, Fair, Good, Excellent). "Important and moving well" = importance above 50% with Good or Excellent progress; Fair sits on the line. Unrated projects show "Not rated", never 0%; deleted factors are ignored; a blank resource counts as Moderate (fixed in Phase 1 step 0). **To complete from the code in Phase 1:** how strategic importance is calculated from the Critical Success Factors, the attention score and the tie-break. Alignment over time (M19.3) = the share of a team's rated projects that are important and moving well, per version (Claude).
-- **Life balance review (was Wheel of Life):** each area rated 1 to 10. Areas that went up show in mint; last time is a faint outline. **To complete from the code in Phase 1:** the areas, and any total the code works out.
-- The old strategic alignment tool's progress scale, Stop Doing hours, the Meeting planner's end time and "N of 5" are fixed in their rebuilds, and written in here then.
+The live portal already scores two tools. Their rules are not changing in the overhaul, so this section documents them from the code as it is on 27 Oct 2026, with test cases (completed in Phase 1). The arithmetic stays in the code that does it today (`src/lib/alignmentScore.js` and `src/lib/wheelOfLife.js`); `src/lib/scores/m20.js` brings it together under this section's ID, and `tests/scores/scores.test.mjs` checks every rule below. The old strategic alignment tool's progress scale, Stop Doing hours, the Meeting planner's end time and "N of 5" are fixed in their rebuilds, and written in here then.
+
+### M20.1 Strategic Alignment Health Check
+
+In plain words: each project is scored on how much it helps the organisation's Critical Success Factors, which gives its strategic importance. Projects are also rated for progress and the resource they need. Important projects that are behind come first in the list of what needs attention.
+
+**Ratings, from the person filling it in:**
+- **Contribution:** for each project, a score of 0 to 3 against each Critical Success Factor.
+- **Progress:** 1 Embryonic stage, 2 Bad, 3 Fair, 4 Good, 5 Excellent.
+- **Resource required:** 1 Minimal, 2 Low, 3 Moderate, 4 High, 5 Very high.
+
+**Strategic importance (0 to 100%)** = the project's contribution scores added together ÷ (the number of Critical Success Factors × 3) × 100.
+- Only factors still on the list count. A score for a deleted factor is ignored, and the maximum uses the current number of factors.
+- Kept exact; shown as a whole number (halves up).
+- A project is **rated** once it has at least one contribution score for a current factor. An unrated project shows "Not rated", never 0%, on the page and the PDF alike, and is left out of averages.
+- Example (test case M20-1): "Data platform" scores 0 + 2 + 2 + 3 = 7 against 4 factors, so the maximum is 4 × 3 = 12, and 7 ÷ 12 × 100 = 58.33%, shown as **58%**.
+
+**Most in need of attention** = importance % × (5 − progress) ÷ 4 × (resource + 3) ÷ 8.
+- Progress 1 (Embryonic) keeps the full importance; progress 5 (Excellent) scores 0.
+- The resource multiplier runs from 0.5 (Minimal) to 1 (Very high): 0.5, 0.625, 0.75, 0.875, 1.
+- A blank resource counts as Moderate (3), in the score and in the tie-break alike (fixed in Phase 1 step 0).
+- A project with no progress rating scores −1, so it sorts last.
+- The score stays out of 100.
+- **Ranking and tie-break:** highest attention score first; on a tie, the higher importance; then the higher resource (a blank counting as Moderate).
+- Examples (test case M20-2): Data platform (58.33%, Embryonic, Very high) = 58.33 × 4 ÷ 4 × 8 ÷ 8 = **58.33**. Leadership programme (41.67%, Bad, High) = 41.67 × 3 ÷ 4 × 7 ÷ 8 = **27.34**. Two projects at 50% with Fair progress: with resource Very high, 50 × 2 ÷ 4 × 8 ÷ 8 = 25.00, which ranks above resource Low, 50 × 2 ÷ 4 × 5 ÷ 8 = 15.63.
+
+**Where a project sits on the importance against progress chart:**
+- **Important and moving well** (green): importance above 50% with Good or Excellent progress.
+- **Important but behind** (needs attention first): importance above 50% with Embryonic or Bad progress.
+- Everything else is neutral: 50% or less, Fair progress (which sits on the line), or no progress rating. Exactly 50% is not above the line.
+- Only projects with a progress rating are drawn on the chart.
+
+**At a glance (PDF):** average strategic importance = the mean of the rated projects' exact importance, rounded; 0% when none is rated. The sentence counts the projects drawn that are important and moving well, and those important but behind.
+
+**Alignment over time (M19.3; Claude, not in the code yet):** for each version of a team's Health Check, the share of its rated projects (rated, with a progress rating) that are important and moving well.
+
+### M20.2 Life balance review (was Wheel of Life)
+
+In plain words: the person rates how satisfied they are with each area of their life, from 0 to 10. The review shows what rose and fell since the start of the period, and how far each area is from any target set. There is no overall score.
+
+**Areas:** the ten standard areas, in wheel order: Career / Work, Financial / Money, Health / Fitness, Relationships / Family, Romance / Partner, Personal Growth / Learning, Fun / Recreation, Physical Environment / Home, Contribution / Community, Purpose / Meaning. People can add their own areas (1 to 24 characters), which come after the standard ones in the order added. An area can be taken off the wheel and put back; its past scores are kept.
+
+**Ratings:** each area **0 to 10** (the code and database allow 0; the earlier draft of this section said 1 to 10). Targets are also 0 to 10, one per area, optional.
+
+**Figures, over the check-ins in the chosen period** (3, 6 or 12 months, or All, counted back from the newest check-in), for the areas on the wheel now:
+- **Average** = the mean of the area scores present, ignoring areas with no score; shown to one decimal place ("6.6"). It is 0 when there are none.
+- **Change for an area** = its latest score − its first score in the period. An area with no first score shows "New".
+- **One check-in in the period:** Average, Highest, Lowest, and Areas at 7+ (areas scoring 7 or more, out of the areas on the wheel).
+- **Two or more:** Average and how far it moved from the first check-in; Biggest rise; Biggest drop (areas with no first score are left out of both); Lowest now. When any area with a latest score has a target, the fourth figure becomes Furthest from target (or All met), with how many are on target.
+- **On target:** the latest score is at or above the target; otherwise "N below".
+- **Ties** go to the first area in wheel order.
+- **The "what moved" view:** the bars are scaled to the biggest change in the period, at least 3. On the chart, areas that went up show in mint, and the last check-in is a faint outline.
+- Example (test case M20-3, the mock-up's data, 8 May to 15 Oct 2026): average 6.6, up from 5.7; biggest rise +2, Relationships / Family; biggest drop −1, Fun / Recreation; furthest from target 2 below, Romance / Partner; 6 of 10 on target. With only 15 Oct: highest 8, Career / Work; lowest 4, Fun / Recreation; 6 of 10 areas at 7+.
+
+**Who sees it:** the person only, unless they choose to share (unchanged in Phase 1).
 
 ---
 
@@ -552,6 +603,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 
 | Version | Date | Change |
 |---|---|---|
+| 1.1 (repo) | 27 Oct 2026 | M20 completed from the code in Phase 1 (Health Check: strategic importance, attention score, tie-break, chart areas, the PDF's average; Life balance review: areas, 0 to 10 ratings and every figure worked out). No arithmetic changed. |
 | 1.1 | 26 Oct 2026 | Scientific audit (Tim, 18:47): no pattern may contain its own cause (L3 uses the Strategy score without that habit; sleep habits left out of the day score); each half needs 3 weeks or 10 days per group; weekly re-checking named as a risk and covered by the any-time simulation; autocorrelation and nested habits added to the simulation; check-in changes judged against each area's typical swing once real data exist (M13); the bias in "looking back" ratings stated (M17); organisations never see check-in totals, only named wellbeing a person chooses to share (Tim, 18:48; M19.4); two new limits (easy targets, not yet validated) and a plan for checking the scores against real data (M23). |
 | 1.0 | 26 Oct 2026 | First version, from the decisions doc (21 to 26 Oct) and Claude's calls listed below. |
 
