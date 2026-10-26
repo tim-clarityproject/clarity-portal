@@ -425,14 +425,14 @@ export const M19_CASES = [
   },
   {
     id: 'M19-two-seats',
-    note: 'A group of 2 seats: objective and Strategy figures show, use figures don\'t.',
+    note: 'A group of 2 seats: objective and Strategy figures show; use figures and the share at their own standard don\'t.',
     input: { seats: [seat(true, ['on_track', 'off_track']), seat(true, ['reached'], { summary: { objectives: [{ status: 'reached' }], strategies: [{ average: 60 }], averageScore: 70, standard: 85 } })] },
-    expect: { headline: 66.666667, shown: 67, counted: 3, tooEarly: 0, seats: 2, use: null, atOwnStandard: 50, averageStrategyScore: 76.666667 },
+    expect: { headline: 66.666667, shown: 67, counted: 3, tooEarly: 0, seats: 2, use: null, atOwnStandard: null, averageStrategyScore: 76.666667 },
   },
   {
     id: 'M19-leaver',
     note: 'Someone who has left still counts in the totals, anonymised, but not as a seat: 3 seats minus 1 leaver is a group of 2, so no use figures.',
     input: { seats: [seat(true, ['on_track']), seat(true, ['on_track']), seat(false, ['off_track'])] },
-    expect: { headline: 66.666667, shown: 67, counted: 3, tooEarly: 0, seats: 2, use: null, atOwnStandard: 100, averageStrategyScore: 85 },
+    expect: { headline: 66.666667, shown: 67, counted: 3, tooEarly: 0, seats: 2, use: null, atOwnStandard: null, averageStrategyScore: 85 },
   },
 ];

@@ -100,7 +100,7 @@ export function m13Results(now, before, typicalSwing = {}) {
   return {
     hardwareChange: before ? m0Change(now.hardware, before.hardware) : null,
     softwareChange: before ? m0Change(now.software, before.software) : null,
-    improved: rises.slice(0, 3).map(({ order, ...r }) => r),
+    improved: rises.slice(0, 3).map((r) => ({ key: r.key, name: r.name, change: r.change })),
     workOn,
   };
 }

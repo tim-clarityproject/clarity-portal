@@ -40,7 +40,7 @@ test('M0.3: working patterns, and a change applies from the next sprint week', (
 for (const c of CALENDAR_CASES) {
   test(`${c.id}: ${c.note}`, () => {
     const r = S.m0SprintCalendar(c.input.sprint, c.input.today);
-    assert.deepEqual(r.weeks.map(({ days, ...w }) => w), c.expect.weeks);
+    assert.deepEqual(r.weeks.map(({ days: _days, ...w }) => w), c.expect.weeks);
     assert.equal(r.plannedEnd, c.expect.plannedEnd);
     assert.equal(r.actualEnd, c.expect.actualEnd);
     for (const w of r.weeks.filter((x) => x.days.length === 7)) {

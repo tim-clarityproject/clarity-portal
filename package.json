@@ -11,7 +11,7 @@
     "test:panels": "node tests/design-reference/panels-never-jump.mjs",
     "test:typing": "node tests/typing-never-jumps.mjs",
     "test:rules": "node tests/rules/run.mjs",
-    "test:scores": "node --import ./tests/scores/register.mjs --test tests/scores/*.test.mjs"
+    "test:scores": "node --import ./tests/scores/register.mjs --test tests/scores/*.test.mjs && node tests/scores/make-db-test.mjs --check && node scripts/make-evidence-seed.mjs --check"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",

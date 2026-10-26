@@ -69,6 +69,13 @@ update public.migration_log
 | 023 | `023_mission_progress_reviews_update` | POP review drafts save over themselves | ☐ | ☐ | Live: at go-live or earlier. On test, its rule is there (checked 26 Oct) |
 | 024 | `024_baseline_live_structure` | The live structure in one file | ☐ | ☐ | Then run `supabase/024_baseline_test.sql` |
 | 025 | `025_migration_log` | This list | ☐ | ☐ | Records itself |
+| 026 | `026_people_coaches_organisations` | Phase 1: people, coaches, organisations, teams, seats, sharing switches and the checked helper `may_see` | ☐ | ☐ | Test: `supabase/026_people_coaches_organisations_test.sql` (ALL CHECKS PASSED). Live: at go-live |
+| 027 | `027_performance_plan` | Phase 1: the Individual Performance Plan (mission, objectives, Strategies, habits, versions, sponsor proposals) | ☐ | ☐ | Test: `supabase/027_performance_plan_test.sql`. Live: at go-live |
+| 028 | `028_sprints_and_daily_work` | Phase 1: sprints, Recovery, logs, to-dos and their moves, wins, evidence, Plan and Review my day, debriefs, week scores | ☐ | ☐ | Test: `supabase/028_sprints_and_daily_work_test.sql`. Live: at go-live |
+| 029 | `029_checkins_goal_checks_patterns` | Phase 1: Hardware and Software check-ins with their scores and coach flags, goal checks, pattern cards | ☐ | ☐ | Test: `supabase/029_checkins_goal_checks_patterns_test.sql`. Live: at go-live |
+| 030 | `030_organisations_feedback_pulse` | Phase 1: frozen summaries and what sponsors and leaders read, organisation measures, feedback links (hashed, locked), team pulse, impact | ☐ | ☐ | Test: `supabase/030_organisations_feedback_pulse_test.sql`. Live: at go-live |
+| 031 | `031_evidence_library` | Phase 1: the evidence library, seeded from the claims register 1.1 | ☐ | ☐ | Test: `supabase/031_evidence_library_test.sql`. Made by `scripts/make-evidence-seed.mjs`. Live: at go-live |
+| 032 | `032_scores_in_database` | Phase 1: database copies of the scores (M5, M6, M9, M18, M19 and what they rest on), freeze_week, make_sprint_summary, org_figures, pulse_results, impact_results | ☐ | ☐ | Test: `supabase/032_scores_in_database_test.sql` (written from `tests/scores/cases.mjs`). Live: at go-live |
 | – | `add_personal_goal_to_profiles` | profiles.personal_goal | ☐ | ☐ | No number |
 | – | `add_show_mission_in_header_to_profiles` | profiles.show_mission_in_header | ☐ | ☐ | No number |
 

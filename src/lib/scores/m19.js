@@ -7,7 +7,10 @@
 //
 // Group sizes (spec section 12, M19.3): use figures only for groups of 3 or
 // more seats; objective and Strategy figures at any size; self-reported
-// totals at any size; the monthly check-in never.
+// totals at any size; the monthly check-in never. "% of seats at their own
+// standard" comes from weekly Performance scores, which sponsors and
+// leaders never otherwise see, so it follows the use figures' rule: groups
+// of 3 or more seats only (Claude).
 
 import { m0AtStandard, m0Round } from './m0.js';
 
@@ -70,7 +73,7 @@ export function m19GroupFigures({ seats = [], impact = [], goalChecks = [] }) {
     use,
     useHiddenReason: showUse ? null : 'Use figures show for groups of 3 or more seats.',
     behaviour: {
-      atOwnStandard: pct(withAverage.filter((s) => m0AtStandard(s.averageScore, s.standard)).length, withAverage.length),
+      atOwnStandard: showUse ? pct(withAverage.filter((s) => m0AtStandard(s.averageScore, s.standard)).length, withAverage.length) : null,
       averageStrategyScore: mean(summaries.flatMap((s) => (s.strategies || []).map((x) => x.average)).filter((x) => x != null)),
     },
     outcomes: {
