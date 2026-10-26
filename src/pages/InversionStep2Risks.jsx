@@ -11,7 +11,7 @@ import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import pageText from '../content/pageText';
-import { PageHeader, TextBox, Button, useToast } from '../components/design';
+import { PageHeader, TextBox, AddButton, Button, useToast } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -223,9 +223,9 @@ export default function InversionStep2Risks() {
             </button>
           </div>
         ))}
-        <Button variant="outline" icon="plus" onClick={addRisk}>
-          Add
-        </Button>
+        <AddButton onClick={addRisk}>
+          Add risk
+        </AddButton>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 

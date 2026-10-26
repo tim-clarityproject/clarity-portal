@@ -6,7 +6,7 @@ import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import OptionsTimer from '../components/OptionsTimer';
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, Loading, PageHeader, TextField, Button } from '../components/design';
+import { Crosshair, Loading, PageHeader, TextField, AddButton, Button } from '../components/design';
 
 // Never the raw error: say what happened, then what to do.
 const LOAD_ERROR = 'Your decision didn’t load. Check your connection and try again.';
@@ -149,7 +149,7 @@ function GrowStep3OptionsForm({ isReload }) {
           ))}
         </div>
 
-        <Button variant="outline" icon="plus" onClick={handleAddOption} style={{ marginBottom: '32px', alignSelf: 'flex-start' }}>Add Option</Button>
+        <AddButton onClick={handleAddOption} style={{ marginBottom: '32px', alignSelf: 'flex-start' }}>Add option</AddButton>
 
         {error && (
           <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>

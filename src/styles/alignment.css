@@ -308,43 +308,15 @@
   visibility: hidden;
 }
 
+/* The shared add button (AddButton), set in from the left like the rows. */
 .ui-root .al-add {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  min-height: var(--tap-min);
   margin: var(--space-2) 0 0 var(--space-5);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-size: var(--fs-tab);
-  letter-spacing: var(--ls-overline);
-  text-transform: uppercase;
-  color: var(--text-2);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
-.ui-root .al-add .ds-cross {
-  transition: transform var(--dur-slow) var(--ease);
-}
-
-.ui-root .al-add:hover,
-.ui-root .al-add:focus-visible {
-  color: var(--text);
-  border-color: var(--coral-text);
-}
-
-.ui-root .al-add:hover .ds-cross {
-  transform: rotate(90deg);
-}
-
-.ui-root .al-add:focus-visible {
-  outline: 2px solid var(--coral-text);
-  outline-offset: 2px;
+@media (max-width: 768px) {
+  .ui-root .al-add {
+    margin-left: 0;
+  }
 }
 
 .ui-root .al-count {

@@ -195,6 +195,31 @@
   outline-offset: var(--space-px3);
 }
 
+/* The one add button (AddButton; Tim, 26 Oct, 16:54): the crosshair in
+   the text colour, coral only on hover or keyboard focus, full width on
+   a phone. */
+.ui-root .ds-add .ds-cross {
+  background-color: var(--text);
+  transition: background-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-add:hover,
+.ui-root .ds-add:focus-visible {
+  border-color: var(--coral-text);
+}
+
+.ui-root .ds-add:hover .ds-cross,
+.ui-root .ds-add:focus-visible .ds-cross {
+  background-color: var(--coral-text);
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-add {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .ui-root .ds-btn[aria-disabled='true'],
 .ui-root .ds-btn:disabled {
   cursor: default;

@@ -60,6 +60,18 @@
 
 28. **Error messages say what happened, then what to do** (Tim's rule 15), for example "That didn’t save. Check your connection and try again." "Fail" and "failed" are never used in client text. After deleting something the message reads "Deleted" (with Undo where Undo exists), apart from deleting the whole account, which says "Your account has been deleted."
 
+29. **One add button everywhere** (Tim, 26 Oct, 16:54): every button that adds something is the shared `AddButton` (src/components/design): an outlined pill, the brand crosshair in the text colour (not coral), words that say what it adds ("Add objective", "Add agenda item", "Add a to-do", "Add another"), coral only on hover or keyboard focus, and full width on a phone. No page builds its own.
+
+30. **Lists are rows** (Tim, 26 Oct, 16:51): when someone lists several things, each gets its own box, with "Add another" (the `AddButton`) to add a row and the 45 degree crosshair (`IconButton`) to remove one, never one big box ("one per line" or similar). Tools that still ask for several things in one box change when each tool is rebuilt.
+
+## Action first (Tim, 26 Oct)
+
+Every later phase follows these.
+
+1. **The portal is extremely action focused.** Big goals are moved by immediate, small next steps, and every screen helps someone see and take the next one.
+2. **Every tool ends with clarity on at least one small next step**, which links into the performance system (added to the plan, the sprint, a to-do or a habit). The Journal is the one exception for now; others only when Tim agrees.
+3. **Next steps are small enough to do this week, worded as an action, and shown where people will see them again** (Home, the sprint and the weekly debrief).
+
 ## 26 Oct design rules
 
 Tim's rules of 26 Oct (design reference v15, M4 dashboard v46). Later phases follow them. The shared parts are in `src/components/design` and shown in the design gallery.

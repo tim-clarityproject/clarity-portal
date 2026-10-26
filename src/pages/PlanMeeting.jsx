@@ -8,7 +8,7 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import pageText from '../content/pageText';
-import { DatePicker, DisclosureArrow, PageHeader, SaveStatus, TextBox, Button, useToast } from '../components/design';
+import { DatePicker, DisclosureArrow, PageHeader, SaveStatus, TextBox, AddButton, Button, useToast } from '../components/design';
 import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
 import { saveDecisionOrQueue } from '../lib/decisionSave';
 import { useQueuedSave } from '../lib/syncQueue';
@@ -437,9 +437,9 @@ export default function PlanMeeting() {
             </button>
           </div>
         ))}
-        <Button type="button" variant="outline" icon="plus" onClick={addObjective}>
+        <AddButton onClick={addObjective}>
           Add objective
-        </Button>
+        </AddButton>
 
         <div className="plan-label-row">
           <span className="ui-section-heading">Meeting agenda</span>
@@ -490,9 +490,9 @@ export default function PlanMeeting() {
             </button>
           </div>
         ))}
-        <Button type="button" variant="outline" icon="plus" onClick={addAgendaItem}>
+        <AddButton onClick={addAgendaItem}>
           Add agenda item
-        </Button>
+        </AddButton>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
         <SaveStatus state={syncState} />

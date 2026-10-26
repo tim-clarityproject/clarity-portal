@@ -11,7 +11,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import SavingOverlay from '../components/ui/SavingOverlay';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
-import { Crosshair, Loading, PageHeader, TextBox, TextField, Button, SegmentedControl } from '../components/design';
+import { Crosshair, Loading, PageHeader, TextBox, TextField, AddButton, Button, SegmentedControl } from '../components/design';
 
 const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your mission. It's your overall direction, how you'll tackle things in a consistent, thoughtful way. Unlike tactics, which happen day-to-day, your strategies don't change frequently. They're the foundation that guides your daily actions.";
 const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do: the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
@@ -486,16 +486,16 @@ export default function PersonalOperatingPlanEdit() {
                   </div>
                 );
               })}
-              <Button type="button" variant="outline" icon="plus" onClick={() => addTactic(sIndex)}>
+              <AddButton onClick={() => addTactic(sIndex)}>
                 Add tactic
-              </Button>
+              </AddButton>
             </div>
           </div>
         ))}
 
-        <Button type="button" variant="outline" icon="plus" onClick={addStrategy}>
+        <AddButton onClick={addStrategy}>
           Add strategy
-        </Button>
+        </AddButton>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
 

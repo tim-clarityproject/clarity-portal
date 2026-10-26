@@ -11,7 +11,7 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import pageText from '../content/pageText';
-import { Crosshair, Loading, PageHeader, TextBox, Button, Choice, useToast } from '../components/design';
+import { Crosshair, Loading, PageHeader, TextBox, AddButton, Button, Choice, useToast } from '../components/design';
 
 const ACTIONS = ['Stop', 'Automate', 'Delegate', 'Defer'];
 const MAX_ACTIVITY = 80;
@@ -303,9 +303,9 @@ export default function StopDoingAudit() {
           </div>
         ))}
         {items.length < 5 && (
-          <Button type="button" variant="outline" icon="plus" onClick={addItem}>
+          <AddButton onClick={addItem}>
             Add activity
-          </Button>
+          </AddButton>
         )}
 
         <div className="tsa-total">

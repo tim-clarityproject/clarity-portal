@@ -8,7 +8,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
-import { Crosshair, PageHeader, Button } from '../components/design';
+import { Crosshair, PageHeader, AddButton, Button } from '../components/design';
 
 export default function ProjectMatrix() {
   const navigate = useNavigate();
@@ -188,7 +188,7 @@ export default function ProjectMatrix() {
           </table>
         </div>
 
-        <Button variant="outline" icon="plus" type="button" onClick={handleAddProject} style={{ width: '100%', marginBottom: '48px' }}>Add another</Button>
+        <AddButton onClick={handleAddProject} style={{ marginBottom: '48px' }}>Add another</AddButton>
 
         <SaveDiscardButtons
           formData={{ matrix }}

@@ -10,7 +10,7 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import pageText from '../content/pageText';
-import { PageHeader, SaveStatus, TextBox, Button, useToast } from '../components/design';
+import { PageHeader, SaveStatus, TextBox, AddButton, Button, useToast } from '../components/design';
 import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
 import { saveDecisionOrQueue } from '../lib/decisionSave';
 import { useQueuedSave } from '../lib/syncQueue';
@@ -262,9 +262,9 @@ export default function IfThenPlanning() {
             </div>
           );
         })}
-        <Button variant="outline" icon="plus" onClick={addItem}>
+        <AddButton onClick={addItem}>
           Add scenario
-        </Button>
+        </AddButton>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
         <SaveStatus state={syncState} />

@@ -6,7 +6,7 @@ import { useLoadDecision } from '../hooks/useLoadDecision';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader, TextField, Button } from '../components/design';
+import { PageHeader, TextField, AddButton, Button } from '../components/design';
 
 export default function RisksAssessment() {
   const navigate = useNavigate();
@@ -126,7 +126,7 @@ export default function RisksAssessment() {
             ))}
           </div>
 
-          <Button variant="outline" icon="plus" type="button" onClick={handleAddRisk} style={{ marginBottom: '32px' }}>Add another</Button>
+          <AddButton onClick={handleAddRisk} style={{ marginBottom: '32px' }}>Add another</AddButton>
         </form>
 
         <SaveDiscardButtons

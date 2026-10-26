@@ -8,7 +8,7 @@ import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import { autoSaveFormData } from '../lib/saveProgress';
 
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader, TextBox, Button } from '../components/design';
+import { PageHeader, TextBox, AddButton, Button } from '../components/design';
 
 export default function ProjectList() {
   const navigate = useNavigate();
@@ -211,7 +211,7 @@ export default function ProjectList() {
               ))}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
                 <span style={{ minWidth: '20px' }}></span>
-                <Button variant="outline" icon="plus" type="button" onClick={handleAddProject} style={{ flex: 1 }}>Add another</Button>
+                <AddButton onClick={handleAddProject}>Add another</AddButton>
               </div>
             </form>
           </div>

@@ -7,7 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { supabase } from '../lib/supabase';
-import { Loading, PageHeader, Button } from '../components/design';
+import { Loading, PageHeader, AddButton, Button } from '../components/design';
 
 // Never the raw error: say what happened, then what to do.
 const LOAD_ERROR = 'Your options didn’t load. Check your connection and try again.';
@@ -478,10 +478,7 @@ function GrowStep3bPrioritizeForm({ isReload }) {
                   All options ranked
                 </p>
               )}
-              <Button
-                variant="outline"
-                icon="plus"
-                onClick={() => {
+              <AddButton onClick={() => {
                   const newAvailable = [...availableOptions, ''];
                   setAvailableOptions(newAvailable);
                   updateFormData('availableOptions', newAvailable);
@@ -491,8 +488,8 @@ function GrowStep3bPrioritizeForm({ isReload }) {
                 }}
                 style={{ alignSelf: 'flex-start' }}
               >
-                Add Option
-              </Button>
+                Add option
+              </AddButton>
             </div>
           </div>
 

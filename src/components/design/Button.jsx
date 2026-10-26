@@ -26,6 +26,23 @@ export const Button = forwardRef(function Button(
   );
 });
 
+// The one add button (Tim, 26 Oct, 16:54): every button that adds
+// something looks the same. An outlined pill, the brand crosshair in the
+// text colour (not coral), words that say what it adds ("Add objective",
+// "Add agenda item", "Add a to-do", "Add another"), coral only on hover
+// or keyboard focus, and full width on a phone.
+export const AddButton = forwardRef(function AddButton(
+  { children, className = '', type = 'button', ...rest },
+  ref,
+) {
+  return (
+    <button ref={ref} type={type} className={`ds-btn ds-btn--outline ds-add ${className}`.trim()} {...rest}>
+      <Crosshair />
+      {children}
+    </button>
+  );
+});
+
 // A 44px round button holding only a crosshair. `label` is required: it
 // is what a screen reader says ("Close", "Add a to-do").
 export const IconButton = forwardRef(function IconButton(

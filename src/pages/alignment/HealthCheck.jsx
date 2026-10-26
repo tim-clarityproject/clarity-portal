@@ -7,7 +7,7 @@ import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 import OnePager from './OnePager';
 import AccessCodeInput, { cleanCode } from './AccessCodeInput';
-import { Chevron, Crosshair, Loading, TextBox, PdfChoice, savePdf, PDF_ERROR } from '../../components/design';
+import { AddButton, Chevron, Loading, TextBox, PdfChoice, savePdf, PDF_ERROR } from '../../components/design';
 import { formatUkDate } from '../../lib/dateFormatter';
 import { requestAlignmentEmail } from '../../lib/alignmentEmail';
 import { healthCheckPdf } from '../../lib/pdf/docs/healthCheck';
@@ -129,10 +129,9 @@ function NumberedRows({ rows, kind, label, placeholder, max, focusId, onChange, 
         </div>
       ))}
       {rows.length < max && (
-        <button type="button" className="al-add" onClick={onAdd} data-kind={kind}>
-          <Crosshair size="sm" />
+        <AddButton className="al-add" onClick={onAdd} data-kind={kind}>
           Add another
-        </button>
+        </AddButton>
       )}
     </>
   );
