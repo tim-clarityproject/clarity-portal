@@ -1,7 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
 import { supabase, auth } from '../lib/supabase';
 import { sessionManager } from '../lib/sessionManager';
-import { dataSyncManager } from '../lib/dataSyncManager';
 import { diag } from '../utils/diag';
 import { clearAppStorage } from '../lib/clearAppStorage';
 import { flush as flushQueue, queueState, retrySyncQueue, startSyncQueue, stopSyncQueue } from '../lib/syncQueue';
@@ -32,10 +31,8 @@ export function AuthProvider({ children }) {
     const checkUser = async () => {
       try {
         // DIAGNOSTIC: Check what's in localStorage at app launch
-        const storedUserData = localStorage.getItem('clarity-user-data');
         const storedAuthToken = localStorage.getItem('clarity-portal-auth');
         console.log('[AuthContext] APP LAUNCH DIAGNOSTIC:');
-        console.log('[AuthContext] - clarity-user-data in localStorage?', !!storedUserData);
         console.log('[AuthContext] - clarity-portal-auth token in localStorage?', !!storedAuthToken);
         if (storedAuthToken) {
           try {
@@ -68,13 +65,9 @@ export function AuthProvider({ children }) {
 
         // Check session validity
         if (session?.user && !error) {
-          // Session exists and is valid. The page shows straight away;
-          // the cached profile data refreshes in the background.
+          // Session exists and is valid. The page shows straight away.
           console.log('[AuthContext] - Session valid, setting user:', session.user.email);
           setUser(session.user);
-          dataSyncManager.loadUserData(session.user.id)
-            .then((userData) => localStorage.setItem('clarity-user-data', JSON.stringify(userData)))
-            .catch(() => { /* offline: the cached copy stays */ });
         } else if (storedSessionUser()) {
           // The refresh could not reach the server (offline, or a slow
           // connection): still signed in, from the session on the device.
@@ -179,13 +172,6 @@ export function AuthProvider({ children }) {
                 if (updateError) console.error('[AuthContext] Profile update error:', updateError);
               }
             }
-
-            // Wait 500ms for session to fully settle before querying other tables
-            // This prevents 406 errors on SELECT queries that depend on RLS checks
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            const userData = await dataSyncManager.loadUserData(session.user.id);
-            localStorage.setItem('clarity-user-data', JSON.stringify(userData));
           } catch (error) {
             // Silently handle profile update errors
           }
@@ -193,15 +179,6 @@ export function AuthProvider({ children }) {
 
         // A refreshed sign-in: send whatever waited for it.
         if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') retrySyncQueue();
-
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-          try {
-            const userData = await dataSyncManager.loadUserData(session.user.id);
-            localStorage.setItem('clarity-user-data', JSON.stringify(userData));
-          } catch (error) {
-            // Silently handle data sync errors
-          }
-        }
       } else if (!storedSessionUser()) {
         // Signed out (here, in another tab, or the session ended). Drafts,
         // page copies and waiting saves stay on the device: only a
@@ -275,10 +252,6 @@ export function AuthProvider({ children }) {
       const session = await sessionManager.getSession();
       if (session?.user) {
         sessionManager.saveSessionMetadata(session);
-        // Load user's data from Supabase
-        const userData = await dataSyncManager.loadUserData(session.user.id);
-        // Store user data in localStorage for quick access
-        localStorage.setItem('clarity-user-data', JSON.stringify(userData));
       }
       return { success: true };
     } catch (err) {

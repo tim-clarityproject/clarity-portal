@@ -46,18 +46,6 @@ export default function WelcomeBack() {
           return;
         }
 
-        const cachedData = localStorage.getItem('clarity-user-data');
-        if (cachedData) {
-          const userData = JSON.parse(cachedData);
-          if (userData.first_name) {
-            if (!cancelled) {
-              setFirstName(userData.first_name);
-              setNameLoaded(true);
-            }
-            return;
-          }
-        }
-
         const { data } = await supabase
           .from('profiles')
           .select('first_name')

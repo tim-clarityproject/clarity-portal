@@ -30,7 +30,7 @@ function isAppOwnedKey(key) {
   if (DEVICE_PREFIXES.some((prefix) => key.startsWith(prefix))) return true;
   // Journal, plan-edit and other drafts: clarity-<thing>-draft-<id>.
   if (key.startsWith('clarity-') && key.includes('-draft-')) return true;
-  // dataSyncManager's per-tool saves: <toolType>-autosave / -progress.
+  // Older per-tool saves, <toolType>-autosave / -progress, still on some devices.
   if (key.endsWith('-autosave') || key.endsWith('-progress')) return true;
   // Wheel of Life in-progress check-in: clarity.wol.inprogress.<userId>
   // (IN_PROGRESS_PREFIX in wheelOfLifeApi.js).

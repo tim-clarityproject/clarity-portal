@@ -135,7 +135,6 @@ export default function EmailConfirmation() {
         // 1. See the SIGNED_IN event (from detectSessionInUrl)
         // 2. Read justConfirmedEmail flag from localStorage
         // 3. Do the profile UPSERT with names from user_metadata and terms_accepted=true
-        // 4. Call loadUserData to sync other tables
         succeed();
       } catch (err) {
         console.error('Email confirmation exception:', err);
