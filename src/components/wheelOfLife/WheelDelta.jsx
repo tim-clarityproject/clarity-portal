@@ -1,4 +1,15 @@
 import { deltaView, formatCheckinDate } from '../../lib/wheelOfLife';
+import { tipProps } from '../design/ChartTips';
+
+// Each bar's pop-up (every mark has one, Tim 26 Oct): the change first,
+// then the two check-ins it compares.
+function deltaTip(r, first, last) {
+  return {
+    value: `${r.name} ${r.changeText}`,
+    when: `${first} to ${last}`,
+    extra: [r.start == null ? `New, now ${r.latest}.` : `From ${r.start} to ${r.latest}.`],
+  };
+}
 
 // The Delta ("what moved") view, ported line for line from the approved
 // mock-up's delta() (wheel-of-life.html). Desktop: one row per area with a
@@ -39,7 +50,7 @@ export default function WheelDelta({ range, areas, phone }) {
                   </div>
                   <div className="wol-dpb">
                     <span className="wol-trk">
-                      {r.change ? <i className={`wol-${r.changeClass}`} style={{ '--w': `${r.fullPct.toFixed(1)}%` }} /> : null}
+                      {r.change ? <i className={`wol-${r.changeClass}`} style={{ '--w': `${r.fullPct.toFixed(1)}%` }} {...tipProps(deltaTip(r, first, last))} /> : null}
                     </span>
                     <small>{startLatest(r)}</small>
                   </div>
@@ -66,8 +77,8 @@ export default function WheelDelta({ range, areas, phone }) {
           <span className="wol-db">
             <i className="wol-ax" />
             {r.change == null || r.change === 0
-              ? (r.change === 0 ? <b className="wol-z" /> : null)
-              : <b className={`wol-${r.changeClass}`} style={{ '--w': `${r.halfPct.toFixed(2)}%` }} />}
+              ? (r.change === 0 ? <b className="wol-z" {...tipProps(deltaTip(r, first, last))} /> : null)
+              : <b className={`wol-${r.changeClass}`} style={{ '--w': `${r.halfPct.toFixed(2)}%` }} {...tipProps(deltaTip(r, first, last))} />}
           </span>
           <span className={`wol-dv wol-${r.changeClass}`}>
             {r.changeText}

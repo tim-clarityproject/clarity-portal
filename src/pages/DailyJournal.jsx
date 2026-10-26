@@ -45,6 +45,12 @@ const JOURNAL_CSS = `
     font-size: var(--fs-option) !important;
   }
 }
+.ui-root .jrn-unknown {
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
 .ui-root .jrn-paper-wrap {
   display: flex;
   flex-direction: column;
@@ -313,6 +319,10 @@ export default function DailyJournal() {
           title={`${formatPlainDayLabel(dateObj)} ${dateObj.getFullYear()}`}
           info={pageText.dailyJournal}
         />
+
+        {!serverKnown && (
+          <p className="jrn-unknown" role="status">This day hasn’t loaded, so you can write now and save once you’re back online.</p>
+        )}
 
         <ChipRow className="jrn-prompts" label="Need a way in?">
           {PROMPTS.map((p) => (

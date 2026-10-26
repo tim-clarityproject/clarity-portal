@@ -179,6 +179,19 @@ export function dismissFailed(userId = currentUser) {
   if (items.some((x) => x.failed)) write(userId, items.filter((x) => !x.failed));
 }
 
+/**
+ * Forget saves still waiting for one row (a plan discarded before its
+ * save was sent), so it can't come back once the connection returns.
+ * Returns how many were dropped.
+ */
+export function dropQueued(userId, table, id) {
+  if (!userId) return 0;
+  const items = read(userId);
+  const keepItems = items.filter((x) => !(x.table === table && (x.values?.id === id || x.match?.id === id)));
+  if (keepItems.length !== items.length) write(userId, keepItems);
+  return items.length - keepItems.length;
+}
+
 /** After a refreshed sign-in, try again whatever waited for it. */
 export function retrySyncQueue() {
   if (currentUser) flush(currentUser);

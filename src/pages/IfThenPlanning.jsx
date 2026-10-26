@@ -11,7 +11,7 @@ import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import pageText from '../content/pageText';
 import { PageHeader, SaveStatus, TextBox, Button, useToast } from '../components/design';
-import { useDraft } from '../lib/drafts';
+import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
 import { saveDecisionOrQueue } from '../lib/decisionSave';
 import { useQueuedSave } from '../lib/syncQueue';
 
@@ -51,7 +51,7 @@ export default function IfThenPlanning() {
   const toast = useToast();
   // A plan opened from My Plans is ready once it has loaded; a new one at once.
   const [loaded, setLoaded] = useState(!location.state?.decisionId);
-  const [draftName] = useState(() => `if-then:${location.state?.decisionId || 'new'}`);
+  const [draftName, setDraftName] = useState(() => `if-then:${location.state?.decisionId || 'new'}`);
   const [syncState, markQueued] = useQueuedSave();
   // A double tap starts one save, not two.
   const savingRef = useRef(false);
@@ -130,6 +130,14 @@ export default function IfThenPlanning() {
     // back ("Will sync", then "Saved").
     const result = await saveDecisionOrQueue({ userId: user.id, decisionId, toolType: 'if_then_planning', payload });
     setDecisionId(result.id);
+    // A new plan now has its id (made on the device when offline): the
+    // page's history and its draft follow it, so a refresh and a second
+    // save update this plan rather than make another.
+    if (!location.state?.decisionId) {
+      navigate(location.pathname, { replace: true, state: { ...location.state, decisionId: result.id } });
+      forgetDraft(user.id, draftName);
+      setDraftName(`if-then:${result.id}`);
+    }
     // The draft stays until the server has it: a save waiting on the
     // device is cleared once it has gone (below), and kept if refused.
     if (result.status === 'queued') markQueued(result.qid);

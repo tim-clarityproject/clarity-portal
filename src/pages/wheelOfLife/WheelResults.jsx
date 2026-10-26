@@ -287,7 +287,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
 
         {view.style === 'delta' ? (
           <div key="delta" className="wol-panel wol-delta wol-enter">
-            <WheelDelta range={rg} areas={areas} phone={phone} />
+            <ChartTips><WheelDelta range={rg} areas={areas} phone={phone} /></ChartTips>
           </div>
         ) : (
           <div key={view.style} className="wol-wheel wol-enter">

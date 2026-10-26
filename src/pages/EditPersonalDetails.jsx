@@ -35,6 +35,9 @@ export default function EditPersonalDetails() {
   });
 
   useEffect(() => {
+    // Only the latest load counts (a second, late answer must never
+    // replace a draft that has just been put back).
+    let cancelled = false;
     const fetchProfile = async () => {
       if (!user?.id) {
         setIsLoading(false);
@@ -48,6 +51,7 @@ export default function EditPersonalDetails() {
           .eq('id', user.id)
           .single();
 
+        if (cancelled) return;
         if (profile) {
           setFirstName(profile.first_name || '');
           setLastName(profile.last_name || '');
@@ -57,11 +61,12 @@ export default function EditPersonalDetails() {
       } catch (error) {
         // Silently handle profile fetch errors
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchProfile();
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   const handleSaveProfile = async () => {

@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { PLAN_REVIEW_TYPE } from './planReview';
+import { dropQueued, saveOrQueue } from './syncQueue';
+import { isNetworkError } from './connection';
 
 // Draft-only deletes for every tool's in-page Discard (patch D1).
 //
@@ -81,11 +83,20 @@ export async function discardMissionReviewDraft(userId, reviewId) {
 // without depending on which of the two that tool happens to set, and
 // a 'completed' row matches neither.
 export async function discardDecisionDraft(userId, decisionId) {
-  const { error } = await supabase
-    .from('decisions')
-    .delete()
-    .eq('id', decisionId)
-    .eq('user_id', userId)
-    .or('draft.eq.true,status.eq.draft');
-  if (error) throw error;
+  // A save of this plan still waiting on the device is dropped, so the
+  // discarded plan can't arrive once the connection is back.
+  dropQueued(userId, 'decisions', decisionId);
+  try {
+    const { error } = await supabase
+      .from('decisions')
+      .delete()
+      .eq('id', decisionId)
+      .eq('user_id', userId)
+      .or('draft.eq.true,status.eq.draft');
+    if (error) throw error;
+  } catch (error) {
+    if (!isNetworkError(error)) throw error;
+    // Offline: delete it once the connection is back (still drafts only).
+    await saveOrQueue(userId, { table: 'decisions', kind: 'delete', match: { id: decisionId, user_id: userId, status: 'draft' } });
+  }
 }

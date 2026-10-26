@@ -29,7 +29,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
     try {
       setIsSaving(true);
       const decisionId = location.state?.decisionId;
-      const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+      const dateTitle = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/,/g, '');
       const title = location.state?.problemTitle || location.state?.title || dateTitle;
 
       if (decisionId) {
@@ -94,7 +94,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
       try {
         setIsSaving(true);
         const decisionId = location.state?.decisionId;
-        const dateTitle = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        const dateTitle = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/,/g, '');
         const title = location.state?.problemTitle || location.state?.title || dateTitle;
 
         if (decisionId) {
