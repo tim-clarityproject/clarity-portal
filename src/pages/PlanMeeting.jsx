@@ -9,6 +9,7 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import pageText from '../content/pageText';
 import { DatePicker, DisclosureArrow, PageHeader, TextBox, Button, useToast } from '../components/design';
+import { limitTitle, TITLE_TOO_LONG } from '../lib/titleLimit';
 
 const SECTION_OPTIONS = [
   { id: 'context', label: 'Meeting context' },
@@ -41,6 +42,7 @@ export default function PlanMeeting() {
   const [decisionId, setDecisionId] = useState(location.state?.decisionId || null);
 
   const [title, setTitle] = useState('');
+  const [titleNote, setTitleNote] = useState(false); // shown after typing past the title limit
   const [chair, setChair] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -265,7 +267,20 @@ export default function PlanMeeting() {
         </div>
 
         <div className="plan-field">
-          <TextBox id="meeting-title" label="Meeting title" lines="one" placeholder="Type here" value={title} onChange={setTitle} />
+          <TextBox
+            id="meeting-title"
+            label="Meeting title"
+            lines="one"
+            placeholder="Type here"
+            value={title}
+            onChange={(next) => {
+              const { value, over } = limitTitle(next);
+              setTitle(value);
+              setTitleNote(over);
+            }}
+            aria-describedby={titleNote ? 'meeting-title-note' : undefined}
+          />
+          {titleNote && <p id="meeting-title-note" className="ds-hint" role="status">{TITLE_TOO_LONG}</p>}
         </div>
 
         <div className="plan-field">

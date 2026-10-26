@@ -74,6 +74,7 @@ Tim's PDF rules (26 Oct). Every PDF follows all 32. They are built into the shar
 **On every page**
 
 5. **Title block (page 1):** the title in Nekst capitals, one or two lines; the 56px coral line; one grey line of details (organisation or person, date, type), each readable on its own ("Board or owner meeting", not "Board or owner").
+5a. **Titles people type are limited to 80 characters, so a PDF title always fits two lines.** (The meeting plan's title, with the note "Titles can be up to 80 characters."; `src/lib/titleLimit.js`. The title block still shrinks to fit for older saved titles.)
 6. **Updated, not version numbers** (Tim, 09:33): a tool PDF downloaded again after changes shows "Updated Mon 26 Oct 2026, 09:30" in its details line. Signed documents keep their reference and version number.
 7. **Running header from page 2** (Tim, 09:20): small and grey: the document name on the left, the organisation or person on the right.
 8. **Footer:** the real logo mark, the portal address as a working link, "Confidential: for [organisation or person]" when it holds a client's or team's own answers (Tim, 09:20), and "Page 2 of 4". A one-page PDF has no page number.
