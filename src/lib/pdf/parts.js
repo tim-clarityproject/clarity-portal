@@ -797,9 +797,9 @@ export function flatten(L, spec, contents, root) {
       after += su[i].lines;
       if (after < 3) su[i].keep = true;
     }
-    // a table's last row stays with a note straight after it
+    // a table's last row stays with a short note (up to three lines) straight after it, so the note never sits alone on a page
     blocks.forEach((us, bi) => {
-      if (us[0].kind === 'thead' && blocks[bi + 1]) us[us.length - 1].keep = blocks[bi + 1].length === 1 && blocks[bi + 1][0].lines <= 2;
+      if (us[0].kind === 'thead' && blocks[bi + 1]) us[us.length - 1].keep = blocks[bi + 1].length === 1 && blocks[bi + 1][0].lines <= 3;
     });
     const total = su.reduce((s, u, i) => s + u.h + (i ? u.gap : 0), 0);
     if (total < L.pageH / 3) su.forEach((u) => { u.keep = true; }); // short sections move whole

@@ -122,8 +122,10 @@ async function healthCheck(name, browserType, options, organisation = null) {
   const footer = page.getByRole('button', { name: /^download pdf$/i });
   await footer.waitFor({ timeout: 20000 });
   await choose(page, downloads, footer, 'Light', name, { doubleTap: true });
-  const card = page.getByRole('button', { name: /download a pdf/i });
-  await choose(page, downloads, card, 'Dark', name);
+  // one way in (rule 2): the footer button only, no "Download a PDF" card
+  results.push(`${name}: "Download a PDF" cards on the page: ${await page.getByText('Download a PDF').count()}`);
+  if (process.env.SHOTS) await page.screenshot({ path: join(out, `${name} - results.png`), fullPage: true });
+  await choose(page, downloads, footer, 'Dark', name);
   await browser.close();
 }
 
