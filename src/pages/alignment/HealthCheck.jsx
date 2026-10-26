@@ -7,11 +7,10 @@ import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 import OnePager from './OnePager';
 import AccessCodeInput, { cleanCode } from './AccessCodeInput';
-import PdfChoice from './PdfChoice';
-import { Crosshair, Loading, TextBox } from '../../components/design';
+import { Crosshair, Loading, TextBox, PdfChoice, savePdf, PDF_ERROR } from '../../components/design';
 import { formatUkDate } from '../../lib/dateFormatter';
 import { requestAlignmentEmail } from '../../lib/alignmentEmail';
-import { downloadPdf } from './pdf/generatePdf';
+import { healthCheckPdf } from '../../lib/pdf/docs/healthCheck';
 import { openSession, createSaveQueue, readBackup, clearBackup } from '../../lib/alignmentApi';
 import { strategicImportance, roundPct } from '../../lib/alignmentScore';
 import {
@@ -172,6 +171,7 @@ export default function HealthCheck() {
   const footerButtonRef = useRef(null);
   const notifyRef = useRef(false); // send the completion email after the completing save lands
   const [openedAt, setOpenedAt] = useState(null); // updated_at when the session was opened (date fallback)
+  const changedAtRef = useRef(null); // when the answers last changed in this visit (the PDF's "Updated" line)
 
   // ---- page chrome: title and robots meta for this route only ----
   useEffect(() => {
@@ -200,6 +200,7 @@ export default function HealthCheck() {
     applyDraft(nextDraft);
     applyStep(nextStep);
     setNotice('');
+    changedAtRef.current = new Date().toISOString();
     const queue = queueRef.current;
     if (!queue) return;
     unsavedRef.current = true;
@@ -445,15 +446,25 @@ export default function HealthCheck() {
   const total = projects.length || 1;
 
   // One-pager card actions.
+  const pdfBusyRef = useRef(false); // a double tap never makes two files
   const handleDownloadPdf = async (variant = 'light') => {
-    if (pdf.busy) return;
+    if (pdfBusyRef.current) return;
+    pdfBusyRef.current = true;
     setPdf({ busy: true, message: '' });
     try {
       const done = serverCompletedAt || draftRef.current.completedAt || openedAt || null;
-      await downloadPdf(draftRef.current, variant, done);
+      await savePdf(() => healthCheckPdf({
+        draft: draftRef.current,
+        completedAt: done,
+        updatedAt: changedAtRef.current || openedAt,
+        organisation: null, // the client's organisation is not sent to this page yet
+      }), variant);
       setPdf({ busy: false, message: '' });
-    } catch {
-      setPdf({ busy: false, message: 'Your PDF wasn’t made. Check your connection and try again.' });
+    } catch (error) {
+      console.error('[HealthCheck] the PDF was not made:', error);
+      setPdf({ busy: false, message: PDF_ERROR });
+    } finally {
+      pdfBusyRef.current = false;
     }
   };
   const handleEmailLink = async () => {
@@ -750,7 +761,7 @@ export default function HealthCheck() {
         )}
       </div>
       {onDone ? (
-        <div className="al-pdfmenu" ref={footerMenuRef}>
+        <div className="ds-pdfmenu" ref={footerMenuRef}>
           <AuthPrimaryButton
             ref={footerButtonRef}
             loading={pdf.busy}

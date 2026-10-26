@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import AlignmentChart from './AlignmentChart';
-import PdfChoice from './PdfChoice';
-import { DisclosureArrow } from '../../components/design';
+import { DisclosureArrow, PdfChoice } from '../../components/design';
 import { cleanItems } from './alignmentFlow';
 import { quadrant } from './chartLayout';
 import { rankProjects, roundPct, MAX_CONTRIBUTION } from '../../lib/alignmentScore';
@@ -64,7 +63,7 @@ function ProjectCards({ onDownloadPdf, onEmailLink, onCreateAccount, pdf, email,
             <span>
               <span className="al-card-name">Download a PDF</span>
               <span className="al-card-desc">
-                {pdf.busy ? 'Preparing your PDF' : 'This one-pager, ready to print or share'}
+                {pdf.busy ? 'Preparing your PDF' : 'Your results, ready to print or share'}
               </span>
             </span>
             <DisclosureArrow open={menuOpen} />

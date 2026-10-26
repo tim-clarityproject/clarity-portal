@@ -1,35 +1,30 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
-// The Light / Dark choice for the PDF. One component, used by both the coral
-// Download PDF button in the footer and the Download a PDF card, so the two
-// always match. Desktop: a small panel above its anchor. Phone: a bottom sheet.
+// The Light / Dark choice for every PDF (PDF rule 2): one Download PDF button,
+// then "Light, for printing" or "Dark, for sharing". Used by PdfDownload and by
+// any other trigger (the Health Check's Download a PDF card), so they always
+// match. Desktop: a small panel by its trigger. Phone: a bottom sheet.
 
 const OPTIONS = [
   { variant: 'light', name: 'Light', note: 'For printing' },
-  { variant: 'dark', name: 'Dark', note: 'For screens' },
+  { variant: 'dark', name: 'Dark', note: 'For sharing' },
 ];
 
-/** A miniature A4 page: a few text lines, a tiny dot field, a coral and a mint dot. */
+/** A miniature page: a title, the coral line, a few text lines and a small bar chart. */
 function Thumb({ variant }) {
   const light = variant === 'light';
   const paper = light ? 'var(--text)' : 'var(--bg)';
   const ink = light ? 'var(--placeholder)' : 'var(--btn-line)';
-  const field = light ? 'var(--line)' : 'var(--btn-line)';
-  const dots = [];
-  for (let r = 0; r < 3; r += 1) {
-    for (let c = 0; c < 5; c += 1) dots.push(<circle key={`${r}-${c}`} cx={4 + c * 5} cy={4 + r * 5} r="0.9" style={{ fill: field }} />);
-  }
   return (
-    <svg className="al-thumb" viewBox="0 0 56 79" width="56" height="79" aria-hidden="true" focusable="false">
+    <svg className="ds-pdfthumb" viewBox="0 0 56 79" width="56" height="79" aria-hidden="true" focusable="false">
       <rect x="0.5" y="0.5" width="55" height="78" rx="4" style={{ fill: paper, stroke: 'var(--line)' }} />
-      <rect x="6" y="8" width="26" height="2" rx="1" style={{ fill: ink }} />
-      <rect x="6" y="14" width="40" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
-      <rect x="6" y="19" width="34" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
-      <g transform="translate(15 30)">
-        {dots}
-        <circle cx="9" cy="9" r="2.4" style={{ fill: 'var(--coral)' }} />
-        <circle cx="19" cy="4" r="2.4" style={{ fill: 'var(--mint)' }} />
-      </g>
+      <rect x="6" y="8" width="30" height="2.5" rx="1" style={{ fill: ink }} />
+      <rect x="6" y="13" width="9" height="1" style={{ fill: 'var(--coral)' }} />
+      <rect x="6" y="18" width="40" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
+      <rect x="6" y="23" width="34" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
+      <rect x="6" y="32" width="36" height="3" style={{ fill: 'var(--coral)' }} />
+      <rect x="6" y="38" width="28" height="3" style={{ fill: 'var(--coral)' }} />
+      <rect x="6.25" y="44.25" width="17.5" height="2.5" style={{ fill: 'none', stroke: ink, strokeWidth: 0.5 }} />
       <rect x="6" y="58" width="44" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
       <rect x="6" y="63" width="38" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
       <rect x="6" y="68" width="42" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
@@ -56,15 +51,17 @@ function usePhone() {
  * @param {(variant: 'light'|'dark') => void} props.onChoose
  * @param {{current: HTMLElement|null}} props.containerRef wraps the trigger and the panel: clicks inside it are not "outside"
  * @param {{current: HTMLElement|null}} props.returnFocusRef the trigger button
+ * @param {'up'|'down'} [props.placement] desktop: open above (default) or below the trigger
+ * @param {'left'|'right'} [props.align] desktop: line up with the trigger's left or right edge (default)
  */
-export default function PdfChoice({ open, onClose, onChoose, containerRef, returnFocusRef }) {
+export default function PdfChoice({ open, onClose, onChoose, containerRef, returnFocusRef, placement = 'up', align = 'right' }) {
   const titleId = useId();
   const panelRef = useRef(null);
   const phone = usePhone();
 
   // Focus the first option (Light) when it opens; nothing is pre-selected.
   useEffect(() => {
-    if (open) panelRef.current?.querySelector('.al-pdfopt')?.focus();
+    if (open) panelRef.current?.querySelector('.ds-pdfopt')?.focus();
   }, [open]);
 
   // Click or tap outside closes it.
@@ -87,7 +84,7 @@ export default function PdfChoice({ open, onClose, onChoose, containerRef, retur
   };
 
   const onKeyDown = (e) => {
-    const opts = [...panelRef.current.querySelectorAll('.al-pdfopt')];
+    const opts = [...panelRef.current.querySelectorAll('.ds-pdfopt')];
     const i = opts.indexOf(document.activeElement);
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -116,30 +113,30 @@ export default function PdfChoice({ open, onClose, onChoose, containerRef, retur
   const panel = (
     <div
       ref={panelRef}
-      className={phone ? 'al-pdfsheet' : 'al-pdfpop'}
+      className={phone ? 'ds-pdfsheet' : `ds-pdfpop${placement === 'down' ? ' ds-pdfpop--down' : ''}${align === 'left' ? ' ds-pdfpop--left' : ''}`}
       role="dialog"
       aria-modal={phone ? 'true' : undefined}
       aria-labelledby={titleId}
       onKeyDown={onKeyDown}
     >
-      <p id={titleId} className="al-pdftitle">Choose your PDF</p>
-      <div className="al-pdfopts">
+      <p id={titleId} className="ds-pdftitle">Choose your PDF</p>
+      <div className="ds-pdfopts">
         {OPTIONS.map((o) => (
-          <button key={o.variant} type="button" className="al-pdfopt" onClick={() => choose(o.variant)}>
+          <button key={o.variant} type="button" className="ds-pdfopt" aria-label={`${o.name}, ${o.note.toLowerCase()}`} onClick={() => choose(o.variant)}>
             <Thumb variant={o.variant} />
-            <span className="al-pdfname">{o.name}</span>
-            <span className="al-pdfnote">{o.note}</span>
+            <span className="ds-pdfname">{o.name}</span>
+            <span className="ds-pdfnote">{o.note}</span>
           </button>
         ))}
       </div>
-      {phone && <button type="button" className="al-pdfcancel" onClick={close}>Cancel</button>}
+      {phone && <button type="button" className="ds-pdfcancel" onClick={close}>Cancel</button>}
     </div>
   );
 
   if (!phone) return panel;
   return (
     <>
-      <div className="al-pdfscrim" aria-hidden="true" />
+      <div className="ds-pdfscrim" aria-hidden="true" />
       {panel}
     </>
   );

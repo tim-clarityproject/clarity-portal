@@ -60,6 +60,65 @@
 
 28. **Error messages say what happened, then what to do** (Tim's rule 15), for example "That didn’t save. Check your connection and try again." "Fail" and "failed" are never used in client text. After deleting something the message reads "Deleted" (with Undo where Undo exists), apart from deleting the whole account, which says "Your account has been deleted."
 
+## PDF rules
+
+Tim's PDF rules (26 Oct). Every PDF follows all 32. They are built into the shared template in `src/lib/pdf` (pdfkit, with its own page layout step), so no tool draws its own PDF: a tool describes its document (see the top of `src/lib/pdf/render.js`) and the template does the rest. The one Download PDF button is `PdfDownload` (src/components/design).
+
+**Versions and paper**
+
+1. **Light and Dark for tools** (Tim, 08:59): every tool that makes a PDF offers Light (for printing) and Dark (for sharing on a phone). Same layout, content and page breaks; only the colours and the logo file change. Coaching agreements, sponsor agreements, quotes and the supplier pack are light only, because they are printed, signed and filed.
+2. **One button, then a choice:** one "Download PDF" button, which then offers "Light, for printing" and "Dark, for sharing".
+3. **Paper matches the client's country** (Tim, 09:20): US Letter for the US and Canada, A4 for everyone else. Margins about 19mm on every side, with the footer inside them. (One shared helper, `paperFor` in `src/lib/pdf/paper.js`: the person's country setting once My Account has one, then the device's region, then its time zone.)
+4. **No cover page** (Tim, 09:20): page 1 opens with the title block, then the content straight away.
+
+**On every page**
+
+5. **Title block (page 1):** the title in Nekst capitals, one or two lines; the 56px coral line; one grey line of details (organisation or person, date, type), each readable on its own ("Board or owner meeting", not "Board or owner").
+6. **Updated, not version numbers** (Tim, 09:33): a tool PDF downloaded again after changes shows "Updated Mon 26 Oct 2026, 09:30" in its details line. Signed documents keep their reference and version number.
+7. **Running header from page 2** (Tim, 09:20): small and grey: the document name on the left, the organisation or person on the right.
+8. **Footer:** the real logo mark, the portal address as a working link, "Confidential: for [organisation or person]" when it holds a client's or team's own answers (Tim, 09:20), and "Page 2 of 4". A one-page PDF has no page number.
+9. **The real logo only** (Tim, 09:04): public/brand/logomark-positive.png (black crosshair) on light pages, logomark-negative.png (white crosshair) on dark pages. Never redrawn or recoloured, in PDFs or mock-ups.
+10. **No "Prepared by" panel** (Tim, 09:04). Who made it only shows where a signature is needed.
+
+**What goes in**
+
+11. **Blank answers are left out** (Tim, 09:33): the PDF shows only what was filled in, so it never looks half done. A section with nothing in it is left out with its heading.
+12. **Summary first:** page 1 starts with an At a glance panel of two to four items, each laid out the same way.
+13. **Contents list over 6 pages** (Tim, 09:33): a short list of sections with page numbers, under the At a glance panel.
+14. **No link back to the portal** (Tim, 09:33): the PDF stands on its own; the portal address in the footer is enough.
+
+**Type and colour**
+
+15. **Fonts:** Nekst for the title, section headings (capitals, slightly letter-spaced) and big numbers (Nekst Light at 22pt and above); DM Sans for everything else. Body text 10pt with generous line spacing, lines no longer than about 62 characters, nothing smaller than 8.5pt. Words are never hyphenated across lines.
+16. **Light colours:** white page, near-black text (#111110), grey for details (#636362), pale grey lines (#DCDCD9), light grey panels (#F4F4F3). **Dark colours:** black page, white text, grey details (#A3A3A0), dark lines (#262626), dark panels (#111110) with a thin edge so they hold on a dim phone. (These live in `src/lib/pdf/theme.js`, the one place a PDF colour is written.)
+17. **Coral means good:** only for the title line and what is at or above the standard; below the standard is grey. Never coral text, and no mint (it prints poorly).
+18. **Colour is never the only signal:** every bar has its value beside it and every chart has a key, so a black and white print still reads.
+19. **The writing rules apply** (as in this file): labels before numbers, UK spelling, dates like "Mon 26 Oct 2026", 24-hour times, no dashes, "Dr. Tim Dutton" and "The Clarity Project LTD" exactly so.
+
+**Parts**
+
+20. **Shared parts only:** title block, running header, footer, At a glance panel, contents list, section heading, text, table, bar chart, list and signature block. No tool draws its own.
+21. **Charts:** drawn to scale from zero, with the standard marked, values at the end of each bar, a key underneath, and a sentence after it saying what it means.
+22. **Tables:** thin lines between rows only, no boxes or fills, a grey header row, numbers lined up on the right.
+
+**Page breaks: nothing chopped** (Tim, 09:21 and 09:30)
+
+23. **Kept together, always:** a heading with at least three lines of what follows; a panel; a chart with its key and its sentence; a table row; a list item; a question with its answer's first three lines; the signature block.
+24. **Short sections move whole:** a section shorter than about a third of a page that won't fit in the space left moves to the next page whole.
+25. **Long sections split only at natural points:** between paragraphs, table rows or list items, never inside one.
+26. **Long answers split with three lines each side:** a client's long answer can carry on to the next page only between paragraphs, with at least three lines left behind and three carried over.
+27. **Tables that carry on:** the next page repeats the heading with ", continued" ("Projects ranked by alignment, continued") and the column names.
+28. **No stray lines:** never one or two lines alone at the top or bottom of a page, and a last page never holds just a line or two. Space at the end of a page is fine; content is never stretched to fill it.
+29. **Light and dark break in the same places,** and A4 and US Letter are each checked.
+
+**The file and checks**
+
+30. **Real and readable:** fonts embedded, text selectable and searchable, links that work; tagged for screen readers with the right reading order, a text description for every chart, the language set to English (UK), and section bookmarks when it is over two pages.
+31. **Named in words and small:** for example "Health Check, Northfield Logistics, 26 Oct 2026.pdf", with "(dark)" at the end of the dark one; the file's properties carry the same title and "Dr. Tim Dutton, The Clarity Project LTD" as author; a typical PDF is under 1 MB.
+32. **Stress-test pack before Tim sees it** (Tim, 09:30): every new or changed PDF is made with very short, very long and awkward content (long names, long answers, long tables, emoji, blank answers), in light and dark, on A4 and US Letter; every page break is checked against rules 23 to 29; Tim gets the pack to look through. Plus: open on a Mac and an iPhone, print a light page in black and white, and send the dark one through a chat app. Invented names only.
+
+**How to check a PDF** (for rules 23 to 32): `node tests/pdf/make-pdfs.mjs <folder>` makes every PDF and the stress cases in light and dark, on A4 and US Letter, checks every page break and writes `break-report.txt`; add new documents there. Check the tags with veraPDF (`brew install verapdf`, then `verapdf --flavour ua1 --format text <folder>/*.pdf`; every file should say PASS). Fonts for PDFs are TTF or WOFF, never WOFF2: pdfkit cannot build in a WOFF2 font's letter shapes, so its text comes out blank.
+
 ## List row guidelines
 
 These are guidelines, to apply by default to every list built from the shared row (`src/components/ui/HistoryList.jsx`: My Plans, My Reviews, My Journals, Decision History). Where a mock-up shows a detail, the mock-up wins. They are about layout only, not saving or navigation.

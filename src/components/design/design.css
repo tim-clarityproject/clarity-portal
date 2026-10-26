@@ -3250,3 +3250,178 @@
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }
+
+/* ---------- PDF download: one button, then Light or Dark (PdfDownload, PdfChoice) ---------- */
+
+.ui-root .ds-pdfmenu {
+  position: relative;
+  display: inline-flex;
+}
+
+.ui-root .ds-pdfpop {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+  z-index: 30;
+  box-sizing: border-box;
+  padding: var(--space-3);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  animation: ds-pdf-up var(--dur) var(--ease) both;
+}
+
+.ui-root .ds-pdfpop--down {
+  top: calc(100% + var(--space-2));
+  bottom: auto;
+}
+
+.ui-root .ds-pdfpop--left {
+  left: 0;
+  right: auto;
+}
+
+.ui-root .ds-pdftitle {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-tab);
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .ds-pdfopts {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.ui-root .ds-pdfopt {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 104px;
+  min-height: var(--tap-min);
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-input);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-pdfopt:hover,
+.ui-root .ds-pdfopt:focus-visible {
+  border-color: var(--coral-text);
+}
+
+.ui-root .ds-pdfopt:focus-visible {
+  outline: none;
+}
+
+.ui-root .ds-pdfthumb {
+  display: block;
+}
+
+.ui-root .ds-pdfname {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .ds-pdfnote {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.ui-root .ds-pdfscrim {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: var(--scrim);
+  animation: ds-fade var(--dur) var(--ease) both;
+}
+
+.ui-root .ds-pdfsheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  box-sizing: border-box;
+  padding: var(--space-4) var(--page-x-phone) var(--space-3);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  animation: ds-pdf-sheet var(--dur-slow) var(--ease) both;
+}
+
+.ui-root .ds-pdfsheet .ds-pdfopts {
+  gap: var(--space-2);
+}
+
+.ui-root .ds-pdfsheet .ds-pdfopt {
+  flex: 1;
+  min-height: 132px;
+  padding: var(--space-3) var(--space-2);
+}
+
+.ui-root .ds-pdfcancel {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--tap-min);
+  margin-top: var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.ui-root .ds-pdfcancel:hover,
+.ui-root .ds-pdfcancel:focus-visible {
+  color: var(--text);
+}
+
+.ui-root .ds-pdfcancel:focus-visible {
+  outline: 2px solid var(--coral-text);
+  outline-offset: -2px;
+  border-radius: var(--radius-input);
+}
+
+@keyframes ds-pdf-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ds-pdf-sheet {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-pdfpop,
+  .ui-root .ds-pdfsheet,
+  .ui-root .ds-pdfscrim {
+    animation: none;
+  }
+}
+
+.ui-root .ds-pdfmenu {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.ui-root .ds-pdfmessage {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--text-2);
+}

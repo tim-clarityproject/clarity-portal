@@ -29,6 +29,7 @@ import {
   Loading,
   LoggingRow,
   PageHeader,
+  PdfDownload,
   Popup,
   SavedIndicator,
   SaveStatus,
@@ -53,6 +54,7 @@ import {
 import { GallerySection, New } from './galleryKit';
 import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView } from './galleryUtils';
 import SprintTool from './SprintTool';
+import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import './designReference.css';
 
@@ -68,7 +70,7 @@ const TOC = [
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
   ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
-  ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'],
+  ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
 
 // The colour table (design-reference-v3.html): name, what it's for, dark,
@@ -544,6 +546,15 @@ function CollapsibleDemo() {
       <p>Average performance score so far: 74%, across 3 weeks.</p>
       <p>26 days left in Performance Sprint 4, then Recovery.</p>
     </Collapsible>
+  );
+}
+
+function PdfDemo() {
+  return (
+    <div className="dr-stack">
+      <p className="dr-quiet">A two-page sample using every shared part, with invented names.</p>
+      <PdfDownload getDocument={samplePdf} placement="down" />
+    </div>
   );
 }
 
@@ -1071,7 +1082,17 @@ function Gallery() {
             <p><New /><b>In My Account: Light, Dark or Match my device.</b></p>
             <p>Match my device is the starting choice; it follows the phone or laptop, including switching at night.</p>
             <p>The phone’s top bar matches: black in dark, off-white in light.</p>
-            <p>Emails and PDFs stay light.</p>
+            <p>Emails stay light. Tool PDFs come in Light, for printing, and Dark, for sharing.</p>
+          </>
+        )} />
+
+        <GallerySection id="c31" title="PDFs" demo={PdfDemo} rules={(
+          <>
+            <p><New /><b>One shared template</b> for every PDF, in CLAUDE.md under “PDF rules”.</p>
+            <p>One Download PDF button, then a choice: Light, for printing, or Dark, for sharing. Same layout, content and page breaks; only the colours and the logo file change.</p>
+            <p>A4, or US Letter in the US and Canada. No cover page: the title block, then At a glance, then the content.</p>
+            <p>Coral only for the title line and what is at or above the standard. No mint, and colour is never the only signal.</p>
+            <p>Agreements, quotes and the supplier pack are light only.</p>
           </>
         )} />
       </div>

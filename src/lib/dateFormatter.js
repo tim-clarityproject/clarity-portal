@@ -180,3 +180,39 @@ export const formatDateTimeWithOrdinal = (dateStr) => {
 
   return `${month} ${day}${ordinal}, ${year}, ${timeStr}`;
 };
+
+// Dates in documents and PDFs. Built from the device's own getters so every
+// browser writes them the same way. Takes a saved timestamp, a Date, or a
+// plain "YYYY-MM-DD" day (read as that day, not shifted by time zone).
+const DOC_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DOC_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const toDocDate = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split('-').map(Number);
+    return new Date(y, m - 1, d, 12);
+  }
+  const date = parseDbTimestamp(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+// "Mon 26 Oct 2026"
+export const formatDocDate = (value) => {
+  const date = toDocDate(value);
+  if (!date) return '';
+  return `${DOC_DAYS[date.getDay()]} ${date.getDate()} ${DOC_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+};
+
+// "26 Oct 2026", for file names.
+export const formatFileDate = (value) => {
+  const date = toDocDate(value);
+  if (!date) return '';
+  return `${date.getDate()} ${DOC_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+};
+
+// "Updated Mon 26 Oct 2026, 09:30"
+export const formatUpdatedAt = (value) => {
+  const date = toDocDate(value);
+  if (!date) return '';
+  return `Updated ${formatDocDate(date)}, ${formatClockTime(date)}`;
+};

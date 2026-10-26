@@ -46,3 +46,6 @@ export { BrandMark, GoogleButton } from './Brand';
 export { default as ColourModeChoice } from './ColourModeChoice';
 export { ThemeScopeContext, useThemeScope } from './themeScope';
 export { default as useColourMode } from '../../lib/colourMode/useColourMode';
+export { default as PdfChoice } from './PdfChoice';
+export { default as PdfDownload } from './PdfDownload';
+export { savePdf, PDF_ERROR } from './pdfSave';
