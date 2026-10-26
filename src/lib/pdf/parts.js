@@ -2,7 +2,7 @@ import { STYLES } from './text';
 
 // The shared parts of every PDF (PDF rule 20): title block, At a glance panel,
 // contents list, section heading, text, question and answer, table, bar chart,
-// list and signature block. The running header and footer are drawn in render.js.
+// dot chart, list and signature block. The running header and footer are drawn in render.js.
 //
 // Each part is turned into "units": boxes of known height that the page layout
 // (layout.js) places. A unit says how much space it wants above it (`gap`,
@@ -445,6 +445,268 @@ function barsBlock(L, b, parent, maxH) {
   }];
 }
 
+/**
+ * A dot chart: one dot per item, placed by a category along the bottom (such
+ * as progress) and a value from zero up the side (such as strategic
+ * importance), split into four labelled quadrants by two centre lines. Dots in
+ * the good quadrant are filled coral; the rest are grey outlines, so a black
+ * and white print still tells them apart. Each dot holds its number. Names sit
+ * beside the dots only when every one fits without touching another label, a
+ * dot, a line or the edge; otherwise a numbered list sits beside or under the
+ * chart. Never split across pages.
+ *
+ * b: { points: [{ n, label, x (1..k), y (0..yMax), good }], xLabels: [k words],
+ *      yMax, xCentre, yCentre, axisX, axisY, quadrants: { topLeft, topRight,
+ *      bottomLeft, bottomRight }, keyGood, keyOther, listNote, sentence, alt }
+ */
+function dotsBlock(L, b, parent, maxH) {
+  const { ts } = L;
+  const W = L.contentW;
+  const k = b.xLabels.length;
+  const yMax = b.yMax || 100;
+  const unit = b.unit ?? '%';
+  const tick = STYLES.small;
+  const numStyle = { font: 'nekst', size: 8.5, lh: 10, features: ['tnum'] };
+  const nameStyle = STYLES.small;
+  const R = 8; // dot radius: room for a two-figure number at 8.5pt
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * yMax);
+  const yLabW = Math.max(...yTicks.map((v) => ts.width(`${Math.round(v)}${unit}`, tick))) + 8;
+  const pts0 = b.points.filter((p) => p.x != null && p.y != null);
+  const listRows = pts0.slice().sort((a, c) => a.n - c.n);
+
+  // Geometry for a plot of a given width and height, its top-left at (0, top).
+  const geometry = (plotW, plotH, top) => {
+    const Lx = yLabW;
+    const pad = R + 3; // the scale stops short of the frame so dots never cross it
+    const xs = (v) => Lx + ((v - 0.5) / k) * plotW;
+    const ys = (v) => top + pad + (1 - v / yMax) * (plotH - pad * 2);
+    return { Lx, plotW, plotH, top, xs, ys, mx: xs(b.xCentre), my: ys(b.yCentre) };
+  };
+
+  // Dots at their true places, then pushed apart (and kept inside the frame)
+  // until none touch.
+  const placeDots = (gm) => {
+    const pts = pts0.map((p) => ({ ...p, cx: gm.xs(p.x), cy: gm.ys(p.y) }));
+    const seen = {};
+    pts.forEach((p) => {
+      const key = `${p.x}|${Math.round(p.y)}`;
+      seen[key] = (seen[key] || 0) + 1;
+      const s = seen[key] - 1;
+      if (s) p.cx += (s % 2 ? 1 : -1) * Math.ceil(s / 2) * 0.5;
+    });
+    const minX = gm.Lx + R + 1;
+    const maxX = gm.Lx + gm.plotW - R - 1;
+    const minY = gm.top + R + 1;
+    const maxY = gm.top + gm.plotH - R - 1;
+    const need = R * 2 + 2;
+    for (let pass = 0; pass < 400; pass += 1) {
+      let moved = false;
+      for (let i = 0; i < pts.length; i += 1) {
+        for (let j = 0; j < i; j += 1) {
+          const p = pts[i];
+          const o = pts[j];
+          let dx = p.cx - o.cx;
+          let dy = p.cy - o.cy;
+          let d = Math.hypot(dx, dy);
+          if (d >= need - 0.01) continue;
+          if (d < 0.01) { dx = 1; dy = 0; d = 1; }
+          const push = (need - d) / 2 + 0.1;
+          p.cx += (dx / d) * push; p.cy += (dy / d) * push;
+          o.cx -= (dx / d) * push; o.cy -= (dy / d) * push;
+          moved = true;
+        }
+      }
+      pts.forEach((p) => {
+        p.cx = Math.min(maxX, Math.max(minX, p.cx));
+        p.cy = Math.min(maxY, Math.max(minY, p.cy));
+      });
+      if (!moved) break;
+    }
+    return pts;
+  };
+
+  // Names beside the dots, or null when any one cannot be placed cleanly.
+  const placeNames = (gm, pts) => {
+    if (pts.length > 12) return null;
+    const boxes = pts.map((p) => [p.cx - R - 1, p.cy - R - 1, p.cx + R + 1, p.cy + R + 1]);
+    const lines = [[gm.mx - 1, gm.top, gm.mx + 1, gm.top + gm.plotH], [gm.Lx, gm.my - 1, gm.Lx + gm.plotW, gm.my + 1]];
+    const frame = [gm.Lx + 2, gm.top + 2, gm.Lx + gm.plotW - 2, gm.top + gm.plotH - 2];
+    const clash = (bx, list) => list.some((c) => bx[0] < c[2] + 2 && bx[2] > c[0] - 2 && bx[1] < c[3] + 1 && bx[3] > c[1] - 1);
+    const placed = [];
+    for (const p of pts) {
+      const ls = ts.wrap(p.label, nameStyle, 120);
+      if (ls.length > 2) return null;
+      const w = Math.max(...ls.map((l) => ts.width(l, nameStyle)));
+      const h = ls.length * nameStyle.lh;
+      const g = R + 4;
+      const cands = [
+        [p.cx + g, p.cy - h / 2], [p.cx - g - w, p.cy - h / 2],
+        [p.cx - w / 2, p.cy - g - h], [p.cx - w / 2, p.cy + g],
+        [p.cx + g, p.cy - h - 2], [p.cx + g, p.cy + 2], [p.cx - g - w, p.cy - h - 2], [p.cx - g - w, p.cy + 2],
+      ];
+      const spot = cands.map(([x0, y0]) => [x0, y0, x0 + w, y0 + h]).find((bx) => (
+        bx[0] >= frame[0] && bx[2] <= frame[2] && bx[1] >= frame[1] && bx[3] <= frame[3]
+        && !clash(bx, boxes) && !clash(bx, lines) && !clash(bx, placed.map((q) => q.box))
+      ));
+      if (!spot) return null;
+      placed.push({ box: spot, lines: ls });
+    }
+    return placed;
+  };
+
+  // The numbered list: one line per item, shortened with an ellipsis (the
+  // full names are in the table that follows).
+  const listLines = (colW) => listRows.map((p) => ts.fit(`${p.n}. ${p.label}`, nameStyle, colW));
+
+  const titleH = STYLES.smallMedium.lh + 4;
+  const bandH = tick.lh + 4;
+  const belowH = 4 + tick.lh + 4 + tick.lh + 4 + STYLES.smallMedium.lh;
+  const keyItems = [
+    { good: true, text: b.keyGood },
+    { good: false, text: b.keyOther },
+    ...(b.listNote ? [{ note: true, text: b.listNote }] : []),
+  ].map((it) => ({ ...it, w: (it.note ? 0 : 16) + ts.width(it.text, STYLES.small) }));
+  const keyLines = [];
+  keyItems.forEach((it) => {
+    const line = keyLines[keyLines.length - 1];
+    const used = line ? line.reduce((s, x) => s + x.w + 16, 0) : Infinity;
+    if (!line || used + it.w > W) keyLines.push([it]);
+    else line.push(it);
+  });
+  const keyH = keyLines.length * STYLES.small.lh;
+  const sentence = blank(b.sentence) ? [] : ts.wrap(b.sentence, STYLES.body, L.measure);
+  const sentH = sentence.length ? 10 + sentence.length * STYLES.body.lh : 0;
+
+  // Try, in order: names beside dots; a list beside the chart; a list under it.
+  const plotTop = titleH + bandH;
+  const fixed = plotTop + belowH + 12 + keyH + sentH;
+  const plotH = Math.max(150, Math.min(240, maxH - fixed));
+  let mode = 'names';
+  let gm = geometry(W - yLabW, plotH, plotTop);
+  let pts = placeDots(gm);
+  let names = placeNames(gm, pts);
+  let list = [];
+  let listCols = 1;
+  let listColW = 0;
+  let listH = 0;
+  const listW = 170;
+  if (!names) {
+    if (pts0.length * nameStyle.lh <= plotH) {
+      mode = 'beside';
+      gm = geometry(W - yLabW - 16 - listW, plotH, plotTop);
+      pts = placeDots(gm);
+      listColW = listW;
+      list = listLines(listW);
+    } else {
+      mode = 'under';
+      listCols = 3;
+      listColW = (W - 32) / 3;
+      list = listLines(listColW);
+      listH = 10 + Math.ceil(list.length / listCols) * nameStyle.lh;
+    }
+  }
+  const h = fixed + plotH + listH;
+  const figure = tagNode('Figure', parent, { alt: b.alt });
+  const p = tagNode('P', parent);
+
+  return [{
+    kind: 'chart',
+    h,
+    gap: 0,
+    lines: ATOMIC,
+    draw(ctx, x, y) {
+      const { doc, t } = ctx;
+      const X = (v) => x + v;
+      const Y = (v) => y + v;
+      ctx.mark(figure, () => {
+        const s = STYLES.smallMedium;
+        ts.draw(b.axisY, X(0), Y(ts.baseline(s)), s, t.text);
+        // quadrant names: above the frame for the top two, under the
+        // progress words for the bottom two, centred on their half
+        const halves = [[gm.Lx, gm.mx], [gm.mx, gm.Lx + gm.plotW]];
+        const qLabel = (text, [a, c], yy) => {
+          const fitText = ts.fit(text, tick, c - a - 8);
+          ts.draw(fitText, X((a + c) / 2 - ts.width(fitText, tick) / 2), Y(yy + ts.baseline(tick)), tick, t.detail);
+        };
+        qLabel(b.quadrants.topLeft, halves[0], titleH);
+        qLabel(b.quadrants.topRight, halves[1], titleH);
+        const fTop = gm.top;
+        const fBot = gm.top + gm.plotH;
+        // frame: the zero line and the side, then the centre lines with a
+        // small gap where they cross
+        doc.moveTo(X(gm.Lx), Y(fTop)).lineTo(X(gm.Lx), Y(fBot)).lineTo(X(gm.Lx + gm.plotW), Y(fBot)).lineWidth(0.5).stroke(t.detail);
+        const gap = 5;
+        doc.moveTo(X(gm.Lx), Y(gm.my)).lineTo(X(gm.mx - gap), Y(gm.my))
+          .moveTo(X(gm.mx + gap), Y(gm.my)).lineTo(X(gm.Lx + gm.plotW), Y(gm.my))
+          .moveTo(X(gm.mx), Y(fTop)).lineTo(X(gm.mx), Y(gm.my - gap))
+          .moveTo(X(gm.mx), Y(gm.my + gap)).lineTo(X(gm.mx), Y(fBot))
+          .lineWidth(0.5).stroke(t.line);
+        yTicks.forEach((v) => {
+          const ty = gm.ys(v);
+          doc.moveTo(X(gm.Lx - 3), Y(ty)).lineTo(X(gm.Lx), Y(ty)).lineWidth(0.5).stroke(t.detail);
+          ts.draw(`${Math.round(v)}${unit}`, X(gm.Lx - 6), Y(ty + tick.size * 0.35), tick, t.detail, 'right');
+        });
+        b.xLabels.forEach((word, i) => {
+          const tx = gm.xs(i + 1);
+          doc.moveTo(X(tx), Y(fBot)).lineTo(X(tx), Y(fBot + 3)).lineWidth(0.5).stroke(t.detail);
+          const fitWord = ts.fit(word, tick, gm.plotW / k - 2);
+          ts.draw(fitWord, X(tx - ts.width(fitWord, tick) / 2), Y(fBot + 4 + ts.baseline(tick)), tick, t.detail);
+        });
+        const bandY = fBot + 4 + tick.lh + 4;
+        qLabel(b.quadrants.bottomLeft, halves[0], bandY);
+        qLabel(b.quadrants.bottomRight, halves[1], bandY);
+        const axisXY = bandY + tick.lh + 4;
+        ts.draw(b.axisX, X(gm.Lx + gm.plotW / 2 - ts.width(b.axisX, s) / 2), Y(axisXY + ts.baseline(s)), s, t.text);
+
+        // the dots, each with its number
+        pts.forEach((pt) => {
+          if (pt.good) doc.circle(X(pt.cx), Y(pt.cy), R).fill(t.coral);
+          else doc.circle(X(pt.cx), Y(pt.cy), R - 0.375).lineWidth(0.75).fillAndStroke(t.page, t.detail);
+          const num = String(pt.n);
+          ts.draw(num, X(pt.cx - ts.width(num, numStyle) / 2), Y(pt.cy + numStyle.size * 0.36), numStyle, pt.good ? '#000000' : t.text);
+        });
+        if (names) {
+          names.forEach((nm) => nm.lines.forEach((line, i) => (
+            ts.draw(line, X(nm.box[0]), Y(nm.box[1] + i * nameStyle.lh + ts.baseline(nameStyle)), nameStyle, t.text)
+          )));
+        }
+        if (mode === 'beside') {
+          const lx = gm.Lx + gm.plotW + 16;
+          list.forEach((line, i) => ts.draw(line, X(lx), Y(fTop + i * nameStyle.lh + ts.baseline(nameStyle)), nameStyle, t.text));
+        }
+        let ky = axisXY + STYLES.smallMedium.lh;
+        if (mode === 'under') {
+          const rowsPer = Math.ceil(list.length / listCols);
+          list.forEach((line, i) => {
+            const col = Math.floor(i / rowsPer);
+            ts.draw(line, X(col * (listColW + 16)), Y(ky + 10 + (i % rowsPer) * nameStyle.lh + ts.baseline(nameStyle)), nameStyle, t.text);
+          });
+          ky += listH;
+        }
+        // the key
+        ky += 12;
+        keyLines.forEach((line) => {
+          let kx = 0;
+          line.forEach((it) => {
+            const my = ky + STYLES.small.lh / 2;
+            if (!it.note) {
+              if (it.good) doc.circle(X(kx + 5), Y(my), 5).fill(t.coral);
+              else doc.circle(X(kx + 5), Y(my), 4.6).lineWidth(0.75).fillAndStroke(t.page, t.detail);
+            }
+            ts.draw(it.text, X(kx + (it.note ? 0 : 16)), Y(ky + ts.baseline(STYLES.small)), STYLES.small, t.text);
+            kx += it.w + 16;
+          });
+          ky += STYLES.small.lh;
+        });
+      });
+      if (sentence.length) {
+        const sy = y + h - sentence.length * STYLES.body.lh;
+        ctx.mark(p, () => sentence.forEach((line, i) => ts.draw(line, x, sy + i * STYLES.body.lh + ts.baseline(STYLES.body), STYLES.body, t.text)));
+      }
+    },
+  }];
+}
+
 /** Signature block for agreements: a signature, name and date line for each person. */
 function signatureBlock(L, b, parent) {
   const { ts } = L;
@@ -515,6 +777,7 @@ export function flatten(L, spec, contents, root) {
       if (b.type === 'list' && b.items?.some((it) => !blank(it))) us = listBlock(L, b, sect);
       if (b.type === 'table' && b.rows?.length) us = tableBlock(L, b, sect, b.title || sec.title);
       if (b.type === 'bars' && b.rows?.length) us = barsBlock(L, b, sect, L.pageH - 60);
+      if (b.type === 'dots' && b.points?.some((pt) => pt.x != null)) us = dotsBlock(L, b, sect, L.pageH - 60);
       if (b.type === 'signature' && b.parties?.length) us = signatureBlock(L, b, sect);
       if (!us.length) return;
       L.block = (L.block || 0) + 1;

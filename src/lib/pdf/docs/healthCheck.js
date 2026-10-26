@@ -1,10 +1,19 @@
 import { cleanItems, PROGRESS, RESOURCE } from '../../../pages/alignment/alignmentFlow';
 import { rankProjects, roundPct, MAX_CONTRIBUTION } from '../../alignmentScore';
+import { quadrant, PROGRESS_WORDS } from '../../../pages/alignment/chartLayout';
 import { formatDocDate, parseDbTimestamp } from '../../dateFormatter';
 
 // The Strategic Alignment Health Check as a document for the shared PDF template.
 
-const STANDARD = 50; // strategic importance at or above this is strongly aligned
+const STANDARD = 50; // the line between more and less important, as on the results page
+// The four quadrants of the importance against progress chart. Progress
+// "Fair" sits on the centre line, as on the results page.
+const QUADRANTS = {
+  topLeft: 'Important but behind',
+  topRight: 'Important and moving well',
+  bottomLeft: 'Less important and behind',
+  bottomRight: 'Less important and moving well',
+};
 const word = (list, v) => (v == null ? '' : (list.find(([k]) => k === v)?.[1] || ''));
 
 /** True when the answers changed after the Health Check was finished. */
@@ -31,10 +40,28 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
   const scoredRows = ranked.filter(rated);
   const m = scoredRows.length;
   const scored = m > 0;
-  const above = scoredRows.filter((r) => roundPct(r.importance) >= STANDARD).length;
   const average = scored ? roundPct(scoredRows.reduce((s, r) => s + r.importance, 0) / scoredRows.length) : 0;
   const org = organisation?.trim() || null;
-  const byImportance = scoredRows.slice().sort((a, b) => b.importance - a.importance || a.n - b.n);
+  // the chart shows projects with a progress rating, as on the results page
+  const plotted = ranked.filter((r) => r.progress != null);
+  const good = plotted.filter((r) => quadrant(r.progress, r.importance) === 'mi').length;
+  const behind = plotted.filter((r) => quadrant(r.progress, r.importance) === 'co').length;
+  const quadrantName = (r) => {
+    if (r.progress === 3) return 'on the centre line';
+    const top = r.importance > STANDARD;
+    if (r.progress > 3) return (top ? QUADRANTS.topRight : QUADRANTS.bottomRight).toLowerCase();
+    return (top ? QUADRANTS.topLeft : QUADRANTS.bottomLeft).toLowerCase();
+  };
+  const dotSentence = () => {
+    const one = plotted.length === 1 ? plotted[0] : null;
+    const onLine = (r) => `${r.text} has Fair progress, so it sits on the centre line between behind and moving well.`;
+    const first = one
+      ? (one.progress === 3 ? onLine(one) : `${one.text} is ${quadrantName(one)}.`)
+      : `${good} of ${plotted.length} projects ${good === 1 ? 'is' : 'are'} important and moving well${behind ? `, and ${behind} ${behind === 1 ? 'is' : 'are'} important but behind, so ${behind === 1 ? 'it needs' : 'they need'} attention first` : ''}.`;
+    const missing = n - plotted.length;
+    const rest = missing ? ` ${missing} ${missing === 1 ? 'project has' : 'projects have'} no progress rating yet, so ${missing === 1 ? 'it is' : 'they are'} not on the chart.` : '';
+    return first + rest;
+  };
 
   return {
     docName: 'Health Check',
@@ -50,25 +77,29 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
       { label: 'Critical Success Factors', value: String(nf), big: true },
       ...(scored ? [
         { label: 'Average strategic importance', value: `${average}%`, big: true },
-        { label: `At or above the ${STANDARD}% standard`, value: `${above} of ${m}`, big: true },
+        ...(plotted.length ? [{ label: QUADRANTS.topRight, value: `${good} of ${plotted.length}`, big: true }] : []),
       ] : []),
     ],
     sections: [
       { title: 'Objective', blocks: [{ type: 'text', text: draft.objective || '' }] },
       { title: 'Critical Success Factors', blocks: [{ type: 'list', ordered: true, items: factors.map((f) => f.text) }] },
       {
-        title: 'Strategic importance',
-        blocks: scored ? [{
-          type: 'bars',
-          standard: { value: STANDARD },
-          rows: byImportance.map((r) => ({ label: `${r.n}. ${r.text}`, value: roundPct(r.importance) })),
-          keyAbove: `At or above ${STANDARD}%`,
-          keyBelow: `Below ${STANDARD}%`,
-          keyStandard: `The ${STANDARD}% standard`,
-          sentence: above === m
-            ? `All ${m} projects are at or above the ${STANDARD}% standard: each one contributes strongly to your Critical Success Factors.`
-            : `${above} of ${m} projects ${above === 1 ? 'is' : 'are'} at or above the ${STANDARD}% standard and contribute${above === 1 ? 's' : ''} strongly to your Critical Success Factors. The others contribute less.`,
-          alt: `Bar chart of strategic importance for each project, on a scale from 0% to 100%, with the standard at ${STANDARD}%. ${byImportance.map((r) => `${r.n}. ${r.text}: ${roundPct(r.importance)}%`).join('. ')}.`,
+        title: 'Strategic importance versus progress',
+        blocks: plotted.length ? [{
+          type: 'dots',
+          points: plotted.map((r) => ({ n: r.n, label: r.text, x: r.progress, y: r.importance, good: quadrant(r.progress, r.importance) === 'mi' })),
+          xLabels: PROGRESS_WORDS,
+          yMax: 100,
+          xCentre: 3,
+          yCentre: STANDARD,
+          axisX: 'Progress',
+          axisY: 'Strategic importance',
+          quadrants: QUADRANTS,
+          keyGood: QUADRANTS.topRight,
+          keyOther: 'Every other project',
+          listNote: 'Numbers match the project table.',
+          sentence: dotSentence(),
+          alt: `Dot chart of strategic importance, from 0% to 100%, against progress, from Embryonic to Excellent, in four quadrants split at ${STANDARD}% and Fair. ${plotted.map((r) => `${r.n}. ${r.text}: ${roundPct(r.importance)}%, ${PROGRESS_WORDS[r.progress - 1]}, ${quadrantName(r)}`).join('. ')}.`,
         }] : [],
       },
       {

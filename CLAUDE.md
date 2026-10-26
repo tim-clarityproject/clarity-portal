@@ -97,7 +97,7 @@ Tim's PDF rules (26 Oct). Every PDF follows all 32. They are built into the shar
 
 **Parts**
 
-20. **Shared parts only:** title block, running header, footer, At a glance panel, contents list, section heading, text, table, bar chart, list and signature block. No tool draws its own.
+20. **Shared parts only:** title block, running header, footer, At a glance panel, contents list, section heading, text, table, bar chart, dot chart, list and signature block. No tool draws its own. (The dot chart, as in the Health Check: one dot per item on labelled axes split into four named quadrants; coral filled dots only in the good quadrant, grey outlines for the rest; each dot numbered, with names beside the dots only when none would touch a label, dot or line, otherwise a numbered list beside or under the chart; a key and a sentence after it.)
 21. **Charts:** drawn to scale from zero, with the standard marked, values at the end of each bar, a key underneath, and a sentence after it saying what it means.
 22. **Tables:** thin lines between rows only, no boxes or fills, a grey header row, numbers lined up on the right.
 
