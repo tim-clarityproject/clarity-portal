@@ -138,3 +138,4 @@ Note for mock-ups: Tim approved the type, status and version line in place of th
 ## Go-live notes
 
 - **Terms accepted SQL** (`supabase/migrations/021_restore_terms_accepted_from_signup.sql`): run it on the live database only at go-live, after this branch's code is live. The old live code marks the terms as not accepted on every page load, so running it earlier would be undone straight away.
+- **Health Check organisation name SQL** (`supabase/migrations/022_alignment_open_returns_organisation.sql`): lets the outside Health Check page receive the organisation name for its own session, so the PDF can show it. Run it on the test project now; on the live database only at go-live, after this branch's code is live. The code works without it (the PDF then has no organisation name).

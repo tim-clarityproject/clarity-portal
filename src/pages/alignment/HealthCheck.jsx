@@ -171,6 +171,7 @@ export default function HealthCheck() {
   const footerButtonRef = useRef(null);
   const notifyRef = useRef(false); // send the completion email after the completing save lands
   const [openedAt, setOpenedAt] = useState(null); // updated_at when the session was opened (date fallback)
+  const [organisation, setOrganisation] = useState(null); // for the PDF; null when the server doesn't send it
   const changedAtRef = useRef(null); // when the answers last changed in this visit (the PDF's "Updated" line)
 
   // ---- page chrome: title and robots meta for this route only ----
@@ -228,6 +229,7 @@ export default function HealthCheck() {
     setResultsReached(session.status === 'complete');
     setServerCompletedAt(session.completedAt || null);
     setOpenedAt(session.updatedAt || null);
+    setOrganisation(session.organisation || null);
     writeAccess(token, creds);
 
     // Backup rule: the browser copy is applied only if it holds unsaved changes
@@ -457,7 +459,7 @@ export default function HealthCheck() {
         draft: draftRef.current,
         completedAt: done,
         updatedAt: changedAtRef.current || openedAt,
-        organisation: null, // the client's organisation is not sent to this page yet
+        organisation,
       }), variant);
       setPdf({ busy: false, message: '' });
     } catch (error) {

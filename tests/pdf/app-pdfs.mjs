@@ -108,10 +108,12 @@ const session = {
   },
 };
 
-async function healthCheck(name, browserType, options) {
+async function healthCheck(name, browserType, options, organisation = null) {
   const { browser, context, page, downloads } = await open(browserType, options);
+  // with an organisation name: as alignment_open answers once migration 022 has run
+  const opened = organisation ? { ...session, client_label: organisation } : session;
   await context.route(/\/rest\/v1\/rpc\/alignment_(open|save)/, (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify(route.request().url().includes('open') ? session : { ok: true, version: 3, updated_at: session.updated_at }),
+    status: 200, contentType: 'application/json', body: JSON.stringify(route.request().url().includes('open') ? opened : { ok: true, version: 3, updated_at: session.updated_at }),
   }));
   await page.goto(`${APP}/health-check/invented-test-token`);
   await page.getByLabel('Email').fill('respondent@example.com');
@@ -130,7 +132,7 @@ const us = { locale: 'en-US', timezoneId: 'America/New_York' };
 await meeting('meeting, laptop, en-GB', chromium, { viewport: { width: 1280, height: 900 }, ...gb });
 await meeting('meeting, laptop, en-US', chromium, { viewport: { width: 1280, height: 900 }, ...us });
 await meeting('meeting, iPhone', webkit, { ...devices['iPhone 13'], ...gb });
-await healthCheck('health check, laptop, en-GB', chromium, { viewport: { width: 1280, height: 900 }, ...gb });
+await healthCheck('health check, laptop, en-GB', chromium, { viewport: { width: 1280, height: 900 }, ...gb }, 'Northbridge Logistics');
 await healthCheck('health check, iPhone, en-US', webkit, { ...devices['iPhone 13'], ...us });
 console.log(results.join('\n'));
 if (wrongHost) {
