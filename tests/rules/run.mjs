@@ -194,14 +194,25 @@ ${values.join(',\n')}
   '',
 ].join('\n\n');
 
+// Migrations 024 onwards run first, in the same rolled-back transaction, so
+// the rules are checked as they will be once Tim has run them (each is safe
+// to run twice, so one already run changes nothing). --as-is checks the
+// test database exactly as it is.
+const MIGRATIONS = path.join(REPO, 'supabase/migrations');
+const pending = process.argv.includes('--as-is') ? [] : fs.readdirSync(MIGRATIONS)
+  .filter((f) => /^\d{3}_.*\.sql$/.test(f) && Number(f.slice(0, 3)) >= 24)
+  .sort()
+  .map((f) => path.join(MIGRATIONS, f));
+
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'clarity-rules-'));
 const file = path.join(dir, 'rules-test.sql');
 fs.writeFileSync(file, sql, { mode: 0o600 });
 if (process.argv.includes('--sql')) {
-  console.log(`The SQL is in ${file} (not run).`);
+  console.log(`The SQL is in ${file} (not run). Run first: ${pending.map((f) => path.basename(f)).join(', ') || 'nothing'}.`);
   process.exit(0);
 }
-const run = spawnSync('bash', [path.join(REPO, 'scripts/dry-run-on-test.sh'), file], { encoding: 'utf8' });
+if (pending.length) console.log(`Running first, then undoing: ${pending.map((f) => path.basename(f, '.sql')).join(', ')}.`);
+const run = spawnSync('bash', [path.join(REPO, 'scripts/dry-run-on-test.sh'), ...pending, file], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
 fs.rmSync(dir, { recursive: true, force: true });
 const output = `${run.stdout || ''}${run.stderr || ''}`;
 if (run.status !== 0 || !output.includes('Dry run finished and rolled back')) {

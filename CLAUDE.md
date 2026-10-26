@@ -170,6 +170,10 @@ On phone every row is built the same way:
 
 Note for mock-ups: Tim approved the type, status and version line in place of the mock-ups' version on the date line. His earlier approval of swipeable filter pills is replaced by guideline 6.
 
+## Scores
+
+**Every score is built from `docs/scoring-methods.md`, one function per section in `src/lib/scores/`, and every worked example is a test** (`npm run test:scores`). The evidence behind each claim is in `docs/claims-register.md`.
+
 ## Migrations and the rules test
 
 - **Every migration from 025 on ends with the line that records itself**: `select public.record_migration(26, '026_what_it_does');`. `public.migration_log` lists what has run on each database; `supabase/MIGRATION_LOG.md` is the same list as Tim's checklist. Migrations are safe to run twice and are dry-run first with `bash scripts/dry-run-on-test.sh FILE.sql [TEST.sql]` (test project only, always rolled back).
