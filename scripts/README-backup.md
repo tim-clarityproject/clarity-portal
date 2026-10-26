@@ -33,7 +33,7 @@ The **newest 12** backups are kept. Each time the script runs, it deletes anythi
 2. Paste this and press Return:
 
    ```
-   cd ~/Library/CloudStorage/OneDrive-Personal/Client\ Portal/clarity-portal && bash scripts/backup-db.sh
+   cd ~/code/clarity-portal && bash scripts/backup-db.sh
    ```
 
 3. It takes from a few seconds to a minute or two. The last line tells you the result:

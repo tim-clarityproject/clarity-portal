@@ -24,7 +24,7 @@ As always before anything that reads the live database:
 2. Paste this and press Return:
 
    ```
-   cd ~/Library/CloudStorage/OneDrive-Personal/Client\ Portal/clarity-portal && bash scripts/backup-db.sh
+   cd ~/code/clarity-portal && bash scripts/backup-db.sh
    ```
 
 3. A good result ends with a line like `Backup saved: clarity-2026-10-23-1830.dump (2.4 MB)`.

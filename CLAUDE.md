@@ -1,5 +1,7 @@
 # Clarity Portal Codebase Guide
 
+**Working folder (from 26 Oct):** `~/code/clarity-portal`, outside OneDrive, so syncing never touches `.git` or `node_modules` mid-change. Start Claude Code there with `cd ~/code/clarity-portal && claude`. GitHub is the backup. The old copy under OneDrive (`Client Portal/clarity-portal`) is a fallback for one week only; never work in it.
+
 ## Design rules (Clarity Portal)
 
 1. **Dark and light modes both exist**, chosen as Light, Dark or Match my device (the starting choice). Existing pages stay in dark until each is rebuilt in its own phase. The pages that already show both modes are listed in `src/lib/colourMode/boot.js` (`BOTH_MODES`); every other page is held in dark whatever the device setting, so no page ever shows half in light mode.
