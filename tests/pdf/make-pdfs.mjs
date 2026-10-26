@@ -10,6 +10,7 @@
 import { createServer } from 'vite';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -193,6 +194,73 @@ function check(layout) {
   return problems;
 }
 
+// ---- whole words (rule 30) ------------------------------------------------------------
+// Reads every bookmark, the title property, each heading's tag and the copied
+// text, and fails if a heading's words are split, spaced or set in capitals
+// where its written words belong. Needs poppler and qpdf (brew install
+// poppler qpdf); without them it says so and skips.
+
+const run = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+let toolsMissing = false;
+const squash = (t) => t.replace(/\s+/g, ' ').trim();
+
+// pdfinfo prints a heading tag's written words as the PDF stores them: a
+// two-byte (UTF-16) string when they hold an emoji or a curly apostrophe.
+// Decode those so the check compares words, not bytes.
+function readStruct(file) {
+  const raw = execFileSync('pdfinfo', ['-struct-text', file], { stdio: ['ignore', 'pipe', 'ignore'] }).toString('latin1');
+  return raw.split('\n').map((line) => {
+    const m = /^(\s*H[1-6]\s+")\u00fe\u00ff([\s\S]*)("\s*\(.*)$/.exec(line);
+    if (m) return m[1] + Buffer.from(m[2], 'latin1').swap16().toString('utf16le') + m[3];
+    return Buffer.from(line, 'latin1').toString('utf8');
+  }).join('\n');
+}
+
+function checkWords(file, spec, res) {
+  const problems = [];
+  const expected = [spec.title, 'At a glance', 'Contents', ...(spec.sections || []).map((x) => x.title)].map(squash);
+  let info;
+  let outline;
+  let struct;
+  let text;
+  try {
+    info = run('pdfinfo', [file]);
+    outline = JSON.parse(run('qpdf', ['--json', '--json-key=outlines', file])).outlines || [];
+    struct = readStruct(file);
+    text = squash(run('pdftotext', [file, '-']));
+  } catch {
+    toolsMissing = true;
+    return problems;
+  }
+  const title = /^Title:\s+(.*)$/m.exec(info)?.[1]?.trim() || '';
+  if (title !== res.title) problems.push(`title property is "${title}", not "${res.title}"`);
+  if (title && title === title.toUpperCase() && /[a-z]/i.test(title)) problems.push(`title property is in capitals: "${title}"`);
+  outline.forEach((o) => {
+    if (!expected.includes(squash(o.title))) problems.push(`bookmark "${o.title}" is not a section name as written`);
+  });
+  // heading tags: H1 "Written words" (block), then the drawn line(s)
+  const lines = struct.split('\n');
+  lines.forEach((line, i) => {
+    const m = /^\s*(H1|H2)\s+"(.*)"/.exec(line);
+    if (!m) return;
+    const words = squash(m[2]);
+    if (!expected.includes(words)) problems.push(`${m[1]} tag "${words}" is not a heading as written`);
+    const drawn = squash((/"(.*)"/.exec(lines[i + 1] || '') || [])[1] || '');
+    if (drawn && drawn !== words.toLocaleUpperCase('en-GB') && drawn !== words) problems.push(`${m[1]} "${words}" is drawn as "${drawn}"`);
+    if (!text.includes(words) && !text.includes(words.toLocaleUpperCase('en-GB'))) problems.push(`copied text does not hold "${words}" whole`);
+  });
+  if (!/^\s*H1\s+"/m.test(struct)) problems.push('no H1 heading tag with its written words');
+  // any heading whose letters are in the copied text must be there as whole words
+  const letters = (t) => t.toLocaleLowerCase('en-GB').replace(/\s+/g, '');
+  const flat = letters(text);
+  expected.forEach((e) => {
+    if (e && flat.includes(letters(e)) && !text.includes(e) && !text.includes(e.toLocaleUpperCase('en-GB'))) {
+      problems.push(`copied text splits "${e}"`);
+    }
+  });
+  return problems;
+}
+
 // ---- make them -----------------------------------------------------------------------
 
 const report = [];
@@ -207,7 +275,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
       const fname = `${name}, ${paper.name}${variant === 'dark' ? ' (dark)' : ''}.pdf`;
       writeFileSync(join(out, fname), res.bytes);
       layouts[variant] = res;
-      const problems = check(res.layout);
+      const problems = [...check(res.layout), ...checkWords(join(out, fname), spec, res)];
       if (problems.length) failed += 1;
       report.push(`${fname}\n  file name in the app: ${res.fileName}\n  ${res.pages} page(s), ${(res.bytes.length / 1024).toFixed(0)} KB${problems.length ? `\n  PROBLEMS:\n    ${problems.join('\n    ')}` : '\n  breaks: all checks pass'}`);
       report.push(`  pages: ${res.layout.map((p, i) => `${i + 1}[${p.map((x) => `${x.cont ? '+' : ''}${x.kind}${x.lines && x.lines < 99 ? x.lines : ''}`).join(' ')}]`).join('  ')}`);
@@ -220,6 +288,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
 }
 writeFileSync(join(out, 'break-report.txt'), `${report.join('\n')}\n`);
 console.log(report.join('\n'));
-console.log(failed ? `\n${failed} problem(s)` : '\nAll page-break checks pass.');
+if (toolsMissing) console.log('\nThe whole-words check was skipped: install poppler and qpdf to run it.');
+console.log(failed ? `\n${failed} problem(s)` : '\nAll page-break and whole-word checks pass.');
 await vite.close();
 process.exit(failed ? 1 : 0);

@@ -192,7 +192,12 @@ export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, ass
       const e = el(node);
       const content = doc.markStructureContent(node.type);
       e.add(content);
+      // A heading drawn in spaced capitals also carries its words as written
+      // ("Next steps"), so copying, searching and screen readers get whole words.
+      const actual = node.opts?.actual;
+      if (actual) doc.markContent('Span', { actual });
       fn();
+      if (actual) doc.endMarkedContent();
       doc.endMarkedContent();
     },
     artifact(fn, type = 'Layout') {

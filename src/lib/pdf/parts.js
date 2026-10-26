@@ -62,7 +62,7 @@ export function titleUnits(L, spec, parent) {
   const detailLines = details ? ts.wrap(details, STYLES.details, L.contentW) : [];
   const ruleY = lines.length * style.lh + 10;
   const h = ruleY + 1.5 + (detailLines.length ? 10 + detailLines.length * STYLES.details.lh : 0);
-  const h1 = tagNode('H1', parent);
+  const h1 = tagNode('H1', parent, { actual: spec.title, title: spec.title });
   const p = tagNode('P', parent);
   return [{
     kind: 'title',
@@ -121,7 +121,7 @@ export function glanceUnits(L, items, parent) {
   const headH = STYLES.panelHeading.lh;
   const h = PAD + headH + 10 + labelH + 4 + valueH + (noteH ? 4 + noteH : 0) + PAD;
   const sect = tagNode('Sect', parent);
-  const head = tagNode('H2', sect);
+  const head = tagNode('H2', sect, { actual: 'At a glance', title: 'At a glance' });
   return [{
     kind: 'glance',
     h,
@@ -166,7 +166,7 @@ export function contentsUnits(L, entries, parent) {
     draw(ctx, x, y) {
       panel(ctx, x, y, L.contentW, h);
       const hs = STYLES.panelHeading;
-      ctx.mark(tagNode('H2', parent), () => ts.draw('Contents', x + PAD, y + PAD + ts.baseline(hs), hs, ctx.t.text));
+      ctx.mark(tagNode('H2', parent, { actual: 'Contents', title: 'Contents' }), () => ts.draw('Contents', x + PAD, y + PAD + ts.baseline(hs), hs, ctx.t.text));
       let ry = y + PAD + headH + 8;
       rows.forEach((r) => {
         const item = tagNode('TOCI', toc);
@@ -788,7 +788,7 @@ export function flatten(L, spec, contents, root) {
       blocks.push(us);
     });
     if (!blocks.length) return; // a section with nothing in it is left out with its heading
-    const heading = headingUnit(L, sec.title, tagNode('H2', sect));
+    const heading = headingUnit(L, sec.title, tagNode('H2', sect, { actual: sec.title, title: sec.title }));
     heading.section = sections.length;
     const su = [heading, ...blocks.flat()];
     // the heading stays with at least three lines of what follows

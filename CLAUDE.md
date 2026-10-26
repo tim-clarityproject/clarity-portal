@@ -114,7 +114,7 @@ Tim's PDF rules (26 Oct). Every PDF follows all 32. They are built into the shar
 
 **The file and checks**
 
-30. **Real and readable:** fonts embedded, text selectable and searchable, links that work; tagged for screen readers with the right reading order, a text description for every chart, the language set to English (UK), and section bookmarks when it is over two pages.
+30. **Real and readable:** fonts embedded, text selectable and searchable, links that work; tagged for screen readers with the right reading order, a text description for every chart, the language set to English (UK), and section bookmarks when it is over two pages. Bookmarks, the file's title and copied heading text are whole words in sentence case, never split by letter-spacing. (Headings in spaced capitals are drawn as whole words with the PDF's own letter-spacing and no pair kerning, and carry their written words as ActualText; `tests/pdf/make-pdfs.mjs` checks every bookmark, title and heading.)
 31. **Named in words and small:** for example "Health Check, Northfield Logistics, 26 Oct 2026.pdf", with "(dark)" at the end of the dark one; the file's properties carry the same title and "Dr. Tim Dutton, The Clarity Project LTD" as author; a typical PDF is under 1 MB.
 32. **Stress-test pack before Tim sees it** (Tim, 09:30): every new or changed PDF is made with very short, very long and awkward content (long names, long answers, long tables, emoji, blank answers), in light and dark, on A4 and US Letter; every page break is checked against rules 23 to 29; Tim gets the pack to look through. Plus: open on a Mac and an iPhone, print a light page in black and white, and send the dark one through a chat app. Invented names only.
 

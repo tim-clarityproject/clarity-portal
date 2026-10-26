@@ -82,7 +82,13 @@ export function createTypesetter(doc, chains) {
     return out;
   }
 
-  const opts = (style) => ({ characterSpacing: style.tracking || 0, features: style.features });
+  // Spaced capitals keep only the PDF's own letter-spacing (Tc): the font's
+  // pair kerning is switched off, so every gap is the same and readers never
+  // mistake a wider one for a space ("SUM MARY").
+  const opts = (style) => ({
+    characterSpacing: style.tracking || 0,
+    features: style.tracking ? { kern: false } : style.features,
+  });
   const widthCache = new Map();
 
   /** Width of one line of text, in points. */
