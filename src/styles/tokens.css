@@ -15,6 +15,15 @@
   --on-coral: #000000;
   --coral-text: #FF6F5C;
   --mint-text: #5FEFBB;
+  /* Good (Tim, 26 Oct): the one colour for at or above the standard,
+     rises, the live score at or above the standard, progress, week
+     squares, mini charts, ticked boxes, celebrations and Saved. It is
+     the mint of the mode on screen: it is declared on every .ui-root
+     (and again in the light block), so each part resolves its own
+     mode's mint, never one frozen on the root. Coral is never a data
+     colour. --on-good is the tick or number drawn on top of it. */
+  --good: var(--mint-text);
+  --on-good: #000000;
   --scrim: rgba(0, 0, 0, 0.62);
 
   /* Wheel of Life chart colours (wheel-of-life.html mock-up) that have no
@@ -192,8 +201,32 @@
   --option-min-h: 52px;
   --option-pad-y: 13px;
   --fs-label-row: 15px;      /* the question above a box (M6) */
-  --fs-who: 13px;            /* the who-sees label */
-  --who-icon: 14px;
+  /* Icons with words, one standard (Tim, 26 Oct): the eye, the "i" and
+     any small icon beside words. 14px words in the secondary grey, the
+     icon in a 16px square drawn with 1.5px lines in the colour of its
+     words, 6px between them, 20px between items on one line. */
+  --fs-who: 14px;            /* words beside an icon (was 13px) */
+  --who-icon: 16px;          /* the icon's square (was 14px) */
+  --icon-line: 1.5px;
+  --icon-gap: 6px;
+  --icon-item-gap: 20px;
+  --switch-w: 52px;          /* the switch (M4 v46) */
+  --switch-h: 30px;
+  --switch-knob: #FFFFFF;    /* white in both modes, as the mock-up */
+  /* The chart pop-up (Tim, 26 Oct; M4 dashboard v46) */
+  --tip-edge: 12px;          /* never closer than this to a screen edge */
+  --tip-gap: 8px;            /* between the mark and the pop-up */
+  --tip-max-w: 240px;
+  --fs-tip: 13px;
+  --fs-tip-value: 14px;      /* the value comes first, and larger (M4: 14px against 13px) */
+  --fs-tip-kind: 12px;       /* "Outcome Objective 2", small, before a name */
+  /* Charts drawn on screen (design reference v15, M4) */
+  --chart-h: 120px;
+  --chart-bar-max: 22px;
+  --dial-size: 120px;
+  --dial-w: 10px;
+  --fs-chart: 12px;          /* labels inside a chart (the mock-ups use 11px; 12px keeps the "nothing below 12px" rule) */
+  --fs-unit: 13px;           /* units beside a big figure: "7.1 hours" */
   --tick-option: 16px;       /* the tick beside the chosen option */
   --row-min-h: 54px;         /* full-width answer rows */
   --row-pad-x: 18px;
@@ -357,7 +390,10 @@
   --tick-edge: #C2412E;      /* a ticked box's 1px deep coral edge: 3 to 1 on the page */
   --coral-soft-text: #A84E28;
   --coral-soft-tint: #FFE7DB;
+  --mint: #0B7A52;           /* the mint of light mode (Tim, 26 Oct): pale #5FEFBB never sits on off-white */
   --mint-text: #0B7A52;
+  --good: var(--mint-text);  /* deep green in light, as design reference v15 */
+  --on-good: #FFFFFF;        /* white tick on deep green */
   --mint-tint: #DDF7EC;
   --below: #8F8D88;
   --to-come: #DCDAD3;

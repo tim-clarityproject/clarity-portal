@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import Crosshair from './Crosshair';
 import InfoIcon from './InfoIcon';
+import { IconText } from './IconText';
 import './design.css';
 
 // Buttons (design reference: Buttons). Nekst capitals, labels are verb
@@ -44,13 +45,13 @@ export const IconButton = forwardRef(function IconButton(
   );
 });
 
-// "How the system fits together", with the small "i" at the end of the
-// words. Used in the page header's meta line and in empty states.
+// "How the system fits together": the "i" then its words, in the
+// icon-with-words standard (Tim, 26 Oct; design reference v15). Used in
+// the page header's meta line and in empty states.
 export function SystemLink({ children = 'How the system fits together', className = '', ...rest }) {
   return (
-    <button type="button" className={`ds-info-link ${className}`.trim()} {...rest}>
+    <IconText icon={<InfoIcon />} className={`ds-info-link ${className}`.trim()} {...rest}>
       {children}
-      <InfoIcon />
-    </button>
+    </IconText>
   );
 }

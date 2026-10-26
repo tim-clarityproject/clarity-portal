@@ -5,6 +5,10 @@
 export { default as Crosshair } from './Crosshair';
 export { default as BoldCrosshair } from './BoldCrosshair';
 export { default as DisclosureArrow } from './DisclosureArrow';
+export { default as Chevron } from './Chevron';
+export { IconText, IconTextRow, EyeIcon } from './IconText';
+export { default as ChartTips, tipProps } from './ChartTips';
+export { Dial, WeekChart } from './Charts';
 export { Button, IconButton, SystemLink } from './Button';
 export { default as PageHeader } from './PageHeader';
 export { default as InfoIcon } from './InfoIcon';
@@ -29,7 +33,7 @@ export { dayLabel, fullDateLabel, todayKey, nextMondayKey, toKey, fromKey, addDa
 export { default as GuidedTool, GuidedSummary } from './GuidedTool';
 export { clearGuideDraft } from './guideDraft';
 export { default as useAutosave, readDraft, clearDraft } from './useAutosave';
-export { default as WhoSees } from './WhoSees';
+export { default as WhoSees, CoachSees, MY_ACCOUNT_LINE } from './WhoSees';
 export { CoachContext, useCoach, useCoachName, whoSeesText } from './coachContext';
 export { default as Popover } from './Popover';
 export { default as useIsPhone } from './useIsPhone';
@@ -38,7 +42,7 @@ export { default as Collapsible } from './Collapsible';
 export { SavingIndicator, SavedIndicator, WillSyncIndicator, SaveStatus, Loading, SmallWin, ErrorMessage } from './Status';
 export { ToastProvider } from './Toast';
 export { useToast, ERROR_MESSAGE } from './toastContext';
-export { SlidePanel, Popup } from './Dialogs';
+export { SlidePanel, Popup, Sheet } from './Dialogs';
 export { default as EmptyState } from './EmptyState';
 export { default as FloatingOrb } from './FloatingOrb';
 export { default as ChatButton } from './ChatButton';

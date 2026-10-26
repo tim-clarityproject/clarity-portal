@@ -46,7 +46,7 @@ export function SaveStatus({ state }) {
   );
 }
 
-// A small win (Tim, 23 Oct): the tick fills coral and a few words show,
+// A small win (Tim, 23 Oct): the tick fills mint (Tim, 26 Oct) and a few words show,
 // e.g. "Done. 3 of 4 this week." Big moments get the full celebration.
 export function SmallWin({ children }) {
   return (

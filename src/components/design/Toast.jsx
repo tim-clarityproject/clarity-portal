@@ -8,7 +8,7 @@ import './design.css';
 // "Undo", "Errors"). One short line at the bottom of the screen:
 //   toast.show('Added to this week.')   about 3 seconds, mint tick
 //   toast.saved({ onUndo })              "Saved · Undo", about 5 seconds
-//   toast.error()                        "Couldn't save just now. We'll keep trying."
+//   toast.error()                        "That didn't save. Check your connection and try again."
 // One at a time: a new toast replaces the one showing. The timer pauses
 // while the pointer or keyboard focus is on the toast, so Undo can always
 // be reached. Calm wording only: no red, no exclamation marks.

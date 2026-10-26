@@ -34,3 +34,4 @@ dist-ssr
 # These lines stop a copy of any of them ever being committed.
 .clarity-*
 *clarity-test-accounts*
+tests/scratch/

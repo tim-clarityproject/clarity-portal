@@ -1,16 +1,16 @@
 import './design.css';
 
-// The one "i" (Tim, 23 Oct): a 16px thin outlined circle with a small
-// "i" inside, like the character ⓘ, in the current text colour. No disc
-// behind it and no thicker border. The button around it gives the 44px
-// tap area with its padding; the icon itself never grows. Decorative:
+// The one "i" (Tim, 23 Oct; redrawn 26 Oct to design reference v15): a
+// 16px outlined circle with a small "i" inside, like ⓘ, drawn with 1.5px
+// lines in the colour of its words. No disc behind it. The button around
+// it gives the 44px tap area; the icon itself never grows. Decorative:
 // the button carries the accessible name.
 export default function InfoIcon() {
   return (
     <svg className="ds-info" viewBox="0 0 16 16" aria-hidden="true">
-      <circle className="ds-info-ring" cx="8" cy="8" r="7.3" />
-      <circle className="ds-info-dot" cx="8" cy="4.6" r="0.95" />
-      <path className="ds-info-stem" d="M6.9 6.9H8.15V11.4M6.7 11.4H9.6" />
+      <circle className="ds-info-ring" cx="8" cy="8" r="7" />
+      <circle className="ds-info-dot" cx="8" cy="4.9" r="1" />
+      <path className="ds-info-stem" d="M6.8 7.2H8.1V11.3M6.6 11.3H9.6" />
     </svg>
   );
 }

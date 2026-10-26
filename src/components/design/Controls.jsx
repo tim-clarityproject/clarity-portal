@@ -36,8 +36,8 @@ export function ChipRow({ children, label, className = '' }) {
   );
 }
 
-// Checkbox: a 22px box in a 44px target, coral with a black tick when
-// done. The words beside it are its label and can be tapped too.
+// Checkbox: an 18px box in a 44px target, filled mint when done (Tim,
+// 26 Oct): a black tick in dark, a white tick on deep green in light. The words beside it are its label and can be tapped too.
 export function Checkbox({ checked, onChange, children, after }) {
   const labelId = useId();
   return (

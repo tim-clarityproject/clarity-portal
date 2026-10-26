@@ -13,14 +13,22 @@ export function Bar({ value = 0, className = '' }) {
 
 // Stat (design reference: Stats). Label first, then the number (Nekst
 // Light), then one grey line saying what it means. Never a number on its
-// own. Only the live score is coral (`live`); other numbers are white.
+// own.
 //
-// bar: optional 0 to 1 for the thin bar underneath.
-export function Stat({ label, value, note, live = false, bar, className = '' }) {
+// good: the number is mint (Tim, 26 Oct): the live score at or above the
+//       standard, or a rise. Below the standard it stays the text colour.
+// unit: a full word, small and grey, beside the number ("7.1 hours",
+//       "6 weeks"; never "h" or "wks"). A unit starting with "/" sits
+//       right against the number ("8/10").
+// bar:  optional 0 to 1 for the thin bar underneath (mint: progress).
+export function Stat({ label, value, unit, note, good = false, bar, className = '' }) {
   return (
     <div className={`ds-stat ${className}`.trim()}>
       <span className="ds-stat-label">{label}</span>
-      <strong className={`ds-stat-value${live ? ' ds-stat-value--live' : ''}`}>{value}</strong>
+      <strong className={`ds-stat-value${good ? ' ds-stat-value--good' : ''}`}>
+        {value}
+        {unit && <span className={`ds-unit${unit.startsWith('/') ? ' ds-unit--tight' : ''}`}>{unit}</span>}
+      </strong>
       {note && <span className="ds-stat-note">{note}</span>}
       {bar != null && <Bar value={bar} />}
     </div>

@@ -5,6 +5,15 @@ import {
   CalendarPopover,
   ChatButton,
   Button,
+  Chevron,
+  CoachSees,
+  Dial,
+  EyeIcon,
+  IconText,
+  IconTextRow,
+  InfoIcon,
+  WeekChart,
+  WhoSees,
   Checkbox,
   Chip,
   ChipRow,
@@ -66,8 +75,8 @@ import './designReference.css';
 // vite.config.js).
 
 const TOC = [
-  ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c4', 'Sections and questions'],
-  ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c9', 'Lists'], ['c10', 'Logging rows'],
+  ['c1', 'Colour'], ['c2', 'Type'], ['c3', 'Page header'], ['c3b', 'Icons with words'], ['c4', 'Sections and questions'],
+  ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c8', 'Dial and charts'], ['c9', 'Lists'], ['c10', 'Logging rows'],
   ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
@@ -87,10 +96,10 @@ const COLOURS = [
   ['Text', 'Main text, this week', '#FFFFFF', '#000000', 'measure'],
   ['Secondary text', 'Lines under things', '#A3A3A0', '#4A4A49', 'measure'],
   ['Labels', 'Small labels, examples', '#7F7F7C', '#636362', 'measure'],
-  ['Coral, buttons', 'The one main button, ticks', '#FF6F5C', '#FF6F5C', 'black text 7.7 to 1'],
-  ['Coral, text and lines', 'Live score, bars, selected', '#FF6F5C', '#C2412E', 'measure'],
+  ['Coral, buttons', 'The one main button', '#FF6F5C', '#FF6F5C', 'black text 7.7 to 1'],
+  ['Coral, text and lines', 'Hover, focus, selected, brand line', '#FF6F5C', '#C2412E', 'measure'],
   ['Soft coral', 'Needs you', '#FFBD9E', '#A84E28', 'measure'],
-  ['Mint', 'Saved, done', '#5FEFBB', '#0B7A52', 'measure'],
+  ['Mint', 'Good: at or above standard, rises, live score, progress, ticks, saved, done', '#5FEFBB', '#0B7A52', 'measure'],
   ['Below standard', 'Weeks under the standard', '#636362', '#8F8D88', 'measure'],
   ['Weeks to come', 'Dial, empty segments', '#262626', '#DCDAD3', 'none'],
 ];
@@ -176,7 +185,7 @@ function PageHeaderDemo() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <PageHeader as="h3" title="Performance Sprint 4" meta={['8 weeks · 28 Sep to 22 Nov']} onSystemLink={() => setOpen(true)} />
+      <PageHeader as="h3" title="Performance Sprint 4" meta={['8 weeks, 28 Sep to 22 Nov']} onSystemLink={() => setOpen(true)} />
       <SystemPopup open={open} onClose={() => setOpen(false)} />
     </>
   );
@@ -251,12 +260,20 @@ function CrosshairDemo() {
         <Crosshair size="md" tone="white" />
         <IconButton label="Close" onClick={() => toast.show('Close closes what’s open.')} />
       </div>
-      <span className="dr-small">DisclosureArrow: anything that opens (tap to turn it)</span>
+      <span className="dr-small">The one chevron: anything that opens (tap to turn it)</span>
       <div className="dr-row">
-        <button type="button" className="dr-arrow-demo" aria-expanded={open} aria-label="Turn the arrow" onClick={() => setOpen((v) => !v)}>
+        <button type="button" className="dr-arrow-demo" aria-expanded={open} aria-label="Turn the chevron" onClick={() => setOpen((v) => !v)}>
           <DisclosureArrow open={open} />
         </button>
       </div>
+      <span className="dr-small">The same chevron, turned: down, up, back and next</span>
+      <div className="dr-row dr-chevrons">
+        <Chevron direction="down" />
+        <Chevron direction="up" />
+        <Chevron direction="left" />
+        <Chevron direction="right" />
+      </div>
+      <IconText icon={<Chevron direction="left" size="sm" />} onClick={() => toast.show('Back goes to where you came from.')}>Personal</IconText>
     </div>
   );
 }
@@ -266,13 +283,105 @@ function StatsDemo() {
     <StatGroup>
       <Stat
         label="Performance score this week"
-        value="78%"
-        live
-        note={<><span className="ds-line">Your usual 72 to 84%.</span><span className="ds-line">Standard 85%.</span></>}
-        bar={0.78}
+        value="88%"
+        good
+        note={<><span className="ds-line">You’re above your standard of 85%.</span><span className="ds-line">That’s 4 points higher than last week.</span></>}
+        bar={0.88}
       />
-      <Stat label="Training sessions" value="3 of 4" note="This week" />
+      <Stat
+        label="Performance score last week"
+        value="78%"
+        note={<><span className="ds-line">You were below your standard of 85%.</span></>}
+      />
+      <Stat label="Training sessions" value="3 of 4" note="You’ve done 3 of 4 this week." bar={0.75} />
+      <Stat label="Sleep" value="7.1" unit="hours" note="You slept 7.1 hours a night on average." />
+      <Stat label="Calm under pressure" value="8" unit="/10" note="You rated it 8/10 on average this sprint." />
     </StatGroup>
+  );
+}
+
+// The sharing setting doesn't exist in the database yet (Phase 1), so
+// the eye's panels work here on a stand-in setting kept in the gallery.
+const STAND_IN_PARTS = [
+  ['wins', 'Your unplanned wins'],
+  ['check', 'Your Hardware and Software check-in'],
+  ['sleep', 'Your sleep'],
+  ['stress', 'Your stress answers'],
+];
+
+function pretendSave() {
+  return new Promise((resolve) => { setTimeout(resolve, 250); });
+}
+
+function IconsDemo() {
+  const toast = useToast();
+  const [sleep, setSleep] = useState('me');
+  const [shared, setShared] = useState({ check: true });
+  const parts = STAND_IN_PARTS.map(([key, label]) => ({ key, label, shared: !!shared[key] }));
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <div>
+        <span className="dr-small">Together on one line</span>
+        <IconTextRow>
+          <WhoSees audience="me" />
+          <IconText icon={<InfoIcon />} onClick={() => toast.show('How the system fits together opens here.')}>How the system fits together</IconText>
+        </IconTextRow>
+      </div>
+      <div>
+        <span className="dr-small">Tap the eye to change who sees it</span>
+        <IconTextRow>
+          <WhoSees
+            audience={sleep}
+            name="Your sleep"
+            onChange={async (next) => { await pretendSave(); setSleep(next); }}
+          />
+          <CoachSees
+            parts={parts}
+            onToggle={async (key, on) => { await pretendSave(); setShared((s) => ({ ...s, [key]: on })); }}
+          />
+        </IconTextRow>
+      </div>
+      <div>
+        <span className="dr-small">Beside a chart label</span>
+        <div className="dr-chart-head">
+          <span>Average hours a night, week by week</span>
+          <WhoSees audience={sleep} name="Your sleep" onChange={async (next) => { await pretendSave(); setSleep(next); }} />
+        </div>
+      </div>
+      <IconTextRow>
+        <IconText icon={<EyeIcon />}>
+          <span className="ds-sr">Who can see this: </span>You and Tim
+        </IconText>
+      </IconTextRow>
+    </div>
+  );
+}
+
+const DEMO_WEEKS = [
+  { label: 'W1', when: 'Sprint 4, week 1', value: 88 },
+  { label: 'W2', when: 'Sprint 4, week 2', value: 79 },
+  { label: 'W3', when: 'Sprint 4, week 3', value: 91 },
+  { label: 'W4', when: 'Sprint 4, week 4', value: 86 },
+  { label: 'W5', when: 'Sprint 4, week 5', value: 72 },
+  { label: 'W6', when: 'Sprint 4, week 6', value: 82, now: true },
+  { label: 'W7', when: 'Sprint 4, week 7', value: null },
+  { label: 'W8', when: 'Sprint 4, week 8', value: null },
+];
+
+function ChartsDemo() {
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <div className="dr-dialrow">
+        <Dial weeks={DEMO_WEEKS} standard={85} title="Performance Sprint 4" />
+        <div className="dr-dial-words">
+          <span>Weeks 1, 3 and 4 met your standard.</span>
+          <span>Weeks 2 and 5 were below it.</span>
+          <span>Week 6 is this week.</span>
+        </div>
+      </div>
+      <WeekChart weeks={DEMO_WEEKS} standard={85} label="Performance score by week" />
+      <WeekChart weeks={DEMO_WEEKS.map((w) => ({ ...w, value: null, now: false }))} standard={85} label="Average hours a night, week by week" empty="Your graph starts here after your first week." />
+    </div>
   );
 }
 
@@ -775,6 +884,7 @@ function Gallery() {
         <p className="dr-lead">Version 3: dark and light.</p>
         <p className="dr-lead">Every part of the portal is shown in both modes side by side, with its rules beside it.</p>
         <p className="dr-lead">Items marked “new” were added or changed in Phase 0b.</p>
+        <p className="dr-lead">Updated 26 Oct (design reference v15): icons with words share one look; mint means good in every chart, dial, score and tick, and coral is only for actions and the brand; one chevron everywhere; charts label things where they are, with a pop-up on every mark.</p>
         <div className="dr-switches">
           <ColourModeChoice label="How should the portal look?" />
           <SegmentedControl
@@ -824,6 +934,21 @@ function Gallery() {
             <p><New /><b>No intro line under the title.</b></p>
             <p>The title is enough; any explanation sits behind the small “i”.</p>
             <p>A quiet meta line under the title, and no coral line under it. PDFs keep theirs.</p>
+            <p><New />The meta line is 14px in the secondary grey, its items 20px apart with no dots between them.</p>
+          </>
+        )} />
+
+        <GallerySection id="c3b" title="Icons with words" demo={IconsDemo} rules={(
+          <>
+            <p><New /><b>One look for every small icon beside words</b> (Tim, 26 Oct): the eye (who can see this), the “i” (learn more) and any others.</p>
+            <p>Words in DM Sans, 14px, in the secondary grey.</p>
+            <p>The icon is a 16px square drawn with 1.5px lines, in the same colour as its words, 6px from them, centred on the middle of the capital letters.</p>
+            <p>Items on one line sit 20px apart, <b>never with a dot between them</b>.</p>
+            <p>A tappable one looks the same at rest, turns coral on hover or focus, and has a 44px tap area.</p>
+            <p><New /><b>The eye can be tapped to change who sees it</b>, there and then. On one thing it opens “Who can see this?” with the thing’s name; choosing saves at once and shows “Saved”. At the top of a page it opens “What Tim sees”, with one switch per part.</p>
+            <p>Both end with “You can also change this in My Account, under What your coach sees.” On a phone they rise from the bottom.</p>
+            <p>The sharing setting arrives in Phase 1; here it is a stand-in kept in the gallery.</p>
+            <p>The eye only ever means who can see this. Password boxes say “Show”, not an eye.</p>
           </>
         )} />
 
@@ -848,7 +973,8 @@ function Gallery() {
         <GallerySection id="c6" title="Crosshairs" demo={CrosshairDemo} rules={(
           <>
             <p><New /><b>Standard crosshair for add and close only</b> (Tim, 23 Oct): a plus to add, turned 45° to close, from the logo’s own crop. Nowhere else.</p>
-            <p><New /><b>DisclosureArrow for anything that opens</b>: drop-downs, folded sections and expandable rows. It is one half of the same crosshair, its corner pointing down, and it turns to point up while open.</p>
+            <p><New /><b>One chevron everywhere</b> (Tim, 26 Oct): back, open, close and drop-down chevrons are all the corner of the same crosshair, only turned. No other arrow, chevron or caret anywhere.</p>
+            <p>Drop-downs and folds point down and turn to point up while open. Back points left, before its words.</p>
             <p>Coral or white on dark; deep coral or black on light.</p>
             <p>Never a typed + or ×, never smaller than 14px.</p>
             <p>The bold crosshair has its own section below.</p>
@@ -858,8 +984,22 @@ function Gallery() {
         <GallerySection id="c7" title="Stats" demo={StatsDemo} rules={(
           <>
             <p><b>Label first, then the number</b>, then one line saying what it means.</p>
-            <p>The live score is coral in dark and deep coral in light.</p>
+            <p><New /><b>The live score is mint at or above the standard</b> (deep green in light), and the text colour below it.</p>
+            <p>Progress bars run from zero to the target, in mint.</p>
             <p>Counts read “3 of 4”.</p>
+            <p><New /><b>Units beside a big figure are full words</b>, small and grey: “7.1 hours”, “6 weeks”, “8/10”. Never “h” or “wks”.</p>
+            <p><New />Every line under a figure is a full sentence: “You’re above your standard of 85%.”</p>
+          </>
+        )} />
+
+        <GallerySection id="c8" title="Dial and charts" demo={ChartsDemo} rules={(
+          <>
+            <p><New /><b>Mint means good</b> (Tim, 26 Oct): weeks at or above the standard, rises, the live score, progress bars and ticked boxes are mint (deep green in light).</p>
+            <p>Below the standard is neutral grey; this week is white in dark and black in light; weeks to come are faint.</p>
+            <p>Coral is only for the one main button, hover and focus, selected states and the brand. It is never a data colour.</p>
+            <p><New /><b>No keys.</b> Things are labelled where they are: the standard as a labelled line at its right end, “Best” and “So far” on their bars, the weeks along the bottom.</p>
+            <p><New /><b>A pop-up on every mark</b>: hover, tap, or Tab to it. The value first and larger, then when, then any extra fact on its own line. It stays 12px inside the screen and flips below the mark when there’s no room above.</p>
+            <p><New /><b>No empty charts.</b> Until there’s enough data, say what’s coming: “Your graph starts here after your first week.”</p>
           </>
         )} />
 
@@ -890,7 +1030,7 @@ function Gallery() {
             <p>Segmented control for views; chips for on and off; large text boxes for anything written.</p>
             <p><New /><b>One tick box size everywhere</b> (Tim, 23 Oct): an 18px box with a 1.5px edge in the box-edge colour, 5px corners and a 12px tick, in a 44px tap area.</p>
             <p>Tick boxes are only for lists: to-dos, yes-or-no habits and the terms box at sign-up.</p>
-            <p>A ticked box has a deep coral edge in light mode, so it passes 3 to 1.</p>
+            <p><New /><b>A ticked box fills mint</b> (Tim, 26 Oct): bright mint with a black tick in dark, deep green with a white tick in light.</p>
           </>
         )} />
 
@@ -921,7 +1061,7 @@ function Gallery() {
         <GallerySection id="c24" title="Who can see this" demo={WhoSeesDemo} rules={(
           <>
             <p><New /><b>Every box that holds something personal shows a small eye and who can see it</b>: “Only you”, “You and [coach’s first name]” or “Your team” (Tim, 23 Oct; experience rule 44).</p>
-            <p>It sits at the right of the question above the box, 13px, in the label colour.</p>
+            <p>It sits at the right of the question above the box, in the icon-with-words standard: 14px, in the secondary grey.</p>
             <p>Screen readers hear “Who can see this: Only you”.</p>
             <p>It changes the moment something is shared, and back if sharing is undone.</p>
             <p>Turn the sharing chip on and off to see it.</p>
@@ -974,7 +1114,8 @@ function Gallery() {
             <p>Question tools use the % complete bar instead.</p>
             <p>Never a “Step 1 of 3” line.</p>
             <p>Each step: a small label with an optional “i”, the question in sentence case, a short nudge, an optional “See an example” for your role, a one-off tip, then the step itself.</p>
-            <p>Back on the left (the arrow alone on phone), a quiet Skip, and the coral button.</p>
+            <p>Back on the left (the chevron alone on phone), a quiet Skip, and the coral button.</p>
+            <p><New />The step list and the % complete bar are neutral, in the text colour: guided tools are doing screens, where the coral button leads. Mint is kept for progress towards a performance target.</p>
             <p>Steps slide across; with reduced motion they fade.</p>
             <p>Everything saves as you go, and the summary at the end lets you change any answer.</p>
             <p><New /><b>Statements people rate</b> (writing rule 51): the heading is the task, then the statement in a soft panel, then the who-sees label and the answers.</p>
@@ -1000,7 +1141,7 @@ function Gallery() {
         <GallerySection id="c13" title="Messages" demo={MessagesDemo} rules={(
           <>
             <p><b>Saved</b> is just “Saved”, in mint (deep green in light).</p>
-            <p><New /><b>Small wins</b>: the tick fills coral and a few words show.</p>
+            <p><New /><b>Small wins</b>: the tick fills mint and a few words show.</p>
             <p><New /><b>Toasts</b> are black with white text in both modes.</p>
             <p>Deleting shows “Deleted” with Undo; no “Are you sure?”.</p>
             <p><New /><b>Errors</b> say what happened, then what to do, on a soft coral tint.</p>
@@ -1090,7 +1231,7 @@ function Gallery() {
             <p><New /><b>One shared template</b> for every PDF, in CLAUDE.md under “PDF rules”.</p>
             <p>One Download PDF button, then a choice: Light, for printing, or Dark, for sharing. Same layout, content and page breaks; only the colours and the logo file change.</p>
             <p>A4, or US Letter in the US and Canada. No cover page: the title block, then At a glance, then the content.</p>
-            <p>Coral only for the title line and what is at or above the standard. No mint, and colour is never the only signal.</p>
+            <p>Coral only for the title line. <New />What is good, at or above the standard, is green: deep green #0B7A52 on light pages and mint #5FEFBB on dark pages. Colour is never the only signal.</p>
             <p>Agreements, quotes and the supplier pack are light only.</p>
           </>
         )} />

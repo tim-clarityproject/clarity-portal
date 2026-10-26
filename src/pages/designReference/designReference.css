@@ -736,3 +736,32 @@
   display: grid;
   gap: var(--space-4);
 }
+
+/* Icons with words, the chevron's four turns, and the dial (26 Oct). */
+.ui-root .dr-chevrons {
+  gap: var(--space-4);
+  color: var(--text-2);
+}
+
+.ui-root .dr-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+  font-size: var(--fs-secondary);
+}
+
+.ui-root .dr-dialrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ui-root .dr-dial-words {
+  display: grid;
+  gap: var(--space-px6);
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+}

@@ -17,6 +17,7 @@ import './design.css';
 // - dim the page underneath strongly in dark and lightly in light.
 
 const SWIPE_CLOSE_PX = 90;
+const KIND_CLASS = { panel: 'ds-panel', popup: 'ds-popup', sheet: 'ds-choice-sheet' };
 const DOUBLE_CLICK_MS = 400;
 
 function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, closeLabel = 'Close' }) {
@@ -157,7 +158,7 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
       />
       <div
         ref={dialogRef}
-        className={`ds-dialog ${kind === 'panel' ? 'ds-panel' : 'ds-popup'}${phoneForm ? ' ds-dialog--phone' : ''}`}
+        className={`ds-dialog ${KIND_CLASS[kind]}${phoneForm ? ' ds-dialog--phone' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -168,6 +169,7 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
       >
+        {kind === 'sheet' && phoneForm && <span className="ds-sheet-grab" aria-hidden="true" />}
         <div className="ds-dialog-head">
           <h2 id={titleId} className="ds-dialog-title">{title}</h2>
           <IconButton label={closeLabel} onClick={() => onCloseRef.current?.()} />
@@ -190,4 +192,12 @@ export function SlidePanel(props) {
 // System (full screen on phone).
 export function Popup(props) {
   return <Modal kind="popup" {...props} />;
+}
+
+// A small choice panel (M4 dashboard v46): a short dialog in the middle
+// of the screen on a laptop, and a panel rising from the bottom on a
+// phone, with the grab bar. For a quick choice that saves at once, like
+// who can see something.
+export function Sheet(props) {
+  return <Modal kind="sheet" {...props} />;
 }

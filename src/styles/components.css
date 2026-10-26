@@ -152,8 +152,8 @@ html:has(.ui-root) {
 }
 
 .ui-root .ui-switch--on {
-  background: var(--mint-text);
-  border-color: var(--mint-text);
+  background: var(--good);
+  border-color: var(--good);
 }
 
 .ui-root .ui-switch::after {

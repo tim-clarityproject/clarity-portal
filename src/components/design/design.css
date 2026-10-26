@@ -70,26 +70,50 @@
   background-color: var(--text-2);
 }
 
-/* ---------- Disclosure arrow: anything that opens a list or a fold ----------
-   Half the standard crosshair (the same mask), clipped to its upper-right
-   half so only the corner and two arms are left, then turned so the corner
-   points down; open, it turns 180° to point up. The shift keeps it centred. */
+/* ---------- The one chevron (Tim, 26 Oct) ----------
+   One corner of the standard crosshair (the same mask), clipped to its
+   upper-right half so only the corner and its two arms are left, then
+   turned to point down, up, left or right. The shift keeps the corner
+   centred in its square. Back, open, close and drop-down chevrons all
+   use it; there is no other arrow. The disclosure arrow (ds-arrow) is
+   this chevron pointing down, turning up while open. */
 
-.ui-root .ds-arrow {
+.ui-root .ds-chevron {
   display: inline-block;
   flex: none;
   width: var(--arrow-size);
   height: var(--arrow-size);
-  background-color: var(--text-2);
+  background-color: currentColor;
   -webkit-mask: url('/brand/crosshair_white.png') center / contain no-repeat;
   mask: url('/brand/crosshair_white.png') center / contain no-repeat;
   clip-path: polygon(0 0, 100% 0, 100% 100%);
-  transform: translateY(var(--arrow-shift)) rotate(-45deg);
   transition: transform var(--dur-slow) var(--ease);
 }
 
-.ui-root .ds-arrow--open {
+.ui-root .ds-chevron--sm {
+  width: var(--who-icon);
+  height: var(--who-icon);
+}
+
+.ui-root .ds-chevron--down {
+  transform: translateY(var(--arrow-shift)) rotate(-45deg);
+}
+
+.ui-root .ds-chevron--up {
   transform: translateY(calc(-1 * var(--arrow-shift))) rotate(135deg);
+}
+
+.ui-root .ds-chevron--left {
+  transform: translateX(calc(-1 * var(--arrow-shift))) rotate(45deg);
+}
+
+.ui-root .ds-chevron--right {
+  transform: translateX(var(--arrow-shift)) rotate(-135deg);
+}
+
+/* Drop-downs and folds: grey, beside the box's words. */
+.ui-root .ds-arrow {
+  background-color: var(--text-2);
 }
 
 .ui-root .ds-cross--spin {
@@ -239,38 +263,10 @@
   outline: var(--focus-w) solid var(--coral-text);
 }
 
-/* "How the system fits together", with the "i" 6px after the last word,
-   lined up with the middle of the text. */
-.ui-root .ds-info-link {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--info-gap);
-  min-height: var(--tap-min) !important;
-  padding: 0 !important;
-  font-family: var(--font-body);
-  font-size: inherit !important;
-  line-height: var(--lh-text);
-  letter-spacing: normal;
-  color: var(--text-2);
-  transition: color var(--dur) var(--ease);
-  -webkit-tap-highlight-color: transparent;
-}
+/* "How the system fits together": an icon with words (.ds-iconword--tap). */
 
-.ui-root .ds-info-link:hover {
-  color: var(--coral-text);
-}
-
-.ui-root .ds-info-link:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
-  outline-offset: var(--space-px2);
-  border-radius: var(--space-1);
-}
-
-/* The one "i" (InfoIcon): a thin ring with a small i, like ⓘ, in the
-   current text colour. No disc behind it and no thicker border. */
+/* The one "i" (InfoIcon): a ring with a small i, like ⓘ, drawn with
+   1.5px lines in the current text colour (design reference v15). */
 .ui-root .ds-info {
   flex: none;
   display: block;
@@ -281,7 +277,7 @@
 .ui-root .ds-info-ring {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1;
+  stroke-width: var(--icon-line);
 }
 .ui-root .ds-info-dot {
   fill: currentColor;
@@ -290,7 +286,7 @@
 .ui-root .ds-info-stem {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.1;
+  stroke-width: var(--icon-line);
 }
 
 /* ---------- Page header ---------- */
@@ -340,11 +336,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-px2) var(--space-px20);
+  gap: var(--space-px2) var(--icon-item-gap);
   margin-top: var(--space-px10);
-  font-size: var(--fs-meta);
+  /* The meta line is words beside icons (design reference v15): 14px
+     in the secondary grey, items 20px apart. */
+  font-size: var(--fs-who);
   line-height: var(--lh-text);
-  color: var(--label);
+  color: var(--text-2);
 }
 
 /* A question heading under the page header (a step in a tool): DM Sans,
@@ -422,6 +420,7 @@
 }
 
 .ui-root .ds-help-toggle:hover,
+.ui-root .ds-help-toggle:focus-visible,
 .ui-root .ds-help-toggle[aria-expanded='true'] {
   color: var(--coral-text);
 }
@@ -462,8 +461,22 @@
   color: var(--text);
 }
 
-.ui-root .ds-stat-value--live {
-  color: var(--coral-text);
+.ui-root .ds-stat-value--good {
+  color: var(--good);
+}
+
+/* Units beside a big figure: full words, small and grey (Tim, 26 Oct). */
+.ui-root .ds-unit {
+  margin-left: var(--space-1);
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-unit);
+  letter-spacing: normal;
+  color: var(--text-2);
+}
+
+.ui-root .ds-unit--tight {
+  margin-left: 1px;
 }
 
 .ui-root .ds-stat-note {
@@ -490,7 +503,7 @@
   display: block;
   height: 100%;
   border-radius: var(--radius-bar);
-  background: var(--coral-text);
+  background: var(--good);
   transition: width var(--dur) var(--ease);
 }
 
@@ -1356,16 +1369,17 @@
 }
 
 .ui-root .ds-check-box[aria-checked='true'] > span {
-  background: var(--coral);
-  /* Deep coral in light mode, so the ticked box passes 3 to 1. */
-  border-color: var(--tick-edge);
+  /* Ticked boxes fill mint (Tim, 26 Oct): bright mint with a black tick
+     in dark, deep green with a white tick in light. */
+  background: var(--good);
+  border-color: var(--good);
 }
 
 .ui-root .ds-check-box svg {
   width: var(--tick-size);
   height: var(--tick-size);
   fill: none;
-  stroke: var(--on-coral);
+  stroke: var(--on-good);
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -1805,6 +1819,64 @@
   padding-right: var(--space-3);
 }
 
+/* The small choice panel (Sheet): a short dialog in the middle on a
+   laptop, a panel rising from the bottom on a phone (M4 v46 .bs). */
+.ui-root .ds-choice-sheet {
+  left: 50%;
+  top: 50%;
+  width: min(var(--cal-w), calc(100% - 2 * var(--space-3)));
+  max-height: calc(100dvh - 2 * var(--space-5));
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-sheet-desktop);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
+}
+
+.ui-root.ds-modal--shown .ds-choice-sheet {
+  opacity: 1;
+}
+
+.ui-root .ds-dialog--phone.ds-choice-sheet {
+  top: auto;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-height: 85dvh;
+  border-width: var(--line-w) 0 0;
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  opacity: 1;
+  transform: translateY(100%);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.ui-root.ds-modal--shown .ds-dialog--phone.ds-choice-sheet {
+  transform: none;
+}
+
+.ui-root .ds-sheet-grab {
+  flex: none;
+  display: block;
+  width: var(--grab-w);
+  height: var(--grab-h);
+  margin: var(--space-px10) auto 0;
+  border-radius: var(--radius-bar);
+  background: var(--line);
+}
+
+.ui-root .ds-choice-sheet .ds-dialog-title {
+  font-family: var(--font-body);
+  font-size: var(--fs-text) !important;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.ui-root .ds-choice-sheet .ds-dialog-foot {
+  border-top: 0;
+  padding-top: 0;
+}
+
 /* While a finger drags the dialog down, it follows with no easing. */
 .ui-root .ds-dialog.ds-dialog--dragging {
   transition: none;
@@ -1946,8 +2018,8 @@
   height: var(--checkbox-box);
   margin: var(--space-px3);
   border-radius: var(--radius-box);
-  background: var(--coral);
-  border: var(--line-w-strong) solid var(--tick-edge);
+  background: var(--good);
+  border: var(--line-w-strong) solid var(--good);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1957,7 +2029,7 @@
   width: var(--tick-size);
   height: var(--tick-size);
   fill: none;
-  stroke: var(--on-coral);
+  stroke: var(--on-good);
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2036,29 +2108,204 @@
   opacity: 0.4;
 }
 
-/* ---------- Who can see this (experience rule 44; M6) ---------- */
+/* ---------- Icons with words, one standard (Tim, 26 Oct) ----------
+   The eye, the "i" and any small icon beside words: 14px DM Sans in the
+   secondary grey; the icon in a 16px square with 1.5px lines in the
+   colour of its words; 6px between them; 20px between items, no dots.
+   A tappable one looks the same at rest, turns coral on hover or
+   keyboard focus, and has a 44px tap area. The icon is centred on the
+   middle of the capital letters: DM Sans's capitals sit within 0.2px
+   of the middle of its line box, so centring the two lines them up
+   (checked by measuring in tests/icons-with-words.mjs). */
 
-.ui-root .ds-who {
+.ui-root .ds-iconwords {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--icon-item-gap);
+}
+
+.ui-root .ds-iconword {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-px6);
+  gap: var(--icon-gap);
   font-family: var(--font-body);
   font-size: var(--fs-who);
-  line-height: var(--lh-text);
+  font-weight: var(--fw-regular);
+  line-height: 1.3;
   letter-spacing: normal;
-  color: var(--label);
+  text-transform: none;
+  text-align: left;
+  color: var(--text-2);
   white-space: nowrap;
 }
 
-.ui-root .ds-who svg {
+.ui-root .ds-iconword-icon {
   flex: none;
+  display: inline-flex;
   width: var(--who-icon);
   height: var(--who-icon);
+}
+
+.ui-root .ds-iconword-icon > svg,
+.ui-root .ds-iconword-icon > .ds-chevron {
+  width: var(--who-icon);
+  height: var(--who-icon);
+}
+
+.ui-root .ds-eye {
+  display: block;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.4;
+  stroke-width: var(--icon-line);
   stroke-linejoin: round;
+}
+
+.ui-root .ds-iconword--tap {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--icon-gap);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-who) !important;
+  line-height: 1.3;
+  letter-spacing: normal;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-iconword--tap:hover,
+.ui-root .ds-iconword--tap:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-iconword--tap:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-px6);
+}
+
+/* Who can see this: the icon-with-words standard. A long label (a
+   coach's long name) may wrap rather than run off a phone. */
+.ui-root .ds-who .ds-iconword-text {
+  white-space: normal;
+}
+
+/* ---------- The eye's panels (Tim, 26 Oct; M4 dashboard v46) ---------- */
+
+.ui-root .ds-sheet-name {
+  margin: 0 0 var(--space-px10);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-sheet-options .ds-option {
+  appearance: none;
+  width: 100%;
+  margin: 0;
+  border-width: 0 0 var(--line-w);
+  border-style: solid;
+  border-color: var(--line-soft);
+  background: transparent;
+  text-align: left;
+}
+
+.ui-root .ds-sheet-options .ds-option:last-child {
+  border-bottom: 0;
+}
+
+.ui-root .ds-sheet-options .ds-option[aria-selected='true'] {
+  background: var(--raised);
+}
+
+.ui-root .ds-sheet-options .ds-option:hover {
+  color: var(--text);
+}
+
+.ui-root .ds-sheet-options .ds-option:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc(-1 * var(--focus-w));
+}
+
+.ui-root .ds-sheet-rows {
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-sheet-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--option-min-h);
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-option);
+  line-height: var(--lh-option);
+  color: var(--text);
+}
+
+.ui-root .ds-sheet-foot {
+  margin: 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+/* The switch (M4 v46 .swt): mint when on, the mode's own mint. */
+.ui-root .ds-switch {
+  all: unset;
+  cursor: pointer;
+  flex: none;
+  position: relative;
+  box-sizing: border-box;
+  width: var(--switch-w);
+  height: var(--switch-h);
+  min-height: var(--switch-h) !important;
+  padding: 0 !important;
+  border-radius: var(--radius-pill);
+  background: var(--outline);
+  transition: background-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The tap area reaches 44px around the switch. */
+.ui-root .ds-switch::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--switch-h) - var(--tap-min)) / 2) calc(-1 * var(--space-1));
+}
+
+.ui-root .ds-switch::after {
+  content: '';
+  position: absolute;
+  top: var(--space-px3);
+  left: var(--space-px3);
+  width: calc(var(--switch-h) - 2 * var(--space-px3));
+  height: calc(var(--switch-h) - 2 * var(--space-px3));
+  border-radius: 50%;
+  background: var(--switch-knob);
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .ds-switch[aria-checked='true'] {
+  background: var(--good);
+}
+
+.ui-root .ds-switch[aria-checked='true']::after {
+  transform: translateX(calc(var(--switch-w) - var(--switch-h)));
+}
+
+.ui-root .ds-switch:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px3);
 }
 
 /* ---------- The steady text box (Tim, 21 Oct; v3, M6) ---------- */
@@ -2501,6 +2748,13 @@
   justify-content: center;
   border-radius: var(--radius-pill);
   color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+/* Coral on hover or keyboard focus, like every tappable icon (Tim, 26 Oct). */
+.ui-root .ds-guide-i:hover,
+.ui-root .ds-guide-i:focus-visible {
+  color: var(--coral-text);
 }
 
 .ui-root .ds-guide-i:focus-visible {
@@ -3428,4 +3682,222 @@
   font-size: var(--fs-small);
   line-height: 1.4;
   color: var(--text-2);
+}
+
+/* ---------- The chart pop-up (Tim, 26 Oct; M4 dashboard v46) ----------
+   Black with white words in both modes, like the toast. Placed by
+   ChartTips.jsx: at least 12px inside both screen edges, above the mark
+   or flipped below it, wrapping rather than running off the side.
+   Hidden with display none when closed. */
+
+.ui-root .ds-tipzone {
+  position: relative;
+  min-width: 0;
+}
+
+.ui-root .ds-tipzone [data-tip] {
+  cursor: default;
+  outline: none;
+}
+
+.ui-root .ds-tipzone [data-tip]:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-tip {
+  position: fixed;
+  z-index: var(--z-toast);
+  pointer-events: none;
+  box-sizing: border-box;
+  display: block;
+  width: max-content;
+  max-width: var(--tip-max-w);
+  padding: var(--space-2) var(--space-px12);
+  border: var(--line-w) solid var(--toast-line);
+  border-radius: var(--radius-input);
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-tip);
+  line-height: 1.35;
+  letter-spacing: normal;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-tip[hidden] {
+  display: none !important;
+}
+
+.ui-root .ds-tip-value {
+  display: block;
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-tip-value);
+}
+
+.ui-root .ds-tip-line {
+  display: block;
+}
+
+.ui-root .ds-tip-extra {
+  opacity: 0.75;
+}
+
+.ui-root .ds-tip-kind {
+  display: block;
+  margin-bottom: var(--space-px2);
+  font-size: var(--fs-tip-kind);
+  opacity: 0.75;
+}
+
+/* ---------- Dial and week chart (Tim, 26 Oct; design reference v15) ----------
+   Mint at or above the standard, grey below, this week in the text
+   colour, weeks to come faint. No keys: labels sit where they are and
+   every mark has a pop-up (ChartTips). */
+
+.ui-root .ds-dial {
+  display: inline-block;
+  width: var(--dial-size);
+  height: var(--dial-size);
+}
+
+.ui-root .ds-dial svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ui-root .ds-dial-seg {
+  fill: none;
+  stroke-width: var(--dial-w);
+  stroke: var(--to-come);
+}
+
+.ui-root .ds-dial-seg--good { stroke: var(--good); }
+.ui-root .ds-dial-seg--below { stroke: var(--below); }
+.ui-root .ds-dial-seg--now { stroke: var(--text); }
+
+.ui-root .ds-dial-small {
+  font-family: var(--font-body);
+  font-size: var(--fs-chart);
+  fill: var(--label);
+}
+
+.ui-root .ds-dial-big {
+  font-family: var(--font-display);
+  font-size: var(--fs-section-title);
+  fill: var(--text);
+}
+
+.ui-root .ds-chart-label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-chart-empty {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-wchart-plot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  height: var(--chart-h);
+  margin-top: var(--space-px22);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+/* The standard: a dashed line, labelled at its right end. */
+.ui-root .ds-wchart-std {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  border-top: var(--line-w) dashed var(--text-2);
+  pointer-events: none;
+}
+
+.ui-root .ds-wchart-std-label {
+  position: absolute;
+  right: 0;
+  bottom: var(--space-px3);
+  padding: 0 0 0 var(--space-1);
+  background: var(--bg);
+  font-size: var(--fs-chart);
+  line-height: 1.2;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.ui-root .ds-wchart-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.ui-root .ds-wchart-bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: var(--chart-bar-max);
+  border-radius: var(--space-1) var(--space-1) 0 0;
+  background: var(--to-come);
+}
+
+.ui-root .ds-wchart-bar--good { background: var(--good); }
+.ui-root .ds-wchart-bar--below { background: var(--below); }
+.ui-root .ds-wchart-bar--now { background: var(--text); }
+.ui-root .ds-wchart-bar--next {
+  height: var(--space-px3);
+  border-radius: var(--space-px2);
+}
+
+/* "So far" and "Best", on their own bars. */
+.ui-root .ds-wchart-tag {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: var(--space-px3);
+  font-style: normal;
+  font-size: var(--fs-chart);
+  line-height: 1.2;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.ui-root .ds-wchart-std--under .ds-wchart-std-label {
+  bottom: auto;
+  top: var(--space-px3);
+}
+
+.ui-root .ds-wchart-axis .ds-wchart-now {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ui-root .ds-wchart-axis {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-px6);
+}
+
+.ui-root .ds-wchart-axis span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--fs-chart);
+  color: var(--label);
 }

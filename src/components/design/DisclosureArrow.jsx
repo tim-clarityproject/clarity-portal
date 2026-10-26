@@ -1,15 +1,12 @@
-import './design.css';
+import Chevron from './Chevron';
 
-// The arrow on anything that opens a list or a folded section (Tim,
-// 23 Oct): drop-downs, folds and expandable rows. The standard crosshair
-// is only for add and, turned 45°, close.
-//
-// One half of the standard crosshair, from the same mask image (never a
-// redrawn arrow), with its corner pointing down; it turns to point up
-// while open. Always decorative: the control around it keeps aria-expanded.
+// The chevron on anything that opens a list or a folded section (Tim,
+// 23 Oct): drop-downs, folds and expandable rows. It points down, and
+// turns to point up while open. The shared Chevron, with the turn
+// animated between the two.
 export default function DisclosureArrow({ open = false, className = '' }) {
   const classes = ['ds-arrow'];
   if (open) classes.push('ds-arrow--open');
   if (className) classes.push(className);
-  return <span className={classes.join(' ')} aria-hidden="true" />;
+  return <Chevron direction={open ? 'up' : 'down'} className={classes.join(' ')} />;
 }
