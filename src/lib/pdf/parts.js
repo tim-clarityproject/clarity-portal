@@ -232,7 +232,7 @@ function listBlock(L, b, parent) {
   const { ts } = L;
   const items = b.items.filter((it) => !blank(it));
   const s = STYLES.body;
-  const marks = items.map((_, i) => (b.ordered ? `${i + 1}.` : '•'));
+  const marks = items.map((_, i) => (b.marks ? b.marks[i] : (b.ordered ? `${i + 1}.` : '•')));
   const markW = Math.max(...marks.map((m) => ts.width(m, s))) + 8;
   const list = tagNode('L', parent, b.ordered ? { title: 'Numbered list' } : undefined);
   return items.map((it, i) => {
@@ -343,18 +343,15 @@ function barsBlock(L, b, parent, maxH) {
   const fmt = (v) => `${Math.round(v)}${unit}`;
   const keyStyle = STYLES.small;
 
-  const build = (maxLines, rowPad, barH) => {
+  const build = (rowPad, barH) => {
     const rows = b.rows.map((r) => {
-      let lines = ts.wrap(r.label, STYLES.cell, labelW);
-      if (lines.length > maxLines) {
-        // the full name is in the table; the chart shortens it with an ellipsis
-        lines = [...lines.slice(0, maxLines - 1), ts.fit(lines.slice(maxLines - 1).join(' '), STYLES.cell, labelW)];
-      }
+      // Every label in full, however many lines (never cut off with "…").
+      const lines = ts.wrap(r.label, STYLES.cell, labelW);
       return { ...r, lines, h: lines.length * STYLES.cell.lh + rowPad };
     });
     return { rows, barH, rowsH: rows.reduce((s, r) => s + r.h, 0) };
   };
-  let g = build(2, 6, 8);
+  let g = build(6, 8);
   const topH = std != null ? 16 : 4;
   const axisH = 22;
   const keyItems = [
@@ -373,8 +370,8 @@ function barsBlock(L, b, parent, maxH) {
   const keyH = keyLines.length * keyStyle.lh;
   const sentence = blank(b.sentence) ? [] : ts.wrap(b.sentence, STYLES.body, L.measure);
   const fixedH = topH + axisH + 12 + keyH + (sentence.length ? 10 + sentence.length * STYLES.body.lh : 0);
-  if (fixedH + g.rowsH > maxH) g = build(1, 3, 7);
-  if (fixedH + g.rowsH > maxH) g = build(1, 1, 6);
+  if (fixedH + g.rowsH > maxH) g = build(3, 7);
+  if (fixedH + g.rowsH > maxH) g = build(1, 6);
   const h = fixedH + g.rowsH;
   const figure = tagNode('Figure', parent, { alt: b.alt });
   const p = tagNode('P', parent);
@@ -555,9 +552,34 @@ function dotsBlock(L, b, parent, maxH) {
     return placed;
   };
 
-  // The numbered list: one line per item, shortened with an ellipsis (the
-  // full names are in the table that follows).
-  const listLines = (colW) => listRows.map((p) => ts.fit(`${p.n}. ${p.label}`, nameStyle, colW));
+  // The numbered list: each name in full, wrapping under itself when it is
+  // long (never cut off with "…", Tim 26 Oct). Laid out as positioned
+  // lines: { text, x, row } in rows of nameStyle.lh, `cols` columns.
+  const listLayout = (colW, cols) => {
+    const numW = ts.width(`${listRows.length}. `, nameStyle);
+    const entries = listRows.map((p) => {
+      const words = ts.wrap(p.label, nameStyle, Math.max(40, colW - numW));
+      return words.map((text, i) => ({ text: i ? text : `${p.n}. ${text}`, indent: i ? numW : 0 }));
+    });
+    const total = entries.reduce((n, e) => n + e.length, 0);
+    const perCol = Math.ceil(total / cols);
+    const lines = [];
+    let col = 0;
+    let row = 0;
+    entries.forEach((e) => {
+      // an entry never splits across columns
+      if (row > 0 && row + e.length > perCol && col < cols - 1) {
+        col += 1;
+        row = 0;
+      }
+      e.forEach((ln) => {
+        lines.push({ ...ln, col, row });
+        row += 1;
+      });
+    });
+    const rows = lines.reduce((m, ln) => Math.max(m, ln.row + 1), 0);
+    return { lines, rows };
+  };
 
   const titleH = STYLES.smallMedium.lh + 4;
   const bandH = b.quadrants ? tick.lh + 4 : 0; // the quadrant names, when given
@@ -581,29 +603,46 @@ function dotsBlock(L, b, parent, maxH) {
   // Try, in order: names beside dots; a list beside the chart; a list under it.
   const plotTop = titleH + bandH;
   const fixed = plotTop + belowH + 12 + keyH + sentH;
-  const plotH = Math.max(150, Math.min(240, maxH - fixed));
+  let plotH = Math.max(150, Math.min(240, maxH - fixed));
   let mode = 'names';
   let gm = geometry(W - yLabW, plotH, plotTop);
   let pts = placeDots(gm);
   let names = placeNames(gm, pts);
-  let list = [];
+  let list = { lines: [], rows: 0 };
   let listCols = 1;
   let listColW = 0;
   let listH = 0;
   const listW = 170;
   if (!names) {
-    if (pts0.length * nameStyle.lh <= plotH) {
+    if (listLayout(listW, 1).rows * nameStyle.lh <= plotH) {
       mode = 'beside';
       gm = geometry(W - yLabW - 16 - listW, plotH, plotTop);
       pts = placeDots(gm);
       listColW = listW;
-      list = listLines(listW);
+      list = listLayout(listW, 1);
     } else {
       mode = 'under';
       listCols = 3;
       listColW = (W - 32) / 3;
-      list = listLines(listColW);
-      listH = 10 + Math.ceil(list.length / listCols) * nameStyle.lh;
+      list = listLayout(listColW, listCols);
+      listH = 10 + list.rows * nameStyle.lh;
+      // Full names take more lines than shortened ones did: the plot gives
+      // up some room so the chart, its list, key and sentence stay on one
+      // page with their heading (PDF rule 23). When even that isn't enough,
+      // the numbered list follows the chart, key and sentence as a list of
+      // its own, which can carry on between names like any list.
+      const room = maxH - fixed - listH;
+      if (room >= 150) {
+        if (room < plotH) {
+          plotH = room;
+          gm = geometry(W - yLabW, plotH, plotTop);
+          pts = placeDots(gm);
+        }
+      } else {
+        mode = 'after';
+        list = { lines: [], rows: 0 };
+        listH = 0;
+      }
     }
   }
   const h = fixed + plotH + listH;
@@ -626,8 +665,8 @@ function dotsBlock(L, b, parent, maxH) {
         // progress words for the bottom two, centred on their half
         const halves = [[gm.Lx, gm.mx], [gm.mx, gm.Lx + gm.plotW]];
         const qLabel = (text, [a, c], yy) => {
-          const fitText = ts.fit(text, tick, c - a - 8);
-          ts.draw(fitText, X((a + c) / 2 - ts.width(fitText, tick) / 2), Y(yy + ts.baseline(tick)), tick, t.detail);
+          const st = ts.shrink(text, tick, c - a - 8);
+          ts.draw(text, X((a + c) / 2 - ts.width(text, st) / 2), Y(yy + ts.baseline(tick)), st, t.detail);
         };
         if (b.quadrants) {
           qLabel(b.quadrants.topLeft, halves[0], titleH);
@@ -635,6 +674,30 @@ function dotsBlock(L, b, parent, maxH) {
         }
         const fTop = gm.top;
         const fBot = gm.top + gm.plotH;
+        // The pale areas behind the dots, as on the results page (Tim, 26 Oct,
+        // 16:14): a field of small dots, pale green where projects are
+        // important and moving well (green means good) and the pale line
+        // colour everywhere else, never coral. Pale enough that a black and
+        // white print still reads; the key and sentence say what green means.
+        {
+          const sp = 9;
+          const r = 0.8;
+          const x0 = gm.Lx + (((gm.mx - gm.Lx) % sp) + sp) % sp;
+          const y0 = fTop + (((gm.my - fTop) % sp) + sp) % sp;
+          const good = [];
+          const other = [];
+          for (let gx = x0; gx <= gm.Lx + gm.plotW; gx += sp) {
+            for (let gy = y0; gy <= fBot; gy += sp) {
+              if (Math.abs(gx - gm.mx) < 0.5 || Math.abs(gy - gm.my) < 0.5) continue; // not on the centre lines
+              (gx > gm.mx && gy < gm.my ? good : other).push([gx, gy]);
+            }
+          }
+          other.forEach(([gx, gy]) => doc.circle(X(gx), Y(gy), r));
+          doc.fillOpacity(0.9).fill(t.line);
+          good.forEach(([gx, gy]) => doc.circle(X(gx), Y(gy), r));
+          doc.fillOpacity(0.55).fill(t.good);
+          doc.fillOpacity(1);
+        }
         // frame: the zero line and the side, then the centre lines with a
         // small gap where they cross
         doc.moveTo(X(gm.Lx), Y(fTop)).lineTo(X(gm.Lx), Y(fBot)).lineTo(X(gm.Lx + gm.plotW), Y(fBot)).lineWidth(0.5).stroke(t.detail);
@@ -652,8 +715,8 @@ function dotsBlock(L, b, parent, maxH) {
         b.xLabels.forEach((word, i) => {
           const tx = gm.xs(i + 1);
           doc.moveTo(X(tx), Y(fBot)).lineTo(X(tx), Y(fBot + 3)).lineWidth(0.5).stroke(t.detail);
-          const fitWord = ts.fit(word, tick, gm.plotW / k - 2);
-          ts.draw(fitWord, X(tx - ts.width(fitWord, tick) / 2), Y(fBot + 4 + ts.baseline(tick)), tick, t.detail);
+          const st = ts.shrink(word, tick, gm.plotW / k - 2);
+          ts.draw(word, X(tx - ts.width(word, st) / 2), Y(fBot + 4 + ts.baseline(tick)), st, t.detail);
         });
         const bandY = fBot + 4 + tick.lh + 4;
         if (b.quadrants) {
@@ -665,6 +728,9 @@ function dotsBlock(L, b, parent, maxH) {
 
         // the dots, each with its number
         pts.forEach((pt) => {
+          // the soft halo around each dot, as on the results page
+          doc.circle(X(pt.cx), Y(pt.cy), R + 4).fillOpacity(pt.good ? 0.16 : 0.07).fill(pt.good ? t.good : t.detail);
+          doc.fillOpacity(1);
           if (pt.good) doc.circle(X(pt.cx), Y(pt.cy), R).fill(t.good);
           else doc.circle(X(pt.cx), Y(pt.cy), R - 0.375).lineWidth(0.75).fillAndStroke(t.page, t.detail);
           const num = String(pt.n);
@@ -677,14 +743,12 @@ function dotsBlock(L, b, parent, maxH) {
         }
         if (mode === 'beside') {
           const lx = gm.Lx + gm.plotW + 16;
-          list.forEach((line, i) => ts.draw(line, X(lx), Y(fTop + i * nameStyle.lh + ts.baseline(nameStyle)), nameStyle, t.text));
+          list.lines.forEach((ln) => ts.draw(ln.text, X(lx + ln.indent), Y(fTop + ln.row * nameStyle.lh + ts.baseline(nameStyle)), nameStyle, t.text));
         }
         let ky = axisXY + STYLES.smallMedium.lh;
         if (mode === 'under') {
-          const rowsPer = Math.ceil(list.length / listCols);
-          list.forEach((line, i) => {
-            const col = Math.floor(i / rowsPer);
-            ts.draw(line, X(col * (listColW + 16)), Y(ky + 10 + (i % rowsPer) * nameStyle.lh + ts.baseline(nameStyle)), nameStyle, t.text);
+          list.lines.forEach((ln) => {
+            ts.draw(ln.text, X(ln.col * (listColW + 16) + ln.indent), Y(ky + 10 + ln.row * nameStyle.lh + ts.baseline(nameStyle)), nameStyle, t.text);
           });
           ky += listH;
         }
@@ -709,7 +773,10 @@ function dotsBlock(L, b, parent, maxH) {
         ctx.mark(p, () => sentence.forEach((line, i) => ts.draw(line, x, sy + i * STYLES.body.lh + ts.baseline(STYLES.body), STYLES.body, t.text)));
       }
     },
-  }];
+  }, ...(mode === 'after'
+    // the numbered list, after the chart: each name in full
+    ? listBlock(L, { items: listRows.map((r) => r.label), marks: listRows.map((r) => `${r.n}.`) }, parent).map((u, i) => (i === 0 ? { ...u, gap: 10 } : u))
+    : [])];
 }
 
 /** Signature block for agreements: a signature, name and date line for each person. */

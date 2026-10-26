@@ -30,8 +30,6 @@ const FILES = {
   DMSansExt: dm400x,
   DMSansMedium: dm500,
   DMSansMediumExt: dm500x,
-  positive: '/brand/logomark-positive.png',
-  negative: '/brand/logomark-negative.png',
 };
 
 const cache = new Map();
@@ -51,13 +49,11 @@ function bytes(url) {
 export async function loadPdfAssets(spec) {
   const parts = emojiPartsFor(textOf(spec), emojiRanges);
   const names = ['Nekst', 'NekstLight', 'DMSans', 'DMSansExt', 'DMSansMedium', 'DMSansMediumExt'];
-  const [fontBytes, emoji, positive, negative] = await Promise.all([
+  const [fontBytes, emoji] = await Promise.all([
     Promise.all(names.map((n) => bytes(FILES[n]))),
     Promise.all(parts.map((k) => bytes(EMOJI[k]))),
-    bytes(FILES.positive),
-    bytes(FILES.negative),
   ]);
   const fonts = Object.fromEntries(names.map((n, i) => [n, fontBytes[i]]));
   fonts.emoji = emoji;
-  return { fonts, logos: { positive, negative } };
+  return { fonts };
 }

@@ -1192,7 +1192,7 @@ function Gallery() {
             <p><New /><b>Two crosshairs, never mixed up</b> (Tim, 22 Oct).</p>
             <p>The bold one is its own component, so a build can never swap one for the other.</p>
             <p>Drawn as clean lines at 2 times the standard line, with the gap between the two halves the same size as the standard crosshair’s.</p>
-            <p>Only four places: the Home Screen icon, the favicon, the desktop menu button and the phone bar’s centre button.</p>
+            <p>Only five places: the Home Screen icon, the favicon, the desktop menu button, the phone bar’s centre button and <New />every PDF footer (Tim, 26 Oct), black on light pages and white on dark ones, from the same drawing.</p>
             <p>The menus get it in Phase 0c.</p>
             <p>White in dark mode and black in light mode.</p>
             <p>The app icons stay white on black, filling about 69% of the square.</p>
@@ -1230,7 +1230,8 @@ function Gallery() {
         <GallerySection id="c31" title="PDFs" demo={PdfDemo} rules={(
           <>
             <p><New /><b>One shared template</b> for every PDF, in CLAUDE.md under “PDF rules”.</p>
-            <p>One Download PDF button, then a choice: Light, for printing, or Dark, for sharing. Same layout, content and page breaks; only the colours and the logo file change.</p>
+            <p>One Download PDF button, then a choice: Light, for printing, or Dark, for sharing. Same layout, content and page breaks; only the colours change.</p>
+            <p><New />Nothing is ever cut off with “…”: long names wrap onto another line, in the footer too.</p>
             <p>A4, or US Letter in the US and Canada. No cover page: the title block, then At a glance, then the content.</p>
             <p>Coral only for the title line. <New />What is good, at or above the standard, is green: deep green #0B7A52 on light pages and mint #5FEFBB on dark pages. Colour is never the only signal.</p>
             <p>Agreements, quotes and the supplier pack are light only.</p>

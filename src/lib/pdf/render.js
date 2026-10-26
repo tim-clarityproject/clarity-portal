@@ -3,6 +3,7 @@ import { createTypesetter, STYLES } from './text';
 import { flatten, tagNode } from './parts';
 import { layoutPages } from './layout';
 import { PAPER } from './paper';
+import { BOLD_CROSS_PATHS, BOLD_CROSS_STROKE, BOLD_CROSS_VIEWBOX } from '../boldCrosshair';
 import { PDF_THEMES, PDF_AUTHOR, PORTAL_ADDRESS, PORTAL_URL } from './theme';
 import { formatFileDate, formatUpdatedAt } from '../dateFormatter';
 
@@ -33,9 +34,9 @@ import { formatFileDate, formatUpdatedAt } from '../dateFormatter';
 
 const MM = 72 / 25.4;
 const MARGIN = 19 * MM;
-const HEADER_BAND = 12 + 16; // running header line and the space under it
-const FOOTER_BAND = 16 + 16; // logo mark and the space above it
-const LOGO = 16;
+const HEADER_GAP = 16; // under the running header
+const FOOTER_GAP = 16; // above the footer
+const LOGO = 16; // the bold crosshair's square in the footer
 
 const clean = (s) => String(s ?? '').normalize('NFC')
   .replace(/[\\/:*?"<>|]/g, ' ')
@@ -88,7 +89,7 @@ function registerFonts(doc, fonts) {
  * @param {Object} options
  * @param {'light'|'dark'} [options.variant]
  * @param {{width: number, height: number}} [options.paper] from paperFor()
- * @param {{fonts: Object<string, Uint8Array>, logos: {positive: Uint8Array, negative: Uint8Array}}} options.assets
+ * @param {{fonts: Object<string, Uint8Array>}} options.assets
  * @returns {Promise<{bytes: Uint8Array, pages: number, fileName: string, title: string, layout: Object[][]}>}
  */
 export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, assets }) {
@@ -138,9 +139,26 @@ export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, ass
 
   const ts = createTypesetter(doc, registerFonts(doc, assets.fonts));
   const contentW = W - MARGIN * 2;
+
+  // The running header and the footer never cut a name off with "…" (Tim,
+  // 26 Oct, 16:12): a long name wraps onto more lines, and the header and
+  // footer bands grow to hold them, inside the margins.
+  const who = spec.who ? String(spec.who).trim() : '';
+  const s = STYLES.small;
+  const docName = spec.docName || spec.title || '';
+  const leftW = who ? Math.min(ts.width(docName, s), contentW * 0.5) : contentW;
+  const headLeft = ts.wrap(docName, s, Math.max(leftW, 1));
+  const headRight = who ? ts.wrap(who, s, contentW - leftW - 24) : [];
+  const headerBand = Math.max(headLeft.length, headRight.length, 1) * s.lh + HEADER_GAP;
+  const aw = ts.width(PORTAL_ADDRESS, s);
+  const footLeft = LOGO + 8 + aw + 16; // the mark and the address
+  const numRoom = ts.width('Page 99 of 99', { ...s, features: ['tnum'] }) + 16;
+  const confText = spec.confidential ? (who ? `Confidential: for ${who}` : 'Confidential') : '';
+  const confLines = confText ? ts.wrap(confText, s, contentW - footLeft - numRoom) : [];
+  const footH = Math.max(LOGO, confLines.length * s.lh);
   const geom = {
-    top: (i) => MARGIN + (i > 0 ? HEADER_BAND : 0),
-    bottom: () => H - MARGIN - FOOTER_BAND,
+    top: (i) => MARGIN + (i > 0 ? headerBand : 0),
+    bottom: () => H - MARGIN - footH - FOOTER_GAP,
   };
   const sample = 'Most of the team agreed the new routing plan should start soon.';
   const measure = Math.min(contentW, (ts.width(sample, STYLES.body) / sample.length) * 62);
@@ -174,7 +192,6 @@ export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, ass
     }
   }
 
-  const logo = doc.openImage(t.logo === 'negative' ? assets.logos.negative : assets.logos.positive);
   root.el = doc.struct('Document');
   doc.addStructure(root.el);
   const el = (node) => {
@@ -207,30 +224,42 @@ export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, ass
     },
   };
 
-  const who = spec.who ? String(spec.who).trim() : '';
-  const s = STYLES.small;
+  // The footer mark: the bold crosshair (Tim, 26 Oct, 16:13), from the same
+  // drawing as the website's menu button and Home Screen icon, black on
+  // light pages and white on dark pages.
+  const drawMark = (x, y) => {
+    const [vx, vy, vw] = BOLD_CROSS_VIEWBOX;
+    const k = LOGO / vw;
+    BOLD_CROSS_PATHS.forEach((p) => {
+      doc.save();
+      doc.translate(x, y).scale(k).translate(-vx + p.dx, -vy + p.dy);
+      doc.path(p.d).lineWidth(BOLD_CROSS_STROKE).lineJoin('round').lineCap('butt').stroke(t.mark);
+      doc.restore();
+    });
+  };
+
   pages.forEach((page, pi) => {
     doc.addPage({ size: [W, H], margin: 0 });
     if (variant === 'dark') ctx.artifact(() => doc.rect(0, 0, W, H).fill(t.page), 'Background');
     page.items.forEach(({ u, y }, k) => u.draw(ctx, MARGIN, y, { first: k === 0 || page.items[k - 1].u.kind === 'thead' }));
 
-    // running header, from page 2: the document name and who it is for
+    // running header, from page 2: the document name and who it is for,
+    // each wrapping onto more lines rather than being cut off
     if (pi > 0) {
       ctx.artifact(() => {
         const by = MARGIN + ts.baseline(s);
-        const left = ts.fit(spec.docName || spec.title, s, who ? contentW * 0.55 : contentW);
-        ts.draw(left, MARGIN, by, s, t.detail);
-        if (who) ts.draw(ts.fit(who, s, contentW - ts.width(left, s) - 24), MARGIN + contentW, by, s, t.detail, 'right');
+        headLeft.forEach((ln, i) => ts.draw(ln, MARGIN, by + i * s.lh, s, t.detail));
+        headRight.forEach((ln, i) => ts.draw(ln, MARGIN + contentW, by + i * s.lh, s, t.detail, 'right'));
       }, 'Pagination');
     }
 
-    // footer: the logo mark, the portal address (a working link), who it is
-    // confidential for, and the page number (none on a one-page PDF)
+    // footer: the bold crosshair, the portal address (a working link), who
+    // it is confidential for (wrapping upwards when long, so the full name
+    // always shows), and the page number (none on a one-page PDF)
     const fy = H - MARGIN - LOGO;
     const by = fy + LOGO / 2 + s.size * 0.35;
-    ctx.artifact(() => doc.image(logo, MARGIN, fy, { width: LOGO, height: LOGO }), 'Pagination');
+    ctx.artifact(() => drawMark(MARGIN, fy), 'Pagination');
     const ax = MARGIN + LOGO + 8;
-    const aw = ts.width(PORTAL_ADDRESS, s);
     const link = doc.struct('Link');
     root.el.add(link);
     const content = doc.markStructureContent('Link');
@@ -246,10 +275,9 @@ export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, ass
         ts.draw(num, right, by, { ...s, features: ['tnum'] }, t.detail, 'right');
         right -= ts.width(num, s) + 16;
       }
-      if (spec.confidential) {
-        const text = who ? `Confidential: for ${who}` : 'Confidential';
-        ts.draw(ts.fit(text, s, right - (ax + aw + 16)), right, by, s, t.detail, 'right');
-      }
+      confLines.forEach((ln, i) => {
+        ts.draw(ln, right, by - (confLines.length - 1 - i) * s.lh, s, t.detail, 'right');
+      });
     }, 'Pagination');
   });
 

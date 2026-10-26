@@ -165,18 +165,16 @@ export function createTypesetter(doc, chains) {
     return lines;
   }
 
-  /** One line, shortened with an ellipsis if it is wider than maxW. */
-  function fit(text, style, maxW) {
-    if (width(text, style) <= maxW) return text;
-    const gs = graphemes(text);
-    let lo = 0;
-    let hi = gs.length;
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2);
-      if (width(`${gs.slice(0, mid).join('').trimEnd()}…`, style) <= maxW) lo = mid;
-      else hi = mid - 1;
-    }
-    return `${gs.slice(0, lo).join('').trimEnd()}…`;
+  /**
+   * A label that must stay on one line (a chart's axis word): the style,
+   * made smaller if needed, down to the 8.5pt floor (PDF rule 15). Text is
+   * never cut off with "…" (Tim, 26 Oct).
+   */
+  function shrink(text, style, maxW) {
+    const w = width(text, style);
+    if (w <= maxW) return style;
+    const size = Math.max(8.5, Math.floor(style.size * (maxW / w) * 10) / 10);
+    return { ...style, size, lh: style.lh * (size / style.size) };
   }
 
   /**
@@ -200,5 +198,5 @@ export function createTypesetter(doc, chains) {
   /** Distance from the top of a line box to its baseline. */
   const baseline = (style) => style.lh / 2 + style.size * 0.35;
 
-  return { width, wrap, fit, draw, baseline };
+  return { width, wrap, shrink, draw, baseline };
 }

@@ -36,10 +36,8 @@ const baseFonts = {
   DMSansMediumExt: file(`${fs}dm-sans/files/dm-sans-latin-ext-500-normal.woff`),
 };
 const ranges = JSON.parse(readFileSync(join(root, `${fs}noto-emoji/unicode.json`), 'utf8'));
-const logos = { positive: file('public/brand/logomark-positive.png'), negative: file('public/brand/logomark-negative.png') };
 const assetsFor = (spec) => ({
   fonts: { ...baseFonts, emoji: emojiPartsFor(textOf(spec), ranges).map((k) => file(`${fs}noto-emoji/files/noto-emoji-${k.replace(/\D/g, '')}-400-normal.woff`)) },
-  logos,
 });
 
 // ---- invented content ---------------------------------------------------------
@@ -233,6 +231,13 @@ function checkWords(file, spec, res) {
     return problems;
   }
   const title = /^Title:\s+(.*)$/m.exec(info)?.[1]?.trim() || '';
+  // No "…" anywhere in a PDF (Tim, 26 Oct, 16:12): names wrap instead.
+  if (/…|\.\.\./.test(text)) problems.push('the text holds "…": something was cut off');
+  // The very long organisation name shows in full in the footer.
+  if (spec.who && spec.confidential && !text.includes(squash(`Confidential: for ${spec.who}`).replace(/\s+/g, ' '))) {
+    const words = squash(String(spec.who)).split(' ');
+    if (!words.every((w) => text.includes(w))) problems.push(`the footer doesn't show "${spec.who}" in full`);
+  }
   if (title !== res.title) problems.push(`title property is "${title}", not "${res.title}"`);
   if (title && title === title.toUpperCase() && /[a-z]/i.test(title)) problems.push(`title property is in capitals: "${title}"`);
   outline.forEach((o) => {

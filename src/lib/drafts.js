@@ -12,14 +12,55 @@ const RESTORED_EVENT = 'clarity:draft-restored';
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-export function readDraft(userId, name) {
-  if (!userId) return null;
-  return readJson(deviceKey('draft', userId, name));
+// Each browser tab keeps its own copy of a draft (`<name>~<tab>`), so two
+// tabs on the same page (the same Journal day) never overwrite each
+// other's typing. The tab's id lasts as long as the tab, refreshes
+// included. A reopened tab, or a refresh, takes the newest copy.
+const TAB_KEY = 'clarity-tab-id';
+let tabId = null;
+function thisTab() {
+  if (tabId) return tabId;
+  try {
+    tabId = window.sessionStorage.getItem(TAB_KEY);
+    if (!tabId) {
+      tabId = Math.random().toString(36).slice(2, 10);
+      window.sessionStorage.setItem(TAB_KEY, tabId);
+    }
+  } catch {
+    tabId = Math.random().toString(36).slice(2, 10);
+  }
+  return tabId;
 }
 
+// Every copy of one draft on the device: this tab's, other tabs', and one
+// kept before tabs had their own (the plain name). Newest first.
+function copies(userId, name) {
+  const base = deviceKey('draft', userId, name);
+  const found = [];
+  try {
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const k = window.localStorage.key(i);
+      if (k === base || (k && k.startsWith(`${base}~`))) {
+        const v = readJson(k);
+        if (v) found.push({ key: k, ...v });
+      }
+    }
+  } catch {
+    /* storage blocked */
+  }
+  return found.sort((a, b) => (b.at || 0) - (a.at || 0));
+}
+
+/** The newest copy of a draft, from any tab. */
+export function readDraft(userId, name) {
+  if (!userId) return null;
+  return copies(userId, name)[0] || null;
+}
+
+/** Removes a draft: every tab's copy (it has been saved or discarded). */
 export function clearDraft(userId, name) {
   if (!userId) return;
-  removeKey(deviceKey('draft', userId, name));
+  copies(userId, name).forEach((c) => removeKey(c.key));
 }
 
 /** Says "Draft restored" (DraftNotices in App.jsx shows it). */
@@ -49,7 +90,7 @@ export function onDraftRestored(fn) {
  * @returns {{ clear: () => void }} clear: call after a save or a discard
  */
 export function useDraft({ userId, name, value, ready, onRestore }) {
-  const key = userId && name ? deviceKey('draft', userId, name) : null;
+  const key = userId && name ? deviceKey('draft', userId, `${name}~${thisTab()}`) : null;
   const baseline = useRef(undefined); // what the page loaded, so an unchanged page keeps no draft
   const latest = useRef(value);
   const restoreRef = useRef(onRestore);
@@ -62,13 +103,22 @@ export function useDraft({ userId, name, value, ready, onRestore }) {
   useEffect(() => {
     if (!ready || !key || started) return;
     baseline.current = latest.current;
-    const stored = readJson(key);
+    // This tab's own copy first; otherwise the newest from any tab (a
+    // closed tab's typing), which this tab then keeps as its own. Another
+    // tab still open writes its copy again on its next change, so nothing
+    // is lost.
+    const own = readJson(key);
+    const stored = own || readDraft(userId, name);
     if (stored && stored.v !== undefined && !same(stored.v, latest.current)) {
       restoreRef.current?.(stored.v);
       announceDraftRestored();
+      if (!own && stored.key) {
+        writeJson(key, { v: stored.v, at: Date.now() });
+        removeKey(stored.key);
+      }
     }
     setStarted(true);
-  }, [ready, key, started]);
+  }, [ready, key, started, userId, name]);
 
   const write = useCallback(() => {
     if (!key || baseline.current === undefined) return;
@@ -97,12 +147,14 @@ export function useDraft({ userId, name, value, ready, onRestore }) {
     };
   }, [started, write]);
 
+  // Saved or discarded: every tab's copy goes. (Another tab still open
+  // keeps its typing on screen and writes it again if it changes.)
   const clear = useCallback(() => {
     if (!key) return;
-    removeKey(key);
+    clearDraft(userId, name);
     // What is on screen now counts as saved.
     baseline.current = latest.current;
-  }, [key]);
+  }, [key, userId, name]);
 
   return { clear };
 }

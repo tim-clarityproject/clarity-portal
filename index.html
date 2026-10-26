@@ -17,6 +17,35 @@
     <meta name="apple-mobile-web-app-title" content="Clarity" />
     <title>The Clarity Portal</title>
     <script>
+      // When the browser blocks all site storage (Safari with "Block all
+      // cookies", some private modes), reading it throws, and the app would
+      // open on a blank screen. Then it gets an in-memory stand-in for this
+      // visit: everything works, just without the device's copies and
+      // drafts after the tab closes, and nothing alarming is said.
+      (function () {
+        function memory() {
+          var data = {};
+          return {
+            getItem: function (k) { return Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null; },
+            setItem: function (k, v) { data[k] = String(v); },
+            removeItem: function (k) { delete data[k]; },
+            clear: function () { data = {}; },
+            key: function (i) { return Object.keys(data)[i] || null; },
+            get length() { return Object.keys(data).length; },
+          };
+        }
+        ['localStorage', 'sessionStorage'].forEach(function (name) {
+          try {
+            var s = window[name];
+            s.setItem('clarity-storage-check', '1');
+            s.removeItem('clarity-storage-check');
+          } catch (e) {
+            try { Object.defineProperty(window, name, { value: memory(), configurable: true }); } catch (e2) { /* nothing more to do */ }
+          }
+        });
+      })();
+    </script>
+    <script>
       // Restore saved header height from localStorage before app renders
       // This prevents layout shift by setting --header-height immediately
       (function() {

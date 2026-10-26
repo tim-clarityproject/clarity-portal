@@ -1,5 +1,5 @@
 // The two looks of every tool PDF (PDF rules 1, 9 and 16). Same layout, content
-// and page breaks; only these colours and the logo file change. PDFs cannot read
+// and page breaks; only these colours change. PDFs cannot read
 // the CSS variables in tokens.css, so their colours live here, in one place.
 
 export const PDF_THEMES = {
@@ -13,7 +13,7 @@ export const PDF_THEMES = {
     coral: '#FF6F5C', // the title line only
     good: '#0B7A52', // green: at or above the standard (Tim, 26 Oct), deep green on light pages
     onGood: '#FFFFFF', // a number on a green dot
-    logo: 'positive', // public/brand/logomark-positive.png, black crosshair
+    mark: '#000000', // the footer's bold crosshair: black on light pages (Tim, 26 Oct, 16:13)
   },
   dark: {
     page: '#000000',
@@ -25,7 +25,7 @@ export const PDF_THEMES = {
     coral: '#FF6F5C', // the title line only
     good: '#5FEFBB', // mint on dark pages
     onGood: '#000000',
-    logo: 'negative', // public/brand/logomark-negative.png, white crosshair
+    mark: '#FFFFFF', // white on dark pages
   },
 };
 
