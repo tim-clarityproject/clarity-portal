@@ -1,3 +1,15 @@
+-- =============================================================================
+-- DO NOT RUN THIS FILE (Phase 1 step 0, 26 Oct).
+--
+-- It is an early sketch of the database, kept only as history. It is not the
+-- live structure and not a migration. Running it would RE-OPEN guest_sessions
+-- to anyone ("Anyone can read/update guest sessions" below): on the live
+-- structure (checked on its copy, the test project) guest_sessions has row
+-- level security on and no rules, so today nobody can read or change it
+-- through the app's connection. Changes to the database go only through
+-- numbered files in supabase/migrations, run on the test project first.
+-- =============================================================================
+
 -- Create profiles table (extends Supabase auth)
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE,

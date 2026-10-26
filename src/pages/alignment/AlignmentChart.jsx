@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { layoutChart, PROGRESS_WORDS } from './chartLayout';
-import { roundPct } from '../../lib/alignmentScore';
+import { importanceText } from '../../lib/alignmentScore';
 import { ChartTips } from '../../components/design';
 
 // Strategic importance versus progress: SVG dot-matrix field, crosshair
@@ -147,7 +147,7 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
         {pts.map((p, i) => {
           const solid = p.q === 'mi';
           const c = FILL[p.q];
-          const name = `${p.n}, ${p.text}, strategic importance ${roundPct(p.importance)}%, progress ${PROGRESS_WORDS[p.progress - 1]}`;
+          const name = `${p.n}, ${p.text}, strategic importance ${importanceText(p).toLowerCase()}, progress ${PROGRESS_WORDS[p.progress - 1]}`;
           return (
             <g
               key={p.id ?? p.n}
@@ -158,7 +158,7 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
               data-tip={JSON.stringify({
                 kind: `Project ${p.n}`,
                 name: p.text,
-                extra: [`Strategic importance ${roundPct(p.importance)}%.`, `Progress rated ${PROGRESS_WORDS[p.progress - 1]}.`],
+                extra: [p.rated === false ? 'Strategic importance not rated yet.' : `Strategic importance ${importanceText(p)}.`, `Progress rated ${PROGRESS_WORDS[p.progress - 1]}.`],
               })}
               onMouseEnter={() => onHighlight(p.n)}
               onMouseLeave={() => onHighlight(null)}

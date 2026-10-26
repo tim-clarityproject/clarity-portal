@@ -1,5 +1,5 @@
 import { cleanItems, PROGRESS, RESOURCE } from '../../../pages/alignment/alignmentFlow';
-import { rankProjects, roundPct, MAX_CONTRIBUTION } from '../../alignmentScore';
+import { rankProjects, importanceText, roundPct, MAX_CONTRIBUTION } from '../../alignmentScore';
 import { quadrant, PROGRESS_WORDS } from '../../../pages/alignment/chartLayout';
 import { formatDocDate, parseDbTimestamp } from '../../dateFormatter';
 
@@ -37,8 +37,9 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
   const ranked = rankProjects(projects, factors, draft.ratings).map((r, i) => ({ ...r, text: r.project.text, n: i + 1 }));
   const nf = factors.length;
   const n = ranked.length;
-  // a project with no contribution ratings has no importance to show yet
-  const rated = (r) => Object.keys(draft.ratings?.[r.project.id]?.contrib || {}).length > 0;
+  // a project with no contribution ratings for the current factors has no
+  // importance to show yet (the same test as the results page)
+  const rated = (r) => r.rated;
   const scoredRows = ranked.filter(rated);
   const m = scoredRows.length;
   const scored = m > 0;
@@ -58,7 +59,9 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
     const one = plotted.length === 1 ? plotted[0] : null;
     // The chart names no quadrants, so the sentence says what the words mean.
     const onLine = (r) => `${r.text} has Fair progress, so it sits on the line between behind and moving well.`;
-    const facts = (r) => `${roundPct(r.importance)}% strategic importance and ${PROGRESS_WORDS[r.progress - 1]} progress`;
+    const facts = (r) => (r.rated
+      ? `${roundPct(r.importance)}% strategic importance and ${PROGRESS_WORDS[r.progress - 1]} progress`
+      : `strategic importance not rated yet, and ${PROGRESS_WORDS[r.progress - 1]} progress`);
     const first = one
       ? (one.progress === 3 ? onLine(one) : `${one.text} is ${quadrantName(one)}: ${facts(one)}.`)
       : `${good} of ${plotted.length} projects ${good === 1 ? 'is' : 'are'} important and moving well: above ${STANDARD}% strategic importance, with Good or Excellent progress.${behind ? ` ${behind} ${behind === 1 ? 'is' : 'are'} important but behind, with Embryonic or Bad progress, so ${behind === 1 ? 'it needs' : 'they need'} attention first.` : ''}`;
@@ -102,7 +105,7 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
           keyOther: 'Grey outline: every other project',
           listNote: 'Numbers match the project table.',
           sentence: dotSentence(),
-          alt: `Dot chart of strategic importance, from 0% to 100%, against progress, from Embryonic to Excellent, divided by lines at ${STANDARD}% and Fair. ${plotted.map((r) => `${r.n}. ${r.text}: ${roundPct(r.importance)}%, ${PROGRESS_WORDS[r.progress - 1]}, ${quadrantName(r)}`).join('. ')}.`,
+          alt: `Dot chart of strategic importance, from 0% to 100%, against progress, from Embryonic to Excellent, divided by lines at ${STANDARD}% and Fair. ${plotted.map((r) => `${r.n}. ${r.text}: ${importanceText(r).toLowerCase()}, ${PROGRESS_WORDS[r.progress - 1]}, ${quadrantName(r)}`).join('. ')}.`,
         }] : [],
       },
       {
@@ -118,7 +121,7 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
               { label: 'Progress', width: 1.05 },
               { label: 'Resource required', width: 1.15 },
             ],
-            rows: ranked.map((r) => [String(r.n), r.text, rated(r) ? `${roundPct(r.importance)}%` : '', word(PROGRESS, r.progress), word(RESOURCE, r.resource)]),
+            rows: ranked.map((r) => [String(r.n), r.text, importanceText(r), word(PROGRESS, r.progress), word(RESOURCE, r.resource)]),
           },
           {
             type: 'text',

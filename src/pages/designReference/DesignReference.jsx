@@ -285,7 +285,7 @@ function StatsDemo() {
         label="Performance score this week"
         value="88%"
         good
-        note={<><span className="ds-line">You’re above your standard of 85%.</span><span className="ds-line">That’s 4 points higher than last week.</span></>}
+        note={<><span className="ds-line">You’re above your standard of 85%.</span><span className="ds-line">That’s 10 points higher than last week.</span></>}
         bar={0.88}
       />
       <Stat
@@ -650,11 +650,16 @@ function FilterDemo() {
   );
 }
 
+// Worked out from the same example weeks the dial and chart show, so the
+// numbers always agree: the finished weeks' average, and the weeks left.
 function CollapsibleDemo() {
+  const finished = DEMO_WEEKS.filter((w) => w.value != null && !w.now);
+  const average = Math.round(finished.reduce((s, w) => s + w.value, 0) / finished.length);
+  const left = DEMO_WEEKS.filter((w) => w.value == null).length;
   return (
-    <Collapsible summary="Sprint details: average 74%, 26 days left">
-      <p>Average performance score so far: 74%, across 3 weeks.</p>
-      <p>26 days left in Performance Sprint 4, then Recovery.</p>
+    <Collapsible summary={`Sprint details: average ${average}%, ${left} weeks left`}>
+      <p>{`Your average performance score so far is ${average}%, across ${finished.length} finished weeks.`}</p>
+      <p>{`Performance Sprint 4 has ${left} weeks left after this one, then Recovery.`}</p>
     </Collapsible>
   );
 }

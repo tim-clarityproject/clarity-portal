@@ -71,7 +71,10 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
             tool_type: toolType,
             title,
             form_data: formData,
-            status: 'in_progress'
+            // An unfinished tool is a draft: the lists show it as one, with
+            // Continue ("in_progress" was never a status the lists know).
+            status: 'draft',
+            draft: true
           }])
           .select();
 

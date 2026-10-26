@@ -210,6 +210,32 @@ export async function loadBreathingSessions(userId) {
   return data || [];
 }
 
+/**
+ * Every session counted and timed, not just the latest 30 the list shows:
+ * the exact number of sessions and their total seconds (read a page of
+ * 1,000 at a time, the most the database hands back at once).
+ * @returns {Promise<{count: number, seconds: number}>}
+ */
+export async function loadBreathingTotals(userId) {
+  const PAGE = 1000;
+  let count = 0;
+  let seconds = 0;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('breathing_sessions')
+      .select('duration')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = data || [];
+    count += rows.length;
+    seconds += rows.reduce((sum, r) => sum + (r.duration || 0), 0);
+    if (rows.length < PAGE) break;
+  }
+  return { count, seconds };
+}
+
 export async function loadLatestBreathingSession(userId) {
   const { data, error } = await supabase
     .from('breathing_sessions')

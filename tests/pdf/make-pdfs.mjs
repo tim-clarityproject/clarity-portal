@@ -291,6 +291,45 @@ for (const [name, spec] of Object.entries(DOCS)) {
     }
   }
 }
+// ---- Health Check: the app and the PDF agree (Phase 1 step 0) ------------------------
+{
+  const { rankProjects, importanceText } = await load('/src/lib/alignmentScore.js');
+  const csfs = [{ id: 'f1', text: 'On-time delivery' }, { id: 'f2', text: 'Drivers who stay' }];
+  const projects = [
+    { id: 'pa', text: 'Rated project' },
+    { id: 'pb', text: 'Unrated project' },
+    { id: 'pc', text: 'Rated only on a deleted factor' },
+  ];
+  const ratings = {
+    pa: { contrib: { f1: 3, f2: 1 }, progress: 2, resource: 3 },
+    pb: { progress: 4 },
+    pc: { contrib: { gone: 3 }, progress: 1 },
+  };
+  const scoring = [];
+  const ranked = rankProjects(projects, csfs, ratings);
+  const row = (id) => ranked.find((r) => r.project.id === id);
+  // 1. an unrated project reads "Not rated", never 0%, the same in both
+  if (importanceText(row('pb')) !== 'Not rated') scoring.push('an unrated project does not read "Not rated"');
+  if (importanceText(row('pa')) !== '67%') scoring.push(`a rated project reads "${importanceText(row('pa'))}", not "67%"`);
+  // 2. a score for a deleted factor doesn't make a project rated
+  if (row('pc').rated) scoring.push('a project rated only on a deleted factor counts as rated');
+  const doc = healthCheckPdf({ draft: { objective: 'Test', csfs, projects, ratings } });
+  const docText = JSON.stringify(doc);
+  if (!docText.includes('"Not rated"')) scoring.push('the PDF table does not say "Not rated" for an unrated project');
+  if (/"0%"/.test(docText)) scoring.push('the PDF shows 0% for a project');
+  const glance = (doc.glance || []).map((g) => `${g.label}: ${g.value}`).join('; ');
+  if (/Average strategic importance: (?!67%)/.test(glance)) scoring.push(`the PDF average counts more than the rated project (${glance})`);
+  // 3. a blank resource counts as Moderate (3) in the tie-break too
+  const tie = rankProjects(
+    [{ id: 'low', text: 'Low' }, { id: 'blank', text: 'Blank' }, { id: 'mod', text: 'Moderate' }],
+    csfs,
+    { low: { contrib: { f1: 3 }, progress: 5, resource: 2 }, blank: { contrib: { f1: 3 }, progress: 5 }, mod: { contrib: { f1: 3 }, progress: 5, resource: 3 } },
+  ).map((r) => r.project.id);
+  if (tie.join(',') !== 'blank,mod,low') scoring.push(`blank resource ranks as ${tie.join(', ')}, not as Moderate`);
+  report.push(`Health Check scoring (app and PDF agree)\n  ${scoring.length ? `PROBLEMS:\n    ${scoring.join('\n    ')}` : 'unrated reads "Not rated"; a deleted factor never counts; a blank resource ties as Moderate: all checks pass'}`);
+  if (scoring.length) failed += 1;
+}
+
 writeFileSync(join(out, 'break-report.txt'), `${report.join('\n')}\n`);
 console.log(report.join('\n'));
 if (toolsMissing) console.log('\nThe whole-words check was skipped: install poppler and qpdf to run it.');

@@ -469,7 +469,7 @@ export default function ProjectScatter() {
           <SaveDiscardButtons
             formData={{ matrix, progress, factors }}
             pageType="decision"
-            toolType="team-focus"
+            toolType="strategic-alignment"
             onNext={handleSaveToLogClick}
             canNext={true}
             onBack={() => navigate('/project-progress', { state: { ...location.state } })}

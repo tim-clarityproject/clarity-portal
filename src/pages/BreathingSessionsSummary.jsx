@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { parseDbTimestamp, formatDayMonthTime } from '../lib/dateFormatter';
-import { TECHNIQUES, loadBreathingSessions, deleteBreathingSession, formatSessionLength } from '../lib/breathing';
+import { TECHNIQUES, loadBreathingSessions, loadBreathingTotals, deleteBreathingSession, formatSessionLength } from '../lib/breathing';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -18,14 +18,17 @@ export default function BreathingSessionsSummary() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [sessions, setSessions] = useState([]);
+  // Every session, counted exactly (the list shows the latest 30).
+  const [totals, setTotals] = useState({ count: 0, seconds: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
   const load = async () => {
     try {
-      const data = await loadBreathingSessions(user.id);
+      const [data, all] = await Promise.all([loadBreathingSessions(user.id), loadBreathingTotals(user.id)]);
       setSessions(data);
+      setTotals(all);
     } catch (error) {
       console.error('[BreathingSessionsSummary] load failed:', error);
     } finally {
@@ -43,7 +46,9 @@ export default function BreathingSessionsSummary() {
     setDeleteTarget(null);
     try {
       await deleteBreathingSession(user.id, id);
+      const gone = sessions.find((s) => s.id === id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
+      setTotals((t) => ({ count: Math.max(0, t.count - 1), seconds: Math.max(0, t.seconds - (gone?.duration || 0)) }));
       toast.show('Deleted');
     } catch (error) {
       console.error('[BreathingSessionsSummary] delete failed:', error);
@@ -51,7 +56,7 @@ export default function BreathingSessionsSummary() {
     }
   };
 
-  const totalSeconds = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const totalSeconds = totals.seconds;
   const totalHours = Math.floor(totalSeconds / 3600);
   const totalMins = Math.floor((totalSeconds % 3600) / 60);
 
@@ -86,7 +91,7 @@ export default function BreathingSessionsSummary() {
           <>
             <div className="tsa-total" style={{ marginBottom: 'var(--space-5)' }}>
               <span>Sessions</span>
-              <b>{sessions.length}</b>
+              <b>{totals.count}</b>
             </div>
             <div className="tsa-total" style={{ marginBottom: 'var(--space-5)' }}>
               <span>Total time</span>
