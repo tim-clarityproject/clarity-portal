@@ -36,7 +36,7 @@ function Centered({ topBar = 'back', beforeHeadline, headline, sub, children }) 
     <AuthShell
       topBar={topBar}
       backTo="/auth/login"
-      backLabel="← Log in"
+      backLabel="Log in"
       align="center"
       columnClassName="cc"
       beforeHeadline={beforeHeadline}

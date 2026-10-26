@@ -224,7 +224,7 @@ export default function GrowStep4WillDo() {
         <h2 className="ds-question">What will I do?</h2>
 
         <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
+          <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--text)', transition: 'width 0.3s ease' }} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', minHeight: '400px', marginBottom: '100px' }}>

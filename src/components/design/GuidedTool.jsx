@@ -9,6 +9,7 @@ import { themeProps, useThemeScope } from './themeScope';
 import { STEP_PREFIX } from './guideDraft';
 import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
+import Chevron from './Chevron';
 import './design.css';
 
 // The guided-step component: every tool people work through in order,
@@ -85,9 +86,8 @@ function exampleFor(example, role) {
   return example[key] ?? example.leader;
 }
 
-const ARROW = (
-  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7 4L3 8l4 4" /></svg>
-);
+// Back: the one chevron, turned to point left (Tim, 26 Oct).
+const ARROW = <Chevron direction="left" size="sm" />;
 
 function Tip({ tip, onClosed }) {
   const [shown, setShown] = useState(() => !readJson(TIP_PREFIX + tip.key, false));

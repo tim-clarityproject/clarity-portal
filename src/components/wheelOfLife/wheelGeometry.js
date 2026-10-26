@@ -38,11 +38,43 @@ export function sizeFor(size, radar) {
 export function remap(areas, series, targets, labelValues) {
   const keys = areas.map((a) => a.key);
   const val = (map, k) => (map && typeof map[k] === 'number' ? map[k] : null);
+  const mapped = (series || []).map((sr) => ({ cls: sr.cls, v: keys.map((k) => val(sr.scores, k)) }));
+  const now = mapped.find((sr) => sr.cls === 'now')?.v || null;
+  const start = mapped.find((sr) => sr.cls === 'start')?.v || null;
   return {
     N: keys.length,
     names: areas.map(areaName),
-    series: (series || []).map((sr) => ({ cls: sr.cls, v: keys.map((k) => val(sr.scores, k)) })),
+    series: mapped,
     tgt: targets ? keys.map((k) => val(targets, k)) : null,
     labVals: labelValues ? keys.map((k) => val(labelValues, k)) : null,
+    now,
+    start,
+    // Areas that went up since the start of the range: only these are
+    // green (Tim, 26 Oct: mint dots and figures only on areas that rose).
+    rose: keys.map((k, i) => !!(now && start && now[i] != null && start[i] != null && now[i] > start[i])),
+  };
+}
+
+/**
+ * What one area's pop-up says: its score first, then when, then how it
+ * moved since the start of the range.
+ * @param {object} M - from remap
+ * @param {number} i - the area's place on the wheel
+ * @param {{ when?: string, startWhen?: string }} dates - "Sat 3 Oct"
+ */
+export function areaTip(M, i, { when, startWhen } = {}) {
+  const v = M.now ? M.now[i] : null;
+  const s = M.start ? M.start[i] : null;
+  const extra = [];
+  if (v != null && s != null && startWhen) {
+    if (v > s) extra.push(`Up ${v - s} from ${s} on ${startWhen}.`);
+    else if (v < s) extra.push(`Down ${s - v} from ${s} on ${startWhen}.`);
+    else extra.push(`The same as on ${startWhen}.`);
+  }
+  if (M.tgt && M.tgt[i] != null) extra.push(v != null && v >= M.tgt[i] ? `Target ${M.tgt[i]} reached.` : `Target ${M.tgt[i]}.`);
+  return {
+    value: v == null ? `${M.names[i]}: no score` : `${M.names[i]} ${v}/10`,
+    when: when ? `Latest, ${when}` : undefined,
+    extra,
   };
 }

@@ -47,7 +47,7 @@ function LinkState({ beforeHeadline, columnClassName, headline, sub, children })
     <AuthShell
       topBar="back"
       backTo="/auth/login"
-      backLabel="← Log in"
+      backLabel="Log in"
       align="center"
       columnClassName={columnClassName}
       beforeHeadline={beforeHeadline}

@@ -58,7 +58,7 @@ export default function ForgotPassword() {
     <AuthShell
       topBar="back"
       backTo="/auth/login"
-      backLabel="← Log in"
+      backLabel="Log in"
       align="left"
       headline="FORGOT YOUR PASSWORD?"
       sub="Enter your email and we will send you a link to set a new one."

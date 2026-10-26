@@ -519,7 +519,7 @@
   transition: background-color var(--dur-slow) var(--ease);
 }
 
-.ui-root .wol-steps i.f { background: var(--coral); }
+.ui-root .wol-steps i.f { background: var(--good); } /* done steps in green (Tim, 26 Oct) */
 .ui-root .wol-steps i.n { background: var(--text-2); }
 
 .ui-root .wol-qq {
@@ -982,51 +982,32 @@
 }
 
 /* legend under the wheel */
-.ui-root .wol-leg {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2) 20px;
-  margin-top: var(--space-2);
-  font-size: var(--fs-small);
+/* What the wheel shows, in words (no legend; Tim, 26 Oct) */
+.ui-root .wol-words {
+  max-width: var(--nudge-max);
+  margin: var(--space-2) auto 0;
+  text-align: center;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
   color: var(--text-2);
 }
 
-.ui-root .wol-leg span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+.ui-root .wol-words p,
+.ui-root .wol-why p {
+  margin: 0;
 }
 
-.ui-root .wol-leg i {
-  width: 18px;
-  height: 0;
-  border-top: 2px solid var(--coral);
+/* Why a chart style can't be chosen */
+.ui-root .wol-why {
+  margin: calc(-1 * var(--space-2)) 0 var(--space-3);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
 }
 
-.ui-root .wol-leg i.wol-s {
-  border-top: 1.5px dashed var(--text-2);
-}
-
-.ui-root .wol-leg i.wol-o {
-  border-top: 1px solid var(--wol-between);
-}
-
-.ui-root .wol-leg i.wol-f {
-  width: 12px;
-  height: 12px;
-  border: 0;
-  border-radius: 2px;
-  background: var(--coral);
-}
-
-.ui-root .wol-leg i.wol-s.wol-w {
-  border-top: 1.5px solid var(--text);
-  border-radius: 2px;
-}
-
-.ui-root .wol-leg i.wol-tgt {
-  border-top: 1.5px dashed var(--text-2);
+/* Every area of the full wheel has its own pop-up. */
+.ui-root .wol-hit {
+  cursor: default;
 }
 
 /* summary numbers */
@@ -1060,6 +1041,10 @@
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--text);
+}
+
+.ui-root .wol-stats strong.wol-good {
+  color: var(--good);
 }
 
 .ui-root .wol-stats span {
@@ -1222,7 +1207,7 @@
   text-align: center;
 }
 
-.ui-root .wol-dl.wol-up { color: var(--text); }
+.ui-root .wol-dl.wol-up { color: var(--good); } /* rises in green (Tim, 26 Oct) */
 .ui-root .wol-dl.wol-dn { color: var(--below); }
 .ui-root .wol-dl.wol-eq { color: var(--placeholder); }
 
@@ -1402,7 +1387,7 @@
 .ui-root .wol-db b.wol-up {
   left: 50%;
   border-radius: 0 3px 3px 0;
-  background: var(--coral); /* coral marks what is going well; falls stay neutral grey (Phase 0d) */
+  background: var(--good); /* green marks a rise (Tim, 26 Oct); falls stay neutral grey */
   transform-origin: left center;
 }
 
@@ -1450,6 +1435,7 @@
   color: var(--text);
 }
 
+.ui-root .wol-dv.wol-up { color: var(--good); }
 .ui-root .wol-dv.wol-dn { color: var(--below); }
 .ui-root .wol-dv.wol-eq { color: var(--placeholder); }
 
@@ -1523,6 +1509,7 @@
   color: var(--text);
 }
 
+.ui-root .wol-dpt b.wol-up { color: var(--good); }
 .ui-root .wol-dpt b.wol-dn { color: var(--below); }
 .ui-root .wol-dpt b.wol-eq { color: var(--placeholder); }
 
@@ -1559,7 +1546,7 @@
   transform-origin: left center;
 }
 
-.ui-root .wol-trk i.wol-up { background: var(--coral); }
+.ui-root .wol-trk i.wol-up { background: var(--good); }
 .ui-root .wol-trk i.wol-dn { background: var(--below); }
 
 .ui-root .wol-dpb small {
@@ -1575,16 +1562,6 @@
   .ui-root .wol-seg { gap: 9px; }
   .ui-root .wol-seg button { letter-spacing: 0.14em; }
   .ui-root .wol-seg button svg { display: none; }
-
-  .ui-root .wol-leg {
-    display: grid;
-    grid-template-columns: auto auto;
-    justify-content: center;
-    gap: var(--space-2) 18px;
-    font-size: 12px;
-  }
-
-  .ui-root .wol-leg span { white-space: nowrap; }
 
   .ui-root .wol-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1624,14 +1601,20 @@
     justify-content: flex-end;
   }
 
-  /* the arrow in DM Sans, as the mock-up shows it (the portal's Nekst
-     draws → as a triangle) */
-  .ui-root .wol-tr .wol-v--s::after {
-    content: " →";
+  /* "from 5 to 7", in words: no text arrows (Tim, 26 Oct) */
+  .ui-root .wol-tr .wol-v--s::before {
+    content: "from ";
     font-family: var(--font-body);
     color: var(--placeholder);
   }
 
+  .ui-root .wol-tr .wol-v--s::after {
+    content: " to";
+    font-family: var(--font-body);
+    color: var(--placeholder);
+  }
+
+  .ui-root .wol-tr .wol-v--s:empty::before,
   .ui-root .wol-tr .wol-v--s:empty::after { content: none; }
   .ui-root .wol-tgc { display: none; }
   .ui-root .wol-tgm { display: block; }

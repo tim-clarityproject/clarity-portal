@@ -10,7 +10,7 @@ const OPTIONS = [
   { variant: 'dark', name: 'Dark', note: 'For sharing' },
 ];
 
-/** A miniature page: a title, the coral line, a few text lines and a small bar chart. */
+/** A miniature page: a title, the coral line, a few text lines and a small bar chart in green. */
 function Thumb({ variant }) {
   const light = variant === 'light';
   const paper = light ? 'var(--text)' : 'var(--bg)';
@@ -22,8 +22,8 @@ function Thumb({ variant }) {
       <rect x="6" y="13" width="9" height="1" style={{ fill: 'var(--coral)' }} />
       <rect x="6" y="18" width="40" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
       <rect x="6" y="23" width="34" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
-      <rect x="6" y="32" width="36" height="3" style={{ fill: 'var(--coral)' }} />
-      <rect x="6" y="38" width="28" height="3" style={{ fill: 'var(--coral)' }} />
+      <rect x="6" y="32" width="36" height="3" style={{ fill: 'var(--good)' }} />
+      <rect x="6" y="38" width="28" height="3" style={{ fill: 'var(--good)' }} />
       <rect x="6.25" y="44.25" width="17.5" height="2.5" style={{ fill: 'none', stroke: ink, strokeWidth: 0.5 }} />
       <rect x="6" y="58" width="44" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />
       <rect x="6" y="63" width="38" height="1.5" rx="0.75" style={{ fill: ink, opacity: 0.6 }} />

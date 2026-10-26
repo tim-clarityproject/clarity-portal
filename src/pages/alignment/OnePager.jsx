@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import AlignmentChart from './AlignmentChart';
+import { Chevron } from '../../components/design';
 import { cleanItems } from './alignmentFlow';
 import { quadrant } from './chartLayout';
 import { rankProjects, roundPct, MAX_CONTRIBUTION } from '../../lib/alignmentScore';
@@ -31,11 +32,9 @@ function EditButton({ label, onClick }) {
   );
 }
 
-const Arrow = ({ up }) => (
-  <svg className={`al-dir${up ? ' al-dir--up' : ''}`} viewBox="0 0 12 12" aria-hidden="true">
-    <path d="M6 1.5v9M2.5 7 6 10.5 9.5 7" />
-  </svg>
-);
+// The sort direction: the one chevron (Tim, 26 Oct), down for high to
+// low and up for low to high.
+const Arrow = ({ up }) => <Chevron direction={up ? 'up' : 'down'} size="sm" className="al-dir" />;
 
 function ProjectCards({ onEmailLink, onCreateAccount, email }) {
   const emailNote = {

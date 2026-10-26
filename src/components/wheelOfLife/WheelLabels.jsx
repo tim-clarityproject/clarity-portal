@@ -5,11 +5,12 @@ import { wrapLabel } from '../../lib/wheelOfLife';
 
 /**
  * One area name around the wheel, on one to three lines, with the latest
- * score after the last line in coral (the mock-up's svgLab, line for line;
+ * score after the last line: green when the area went up since the start
+ * of the range, the text colour otherwise (Tim, 26 Oct) (the mock-up's svgLab, line for line;
  * the score is never below 12px, the portal's smallest text - the
  * mock-up's fs-1 gave 9px on phone).
  */
-export function WheelLabel({ x, y, anchor, pos, lines, fs, fill, val }) {
+export function WheelLabel({ x, y, anchor, pos, lines, fs, fill, val, rose = false }) {
   const lh = 1.15;
   const n = lines.length;
   const d0 = pos === 'top' ? -(n - 1) * lh : (pos === 'bot' ? 0.75 : 0.35 - ((n - 1) * lh) / 2);
@@ -21,7 +22,7 @@ export function WheelLabel({ x, y, anchor, pos, lines, fs, fill, val }) {
           {k === n - 1 && val != null ? (
             <>
               {' '}
-              <tspan style={{ fill: 'var(--coral)', fontFamily: 'var(--font-display)' }} fontSize={Math.max(12, fs - 1)}>{val}</tspan>
+              <tspan style={{ fill: rose ? 'var(--good)' : 'var(--text)', fontFamily: 'var(--font-display)' }} fontSize={Math.max(12, fs - 1)}>{val}</tspan>
             </>
           ) : null}
         </tspan>
@@ -57,6 +58,7 @@ export function WheelLabels({ o, M, hlIndex, extra = 0 }) {
         fs={o.fs}
         fill={hlIndex === i ? 'var(--coral)' : 'var(--wol-label)'}
         val={M.labVals ? M.labVals[i] : null}
+        rose={M.rose ? M.rose[i] : false}
       />,
     );
   }

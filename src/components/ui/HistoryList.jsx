@@ -475,7 +475,7 @@ const HLIST_CSS = `
 .hlist-reviewed-tag {
   display: inline-block;
   padding: 1px 8px;
-  border: 1px solid var(--mint);
+  border: 1px solid var(--good);
   border-radius: var(--radius-pill);
   font-family: var(--font-display);
   font-weight: 400;

@@ -108,7 +108,7 @@ export default function ProjectMatrix() {
           <PageHeader title="Strategic alignment" />
           <h2 className="ds-question">How much does each project/line of effort contribute to your Critical Success Factors?</h2>
           <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '50%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
+            <div style={{ height: '100%', width: '50%', backgroundColor: 'var(--text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 

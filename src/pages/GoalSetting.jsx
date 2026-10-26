@@ -64,7 +64,7 @@ export default function GoalSetting() {
           <Button variant="outline" onClick={() => navigate('/decision-history')} style={{ flexShrink: 0 }}>My Decisions</Button>
         </div>
         <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
-          <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
+          <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: 'var(--text)', transition: 'width 0.3s ease' }} />
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>

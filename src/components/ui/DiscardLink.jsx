@@ -2,6 +2,7 @@
 // classes get the `.ui-root` ancestor prefix in components.css to beat
 // src/styles/mobile.css's `button:not(.breathe-button)` (0,1,1,
 // !important) on font-size/padding - see the comment there.
+import Chevron from '../design/Chevron';
 
 function BinIcon() {
   return (
@@ -22,23 +23,9 @@ function BinIcon() {
   );
 }
 
+// Back: the one chevron, turned to point left (Tim, 26 Oct).
 function ArrowLeftIcon() {
-  return (
-    <svg
-      className="ui-back-link-icon"
-      width="14"
-      height="14"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12.5 8h-9M7 3.5 2.5 8l4.5 4.5" />
-    </svg>
-  );
+  return <Chevron direction="left" size="sm" className="ui-back-link-icon" />;
 }
 
 export function DiscardLink({ onClick, label = 'Discard', ...props }) {

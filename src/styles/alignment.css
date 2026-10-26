@@ -582,14 +582,17 @@
   min-height: var(--tap-min);
   display: inline-flex;
   align-items: center;
+  gap: var(--icon-gap);
   font-family: var(--font-body);
-  font-size: var(--fs-small);
+  font-size: var(--fs-who);
   color: var(--text-2);
   transition: color var(--dur) var(--ease);
 }
 
-.ui-root .al-back:hover {
-  color: var(--text);
+/* The chevron with its words (Tim, 26 Oct): coral on hover or focus. */
+.ui-root .al-back:hover,
+.ui-root .al-back:focus-visible {
+  color: var(--coral-text);
 }
 
 .ui-root .al-back:focus-visible {
@@ -885,20 +888,10 @@
   }
 }
 
-/* ---- sort pills (the shared FilterPills with an arrow) ---- */
+/* ---- sort pills (the shared FilterPills with the chevron) ---- */
 .ui-root .al-dir {
-  width: 11px;
-  height: 11px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform var(--dur-slow) var(--ease);
-}
-
-.ui-root .al-dir--up {
-  transform: rotate(180deg);
+  width: var(--cross-sm);
+  height: var(--cross-sm);
 }
 
 .ui-root .fpills-btn i .al-dir {
@@ -934,10 +927,8 @@
   position: absolute;
   left: 100%;
   top: 50%;
-  margin: -5px 0 0 var(--space-2);
-  width: 10px;
-  height: 10px;
-  stroke: var(--coral-text);
+  margin: calc(var(--cross-sm) / -2) 0 0 var(--space-1);
+  color: var(--coral-text);
 }
 
 /* ---- project table: adapts to the space it has, not the device ---- */
@@ -977,7 +968,7 @@
   grid-area: rn;
   width: var(--space-4);
   height: var(--space-4);
-  border: 1px solid var(--text);
+  border: 1px solid var(--text-2);  /* a grey outline, like its dot */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -988,15 +979,16 @@
 }
 
 .ui-root .al-rn--mi {
-  background: var(--mint);
-  border-color: var(--mint);
-  color: var(--on-coral);
+  /* Important and moving well: filled green, like its dot (26 Oct). */
+  background: var(--good);
+  border-color: var(--good);
+  color: var(--on-good);
 }
 
+/* Every other rank (important but behind included) is a grey outline,
+   like its dot on the chart. */
 .ui-root .al-rn--co {
-  background: var(--coral);
-  border-color: var(--coral);
-  color: var(--on-coral);
+  border-color: var(--text-2);
 }
 
 .ui-root .al-nm {
@@ -1248,10 +1240,6 @@
   font-size: var(--fs-small);
   line-height: 1.4;
   color: var(--text-2);
-}
-
-.ui-root .al-card .ds-arrow {
-  margin-top: var(--space-px2);
 }
 
 @media (prefers-reduced-motion: reduce) {

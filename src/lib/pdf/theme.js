@@ -10,7 +10,9 @@ export const PDF_THEMES = {
     line: '#DCDCD9',
     panel: '#F4F4F3',
     panelEdge: null,
-    coral: '#FF6F5C',
+    coral: '#FF6F5C', // the title line only
+    good: '#0B7A52', // green: at or above the standard (Tim, 26 Oct), deep green on light pages
+    onGood: '#FFFFFF', // a number on a green dot
     logo: 'positive', // public/brand/logomark-positive.png, black crosshair
   },
   dark: {
@@ -20,7 +22,9 @@ export const PDF_THEMES = {
     line: '#262626',
     panel: '#111110',
     panelEdge: '#262626', // a thin edge so panels hold on a dim phone
-    coral: '#FF6F5C',
+    coral: '#FF6F5C', // the title line only
+    good: '#5FEFBB', // mint on dark pages
+    onGood: '#000000',
     logo: 'negative', // public/brand/logomark-negative.png, white crosshair
   },
 };

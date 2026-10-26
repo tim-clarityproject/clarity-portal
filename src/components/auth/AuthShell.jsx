@@ -1,6 +1,7 @@
 import { Children, cloneElement, isValidElement } from 'react';
 import { Link } from 'react-router-dom';
 import BigLogo from './BigLogo';
+import Chevron from '../design/Chevron';
 
 // Shared layout for every screen in the pre-login Welcome flow (log in,
 // sign up, check your email, mission, finished, welcome back). Renders
@@ -12,7 +13,7 @@ export default function AuthShell({
   step = null,
   topBar = 'back', // 'back' | 'mark' | 'none'
   backTo,
-  backLabel = '<- Back',
+  backLabel = 'Back',
   align = 'center', // 'left' | 'center'
   logo = false,
   beforeHeadline, // optional node (envelope/clock/confirmed-tick-row) rendered above the headline, same slot logo uses
@@ -89,10 +90,11 @@ export default function AuthShell({
         .ui-root .auth-back {
           display: inline-flex;
           align-items: center;
+          gap: var(--icon-gap);
           min-height: 44px !important;
           padding: 0 !important;
           font-family: var(--font-body);
-          font-size: 13px !important;
+          font-size: var(--fs-who) !important;
           color: var(--text-2);
           background: transparent;
           border: none;
@@ -101,9 +103,10 @@ export default function AuthShell({
           transition: color var(--dur-fast) var(--ease);
         }
 
+        /* The chevron with its words (Tim, 26 Oct): coral on hover or focus. */
         .ui-root .auth-back:hover,
         .ui-root .auth-back:focus-visible {
-          color: var(--text);
+          color: var(--coral-text);
         }
 
         .ui-root .auth-back:focus-visible {
@@ -422,7 +425,10 @@ export default function AuthShell({
         )}
         {!topBarContent && topBar === 'back' && (
           backTo ? (
-            <Link to={backTo} className="auth-back">{backLabel}</Link>
+            <Link to={backTo} className="auth-back">
+              <Chevron direction="left" size="sm" />
+              <span>{backLabel}</span>
+            </Link>
           ) : (
             <span />
           )

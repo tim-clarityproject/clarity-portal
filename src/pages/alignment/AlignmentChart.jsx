@@ -1,16 +1,18 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { layoutChart, PROGRESS_WORDS } from './chartLayout';
 import { roundPct } from '../../lib/alignmentScore';
+import { ChartTips } from '../../components/design';
 
 // Strategic importance versus progress: SVG dot-matrix field, crosshair
 // centre lines and numbered project dots. Geometry comes from
 // alignmentChart.js (a port of the mock-up's chart()). Colours are tokens,
 // applied with style (var() does not resolve in presentation attributes
-// everywhere).
+// everywhere). Only "important and moving well" is filled, in green (the
+// mode's own mint, Tim 26 Oct); every other dot is a grey outline.
 const FILL = {
-  mi: 'var(--mint)',
-  co: 'var(--coral)',
-  n: 'var(--text)',
+  mi: 'var(--good)',
+  co: 'var(--text-2)',
+  n: 'var(--text-2)',
 };
 
 let measureCtx = null;
@@ -70,10 +72,11 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
   const on = highlight != null;
 
   return (
+    <ChartTips>
     <div ref={wrapRef} className={`al-chart al-enter${on ? ' al-hlon' : ''}`}>
       <svg viewBox={`0 0 ${W} ${H}`} role="group" aria-label="Strategic importance versus progress">
         <defs>
-          {[['b', 'var(--line)', 0.9], ['mi', 'var(--mint)', 0.55], ['co', 'var(--coral)', 0.55]].map(([k, c, o]) => (
+          {[['b', 'var(--line)', 0.9], ['mi', 'var(--good)', 0.55]].map(([k, c, o]) => (
             <pattern
               key={k}
               id={pat(k)}
@@ -91,7 +94,7 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
         <g className="al-zone" aria-hidden="true">
           <rect x={L} y={my} width={pw} height={T + ph - my} fill={`url(#${pat('b')})`} />
           <rect x={mx} y={T} width={L + pw - mx} height={my - T} fill={`url(#${pat('mi')})`} />
-          <rect x={L} y={T} width={mx - L} height={my - T} fill={`url(#${pat('co')})`} />
+          <rect x={L} y={T} width={mx - L} height={my - T} fill={`url(#${pat('b')})`} />
         </g>
 
         {/* centre lines with a small gap, echoing the crosshair in the mark */}
@@ -141,7 +144,7 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
         )}
 
         {pts.map((p, i) => {
-          const solid = p.q !== 'n';
+          const solid = p.q === 'mi';
           const c = FILL[p.q];
           const name = `${p.n}, ${p.text}, strategic importance ${roundPct(p.importance)}%, progress ${PROGRESS_WORDS[p.progress - 1]}`;
           return (
@@ -151,6 +154,11 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
               tabIndex={0}
               role="img"
               aria-label={name}
+              data-tip={JSON.stringify({
+                kind: `Project ${p.n}`,
+                name: p.text,
+                extra: [`Strategic importance ${roundPct(p.importance)}%.`, `Progress is ${PROGRESS_WORDS[p.progress - 1]}.`],
+              })}
               onMouseEnter={() => onHighlight(p.n)}
               onMouseLeave={() => onHighlight(null)}
               onFocus={() => onHighlight(p.n)}
@@ -159,7 +167,6 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
               onKeyDown={onOpen ? (e) => { if (e.key === 'Enter') { e.preventDefault(); onOpen(p.id); } } : undefined}
               style={{ '--d': `${250 + i * 80}ms`, cursor: onOpen ? 'pointer' : undefined }}
             >
-              <title>{p.text}</title>
               <circle className="al-halo" cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r={p.r + 6} style={{ fill: c }} fillOpacity={solid ? 0.16 : 0.07} />
               <circle
                 className="al-core"
@@ -176,7 +183,7 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontSize={D ? 11 : 10}
-                style={{ fill: solid ? 'var(--on-coral)' : 'var(--text)', letterSpacing: 0 }}
+                style={{ fill: solid ? 'var(--on-good)' : 'var(--text)', letterSpacing: 0 }}
               >
                 {p.n}
               </text>
@@ -201,5 +208,6 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
         ))}
       </svg>
     </div>
+    </ChartTips>
   );
 }

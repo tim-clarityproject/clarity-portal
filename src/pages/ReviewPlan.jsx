@@ -30,6 +30,17 @@ const DAILY_QUESTIONS = [
   { key: 'notDo', label: 'What do you not want to do today?' },
 ];
 
+// An if-then plan in words, never with an arrow (Tim, 26 Oct): "If the
+// meeting runs over, then I'll leave at 18:00." The words people typed
+// are kept as they are, with "If" and "then" added only where missing.
+function ifThenWords(ifCondition = '', thenAction = '') {
+  const cond = String(ifCondition).trim().replace(/[.,]$/, '');
+  const act = String(thenAction).trim().replace(/[.]$/, '');
+  const ifPart = /^if\b/i.test(cond) ? cond : `If ${cond}`;
+  const thenPart = /^then\b/i.test(act) ? act : `then ${act}`;
+  return `${ifPart}, ${thenPart}.`;
+}
+
 function ordinal(n) {
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
@@ -70,7 +81,7 @@ function PanelBody({ planKind, plan }) {
         </div>
         <div>
           <small>Scenarios</small>
-          {items.map((it, i) => <p key={i}>{it.ifCondition} → {it.thenAction}</p>)}
+          {items.map((it, i) => <p key={i}>{ifThenWords(it.ifCondition, it.thenAction)}</p>)}
         </div>
       </div>
     );
@@ -87,7 +98,7 @@ function PanelBody({ planKind, plan }) {
         <div>
           <small>Risks</small>
           {risks.length > 0
-            ? risks.map((r, i) => <p key={i}>{r}{answers[i] ? ` → ${answers[i]}` : ''}</p>)
+            ? risks.map((r, i) => <p key={i}>{answers[i] ? `${r}. Your answer: ${answers[i]}` : r}</p>)
             : <p>No risks recorded.</p>}
         </div>
       </div>

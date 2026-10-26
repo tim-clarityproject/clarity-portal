@@ -28,7 +28,7 @@ function Checkbox({ checked, onChange, error, shakeToken }) {
       onClick={() => onChange(!checked)}
     >
       <svg viewBox="0 0 20 20" width="12" height="12" className="auth-checkbox-tick" aria-hidden="true">
-        <path d="M4 10.5l3.5 3.5L16 6" fill="none" style={{ stroke: 'var(--on-coral)' }} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 10.5l3.5 3.5L16 6" fill="none" style={{ stroke: 'var(--on-good)' }} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
   );
@@ -119,7 +119,7 @@ export default function SignUpStep2() {
       step={2}
       topBar="back"
       backTo="/auth/sign-up"
-      backLabel="← Back"
+      backLabel="Back"
       align="left"
       headline="CREATE YOUR LOGIN."
       sub="One email and one password. That is all."

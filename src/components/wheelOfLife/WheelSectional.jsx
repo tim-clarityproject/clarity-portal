@@ -1,12 +1,14 @@
 import { average, oneDecimal } from '../../lib/wheelOfLife';
-import { remap, sizeFor } from './wheelGeometry';
+import { areaTip, remap, sizeFor } from './wheelGeometry';
 import { WheelLabels } from './WheelLabels';
+import { tipProps } from '../design/ChartTips';
 
 // The sectional wheel, ported line for line from the approved mock-up's
 // sectional() (wheel-of-life.html): round slices with a hole in the
-// middle, ten bands per slice in a tonal coral ramp, empty bands as faint
-// dots, the start of the range as a white hairline arc, the target as a
-// dashed arc just outside its band (soft coral, mint once reached), a
+// middle, ten bands per slice in a tonal ramp of the text colour (coral
+// is never a data colour, Tim 26 Oct), empty bands as faint dots, the
+// start of the range as a faint hairline arc, the target as a dashed arc
+// just outside its band (grey, green once reached), a
 // dial rim with ticks, and the average number in the centre (or an empty hub
 // when there are no labels). Animations live in wheelOfLife.css
 // (.wol-enter .wol-sw .wol-sl), switched off under reduced motion.
@@ -21,10 +23,12 @@ import { WheelLabels } from './WheelLabels';
  * @param {'desktop'|'phone'|'mini'} [props.size='mini']
  * @param {boolean} [props.labels=false] - area names around the wheel, and the average in the centre
  * @param {string} [props.aria]
+ * @param {string} [props.when] - the latest check-in's date, for the pop-ups ("Sat 3 Oct")
+ * @param {string} [props.startWhen] - the start of the range's date
  */
 export default function WheelSectional({
   areas, series, targets = null, labelValues = null, highlightKey = null,
-  size = 'mini', labels = false, aria = 'Wheel of Life',
+  size = 'mini', labels = false, aria = 'Wheel of Life', when, startWhen,
 }) {
   const o = sizeFor(size, false);
   const M = remap(areas, series, targets, labels ? labelValues : null);
@@ -80,7 +84,7 @@ export default function WheelSectional({
       const r0 = H + (k - 1) * bw + 0.6;
       const r1 = H + k * bw - 0.6;
       if (v != null && k <= v) {
-        parts.push(<path key={`b${k}`} d={ring(a1, a2, r0, r1)} style={{ fill: 'var(--coral)' }} fillOpacity={(0.32 + (0.68 * k) / v).toFixed(2)} />);
+        parts.push(<path key={`b${k}`} d={ring(a1, a2, r0, r1)} style={{ fill: M.rose[i] ? 'var(--good)' : 'var(--text)' }} fillOpacity={(0.32 + (0.68 * k) / v).toFixed(2)} />);
       } else {
         const m = pt(c, (r0 + r1) / 2);
         parts.push(<circle key={`b${k}`} cx={m[0]} cy={m[1]} r={R > 100 ? 1.1 : 0.9} style={{ fill: hl ? 'var(--placeholder)' : 'var(--wol-dot)' }} />);
@@ -89,7 +93,7 @@ export default function WheelSectional({
     if (hl) parts.push(<path key="hl" d={ring(a1, a2, H, R)} fill="none" style={{ stroke: 'var(--coral)' }} strokeWidth="1" strokeOpacity=".6" />);
     if (start && start[i] != null && start[i] > 0) {
       const rs = H + start[i] * bw;
-      parts.push(<path key="st" d={arc(a1 + 1.5, a2 - 1.5, rs)} fill="none" style={{ stroke: 'var(--text)' }} strokeWidth="1.5" strokeLinecap="round" />);
+      parts.push(<path key="st" d={arc(a1 + 1.5, a2 - 1.5, rs)} fill="none" style={{ stroke: 'var(--placeholder)' }} strokeWidth="1.5" strokeLinecap="round" />);
     }
     if (M.tgt && M.tgt[i] != null) {
       const rt = H + M.tgt[i] * bw + (R > 100 ? 2.5 : 2);
@@ -99,15 +103,14 @@ export default function WheelSectional({
           key="tg"
           d={arc(a1 + 0.5, a2 - 0.5, rt)}
           fill="none"
-          style={{ stroke: met ? 'var(--mint)' : 'var(--text-2)' }}
+          style={{ stroke: met ? 'var(--good)' : 'var(--text-2)' }}
           strokeWidth={R > 100 ? 2 : 1.6}
           strokeDasharray={R > 100 ? '2.5 2.5' : '2 2'}
         />,
       );
     }
     slices.push(
-      <g key={areas[i].key} className="wol-sl" style={{ '--k': i }}>
-        <title>{`${M.names[i]}${v != null ? `: ${v} of 10` : ''}`}</title>
+      <g key={areas[i].key} className="wol-sl" style={{ '--k': i }} {...(labels ? tipProps(areaTip(M, i, { when, startWhen })) : {})}>
         {parts}
       </g>,
     );
@@ -129,7 +132,7 @@ export default function WheelSectional({
   }
 
   return (
-    <svg className="wol-sw" viewBox={`0 0 ${o.w} ${o.h}`} role="img" aria-label={aria}>
+    <svg className="wol-sw" viewBox={`0 0 ${o.w} ${o.h}`} role={labels ? 'group' : 'img'} aria-label={aria}>
       <circle cx={cx} cy={cy} r={(R + 6).toFixed(1)} fill="none" style={{ stroke: 'var(--line)' }} strokeWidth="1" />
       {ticks}
       {slices}

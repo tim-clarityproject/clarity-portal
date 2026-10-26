@@ -80,7 +80,7 @@ export default function CriticalSuccessFactors() {
           <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
           <h2 className="ds-question">List the factors you feel are critical to achieving your team's objective</h2>
           <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '40%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
+            <div style={{ height: '100%', width: '40%', backgroundColor: 'var(--text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 

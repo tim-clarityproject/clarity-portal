@@ -7,7 +7,7 @@ import { FormContext } from '../context/FormContext';
 import { useLoadDecision } from '../hooks/useLoadDecision';
 import { supabase } from '../lib/supabase';
 import DesignHeader from '../components/DesignHeader';
-import { PageHeader, Button, useToast } from '../components/design';
+import { PageHeader, Button, ChartTips, tipProps, useToast } from '../components/design';
 
 export default function ProjectScatter() {
   const navigate = useNavigate();
@@ -220,13 +220,14 @@ export default function ProjectScatter() {
 
         <div style={{ marginTop: '24px', marginBottom: '32px' }}>
           <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
+            <div style={{ height: '100%', width: '100%', backgroundColor: 'var(--text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 
         {/* Gartner Magic Quadrant */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '48px' }}>
-          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" style={{ backgroundColor: 'var(--raised)', maxWidth: `${svgWidth}px`, height: 'auto', display: 'block' }} onClick={() => setSelectedProjectIdx(null)}>
+          <ChartTips className="ps-tips">
+          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" style={{ backgroundColor: 'var(--raised)', maxWidth: `${svgWidth}px`, height: 'auto', display: 'block' }} onClick={(e) => { if (!e.target.closest('[data-tip]')) setSelectedProjectIdx(null); }}>
             {/* Click-to-deselect background */}
             <rect x={leftPadding} y={topPadding} width={plotWidth} height={plotHeight} fill="transparent" pointerEvents="none" />
 
@@ -237,7 +238,7 @@ export default function ProjectScatter() {
               y={topPadding}
               width={plotWidth / 2}
               height={plotHeight / 2}
-              fill="var(--coral)"
+              fill="var(--label)"
               opacity={hoveredQuadrant === 'topLeft' ? '0.15' : '0.08'}
               style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
               onMouseEnter={() => setHoveredQuadrant('topLeft')}
@@ -249,7 +250,7 @@ export default function ProjectScatter() {
               y={topPadding}
               width={plotWidth / 2}
               height={plotHeight / 2}
-              fill="var(--mint-text)"
+              fill="var(--good)"
               opacity={hoveredQuadrant === 'topRight' ? '0.2' : '0.12'}
               style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
               onMouseEnter={() => setHoveredQuadrant('topRight')}
@@ -273,7 +274,7 @@ export default function ProjectScatter() {
               y={midY}
               width={plotWidth / 2}
               height={plotHeight / 2}
-              fill="var(--coral)"
+              fill="var(--label)"
               opacity={hoveredQuadrant === 'bottomRight' ? '0.12' : '0.05'}
               style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
               onMouseEnter={() => setHoveredQuadrant('bottomRight')}
@@ -317,19 +318,25 @@ export default function ProjectScatter() {
             {projectData.map((project, idx) => {
               const x = scaleX(project.progress);
               const y = scaleY(project.importance);
-              const labelX = x + 12;
-              const labelY = y - 10;
+              // The name sits to the right of its dot, or to the left when
+              // it would run past the chart's right edge; never above the top.
+              const estimate = project.name.length * 7;
+              const flip = x + 12 + estimate > svgWidth - 4;
+              const labelX = flip ? x - 12 : x + 12;
+              const labelY = Math.max(14, y - 10);
               const isSelected = selectedProjectIdx === idx;
               return (
-                <g key={idx} style={{ cursor: 'pointer' }} onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedProjectIdx(isSelected ? null : idx);
-                }}>
+                <g
+                  key={idx}
+                  style={{ cursor: 'pointer' }}
+                  {...tipProps({ kind: 'Project', name: project.name, extra: [`Progress ${project.progress} of 5.`, `Strategic importance ${project.importance}.`] })}
+                  onClick={() => setSelectedProjectIdx(isSelected ? null : idx)}
+                >
                   <circle
                     cx={x}
                     cy={y}
                     r={isSelected ? 10 : 7}
-                    fill="var(--coral)"
+                    fill="var(--text)"
                     opacity={isSelected ? 1 : 0.8}
                     style={{ transition: 'all 0.2s ease' }}
                   />
@@ -338,7 +345,7 @@ export default function ProjectScatter() {
                     cy={y}
                     r={isSelected ? 10 : 7}
                     fill="none"
-                    stroke="var(--coral-text)"
+                    stroke={isSelected ? 'var(--coral-text)' : 'var(--text)'}
                     strokeWidth={isSelected ? 3 : 2}
                     opacity={isSelected ? 0.8 : 0.4}
                     style={{ transition: 'all 0.2s ease' }}
@@ -347,6 +354,7 @@ export default function ProjectScatter() {
                   <text
                     x={labelX}
                     y={labelY}
+                    textAnchor={flip ? 'end' : 'start'}
                     fontSize={isSelected ? '12' : '11'}
                     fill={isSelected ? 'var(--coral-text)' : 'var(--text)'}
                     fontWeight={isSelected ? '700' : '500'}
@@ -359,6 +367,7 @@ export default function ProjectScatter() {
               );
             })}
           </svg>
+          </ChartTips>
 
           {/* Quadrant Tips */}
           <div style={{ marginTop: '48px', marginBottom: '48px', width: '100%', maxWidth: '850px', padding: '24px', backgroundColor: 'var(--raised)', borderRadius: '12px', border: '1px solid var(--line)' }}>
@@ -375,7 +384,7 @@ export default function ProjectScatter() {
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
               <div
-                style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--mint-text)', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--good)', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={() => setHoveredQuadrant('topRight')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
@@ -442,7 +451,7 @@ export default function ProjectScatter() {
                       <div
                         style={{
                           height: '100%',
-                          backgroundColor: 'var(--coral)',
+                          backgroundColor: 'var(--text)',
                           width: `${(project.progress / 5) * 100}%`,
                           transition: 'width 0.3s ease',
                         }}

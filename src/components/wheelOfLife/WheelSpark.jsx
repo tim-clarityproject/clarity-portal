@@ -1,7 +1,7 @@
 // "Over time" in the Area by area table, ported line for line from the
 // approved mock-up's spark() (wheel-of-life.html): one small bar per
-// check-in in the range on a 0 to 10 scale, the latest in coral, earlier
-// ones in grey, each with its score above it (when the bars are wide
+// check-in in the range on a 0 to 10 scale, the latest in the text colour
+// (coral is never a data colour, Tim 26 Oct), earlier ones in grey, each with its score above it (when the bars are wide
 // enough). A check-in with no score for the area shows a tiny dot.
 
 /**
@@ -32,7 +32,7 @@ export default function WheelSpark({ vals, w }) {
         }
         const bh = Math.max(1.5, (v / 10) * sc);
         const last = k === lastI;
-        const colour = last ? 'var(--coral)' : 'var(--text-2)';
+        const colour = last ? 'var(--text)' : 'var(--text-2)';
         return (
           <g key={k}>
             <rect x={x.toFixed(1)} y={(base - bh).toFixed(1)} width={bw.toFixed(1)} height={bh.toFixed(1)} rx="1.5" style={{ fill: colour }} fillOpacity={last ? 1 : 0.32} />

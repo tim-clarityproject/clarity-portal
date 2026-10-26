@@ -98,7 +98,7 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
           yCentre: STANDARD,
           axisX: 'Progress',
           axisY: 'Strategic importance',
-          keyGood: 'Coral: important and moving well',
+          keyGood: 'Green: important and moving well',
           keyOther: 'Grey outline: every other project',
           listNote: 'Numbers match the project table.',
           sentence: dotSentence(),

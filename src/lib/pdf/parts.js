@@ -326,7 +326,7 @@ function tableBlock(L, b, parent, title) {
 /**
  * A bar chart: to scale from zero, the standard marked, the value at the end
  * of each bar, a key underneath and a sentence saying what it means. Bars at
- * or above the standard are coral; below it, a grey outline, so a black and
+ * or above the standard are green (deep green on light pages, mint on dark); below it, a grey outline, so a black and
  * white print still tells them apart. Never split across pages.
  */
 function barsBlock(L, b, parent, maxH) {
@@ -397,7 +397,7 @@ function barsBlock(L, b, parent, maxH) {
           const on = std == null || r.value >= std;
           const end = sx(r.value);
           if (end - barX > 0.5) {
-            if (on) doc.rect(x + barX, by, end - barX, g.barH).fill(t.coral);
+            if (on) doc.rect(x + barX, by, end - barX, g.barH).fill(t.good);
             else doc.rect(x + barX + 0.375, by + 0.375, Math.max(0, end - barX - 0.75), g.barH - 0.75).lineWidth(0.75).stroke(t.detail);
           }
           values.push({ text: fmt(r.value), x: x + end + 6, y: ry });
@@ -428,7 +428,7 @@ function barsBlock(L, b, parent, maxH) {
           let kx = x;
           line.forEach((k) => {
             const my = ky + keyStyle.lh / 2;
-            if (k.kind === 'on') doc.rect(kx, my - 4, 12, 8).fill(t.coral);
+            if (k.kind === 'on') doc.rect(kx, my - 4, 12, 8).fill(t.good);
             if (k.kind === 'off') doc.rect(kx + 0.375, my - 3.625, 11.25, 7.25).lineWidth(0.75).stroke(t.detail);
             if (k.kind === 'std') doc.moveTo(kx + 6, my - 5).lineTo(kx + 6, my + 5).lineWidth(0.75).dash(2, { space: 2 }).stroke(t.text).undash();
             ts.draw(k.text, kx + 18, ky + ts.baseline(keyStyle), keyStyle, t.text);
@@ -450,7 +450,7 @@ function barsBlock(L, b, parent, maxH) {
  * as progress) and a value from zero up the side (such as strategic
  * importance), split into four quadrants by two centre lines (named only when
  * `quadrants` is given; the Health Check leaves them unnamed, as on its
- * results page). Dots in the good quadrant are filled coral; the rest are grey outlines, so a black
+ * results page). Dots in the good quadrant are filled green; the rest are grey outlines, so a black
  * and white print still tells them apart. Each dot holds its number. Names sit
  * beside the dots only when every one fits without touching another label, a
  * dot, a line or the edge; otherwise a numbered list sits beside or under the
@@ -665,10 +665,10 @@ function dotsBlock(L, b, parent, maxH) {
 
         // the dots, each with its number
         pts.forEach((pt) => {
-          if (pt.good) doc.circle(X(pt.cx), Y(pt.cy), R).fill(t.coral);
+          if (pt.good) doc.circle(X(pt.cx), Y(pt.cy), R).fill(t.good);
           else doc.circle(X(pt.cx), Y(pt.cy), R - 0.375).lineWidth(0.75).fillAndStroke(t.page, t.detail);
           const num = String(pt.n);
-          ts.draw(num, X(pt.cx - ts.width(num, numStyle) / 2), Y(pt.cy + numStyle.size * 0.36), numStyle, pt.good ? '#000000' : t.text);
+          ts.draw(num, X(pt.cx - ts.width(num, numStyle) / 2), Y(pt.cy + numStyle.size * 0.36), numStyle, pt.good ? t.onGood : t.text);
         });
         if (names) {
           names.forEach((nm) => nm.lines.forEach((line, i) => (
@@ -695,7 +695,7 @@ function dotsBlock(L, b, parent, maxH) {
           line.forEach((it) => {
             const my = ky + STYLES.small.lh / 2;
             if (!it.note) {
-              if (it.good) doc.circle(X(kx + 5), Y(my), 5).fill(t.coral);
+              if (it.good) doc.circle(X(kx + 5), Y(my), 5).fill(t.good);
               else doc.circle(X(kx + 5), Y(my), 4.6).lineWidth(0.75).fillAndStroke(t.page, t.detail);
             }
             ts.draw(it.text, X(kx + (it.note ? 0 : 16)), Y(ky + ts.baseline(STYLES.small)), STYLES.small, t.text);

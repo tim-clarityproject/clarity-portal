@@ -2,6 +2,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { legalDocuments } from '../../content/legal';
 import LegalDocBody from '../../components/legal/LegalDocBody';
 import { PageHeader } from '../../components/design';
+import Chevron from '../../components/design/Chevron';
 
 // Standalone, publicly reachable pages for the same three documents the
 // sign-up reading pop-up shows (src/components/auth/ReadingPopup.jsx),
@@ -66,10 +67,11 @@ export default function LegalDocumentPage() {
         .ui-root .legal-page-back {
           display: inline-flex;
           align-items: center;
+          gap: var(--icon-gap);
           min-height: var(--tap-min) !important;
           padding: 0 !important;
           font-family: var(--font-body);
-          font-size: 13px !important;
+          font-size: var(--fs-who) !important;
           color: var(--text-2);
           background: transparent;
           border: none;
@@ -80,7 +82,7 @@ export default function LegalDocumentPage() {
 
         .ui-root .legal-page-back:hover,
         .ui-root .legal-page-back:focus-visible {
-          color: var(--text);
+          color: var(--coral-text);
         }
 
         .legal-page-content {
@@ -141,7 +143,7 @@ export default function LegalDocumentPage() {
       `}</style>
 
       <div className="legal-page-topbar">
-        <Link to="/auth/login" className="legal-page-back">← Back</Link>
+        <Link to="/auth/login" className="legal-page-back"><Chevron direction="left" size="sm" /><span>Back</span></Link>
       </div>
 
       <div className="legal-page-content">

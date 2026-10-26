@@ -42,7 +42,7 @@ export default function SignUpStep1() {
       step={1}
       topBar="back"
       backTo="/auth/login"
-      backLabel="← Log in"
+      backLabel="Log in"
       align="left"
       headline="WHAT SHOULD WE CALL YOU?"
       sub="Your first and last name, please."

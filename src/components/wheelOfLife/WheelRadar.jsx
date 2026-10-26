@@ -1,18 +1,20 @@
-import { remap, sizeFor } from './wheelGeometry';
+import { areaTip, remap, sizeFor } from './wheelGeometry';
 import { WheelLabels } from './WheelLabels';
+import { tipProps } from '../design/ChartTips';
 
 // The radar wheel, ported line for line from the approved mock-up's
 // wheel() (wheel-of-life.html): five rings (2 to 10), spokes that stop
 // short of the centre like the crosshair in the mark, the latest check-in
-// as a coral shape with dots, the start of the range as a dashed grey
-// outline, check-ins in between as faint lines, and each target as a
+// as a shape in the text colour, the start of the range as a faint dashed
+// outline, green dots only on the areas that went up (Tim, 26 Oct: coral
+// is never a data colour), check-ins in between as faint lines, and each target as a
 // dashed soft-coral line with a small dot. Areas with no score draw only
 // the segments they have. Needs three or more areas; the pages draw the
 // sectional wheel instead when there are fewer (effectiveChartStyle).
 
 function lineStyle(cls) {
-  if (cls === 'now') return { style: { stroke: 'var(--coral)' }, strokeWidth: 2 };
-  if (cls === 'start') return { style: { stroke: 'var(--text-2)' }, strokeWidth: 1.5, strokeDasharray: '5 4' };
+  if (cls === 'now') return { style: { stroke: 'var(--text)' }, strokeWidth: 1.5 };
+  if (cls === 'start') return { style: { stroke: 'var(--placeholder)' }, strokeWidth: 1, strokeDasharray: '3 3' };
   return { style: { stroke: 'var(--wol-between)' }, strokeWidth: 1 };
 }
 
@@ -27,10 +29,12 @@ function lineStyle(cls) {
  * @param {boolean} [props.labels=false]
  * @param {boolean} [props.ticks=false] - the ring values 2, 4, 6, 8
  * @param {string} [props.aria]
+ * @param {string} [props.when] - the latest check-in's date, for the pop-ups ("Sat 3 Oct")
+ * @param {string} [props.startWhen] - the start of the range's date
  */
 export default function WheelRadar({
   areas, series, targets = null, labelValues = null, highlightKey = null,
-  size = 'mini', labels = false, ticks = false, aria = 'Wheel of Life',
+  size = 'mini', labels = false, ticks = false, aria = 'Wheel of Life', when, startWhen,
 }) {
   const o = sizeFor(size, true);
   const M = remap(areas, series, targets, labels ? labelValues : null);
@@ -96,8 +100,8 @@ export default function WheelRadar({
     const body = [];
     if (full) {
       const d = `${pts.map((p, j) => `${j ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('')}Z`;
-      if (sr.cls === 'now') body.push(<path key="p" d={d} style={{ fill: 'var(--coral)', stroke: 'var(--coral)' }} fillOpacity=".14" strokeWidth="2" strokeLinejoin="round" />);
-      else if (sr.cls === 'start') body.push(<path key="p" d={d} fill="none" style={{ stroke: 'var(--text-2)' }} strokeWidth="1.5" strokeDasharray="5 4" strokeLinejoin="round" />);
+      if (sr.cls === 'now') body.push(<path key="p" d={d} fill="none" style={{ stroke: 'var(--text)' }} strokeWidth="1.5" strokeLinejoin="round" />);
+      else if (sr.cls === 'start') body.push(<path key="p" d={d} fill="none" style={{ stroke: 'var(--placeholder)' }} strokeWidth="1" strokeDasharray="3 3" strokeLinejoin="round" />);
       else body.push(<path key="p" d={d} fill="none" style={{ stroke: 'var(--wol-between)' }} strokeWidth="1" strokeLinejoin="round" />);
     } else {
       // partial: draw segments between consecutive rated areas
@@ -110,7 +114,16 @@ export default function WheelRadar({
     }
     if (sr.cls === 'now') {
       pts.forEach((p, j) => {
-        if (p) body.push(<circle key={`d${j}`} cx={p[0].toFixed(1)} cy={p[1].toFixed(1)} r={hlIndex === j ? 4.5 : 3} style={{ fill: 'var(--coral)' }} />);
+        if (!p) return;
+        // A green dot only where the area went up.
+        if (M.rose[j]) body.push(<circle key={`d${j}`} cx={p[0].toFixed(1)} cy={p[1].toFixed(1)} r={hlIndex === j ? 4.5 : 3.5} style={{ fill: 'var(--good)' }} />);
+        // Every area can be hovered, tapped or reached with Tab for its
+        // pop-up (the full wheel only).
+        if (labels) {
+          body.push(
+            <circle key={`h${j}`} className="wol-hit" cx={p[0].toFixed(1)} cy={p[1].toFixed(1)} r="11" fill="transparent" {...tipProps(areaTip(M, j, { when, startWhen }))} />,
+          );
+        }
       });
     }
     return (
@@ -142,7 +155,7 @@ export default function WheelRadar({
   }
 
   return (
-    <svg className="wol-rw" viewBox={`0 0 ${o.w} ${o.h}`} role="img" aria-label={aria}>
+    <svg className="wol-rw" viewBox={`0 0 ${o.w} ${o.h}`} role={labels ? 'group' : 'img'} aria-label={aria}>
       {rings}
       {spokes}
       {tickLabels}

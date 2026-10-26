@@ -39,11 +39,9 @@ export default function Strategies() {
     updateFormData('strategies', newStrategies);
   };
 
-  const getNumberColor = (index) => {
-    if (index === 0) return 'var(--coral-text)';
-    if (index === 1) return 'var(--mint-text)';
-    return 'var(--text-2)';
-  };
+  // List numbers are neutral: coral is never a data colour and green
+  // only means good (Tim, 26 Oct).
+  const getNumberColor = () => 'var(--text-2)';
 
   return (
     <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
@@ -55,7 +53,7 @@ export default function Strategies() {
           <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
           <h2 className="ds-question">Now, what's your strategy?</h2>
           <div style={{ marginTop: '24px', width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
+            <div style={{ height: '100%', width: '75%', backgroundColor: 'var(--text)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
 

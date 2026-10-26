@@ -137,7 +137,7 @@ export default function GrowStep1Goal() {
 
         <div style={{ marginBottom: '32px' }}>
           <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', marginBottom: '24px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '25%', backgroundColor: 'var(--coral-text)', transition: 'width 0.3s ease' }} />
+            <div style={{ height: '100%', width: '25%', backgroundColor: 'var(--text)', transition: 'width 0.3s ease' }} />
           </div>
 
           {isLoading && <Loading label="Loading your decision" />}

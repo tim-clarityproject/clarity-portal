@@ -2,7 +2,7 @@ import { deltaView, formatCheckinDate } from '../../lib/wheelOfLife';
 
 // The Delta ("what moved") view, ported line for line from the approved
 // mock-up's delta() (wheel-of-life.html). Desktop: one row per area with a
-// bar from a centre line (rises to the right in coral, drops to the left in
+// bar from a centre line (rises to the right in green (Tim, 26 Oct), drops to the left in
 // neutral grey, no change as a small grey dot), biggest rise first, areas new
 // in the range at the bottom. Phone: grouped Rose, Dropped, No change, New
 // in this range, each with a count, with a full-width bar track. The sort
@@ -19,7 +19,7 @@ export default function WheelDelta({ range, areas, phone }) {
   if (!view) return null;
   const first = formatCheckinDate(view.firstDate);
   const last = formatCheckinDate(view.latestDate);
-  const startLatest = (r) => `${r.start == null ? 'None' : r.start} → ${r.latest}`;
+  const startLatest = (r) => (r.start == null ? `new, now ${r.latest}` : `from ${r.start} to ${r.latest}`);
 
   if (phone) {
     // each row's place in the whole list, for the bars' stagger (1, 2, 3...)

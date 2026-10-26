@@ -6,7 +6,7 @@ import { formatUkDate } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import pageText from '../content/pageText';
-import { Loading, PageHeader, Button } from '../components/design';
+import { Loading, PageHeader, Button, ChartTips, tipProps } from '../components/design';
 
 // Types with their own dedicated, design-system summary page now - an
 // old bookmark/link that still points here gets sent on rather than
@@ -277,7 +277,8 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
             Are you allocating your resources appropriately?
           </h2>
 
-          <svg viewBox="0 0 850 600" width="100%" style={{ backgroundColor: 'var(--raised)', display: 'block', margin: '0 auto', marginBottom: '32px', maxWidth: '100%', height: 'auto' }} onClick={() => setSelectedProjectIdx(null)}>
+          <ChartTips>
+          <svg viewBox="0 0 850 600" width="100%" style={{ backgroundColor: 'var(--raised)', display: 'block', margin: '0 auto', marginBottom: '32px', maxWidth: '100%', height: 'auto' }} onClick={(e) => { if (!e.target.closest('[data-tip]')) setSelectedProjectIdx(null); }}>
             {(() => {
               const svgWidth = 850, svgHeight = 600;
               const topPadding = 60, bottomPadding = 80, leftPadding = 90, rightPadding = 130;
@@ -297,10 +298,10 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
 
               return (
                 <g>
-                  <rect x={leftPadding} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="var(--coral)" opacity={hoveredQuadrant === 'topLeft' ? '0.15' : '0.08'} />
-                  <rect x={midX} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="var(--mint-text)" opacity={hoveredQuadrant === 'topRight' ? '0.2' : '0.12'} />
+                  <rect x={leftPadding} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="var(--label)" opacity={hoveredQuadrant === 'topLeft' ? '0.15' : '0.08'} />
+                  <rect x={midX} y={topPadding} width={plotWidth / 2} height={plotHeight / 2} fill="var(--good)" opacity={hoveredQuadrant === 'topRight' ? '0.2' : '0.12'} />
                   <rect x={leftPadding} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="var(--label)" opacity={hoveredQuadrant === 'bottomLeft' ? '0.15' : '0.08'} />
-                  <rect x={midX} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="var(--coral)" opacity={hoveredQuadrant === 'bottomRight' ? '0.12' : '0.05'} />
+                  <rect x={midX} y={midY} width={plotWidth / 2} height={plotHeight / 2} fill="var(--label)" opacity={hoveredQuadrant === 'bottomRight' ? '0.12' : '0.05'} />
                   <line x1={leftPadding} y1={midY} x2={svgWidth - rightPadding} y2={midY} stroke="var(--text-2)" strokeWidth="2" />
                   <line x1={midX} y1={topPadding} x2={midX} y2={svgHeight - bottomPadding} stroke="var(--text-2)" strokeWidth="2" />
                   {[1, 2, 3, 4, 5].map((tick) => (
@@ -318,16 +319,23 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
                       </g>
                     ) : null;
                   })}
-                  <text x={svgWidth / 2} y={svgHeight - 20} textAnchor="middle" fontSize="12" fill="var(--text-2)" fontWeight="500">Project progress →</text>
-                  <text x={20} y={svgHeight / 2} textAnchor="middle" fontSize="12" fill="var(--text-2)" fontWeight="500" transform={`rotate(-90 20 ${svgHeight / 2})`}>Strategic importance →</text>
+                  <text x={svgWidth / 2} y={svgHeight - 20} textAnchor="middle" fontSize="12" fill="var(--text-2)" fontWeight="500">Project progress</text>
+                  <text x={20} y={svgHeight / 2} textAnchor="middle" fontSize="12" fill="var(--text-2)" fontWeight="500" transform={`rotate(-90 20 ${svgHeight / 2})`}>Strategic importance</text>
                   {projectData.map((project, idx) => {
                     const x = scaleX(project.progress);
                     const y = scaleY(project.importance);
                     const isSelected = selectedProjectIdx === idx;
+                    // The name sits under its dot, kept inside the chart's edges.
+                    const half = (project.name.length * 6.5) / 2;
+                    const labelX = Math.min(svgWidth - 4 - half, Math.max(4 + half, x));
                     return (
-                      <g key={idx} onClick={(e) => { e.stopPropagation(); setSelectedProjectIdx(isSelected ? null : idx); }}>
-                        <circle cx={x} cy={y} r={isSelected ? 8 : 6} fill="var(--coral)" opacity={isSelected ? 1 : 0.7} style={{ cursor: 'pointer' }} />
-                        <text x={x} y={y + 16} textAnchor="middle" fontSize={isSelected ? '12' : '11'} fill={isSelected ? 'var(--coral-text)' : 'var(--text)'} fontWeight={isSelected ? '700' : '500'}>{project.name}</text>
+                      <g
+                        key={idx}
+                        {...tipProps({ kind: 'Project', name: project.name, extra: [`Progress ${project.progress} of 5.`, `Strategic importance ${project.importance}.`] })}
+                        onClick={() => setSelectedProjectIdx(isSelected ? null : idx)}
+                      >
+                        <circle cx={x} cy={y} r={isSelected ? 8 : 6} fill="var(--text)" stroke={isSelected ? 'var(--coral-text)' : 'none'} strokeWidth="2" opacity={isSelected ? 1 : 0.7} style={{ cursor: 'pointer' }} />
+                        <text x={labelX} y={y + 16} textAnchor="middle" fontSize={isSelected ? '12' : '11'} fill={isSelected ? 'var(--coral-text)' : 'var(--text)'} fontWeight={isSelected ? '700' : '500'}>{project.name}</text>
                       </g>
                     );
                   })}
@@ -335,15 +343,16 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
               );
             })()}
           </svg>
+          </ChartTips>
 
           <div style={{ padding: '24px', backgroundColor: 'var(--raised)', borderRadius: '12px', border: '1px solid var(--line)' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>What does each quadrant mean?</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-              <div style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
+              <div style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--coral-soft-text)' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--mint-text)' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
+              <div style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--good)' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
@@ -351,7 +360,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-text)' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
+              <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-soft-text)' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
                 <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>

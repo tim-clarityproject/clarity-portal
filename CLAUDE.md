@@ -108,13 +108,13 @@ Tim's PDF rules (26 Oct). Every PDF follows all 32. They are built into the shar
 
 15. **Fonts:** Nekst for the title, section headings (capitals, slightly letter-spaced) and big numbers (Nekst Light at 22pt and above); DM Sans for everything else. Body text 10pt with generous line spacing, lines no longer than about 62 characters, nothing smaller than 8.5pt. Words are never hyphenated across lines.
 16. **Light colours:** white page, near-black text (#111110), grey for details (#636362), pale grey lines (#DCDCD9), light grey panels (#F4F4F3). **Dark colours:** black page, white text, grey details (#A3A3A0), dark lines (#262626), dark panels (#111110) with a thin edge so they hold on a dim phone. (These live in `src/lib/pdf/theme.js`, the one place a PDF colour is written.)
-17. **Coral means good:** only for the title line and what is at or above the standard; below the standard is grey. Never coral text, and no mint (it prints poorly).
+17. **Green means good** (Tim, 26 Oct; was coral): what is at or above the standard is green, deep green #0B7A52 on light pages and mint #5FEFBB on dark pages (`good` in `src/lib/pdf/theme.js`); below the standard is grey. Coral is only the title line. Never coral or green text. Keys call it green ("Green: important and moving well").
 18. **Colour is never the only signal:** every bar has its value beside it and every chart has a key, so a black and white print still reads.
 19. **The writing rules apply** (as in this file): labels before numbers, UK spelling, dates like "Mon 26 Oct 2026", 24-hour times, no dashes, "Dr. Tim Dutton" and "The Clarity Project LTD" exactly so.
 
 **Parts**
 
-20. **Shared parts only:** title block, running header, footer, At a glance panel, contents list, section heading, text, table, bar chart, dot chart, list and signature block. No tool draws its own. (The dot chart, as in the Health Check: one dot per item on labelled axes split into four named quadrants; coral filled dots only in the good quadrant, grey outlines for the rest; each dot numbered, with names beside the dots only when none would touch a label, dot or line, otherwise a numbered list beside or under the chart; a key and a sentence after it.)
+20. **Shared parts only:** title block, running header, footer, At a glance panel, contents list, section heading, text, table, bar chart, dot chart, list and signature block. No tool draws its own. (The dot chart, as in the Health Check: one dot per item on labelled axes, divided by lines at the middle of each axis, with no quadrant names, as on the results page; green filled dots only for the good area, grey outlines for the rest; each dot numbered, with names beside the dots only when none would touch a label, dot or line, otherwise a numbered list beside or under the chart; a key and a sentence after it.)
 21. **Charts:** drawn to scale from zero, with the standard marked, values at the end of each bar, a key underneath, and a sentence after it saying what it means.
 22. **Tables:** thin lines between rows only, no boxes or fills, a grey header row, numbers lined up on the right.
 

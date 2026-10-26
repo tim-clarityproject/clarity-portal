@@ -637,8 +637,9 @@ html:has(.ui-root) {
 }
 
 .auth-checkbox.checked::before {
-  background: var(--coral);
-  border-color: var(--coral);
+  /* A ticked box fills mint, like every ticked box (Tim, 26 Oct). */
+  background: var(--good);
+  border-color: var(--good);
 }
 
 .auth-checkbox.error::before {
@@ -1285,7 +1286,8 @@ html:has(.ui-root) {
 }
 
 .plan-dq.on .plan-dq-num {
-  color: var(--coral-text);
+  /* Answered: neutral, never coral (coral is not a data colour; 26 Oct). */
+  color: var(--text);
 }
 
 .plan-dq-check {
@@ -1293,7 +1295,7 @@ html:has(.ui-root) {
   height: 13px;
   margin-top: 1px;
   fill: none;
-  stroke: var(--mint);
+  stroke: var(--good);
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2078,7 +2080,8 @@ html:has(.ui-root) {
 }
 
 .inv-stepper-lines i.on {
-  background: var(--coral);
+  /* Steps through a doing screen: neutral, in the text colour (26 Oct). */
+  background: var(--text);
 }
 
 .inv-stepper-label {
@@ -2183,7 +2186,7 @@ html:has(.ui-root) {
   width: 13px;
   height: 13px;
   fill: none;
-  stroke: var(--on-coral);
+  stroke: var(--on-good);
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2192,8 +2195,8 @@ html:has(.ui-root) {
 }
 
 .inv-card.ok .inv-card-check {
-  background: var(--mint);
-  border-color: var(--mint);
+  background: var(--good);
+  border-color: var(--good);
 }
 
 .inv-card.ok .inv-card-check svg {
@@ -2874,7 +2877,7 @@ span.tc-editable:focus-visible {
   width: 12px;
   height: 12px;
   fill: none;
-  stroke: var(--mint);
+  stroke: var(--good);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2883,7 +2886,7 @@ span.tc-editable:focus-visible {
 }
 
 .pop-tick--done {
-  border-color: var(--mint);
+  border-color: var(--good);
 }
 
 .pop-tick--done svg {
@@ -3351,8 +3354,9 @@ span.tc-editable:focus-visible {
 }
 
 .rate-dot--on {
-  background: var(--coral);
-  border-color: var(--coral);
+  /* A rating shown back: neutral, never coral (coral is not a data colour). */
+  background: var(--text);
+  border-color: var(--text);
 }
 
 .rate-dots-score {

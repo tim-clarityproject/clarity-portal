@@ -71,7 +71,7 @@ export default function CheckYourEmail() {
     <AuthShell
       topBar="back"
       backTo="/auth/login"
-      backLabel="← Log in"
+      backLabel="Log in"
       align="center"
       columnClassName="cc"
       beforeHeadline={<EnvelopeIcon />}

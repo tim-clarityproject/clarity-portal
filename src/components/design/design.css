@@ -2928,12 +2928,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.ui-root .ds-guide-back svg {
-  width: var(--cross-sm);
-  height: var(--cross-sm);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.4;
+.ui-root .ds-guide-back .ds-chevron {
+  width: var(--who-icon);
+  height: var(--who-icon);
 }
 
 .ui-root .ds-guide-back:hover {
@@ -3117,7 +3114,7 @@
     padding: 0 !important;
   }
 
-  .ui-root .ds-guide-back svg {
+  .ui-root .ds-guide-back .ds-chevron {
     width: var(--space-px18);
     height: var(--space-px18);
   }
@@ -3220,12 +3217,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.ui-root .ds-cal-nav svg {
-  width: var(--space-3);
-  height: var(--space-3);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
+.ui-root .ds-cal-nav .ds-chevron {
+  width: var(--who-icon);
+  height: var(--who-icon);
 }
 
 .ui-root .ds-cal-nav:disabled {

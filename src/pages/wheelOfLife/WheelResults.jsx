@@ -4,7 +4,7 @@ import DesignHeader from '../../components/DesignHeader';
 import pageText from '../../content/pageText';
 import DeleteDialog from '../../components/ui/DeleteDialog';
 import {
-  Button, Choice, DatePicker, EmptyState, PageHeader, useToast,
+  Button, ChartTips, Choice, DatePicker, EmptyState, PageHeader, useToast,
 } from '../../components/design';
 import WheelSectional from '../../components/wheelOfLife/WheelSectional';
 import WheelRadar from '../../components/wheelOfLife/WheelRadar';
@@ -57,36 +57,33 @@ export default function WheelResults() {
   );
 }
 
-function Legend({ style, range, hasTargets }) {
+// What the wheel shows, said in words under it (Tim, 26 Oct: no keys,
+// label things directly). One sentence per line. Every area also has
+// its own pop-up.
+function WheelWords({ style, range, hasTargets }) {
   const one = range.length === 1;
-  const first = range[0];
-  const last = range[range.length - 1];
-  const tl = hasTargets ? <span><i className="wol-tgt" />Your targets</span> : null;
+  const first = fd(range[0].date);
+  const last = fd(range[range.length - 1].date);
+  const lines = [];
   if (style === 'sectional') {
-    return (
-      <div className="wol-leg">
-        <span><i className="wol-f" />{`${fd(last.date)}${one ? '' : ' (latest)'}`}</span>
-        {one ? null : <span><i className="wol-s wol-w" />{`${fd(first.date)} (start)`}</span>}
-        {tl}
-      </div>
-    );
+    lines.push(`Each slice is filled to your score on ${last}.`);
+    if (!one) lines.push(`The faint line in each slice marks your score on ${first}, and green slices went up.`);
+    if (hasTargets) lines.push('The dashed arc is your target, and it turns green once reached.');
+  } else {
+    lines.push(`The outline is your latest check-in, on ${last}.`);
+    if (!one) lines.push(`The faint dashed outline is ${first}, and green dots show the areas that went up.`);
+    if (hasTargets) lines.push('The dotted line shows your targets.');
   }
   return (
-    <div className="wol-leg">
-      <span><i />{`${fd(last.date)}${one ? '' : ' (latest)'}`}</span>
-      {one ? null : (
-        <>
-          <span><i className="wol-s" />{`${fd(first.date)} (start)`}</span>
-          {range.length > 2 ? <span><i className="wol-o" />{`${range.length - 2} in between`}</span> : null}
-        </>
-      )}
-      {tl}
+    <div className="wol-words">
+      {lines.map((l) => <p key={l}>{l}</p>)}
     </div>
   );
 }
 
-function Stat({ label, value, note }) {
-  return <div><b>{label}</b><strong>{value}</strong><span>{note}</span></div>;
+// good: a rise, in green (Tim, 26 Oct).
+function Stat({ label, value, note, good = false }) {
+  return <div><b>{label}</b><strong className={good ? 'wol-good' : undefined}>{value}</strong><span>{note}</span></div>;
 }
 
 function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
@@ -248,8 +245,8 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
   } else {
     stats = (
       <>
-        <Stat label="Average" value={oneDecimal(s.average)} note={`${s.averageUp ? 'Up ' : 'Down '}${oneDecimal(s.averageMove)} from ${oneDecimal(s.averageFrom)}`} />
-        <Stat label="Biggest rise" value={s.biggestRise ? `+${s.biggestRise.change}` : 'None'} note={s.biggestRise ? name(s.biggestRise) : 'No rises'} />
+        <Stat label="Average" value={oneDecimal(s.average)} good={s.averageUp && s.averageMove > 0} note={`${s.averageUp ? 'Up ' : 'Down '}${oneDecimal(s.averageMove)} from ${oneDecimal(s.averageFrom)}`} />
+        <Stat label="Biggest rise" value={s.biggestRise ? `+${s.biggestRise.change}` : 'None'} good={!!s.biggestRise} note={s.biggestRise ? name(s.biggestRise) : 'No rises'} />
         <Stat label="Biggest drop" value={s.biggestDrop ? `${MINUS}${Math.abs(s.biggestDrop.change)}` : 'None'} note={s.biggestDrop ? name(s.biggestDrop) : 'No drops'} />
         {fourth || <Stat label="Lowest now" value={s.lowest ? s.lowest.score : 'None'} note={name(s.lowest)} />}
       </>
@@ -274,11 +271,19 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
           <div className="wol-seg" role="group" aria-label="Chart style">
             <button type="button" aria-pressed={view.style === 'sectional'} onClick={() => chooseStyle('sectional')}><SectionalIcon />Sectional</button>
             <i aria-hidden="true" />
-            <button type="button" aria-pressed={view.style === 'radar'} disabled={!view.radarAllowed} title={view.radarAllowed ? undefined : 'Radar needs at least three areas'} onClick={() => chooseStyle('radar')}><RadarIcon />Radar</button>
+            <button type="button" aria-pressed={view.style === 'radar'} disabled={!view.radarAllowed} aria-describedby={view.radarAllowed ? undefined : 'wol-why-radar'} onClick={() => chooseStyle('radar')}><RadarIcon />Radar</button>
             <i aria-hidden="true" />
-            <button type="button" aria-pressed={view.style === 'delta'} disabled={!view.deltaAllowed} title={view.deltaAllowed ? undefined : 'Delta needs two check-ins in the range'} onClick={() => chooseStyle('delta')}><DeltaIcon />Delta</button>
+            <button type="button" aria-pressed={view.style === 'delta'} disabled={!view.deltaAllowed} aria-describedby={view.deltaAllowed ? undefined : 'wol-why-delta'} onClick={() => chooseStyle('delta')}><DeltaIcon />Delta</button>
           </div>
         </div>
+        {/* Why a chart style can't be chosen, in words rather than the
+            browser's own hover label (Tim, 26 Oct). */}
+        {!view.radarAllowed || !view.deltaAllowed ? (
+          <div className="wol-why">
+            {!view.radarAllowed ? <p id="wol-why-radar">Radar needs at least three areas.</p> : null}
+            {!view.deltaAllowed ? <p id="wol-why-delta">Delta needs two check-ins in the date range.</p> : null}
+          </div>
+        ) : null}
 
         {view.style === 'delta' ? (
           <div key="delta" className="wol-panel wol-delta wol-enter">
@@ -286,6 +291,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
           </div>
         ) : (
           <div key={view.style} className="wol-wheel wol-enter">
+            <ChartTips>
             <Chart
               areas={areas}
               series={series}
@@ -295,8 +301,11 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
               labels
               ticks
               aria={`Wheel of Life, ${fd(last.date)}`}
+              when={fd(last.date)}
+              startWhen={one ? undefined : fd(first.date)}
             />
-            <Legend style={view.style} range={rg} hasTargets={hasTargets} />
+            </ChartTips>
+            <WheelWords style={view.style} range={rg} hasTargets={hasTargets} />
           </div>
         )}
 

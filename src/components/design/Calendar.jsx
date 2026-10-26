@@ -3,6 +3,7 @@ import DisclosureArrow from './DisclosureArrow';
 import FieldLabel from './FieldLabel';
 import Popover from './Popover';
 import { addDays, dayLabel, fromKey, fullDateLabel, MONTH_NAMES, todayKey, toKey } from './dates';
+import Chevron from './Chevron';
 import './design.css';
 
 // The branded calendar (decisions: "The 'By' date is picked from a
@@ -21,8 +22,9 @@ import './design.css';
 const WEEKDAYS = [['Mo', 'Monday'], ['Tu', 'Tuesday'], ['We', 'Wednesday'], ['Th', 'Thursday'],
   ['Fr', 'Friday'], ['Sa', 'Saturday'], ['Su', 'Sunday']];
 
-const CHEVRON_LEFT = <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>;
-const CHEVRON_RIGHT = <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>;
+// Previous and next month: the one chevron, turned (Tim, 26 Oct).
+const CHEVRON_LEFT = <Chevron direction="left" size="sm" />;
+const CHEVRON_RIGHT = <Chevron direction="right" size="sm" />;
 
 function monthStart(key) {
   const d = fromKey(key);
