@@ -3419,6 +3419,10 @@
   gap: var(--space-2);
 }
 
+.ui-root .ds-pdfmenu--end {
+  align-items: flex-end;
+}
+
 .ui-root .ds-pdfmessage {
   margin: 0;
   font-size: var(--fs-small);

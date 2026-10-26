@@ -166,7 +166,7 @@ export default function HealthCheck() {
   const [serverCompletedAt, setServerCompletedAt] = useState(null);
   const [pdf, setPdf] = useState({ busy: false, message: '' });
   const [emailState, setEmailState] = useState({ status: 'idle', sentTo: '' });
-  const [pdfMenu, setPdfMenu] = useState(null); // 'footer' | 'card' | null
+  const [pdfMenu, setPdfMenu] = useState(null); // 'footer' | null: the one Download PDF button's choice
   const footerMenuRef = useRef(null);
   const footerButtonRef = useRef(null);
   const notifyRef = useRef(false); // send the completion email after the completing save lands
@@ -703,12 +703,8 @@ export default function HealthCheck() {
       <div key="onepager" className="al-onepager">
         <OnePager
           draft={draft}
-          onDownloadPdf={handleDownloadPdf}
           onEmailLink={handleEmailLink}
           onCreateAccount={handleCreateAccount}
-          pdf={pdf}
-          pdfMenuOpen={pdfMenu === 'card'}
-          onPdfMenu={(open) => setPdfMenu(open ? 'card' : null)}
           email={emailState}
           onEdit={editSection}
           onOpenProject={openProject}
@@ -761,7 +757,7 @@ export default function HealthCheck() {
         )}
       </div>
       {onDone ? (
-        <div className="ds-pdfmenu" ref={footerMenuRef}>
+        <div className="ds-pdfmenu ds-pdfmenu--end" ref={footerMenuRef}>
           <AuthPrimaryButton
             ref={footerButtonRef}
             loading={pdf.busy}
@@ -778,6 +774,7 @@ export default function HealthCheck() {
             containerRef={footerMenuRef}
             returnFocusRef={footerButtonRef}
           />
+          {pdf.message && <p className="ds-pdfmessage" role="alert">{pdf.message}</p>}
         </div>
       ) : (
         <div className="al-foot-right">

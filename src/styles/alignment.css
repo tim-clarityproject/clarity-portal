@@ -1438,11 +1438,6 @@
   opacity: 0.7;
 }
 
-/* ---- Light / Dark choice: the shared PdfChoice (design.css) opens inside the card ---- */
-.ui-root .al-cardwrap--pdf {
-  position: relative;
-}
-
 .ui-root .al-cardnote {
   margin: 0;
   font-size: var(--fs-small);
