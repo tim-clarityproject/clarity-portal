@@ -227,7 +227,7 @@ export default function HistoryList({
                     {onReview && row.canReview !== false && (
                       <button
                         type="button"
-                        className={`hlist-review-btn${row.reviewed ? ' done' : ''}`}
+                        className="hlist-review-btn"
                         onClick={(e) => { e.stopPropagation(); onReview(row); }}
                       >
                         {row.reviewed ? 'View review' : 'Review'}
@@ -618,10 +618,6 @@ const HLIST_CSS = `
 .ui-root .hlist-review-btn:hover,
 .ui-root .hlist-review-btn:focus-visible {
   color: var(--text);
-}
-
-.ui-root .hlist-review-btn.done {
-  color: var(--mint-text);
 }
 
 .ui-root .hlist-review-btn:focus-visible {

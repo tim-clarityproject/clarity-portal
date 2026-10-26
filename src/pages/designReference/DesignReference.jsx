@@ -775,7 +775,6 @@ function Gallery() {
         <p className="dr-lead">Version 3: dark and light.</p>
         <p className="dr-lead">Every part of the portal is shown in both modes side by side, with its rules beside it.</p>
         <p className="dr-lead">Items marked “new” were added or changed in Phase 0b.</p>
-        <div className="dr-rule" aria-hidden="true" />
         <div className="dr-switches">
           <ColourModeChoice label="How should the portal look?" />
           <SegmentedControl
@@ -824,7 +823,7 @@ function Gallery() {
           <>
             <p><New /><b>No intro line under the title.</b></p>
             <p>The title is enough; any explanation sits behind the small “i”.</p>
-            <p>A quiet meta line, then the coral rule, once per page.</p>
+            <p>A quiet meta line under the title, and no coral line under it. PDFs keep theirs.</p>
           </>
         )} />
 

@@ -61,13 +61,6 @@
   margin-top: var(--space-1);
 }
 
-.ui-root .dr-rule {
-  width: var(--space-5);
-  height: var(--space-px2);
-  margin-top: var(--space-px20);
-  background: var(--coral-text);
-}
-
 .ui-root .dr-switches {
   display: flex;
   flex-wrap: wrap;

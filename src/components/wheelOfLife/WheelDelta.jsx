@@ -3,7 +3,7 @@ import { deltaView, formatCheckinDate } from '../../lib/wheelOfLife';
 // The Delta ("what moved") view, ported line for line from the approved
 // mock-up's delta() (wheel-of-life.html). Desktop: one row per area with a
 // bar from a centre line (rises to the right in coral, drops to the left in
-// soft coral, no change as a small grey dot), biggest rise first, areas new
+// neutral grey, no change as a small grey dot), biggest rise first, areas new
 // in the range at the bottom. Phone: grouped Rose, Dropped, No change, New
 // in this range, each with a count, with a full-width bar track. The sort
 // order and scale come from deltaView (src/lib/wheelOfLife.js).

@@ -1402,7 +1402,7 @@
 .ui-root .wol-db b.wol-up {
   left: 50%;
   border-radius: 0 3px 3px 0;
-  background: var(--text);
+  background: var(--coral); /* coral marks what is going well; falls stay neutral grey (Phase 0d) */
   transform-origin: left center;
 }
 
@@ -1559,7 +1559,7 @@
   transform-origin: left center;
 }
 
-.ui-root .wol-trk i.wol-up { background: var(--text); }
+.ui-root .wol-trk i.wol-up { background: var(--coral); }
 .ui-root .wol-trk i.wol-dn { background: var(--below); }
 
 .ui-root .wol-dpb small {
