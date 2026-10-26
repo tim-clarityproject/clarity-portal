@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useRef, useState, useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 import { isNetworkError, isOnline, subscribeOnline } from './connection';
 import { deviceKey, readJson, writeJson } from './deviceStore';
@@ -14,8 +14,11 @@ import { deviceKey, readJson, writeJson } from './deviceStore';
 // twice can never make two rows.
 
 const listeners = new Set();
-let flushing = false;
+let flushPromise = null;
 let currentUser = null;
+// Bumped by stopSyncQueue (Sign out), so a send already under way never
+// writes anything back to the device after it has been cleared.
+let epoch = 0;
 
 function key(userId) {
   return deviceKey('queue', userId);
@@ -26,8 +29,30 @@ function read(userId) {
 }
 
 function write(userId, items) {
-  writeJson(key(userId), items);
+  const ok = writeJson(key(userId), items);
   notify();
+  return ok;
+}
+
+/** Thrown when the device can't keep a save (storage full or blocked). */
+export class NoRoomError extends Error {
+  constructor() {
+    super('This device has no room to keep the save.');
+    this.name = 'NoRoomError';
+  }
+}
+
+// Worth trying again later: no connection, or the sign-in needs
+// refreshing first (an expired session sends the anonymous key, which the
+// database refuses). Anything else is the server really saying no.
+function retryable(error) {
+  if (isNetworkError(error)) return true;
+  if (error?.status === 401 || error?.code === 'PGRST301') return true;
+  return /jwt|token is expired|invalid claim/i.test(`${error?.message || ''}`);
+}
+
+function keep(userId, item) {
+  if (!write(userId, [...read(userId), item])) throw new NoRoomError();
 }
 
 function notify() {
@@ -67,24 +92,26 @@ async function perform(op) {
 
 /**
  * Sends a save now, or keeps it on the device when there's no connection.
- * Resolves { status: 'saved', data } or { status: 'queued' }. Rejects only
- * when the server answered with a real error (not a lost connection).
+ * Resolves { status: 'saved', data } or { status: 'queued', qid }. Rejects
+ * when the server answered with a real error, or with NoRoomError when the
+ * device can't keep it (so it is never shown as kept when it isn't).
  */
 export async function saveOrQueue(userId, op) {
   const item = { ...op, qid: newId(), at: Date.now() };
-  // Anything already waiting goes first, so saves never arrive out of order.
-  if (!isOnline() || read(userId).length > 0) {
-    write(userId, [...read(userId), item]);
+  // Anything still waiting goes first, so saves never arrive out of order
+  // (refused ones are set aside and don't hold the rest up).
+  if (!isOnline() || read(userId).some((x) => !x.failed)) {
+    keep(userId, item);
     if (isOnline()) flush(userId);
-    return { status: 'queued' };
+    return { status: 'queued', qid: item.qid };
   }
   try {
     const data = await perform(item);
     return { status: 'saved', data };
   } catch (error) {
-    if (isNetworkError(error)) {
-      write(userId, [...read(userId), item]);
-      return { status: 'queued' };
+    if (retryable(error)) {
+      keep(userId, item);
+      return { status: 'queued', qid: item.qid };
     }
     throw error;
   }
@@ -95,32 +122,66 @@ export async function saveOrQueue(userId, op) {
  * a lost connection) is kept aside under failed, so it is never retried
  * for ever and never silently dropped.
  */
-export async function flush(userId = currentUser) {
-  if (!userId || flushing || !isOnline()) return;
-  flushing = true;
-  try {
+export function flush(userId = currentUser) {
+  if (!userId || !isOnline()) return Promise.resolve();
+  // One send at a time; a second call waits for the one under way.
+  if (flushPromise) return flushPromise;
+  const mine = epoch;
+  flushPromise = (async () => {
     for (;;) {
-      const items = read(userId);
-      const item = items.find((x) => !x.failed);
+      if (mine !== epoch) break;
+      const item = read(userId).find((x) => !x.failed);
       if (!item) break;
+      // A session that expired while offline is refreshed first; until it
+      // is, nothing is sent (it would be refused as anonymous).
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data?.session) break;
+      } catch {
+        break;
+      }
       try {
         await perform(item);
+        if (mine !== epoch) break;
         write(userId, read(userId).filter((x) => x.qid !== item.qid));
       } catch (error) {
-        if (isNetworkError(error)) break;
+        if (retryable(error) || mine !== epoch) break;
         write(userId, read(userId).map((x) => (x.qid === item.qid ? { ...x, failed: true } : x)));
       }
     }
-  } finally {
-    flushing = false;
+  })().finally(() => {
+    flushPromise = null;
     notify();
-  }
+  });
+  return flushPromise;
 }
 
 /** Who is signed in: their waiting saves are sent on every reconnect. */
 export function startSyncQueue(userId) {
   currentUser = userId;
   if (userId) flush(userId);
+}
+
+/** Sign out: nothing more is sent, and nothing is written back. */
+export function stopSyncQueue() {
+  epoch += 1;
+  currentUser = null;
+}
+
+/**
+ * Once the person has been told a save was refused, it is set aside for
+ * good: its typing is still in the page's draft, so it comes back when the
+ * page is opened again, and it isn't announced on every start.
+ */
+export function dismissFailed(userId = currentUser) {
+  if (!userId) return;
+  const items = read(userId);
+  if (items.some((x) => x.failed)) write(userId, items.filter((x) => !x.failed));
+}
+
+/** After a refreshed sign-in, try again whatever waited for it. */
+export function retrySyncQueue() {
+  if (currentUser) flush(currentUser);
 }
 
 subscribeOnline((on) => {
@@ -152,13 +213,22 @@ export function useQueueState() {
 
 /**
  * For a page that saved while offline: 'offline' ("Will sync") while its
- * save waits on the device, then 'saved' once everything has gone; 'idle'
- * before anything was kept. Feed it to SaveStatus.
+ * own save waits on the device, 'saved' once the server has it, and
+ * 'failed' if the server refused it; 'idle' before anything was kept.
+ * Feed it to SaveStatus. markQueued takes the qid saveOrQueue returned.
  */
 export function useQueuedSave() {
-  const { waiting } = useQueueState();
-  const [queued, setQueued] = useState(false);
+  useQueueState(); // re-render whenever the queue changes
+  const [qid, setQid] = useState(null);
+  // Once refused, always refused: a refused save set aside later
+  // (dismissFailed) must never then read as saved.
+  const refused = useRef(new Set());
   let state = 'idle';
-  if (queued) state = waiting > 0 ? 'offline' : 'saved';
-  return [state, () => setQueued(true)];
+  if (qid) {
+    const item = read(currentUser).find((x) => x.qid === qid);
+    if (item?.failed) refused.current.add(qid);
+    if (refused.current.has(qid)) state = 'failed';
+    else state = item ? 'offline' : 'saved';
+  }
+  return [state, (id) => setQid(id)];
 }

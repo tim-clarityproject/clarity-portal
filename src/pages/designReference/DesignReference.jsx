@@ -380,6 +380,7 @@ function ChartsDemo() {
         </div>
       </div>
       <WeekChart weeks={DEMO_WEEKS} standard={85} label="Performance score by week" />
+      <span className="dr-small">Before the first week is finished:</span>
       <WeekChart weeks={DEMO_WEEKS.map((w) => ({ ...w, value: null, now: false }))} standard={85} label="Average hours a night, week by week" empty="Your graph starts here after your first week." />
     </div>
   );

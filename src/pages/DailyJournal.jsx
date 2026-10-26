@@ -11,6 +11,7 @@ import { discardJournalDraft } from '../lib/discardDraft';
 import { useDraft } from '../lib/drafts';
 import { isNetworkError, isOnline } from '../lib/connection';
 import { saveOrQueue, useQueuedSave } from '../lib/syncQueue';
+import { readCache, writeCache } from '../lib/pageCache';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
@@ -80,6 +81,11 @@ export default function DailyJournal() {
   const [isSaving, setIsSaving] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [syncState, markQueued] = useQueuedSave();
+  // Whether what is saved for this day is known (from the server or the
+  // device's copy). If not, saving now could replace writing already
+  // there, so the save waits until the day has loaded.
+  const [serverKnown, setServerKnown] = useState(false);
+  const savingRef = useRef(false);
   const toast = useToast();
   const lastInputRef = useRef(null);
   const focusLastRef = useRef(false);
@@ -87,17 +93,28 @@ export default function DailyJournal() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const show = (row) => {
+        setExistingId(row.id);
+        setExistingStatus(row.status === 'draft' ? 'draft' : 'final');
+        setBlocks(row.body?.length ? row.body : [textBlock('')]);
+        setSaveStatus(row.status === 'draft' ? 'Draft saved' : 'Saved');
+      };
       try {
         const row = await loadJournalByDate(user.id, dateKey);
         if (cancelled) return;
-        if (row) {
-          setExistingId(row.id);
-          setExistingStatus(row.status === 'draft' ? 'draft' : 'final');
-          setBlocks(row.body?.length ? row.body : [textBlock('')]);
-          setSaveStatus(row.status === 'draft' ? 'Draft saved' : 'Saved');
-        }
+        // A copy on the device, so the day opens offline too.
+        writeCache(user.id, `journal:${dateKey}`, row || null);
+        setServerKnown(true);
+        if (row) show(row);
       } catch (error) {
         console.error('[DailyJournal] load failed:', error);
+        if (cancelled) return;
+        // Offline: show the copy from the last visit, if there is one.
+        const cached = readCache(user.id, `journal:${dateKey}`);
+        if (cached) {
+          setServerKnown(true);
+          if (cached.v) show(cached.v);
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -124,6 +141,12 @@ export default function DailyJournal() {
   useEffect(() => {
     try { sessionStorage.removeItem(legacyDraftKey); } catch { /* ignore */ }
   }, [legacyDraftKey]);
+
+  // A save that waited on the device has reached the server: the draft
+  // can go. (A refused one keeps it, so the writing comes back.)
+  useEffect(() => {
+    if (syncState === 'saved') clearDraft();
+  }, [syncState, clearDraft]);
 
   useEffect(() => {
     if (focusLastRef.current) {
@@ -163,6 +186,10 @@ export default function DailyJournal() {
       return null;
     }
     const status = draft ? 'draft' : 'final';
+    if (!serverKnown) {
+      toast.error('This day hasn’t loaded, so saving now could replace what’s already there. Your writing is kept on this device; save it when you’re back online.');
+      return null;
+    }
     let saved;
     try {
       if (!isOnline()) throw new TypeError('Failed to fetch: offline');
@@ -172,7 +199,7 @@ export default function DailyJournal() {
       // No connection: keep it on the device and send it when the
       // connection is back ("Will sync", then "Saved"). One journal per
       // person per day, so sending it twice can never make two.
-      await saveOrQueue(user.id, {
+      const queued = await saveOrQueue(user.id, {
         table: 'daily_journals',
         kind: 'upsert',
         onConflict: 'user_id,journal_date',
@@ -185,19 +212,23 @@ export default function DailyJournal() {
           updated_at: new Date().toISOString(),
         },
       });
-      markQueued();
-      clearDraft();
+      // The draft stays until the server has it (cleared below).
+      markQueued(queued.qid);
+      writeCache(user.id, `journal:${dateKey}`, { id: existingId, body: blocks, status });
       setExistingStatus(status);
       return { queued: true };
     }
     setExistingId(saved.id);
     setExistingStatus(status);
+    writeCache(user.id, `journal:${dateKey}`, saved);
     clearDraft();
     return saved;
   };
 
   const handleSaveJournal = async () => {
-    if (isSaving) return;
+    // A double tap starts one save, not two.
+    if (isSaving || savingRef.current) return;
+    savingRef.current = true;
     setIsSaving(true);
     try {
       const saved = await persist(false);
@@ -207,12 +238,15 @@ export default function DailyJournal() {
       console.error('[DailyJournal] save failed:', error);
       toast.error('That didn’t save. Check your connection and try again.');
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   };
 
   const handleSaveDraft = async () => {
-    if (isSaving) return;
+    // A double tap starts one save, not two.
+    if (isSaving || savingRef.current) return;
+    savingRef.current = true;
     setIsSaving(true);
     try {
       const saved = await persist(true);
@@ -225,6 +259,7 @@ export default function DailyJournal() {
       console.error('[DailyJournal] draft save failed:', error);
       toast.error('That didn’t save. Check your connection and try again.');
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   };

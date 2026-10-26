@@ -2886,7 +2886,13 @@ span.tc-editable:focus-visible {
 }
 
 .pop-tick--done {
+  /* A ticked box fills mint (Tim, 26 Oct), its tick in --on-good. */
   border-color: var(--good);
+  background: var(--good);
+}
+
+.pop-tick--done svg {
+  stroke: var(--on-good);
 }
 
 .pop-tick--done svg {

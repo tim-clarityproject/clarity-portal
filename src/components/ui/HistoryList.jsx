@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import pageText from '../../content/pageText';
-import { Button, Dropdown, EmptyState, FilterButton, PageHeader, keepsHappeningLine, useCoach } from '../design';
+import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, keepsHappeningLine, useCoach } from '../design';
 
 // LIST ROW GUIDELINES (guidelines to apply by default; a mock-up wins
 // where it shows a detail). On phone every row of every list is built
@@ -191,7 +191,9 @@ export default function HistoryList({
       <div className="hlist-tools">
         <span>{filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}</span>
         <button type="button" className="hlist-sort-link" onClick={() => setSortOrder((o) => (o === 'new' ? 'old' : 'new'))}>
-          {sortOrder === 'new' ? 'Newest first' : 'Oldest first'} ⇅
+          {sortOrder === 'new' ? 'Newest first' : 'Oldest first'}
+          {/* The one chevron (Tim, 26 Oct): down for newest first, up for oldest first. */}
+          <Chevron direction={sortOrder === 'new' ? 'down' : 'up'} size="sm" />
         </button>
       </div>
 
@@ -330,6 +332,9 @@ const HLIST_CSS = `
 }
 
 .ui-root .hlist-sort-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--icon-gap);
   min-height: var(--tap-min);
   padding: 0 !important;
   background: transparent;

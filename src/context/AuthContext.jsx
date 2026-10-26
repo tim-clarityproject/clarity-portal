@@ -4,7 +4,7 @@ import { sessionManager } from '../lib/sessionManager';
 import { dataSyncManager } from '../lib/dataSyncManager';
 import { diag } from '../utils/diag';
 import { clearAppStorage } from '../lib/clearAppStorage';
-import { flush as flushQueue, startSyncQueue } from '../lib/syncQueue';
+import { flush as flushQueue, queueState, retrySyncQueue, startSyncQueue, stopSyncQueue } from '../lib/syncQueue';
 import { friendlyError } from '../lib/friendlyError';
 
 // The session kept on this device (supabase.js storageKey), read directly
@@ -47,7 +47,19 @@ export function AuthProvider({ children }) {
           }
         }
 
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // A session that needs refreshing over a slow or absent connection
+        // can take many seconds; after 2 the app opens from the session on
+        // the device instead (Tim, 26 Oct: a calm screen within 2 seconds).
+        const settled = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise((resolve) => { setTimeout(() => resolve(null), 2000); }),
+        ]);
+        if (!settled && storedSessionUser()) {
+          console.log('[AuthContext] - Session refresh still waiting; opening from the device.');
+          setUser(storedSessionUser());
+          return;
+        }
+        const { data: { session }, error } = settled || { data: { session: null }, error: null };
         console.log('[AuthContext] - getSession() returned:', !!session, 'error:', error?.message || 'none');
         if (session) {
           console.log('[AuthContext] - Session user email:', session.user?.email);
@@ -178,6 +190,9 @@ export function AuthProvider({ children }) {
             // Silently handle profile update errors
           }
         }
+
+        // A refreshed sign-in: send whatever waited for it.
+        if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') retrySyncQueue();
 
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           try {
@@ -343,11 +358,19 @@ export function AuthProvider({ children }) {
     clearAppStorage();
   };
 
-  const logout = async () => {
+  // Sign out. Saves still waiting are sent first; if any can't be sent
+  // (no connection), the person stays signed in and is told, so nothing
+  // is thrown away (Tim, 26 Oct). force: deleting the account.
+  // Resolves { signedOut: true } or { pending: n }.
+  const logout = async ({ force = false } = {}) => {
+    if (!force) {
+      await Promise.race([flushQueue(), new Promise((resolve) => { setTimeout(resolve, 20000); })]);
+      const { waiting } = queueState();
+      if (waiting > 0) return { pending: waiting };
+    }
     setIsLoading(true);
     try {
-      // Send anything still waiting before the device is cleared.
-      await Promise.race([flushQueue(), new Promise((resolve) => { setTimeout(resolve, 4000); })]);
+      stopSyncQueue();
       clearUserDrafts();
       await auth.signOut();
       sessionManager.clearSession();
@@ -357,6 +380,7 @@ export function AuthProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
+    return { signedOut: true };
   };
 
   return (

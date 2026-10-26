@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -53,6 +53,8 @@ export default function IfThenPlanning() {
   const [loaded, setLoaded] = useState(!location.state?.decisionId);
   const [draftName] = useState(() => `if-then:${location.state?.decisionId || 'new'}`);
   const [syncState, markQueued] = useQueuedSave();
+  // A double tap starts one save, not two.
+  const savingRef = useRef(false);
 
   // Typing survives a refresh or a closed tab (Tim, 26 Oct).
   const { clear: clearDraft } = useDraft({
@@ -68,6 +70,12 @@ export default function IfThenPlanning() {
       }
     },
   });
+
+  // A save that waited on the device has reached the server: the draft
+  // can go. (A refused one keeps it, so the typing comes back.)
+  useEffect(() => {
+    if (syncState === 'saved') clearDraft();
+  }, [syncState, clearDraft]);
 
   useEffect(() => {
     if (!decisionId || !user || loaded) return;
@@ -122,13 +130,16 @@ export default function IfThenPlanning() {
     // back ("Will sync", then "Saved").
     const result = await saveDecisionOrQueue({ userId: user.id, decisionId, toolType: 'if_then_planning', payload });
     setDecisionId(result.id);
-    clearDraft();
-    if (result.status === 'queued') markQueued();
+    // The draft stays until the server has it: a save waiting on the
+    // device is cleared once it has gone (below), and kept if refused.
+    if (result.status === 'queued') markQueued(result.qid);
+    else clearDraft();
     return result;
   };
 
   const handleNameConfirm = async (name) => {
-    if (!user || isSaving) return;
+    if (!user || isSaving || savingRef.current) return;
+    savingRef.current = true;
     const mode = nameDialog;
     setSaveError('');
     setIsSaving(true);
@@ -153,6 +164,7 @@ export default function IfThenPlanning() {
       setNameDialog(null);
       setSaveError('That didn’t save. Check your connection and try again.');
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   };

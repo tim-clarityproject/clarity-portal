@@ -28,7 +28,7 @@ export default function WheelDelta({ range, areas, phone }) {
       <>
         {view.groups.map((g, gi) => (
           <div className="wol-dg" key={g.label}>
-            <span className="wol-dgl">{`${g.label} · ${g.rows.length}`}</span>
+            <span className="wol-dgl">{`${g.label} (${g.rows.length})`}</span>
             {g.rows.map((r, ri) => {
               const k = offsets[gi] + ri + 1;
               return (

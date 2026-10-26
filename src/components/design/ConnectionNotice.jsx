@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useOnline } from '../../lib/connection';
-import { useQueueState } from '../../lib/syncQueue';
+import { dismissFailed, useQueueState } from '../../lib/syncQueue';
 import { onDraftRestored } from '../../lib/drafts';
 import { useToast } from './toastContext';
 import './design.css';
@@ -29,12 +29,17 @@ export default function ConnectionNotice() {
     }
     if (hadWaiting.current && online) {
       hadWaiting.current = false;
-      toast.show('Saved');
+      // "Saved" only when nothing was refused on the way.
+      if (failed <= shownFailed.current) toast.show('Saved');
     }
-  }, [waiting, online, toast]);
+  }, [waiting, online, failed, toast]);
 
   useEffect(() => {
-    if (failed > shownFailed.current) toast.error('One change didn’t save. Open it again and save it once more.');
+    if (failed > shownFailed.current) {
+      toast.error('One change didn’t save. Open it again: your typing is still there, so save it once more.');
+      // Told once; the page's own "didn't save" line has had its moment.
+      setTimeout(dismissFailed, 8000);
+    }
     shownFailed.current = failed;
   }, [failed, toast]);
 

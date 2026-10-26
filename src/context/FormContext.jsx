@@ -36,7 +36,7 @@ export function FormProvider({ children }) {
 
   // Clean up any old localStorage data on provider mount
   useEffect(() => {
-    localStorage.removeItem('clarity_form_data');
+    try { localStorage.removeItem('clarity_form_data'); } catch { /* storage blocked */ }
   }, []);
 
   // Typing survives a refresh or a closed tab (Tim, 26 Oct): the form is
@@ -46,14 +46,15 @@ export function FormProvider({ children }) {
   // is in place before any page underneath runs its own start-up code
   // (an effect here would run after the page's, which could clear it).
   const [restoredUser, setRestoredUser] = useState(null);
-  if (userId && restoredUser !== userId) {
+  // A different person (or nobody, after Sign out) never sees the last
+  // person's form: it starts empty, then takes the new person's own draft.
+  if (restoredUser !== userId) {
     setRestoredUser(userId);
     restoredFor.current = userId;
-    const draft = readDraft(userId, DRAFT_NAME);
-    if (draft?.v?.formData) {
-      setFormData({ ...DEFAULT_FORM_DATA, ...draft.v.formData });
-      setLoadedDecisionId(draft.v.decisionId ?? null);
-    }
+    const draft = userId ? readDraft(userId, DRAFT_NAME) : null;
+    setFormData(draft?.v?.formData ? { ...DEFAULT_FORM_DATA, ...draft.v.formData } : DEFAULT_FORM_DATA);
+    setLoadedDecisionId(draft?.v?.decisionId ?? null);
+    setDirtyFields(new Set());
   }
 
   // "Draft restored", once, when a form page is what opened.

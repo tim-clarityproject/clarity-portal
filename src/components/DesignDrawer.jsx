@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { findTodaysDailyPlan } from '../lib/planReview';
-import { DisclosureArrow } from './design';
+import { DisclosureArrow, useToast } from './design';
 
 // Plan now absorbs the old Decide section. Each sub-link lists the extra
 // routes that count as "current" for it (its own child/summary/step pages).
@@ -198,6 +198,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
+  const toast = useToast();
   const [shouldRender, setShouldRender] = useState(false);
   const [openSection, setOpenSection] = useState(null);
   const drawerRef = useRef(null);
@@ -295,7 +296,11 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
   if (!shouldRender) return null;
 
   const handleLogout = async () => {
-    await logout();
+    const result = await logout();
+    if (result?.pending) {
+      toast.error(`${result.pending === 1 ? 'One change hasn’t' : `${result.pending} changes haven’t`} been sent yet, so you’re still signed in. Connect to the internet, wait for Saved, then sign out.`);
+      return;
+    }
     onClose();
     navigate('/');
   };

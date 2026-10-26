@@ -158,7 +158,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
   };
 
   let summary;
-  if (rg.length > 1) summary = <>Comparing <b>{fd(rg[0].date)}</b> with <b>{fd(rg[rg.length - 1].date)}</b>{` · ${rg.length} check-ins`}</>;
+  if (rg.length > 1) summary = <>Comparing <b>{fd(rg[0].date)}</b> with <b>{fd(rg[rg.length - 1].date)}</b>{`, across ${rg.length} check-ins.`}</>;
   else if (rg.length === 1) summary = <>One check-in in this range, <b>{fd(rg[0].date)}</b>. Widen the range to compare.</>;
   else summary = 'No check-ins in this range.';
 
@@ -230,7 +230,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
   if (s.targets) {
     fourth = s.targets.allMet
       ? <Stat label="Targets" value="All met" note={`${s.targets.onTarget} of ${s.targets.withTarget} on target`} />
-      : <Stat label="Furthest from target" value={`${s.targets.gap} below`} note={`${areaName(s.targets.area)} · ${s.targets.onTarget} of ${s.targets.withTarget} on target`} />;
+      : <Stat label="Furthest from target" value={`${s.targets.gap} below`} note={`${areaName(s.targets.area)} has the furthest to go. ${s.targets.onTarget} of ${s.targets.withTarget} areas are on target.`} />;
   }
   let stats;
   if (one) {
@@ -340,7 +340,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
                 <span className="wol-nm">
                   {row.name}
                   {row.own ? <small className="wol-was">{`Your own area${row.addedSince ? `, added since ${row.addedSince}` : ''}`}</small> : null}
-                  {row.target != null ? <small className="wol-tgm">{`Target ${row.target}`}{tg ? <>{' · '}{tg}</> : null}</small> : null}
+                  {row.target != null ? <small className="wol-tgm">{`Target ${row.target}`}{tg ? <>{', '}{tg}</> : null}</small> : null}
                 </span>
                 <span className="wol-ch">
                   <span className="wol-v wol-v--s">{one ? '' : (row.isNew ? 'None' : row.start)}</span>

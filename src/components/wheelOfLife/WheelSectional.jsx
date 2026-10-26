@@ -5,8 +5,8 @@ import { tipProps } from '../design/ChartTips';
 
 // The sectional wheel, ported line for line from the approved mock-up's
 // sectional() (wheel-of-life.html): round slices with a hole in the
-// middle, ten bands per slice in a tonal ramp of the text colour (coral
-// is never a data colour, Tim 26 Oct), empty bands as faint dots, the
+// middle, ten bands per slice in the flat text colour, green for an area
+// that went up (coral is never a data colour and no gradients, Tim 26 Oct), empty bands as faint dots, the
 // start of the range as a faint hairline arc, the target as a dashed arc
 // just outside its band (grey, green once reached), a
 // dial rim with ticks, and the average number in the centre (or an empty hub
@@ -84,7 +84,7 @@ export default function WheelSectional({
       const r0 = H + (k - 1) * bw + 0.6;
       const r1 = H + k * bw - 0.6;
       if (v != null && k <= v) {
-        parts.push(<path key={`b${k}`} d={ring(a1, a2, r0, r1)} style={{ fill: M.rose[i] ? 'var(--good)' : 'var(--text)' }} fillOpacity={(0.32 + (0.68 * k) / v).toFixed(2)} />);
+        parts.push(<path key={`b${k}`} d={ring(a1, a2, r0, r1)} style={{ fill: M.rose[i] ? 'var(--good)' : 'var(--text)' }} />);
       } else {
         const m = pt(c, (r0 + r1) / 2);
         parts.push(<circle key={`b${k}`} cx={m[0]} cy={m[1]} r={R > 100 ? 1.1 : 0.9} style={{ fill: hl ? 'var(--placeholder)' : 'var(--wol-dot)' }} />);

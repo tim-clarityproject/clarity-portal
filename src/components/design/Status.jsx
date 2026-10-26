@@ -36,13 +36,18 @@ export function WillSyncIndicator() {
 }
 
 // One place on a page for the current state, announced politely to
-// screen readers. state: 'saving' | 'saved' | 'offline' | 'idle'.
+// screen readers. state: 'saving' | 'saved' | 'offline' | 'failed' | 'idle'.
+// 'failed': a save kept on the device that the server then refused; the
+// typing is still on the page, so it can be saved again.
 export function SaveStatus({ state }) {
   return (
     <span role="status" aria-live="polite">
       {state === 'saving' && <SavingIndicator />}
       {state === 'saved' && <SavedIndicator />}
       {state === 'offline' && <WillSyncIndicator />}
+      {state === 'failed' && (
+        <span className="ds-status ds-status--failed">That didn’t save. Your writing is still here, so save it again.</span>
+      )}
     </span>
   );
 }

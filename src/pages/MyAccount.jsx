@@ -56,7 +56,11 @@ export default function MyAccount() {
   }, [location.state?.openEditMission]);
 
   const handleLogout = async () => {
-    await logout();
+    const result = await logout();
+    if (result?.pending) {
+      toast.error(`${result.pending === 1 ? 'One change hasn’t' : `${result.pending} changes haven’t`} been sent yet, so you’re still signed in. Connect to the internet, wait for Saved, then sign out.`);
+      return;
+    }
     navigate('/');
   };
 
@@ -135,7 +139,7 @@ export default function MyAccount() {
         return;
       }
 
-      await logout();
+      await logout({ force: true });
       clearAppStorage();
 
       toast.show('Your account has been deleted.');

@@ -6,24 +6,24 @@ import { newId, saveOrQueue } from './syncQueue';
 // device and sent when the connection is back (syncQueue.js); a new plan
 // gets its id on the device, so later saves update the same row.
 //
-// Resolves { id, status: 'saved' | 'queued' }. Rejects only when the
+// Resolves { id, status: 'saved' | 'queued', qid }. Rejects only when the
 // server answered with a real error.
 export async function saveDecisionOrQueue({ userId, decisionId, toolType, payload }) {
   if (decisionId) {
-    const { status } = await saveOrQueue(userId, {
+    const { status, qid } = await saveOrQueue(userId, {
       table: 'decisions',
       kind: 'update',
       values: payload,
       match: { id: decisionId, user_id: userId },
     });
-    return { id: decisionId, status };
+    return { id: decisionId, status, qid };
   }
   const id = newId();
-  const { status } = await saveOrQueue(userId, {
+  const { status, qid } = await saveOrQueue(userId, {
     table: 'decisions',
     kind: 'upsert',
     onConflict: 'id',
     values: { id, user_id: userId, tool_type: toolType, ...payload },
   });
-  return { id, status };
+  return { id, status, qid };
 }

@@ -212,7 +212,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
         style={{
           padding: '12px',
           backgroundColor: 'transparent',
-          color: 'var(--coral-text)',
+          color: 'var(--label)',
           border: 'none',
           borderRadius: '8px',
           cursor: 'pointer',
@@ -227,7 +227,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'transparent';
-          e.currentTarget.style.color = 'var(--coral-text)';
+          e.currentTarget.style.color = 'var(--label)';
         }}
       >
         <Trash2 size={20} />

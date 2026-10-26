@@ -164,6 +164,10 @@ export function layoutChart(rows, mode, measure, opts = {}) {
       const sc = hit(k.b) * 10 + k.pen;
       if (sc < bestScore) { bestScore = sc; best = k; }
     });
+    // A name that would touch another name, a dot or a line is left off
+    // (as the PDF rule 20): the dot's number, its pop-up and the table
+    // below still say which project it is.
+    if (hit(best.b) > 0) return;
     labs.push({ ...best, p, text: lines.join(' '), lines });
   });
 

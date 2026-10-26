@@ -3936,3 +3936,8 @@
   justify-content: center;
   background: var(--bg);
 }
+
+/* A save the server refused after it waited on the device. */
+.ui-root .ds-status--failed {
+  color: var(--coral-soft-text);
+}

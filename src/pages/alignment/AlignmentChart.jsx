@@ -158,7 +158,7 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
               data-tip={JSON.stringify({
                 kind: `Project ${p.n}`,
                 name: p.text,
-                extra: [`Strategic importance ${roundPct(p.importance)}%.`, `Progress is ${PROGRESS_WORDS[p.progress - 1]}.`],
+                extra: [`Strategic importance ${roundPct(p.importance)}%.`, `Progress rated ${PROGRESS_WORDS[p.progress - 1]}.`],
               })}
               onMouseEnter={() => onHighlight(p.n)}
               onMouseLeave={() => onHighlight(null)}
