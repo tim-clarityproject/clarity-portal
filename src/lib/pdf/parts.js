@@ -448,15 +448,16 @@ function barsBlock(L, b, parent, maxH) {
 /**
  * A dot chart: one dot per item, placed by a category along the bottom (such
  * as progress) and a value from zero up the side (such as strategic
- * importance), split into four labelled quadrants by two centre lines. Dots in
- * the good quadrant are filled coral; the rest are grey outlines, so a black
+ * importance), split into four quadrants by two centre lines (named only when
+ * `quadrants` is given; the Health Check leaves them unnamed, as on its
+ * results page). Dots in the good quadrant are filled coral; the rest are grey outlines, so a black
  * and white print still tells them apart. Each dot holds its number. Names sit
  * beside the dots only when every one fits without touching another label, a
  * dot, a line or the edge; otherwise a numbered list sits beside or under the
  * chart. Never split across pages.
  *
  * b: { points: [{ n, label, x (1..k), y (0..yMax), good }], xLabels: [k words],
- *      yMax, xCentre, yCentre, axisX, axisY, quadrants: { topLeft, topRight,
+ *      yMax, xCentre, yCentre, axisX, axisY, quadrants?: { topLeft, topRight,
  *      bottomLeft, bottomRight }, keyGood, keyOther, listNote, sentence, alt }
  */
 function dotsBlock(L, b, parent, maxH) {
@@ -559,8 +560,8 @@ function dotsBlock(L, b, parent, maxH) {
   const listLines = (colW) => listRows.map((p) => ts.fit(`${p.n}. ${p.label}`, nameStyle, colW));
 
   const titleH = STYLES.smallMedium.lh + 4;
-  const bandH = tick.lh + 4;
-  const belowH = 4 + tick.lh + 4 + tick.lh + 4 + STYLES.smallMedium.lh;
+  const bandH = b.quadrants ? tick.lh + 4 : 0; // the quadrant names, when given
+  const belowH = 4 + tick.lh + bandH + 4 + STYLES.smallMedium.lh;
   const keyItems = [
     { good: true, text: b.keyGood },
     { good: false, text: b.keyOther },
@@ -628,8 +629,10 @@ function dotsBlock(L, b, parent, maxH) {
           const fitText = ts.fit(text, tick, c - a - 8);
           ts.draw(fitText, X((a + c) / 2 - ts.width(fitText, tick) / 2), Y(yy + ts.baseline(tick)), tick, t.detail);
         };
-        qLabel(b.quadrants.topLeft, halves[0], titleH);
-        qLabel(b.quadrants.topRight, halves[1], titleH);
+        if (b.quadrants) {
+          qLabel(b.quadrants.topLeft, halves[0], titleH);
+          qLabel(b.quadrants.topRight, halves[1], titleH);
+        }
         const fTop = gm.top;
         const fBot = gm.top + gm.plotH;
         // frame: the zero line and the side, then the centre lines with a
@@ -653,9 +656,11 @@ function dotsBlock(L, b, parent, maxH) {
           ts.draw(fitWord, X(tx - ts.width(fitWord, tick) / 2), Y(fBot + 4 + ts.baseline(tick)), tick, t.detail);
         });
         const bandY = fBot + 4 + tick.lh + 4;
-        qLabel(b.quadrants.bottomLeft, halves[0], bandY);
-        qLabel(b.quadrants.bottomRight, halves[1], bandY);
-        const axisXY = bandY + tick.lh + 4;
+        if (b.quadrants) {
+          qLabel(b.quadrants.bottomLeft, halves[0], bandY);
+          qLabel(b.quadrants.bottomRight, halves[1], bandY);
+        }
+        const axisXY = bandY + bandH;
         ts.draw(b.axisX, X(gm.Lx + gm.plotW / 2 - ts.width(b.axisX, s) / 2), Y(axisXY + ts.baseline(s)), s, t.text);
 
         // the dots, each with its number
