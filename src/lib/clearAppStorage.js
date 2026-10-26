@@ -1,8 +1,13 @@
+import { DEVICE_PREFIXES } from './deviceStore';
+
 // Removes everything this app itself keeps in the browser for a
 // signed-in person: legacy tool autosaves and saved progress, cached
-// profile data, journal and plan drafts, and the sign-up flags. Used on
-// log out and when an account is deleted, so the next person on the same
-// device is never offered the previous person's unfinished writing.
+// profile data, page copies, drafts, saves waiting to be sent, and the
+// sign-up flags. Used ONLY on a deliberate Sign out and when an account is
+// deleted, so the next person on the same device is never offered the
+// previous person's unfinished writing. Being offline, or a failed
+// sign-in refresh, never clears anything (Tim, 26 Oct); the device's
+// copies carry the person's id, so nobody else is shown them meanwhile.
 //
 // Deliberately NOT localStorage.clear(): it only touches keys the app
 // owns (exact names and the app's own patterns below). Supabase's own
@@ -21,6 +26,8 @@ const EXACT_KEYS = [
 
 function isAppOwnedKey(key) {
   if (EXACT_KEYS.includes(key)) return true;
+  // Page copies, drafts and saves waiting to be sent (deviceStore.js).
+  if (DEVICE_PREFIXES.some((prefix) => key.startsWith(prefix))) return true;
   // Journal, plan-edit and other drafts: clarity-<thing>-draft-<id>.
   if (key.startsWith('clarity-') && key.includes('-draft-')) return true;
   // dataSyncManager's per-tool saves: <toolType>-autosave / -progress.

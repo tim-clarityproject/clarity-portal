@@ -54,21 +54,21 @@
 
   /* Reduce h1 font size on mobile */
   h1 {
-    font-size: 28px !important;
+    font-size: calc(28 * var(--u, 1px)) !important;
     margin: 16px 0 !important;
     scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }
 
   /* Reduce h2 font size on mobile */
   h2 {
-    font-size: 18px !important;
+    font-size: calc(18 * var(--u, 1px)) !important;
     margin: 12px 0 8px !important;
     scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }
 
   /* Reduce h3 font size on mobile */
   h3 {
-    font-size: 16px !important;
+    font-size: calc(16 * var(--u, 1px)) !important;
     margin: 8px 0 4px !important;
     scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }
@@ -84,7 +84,7 @@
   button:not(.breathe-button) {
     min-height: 44px;
     padding: 12px 16px !important;
-    font-size: 14px !important;
+    font-size: calc(14 * var(--u, 1px)) !important;
   }
 
   /* Dropdown and select elements */
@@ -99,7 +99,7 @@
   input[type="password"],
   textarea {
     min-height: 44px;
-    font-size: 16px;
+    font-size: calc(16 * var(--u, 1px));
   }
 
   /* iOS keyboard handling - allow text selection and gesture-based manipulation */
@@ -114,7 +114,7 @@
 
   /* Ensure form labels are readable */
   label {
-    font-size: 14px;
+    font-size: calc(14 * var(--u, 1px));
   }
 
   /* Fix two-column form inputs on mobile - stack them */
@@ -162,7 +162,7 @@
 
   /* Table responsiveness */
   table {
-    font-size: 13px;
+    font-size: calc(13 * var(--u, 1px));
   }
 
   /* ====== Cards/Boxes ====== */
@@ -226,7 +226,7 @@
 
   /* Readable text sizes */
   body {
-    font-size: 16px !important;
+    font-size: calc(16 * var(--u, 1px)) !important;
   }
 
   /* Ensure proper text wrapping */

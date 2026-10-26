@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import AuthShell from '../components/auth/AuthShell';
 import { AuthPrimaryButton, AuthTextLink } from '../components/auth/AuthButton';
 import { ClockIcon } from './auth/ResetPassword';
+import { friendlyError } from '../lib/friendlyError';
 
 export default function EmailConfirmation() {
   const navigate = useNavigate();
@@ -139,7 +140,7 @@ export default function EmailConfirmation() {
       } catch (err) {
         console.error('Email confirmation exception:', err);
         setStatus('error');
-        setMessage(err.message || 'Your email wasn’t confirmed. Check your connection and try again.');
+        setMessage(friendlyError(err, 'Your email wasn’t confirmed. Check your connection and try again.'));
       }
     };
 

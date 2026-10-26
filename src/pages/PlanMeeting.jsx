@@ -8,7 +8,10 @@ import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import pageText from '../content/pageText';
-import { DatePicker, DisclosureArrow, PageHeader, TextBox, Button, useToast } from '../components/design';
+import { DatePicker, DisclosureArrow, PageHeader, SaveStatus, TextBox, Button, useToast } from '../components/design';
+import { useDraft } from '../lib/drafts';
+import { saveDecisionOrQueue } from '../lib/decisionSave';
+import { useQueuedSave } from '../lib/syncQueue';
 import { limitTitle, TITLE_TOO_LONG } from '../lib/titleLimit';
 
 const SECTION_OPTIONS = [
@@ -58,11 +61,40 @@ export default function PlanMeeting() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const toast = useToast();
+  // A plan opened from My Plans is ready once it has loaded; a new one at once.
+  const [loaded, setLoaded] = useState(!location.state?.decisionId);
+  const [draftName] = useState(() => `meeting:${location.state?.decisionId || 'new'}`);
+  const [syncState, markQueued] = useQueuedSave();
 
   const menuRef = useRef(null);
 
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct).
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: draftName,
+    value: { title, chair, date, time, objectives, flowItems, sections, meetingContext, preReads },
+    ready: loaded,
+    onRestore: (v) => {
+      setTitle(v.title || '');
+      setChair(v.chair || '');
+      setDate(v.date || '');
+      setTime(v.time || '');
+      setMeetingContext(v.meetingContext || '');
+      setPreReads(v.preReads || '');
+      if (v.sections) setSections(v.sections);
+      if (v.objectives?.length) {
+        setObjectives(v.objectives);
+        setNextObjectiveId(Math.max(...v.objectives.map((o) => o.id || 0)) + 1);
+      }
+      if (v.flowItems?.length) {
+        setFlowItems(v.flowItems);
+        setNextItemId(Math.max(...v.flowItems.map((i) => i.id || 0)) + 1);
+      }
+    },
+  });
+
   useEffect(() => {
-    if (!decisionId || !user) return;
+    if (!decisionId || !user || loaded) return;
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
@@ -74,6 +106,7 @@ export default function PlanMeeting() {
       if (cancelled) return;
       if (error) {
         console.error('[PlanMeeting] load failed:', error);
+        setLoaded(true);
         return;
       }
       const formData = data?.form_data || {};
@@ -92,8 +125,10 @@ export default function PlanMeeting() {
         setFlowItems(formData.flowItems);
         setNextItemId(Math.max(...formData.flowItems.map((i) => i.id || 0)) + 1);
       }
+      setLoaded(true);
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decisionId, user?.id]);
 
   useEffect(() => {
@@ -154,25 +189,13 @@ export default function PlanMeeting() {
       updated_at: new Date().toISOString(),
     };
 
-    if (decisionId) {
-      const { data, error } = await supabase
-        .from('decisions')
-        .update(payload)
-        .eq('id', decisionId)
-        .eq('user_id', user.id)
-        .select();
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error('Could not find this meeting to update.');
-      return decisionId;
-    }
-
-    const { data, error } = await supabase
-      .from('decisions')
-      .insert({ user_id: user.id, tool_type: 'plan_meeting', ...payload })
-      .select();
-    if (error) throw error;
-    if (!data || data.length === 0) throw new Error('Save did not return a meeting.');
-    return data[0].id;
+    // Offline, it is kept on the device and sent when the connection is
+    // back ("Will sync", then "Saved").
+    const result = await saveDecisionOrQueue({ userId: user.id, decisionId, toolType: 'plan_meeting', payload });
+    setDecisionId(result.id);
+    clearDraft();
+    if (result.status === 'queued') markQueued();
+    return result;
   };
 
   const handleFinish = async () => {
@@ -180,8 +203,9 @@ export default function PlanMeeting() {
     setSaveError('');
     setIsSaving(true);
     try {
-      const savedId = await persist(false);
-      navigate('/meeting-summary', { state: { decisionId: savedId, toast: 'Saved.' } });
+      const saved = await persist(false);
+      // Kept on the device for now: stay here, showing "Will sync".
+      if (saved.status === 'saved') navigate('/meeting-summary', { state: { decisionId: saved.id, toast: 'Saved.' } });
     } catch (error) {
       console.error('[PlanMeeting] Finish failed:', error);
       setSaveError('That didn’t save. Check your connection and try again.');
@@ -195,10 +219,11 @@ export default function PlanMeeting() {
     setSaveError('');
     setIsSaving(true);
     try {
-      const savedId = await persist(true);
-      setDecisionId(savedId);
-      toast.show('Draft saved.');
-      navigate('/my-plans');
+      const saved = await persist(true);
+      if (saved.status === 'saved') {
+        toast.show('Draft saved.');
+        navigate('/my-plans');
+      }
     } catch (error) {
       console.error('[PlanMeeting] Save as draft failed:', error);
       setSaveError('That didn’t save. Check your connection and try again.');
@@ -220,6 +245,7 @@ export default function PlanMeeting() {
         console.error('[PlanMeeting] draft delete on discard failed:', error);
       }
     }
+    clearDraft();
     navigate('/my-plans');
   };
 
@@ -447,6 +473,7 @@ export default function PlanMeeting() {
         </Button>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
+        <SaveStatus state={syncState} />
 
         <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
 

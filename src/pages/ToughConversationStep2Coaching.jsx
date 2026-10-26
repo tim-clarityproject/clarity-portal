@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
+import { useDraft } from '../lib/drafts';
 import { COACHING_QUESTIONS } from '../content/coachingQuestions';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
@@ -54,6 +55,26 @@ export default function ToughConversationStep2Coaching() {
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
   const toast = useToast();
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct). Nothing is
+  // loaded from the server here (the words arrive from step 1), so the
+  // draft is ready at once. Back hands the words to step 1 and clears
+  // this draft, so returning never brings older words over newer ones.
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `tough-conversation-2:${location.state?.decisionId || 'new'}`,
+    value: { observation, impact, need, selectedQuestions, customQuestion, editingField, editValue },
+    ready: true,
+    onRestore: (v) => {
+      setObservation(v.observation || '');
+      setImpact(v.impact || '');
+      setNeed(v.need || '');
+      setSelectedQuestions(Array.isArray(v.selectedQuestions) ? v.selectedQuestions : []);
+      setCustomQuestion(v.customQuestion || '');
+      setEditingField(v.editingField || null);
+      setEditValue(v.editValue || '');
+    },
+  });
 
   const displayObservation = cleanPhrase(observation, ['i\'ve noticed', 'i noticed', 'observed']);
   const displayImpact = cleanPhrase(impact, ['the impact of that is', 'the impact is', 'impact:', 'impacts:'], true);
@@ -129,10 +150,12 @@ export default function ToughConversationStep2Coaching() {
       if (mode === 'draft') {
         setDecisionId(savedId);
         clearProgress();
+        clearDraft();
         toast.show(`Draft saved as ${name}.`);
         navigate('/decision-history');
       } else {
         clearProgress();
+        clearDraft();
         navigate('/tough-conversation-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
       }
     } catch (error) {
@@ -145,6 +168,7 @@ export default function ToughConversationStep2Coaching() {
   };
 
   const handleBack = () => {
+    clearDraft();
     navigate('/tough-conversation-step-1', {
       state: { decisionId, observation, impact, need, selectedQuestions, customQuestion, problemTitle: currentTitle },
     });
@@ -164,6 +188,7 @@ export default function ToughConversationStep2Coaching() {
         console.error('[ToughConversationStep2Coaching] draft delete on discard failed:', error);
       }
     }
+    clearDraft();
     navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 

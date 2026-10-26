@@ -189,10 +189,10 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
     <>
       {formData.risks?.length > 0 && (
         <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>How it could go wrong</h2>
+          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>How it could go wrong</h2>
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
             {formData.risks.map((risk, idx) => (
-              <div key={idx} style={{ marginBottom: idx < formData.risks.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: '14px' }}>
+              <div key={idx} style={{ marginBottom: idx < formData.risks.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: 'calc(14 * var(--u, 1px))' }}>
                 <span>{idx + 1}.</span> {risk}
               </div>
             ))}
@@ -202,10 +202,10 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
 
       {formData.factors?.length > 0 && (
         <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Critical success factors</h2>
+          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Critical success factors</h2>
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
             {formData.factors.map((factor, idx) => (
-              <div key={idx} style={{ marginBottom: idx < formData.factors.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: '14px' }}>
+              <div key={idx} style={{ marginBottom: idx < formData.factors.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: 'calc(14 * var(--u, 1px))' }}>
                 <span>{String.fromCharCode(65 + idx)}.</span> {factor}
               </div>
             ))}
@@ -215,10 +215,10 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
 
       {formData.projects?.length > 0 && (
         <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Projects / lines of effort</h2>
+          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Projects / lines of effort</h2>
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
             {formData.projects.map((project, idx) => (
-              <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: '14px' }}>
+              <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '12px' : 0, color: 'var(--text-2)', fontSize: 'calc(14 * var(--u, 1px))' }}>
                 <span>{String.fromCharCode(65 + idx)}.</span> {project}
               </div>
             ))}
@@ -228,9 +228,9 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
 
       {formData.matrix && Object.keys(formData.matrix).length > 0 && formData.factors?.length > 0 && (
         <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Strategic importance scores</h2>
+          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Strategic importance scores</h2>
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px', overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px', fontSize: '13px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px', fontSize: 'calc(13 * var(--u, 1px))' }}>
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', paddingBottom: '12px', borderBottom: '2px solid var(--quiet-line)', fontWeight: '600' }}>Project</th>
@@ -255,15 +255,15 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
 
       {formData.progress && Object.keys(formData.progress).length > 0 && (
         <div style={{ marginTop: '32px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Progress status</h2>
+          <h2 style={{ fontSize: 'calc(16 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Progress status</h2>
           <div style={{ backgroundColor: 'var(--raised)', padding: '16px', borderRadius: '8px' }}>
             {formData.projects?.map((project, idx) => {
               const progress = formData.progress[idx] || 0;
               const progressLabels = ['Not started', 'Planning', 'In progress', 'Near complete', 'Completed'];
               return (
                 <div key={idx} style={{ marginBottom: idx < formData.projects.length - 1 ? '16px' : 0 }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-2)', marginBottom: '6px' }}>{String.fromCharCode(65 + idx)}. {project}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--label)' }}>{progressLabels[progress] || 'Not set'}, {progress}/5</div>
+                  <div style={{ fontSize: 'calc(13 * var(--u, 1px))', color: 'var(--text-2)', marginBottom: '6px' }}>{String.fromCharCode(65 + idx)}. {project}</div>
+                  <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--label)' }}>{progressLabels[progress] || 'Not set'}, {progress}/5</div>
                 </div>
               );
             })}
@@ -273,7 +273,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
 
       {formData.factors?.length > 0 && formData.projects?.length > 0 && (
         <div style={{ marginTop: '48px', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', marginBottom: '32px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 'calc(20 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '32px', textAlign: 'center' }}>
             Are you allocating your resources appropriately?
           </h2>
 
@@ -346,22 +346,22 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
           </ChartTips>
 
           <div style={{ padding: '24px', backgroundColor: 'var(--raised)', borderRadius: '12px', border: '1px solid var(--line)' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>What does each quadrant mean?</h3>
+            <h3 style={{ fontSize: 'calc(14 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>What does each quadrant mean?</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', borderLeft: '3px solid var(--coral-soft-text)' }} onMouseEnter={() => setHoveredQuadrant('topLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
+                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resources to these projects?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--mint-tint)', borderRadius: '8px', borderLeft: '3px solid var(--good)' }} onMouseEnter={() => setHoveredQuadrant('topRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
+                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--label)' }} onMouseEnter={() => setHoveredQuadrant('bottomLeft')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
+                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--card)', borderRadius: '8px', borderLeft: '3px solid var(--coral-soft-text)' }} onMouseEnter={() => setHoveredQuadrant('bottomRight')} onMouseLeave={() => setHoveredQuadrant(null)}>
-                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
+                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>
             </div>

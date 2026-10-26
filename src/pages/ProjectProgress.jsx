@@ -78,12 +78,12 @@ export default function ProjectProgress() {
         </div>
 
         {/* Scale Legend */}
-        <div style={{ marginBottom: '48px', padding: '20px', backgroundColor: 'var(--raised)', borderRadius: '12px', display: 'flex', gap: '24px', justifyContent: 'center', fontSize: '13px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>1</span> Not Started</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>2</span> Planning</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>3</span> In Progress</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>4</span> Near Complete</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: '14px' }}>5</span> Completed</div>
+        <div style={{ marginBottom: '48px', padding: '20px', backgroundColor: 'var(--raised)', borderRadius: '12px', display: 'flex', gap: '24px', justifyContent: 'center', fontSize: 'calc(13 * var(--u, 1px))', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: 'calc(14 * var(--u, 1px))' }}>1</span> Not Started</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: 'calc(14 * var(--u, 1px))' }}>2</span> Planning</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: 'calc(14 * var(--u, 1px))' }}>3</span> In Progress</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: 'calc(14 * var(--u, 1px))' }}>4</span> Near Complete</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ color: 'var(--text)', fontSize: 'calc(14 * var(--u, 1px))' }}>5</span> Completed</div>
         </div>
 
         {/* Projects Progress */}
@@ -91,7 +91,7 @@ export default function ProjectProgress() {
           {projects.map((project, index) => (
             <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '20px', backgroundColor: 'var(--raised)', borderRadius: '12px' }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '16px', color: 'var(--text)', marginBottom: '12px' }}>
+                <div style={{ fontSize: 'calc(16 * var(--u, 1px))', color: 'var(--text)', marginBottom: '12px' }}>
                   {project}
                 </div>
                 <input
@@ -112,7 +112,7 @@ export default function ProjectProgress() {
                 textAlign: 'center',
                 fontWeight: '500',
                 color: 'var(--text)',
-                fontSize: '14px',
+                fontSize: 'calc(14 * var(--u, 1px))',
                 flexShrink: 0,
                 border: '2px solid var(--field-line)',
                 borderRadius: '8px',

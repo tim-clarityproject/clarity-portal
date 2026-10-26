@@ -41,10 +41,25 @@ function designGallery(enabled) {
   }
 }
 
+// Quiet updates (src/lib/appUpdate.js): each build has an id, baked into
+// the app and written to /version.json, so an open app can tell when a
+// newer version has been deployed and load it on its next open.
+function buildVersion(id) {
+  return {
+    name: 'clarity-build-version',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ id }) })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command }) => {
   const galleryEnabled = command === 'serve' || process.env.VERCEL_ENV === 'preview'
+  const buildId = command === 'serve' ? 'dev' : (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()))
   return {
-    plugins: [react(), colourMode(), designGallery(galleryEnabled)],
+    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId)],
+    define: { __BUILD_ID__: JSON.stringify(buildId) },
   }
 })

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import AuthShell from '../../components/auth/AuthShell';
 import { AuthGhostButton, AuthTextLink } from '../../components/auth/AuthButton';
+import { friendlyError } from '../../lib/friendlyError';
 
 const RESEND_SECONDS = 30;
 
@@ -51,13 +52,13 @@ export default function CheckYourEmail() {
         options: { emailRedirectTo: `${window.location.origin}/auth/mission` },
       });
       if (error) {
-        setResendMessage(error.message || 'That email didn’t send. Check your connection and try again.');
+        setResendMessage(friendlyError(error, 'That email didn’t send. Check your connection and try again.'));
       } else {
         setResendMessage('Email resent.');
         setSecondsLeft(RESEND_SECONDS);
       }
     } catch (err) {
-      setResendMessage(err.message || 'That email didn’t send. Check your connection and try again.');
+      setResendMessage(friendlyError(err, 'That email didn’t send. Check your connection and try again.'));
     } finally {
       setResending(false);
     }

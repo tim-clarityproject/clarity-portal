@@ -19,7 +19,7 @@ export default function CheckEmailConfirmation() {
             <PageHeader title="Check the email you signed up with to confirm your account" />
           </div>
 
-          <p style={{ fontSize: '14px', color: 'var(--label)', marginBottom: '3em', marginTop: '0' }}>
+          <p style={{ fontSize: 'calc(14 * var(--u, 1px))', color: 'var(--label)', marginBottom: '3em', marginTop: '0' }}>
             OR
           </p>
 

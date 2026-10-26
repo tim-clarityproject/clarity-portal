@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { getLocalDateKey, formatPlainDayLabel } from '../lib/dateFormatter';
 import { loadAllJournals, deleteJournal, wordCount } from '../lib/dailyJournal';
+import { useCachedLoad } from '../lib/pageCache';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -17,29 +18,18 @@ export default function DailyJournals() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const [journals, setJournals] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
-  const load = async () => {
-    setError(null);
-    try {
-      const data = await loadAllJournals(user.id);
-      setJournals(data);
-    } catch (err) {
-      console.error('[DailyJournals] load failed:', err);
-      setError({ message: 'Your journals didn’t load. Check your connection and try again.', onRetry: load });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  // Instant page (Tim, 26 Oct): the journals shown last time appear at
+  // once from the device, then refresh quietly in the background.
+  const loaded = useCachedLoad({ userId: user?.id, name: 'daily-journals', load: () => loadAllJournals(user.id) });
+  const journals = loaded.data || [];
+  const setJournals = loaded.setData;
+  const isLoading = loaded.loading;
+  const error = loaded.error
+    ? { message: 'Your journals didn’t load. Check your connection and try again.', onRetry: loaded.reload }
+    : null;
 
   useEffect(() => {
     if (location.state?.toast) {

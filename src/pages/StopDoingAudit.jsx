@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
+import { useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
@@ -50,6 +51,21 @@ export default function StopDoingAudit() {
   // name instead of always suggesting "Reclaiming my time" (patch D1).
   const [currentTitle, setCurrentTitle] = useState('');
   const toast = useToast();
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct): one draft
+  // per saved audit, and one for a new audit.
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `stop-doing-audit:${location.state?.decisionId || 'new'}`,
+    value: { items, firstAction, actionHow, timeUse },
+    ready: !isLoading,
+    onRestore: (v) => {
+      if (Array.isArray(v.items) && v.items.length) setItems(v.items);
+      setFirstAction(v.firstAction ?? '');
+      setActionHow(v.actionHow || '');
+      setTimeUse(v.timeUse || '');
+    },
+  });
 
   useEffect(() => {
     if (!decisionId || !user) {
@@ -156,6 +172,7 @@ export default function StopDoingAudit() {
       const savedId = await persist(name, 'completed');
       setDecisionId(savedId);
       clearProgress();
+      clearDraft();
       navigate('/stop-doing-audit-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
     } catch (error) {
       console.error('[StopDoingAudit] save failed:', error);
@@ -189,6 +206,7 @@ export default function StopDoingAudit() {
       // (patch D1, same root cause as the empty name pop-up).
       const savedId = await persist(currentTitle || 'Reclaiming my time', 'draft');
       setDecisionId(savedId);
+      clearDraft();
       toast.show('Draft saved.');
       navigate('/my-plans');
     } catch (error) {
@@ -212,6 +230,7 @@ export default function StopDoingAudit() {
         console.error('[StopDoingAudit] draft delete on discard failed:', error);
       }
     }
+    clearDraft();
     navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 

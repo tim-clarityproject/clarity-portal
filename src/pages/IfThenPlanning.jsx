@@ -10,7 +10,10 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import pageText from '../content/pageText';
-import { PageHeader, TextBox, Button, useToast } from '../components/design';
+import { PageHeader, SaveStatus, TextBox, Button, useToast } from '../components/design';
+import { useDraft } from '../lib/drafts';
+import { saveDecisionOrQueue } from '../lib/decisionSave';
+import { useQueuedSave } from '../lib/syncQueue';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -46,9 +49,28 @@ export default function IfThenPlanning() {
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'finish' | 'draft'
   const toast = useToast();
+  // A plan opened from My Plans is ready once it has loaded; a new one at once.
+  const [loaded, setLoaded] = useState(!location.state?.decisionId);
+  const [draftName] = useState(() => `if-then:${location.state?.decisionId || 'new'}`);
+  const [syncState, markQueued] = useQueuedSave();
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct).
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: draftName,
+    value: { situation, items },
+    ready: loaded,
+    onRestore: (v) => {
+      setSituation(v.situation || '');
+      if (v.items?.length) {
+        setItems(v.items);
+        setNextId(Math.max(...v.items.map((i) => i.id || 0)) + 1);
+      }
+    },
+  });
 
   useEffect(() => {
-    if (!decisionId || !user) return;
+    if (!decisionId || !user || loaded) return;
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
@@ -60,6 +82,7 @@ export default function IfThenPlanning() {
       if (cancelled) return;
       if (error) {
         console.error('[IfThenPlanning] load failed:', error);
+        setLoaded(true);
         return;
       }
       if (data?.title) setCurrentTitle(data.title);
@@ -69,8 +92,10 @@ export default function IfThenPlanning() {
         setItems(formData.items);
         setNextId(Math.max(...formData.items.map((i) => i.id || 0)) + 1);
       }
+      setLoaded(true);
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decisionId, user?.id]);
 
   const addItem = () => {
@@ -93,25 +118,13 @@ export default function IfThenPlanning() {
       updated_at: new Date().toISOString(),
     };
 
-    if (decisionId) {
-      const { data, error } = await supabase
-        .from('decisions')
-        .update(payload)
-        .eq('id', decisionId)
-        .eq('user_id', user.id)
-        .select();
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error('Could not find this plan to update.');
-      return decisionId;
-    }
-
-    const { data, error } = await supabase
-      .from('decisions')
-      .insert({ user_id: user.id, tool_type: 'if_then_planning', ...payload })
-      .select();
-    if (error) throw error;
-    if (!data || data.length === 0) throw new Error('Save did not return a plan.');
-    return data[0].id;
+    // Offline, it is kept on the device and sent when the connection is
+    // back ("Will sync", then "Saved").
+    const result = await saveDecisionOrQueue({ userId: user.id, decisionId, toolType: 'if_then_planning', payload });
+    setDecisionId(result.id);
+    clearDraft();
+    if (result.status === 'queued') markQueued();
+    return result;
   };
 
   const handleNameConfirm = async (name) => {
@@ -120,11 +133,14 @@ export default function IfThenPlanning() {
     setSaveError('');
     setIsSaving(true);
     try {
-      const savedId = await persist(mode === 'draft', name);
+      const saved = await persist(mode === 'draft', name);
+      const savedId = saved.id;
       setCurrentTitle(name);
       setNameDialog(null);
-      if (mode === 'draft') {
-        setDecisionId(savedId);
+      if (saved.status === 'queued') {
+        // Kept on the device for now: stay here, showing "Will sync".
+        clearProgress();
+      } else if (mode === 'draft') {
         toast.show(`Draft saved as ${name}.`);
         clearProgress();
         navigate('/my-plans');
@@ -154,6 +170,7 @@ export default function IfThenPlanning() {
         console.error('[IfThenPlanning] draft delete on discard failed:', error);
       }
     }
+    clearDraft();
     navigate('/my-plans');
   };
 
@@ -230,6 +247,7 @@ export default function IfThenPlanning() {
         </Button>
 
         {saveError && <p className="plan-save-error" role="alert">{saveError}</p>}
+        <SaveStatus state={syncState} />
 
         <div className="plan-actions plan-actions--desktop">{actionButtons}</div>
 

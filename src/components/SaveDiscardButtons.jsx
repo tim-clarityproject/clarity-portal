@@ -3,17 +3,25 @@ import { useContext, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { saveProgress, clearProgress, AUTO_SAVE_KEY } from '../lib/saveProgress';
 import { AuthContext } from '../context/AuthContext';
+import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { mergeFormData } from '../utils/mergeFormData';
 import DiscardDialog from './ui/DiscardDialog';
-import { Button } from './design';
+import { Button, ErrorMessage } from './design';
+
+// A save that fails must never look saved (Tim, 26 Oct): the page stays
+// where it is with everything typed, and says what happened and what to
+// do (writing rule 15).
+const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 
 export default function SaveDiscardButtons({ formData, pageType = 'decision', toolType = null, onNext = null, canNext = true, onBack = null, onSaveAsDraft = null, nextLabel = 'Continue' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const { clearFormData } = useContext(FormContext);
   const [isSaving, setIsSaving] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const saveToSupabase = async () => {
     if (!user || !toolType) return null;
@@ -35,7 +43,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
         if (fetchError) {
           console.error('Error fetching existing decision:', fetchError);
-          throw new Error(`Cannot save: Unable to load existing record for merging. ${fetchError.message}`);
+          throw fetchError;
         }
 
         const existingFormData = existingRecord?.form_data || {};
@@ -51,10 +59,8 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           .eq('user_id', user.id)
           .select();
 
-        if (error) {
-          console.error('Error updating decision:', error);
-          return null;
-        }
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error('No decision was updated.');
         return decisionId;
       } else {
         // Insert new decision
@@ -69,21 +75,18 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
           }])
           .select();
 
-        if (error) {
-          console.error('Error inserting decision:', error);
-          return null;
-        }
-        return data?.[0]?.id;
+        if (error) throw error;
+        if (!data?.[0]?.id) throw new Error('No decision was saved.');
+        return data[0].id;
       }
-    } catch (error) {
-      console.error('Error saving to Supabase:', error);
-      return null;
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleSaveAsDraft = async () => {
+    if (isSaving) return;
+    setSaveError('');
     const pageIdentifier = location.pathname.replace('/', '');
 
     // If authenticated, save to Supabase with draft flag
@@ -105,13 +108,13 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
           if (fetchError) {
             console.error('Error fetching existing decision:', fetchError);
-            throw new Error(`Cannot save draft: Unable to load existing record for merging. ${fetchError.message}`);
+            throw fetchError;
           }
 
           const existingFormData = existingRecord?.form_data || {};
           const mergedFormData = mergeFormData(existingFormData, formData);
 
-          await supabase
+          const { error: updateError } = await supabase
             .from('decisions')
             .update({
               form_data: mergedFormData,
@@ -121,9 +124,10 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
             })
             .eq('id', decisionId)
             .eq('user_id', user.id);
+          if (updateError) throw updateError;
         } else {
           // Insert new decision with draft status
-          await supabase
+          const { error: insertError } = await supabase
             .from('decisions')
             .insert([{
               user_id: user.id,
@@ -133,13 +137,17 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
               status: 'draft',
               draft: true
             }]);
+          if (insertError) throw insertError;
         }
-        // Clear localStorage after successful save
+        // Saved: the device's copies are no longer needed.
         clearProgress();
+        clearFormData();
       } catch (error) {
         console.error('Error saving draft to server:', error);
-        // Keep localStorage in case user wants to retry
+        // Keep a copy on the device too, stay on the page with everything
+        // typed, and say so.
         saveProgress(pageIdentifier, formData, location.state);
+        setSaveError(SAVE_ERROR);
         setIsSaving(false);
         return;
       }
@@ -155,16 +163,18 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
   const handleNext = async () => {
     if (!onNext || isSaving) return;
+    setSaveError('');
 
-    // Auto-save to Supabase before proceeding
+    // Save before moving on. If it doesn't save, stay here with everything
+    // typed and say so: moving on would make an unsaved step look saved.
     if (user && toolType) {
-      const newDecisionId = await saveToSupabase();
-      if (newDecisionId) {
+      try {
+        const newDecisionId = await saveToSupabase();
         // Pass the decisionId to the next step so it updates the same record
         onNext(newDecisionId);
-      } else {
-        // If save failed, still proceed but user won't have persistent data
-        onNext(location.state?.decisionId);
+      } catch (error) {
+        console.error('Error saving to Supabase:', error);
+        setSaveError(SAVE_ERROR);
       }
     } else {
       onNext(location.state?.decisionId);
@@ -174,6 +184,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
   const handleDiscard = () => {
     setDiscardOpen(false);
     clearProgress();
+    clearFormData();
     if (pageType === 'decision') {
       navigate('/decision-tools');
     } else if (pageType === 'journal') {
@@ -197,7 +208,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
       <button
         type="button"
         onClick={() => setDiscardOpen(true)}
-        title="Discard this entry"
+        aria-label="Discard this entry"
         style={{
           padding: '12px',
           backgroundColor: 'transparent',
@@ -227,6 +238,8 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
       {onNext && (
         <Button variant="primary" type="button" onClick={handleNext} disabled={!canNext || isSaving}>{isSaving ? 'Saving' : nextLabel}</Button>
       )}
+
+      {saveError && <div style={{ flex: '1 1 100%' }}><ErrorMessage>{saveError}</ErrorMessage></div>}
 
       <DiscardDialog
         isOpen={discardOpen}

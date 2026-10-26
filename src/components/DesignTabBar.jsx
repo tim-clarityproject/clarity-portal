@@ -207,7 +207,7 @@ export default function DesignTabBar() {
         .design-tabbar .design-tab-label {
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: 10px;
+          font-size: calc(10 * var(--u, 1px));
           text-transform: uppercase;
           letter-spacing: 0.06em;
           line-height: 1.2;

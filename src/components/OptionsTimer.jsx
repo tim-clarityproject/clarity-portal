@@ -80,7 +80,7 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
       zIndex: '10',
     }}>
       {/* Instruction Text */}
-      <p style={{ fontSize: '13px', color: 'var(--text-2)', margin: '0 0 4px 0', lineHeight: '1.5' }}>
+      <p style={{ fontSize: 'calc(13 * var(--u, 1px))', color: 'var(--text-2)', margin: '0 0 4px 0', lineHeight: '1.5' }}>
         Create a list of options you have. There are no bad ideas at this point. Write them all down. You can reset the timer if you need more time, but don't give up before the 6 minutes is up.
       </p>
 
@@ -117,7 +117,7 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text)' }}>
+          <div style={{ fontSize: 'calc(22 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)' }}>
             {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
           </div>
           <div style={{ fontSize: 'var(--fs-min)', color: 'var(--label)', marginTop: '2px' }}>

@@ -7,7 +7,8 @@ import { FormProvider } from './context/FormContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
-import { FloatingOrb, ToastProvider } from './components/design';
+import { ConnectionNotice, Crosshair, FloatingOrb, ToastProvider } from './components/design';
+import { startUpdateChecks } from './lib/appUpdate';
 import { CoachChatProvider } from './components/coach/CoachChat';
 import ProtectedLayout from './components/ProtectedLayout';
 import Welcome from './pages/Welcome';
@@ -190,9 +191,14 @@ function AppContent() {
   }, [user, isLoading, location.pathname, navigate]);
 
   if (isLoading) {
-    // Plain black, no text: the first paint matches the dark app instead
-    // of flashing a white "Loading..." page.
-    return <div className="ui-root" role="status" aria-label="Loading" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
+    // The opening screen: the turning crosshair on the page colour, the
+    // same as the one index.html shows before the app has loaded (Tim,
+    // 26 Oct), so the hand-over is seamless.
+    return (
+      <div className="ui-root ds-opening" role="status" aria-label="Loading">
+        <Crosshair size="lg" tone="coral" spin />
+      </div>
+    );
   }
 
   // Determine if buttons should be hidden on current page
@@ -373,9 +379,14 @@ function AppContent() {
           <FloatingOrb onBreathe={() => navigate('/breathe')} />
         </div>
       )}
+      {/* The calm offline message, and "Saved" once saves made offline
+          have gone (Tim, 26 Oct). */}
+      {user && <ConnectionNotice />}
     </>
   );
 }
+
+startUpdateChecks();
 
 export default function App() {
   return (

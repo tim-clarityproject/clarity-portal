@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
+import { friendlyError } from '../lib/friendlyError';
 
 /**
  * Unified hook for loading decision data in multi-step workflows.
@@ -77,7 +78,7 @@ export const useLoadDecisionStep = (fields = []) => {
           .single();
 
         if (fetchError) {
-          throw new Error(fetchError.message || 'Your decision didn’t load. Check your connection and try again.');
+          throw new Error(friendlyError(fetchError, 'Your decision didn’t load. Check your connection and try again.'));
         }
 
         if (data && data.form_data) {
@@ -95,7 +96,7 @@ export const useLoadDecisionStep = (fields = []) => {
         setIsLoading(false);
       } catch (err) {
         console.error('Error loading decision:', err);
-        setError(err.message || 'Your decision didn’t load. Check your connection and try again.');
+        setError(friendlyError(err, 'Your decision didn’t load. Check your connection and try again.'));
         setIsLoading(false);
       }
     };
@@ -118,7 +119,7 @@ export const useLoadDecisionStep = (fields = []) => {
         .single();
 
       if (fetchError) {
-        throw new Error(fetchError.message || 'Your decision didn’t load. Check your connection and try again.');
+        throw new Error(friendlyError(fetchError, 'Your decision didn’t load. Check your connection and try again.'));
       }
 
       if (data && data.form_data) {
@@ -133,7 +134,7 @@ export const useLoadDecisionStep = (fields = []) => {
       setIsLoading(false);
     } catch (err) {
       console.error('Error loading decision on retry:', err);
-      setError(err.message || 'Your decision didn’t load. Check your connection and try again.');
+      setError(friendlyError(err, 'Your decision didn’t load. Check your connection and try again.'));
       setIsLoading(false);
     }
   };

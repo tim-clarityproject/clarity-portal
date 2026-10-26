@@ -152,14 +152,14 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           flex-shrink: 0;
         }
 
-        /* src/styles/mobile.css has h2 { font-size: 18px !important;
+        /* src/styles/mobile.css has h2 { font-size: calc(18 * var(--u, 1px)) !important;
            margin: 12px 0 8px !important; } at max-width: 768px. Scoped
            under .ui-root with matching !important, same reason as the
            h1 fix in AuthShell.jsx's .auth-headline. */
         .ui-root .reading-popup-title {
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: 15px !important;
+          font-size: calc(15 * var(--u, 1px)) !important;
           letter-spacing: 0.12em;
           text-transform: uppercase;
           color: var(--text);
@@ -186,7 +186,7 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           background: transparent;
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: 10px !important;
+          font-size: calc(10 * var(--u, 1px)) !important;
           letter-spacing: 0.12em;
           text-transform: uppercase;
           color: var(--text-2);
@@ -208,39 +208,39 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
           flex: 1;
         }
 
-        /* src/styles/mobile.css has h3 { font-size: 16px !important;
+        /* src/styles/mobile.css has h3 { font-size: calc(16 * var(--u, 1px)) !important;
            margin: 8px 0 4px !important; } at max-width: 768px. Scoped
            under .ui-root with matching !important, same reason as above. */
         .ui-root .reading-popup-doc-heading {
           font-family: var(--font-body);
           font-weight: 500;
-          font-size: 17px !important;
+          font-size: calc(17 * var(--u, 1px)) !important;
           color: var(--text);
           margin: 0 0 4px !important;
         }
 
         .reading-popup-doc-meta {
           font-family: var(--font-body);
-          font-size: 13px;
+          font-size: calc(13 * var(--u, 1px));
           color: var(--text-2);
           margin: 0 0 12px;
         }
 
-        /* src/styles/mobile.css has h4 { font-size: 15px !important;
+        /* src/styles/mobile.css has h4 { font-size: calc(15 * var(--u, 1px)) !important;
            margin: 8px 0 4px !important; } at max-width: 768px. Scoped
            under .ui-root with matching !important, same reason as the
            h1/h2/h3 fixes elsewhere in this file. */
         .ui-root .reading-popup-doc-subheading {
           font-family: var(--font-body);
           font-weight: var(--fw-medium);
-          font-size: 15px !important;
+          font-size: calc(15 * var(--u, 1px)) !important;
           color: var(--text);
           margin: 20px 0 8px !important;
         }
 
         .reading-popup-doc-para {
           font-family: var(--font-body);
-          font-size: 15px;
+          font-size: calc(15 * var(--u, 1px));
           line-height: 1.55;
           color: var(--text-2);
           margin: 0 0 14px;
@@ -259,7 +259,7 @@ export default function ReadingPopup({ isOpen, onClose, onAgree, initialTab = 't
 
         .reading-popup-doc-li {
           font-family: var(--font-body);
-          font-size: 15px;
+          font-size: calc(15 * var(--u, 1px));
           line-height: 1.55;
           color: var(--text-2);
           margin: 0 0 8px;

@@ -100,7 +100,7 @@ export default function EmailVerificationBanner() {
 
         .ev-banner-message {
           font-family: var(--font-body);
-          font-size: 15px;
+          font-size: calc(15 * var(--u, 1px));
           line-height: 1.5;
           color: var(--text-2);
           margin: 0;
@@ -112,7 +112,7 @@ export default function EmailVerificationBanner() {
 
         .ev-banner-status {
           font-family: var(--font-body);
-          font-size: 15px;
+          font-size: calc(15 * var(--u, 1px));
           line-height: 1.5;
           margin: 8px 0 0;
         }

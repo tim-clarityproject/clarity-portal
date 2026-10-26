@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Crosshair from './Crosshair';
+import { useCoach } from './coachContext';
 import { LOADING_DELAY_MS } from './timing';
 import './design.css';
 
@@ -62,13 +63,27 @@ export function SmallWin({ children }) {
 // A calm error: what happened, then what to do, on a soft coral tint.
 // No blame, no codes, never red. e.g. "That didn't save. Check your
 // connection and try again."
-export function ErrorMessage({ children }) {
+// keepsHappening: adds where to turn if it doesn't go away (Tim, 26 Oct):
+// "If it keeps happening, let your coach know." for someone with a
+// coach, and "If it keeps happening, use Something not working? in My
+// Account." for someone without.
+export function ErrorMessage({ children, keepsHappening = false }) {
+  const coach = useCoach();
   return (
     <div className="ds-error" role="alert">
       <span className="ds-error-mark" aria-hidden="true">!</span>
-      <span>{children}</span>
+      <span>
+        {children}
+        {keepsHappening && <span className="ds-line">{keepsHappeningLine(coach)}</span>}
+      </span>
     </div>
   );
+}
+
+export function keepsHappeningLine(coach) {
+  return coach
+    ? 'If it keeps happening, let your coach know.'
+    : 'If it keeps happening, use Something not working? in My Account.';
 }
 
 // Loading: the brand crosshair turning, centred in the space that is

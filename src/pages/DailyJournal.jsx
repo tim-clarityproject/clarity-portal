@@ -8,6 +8,9 @@ import {
   loadJournalByDate, saveJournal,
 } from '../lib/dailyJournal';
 import { discardJournalDraft } from '../lib/discardDraft';
+import { useDraft } from '../lib/drafts';
+import { isNetworkError, isOnline } from '../lib/connection';
+import { saveOrQueue, useQueuedSave } from '../lib/syncQueue';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
@@ -62,7 +65,9 @@ export default function DailyJournal() {
   // midnight keeps the day the page was opened on (spec edge case).
   const [dateKey] = useState(() => location.state?.date || getLocalDateKey(new Date()));
   const dateObj = useMemo(() => new Date(`${dateKey}T00:00:00`), [dateKey]);
-  const draftKey = `clarity-journal-draft-${dateKey}`;
+  // The old same-tab draft (sessionStorage), removed once the device
+  // draft below has taken over.
+  const legacyDraftKey = `clarity-journal-draft-${dateKey}`;
 
   const [existingId, setExistingId] = useState(null);
   // 'draft' | 'final' | null (nothing saved for this day yet). Needed
@@ -74,7 +79,7 @@ export default function DailyJournal() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
-  const [pendingDraft, setPendingDraft] = useState(null);
+  const [syncState, markQueued] = useQueuedSave();
   const toast = useToast();
   const lastInputRef = useRef(null);
   const focusLastRef = useRef(false);
@@ -101,31 +106,24 @@ export default function DailyJournal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, dateKey]);
 
-  // Visible draft restore (same pattern as the plan edit page): never
-  // silently swap in sessionStorage content.
-  useEffect(() => {
-    if (isLoading) return;
-    try {
-      const raw = sessionStorage.getItem(draftKey);
-      if (raw) setPendingDraft(JSON.parse(raw));
-    } catch (error) {
-      console.error('[DailyJournal] draft read failed:', error);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading]);
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct): kept on the
+  // device and put back quietly, with "Draft restored".
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `journal:${dateKey}`,
+    value: blocks,
+    ready: !isLoading,
+    onRestore: (v) => {
+      if (Array.isArray(v) && v.length) {
+        setBlocks(v);
+        setSaveStatus('');
+      }
+    },
+  });
 
   useEffect(() => {
-    if (isLoading || pendingDraft) return;
-    const timeout = setTimeout(() => {
-      try {
-        sessionStorage.setItem(draftKey, JSON.stringify({ blocks, timestamp: Date.now() }));
-      } catch (error) {
-        console.error('[DailyJournal] draft save failed:', error);
-      }
-    }, 1000);
-    return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks, isLoading, pendingDraft]);
+    try { sessionStorage.removeItem(legacyDraftKey); } catch { /* ignore */ }
+  }, [legacyDraftKey]);
 
   useEffect(() => {
     if (focusLastRef.current) {
@@ -133,18 +131,6 @@ export default function DailyJournal() {
       lastInputRef.current?.focus();
     }
   }, [blocks]);
-
-  const applyDraft = () => {
-    if (!pendingDraft) return;
-    setBlocks(pendingDraft.blocks || [textBlock('')]);
-    setSaveStatus('');
-    setPendingDraft(null);
-  };
-
-  const discardDraft = () => {
-    try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
-    setPendingDraft(null);
-  };
 
   const words = wordCount(blocks);
 
@@ -176,10 +162,37 @@ export default function DailyJournal() {
       toast.error(`Keep your writing under ${MAX_CHARS.toLocaleString()} characters.`);
       return null;
     }
-    const saved = await saveJournal({ userId: user.id, journalDate: dateKey, blocks, status: draft ? 'draft' : 'final', existingId });
+    const status = draft ? 'draft' : 'final';
+    let saved;
+    try {
+      if (!isOnline()) throw new TypeError('Failed to fetch: offline');
+      saved = await saveJournal({ userId: user.id, journalDate: dateKey, blocks, status, existingId });
+    } catch (error) {
+      if (!isNetworkError(error)) throw error;
+      // No connection: keep it on the device and send it when the
+      // connection is back ("Will sync", then "Saved"). One journal per
+      // person per day, so sending it twice can never make two.
+      await saveOrQueue(user.id, {
+        table: 'daily_journals',
+        kind: 'upsert',
+        onConflict: 'user_id,journal_date',
+        values: {
+          user_id: user.id,
+          journal_date: dateKey,
+          body: blocks,
+          body_text: textOf(blocks),
+          status,
+          updated_at: new Date().toISOString(),
+        },
+      });
+      markQueued();
+      clearDraft();
+      setExistingStatus(status);
+      return { queued: true };
+    }
     setExistingId(saved.id);
-    setExistingStatus(draft ? 'draft' : 'final');
-    try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+    setExistingStatus(status);
+    clearDraft();
     return saved;
   };
 
@@ -188,7 +201,8 @@ export default function DailyJournal() {
     setIsSaving(true);
     try {
       const saved = await persist(false);
-      if (saved) navigate('/daily-journals', { state: { toast: 'Journal saved. It is in My Reviews too.' } });
+      // Kept on the device for now: stay here, showing "Will sync".
+      if (saved && !saved.queued) navigate('/daily-journals', { state: { toast: 'Journal saved. It is in My Reviews too.' } });
     } catch (error) {
       console.error('[DailyJournal] save failed:', error);
       toast.error('That didn’t save. Check your connection and try again.');
@@ -202,7 +216,7 @@ export default function DailyJournal() {
     setIsSaving(true);
     try {
       const saved = await persist(true);
-      if (saved) {
+      if (saved && !saved.queued) {
         setSaveStatus('Draft saved');
         toast.show('Draft saved.');
         navigate('/daily-journals');
@@ -227,7 +241,7 @@ export default function DailyJournal() {
         console.error('[DailyJournal] draft delete on discard failed:', error);
       }
     }
-    try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ }
+    clearDraft();
     setBlocks([textBlock('')]);
     setExistingId(null);
     setExistingStatus(null);
@@ -265,16 +279,6 @@ export default function DailyJournal() {
           info={pageText.dailyJournal}
         />
 
-        {pendingDraft && (
-          <div className="jrn-draft-banner">
-            <span>We kept your unsaved writing from earlier.</span>
-            <span style={{ display: 'flex', gap: 'var(--space-3)' }}>
-              <Button variant="text" onClick={applyDraft}>Use it</Button>
-              <Button variant="text" onClick={discardDraft}>Discard it</Button>
-            </span>
-          </div>
-        )}
-
         <ChipRow className="jrn-prompts" label="Need a way in?">
           {PROMPTS.map((p) => (
             // An action, not an on/off choice, so no aria-pressed.
@@ -309,7 +313,7 @@ export default function DailyJournal() {
 
         <div className="jrn-meta">
           <span>{words} word{words === 1 ? '' : 's'}</span>
-          <SaveStatus state={isSaving ? 'saving' : (saveStatus ? 'saved' : 'idle')} />
+          <SaveStatus state={isSaving ? 'saving' : (syncState !== 'idle' ? syncState : (saveStatus ? 'saved' : 'idle'))} />
         </div>
 
         <div className="plan-actions plan-actions--desktop" style={{ marginTop: 'var(--space-6)' }}>{actionButtons}</div>

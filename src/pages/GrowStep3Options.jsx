@@ -1,13 +1,32 @@
 import { useState, useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useFormDraftReady } from '../hooks/useFormDraftReady';
 import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import OptionsTimer from '../components/OptionsTimer';
 import DesignHeader from '../components/DesignHeader';
 import { Crosshair, Loading, PageHeader, TextField, Button } from '../components/design';
 
+// Never the raw error: say what happened, then what to do.
+const LOAD_ERROR = 'Your decision didn’t load. Check your connection and try again.';
+
+// Waits for a draft FormContext is putting back after a refresh (see
+// useFormDraftReady), then shows the step.
 export default function GrowStep3Options() {
+  const { ready, isReload } = useFormDraftReady();
+  if (!ready) {
+    return (
+      <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)' }}>
+        <DesignHeader />
+        <Loading label="Loading your decision" />
+      </div>
+    );
+  }
+  return <GrowStep3OptionsForm isReload={isReload} />;
+}
+
+function GrowStep3OptionsForm({ isReload }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { updateFormData, getFieldValue } = useContext(FormContext);
@@ -21,12 +40,14 @@ export default function GrowStep3Options() {
   const optionsValue = options || ['', '', ''];
   const [timerSeconds, setTimerSeconds] = useState(location.state?.timerSeconds || null);
 
-  // Clear on fresh start (new decision)
+  // Clear on fresh start (new decision). After a refresh the shared form
+  // holds what was typed, put back from the device: keep it.
   useEffect(() => {
+    if (isReload) return;
     if (!isEditMode && !location.state?.constraints) {
       updateFormData('options', ['', '', '']);
     }
-  }, [isEditMode, location.state?.constraints, updateFormData]);
+  }, [isReload, isEditMode, location.state?.constraints, updateFormData]);
 
   const handleOptionChange = (index, value) => {
     const newOptions = [...optionsValue];
@@ -132,8 +153,8 @@ export default function GrowStep3Options() {
 
         {error && (
           <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
-            <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
-              {error}
+            <p style={{ fontSize: 'calc(14 * var(--u, 1px))', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
+              {LOAD_ERROR}
             </p>
             <Button variant="outline" onClick={onRetry}>Retry</Button>
           </div>

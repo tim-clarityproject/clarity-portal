@@ -1,49 +1,54 @@
 import { useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useFormDraftReady } from '../hooks/useFormDraftReady';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { Loading, PageHeader, TextBox, Button } from '../components/design';
 
+// Waits for a draft FormContext is putting back after a refresh (see
+// useFormDraftReady), then shows the step.
 export default function GrowStep1Goal() {
+  const { ready, isReload } = useFormDraftReady();
+  if (!ready) {
+    return (
+      <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)' }}>
+        <DesignHeader />
+        <Loading label="Loading your decision" />
+      </div>
+    );
+  }
+  return <GrowStep1GoalForm isReload={isReload} />;
+}
+
+function GrowStep1GoalForm({ isReload }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { formData, updateFormData, getFieldValue, setLoadedDecisionId, clearFormData } = useContext(FormContext);
+  const { formData, updateFormData, loadedDecisionId, setLoadedDecisionId, clearFormData } = useContext(FormContext);
   const { user } = useContext(AuthContext);
-  const [goal, setGoal] = useState(location.state?.goal || '');
+  // After a refresh (or the browser's back button) the shared form already
+  // holds this decision's typing, put back from the device: keep it rather
+  // than starting fresh or reloading over it. Decided once, on opening.
+  const [keepWork] = useState(() => isReload && (loadedDecisionId ?? null) === (location.state?.decisionId ?? null));
+  const [goal, setGoal] = useState(() => (keepWork && formData.goal) || location.state?.goal || '');
   const [isLoading, setIsLoading] = useState(false);
 
   // Reset FormContext when creating fresh decision (no decisionId)
-  // This prevents data leaks from previous decisions across browser refreshes
+  // This prevents data leaks from previous decisions
   useEffect(() => {
+    if (keepWork) return;
     if (!location.state?.decisionId) {
       clearFormData();
       setLoadedDecisionId(null);
     }
-  }, [location.state?.decisionId, clearFormData, setLoadedDecisionId]);
+  }, [keepWork, location.state?.decisionId, clearFormData, setLoadedDecisionId]);
 
-  // Clear form and localStorage on fresh start, or recover from localStorage
+  // Blank every step on a fresh start
   useEffect(() => {
+    if (keepWork) return;
     if (!location.state?.decisionId && !location.state?.goal) {
-      // Try to recover from localStorage first
-      try {
-        const saved = localStorage.getItem('clarity_form_data');
-        if (saved) {
-          const data = JSON.parse(saved);
-          if (data.goal) {
-            setGoal(data.goal);
-            updateFormData('goal', data.goal);
-            return;
-          }
-        }
-      } catch (e) {
-        // localStorage corrupted, clear it
-        localStorage.removeItem('clarity_form_data');
-      }
-
-      // If no localStorage data, clear everything
       setGoal('');
       updateFormData('goal', '');
       updateFormData('constraints', '');
@@ -57,7 +62,7 @@ export default function GrowStep1Goal() {
   useEffect(() => {
     const loadDecision = async () => {
       const decisionId = location.state?.decisionId;
-      if (!decisionId || !user) {
+      if (!decisionId || !user || keepWork) {
         setIsLoading(false);
         return;
       }

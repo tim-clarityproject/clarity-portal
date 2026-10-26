@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
+import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink, BackLink } from '../components/ui/DiscardLink';
@@ -13,6 +14,13 @@ import { PageHeader, TextBox, Button, useToast } from '../components/design';
 import pageText from '../content/pageText';
 
 const MAX_NAME_LENGTH = 60;
+
+// Saved or discarded: no step of this pre-mortem keeps a draft on the
+// device. Each step keeps its own (inversion-1, -2 and -3), named after
+// the saved decision, or "new" for one not saved yet.
+function forgetInversionDrafts(userId, recordKey) {
+  [1, 2, 3].forEach((step) => forgetDraft(userId, `inversion-${step}:${recordKey}`));
+}
 
 function CheckIcon() {
   return (
@@ -55,6 +63,23 @@ export default function InversionStep3Plan() {
   // text, while the user was still typing in it.
   const [focusedIndex, setFocusedIndex] = useState(null);
   const toast = useToast();
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct). A draft
+  // only comes back when it still matches the risks on screen.
+  const recordKey = location.state?.decisionId || 'new';
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `inversion-3:${recordKey}`,
+    value: { riskAnswers },
+    ready: true,
+    onRestore: (draft) => {
+      if (Array.isArray(draft?.riskAnswers) && draft.riskAnswers.length === risks.length) setRiskAnswers(draft.riskAnswers);
+    },
+  });
+  const forgetDrafts = () => {
+    clearDraft();
+    forgetInversionDrafts(user?.id, recordKey);
+  };
 
   const changeAnswer = (index, value) => {
     setRiskAnswers((prev) => prev.map((a, i) => (i === index ? value : a)));
@@ -101,6 +126,7 @@ export default function InversionStep3Plan() {
       const savedId = await persist(mode === 'draft', name);
       setCurrentTitle(name);
       setNameDialog(null);
+      forgetDrafts();
       if (mode === 'draft') {
         setDecisionId(savedId);
         clearProgress();
@@ -126,6 +152,7 @@ export default function InversionStep3Plan() {
   // draft from a completed one in page code (patch D1).
   const handleDiscard = async () => {
     setDiscardOpen(false);
+    forgetDrafts();
     if (decisionId) {
       try {
         await discardDecisionDraft(user.id, decisionId);

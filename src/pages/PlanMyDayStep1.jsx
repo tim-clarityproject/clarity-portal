@@ -4,6 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
+import { useDraft } from '../lib/drafts';
+import { getLocalDateKey } from '../lib/dateFormatter';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
@@ -55,7 +57,25 @@ export default function PlanMyDayStep1() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
+  // True once a saved plan has loaded (straight away for a new one), so
+  // the server copy never overwrites a restored draft.
+  const [loaded, setLoaded] = useState(!location.state?.decisionId);
   const toast = useToast();
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct): one draft
+  // per saved plan, or per day for a new one.
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `plan-my-day:${location.state?.decisionId || `new:${getLocalDateKey(new Date())}`}`,
+    value: { gratitude, topPriority, showUp, notDo },
+    ready: loaded,
+    onRestore: (v) => {
+      setGratitude(v.gratitude || '');
+      setTopPriority(v.topPriority || '');
+      setShowUp(v.showUp || '');
+      setNotDo(v.notDo || '');
+    },
+  });
 
   const values = { gratitude, topPriority, showUp, notDo };
   const setters = {
@@ -82,6 +102,7 @@ export default function PlanMyDayStep1() {
       if (cancelled) return;
       if (error) {
         console.error('[PlanMyDayStep1] load failed:', error);
+        setLoaded(true);
         return;
       }
       const formData = data?.form_data || {};
@@ -89,6 +110,7 @@ export default function PlanMyDayStep1() {
       setTopPriority(formData.topPriority || '');
       setShowUp(formData.showUp || '');
       setNotDo(formData.notDo || '');
+      setLoaded(true);
     })();
     return () => { cancelled = true; };
   }, [decisionId, user?.id]);
@@ -133,6 +155,7 @@ export default function PlanMyDayStep1() {
     try {
       const savedId = await persist(false);
       clearProgress();
+      clearDraft();
       navigate('/daily-plan-summary', { state: { decisionId: savedId, toast: 'Saved.' } });
     } catch (error) {
       console.error('[PlanMyDayStep1] Finish failed:', error);
@@ -149,6 +172,7 @@ export default function PlanMyDayStep1() {
     try {
       const savedId = await persist(true);
       setDecisionId(savedId);
+      clearDraft();
       toast.show('Draft saved.');
       navigate('/my-plans');
     } catch (error) {
@@ -172,6 +196,7 @@ export default function PlanMyDayStep1() {
         console.error('[PlanMyDayStep1] draft delete on discard failed:', error);
       }
     }
+    clearDraft();
     navigate('/my-plans');
   };
 

@@ -395,7 +395,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           font-weight: 400;
           text-transform: uppercase;
           letter-spacing: 0.2em;
-          font-size: 11px !important;
+          font-size: calc(11 * var(--u, 1px)) !important;
           color: var(--text-2);
           padding: 17px 28px 16px !important;
           min-height: 44px;
@@ -439,7 +439,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           font-weight: 400;
           text-transform: uppercase;
           letter-spacing: 0.2em;
-          font-size: 11px;
+          font-size: calc(11 * var(--u, 1px));
           color: var(--text);
           padding: 17px 28px 16px;
           min-height: 44px;
@@ -468,8 +468,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
         }
 
         /* src/styles/mobile.css has button:not(.breathe-button) {
-           min-height: 44px; padding: 12px 16px !important; font-size:
-           14px !important; } at max-width: 768px (also reachable if this
+           min-height: 44px; padding: 12px 16px !important; font-size: calc(14 * var(--u, 1px)) !important; } at max-width: 768px (also reachable if this
            component is ever rendered below 769px). The section headers
            must be real <button> elements. .design-drawer .drawer-section-btn
            (two classes, specificity 0,2,0) already beats the legacy
@@ -484,7 +483,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           font-weight: 400;
           text-transform: uppercase;
           letter-spacing: 0.2em;
-          font-size: 11px !important;
+          font-size: calc(11 * var(--u, 1px)) !important;
           color: var(--text);
           padding: 17px 28px 16px !important;
           min-height: 44px;
@@ -558,7 +557,7 @@ export default function DesignDrawer({ isOpen, onClose, headerHeight, burgerRef 
           font-family: var(--font-body);
           font-weight: 400;
           letter-spacing: 0.01em;
-          font-size: 15px !important;
+          font-size: calc(15 * var(--u, 1px)) !important;
           color: var(--text-2);
           padding: 10px 20px 10px 22px !important;
           min-height: 44px;

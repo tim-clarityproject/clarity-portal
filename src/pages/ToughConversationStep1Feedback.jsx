@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
+import { useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
@@ -53,6 +54,22 @@ export default function ToughConversationStep1Feedback() {
   const [nameDialog, setNameDialog] = useState(null); // null | 'draft'
   const toast = useToast();
 
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct). Nothing is
+  // loaded from the server here (the words arrive with the page), so the
+  // draft is ready at once. Continue hands the words to step 2 and clears
+  // this draft, so going Back never brings older words over newer ones.
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `tough-conversation-1:${location.state?.decisionId || 'new'}`,
+    value: { observation, impact, need },
+    ready: true,
+    onRestore: (v) => {
+      setObservation(v.observation || '');
+      setImpact(v.impact || '');
+      setNeed(v.need || '');
+    },
+  });
+
   const displayObservation = cleanPhrase(observation, ['i\'ve noticed', 'i noticed', 'observed']);
   const displayImpact = cleanPhrase(impact, ['the impact of that is', 'the impact is', 'impact:', 'impacts:'], true);
   const displayNeed = cleanPhrase(need, ['so, what i need from you is', 'what i need is', 'what i need', 'i need you'], true);
@@ -97,6 +114,7 @@ export default function ToughConversationStep1Feedback() {
       setCurrentTitle(name);
       setNameDialog(null);
       clearProgress();
+      clearDraft();
       toast.show(`Draft saved as ${name}.`);
       navigate('/decision-history');
     } catch (error) {
@@ -122,10 +140,12 @@ export default function ToughConversationStep1Feedback() {
         console.error('[ToughConversationStep1Feedback] draft delete on discard failed:', error);
       }
     }
+    clearDraft();
     navigate('/decision-history', { state: { toast: 'Discarded.' } });
   };
 
   const goContinue = () => {
+    clearDraft();
     navigate('/tough-conversation-step-2', {
       state: { decisionId, observation, impact, need, selectedQuestions, customQuestion, problemTitle: currentTitle },
     });

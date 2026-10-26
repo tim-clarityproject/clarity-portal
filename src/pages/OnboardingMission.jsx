@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { MissionContext } from '../context/MissionContext';
 import { supabase } from '../lib/supabase';
+import { useDraft } from '../lib/drafts';
 import { TextBox, Button, useToast } from '../components/design';
 
 const MAX_GOAL_LENGTH = 70;
@@ -18,6 +19,17 @@ export default function OnboardingMission() {
   const [mission, setMission] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [firstName, setFirstName] = useState('');
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct).
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: 'onboarding-mission',
+    value: { mission },
+    ready: true,
+    onRestore: (draft) => {
+      if (typeof draft?.mission === 'string') setMission(draft.mission.slice(0, MAX_GOAL_LENGTH));
+    },
+  });
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -108,18 +120,21 @@ export default function OnboardingMission() {
 
     setIsSaving(true);
     try {
-      await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({ personal_goal: mission.trim() })
         .eq('id', user.id);
+      if (error) throw error;
 
       // Update mission in context after successful save
       await updateMission(mission.trim());
+      clearDraft();
 
       setTimeout(() => {
         navigate('/welcome');
       }, 500);
     } catch (error) {
+      console.error('Error saving mission:', error);
       toast.error('Your mission didn’t save. Check your connection and try again.');
       setIsSaving(false);
     }
@@ -174,7 +189,7 @@ export default function OnboardingMission() {
             justifyContent: 'center',
           }}>
             <h1 style={{
-              fontSize: '56px',
+              fontSize: 'calc(56 * var(--u, 1px))',
               fontWeight: 'bold',
               color: 'var(--text)',
               margin: 0,
@@ -198,7 +213,7 @@ export default function OnboardingMission() {
             textAlign: 'center',
           }}>
             <h2 style={{
-              fontSize: '48px',
+              fontSize: 'calc(48 * var(--u, 1px))',
               fontWeight: 'bold',
               color: 'var(--text)',
               margin: '0 0 24px 0',
@@ -245,7 +260,7 @@ export default function OnboardingMission() {
                 <div style={{
                   textAlign: 'center',
                   marginBottom: '32px',
-                  fontSize: '12px',
+                  fontSize: 'calc(12 * var(--u, 1px))',
                   color: isOverLimit ? 'var(--coral-soft-text)' : 'var(--label)',
                 }}>
                   {charCount}/{MAX_GOAL_LENGTH} characters
@@ -268,7 +283,7 @@ export default function OnboardingMission() {
                     {isSaving ? 'Saving' : 'Get Started'}
                   </Button>
 
-                  <Button variant="text" onClick={() => navigate('/welcome')}>
+                  <Button variant="text" onClick={() => { clearDraft(); navigate('/welcome'); }}>
                     I'll do this later in settings
                   </Button>
                 </div>

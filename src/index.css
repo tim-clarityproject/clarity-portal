@@ -23,7 +23,14 @@
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: clamp(16px, 2vw, 18px)/145% var(--sans);
+  /* The root follows the device's own text-size setting (Claude's call,
+     26 Oct): 100% is whatever the person chose in their browser. The
+     portal's own sizes scale from it (--u in tokens.css). This is the one
+     global rule on html the portal needs: a root size can't be set
+     anywhere else. The old 16px to 18px body size now lives on .ui-root. */
+  font: 100%/145% var(--sans);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--text);
@@ -51,6 +58,14 @@
 
   #social .button-icon {
     filter: invert(1) brightness(2);
+  }
+}
+
+/* iPhone and iPad: the root follows Settings, Display and Brightness,
+   Text Size (and Accessibility, Larger Text). */
+@supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
+  html {
+    font: -apple-system-body;
   }
 }
 
@@ -111,7 +126,7 @@ code,
 }
 
 code {
-  font-size: 15px;
+  font-size: calc(15 * var(--u, 1px));
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);

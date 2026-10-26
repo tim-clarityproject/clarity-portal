@@ -92,7 +92,7 @@ export default function About() {
         .about-by p {
           margin: 0 auto 14px;
           max-width: 44ch;
-          font-size: 17px;
+          font-size: calc(17 * var(--u, 1px));
           line-height: 1.65;
           color: var(--text);
         }

@@ -291,20 +291,20 @@ export default function MyAccount() {
         .account-row-title {
           font-family: var(--font-body);
           font-weight: 500;
-          font-size: 16px;
+          font-size: calc(16 * var(--u, 1px));
           color: var(--text);
         }
 
         .account-row-desc {
           font-family: var(--font-body);
-          font-size: 14px;
+          font-size: calc(14 * var(--u, 1px));
           color: var(--text-2);
           margin-top: 4px;
         }
 
         .account-row-count {
           font-family: var(--font-body);
-          font-size: 12px;
+          font-size: calc(12 * var(--u, 1px));
           color: var(--label);
           margin-top: 6px;
         }
@@ -317,7 +317,7 @@ export default function MyAccount() {
 
         .account-empty-line {
           font-family: var(--font-body);
-          font-size: 14px;
+          font-size: calc(14 * var(--u, 1px));
           color: var(--text-2);
           padding: 18px 0;
           border-bottom: 1px solid var(--line);

@@ -7,6 +7,7 @@ import AuthShell from '../../components/auth/AuthShell';
 import { AuthTextField, AuthPasswordField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton, AuthTextLink } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
+import { friendlyError } from '../../lib/friendlyError';
 
 // New Welcome-flow log in screen. Calls supabase.auth.signInWithPassword()
 // directly - the same underlying Supabase call AuthContext.login() makes -
@@ -92,7 +93,7 @@ export default function LogIn() {
       } else if (signInError.status === 400 || signInError.message?.includes('Invalid login credentials')) {
         setError('That email and password didn’t match. Check them and try again.');
       } else {
-        setError(signInError.message || 'That didn’t sign you in. Check your connection and try again.');
+        setError(friendlyError(signInError, 'That didn’t sign you in. Check your connection and try again.'));
       }
       setShakeToken((t) => t + 1);
     } finally {
@@ -113,10 +114,10 @@ export default function LogIn() {
         options: { emailRedirectTo: `${window.location.origin}/auth/mission` },
       });
       setResendNote(resendError
-        ? (resendError.message || 'That email didn’t send. Check your connection and try again.')
+        ? (friendlyError(resendError, 'That email didn’t send. Check your connection and try again.'))
         : 'Done. If this address needs confirming, a new link is on its way.');
     } catch (err) {
-      setResendNote(err.message || 'That email didn’t send. Check your connection and try again.');
+      setResendNote(friendlyError(err, 'That email didn’t send. Check your connection and try again.'));
     } finally {
       setIsResending(false);
     }

@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Button } from './design';
+import { Button, CoachContext, keepsHappeningLine } from './design';
 
 // Catches a crash in any page and shows a calm, dark screen instead of a
 // blank one. The error itself is logged to the console for us (see
@@ -10,6 +10,9 @@ import { Button } from './design';
 // full page load) so the boundary resets and the app starts clean.
 // Rendered inside .ui-root so it picks up the design tokens.
 export class ErrorBoundary extends Component {
+  // The coach, for "If it keeps happening, let your coach know."
+  static contextType = CoachContext;
+
   constructor(props) {
     super(props);
     this.state = { hasError: false };
@@ -42,7 +45,10 @@ export class ErrorBoundary extends Component {
         <div style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }} role="alert">
           <div className="ui-title">This page hit a problem</div>
           <p className="ui-subtitle" style={{ marginBottom: 'var(--space-5)' }}>
-            Your saved work is safe. Reload the page, or go back to Home.
+            Anything you saved is safe. Reload the page, or go back to Home.
+          </p>
+          <p className="ui-subtitle" style={{ marginBottom: 'var(--space-5)' }}>
+            {keepsHappeningLine(this.context)}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', alignItems: 'center' }}>
             <Button variant="primary" onClick={() => window.location.reload()}>

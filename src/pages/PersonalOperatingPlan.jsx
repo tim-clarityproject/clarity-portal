@@ -7,7 +7,8 @@ import { archivePlan, countArchivedMissions, formatVersion, loadLatestVersion } 
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { DisclosureArrow, Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
+import { DisclosureArrow, ErrorMessage, Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
+import { useCachedLoad } from '../lib/pageCache';
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
@@ -54,22 +55,10 @@ export default function PersonalOperatingPlan() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
 
-  const [mission, setMission] = useState(null);
-  const [strategies, setStrategies] = useState([]);
-  const [tactics, setTactics] = useState({});
-  const [version, setVersion] = useState(null);
-  const [archivedCount, setArchivedCount] = useState(0);
-  const [lastReviewedAt, setLastReviewedAt] = useState(null);
   const [collapsed, setCollapsed] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const toast = useToast();
-
-  useEffect(() => {
-    if (user) loadPlan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
 
   useEffect(() => {
     if (location.state?.toast) {
@@ -79,43 +68,47 @@ export default function PersonalOperatingPlan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadPlan = async () => {
-    try {
-      const { data: missionData } = await supabase
+  // Instant page (Tim, 26 Oct): the plan shown last time appears at once
+  // from the device, then refreshes quietly in the background. A plan
+  // that didn't load says so, rather than looking like no plan at all.
+  const loaded = useCachedLoad({
+    userId: user?.id,
+    name: 'personal-operating-plan',
+    load: async () => {
+      const plan = { mission: null, strategies: [], tactics: {}, version: null, lastReviewedAt: null, archivedCount: 0 };
+      const { data: missionData, error: missionError } = await supabase
         .from('missions')
         .select('*')
         .eq('user_id', user.id)
         .is('archived_at', null)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+      if (missionError) throw missionError;
 
       if (missionData) {
-        setMission(missionData);
+        plan.mission = missionData;
 
-        const { data: strategiesData } = await supabase
+        const { data: strategiesData, error: strategiesError } = await supabase
           .from('strategies')
           .select('*')
           .eq('mission_id', missionData.id)
           .order('sort_order', { ascending: true });
+        if (strategiesError) throw strategiesError;
 
-        if (strategiesData) {
-          setStrategies(strategiesData);
-          const tacticsByStrategy = {};
-          for (const strategy of strategiesData) {
-            const { data: tacticsData } = await supabase
-              .from('tactics')
-              .select('*')
-              .eq('strategy_id', strategy.id)
-              .order('sort_order', { ascending: true });
-            tacticsByStrategy[strategy.id] = tacticsData || [];
-          }
-          setTactics(tacticsByStrategy);
+        plan.strategies = strategiesData || [];
+        for (const strategy of plan.strategies) {
+          const { data: tacticsData, error: tacticsError } = await supabase
+            .from('tactics')
+            .select('*')
+            .eq('strategy_id', strategy.id)
+            .order('sort_order', { ascending: true });
+          if (tacticsError) throw tacticsError;
+          plan.tactics[strategy.id] = tacticsData || [];
         }
 
         try {
-          const latest = await loadLatestVersion(missionData.id);
-          setVersion(latest);
+          plan.version = await loadLatestVersion(missionData.id);
         } catch (error) {
           console.error('[PersonalOperatingPlan] version lookup failed:', error);
         }
@@ -127,20 +120,19 @@ export default function PersonalOperatingPlan() {
             .eq('mission_id', missionData.id)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
-          if (lastReview) setLastReviewedAt(lastReview.created_at);
+            .maybeSingle();
+          if (lastReview) plan.lastReviewedAt = lastReview.created_at;
         } catch (error) {
           console.error('[PersonalOperatingPlan] last-reviewed lookup failed:', error);
         }
       }
 
-      setArchivedCount(await countArchivedMissions(user.id));
-    } catch (error) {
-      console.error('[PersonalOperatingPlan] load failed:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      plan.archivedCount = await countArchivedMissions(user.id);
+      return plan;
+    },
+  });
+  const isLoading = loaded.loading;
+  const { mission = null, strategies = [], tactics = {}, version = null, lastReviewedAt = null, archivedCount = 0 } = loaded.data || {};
 
   const toggleStrategy = (strategyId) => {
     setCollapsed((prev) => ({ ...prev, [strategyId]: !prev[strategyId] }));
@@ -155,11 +147,8 @@ export default function PersonalOperatingPlan() {
       // same empty-state branch below renders once mission is cleared)
       // rather than navigating to the same path, which React Router
       // would not remount.
-      setMission(null);
-      setStrategies([]);
-      setTactics({});
-      setVersion(null);
-      setArchivedCount(await countArchivedMissions(user.id));
+      const count = await countArchivedMissions(user.id);
+      loaded.setData((prev) => ({ ...prev, mission: null, strategies: [], tactics: {}, version: null, archivedCount: count }));
       toast.show('Plan archived. Find it in Archived plans.');
     } catch (error) {
       console.error('[PersonalOperatingPlan] archive failed:', error);
@@ -175,6 +164,21 @@ export default function PersonalOperatingPlan() {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page"><Loading label="Loading your plan" className="ds-loading--page" /></div>
+      </div>
+    );
+  }
+
+  if (loaded.error) {
+    return (
+      <div className="ui-root">
+        <DesignHeader />
+        <div className="plan-page">
+          <PageHeader title="Personal operating plan" info={pageText.personalOperatingPlan} />
+          <ErrorMessage keepsHappening>Your plan didn’t load. Check your connection and try again.</ErrorMessage>
+          <div className="pop-links-row">
+            <Button type="button" variant="outline" onClick={loaded.reload}>Try again</Button>
+          </div>
+        </div>
       </div>
     );
   }

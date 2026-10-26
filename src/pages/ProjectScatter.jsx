@@ -371,7 +371,7 @@ export default function ProjectScatter() {
 
           {/* Quadrant Tips */}
           <div style={{ marginTop: '48px', marginBottom: '48px', width: '100%', maxWidth: '850px', padding: '24px', backgroundColor: 'var(--raised)', borderRadius: '12px', border: '1px solid var(--line)' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
+            <h3 style={{ fontSize: 'calc(14 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
               What does each quadrant mean?
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
@@ -380,7 +380,7 @@ export default function ProjectScatter() {
                 onMouseEnter={() => setHoveredQuadrant('topLeft')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resource to these projects?</div>
+                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Do you need to allocate resource to these projects?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, low progress</div>
               </div>
               <div
@@ -388,7 +388,7 @@ export default function ProjectScatter() {
                 onMouseEnter={() => setHoveredQuadrant('topRight')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
+                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>These projects are doing great.</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>High importance, high progress</div>
               </div>
               <div
@@ -396,7 +396,7 @@ export default function ProjectScatter() {
                 onMouseEnter={() => setHoveredQuadrant('bottomLeft')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
+                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Should this project be deferred or cancelled?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, low progress</div>
               </div>
               <div
@@ -404,7 +404,7 @@ export default function ProjectScatter() {
                 onMouseEnter={() => setHoveredQuadrant('bottomRight')}
                 onMouseLeave={() => setHoveredQuadrant(null)}
               >
-                <div style={{ fontSize: '12px', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
+                <div style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--text)', marginBottom: '6px' }}>Do you need to reallocate resources to other projects?</div>
                 <div style={{ fontSize: 'var(--fs-min)', color: 'var(--text-2)' }}>Low importance, high progress</div>
               </div>
             </div>
@@ -429,19 +429,19 @@ export default function ProjectScatter() {
                       transform: isSelected ? 'scale(1.02)' : 'scale(1)',
                     }}
                   >
-                    <div style={{ fontSize: '14px', color: isSelected ? 'var(--coral-text)' : 'var(--text)', marginBottom: '12px' }}>
+                    <div style={{ fontSize: 'calc(14 * var(--u, 1px))', color: isSelected ? 'var(--coral-text)' : 'var(--text)', marginBottom: '12px' }}>
                       {project.name}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '13px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: 'calc(13 * var(--u, 1px))' }}>
                       <div>
-                        <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: '12px' }}>Project Progress</div>
-                        <div style={{ color: 'var(--text)', fontSize: '18px' }}>
+                        <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: 'calc(12 * var(--u, 1px))' }}>Project Progress</div>
+                        <div style={{ color: 'var(--text)', fontSize: 'calc(18 * var(--u, 1px))' }}>
                           {project.progress}/5
                         </div>
                       </div>
                       <div>
-                        <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: '12px' }}>Strategic Importance</div>
-                        <div style={{ color: 'var(--text)', fontSize: '18px' }}>
+                        <div style={{ color: 'var(--text-2)', marginBottom: '4px', fontSize: 'calc(12 * var(--u, 1px))' }}>Strategic Importance</div>
+                        <div style={{ color: 'var(--text)', fontSize: 'calc(18 * var(--u, 1px))' }}>
                           {project.importance}
                         </div>
                       </div>

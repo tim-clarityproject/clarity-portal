@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatDateAndTime } from '../lib/dateFormatter';
+import { useDraft } from '../lib/drafts';
 import { LIMITS, loadLatestVersion, loadDraftReview, loadReview, saveReview, deleteReview } from '../lib/missionPlan';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
@@ -39,6 +40,18 @@ export default function PersonalOperatingPlanReview() {
   const [saveError, setSaveError] = useState('');
   const [discardOpen, setDiscardOpen] = useState(false);
   const toast = useToast();
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct): one draft per
+  // review being edited, or per mission for a new review.
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: reviewId ? `plan-review:${reviewId}` : mission ? `plan-review:mission-${mission.id}` : null,
+    value: { reviewData },
+    ready: !isLoading && Boolean(mission),
+    onRestore: (draft) => {
+      if (draft?.reviewData && typeof draft.reviewData === 'object') setReviewData(draft.reviewData);
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -195,6 +208,7 @@ export default function PersonalOperatingPlanReview() {
         status: draft ? 'draft' : 'final',
         existingId: existingReviewId,
       });
+      clearDraft();
 
       if (!draft) {
         // Write reviewed progress back onto the live plan, so the main
@@ -226,6 +240,7 @@ export default function PersonalOperatingPlanReview() {
 
   const handleDiscard = async () => {
     setDiscardOpen(false);
+    clearDraft();
     // Discard only ever removes a DRAFT row (an existing final review
     // being edited must never be deleted by walking away from it).
     if (existingReviewId && continuingDraftDate) {

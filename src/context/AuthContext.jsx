@@ -4,6 +4,23 @@ import { sessionManager } from '../lib/sessionManager';
 import { dataSyncManager } from '../lib/dataSyncManager';
 import { diag } from '../utils/diag';
 import { clearAppStorage } from '../lib/clearAppStorage';
+import { flush as flushQueue, startSyncQueue } from '../lib/syncQueue';
+import { friendlyError } from '../lib/friendlyError';
+
+// The session kept on this device (supabase.js storageKey), read directly
+// so that being offline, or a sign-in refresh that fails for want of a
+// connection, never counts as being signed out (Tim, 26 Oct). People stay
+// signed in on their own devices until they choose Sign out.
+function storedSessionUser() {
+  try {
+    const raw = localStorage.getItem('clarity-portal-auth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.refresh_token && parsed?.user ? parsed.user : null;
+  } catch {
+    return null;
+  }
+}
 
 export const AuthContext = createContext();
 
@@ -39,21 +56,28 @@ export function AuthProvider({ children }) {
 
         // Check session validity
         if (session?.user && !error) {
-          // Session exists and is valid
+          // Session exists and is valid. The page shows straight away;
+          // the cached profile data refreshes in the background.
           console.log('[AuthContext] - Session valid, setting user:', session.user.email);
           setUser(session.user);
-          const userData = await dataSyncManager.loadUserData(session.user.id);
-          localStorage.setItem('clarity-user-data', JSON.stringify(userData));
+          dataSyncManager.loadUserData(session.user.id)
+            .then((userData) => localStorage.setItem('clarity-user-data', JSON.stringify(userData)))
+            .catch(() => { /* offline: the cached copy stays */ });
+        } else if (storedSessionUser()) {
+          // The refresh could not reach the server (offline, or a slow
+          // connection): still signed in, from the session on the device.
+          // Supabase refreshes it once the connection is back.
+          console.log('[AuthContext] - Session kept on the device while the refresh waits for a connection.');
+          setUser(storedSessionUser());
         } else {
-          // Session is invalid or missing - clear cached data and logout
-          console.log('[AuthContext] - No session or error, logging out. Error:', error?.message);
-          localStorage.removeItem('clarity-user-data');
+          // Genuinely signed out: nothing kept on the device is cleared
+          // here; only a deliberate Sign out does that.
+          console.log('[AuthContext] - No session. Error:', error?.message);
           setUser(null);
         }
       } catch (error) {
         console.error('[AuthContext] Auth check error:', error);
-        localStorage.removeItem('clarity-user-data');
-        setUser(null);
+        setUser(storedSessionUser());
       } finally {
         setIsLoading(false);
         console.log('[AuthContext] Initial auth check complete - isLoading: false');
@@ -68,7 +92,9 @@ export function AuthProvider({ children }) {
       // Use functional update to preserve user object reference when ID unchanged
       // This prevents unnecessary re-renders in components with [user] in dependencies
       setUser(prevUser => {
-        const nextUser = session?.user || null;
+        // No session in the event, but one still on the device: the
+        // refresh is waiting for a connection, so stay signed in.
+        const nextUser = session?.user || storedSessionUser() || null;
         const userIdShort = nextUser?.id?.substring(0, 8) || 'null';
         let outcome = 'replaced';
 
@@ -161,10 +187,11 @@ export function AuthProvider({ children }) {
             // Silently handle data sync errors
           }
         }
-      } else {
-        // No valid session - clear all cached user data and drafts
-        localStorage.removeItem('clarity-user-data');
-        clearUserDrafts();
+      } else if (!storedSessionUser()) {
+        // Signed out (here, in another tab, or the session ended). Drafts,
+        // page copies and waiting saves stay on the device: only a
+        // deliberate Sign out clears them (Tim, 26 Oct). They carry the
+        // person's id, so nobody else signing in here is shown them.
         setUser(null);
       }
     });
@@ -173,6 +200,11 @@ export function AuthProvider({ children }) {
       subscription?.unsubscribe();
     };
   }, []);
+
+  // Saves made offline are sent for whoever is signed in.
+  useEffect(() => {
+    startSyncQueue(user?.id ?? null);
+  }, [user?.id]);
 
   // Handle session refresh on tab visibility change and periodic refresh
   useEffect(() => {
@@ -240,9 +272,9 @@ export function AuthProvider({ children }) {
       if (err.status === 400 || err.message?.includes('Invalid login credentials')) {
         return { success: false, error: 'That email and password didn’t match. Check them and try again.' };
       } else if (err.status === 401) {
-        return { success: false, error: 'Email not confirmed. Check your email for verification link.' };
+        return { success: false, error: 'Your email address hasn’t been confirmed yet. Open the link we sent you, then sign in.' };
       } else {
-        return { success: false, error: err.message || 'That didn’t sign you in. Check your connection and try again.' };
+        return { success: false, error: friendlyError(err, 'That didn’t sign you in. Check your connection and try again.') };
       }
     } finally {
       setIsLoading(false);
@@ -294,12 +326,12 @@ export function AuthProvider({ children }) {
         } else if (signupErr.status === 429) {
           return { success: false, error: 'That was tried too many times. Wait a moment and try again.' };
         } else {
-          return { success: false, error: signupErr.message || 'Your account wasn’t created. Check your connection and try again.' };
+          return { success: false, error: friendlyError(signupErr, 'Your account wasn’t created. Check your connection and try again.') };
         }
       }
     } catch (err) {
       console.error('Signup exception:', err);
-      return { success: false, error: err.message || 'That didn’t work. Check your connection and try again.' };
+      return { success: false, error: friendlyError(err, 'That didn’t work. Check your connection and try again.') };
     } finally {
       setIsLoading(false);
     }
@@ -314,6 +346,8 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     setIsLoading(true);
     try {
+      // Send anything still waiting before the device is cleared.
+      await Promise.race([flushQueue(), new Promise((resolve) => { setTimeout(resolve, 4000); })]);
       clearUserDrafts();
       await auth.signOut();
       sessionManager.clearSession();

@@ -10,6 +10,7 @@ import { isPlanReviewDraft, PLAN_REVIEW_TYPE } from '../lib/planReview';
 import { discardReviewDraft, discardPlanReviewDraft, discardMissionReviewDraft } from '../lib/discardDraft';
 import { deleteCheckin, listCheckins } from '../lib/wheelOfLifeApi';
 import { formatCheckinDate } from '../lib/wheelOfLife';
+import { useCachedLoad } from '../lib/pageCache';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -48,14 +49,10 @@ export default function MyReviews() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const [rows, setRows] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
   const load = async () => {
-    setError(null);
     let anySucceeded = false;
     const built = [];
 
@@ -165,17 +162,19 @@ export default function MyReviews() {
       console.error('[MyReviews] wheel_of_life_checkins load failed (migration 020 may not be run yet):', err);
     }
 
-    setRows(built);
-    if (!anySucceeded) {
-      setError({ message: 'Your reviews didn’t load. Check your connection and try again.', onRetry: load });
-    }
-    setIsLoading(false);
+    if (!anySucceeded) throw new TypeError('Failed to fetch: nothing loaded');
+    return built;
   };
 
-  useEffect(() => {
-    if (user) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  // Instant page (Tim, 26 Oct): the reviews shown last time appear at
+  // once from the device, then refresh quietly in the background.
+  const loaded = useCachedLoad({ userId: user?.id, name: 'my-reviews', load });
+  const rows = loaded.data || [];
+  const isLoading = loaded.loading;
+  const error = loaded.error
+    ? { message: 'Your reviews didn’t load. Check your connection and try again.', onRetry: loaded.reload }
+    : null;
+  const setRows = loaded.setData;
 
   useEffect(() => {
     if (location.state?.toast) {

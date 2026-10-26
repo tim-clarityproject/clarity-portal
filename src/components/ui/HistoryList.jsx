@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import pageText from '../../content/pageText';
-import { Button, Dropdown, EmptyState, FilterButton, PageHeader } from '../design';
+import { Button, Dropdown, EmptyState, FilterButton, PageHeader, keepsHappeningLine, useCoach } from '../design';
 
 // LIST ROW GUIDELINES (guidelines to apply by default; a mock-up wins
 // where it shows a detail). On phone every row of every list is built
@@ -101,6 +101,7 @@ export default function HistoryList({
   const [sortOrder, setSortOrder] = useState('new'); // 'new' | 'old'
   const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE);
 
+  const coach = useCoach();
   const activeSubFilterList = subFilters[activeFilter];
   const allSubFilters = activeSubFilterList ? [{ id: 'all', label: 'All' }, ...activeSubFilterList] : null;
 
@@ -115,6 +116,7 @@ export default function HistoryList({
         </div>
         <div className="hlist-error" role="alert">
           <p>{error.message || 'That didn’t load. Check your connection and try again.'}</p>
+          <p>{keepsHappeningLine(coach)}</p>
           {error.onRetry && (
             <Button onClick={error.onRetry}>Try again</Button>
           )}
@@ -323,7 +325,7 @@ const HLIST_CSS = `
   align-items: center;
   gap: var(--space-3);
   margin: 22px 0 4px;
-  font-size: 13px;
+  font-size: calc(13 * var(--u, 1px));
   color: var(--placeholder);
 }
 
@@ -332,7 +334,7 @@ const HLIST_CSS = `
   padding: 0 !important;
   background: transparent;
   border: none;
-  font-size: 13px !important;
+  font-size: calc(13 * var(--u, 1px)) !important;
   color: var(--text-2);
   cursor: pointer;
   transition: color var(--dur) var(--ease);
@@ -444,7 +446,7 @@ const HLIST_CSS = `
 
 .hlist-row-title {
   display: block;
-  font-size: 17px;
+  font-size: calc(17 * var(--u, 1px));
   color: var(--text);
   line-height: 1.3;
   /* Wraps between words only - a date title never breaks mid-word.
@@ -467,7 +469,7 @@ const HLIST_CSS = `
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 10px;
+  font-size: calc(10 * var(--u, 1px));
   color: var(--text-2);
   line-height: 1.4;
 }
@@ -481,7 +483,7 @@ const HLIST_CSS = `
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 10px;
+  font-size: calc(10 * var(--u, 1px));
   color: var(--mint-text);
   line-height: 1.4;
 }
@@ -514,7 +516,7 @@ const HLIST_CSS = `
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 10px;
+  font-size: calc(10 * var(--u, 1px));
   color: var(--text-2);
 }
 
@@ -580,7 +582,7 @@ const HLIST_CSS = `
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 10px !important;
+  font-size: calc(10 * var(--u, 1px)) !important;
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease);
 }
@@ -610,7 +612,7 @@ const HLIST_CSS = `
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 10px !important;
+  font-size: calc(10 * var(--u, 1px)) !important;
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease);
 }
@@ -644,7 +646,7 @@ const HLIST_CSS = `
 }
 
 .hlist-row-meta {
-  font-size: 13px;
+  font-size: calc(13 * var(--u, 1px));
   color: var(--text-2);
   display: flex;
   flex-wrap: wrap;
@@ -658,7 +660,7 @@ const HLIST_CSS = `
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: 10px;
+  font-size: calc(10 * var(--u, 1px));
   color: var(--text-2);
 }
 

@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useFormDraftReady } from '../hooks/useFormDraftReady';
 import { AuthContext } from '../context/AuthContext';
 import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import { supabase } from '../lib/supabase';
@@ -10,11 +11,29 @@ import NamingModal from '../components/NamingModal';
 import DesignHeader from '../components/DesignHeader';
 import { Loading, PageHeader, TextBox, Button, useToast } from '../components/design';
 
+// Never the raw error: say what happened, then what to do.
+const LOAD_ERROR = 'Your decision didn’t load. Check your connection and try again.';
+
+// Waits for a draft FormContext is putting back after a refresh (see
+// useFormDraftReady), then shows the step.
 export default function GrowStep4WillDo() {
+  const { ready, isReload } = useFormDraftReady();
+  if (!ready) {
+    return (
+      <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)' }}>
+        <DesignHeader />
+        <Loading label="Loading your decision" />
+      </div>
+    );
+  }
+  return <GrowStep4WillDoForm isReload={isReload} />;
+}
+
+function GrowStep4WillDoForm({ isReload }) {
   const navigate = useNavigate();
   const toast = useToast();
   const location = useLocation();
-  const { updateFormData, getFieldValue } = useContext(FormContext);
+  const { updateFormData, getFieldValue, clearFormData } = useContext(FormContext);
   const { user } = useContext(AuthContext);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -28,12 +47,14 @@ export default function GrowStep4WillDo() {
   const willDoValue = will_do || '';
   const optionsValue = options || [];
 
-  // Clear on fresh start (new decision)
+  // Clear on fresh start (new decision). After a refresh the shared form
+  // holds what was typed, put back from the device: keep it.
   useEffect(() => {
+    if (isReload) return;
     if (!isEditMode && !location.state?.options) {
       updateFormData('will_do', '');
     }
-  }, [isEditMode, location.state?.options, updateFormData]);
+  }, [isReload, isEditMode, location.state?.options, updateFormData]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(location.state?.title || '');
@@ -201,6 +222,9 @@ export default function GrowStep4WillDo() {
       clearDirty();
       toast.show('Saved');
       setTimeout(() => {
+        // Finished and saved: the shared form, and its draft on the
+        // device, are cleared (the summary loads from the server).
+        clearFormData();
         navigate('/decision-summary', { state: { decisionId } });
       }, 1500);
     } catch (error) {
@@ -230,7 +254,7 @@ export default function GrowStep4WillDo() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', minHeight: '400px', marginBottom: '100px' }}>
           {/* Options List */}
           <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ fontSize: 'calc(14 * var(--u, 1px))', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Your Prioritised Options
             </h2>
             <div
@@ -263,7 +287,7 @@ export default function GrowStep4WillDo() {
                     border: '1px solid var(--coral)',
                     borderRadius: '6px',
                     cursor: editingIndex === index ? 'text' : 'grab',
-                    fontSize: '14px',
+                    fontSize: 'calc(14 * var(--u, 1px))',
                     color: 'var(--on-coral)',
                     transition: 'all 0.2s ease',
                     opacity: draggedItem?.item === option && draggedItem?.index === index ? 0.5 : 1,
@@ -299,7 +323,7 @@ export default function GrowStep4WillDo() {
                           width: '100%',
                           border: 'none',
                           outline: 'none',
-                          fontSize: '14px',
+                          fontSize: 'calc(14 * var(--u, 1px))',
                           fontFamily: 'inherit',
                           backgroundColor: 'transparent',
                           color: 'var(--on-coral)',
@@ -336,10 +360,10 @@ export default function GrowStep4WillDo() {
 
           {/* Text Area */}
           <div>
-            <h2 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h2 style={{ fontSize: 'calc(14 * var(--u, 1px))', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               What Will You Do?
             </h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-2)', marginBottom: '16px', lineHeight: '1.5' }}>
+            <p style={{ fontSize: 'calc(13 * var(--u, 1px))', color: 'var(--text-2)', marginBottom: '16px', lineHeight: '1.5' }}>
               Be specific about how and when you will take action.
             </p>
             <TextBox
@@ -358,8 +382,8 @@ export default function GrowStep4WillDo() {
 
         {error && (
           <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
-            <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
-              {error}
+            <p style={{ fontSize: 'calc(14 * var(--u, 1px))', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
+              {LOAD_ERROR}
             </p>
             <Button variant="outline" onClick={onRetry}>Retry</Button>
           </div>
@@ -381,7 +405,7 @@ export default function GrowStep4WillDo() {
 
         {validationError && (
           <div style={{ padding: '16px', marginTop: '16px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
-            <p style={{ fontSize: '14px', color: 'var(--text)', margin: 0, fontWeight: '500' }}>
+            <p style={{ fontSize: 'calc(14 * var(--u, 1px))', color: 'var(--text)', margin: 0, fontWeight: '500' }}>
               {validationError}
             </p>
           </div>

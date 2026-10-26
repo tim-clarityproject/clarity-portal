@@ -10,6 +10,7 @@ import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, Button, useToast } from '../components/design';
+import { useCachedLoad } from '../lib/pageCache';
 
 // Decision types with a "Review this plan" page (prompt 8).
 const REVIEWABLE_TYPES = new Set(['inversion', 'tough-conversation']);
@@ -43,17 +44,8 @@ export default function DecisionHistory() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const [decisions, setDecisions] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
-
-  useEffect(() => {
-    if (user) loadDecisions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
 
   // A Discard on any Inversion/Tough conversation/Stop doing audit step
   // lands here with a one-shot toast - show it once, then clear the
@@ -66,29 +58,37 @@ export default function DecisionHistory() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadDecisions = async () => {
-    setError(null);
-    try {
+  // Instant page (Tim, 26 Oct): the decisions shown last time appear at
+  // once from the device, then refresh quietly in the background.
+  const loaded = useCachedLoad({
+    userId: user?.id,
+    name: 'decision-history',
+    load: async () => {
       const { data, error: fetchError } = await supabase
         .from('decisions')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (fetchError) throw fetchError;
-      setDecisions((data || []).filter((d) => d.tool_type !== 'daily_plan' && d.tool_type !== 'plan_meeting'));
+      let reviews = [];
       try {
-        setReviews(await loadPlanReviews(user.id));
+        reviews = await loadPlanReviews(user.id);
       } catch (reviewErr) {
         console.error('[DecisionHistory] review lookup failed (migration 013 may not be run yet):', reviewErr);
-        setReviews([]);
       }
-    } catch (err) {
-      console.error('[DecisionHistory] load failed:', err);
-      setError({ message: 'Your decisions didn’t load. Check your connection and try again.', onRetry: loadDecisions });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return {
+        decisions: (data || []).filter((d) => d.tool_type !== 'daily_plan' && d.tool_type !== 'plan_meeting'),
+        reviews,
+      };
+    },
+  });
+  const decisions = useMemo(() => loaded.data?.decisions || [], [loaded.data]);
+  const reviews = useMemo(() => loaded.data?.reviews || [], [loaded.data]);
+  const isLoading = loaded.loading;
+  const error = loaded.error
+    ? { message: 'Your decisions didn’t load. Check your connection and try again.', onRetry: loaded.reload }
+    : null;
+  const setDecisions = (fn) => loaded.setData((prev) => ({ ...prev, decisions: fn(prev?.decisions || []) }));
 
   const rows = useMemo(() => decisions.map((d) => {
     const isDraft = Boolean(d.draft || d.status === 'draft');

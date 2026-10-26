@@ -8,6 +8,7 @@ import {
   loadReviewByEntryId, loadWeeklyDraftFor, saveReview,
 } from '../lib/reviewTool';
 import { discardReviewDraft } from '../lib/discardDraft';
+import { useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
@@ -42,6 +43,20 @@ export default function MyJournal() {
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialogOpen, setNameDialogOpen] = useState(false);
   const toast = useToast();
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct). One draft
+  // per saved review; a new weekly check-in is kept per week it starts in.
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `my-journal:${reviewType}:${stateEntryId || (reviewType === 'weekly-momentum' ? `new:${getLocalDateKey(new Date())}` : 'new')}`,
+    value: { dateKey, answers, ratings },
+    ready: !isLoading,
+    onRestore: (v) => {
+      if (v.dateKey) setDateKey(v.dateKey);
+      if (v.answers) setAnswers((prev) => ({ ...prev, ...v.answers }));
+      if (v.ratings) setRatings((prev) => ({ ...prev, ...v.ratings }));
+    },
+  });
 
   const questions = reviewType === 'weekly-momentum' ? WEEKLY_QUESTIONS : AFTER_ACTION_QUESTIONS;
   const pageTitle = reviewType === 'weekly-momentum' ? 'Weekly Momentum Check-in' : 'After-Action Review';
@@ -116,6 +131,7 @@ export default function MyJournal() {
     setIsSaving(true);
     try {
       const savedId = await persist({ title, status: 'final' });
+      clearDraft();
       navigate('/review-summary', { state: { entryId: savedId, reviewType, toast: 'Review saved.' } });
     } catch (error) {
       console.error('[MyJournal] save failed:', error);
@@ -155,6 +171,7 @@ export default function MyJournal() {
       const title = reviewType === 'weekly-momentum' ? weeklyTitle(dateKey) : (currentTitle || afterActionTitle(''));
       await persist({ title, status: 'draft' });
       setExistingStatus('draft');
+      clearDraft();
       toast.show('Draft saved.');
       navigate('/my-reviews');
     } catch (error) {
@@ -177,6 +194,7 @@ export default function MyJournal() {
         console.error('[MyJournal] draft delete on discard failed:', error);
       }
     }
+    clearDraft();
     navigate('/review-section', { state: { toast: 'Discarded.' } });
   };
 

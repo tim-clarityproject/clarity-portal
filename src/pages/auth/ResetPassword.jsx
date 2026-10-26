@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import AuthShell from '../../components/auth/AuthShell';
 import { AuthPasswordField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
+import { friendlyError } from '../../lib/friendlyError';
 
 const NEW_PASSWORD_FIELD_ID = 'reset-password-new';
 const CONFIRM_PASSWORD_FIELD_ID = 'reset-password-confirm';
@@ -154,7 +155,7 @@ export default function ResetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
-        setFormError(error.message || 'Your password didn’t update. Check your connection and try again.');
+        setFormError(friendlyError(error, 'Your password didn’t update. Check your connection and try again.'));
         setShakeToken((t) => t + 1);
         return;
       }
@@ -162,7 +163,7 @@ export default function ResetPassword() {
       await supabase.auth.signOut();
       setStatus('updated');
     } catch (err) {
-      setFormError(err.message || 'Your password didn’t update. Check your connection and try again.');
+      setFormError(friendlyError(err, 'Your password didn’t update. Check your connection and try again.'));
       setShakeToken((t) => t + 1);
     } finally {
       setIsSubmitting(false);

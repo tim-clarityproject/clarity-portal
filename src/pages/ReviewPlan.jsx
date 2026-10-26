@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { parseDbTimestamp, getLocalDateKey, formatReviewDayLabel } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, savePlanReview, isPlanReviewDraft } from '../lib/planReview';
 import { discardPlanReviewDraft } from '../lib/discardDraft';
+import { useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
@@ -158,6 +159,19 @@ export default function ReviewPlan() {
   const [discardOpen, setDiscardOpen] = useState(false);
   const toast = useToast();
 
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct): one draft
+  // per plan reviewed, or per day when there is no plan.
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `review-plan:${planKind}:${plan?.id || dateKey}`,
+    value: { a, b },
+    ready: !isLoading,
+    onRestore: (v) => {
+      setA(v.a || '');
+      setB(v.b || '');
+    },
+  });
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -204,6 +218,7 @@ export default function ReviewPlan() {
     setIsSaving(true);
     try {
       const savedId = await persist(false);
+      clearDraft();
       navigate('/review-plan-summary', {
         state: { planKind, plan, entryId: savedId, toast: 'Review saved.' },
       });
@@ -222,6 +237,7 @@ export default function ReviewPlan() {
       const savedId = await persist(true);
       setEntryId(savedId);
       setExistingIsDraft(true);
+      clearDraft();
       toast.show('Draft saved.');
       navigate('/my-reviews');
     } catch (error) {
@@ -243,6 +259,7 @@ export default function ReviewPlan() {
         console.error('[ReviewPlan] draft delete on discard failed:', error);
       }
     }
+    clearDraft();
     const target = plan ? t.summaryRoute : '/review-section';
     navigate(target, { state: plan ? { decisionId: plan.id, toast: 'Discarded.' } : { toast: 'Discarded.' } });
   };

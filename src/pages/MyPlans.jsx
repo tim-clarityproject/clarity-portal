@@ -1,10 +1,11 @@
-import { useState, useContext, useEffect, useMemo } from 'react';
+import { useState, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { parseDbTimestamp, getLocalDateKey, formatReviewDate } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
+import { useCachedLoad } from '../lib/pageCache';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import HistoryList from '../components/ui/HistoryList';
@@ -75,21 +76,15 @@ function rowTitle(d) {
 export default function MyPlans() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const [plans, setPlans] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
-  useEffect(() => {
-    if (user) loadPlans();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  const loadPlans = async () => {
-    setError(null);
-    try {
+  // Instant page (Tim, 26 Oct): the plans shown last time appear at once
+  // from the device, then refresh quietly in the background.
+  const loaded = useCachedLoad({
+    userId: user?.id,
+    name: 'my-plans',
+    load: async () => {
       const { data, error: fetchError } = await supabase
         .from('decisions')
         .select('*')
@@ -97,24 +92,25 @@ export default function MyPlans() {
         .in('tool_type', COMBINED_TOOL_TYPES)
         .order('created_at', { ascending: false });
       if (fetchError) throw fetchError;
-      setPlans(data || []);
       // Reviews live in journal_entries (prompt 8) under a review_type
       // the live database may not allow yet (see migration
       // 013_add_plan_review_type.sql) - fails gracefully, rows just
       // show no review state until it has been run.
+      let reviews = [];
       try {
-        setReviews(await loadPlanReviews(user.id));
+        reviews = await loadPlanReviews(user.id);
       } catch (reviewErr) {
         console.error('[MyPlans] review lookup failed (migration 013 may not be run yet):', reviewErr);
-        setReviews([]);
       }
-    } catch (err) {
-      console.error('[MyPlans] load failed:', err);
-      setError({ message: 'Your plans didn’t load. Check your connection and try again.', onRetry: loadPlans });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return { plans: data || [], reviews };
+    },
+  });
+  const plans = useMemo(() => loaded.data?.plans || [], [loaded.data]);
+  const reviews = useMemo(() => loaded.data?.reviews || [], [loaded.data]);
+  const isLoading = loaded.loading;
+  const error = loaded.error
+    ? { message: 'Your plans didn’t load. Check your connection and try again.', onRetry: loaded.reload }
+    : null;
 
   const rows = useMemo(() => plans.map((d) => {
     const isDraft = Boolean(d.draft || d.status === 'draft');
@@ -162,7 +158,7 @@ export default function MyPlans() {
     try {
       const { error: deleteError } = await supabase.from('decisions').delete().eq('id', id);
       if (deleteError) throw deleteError;
-      setPlans((prev) => prev.filter((p) => p.id !== id));
+      loaded.setData((prev) => ({ ...prev, plans: (prev?.plans || []).filter((p) => p.id !== id) }));
       clearProgress();
       toast.show('Deleted');
     } catch (err) {

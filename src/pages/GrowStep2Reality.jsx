@@ -1,12 +1,31 @@
 import { useContext, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useFormDraftReady } from '../hooks/useFormDraftReady';
 import { useLoadDecisionStep } from '../hooks/useLoadDecisionStep';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { Loading, PageHeader, TextBox, Button } from '../components/design';
 
+// Never the raw error: say what happened, then what to do.
+const LOAD_ERROR = 'Your decision didn’t load. Check your connection and try again.';
+
+// Waits for a draft FormContext is putting back after a refresh (see
+// useFormDraftReady), then shows the step.
 export default function GrowStep2Reality() {
+  const { ready, isReload } = useFormDraftReady();
+  if (!ready) {
+    return (
+      <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)' }}>
+        <DesignHeader />
+        <Loading label="Loading your decision" />
+      </div>
+    );
+  }
+  return <GrowStep2RealityForm isReload={isReload} />;
+}
+
+function GrowStep2RealityForm({ isReload }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { updateFormData, getFieldValue } = useContext(FormContext);
@@ -14,8 +33,10 @@ export default function GrowStep2Reality() {
   // Load decision data for edit mode; returns values from FormContext
   const { isLoading, isEditMode, error, onRetry, markDirty, constraints, opportunities } = useLoadDecisionStep(['constraints', 'opportunities']);
 
-  // Only clear on mount if starting fresh (no decisionId)
+  // Only clear on mount if starting fresh (no decisionId). After a refresh
+  // the shared form holds what was typed, put back from the device: keep it.
   useEffect(() => {
+    if (isReload) return;
     if (!location.state?.decisionId) {
       updateFormData('constraints', '');
       updateFormData('opportunities', '');
@@ -92,8 +113,8 @@ export default function GrowStep2Reality() {
 
         {error && (
           <div style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
-            <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
-              {error}
+            <p style={{ fontSize: 'calc(14 * var(--u, 1px))', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
+              {LOAD_ERROR}
             </p>
             <Button variant="outline" onClick={onRetry}>Retry</Button>
           </div>

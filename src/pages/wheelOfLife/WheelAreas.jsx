@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
+import { useDraft } from '../../lib/drafts';
 import DesignHeader from '../../components/DesignHeader';
 import pageText from '../../content/pageText';
 import {
@@ -16,7 +18,7 @@ import WheelLoadState from './WheelLoadState';
 import { BinIcon } from './icons';
 import '../../styles/wheelOfLife.css';
 
-const SAVE_FAILED = 'That change hasn’t saved. Check your connection and try again.';
+const SAVE_ERROR = 'That change hasn’t saved. Check your connection and try again.';
 
 function split(all) {
   const sorted = sortAreas(all);
@@ -38,6 +40,20 @@ export default function WheelAreas() {
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const { user } = useContext(AuthContext);
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct). Once an area
+  // is added the box is emptied, which matches what the page opened with,
+  // so the draft removes itself; nothing else needs clearing.
+  useDraft({
+    userId: user?.id,
+    name: 'wheel-areas:new-area',
+    value: { name: draft },
+    ready: !data.loading && !data.error,
+    onRestore: (saved) => {
+      if (typeof saved?.name === 'string') setDraft(saved.name);
+    },
+  });
 
   if (data.loading || data.error) {
     return <WheelLoadState loading={data.loading} error={data.error} onRetry={data.reload} />;
@@ -59,7 +75,9 @@ export default function WheelAreas() {
       if (res.error.code === 'duplicate' || res.error.code === 'invalid' || res.error.code === 'last_area') {
         toast.error(res.error.message);
       } else {
-        setError(res.error.code === 'network' ? SAVE_FAILED : res.error.message);
+        // Never the raw error: say what happened, then what to do.
+        console.error('Wheel of Life areas change:', res.error);
+        setError(SAVE_ERROR);
       }
       return false;
     }

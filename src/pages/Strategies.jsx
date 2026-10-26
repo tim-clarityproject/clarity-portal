@@ -68,10 +68,10 @@ export default function Strategies() {
           {/* Left Column - Risks */}
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: 'calc(18 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
                 How it could go wrong
               </h2>
-              <p style={{ fontSize: '12px', color: 'transparent', margin: 0, textAlign: 'center' }}>
+              <p style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'transparent', margin: 0, textAlign: 'center' }}>
                 placeholder
               </p>
             </div>
@@ -89,7 +89,7 @@ export default function Strategies() {
                   <span
                     style={{
                       color: 'var(--text-2)',
-                      fontSize: '16px',
+                      fontSize: 'calc(16 * var(--u, 1px))',
                       minWidth: '20px',
                       textAlign: 'center',
                       lineHeight: '1',
@@ -104,7 +104,7 @@ export default function Strategies() {
                       backgroundColor: 'var(--raised)',
                       border: '1px solid var(--line)',
                       borderRadius: '8px',
-                      fontSize: '14px',
+                      fontSize: 'calc(14 * var(--u, 1px))',
                       color: 'var(--text)',
                     }}
                   >
@@ -118,10 +118,10 @@ export default function Strategies() {
           {/* Right Column - Strategies */}
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: 'calc(18 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
                 Your strategies
               </h2>
-              <p style={{ fontSize: '12px', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
+              <p style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
                 Clue: it might be the exact opposite of how it could go wrong
               </p>
             </div>
@@ -131,7 +131,7 @@ export default function Strategies() {
                   <span
                     style={{
                       color: 'var(--text-2)',
-                      fontSize: '16px',
+                      fontSize: 'calc(16 * var(--u, 1px))',
                       minWidth: '20px',
                       textAlign: 'center',
                       lineHeight: '1',

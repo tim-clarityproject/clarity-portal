@@ -115,7 +115,7 @@ export default function ProjectList() {
         <div className="g1-two-col">
           {/* Left Column - Critical Success Factors */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: 'calc(18 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
               Critical Success Factors
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -132,7 +132,7 @@ export default function ProjectList() {
                   <span
                     style={{
                       color: 'var(--text-2)',
-                      fontSize: '16px',
+                      fontSize: 'calc(16 * var(--u, 1px))',
                       minWidth: '20px',
                       textAlign: 'center',
                       lineHeight: '1',
@@ -147,7 +147,7 @@ export default function ProjectList() {
                       backgroundColor: 'var(--raised)',
                       border: '1px solid var(--line)',
                       borderRadius: '8px',
-                      fontSize: '14px',
+                      fontSize: 'calc(14 * var(--u, 1px))',
                       color: 'var(--text)',
                     }}
                   >
@@ -160,7 +160,7 @@ export default function ProjectList() {
 
           {/* Right Column - Projects */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: 'calc(18 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
               Projects / Lines of Effort
             </h2>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
@@ -169,7 +169,7 @@ export default function ProjectList() {
                   <span
                     style={{
                       color: 'var(--text-2)',
-                      fontSize: '16px',
+                      fontSize: 'calc(16 * var(--u, 1px))',
                       minWidth: '20px',
                       textAlign: 'center',
                       lineHeight: '1',

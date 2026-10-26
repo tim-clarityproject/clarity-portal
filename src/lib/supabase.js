@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { connectionFetch, setProbeUrl } from './connection';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -62,7 +63,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // Note: Supabase auth cookies are set for the domain, not shared across subdomains
     // Each domain maintains its own session separately
   },
+  // Every request knows at once when the device is offline, and gives up
+  // on one that hangs (src/lib/connection.js).
+  global: { fetch: connectionFetch },
 });
+if (supabaseUrl) setProbeUrl(`${supabaseUrl}/auth/v1/health`);
 
 // Add session recovery for cross-domain access
 // When accessing from a different domain, validate session with Supabase directly

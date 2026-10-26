@@ -1,11 +1,12 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { FormContext } from '../context/FormContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { parseDbTimestamp, getLocalDateKey, formatClockTime, formatDayMonthTime } from '../lib/dateFormatter';
 import { loadPlanReviews, findPlanReview, isPlanReviewDraft, findTodaysDailyPlan } from '../lib/planReview';
+import { useCachedLoad } from '../lib/pageCache';
 import DesignHeader from '../components/DesignHeader';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BreathingOrb from '../components/ui/BreathingOrb';
@@ -118,103 +119,48 @@ export default function Welcome() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const { clearFormData } = useContext(FormContext);
-  const [firstName, setFirstName] = useState('');
-  const [recentPlans, setRecentPlans] = useState([]);
-  const [recentPlanReviews, setRecentPlanReviews] = useState([]);
-  const [plansLoaded, setPlansLoaded] = useState(false);
   const [showBreathingQuickOpen, setShowBreathingQuickOpen] = useState(false);
 
-  // Same first-name source as before: cached localStorage first, then
-  // profiles.first_name from Supabase. No other database reads changed.
-  useEffect(() => {
-    if (!user) {
-      setFirstName('');
-      return;
-    }
+  // Instant page (Tim, 26 Oct): the name and the last three plans shown
+  // last time appear at once from the device, then refresh quietly in the
+  // background. Offline, they simply stay as they were.
+  const home = useCachedLoad({
+    userId: user?.id,
+    name: 'home',
+    load: async () => {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (profileError) throw profileError;
 
-    const loadUserName = async () => {
+      // Last three plans (daily, meeting, If-Then), newest first.
+      const { data: plans, error: plansError } = await supabase
+        .from('decisions')
+        .select('id, tool_type, title, created_at')
+        .eq('user_id', user.id)
+        .in('tool_type', ['daily_plan', 'plan_meeting', 'if_then_planning'])
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (plansError) throw plansError;
+
+      // Prompt 8: which of these already have a finished review, so the
+      // link can say "View review" - fails gracefully (just no "View
+      // review" state) until migration 013 has been run.
+      let planReviews = [];
       try {
-        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
-        if (authError || !currentUser) {
-          localStorage.removeItem('clarity-user-data');
-          setFirstName('');
-          return;
-        }
-
-        const cachedData = localStorage.getItem('clarity-user-data');
-        if (cachedData) {
-          const userData = JSON.parse(cachedData);
-          if (userData.first_name) {
-            setFirstName(userData.first_name);
-            return;
-          }
-        }
-
-        const { data } = await supabase
-          .from('profiles')
-          .select('first_name')
-          .eq('id', user.id)
-          .single();
-
-        if (data && data.first_name) {
-          setFirstName(data.first_name);
-        }
-      } catch (err) {
-        console.error('Error loading user name:', err);
-        setFirstName('');
+        planReviews = await loadPlanReviews(user.id);
+      } catch (reviewErr) {
+        console.error('Error loading plan reviews (migration 013 may not be run yet):', reviewErr);
       }
-    };
-
-    loadUserName();
-  }, [user]);
-
-  // Last three plans (daily, meeting, If-Then) from the decisions table,
-  // newest first. Read-only - title/created_at/tool_type/id only.
-  useEffect(() => {
-    if (!user) {
-      setRecentPlans([]);
-      setPlansLoaded(true);
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadRecentPlans = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('decisions')
-          .select('id, tool_type, title, created_at')
-          .eq('user_id', user.id)
-          .in('tool_type', ['daily_plan', 'plan_meeting', 'if_then_planning'])
-          .order('created_at', { ascending: false })
-          .limit(3);
-
-        if (!cancelled) {
-          if (error) {
-            console.error('Error loading recent plans:', error);
-          } else {
-            setRecentPlans(data || []);
-          }
-        }
-        // Prompt 8: which of these already have a finished review, so the
-        // link can say "View review" - fails gracefully (just no "View
-        // review" state) until migration 013 has been run.
-        try {
-          const planReviews = await loadPlanReviews(user.id);
-          if (!cancelled) setRecentPlanReviews(planReviews);
-        } catch (reviewErr) {
-          console.error('Error loading plan reviews (migration 013 may not be run yet):', reviewErr);
-        }
-      } catch (err) {
-        if (!cancelled) console.error('Error loading recent plans:', err);
-      } finally {
-        if (!cancelled) setPlansLoaded(true);
-      }
-    };
-
-    loadRecentPlans();
-    return () => { cancelled = true; };
-  }, [user]);
+      return { firstName: profile?.first_name || '', recentPlans: plans || [], recentPlanReviews: planReviews };
+    },
+  });
+  const firstName = home.data?.firstName || '';
+  const recentPlans = home.data?.recentPlans || [];
+  const recentPlanReviews = home.data?.recentPlanReviews || [];
+  const plansLoaded = !home.loading;
 
   const greetingWord = getGreetingWord();
   const showWeeklyCard = isWeekendReviewWindow();
@@ -266,7 +212,7 @@ export default function Welcome() {
           }
         }
 
-        /* src/styles/mobile.css has h1 { font-size: 28px !important;
+        /* src/styles/mobile.css has h1 { font-size: calc(28 * var(--u, 1px)) !important;
            margin: 16px 0 !important; } at max-width: 768px. A bare
            element selector (0,0,1); .home-greeting (0,1,0) already
            outranks it on specificity, but the legacy rule is !important
@@ -280,14 +226,14 @@ export default function Welcome() {
           line-height: 1.35;
           color: var(--text);
           text-align: center;
-          font-size: 26px !important;
+          font-size: calc(26 * var(--u, 1px)) !important;
           margin: 0 !important;
           padding-top: 34px;
         }
 
         @media (min-width: 769px) {
           .home-greeting {
-            font-size: 32px !important;
+            font-size: calc(32 * var(--u, 1px)) !important;
             padding-top: 48px;
           }
         }
@@ -369,7 +315,7 @@ export default function Welcome() {
           font-weight: 400;
           text-transform: uppercase;
           letter-spacing: 0.14em;
-          font-size: 13px;
+          font-size: calc(13 * var(--u, 1px));
           line-height: 1.55;
           color: var(--text);
           min-height: 3.1em;
@@ -379,7 +325,7 @@ export default function Welcome() {
         .home-tile-desc {
           font-family: var(--font-body);
           font-weight: 400;
-          font-size: 14px;
+          font-size: calc(14 * var(--u, 1px));
           line-height: 1.4;
           color: var(--text-2);
           align-self: end;
@@ -395,7 +341,7 @@ export default function Welcome() {
           margin: 22px auto 0;
           font-family: var(--font-body);
           font-weight: 400;
-          font-size: 15px;
+          font-size: calc(15 * var(--u, 1px));
           color: var(--text-2);
           text-decoration: none;
           transition: color var(--dur-fast) var(--ease);
@@ -441,7 +387,7 @@ export default function Welcome() {
           padding: 0 var(--space-2);
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: 10px;
+          font-size: calc(10 * var(--u, 1px));
           text-transform: uppercase;
           letter-spacing: 0.16em;
           color: var(--coral-soft-text);
@@ -450,7 +396,7 @@ export default function Welcome() {
         .home-weekly-title {
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: 12px;
+          font-size: calc(12 * var(--u, 1px));
           text-transform: uppercase;
           letter-spacing: 0.14em;
           color: var(--text);
@@ -459,7 +405,7 @@ export default function Welcome() {
 
         .home-weekly-text {
           font-family: var(--font-body);
-          font-size: 13px;
+          font-size: calc(13 * var(--u, 1px));
           color: var(--text-2);
           margin: 0;
         }
@@ -577,7 +523,7 @@ export default function Welcome() {
 
         .home-plan-meta {
           font-family: var(--font-body);
-          font-size: 13px;
+          font-size: calc(13 * var(--u, 1px));
           color: var(--text-2);
           margin-top: 4px;
         }
@@ -591,7 +537,7 @@ export default function Welcome() {
           border: none;
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: 10px;
+          font-size: calc(10 * var(--u, 1px));
           text-transform: uppercase;
           letter-spacing: 0.14em;
           color: var(--coral-text);
@@ -602,7 +548,7 @@ export default function Welcome() {
 
         .home-plans-empty {
           font-family: var(--font-body);
-          font-size: 14px;
+          font-size: calc(14 * var(--u, 1px));
           color: var(--text-2);
           padding: var(--space-3);
         }
@@ -636,7 +582,7 @@ export default function Welcome() {
         .home-ground-title {
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: 14px;
+          font-size: calc(14 * var(--u, 1px));
           text-transform: uppercase;
           letter-spacing: 0.16em;
           color: var(--text);
@@ -666,7 +612,7 @@ export default function Welcome() {
             margin-top: var(--space-5);
             font-family: var(--font-body);
             font-weight: 400;
-            font-size: 14px;
+            font-size: calc(14 * var(--u, 1px));
             color: var(--text-2);
             text-decoration: none;
             transition: color var(--dur-fast) var(--ease);

@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { discardDecisionDraft } from '../lib/discardDraft';
 import { clearProgress } from '../lib/saveProgress';
+import { clearDraft as forgetDraft, useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
 import PhoneActionBar from '../components/ui/PhoneActionBar';
 import { DiscardLink } from '../components/ui/DiscardLink';
@@ -13,6 +14,13 @@ import pageText from '../content/pageText';
 import { Loading, PageHeader, TextBox, Button, useToast } from '../components/design';
 
 const MAX_NAME_LENGTH = 60;
+
+// Saved or discarded: no step of this pre-mortem keeps a draft on the
+// device. Each step keeps its own (inversion-1, -2 and -3), named after
+// the saved decision, or "new" for one not saved yet.
+function forgetInversionDrafts(userId, recordKey) {
+  [1, 2, 3].forEach((step) => forgetDraft(userId, `inversion-${step}:${recordKey}`));
+}
 
 function suggestNameFrom(goal) {
   const trimmed = (goal || '').trim();
@@ -37,6 +45,22 @@ export default function InversionStep1Goal() {
   const [discardOpen, setDiscardOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState(null); // null | 'draft'
   const toast = useToast();
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct).
+  const recordKey = location.state?.decisionId || 'new';
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: `inversion-1:${recordKey}`,
+    value: { goal },
+    ready: !isLoading,
+    onRestore: (draft) => {
+      if (typeof draft?.goal === 'string') setGoal(draft.goal);
+    },
+  });
+  const forgetDrafts = () => {
+    clearDraft();
+    forgetInversionDrafts(user?.id, recordKey);
+  };
 
   useEffect(() => {
     if (!decisionId || !user || location.state?.goal) {
@@ -117,6 +141,7 @@ export default function InversionStep1Goal() {
       setCurrentTitle(name);
       setNameDialog(null);
       clearProgress();
+      forgetDrafts();
       toast.show(`Draft saved as ${name}.`);
       navigate('/decision-history');
     } catch (error) {
@@ -135,6 +160,7 @@ export default function InversionStep1Goal() {
   // draft from a completed one in page code (patch D1).
   const handleDiscard = async () => {
     setDiscardOpen(false);
+    forgetDrafts();
     if (decisionId) {
       try {
         await discardDecisionDraft(user.id, decisionId);

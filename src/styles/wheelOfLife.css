@@ -263,7 +263,7 @@
   border: 0;
   cursor: pointer;
   font-family: var(--font-body);
-  font-size: 14px !important;
+  font-size: calc(14 * var(--u, 1px)) !important;
   color: var(--text-2);
   transition: color var(--dur) var(--ease);
 }
@@ -326,7 +326,7 @@
   padding-top: 3px;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 12px;
+  font-size: calc(12 * var(--u, 1px));
   color: var(--placeholder);
 }
 
@@ -525,7 +525,7 @@
 .ui-root .wol-qq {
   max-width: 40ch;
   margin: var(--space-3) 0 0;
-  font-size: 20px;
+  font-size: calc(20 * var(--u, 1px));
   line-height: 1.45;
   color: var(--text);
 }
@@ -549,7 +549,7 @@
   border-radius: var(--radius-input);
   cursor: pointer;
   font-family: var(--font-display);
-  font-size: 15px !important;
+  font-size: calc(15 * var(--u, 1px)) !important;
   font-variant-numeric: tabular-nums;
   color: var(--text);
   transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease);
@@ -669,7 +669,7 @@
   }
 
   .ui-root .wol-qq {
-    font-size: 18px;
+    font-size: calc(18 * var(--u, 1px));
   }
 
   /* rows of 6 and 5, every target at least 44px */
@@ -742,7 +742,7 @@
   border-radius: var(--radius-pill);
   cursor: pointer;
   font-family: var(--font-body);
-  font-size: 20px !important;
+  font-size: calc(20 * var(--u, 1px)) !important;
   color: var(--text-2);
   transition: color var(--dur-fast) var(--ease);
 }
@@ -863,7 +863,7 @@
 }
 
 .ui-root .wol-rsum {
-  font-size: 14px;
+  font-size: calc(14 * var(--u, 1px));
   color: var(--text-2);
 }
 
@@ -1037,7 +1037,7 @@
   display: block;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 22px;
+  font-size: calc(22 * var(--u, 1px));
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -1079,7 +1079,7 @@
 .ui-root .wol-tgcard p {
   max-width: 52ch;
   margin: 0;
-  font-size: 14px;
+  font-size: calc(14 * var(--u, 1px));
   line-height: 1.5;
   color: var(--text-2);
 }
@@ -1121,7 +1121,7 @@
 
 .ui-root .wol-focus p {
   margin: 0;
-  font-size: 17px;
+  font-size: calc(17 * var(--u, 1px));
   line-height: 1.5;
 }
 
@@ -1175,14 +1175,14 @@
 .ui-root .wol-was {
   display: block;
   margin-top: 2px;
-  font-size: 12px;
+  font-size: calc(12 * var(--u, 1px));
   color: var(--placeholder);
 }
 
 .ui-root .wol-tgm {
   display: none;
   margin-top: 3px;
-  font-size: 12px;
+  font-size: calc(12 * var(--u, 1px));
   color: var(--placeholder);
 }
 
@@ -1203,7 +1203,7 @@
 
 .ui-root .wol-dl {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: calc(12 * var(--u, 1px));
   text-align: center;
 }
 
@@ -1358,7 +1358,7 @@
 .ui-root .wol-dsc span:last-child { text-align: right; }
 
 .ui-root .wol-dn2 {
-  font-size: 14px;
+  font-size: calc(14 * var(--u, 1px));
   line-height: 1.3;
   color: var(--text);
 }
@@ -1551,7 +1551,7 @@
 
 .ui-root .wol-dpb small {
   min-width: 44px;
-  font-size: 12px;
+  font-size: calc(12 * var(--u, 1px));
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-align: right;

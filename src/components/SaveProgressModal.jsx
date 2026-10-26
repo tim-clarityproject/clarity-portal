@@ -35,12 +35,12 @@ export default function SaveProgressModal({ formData, currentPage, isOpen, onClo
       )}
     >
       {!saved && (
-        <p style={{ color: 'var(--text-2)', fontSize: '15px', lineHeight: '1.6', margin: 0 }}>
+        <p style={{ color: 'var(--text-2)', fontSize: 'calc(15 * var(--u, 1px))', lineHeight: '1.6', margin: 0 }}>
           You can save your responses to return to later or discard them.
         </p>
       )}
       {saved && (
-        <p style={{ color: 'var(--text-2)', fontSize: '15px', lineHeight: '1.6', margin: 0 }}>
+        <p style={{ color: 'var(--text-2)', fontSize: 'calc(15 * var(--u, 1px))', lineHeight: '1.6', margin: 0 }}>
           Your progress has been saved. Redirecting to home
         </p>
       )}

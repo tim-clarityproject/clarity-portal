@@ -94,7 +94,7 @@ export default function CriticalSuccessFactors() {
         <div className="g1-two-col">
           {/* Left Column - Risks */}
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: 'calc(18 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '16px', textAlign: 'center' }}>
               How it could go wrong
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -111,7 +111,7 @@ export default function CriticalSuccessFactors() {
                   <span
                     style={{
                       color: 'var(--text-2)',
-                      fontSize: '16px',
+                      fontSize: 'calc(16 * var(--u, 1px))',
                       minWidth: '20px',
                       textAlign: 'center',
                       lineHeight: '1',
@@ -126,7 +126,7 @@ export default function CriticalSuccessFactors() {
                       backgroundColor: 'var(--raised)',
                       border: '1px solid var(--line)',
                       borderRadius: '8px',
-                      fontSize: '14px',
+                      fontSize: 'calc(14 * var(--u, 1px))',
                       color: 'var(--text)',
                     }}
                   >
@@ -140,10 +140,10 @@ export default function CriticalSuccessFactors() {
           {/* Right Column - Critical Success Factors */}
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: 'calc(18 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)', marginBottom: '4px', textAlign: 'center' }}>
                 Critical Success Factors
               </h2>
-              <p style={{ fontSize: '12px', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
+              <p style={{ fontSize: 'calc(12 * var(--u, 1px))', color: 'var(--label)', margin: 0, textAlign: 'center', fontStyle: 'italic' }}>
                 Hint: the opposite of how it could go wrong
               </p>
             </div>
@@ -153,7 +153,7 @@ export default function CriticalSuccessFactors() {
                   <span
                     style={{
                       color: 'var(--text-2)',
-                      fontSize: '16px',
+                      fontSize: 'calc(16 * var(--u, 1px))',
                       minWidth: '20px',
                       textAlign: 'center',
                       lineHeight: '1',

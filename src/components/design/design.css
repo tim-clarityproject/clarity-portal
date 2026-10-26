@@ -9,7 +9,7 @@
    Living alongside the old global rules, without editing them:
    - src/styles/mobile.css (max-width 768px) forces
      button:not(.breathe-button) { padding: 12px 16px !important;
-     font-size: 14px !important }, select, input { padding: 12px 16px
+     font-size: calc(14 * var(--u, 1px)) !important }, select, input { padding: 12px 16px
      !important }, and h1/h2/h3 { font-size; margin !important }. Rules
      here that must beat those repeat the property with !important at a
      higher specificity (.ui-root .ds-x is 0,2,0; theirs is 0,1,1 or less).
@@ -3894,4 +3894,44 @@
   text-align: center;
   font-size: var(--fs-chart);
   color: var(--label);
+}
+
+/* ---------- The calm offline message (Tim, 26 Oct) ----------
+   A quiet pill just under the header while the device is offline, or
+   while saves made offline are being sent. */
+.ui-root .ds-connection {
+  position: fixed;
+  z-index: var(--z-notice);
+  top: calc(var(--header-height, 0px) + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-3));
+  padding: var(--space-2) var(--space-3);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-input);
+  background: var(--raised);
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-note);
+  line-height: 1.4;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-connection .ds-dot {
+  flex: none;
+}
+
+/* The opening screen (Tim, 26 Oct): the turning crosshair, centred on
+   the page colour, as index.html's own first paint. */
+.ui-root.ds-opening {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
 }

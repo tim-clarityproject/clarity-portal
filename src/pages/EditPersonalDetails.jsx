@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useDraft } from '../lib/drafts';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, TextField, Button, useToast } from '../components/design';
@@ -18,6 +19,20 @@ export default function EditPersonalDetails() {
   const [organisation, setOrganisation] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Typing survives a refresh or a closed tab (Tim, 26 Oct).
+  const { clear: clearDraft } = useDraft({
+    userId: user?.id,
+    name: 'edit-profile',
+    value: { firstName, lastName, role, organisation },
+    ready: !isLoading,
+    onRestore: (draft) => {
+      if (typeof draft?.firstName === 'string') setFirstName(draft.firstName);
+      if (typeof draft?.lastName === 'string') setLastName(draft.lastName);
+      if (typeof draft?.role === 'string') setRole(draft.role);
+      if (typeof draft?.organisation === 'string') setOrganisation(draft.organisation);
+    },
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -71,9 +86,10 @@ export default function EditPersonalDetails() {
       }
 
       if (!data || data.length === 0) {
-        throw new Error('Failed to save profile: profile not found or no changes made');
+        throw new Error('No profile was updated.');
       }
 
+      clearDraft();
       toast.show('Saved');
 
       const { data: freshProfile } = await supabase
@@ -186,7 +202,7 @@ export default function EditPersonalDetails() {
           border-radius: 12px;
           padding: 13px 14px !important;
           font-family: var(--font-body);
-          font-size: 16px;
+          font-size: calc(16 * var(--u, 1px));
           color: var(--text);
           background: var(--card);
           caret-color: var(--coral-text);
@@ -207,7 +223,7 @@ export default function EditPersonalDetails() {
 
         .edit-profile-note {
           font-family: var(--font-body);
-          font-size: 12px;
+          font-size: calc(12 * var(--u, 1px));
           color: var(--label);
           margin-top: 6px;
         }

@@ -82,7 +82,7 @@ export default function AuthShell({
         }
 
         /* src/styles/mobile.css has button:not(.breathe-button) { min-height:
-           44px; padding: 12px 16px !important; font-size: 14px !important; }
+           44px; padding: 12px 16px !important; font-size: calc(14 * var(--u, 1px)) !important; }
            at max-width: 768px (and a bare anchor carries no such rule, but the
            back control here is a real <button> when there is no backTo
            route, so it needs the same .ui-root-scoped !important override
@@ -146,7 +146,7 @@ export default function AuthShell({
         .auth-step-label {
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: 10px;
+          font-size: calc(10 * var(--u, 1px));
           letter-spacing: 0.2em;
           text-transform: uppercase;
           color: var(--text-2);
@@ -228,7 +228,7 @@ export default function AuthShell({
           text-align: center;
         }
 
-        /* src/styles/mobile.css has h1 { font-size: 28px !important;
+        /* src/styles/mobile.css has h1 { font-size: calc(28 * var(--u, 1px)) !important;
            margin: 16px 0 !important; } at max-width: 768px (0,0,1
            specificity, !important). .auth-headline (0,1,0) already
            out-ranks that on specificity, but the legacy font-size and
@@ -241,7 +241,7 @@ export default function AuthShell({
           font-weight: 400;
           text-transform: uppercase;
           letter-spacing: 0.12em;
-          font-size: 26px !important;
+          font-size: calc(26 * var(--u, 1px)) !important;
           line-height: 1.25;
           color: var(--text);
           margin: 0 !important;
@@ -249,7 +249,7 @@ export default function AuthShell({
 
         @media (min-width: 769px) {
           .ui-root .auth-headline {
-            font-size: 32px !important;
+            font-size: calc(32 * var(--u, 1px)) !important;
           }
         }
 
@@ -295,7 +295,7 @@ export default function AuthShell({
 
         .auth-sub {
           font-family: var(--font-body);
-          font-size: 15px;
+          font-size: calc(15 * var(--u, 1px));
           line-height: 1.5;
           color: var(--text-2);
           margin: 12px 0 0;

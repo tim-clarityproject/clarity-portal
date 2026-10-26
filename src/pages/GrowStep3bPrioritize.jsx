@@ -2,19 +2,48 @@ import pageText from '../content/pageText';
 import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FormContext } from '../context/FormContext';
+import { useFormDraftReady } from '../hooks/useFormDraftReady';
 import { AuthContext } from '../context/AuthContext';
 import SaveDiscardButtons from '../components/SaveDiscardButtons';
 import DesignHeader from '../components/DesignHeader';
 import { supabase } from '../lib/supabase';
 import { Loading, PageHeader, Button } from '../components/design';
 
+// Never the raw error: say what happened, then what to do.
+const LOAD_ERROR = 'Your options didn’t load. Check your connection and try again.';
+
+// Waits for a draft FormContext is putting back after a refresh (see
+// useFormDraftReady), then shows the step.
 export default function GrowStep3bPrioritize() {
+  const { ready, isReload } = useFormDraftReady();
+  if (!ready) {
+    return (
+      <div className="ui-root" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)', backgroundColor: 'var(--bg)' }}>
+        <DesignHeader />
+        <Loading label="Loading your options" />
+      </div>
+    );
+  }
+  return <GrowStep3bPrioritizeForm isReload={isReload} />;
+}
+
+function GrowStep3bPrioritizeForm({ isReload }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const { formData, updateFormData, getFieldValue } = useContext(FormContext);
-  const [availableOptions, setAvailableOptions] = useState(() => location.state?.availableOptions || location.state?.options || []);
-  const [prioritizedOptions, setPrioritizedOptions] = useState(() => location.state?.prioritizedOptions || []);
+  const { formData, updateFormData, loadedDecisionId } = useContext(FormContext);
+  // After a refresh (or the browser's back button) the shared form already
+  // holds this decision's ranking, put back from the device: keep it rather
+  // than starting again from the options passed in. Decided once, on opening.
+  const [keepWork] = useState(() => isReload
+    && (loadedDecisionId ?? null) === (location.state?.decisionId ?? null)
+    && (Array.isArray(formData.availableOptions) || Array.isArray(formData.prioritizedOptions)));
+  const [availableOptions, setAvailableOptions] = useState(() => (keepWork
+    ? formData.availableOptions || []
+    : location.state?.availableOptions || location.state?.options || []));
+  const [prioritizedOptions, setPrioritizedOptions] = useState(() => (keepWork
+    ? formData.prioritizedOptions || []
+    : location.state?.prioritizedOptions || []));
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -25,12 +54,12 @@ export default function GrowStep3bPrioritize() {
   const loadAttemptRef = useRef(new Set());
 
   useEffect(() => {
+    if (keepWork) return;
     if (!location.state?.decisionId && !location.state?.options) {
       setAvailableOptions([]);
       setPrioritizedOptions([]);
       updateFormData('availableOptions', []);
       updateFormData('prioritizedOptions', []);
-      localStorage.removeItem('clarity_form_data');
     }
   }, []);
 
@@ -44,7 +73,8 @@ export default function GrowStep3bPrioritize() {
     const hasPrioritized = location.state?.prioritizedOptions && location.state?.prioritizedOptions.length > 0;
 
     // Only load from DB if this is edit mode AND we don't have prioritized options from navigation
-    if (decisionId && !hasPrioritized && !hasOptions && user && !loadAttemptRef.current.has(decisionId)) {
+    // (nor a ranking kept from before a refresh)
+    if (!keepWork && decisionId && !hasPrioritized && !hasOptions && user && !loadAttemptRef.current.has(decisionId)) {
       const loadOptions = async () => {
         loadAttemptRef.current.add(decisionId);
         setIsLoading(true);
@@ -58,9 +88,7 @@ export default function GrowStep3bPrioritize() {
             .eq('user_id', user.id)
             .single();
 
-          if (fetchError) {
-            throw new Error(fetchError.message || 'Your options didn’t load. Check your connection and try again.');
-          }
+          if (fetchError) throw fetchError;
 
           const options = data?.form_data?.options || [];
           if (options.length > 0) {
@@ -74,14 +102,14 @@ export default function GrowStep3bPrioritize() {
           setIsLoading(false);
         } catch (err) {
           console.error('Error loading options:', err);
-          setError(err.message || 'Your options didn’t load. Check your connection and try again.');
+          setError(LOAD_ERROR);
           setIsLoading(false);
         }
       };
 
       loadOptions();
     }
-  }, [location.state?.decisionId, location.state?.options, location.state?.prioritizedOptions, user?.id, updateFormData]);
+  }, [keepWork, location.state?.decisionId, location.state?.options, location.state?.prioritizedOptions, user?.id, updateFormData]);
 
   const handleEditStart = (index, value, source) => {
     setEditingIndex(index);
@@ -113,6 +141,7 @@ export default function GrowStep3bPrioritize() {
   };
 
   useEffect(() => {
+    if (keepWork) return;
     if (location.state?.availableOptions) {
       setAvailableOptions(location.state.availableOptions);
     } else if (location.state?.options) {
@@ -127,7 +156,7 @@ export default function GrowStep3bPrioritize() {
     if (location.state?.prioritizedOptions) {
       setPrioritizedOptions(location.state.prioritizedOptions);
     }
-  }, [location.state?.availableOptions, location.state?.options, location.state?.prioritizedOptions, location.state?.form_data, updateFormData]);
+  }, [keepWork, location.state?.availableOptions, location.state?.options, location.state?.prioritizedOptions, location.state?.form_data, updateFormData]);
 
   useEffect(() => {
     const prioritizedSet = new Set(prioritizedOptions);
@@ -215,6 +244,16 @@ export default function GrowStep3bPrioritize() {
     updateFormData('options', prioritizedOptions);
   }, [prioritizedOptions, updateFormData]);
 
+  // Mirror both lists into the shared form on every change, so its draft
+  // on the device always matches the screen and a refresh keeps it.
+  useEffect(() => {
+    updateFormData('availableOptions', availableOptions);
+  }, [availableOptions, updateFormData]);
+
+  useEffect(() => {
+    updateFormData('prioritizedOptions', prioritizedOptions);
+  }, [prioritizedOptions, updateFormData]);
+
   const handleNext = (newDecisionId) => {
     const finalDecisionId = newDecisionId || location.state?.decisionId;
     navigate('/grow-step-4', {
@@ -256,7 +295,7 @@ export default function GrowStep3bPrioritize() {
 
         {error && (
           <div style={{ padding: '16px', marginBottom: '24px', backgroundColor: 'var(--coral-soft-tint)', borderRadius: '8px', border: 'none' }}>
-            <p style={{ fontSize: '14px', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
+            <p style={{ fontSize: 'calc(14 * var(--u, 1px))', color: 'var(--text)', margin: '0 0 12px 0', fontWeight: '500' }}>
               {error}
             </p>
             <Button variant="outline" onClick={() => navigate(-1)}>Go Back</Button>
@@ -336,7 +375,7 @@ export default function GrowStep3bPrioritize() {
                     border: '1px solid var(--line)',
                     borderRadius: '6px',
                     cursor: editingIndex === index && editingSource === 'available' ? 'text' : 'grab',
-                    fontSize: '14px',
+                    fontSize: 'calc(14 * var(--u, 1px))',
                     color: 'var(--text)',
                     transition: 'all 0.2s',
                     opacity: draggedItem?.item === option && draggedItem?.source === 'available' && draggedItem?.sourceIndex === index ? 0.5 : 1,
@@ -374,7 +413,7 @@ export default function GrowStep3bPrioritize() {
                           width: '100%',
                           border: 'none',
                           outline: 'none',
-                          fontSize: '14px',
+                          fontSize: 'calc(14 * var(--u, 1px))',
                           fontFamily: 'inherit',
                           backgroundColor: 'transparent',
                           color: 'var(--text)',
@@ -435,7 +474,7 @@ export default function GrowStep3bPrioritize() {
                 </div>
               ))}
               {availableOptions.length === 0 && (
-                <p style={{ color: 'var(--label)', fontSize: '13px', margin: 'auto 0', textAlign: 'center' }}>
+                <p style={{ color: 'var(--label)', fontSize: 'calc(13 * var(--u, 1px))', margin: 'auto 0', textAlign: 'center' }}>
                   All options ranked
                 </p>
               )}
@@ -531,7 +570,7 @@ export default function GrowStep3bPrioritize() {
                       border: '1px solid var(--coral)',
                       borderRadius: '6px',
                       cursor: editingIndex === originalIndex && editingSource === 'prioritized' ? 'text' : 'grab',
-                      fontSize: '14px',
+                      fontSize: 'calc(14 * var(--u, 1px))',
                       color: 'var(--on-coral)',
                       transition: 'all 0.2s ease',
                       opacity: draggedItem?.item === option && draggedItem?.source === 'prioritized' ? 0.5 : 1,
@@ -567,7 +606,7 @@ export default function GrowStep3bPrioritize() {
                             width: '100%',
                             border: 'none',
                             outline: 'none',
-                            fontSize: '14px',
+                            fontSize: 'calc(14 * var(--u, 1px))',
                             fontFamily: 'inherit',
                             backgroundColor: 'transparent',
                             color: 'var(--on-coral)',
@@ -631,7 +670,7 @@ export default function GrowStep3bPrioritize() {
                 );
               })}
               {prioritizedOptions.length === 0 && (
-                <p style={{ color: 'var(--label)', fontSize: '13px', margin: 'auto 0', textAlign: 'center' }}>
+                <p style={{ color: 'var(--label)', fontSize: 'calc(13 * var(--u, 1px))', margin: 'auto 0', textAlign: 'center' }}>
                   Drag options from the left to prioritise
                 </p>
               )}
