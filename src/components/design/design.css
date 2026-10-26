@@ -309,7 +309,8 @@
   text-transform: uppercase;
   color: var(--text);
   min-width: 0;
-  overflow-wrap: anywhere;
+  /* Between words; inside a word only if it can't fit a line on its own. */
+  overflow-wrap: break-word;
 }
 
 .ui-root .ds-page-title-row {

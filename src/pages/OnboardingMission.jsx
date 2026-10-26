@@ -189,7 +189,7 @@ export default function OnboardingMission() {
             justifyContent: 'center',
           }}>
             <h1 style={{
-              fontSize: 'calc(56 * var(--u, 1px))',
+              fontSize: 'calc(56 * var(--u-big, 1px))',
               fontWeight: 'bold',
               color: 'var(--text)',
               margin: 0,
@@ -213,7 +213,7 @@ export default function OnboardingMission() {
             textAlign: 'center',
           }}>
             <h2 style={{
-              fontSize: 'calc(48 * var(--u, 1px))',
+              fontSize: 'calc(48 * var(--u-big, 1px))',
               fontWeight: 'bold',
               color: 'var(--text)',
               margin: '0 0 24px 0',

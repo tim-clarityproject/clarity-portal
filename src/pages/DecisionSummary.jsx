@@ -273,7 +273,7 @@ function StrategicAlignmentBody({ formData, selectedProjectIdx, setSelectedProje
 
       {formData.factors?.length > 0 && formData.projects?.length > 0 && (
         <div style={{ marginTop: '48px', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: 'calc(20 * var(--u, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '32px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 'calc(20 * var(--u-big, 1px))', fontWeight: '700', color: 'var(--text)', marginBottom: '32px', textAlign: 'center' }}>
             Are you allocating your resources appropriately?
           </h2>
 

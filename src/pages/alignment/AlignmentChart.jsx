@@ -39,6 +39,7 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
   const uid = useId().replace(/:/g, '');
   const [mode, setMode] = useState('d');
   const [fontTick, setFontTick] = useState(0);
+  const tipOpenAtPress = useRef(false);
 
   // Phone geometry when the chart's own width is narrow; redraws on resize.
   useEffect(() => {
@@ -163,7 +164,13 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
               onMouseLeave={() => onHighlight(null)}
               onFocus={() => onHighlight(p.n)}
               onBlur={() => onHighlight(null)}
-              onClick={onOpen ? () => onOpen(p.id) : undefined}
+              // On a phone the first tap shows the dot's pop-up and a
+              // second tap opens the project; a click opens it at once.
+              onPointerDown={(e) => { tipOpenAtPress.current = e.currentTarget.hasAttribute('aria-describedby'); }}
+              onClick={onOpen ? () => {
+                if (window.matchMedia?.('(hover: none)').matches && !tipOpenAtPress.current) return;
+                onOpen(p.id);
+              } : undefined}
               onKeyDown={onOpen ? (e) => { if (e.key === 'Enter') { e.preventDefault(); onOpen(p.id); } } : undefined}
               style={{ '--d': `${250 + i * 80}ms`, cursor: onOpen ? 'pointer' : undefined }}
             >

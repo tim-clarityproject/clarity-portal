@@ -212,7 +212,7 @@ export default function Welcome() {
           }
         }
 
-        /* src/styles/mobile.css has h1 { font-size: calc(28 * var(--u, 1px)) !important;
+        /* src/styles/mobile.css has h1 { font-size: calc(28 * var(--u-big, 1px)) !important;
            margin: 16px 0 !important; } at max-width: 768px. A bare
            element selector (0,0,1); .home-greeting (0,1,0) already
            outranks it on specificity, but the legacy rule is !important
@@ -226,14 +226,14 @@ export default function Welcome() {
           line-height: 1.35;
           color: var(--text);
           text-align: center;
-          font-size: calc(26 * var(--u, 1px)) !important;
+          font-size: calc(26 * var(--u-big, 1px)) !important;
           margin: 0 !important;
           padding-top: 34px;
         }
 
         @media (min-width: 769px) {
           .home-greeting {
-            font-size: calc(32 * var(--u, 1px)) !important;
+            font-size: calc(32 * var(--u-big, 1px)) !important;
             padding-top: 48px;
           }
         }

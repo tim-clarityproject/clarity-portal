@@ -525,7 +525,7 @@
 .ui-root .wol-qq {
   max-width: 40ch;
   margin: var(--space-3) 0 0;
-  font-size: calc(20 * var(--u, 1px));
+  font-size: calc(20 * var(--u-big, 1px));
   line-height: 1.45;
   color: var(--text);
 }
@@ -742,7 +742,7 @@
   border-radius: var(--radius-pill);
   cursor: pointer;
   font-family: var(--font-body);
-  font-size: calc(20 * var(--u, 1px)) !important;
+  font-size: calc(20 * var(--u-big, 1px)) !important;
   color: var(--text-2);
   transition: color var(--dur-fast) var(--ease);
 }
@@ -1037,7 +1037,7 @@
   display: block;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: calc(22 * var(--u, 1px));
+  font-size: calc(22 * var(--u-big, 1px));
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--text);

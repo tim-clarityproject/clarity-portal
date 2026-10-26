@@ -117,7 +117,7 @@ export default function OptionsTimer({ initialSeconds = null, onTimeChange = nul
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 'calc(22 * var(--u, 1px))', fontWeight: 'bold', color: 'var(--text)' }}>
+          <div style={{ fontSize: 'calc(22 * var(--u-big, 1px))', fontWeight: 'bold', color: 'var(--text)' }}>
             {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
           </div>
           <div style={{ fontSize: 'var(--fs-min)', color: 'var(--label)', marginTop: '2px' }}>

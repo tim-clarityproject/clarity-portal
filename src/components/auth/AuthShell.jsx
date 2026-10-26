@@ -228,7 +228,7 @@ export default function AuthShell({
           text-align: center;
         }
 
-        /* src/styles/mobile.css has h1 { font-size: calc(28 * var(--u, 1px)) !important;
+        /* src/styles/mobile.css has h1 { font-size: calc(28 * var(--u-big, 1px)) !important;
            margin: 16px 0 !important; } at max-width: 768px (0,0,1
            specificity, !important). .auth-headline (0,1,0) already
            out-ranks that on specificity, but the legacy font-size and
@@ -241,7 +241,7 @@ export default function AuthShell({
           font-weight: 400;
           text-transform: uppercase;
           letter-spacing: 0.12em;
-          font-size: calc(26 * var(--u, 1px)) !important;
+          font-size: calc(26 * var(--u-big, 1px)) !important;
           line-height: 1.25;
           color: var(--text);
           margin: 0 !important;
@@ -249,7 +249,7 @@ export default function AuthShell({
 
         @media (min-width: 769px) {
           .ui-root .auth-headline {
-            font-size: calc(32 * var(--u, 1px)) !important;
+            font-size: calc(32 * var(--u-big, 1px)) !important;
           }
         }
 

@@ -207,7 +207,9 @@ export default function DesignTabBar() {
         .design-tabbar .design-tab-label {
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: calc(10 * var(--u, 1px));
+          /* A fixed size, like the phone's own tab bars: five labels share
+             one line, so they can't grow with the text size. */
+          font-size: 10px;
           text-transform: uppercase;
           letter-spacing: 0.06em;
           line-height: 1.2;

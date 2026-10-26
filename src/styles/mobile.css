@@ -54,7 +54,7 @@
 
   /* Reduce h1 font size on mobile */
   h1 {
-    font-size: calc(28 * var(--u, 1px)) !important;
+    font-size: calc(28 * var(--u-big, 1px)) !important;
     margin: 16px 0 !important;
     scroll-margin-top: calc(var(--header-height, 56px) + 16px);
   }

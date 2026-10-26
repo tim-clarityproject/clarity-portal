@@ -93,7 +93,7 @@ export default function RisksAssessment() {
                 <span
                   style={{
                     color: 'var(--text-2)',
-                    fontSize: 'calc(20 * var(--u, 1px))',
+                    fontSize: 'calc(20 * var(--u-big, 1px))',
                     minWidth: '24px',
                   }}
                 >

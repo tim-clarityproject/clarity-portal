@@ -68,7 +68,8 @@ export default function ChartTips({ children, className = '' }) {
 
   // Place it once its words are in: centred over the mark, kept 12px
   // inside the screen, above the mark or below it when there's no room.
-  useLayoutEffect(() => {
+  // Placed again when the page scrolls, so it stays with its mark.
+  const place = useCallback(() => {
     const box = tipRef.current;
     if (!shown || !box) return;
     const edge = edgeOf(box);
@@ -84,12 +85,16 @@ export default function ChartTips({ children, className = '' }) {
     const left = Math.max(edge, Math.min(viewW - edge - w, centre - w / 2));
     let top = mark.top - gap - h;
     if (top < edge) top = mark.bottom + gap;
+    // Never past the bottom of the screen either (a mark scrolled away).
+    top = Math.max(edge, Math.min(window.innerHeight - edge - h, top));
     box.style.left = `${Math.round(left)}px`;
     box.style.top = `${Math.round(top)}px`;
   }, [shown]);
 
-  // While one shows: Escape, a tap outside the chart, scrolling or
-  // resizing closes it.
+  useLayoutEffect(place, [place]);
+
+  // While one shows: Escape, a tap outside the chart or resizing closes
+  // it; scrolling moves it with its mark.
   useEffect(() => {
     if (!shown) return undefined;
     const onKey = (e) => {
@@ -100,18 +105,18 @@ export default function ChartTips({ children, className = '' }) {
     };
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', onDown, true);
-    window.addEventListener('scroll', hide, true);
+    window.addEventListener('scroll', place, true);
     window.addEventListener('resize', hide);
     shown.el.setAttribute('aria-describedby', idRef);
     const el = shown.el;
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('pointerdown', onDown, true);
-      window.removeEventListener('scroll', hide, true);
+      window.removeEventListener('scroll', place, true);
       window.removeEventListener('resize', hide);
       el.removeAttribute('aria-describedby');
     };
-  }, [shown, hide, idRef]);
+  }, [shown, hide, place, idRef]);
 
   const markOf = (e) => {
     const el = e.target.closest?.('[data-tip]');
@@ -127,15 +132,22 @@ export default function ChartTips({ children, className = '' }) {
   const onPointerLeave = (e) => {
     if (e.pointerType === 'mouse') hide();
   };
-  // A tap (or click) shows the mark's pop-up; a tap on the same mark
-  // again, or on the chart away from a mark, closes it.
+  // A tap (or click) shows the mark's pop-up; a tap on a mark whose
+  // pop-up was already open before the tap, or on the chart away from a
+  // mark, closes it. (A tap also focuses the mark, which opens it, so
+  // what counts is whether it was open when the finger came down.)
+  const openAtPress = useRef(null);
+  const onPointerDown = (e) => {
+    openAtPress.current = shown?.el ?? null;
+    if (e.pointerType !== 'mouse') e.target.closest?.('[data-tip]')?.focus?.({ preventScroll: true });
+  };
   const onClick = (e) => {
     const el = markOf(e);
     if (!el) {
       hide();
       return;
     }
-    if (shown?.el === el && e.detail > 0 && matchMedia('(hover: none)').matches) hide();
+    if (openAtPress.current === el && matchMedia('(hover: none)').matches) hide();
     else show(el);
   };
   const onFocus = (e) => {
@@ -152,6 +164,7 @@ export default function ChartTips({ children, className = '' }) {
       ref={zoneRef}
       className={`ds-tipzone ${className}`.trim()}
       onPointerOver={onPointerOver}
+      onPointerDown={onPointerDown}
       onPointerLeave={onPointerLeave}
       onClick={onClick}
       onFocus={onFocus}
