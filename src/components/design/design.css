@@ -3342,7 +3342,7 @@
 .ui-root .ds-pdfscrim {
   position: fixed;
   inset: 0;
-  z-index: 39;
+  z-index: var(--z-pop); /* above the phone tab bar, like the drop-down sheet */
   background: var(--scrim);
   animation: ds-fade var(--dur) var(--ease) both;
 }
@@ -3352,9 +3352,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 40;
+  z-index: var(--z-pop);
   box-sizing: border-box;
-  padding: var(--space-4) var(--page-x-phone) var(--space-3);
+  padding: var(--space-4) var(--page-x-phone) max(var(--space-3), env(safe-area-inset-bottom, 0px));
   background: var(--card);
   border-top: 1px solid var(--line);
   border-radius: var(--radius-card) var(--radius-card) 0 0;

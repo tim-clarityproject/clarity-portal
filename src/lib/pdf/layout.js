@@ -72,8 +72,11 @@ export function paginate(units, geom) {
       newPage(queue[i]); // the whole run moves to the next page
       continue;
     }
-    // A run taller than a whole page: start it on a fresh page, then break
-    // between units where allowed, or inside an over-long paragraph.
+    // A run taller than a whole page: start it here if what fits here ends
+    // with at least three lines of an over-long paragraph, otherwise on a
+    // fresh page; then break between units where allowed, or inside an
+    // over-long paragraph.
+    if (!fresh && !page.long && startsHere(chain, page.items.length > 0, room())) page.long = true;
     if (!fresh && !page.long) {
       newPage(queue[i]);
       page.long = true;
@@ -100,6 +103,24 @@ export function paginate(units, geom) {
     i += 1;
   }
   return pages;
+}
+
+/**
+ * Whether a run taller than a page can begin in the space left: the units
+ * that fit whole, then a paragraph that splits with three lines or more here.
+ */
+function startsHere(chain, hasItems, room) {
+  let left = room;
+  for (let k = 0; k < chain.length; k += 1) {
+    const u = chain[k];
+    const gap = hasItems || k > 0 ? u.gap : 0;
+    if (u.h + gap <= left) {
+      left -= u.h + gap;
+      continue;
+    }
+    return !!(u.split && u.split(left - gap));
+  }
+  return true;
 }
 
 const linesOn = (page) => page.items.reduce((s, it) => s + (it.u.lines ?? 0), 0);
