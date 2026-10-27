@@ -44,38 +44,38 @@ update public.migration_log
 
 | No. | File | What it does | Test | Live | Notes |
 |---|---|---|---|---|---|
-| 001 | `001_create_tables` | Decisions, reflections and strategic_alignments tables, with their rules | ☐ | ☐ | |
-| 002 | `002_create_journal_entries` | Reviews table (journal_entries) | ☐ | ☐ | |
+| 001 | `001_create_tables` | Decisions, reflections and strategic_alignments tables, with their rules | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 002 | `002_create_journal_entries` | Reviews table (journal_entries) | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
 | 003 | `003_add_daily_plan_to_decisions` | Adds daily_plan to the tool types | ☐ | ☐ | **Dangerous to run again**: it would narrow the tool types and undo 005 and 011, so If-Then, meeting and Stop Doing saves would be refused |
-| 004 | `004_remove_unique_review_constraint` | More than one review of a type per day | ☐ | ☐ | |
-| 005 | `005_add_if_then_and_plan_tool_types` | Adds if_then_planning, daily_plan, plan_meeting | ☐ | ☐ | |
-| 006 | `006_add_user_settings` | Settings columns on profiles | ☐ | ☐ | |
-| 007 | `007_create_personal_operating_plan` | missions, strategies, tactics, mission_progress_reviews | ☐ | ☐ | |
-| 008 | `008_add_weekly_momentum_review_type` | Adds weekly-momentum review type | ☐ | ☐ | |
-| 009 | `009_add_archive_to_missions` | missions.archived_at | ☐ | ☐ | |
-| 010 | `010_add_names_to_profiles` | First and last name on profiles | ☐ | ☐ | |
-| 011 | `011_add_stop_doing_audit_tool_type` | Adds stop_doing_audit tool type | ☐ | ☐ | |
+| 004 | `004_remove_unique_review_constraint` | More than one review of a type per day | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 005 | `005_add_if_then_and_plan_tool_types` | Adds if_then_planning, daily_plan, plan_meeting | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 006 | `006_add_user_settings` | Settings columns on profiles | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 007 | `007_create_personal_operating_plan` | missions, strategies, tactics, mission_progress_reviews | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 008 | `008_add_weekly_momentum_review_type` | Adds weekly-momentum review type | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 009 | `009_add_archive_to_missions` | missions.archived_at | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 010 | `010_add_names_to_profiles` | First and last name on profiles | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 011 | `011_add_stop_doing_audit_tool_type` | Adds stop_doing_audit tool type | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
 | 012 | `012_add_breathing_preference` | profiles.breathing_preference | ✗ | ✗ | **Never run, and must not be**: the app keeps the choice in breathing_settings (see 017) |
-| 013 | `013_add_plan_review_type` | Adds plan-review review type | ☐ | ☐ | |
-| 014 | `014_add_mission_versions` | POP version history | ☐ | ☐ | |
-| 015 | `015_create_daily_journals` | Daily Journal | ☐ | ☐ | |
-| 016 | `016_add_journal_entries_status` | Draft or final reviews | ☐ | ☐ | |
-| 017 | `017_breathing_sessions_rls` | Rules on breathing_sessions | ☐ | ☐ | Live has the same rules under slightly different names |
-| 018 | `018_alignment_sessions` | Health Check sessions and checked functions | ☐ | ☐ | |
-| 019 | `019_alignment_emails` | Health Check emails | ☐ | ☐ | |
-| 020 | `020_wheel_of_life` | Wheel of Life tables | ☐ | ☐ | |
+| 013 | `013_add_plan_review_type` | Adds plan-review review type | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 014 | `014_add_mission_versions` | POP version history | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 015 | `015_create_daily_journals` | Daily Journal | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 016 | `016_add_journal_entries_status` | Draft or final reviews | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 017 | `017_breathing_sessions_rls` | Rules on breathing_sessions | ☑ | ☐ | Live has the same rules under slightly different names. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 018 | `018_alignment_sessions` | Health Check sessions and checked functions | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 019 | `019_alignment_emails` | Health Check emails | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
+| 020 | `020_wheel_of_life` | Wheel of Life tables | ☑ | ☐ | Test: run or confirmed by Tim, 27 Oct 2026 |
 | 021 | `021_restore_terms_accepted_from_signup` | Data only: puts back "terms accepted" | ☐ | ☐ | Live: only at go-live |
-| 022 | `022_alignment_open_returns_organisation` | Health Check page gets the organisation name | ☐ | ☐ | Live: only at go-live. On test, its change is there (checked 26 Oct) |
-| 023 | `023_mission_progress_reviews_update` | POP review drafts save over themselves | ☐ | ☐ | Live: at go-live or earlier. On test, its rule is there (checked 26 Oct) |
-| 024 | `024_baseline_live_structure` | The live structure in one file | ☐ | ☐ | Then run `supabase/024_baseline_test.sql` |
-| 025 | `025_migration_log` | This list | ☐ | ☐ | Records itself |
-| 026 | `026_people_coaches_organisations` | Phase 1: people, coaches, organisations, teams, seats, sharing switches and the checked helper `may_see` | ☐ | ☐ | Test: `supabase/026_people_coaches_organisations_test.sql` (ALL CHECKS PASSED). Live: at go-live |
-| 027 | `027_performance_plan` | Phase 1: the Individual Performance Plan (mission, objectives, Strategies, habits, versions, sponsor proposals) | ☐ | ☐ | Test: `supabase/027_performance_plan_test.sql`. Live: at go-live |
-| 028 | `028_sprints_and_daily_work` | Phase 1: sprints, Recovery, logs, to-dos and their moves, wins, evidence, Plan and Review my day, debriefs, week scores | ☐ | ☐ | Test: `supabase/028_sprints_and_daily_work_test.sql`. Live: at go-live |
-| 029 | `029_checkins_goal_checks_patterns` | Phase 1: Hardware and Software check-ins with their scores and coach flags, goal checks, pattern cards | ☐ | ☐ | Test: `supabase/029_checkins_goal_checks_patterns_test.sql`. Live: at go-live |
-| 030 | `030_organisations_feedback_pulse` | Phase 1: frozen summaries and what sponsors and leaders read, organisation measures, feedback links (hashed, locked), team pulse, impact | ☐ | ☐ | Test: `supabase/030_organisations_feedback_pulse_test.sql`. Live: at go-live |
-| 031 | `031_evidence_library` | Phase 1: the evidence library, seeded from the claims register 1.1 | ☐ | ☐ | Test: `supabase/031_evidence_library_test.sql`. Made by `scripts/make-evidence-seed.mjs`. Live: at go-live |
-| 032 | `032_scores_in_database` | Phase 1: database copies of the scores (M5, M6, M9, M18, M19 and what they rest on), freeze_week, make_sprint_summary, org_figures, pulse_results, impact_results | ☐ | ☐ | Test: `supabase/032_scores_in_database_test.sql` (written from `tests/scores/cases.mjs`). Live: at go-live |
+| 022 | `022_alignment_open_returns_organisation` | Health Check page gets the organisation name | ☑ | ☐ | Live: only at go-live. On test, its change is there (checked 26 Oct). Test: run or confirmed by Tim, 27 Oct 2026 |
+| 023 | `023_mission_progress_reviews_update` | POP review drafts save over themselves | ☑ | ☐ | Live: at go-live or earlier. On test, its rule is there (checked 26 Oct). Test: run or confirmed by Tim, 27 Oct 2026 |
+| 024 | `024_baseline_live_structure` | The live structure in one file | ☑ | ☐ | Then run `supabase/024_baseline_test.sql`. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 025 | `025_migration_log` | This list | ☑ | ☐ | Records itself. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 026 | `026_people_coaches_organisations` | Phase 1: people, coaches, organisations, teams, seats, sharing switches and the checked helper `may_see` | ☑ | ☐ | Test: `supabase/026_people_coaches_organisations_test.sql` (ALL CHECKS PASSED). Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 027 | `027_performance_plan` | Phase 1: the Individual Performance Plan (mission, objectives, Strategies, habits, versions, sponsor proposals) | ☑ | ☐ | Test: `supabase/027_performance_plan_test.sql`. Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 028 | `028_sprints_and_daily_work` | Phase 1: sprints, Recovery, logs, to-dos and their moves, wins, evidence, Plan and Review my day, debriefs, week scores | ☑ | ☐ | Test: `supabase/028_sprints_and_daily_work_test.sql`. Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 029 | `029_checkins_goal_checks_patterns` | Phase 1: Hardware and Software check-ins with their scores and coach flags, goal checks, pattern cards | ☑ | ☐ | Test: `supabase/029_checkins_goal_checks_patterns_test.sql`. Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 030 | `030_organisations_feedback_pulse` | Phase 1: frozen summaries and what sponsors and leaders read, organisation measures, feedback links (hashed, locked), team pulse, impact | ☑ | ☐ | Test: `supabase/030_organisations_feedback_pulse_test.sql`. Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 031 | `031_evidence_library` | Phase 1: the evidence library, seeded from the claims register 1.1 | ☑ | ☐ | Test: `supabase/031_evidence_library_test.sql`. Made by `scripts/make-evidence-seed.mjs`. Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 032 | `032_scores_in_database` | Phase 1: database copies of the scores (M5, M6, M9, M18, M19 and what they rest on), freeze_week, make_sprint_summary, org_figures, pulse_results, impact_results | ☑ | ☐ | Test: `supabase/032_scores_in_database_test.sql` (written from `tests/scores/cases.mjs`). Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
 | – | `add_personal_goal_to_profiles` | profiles.personal_goal | ☐ | ☐ | No number |
 | – | `add_show_mission_in_header_to_profiles` | profiles.show_mission_in_header | ☐ | ☐ | No number |
 

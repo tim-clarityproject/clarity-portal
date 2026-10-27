@@ -1,6 +1,6 @@
 # Methods: how every score in The Clarity Portal is worked out
 
-Version 1.1 (draft for the build), written 26 Oct 2026, 18:16 onwards, by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); scientific audit the same evening (see M22).
+Version 1.2 (draft for the build), written 26 Oct 2026, 18:16 onwards, by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); scientific audit the same evening; Tim's decisions of 26 and 27 Oct added (see M22).
 
 This is the single source of truth for every score, figure, flag and pattern the portal shows. The code follows it, the PDFs follow it, and the public "How it works" page is written from it. Where a mock-up shows a different figure, this document wins on the arithmetic and the decisions doc wins on everything else.
 
@@ -187,6 +187,7 @@ In plain words: the standard is the weekly score you count as a good week. 85% m
 
 - Set per sprint. Default 85% (decided 21 Oct). Choices 75, 80, 85, 90 or Other, any whole number from 50 to 100 (Tim, 23 Oct).
 - A week **at your standard** is a week whose shown score is at or above it. Those weeks are mint; below-standard weeks are neutral grey (Tim, 22 Oct and 26 Oct).
+- **Organisation seats (Tim, 26 Oct, 23:49):** anyone in a seat an organisation pays for has a fixed standard of 85%; they can't change it. People who pay for themselves choose their own, 50 to 100, 85 suggested.
 - Known limit: the standard is the person's own choice, not a norm. 85% for one person and 85% for another are not the same achievement, so standards and scores are never compared between people.
 
 ---
@@ -377,7 +378,8 @@ A link becomes a pattern card only when **all** of these pass:
 ### M14.7 Proof before go-live (rule 10)
 Claude Code runs the engine on invented people before go-live, and reports the results in its summary:
 - **No real links:** 5,000 invented people, 26 weeks each, with realistic noise, good and bad spells that run on from week to week (autocorrelation), gaps in logging, slow improvement, Recovery weeks, and habits nested inside Strategies exactly as the portal stores them, but no real links. Target: fewer than 1 in 20 of them ever see a pattern card in 26 weeks. If the target fails, the corrected chance threshold is tightened until it passes, and the change is logged (M22).
-- **Planted links:** 1,000 invented people with one planted link the size of their usual swing and at least 12 weeks in each group. Target: at least 8 in 10 found.
+- **Planted links:** 1,000 invented people with one planted link and at least 12 weeks in each group. **Target: at least 3 in 4 found for a link of 2 usual swings** (Tim, 27 Oct, 14:20, "rare but right"; was 8 in 10 at one swing, which half a year of data can't reach without too many false cards).
+- **Rare but right (Tim, 27 Oct, 14:20):** the corrected chance threshold is 2.6% (set by the simulation, M22). Pattern cards are rare and appear only for strong links; How it works says so plainly: "A card only shows when a link is strong enough that it's very unlikely to be chance. Smaller links may be real but can't be told apart from normal ups and downs in half a year."
 - The shuffle test, the correction and the trend removal each get their own test cases with known answers.
 
 ### M14.8 "How was this worked out?" (rule 8)
@@ -449,7 +451,7 @@ Decided by Tim, 26 Oct, 17:35 to 17:38. The question wording below is a first dr
 |---|---|---|
 | Energy to perform | How much energy have you had to perform at your best? | Very low 0 to Very high 100 |
 | Sleep | How would you rate the quality of your sleep? | Very poor 0 to Very good 100 |
-| Stress | How often did you feel tense, restless, nervous or anxious? | Never 100 to Always 0 |
+| Calm (shown as Calm; the question asks about stress) | How often did you feel tense, restless, nervous or anxious? | Never 100 to Always 0, so higher is calmer and every pulse figure reads higher is better (Claude, 26 Oct) |
 | Workload | How often was your workload manageable? | Never 0 to Always 100 |
 | Support | How often did you have the support you needed to perform? | Never 0 to Always 100 |
 | Open comment | What would help the team perform better? | Written, optional |
@@ -458,8 +460,9 @@ Decided by Tim, 26 Oct, 17:35 to 17:38. The question wording below is a first dr
 - Up to 3 of the boss's own questions: a 1 to 10 rating (shown as an average out of 10) or a short written answer.
 - **Team figure** = the average of the answers to each measure. Change = this time minus last time, from the rounded figures.
 - Shown with the number of answers and how many it went to ("from 6 of 8").
-- **Totals show at any number of answers (Tim, 17:35).** When the group is small, the page people answer on says: "Your answers are anonymous, but in a small team your boss may be able to guess who answered." (Claude).
-- Named answers (the person's choice, made fresh each time) also show individually to the boss.
+- **One link for the whole team, open for 7 days** (Claude, 26 Oct).
+- **Results show only once the pulse closes, and only with 3 or more answers (Tim, 27 Oct, 14:20; replaces totals at any number, 26 Oct, 17:35).** Totals that changed after each answer would let a boss work out one person's answers. This covers the measures, the boss's own questions and the comments. With fewer than 3 answers the boss sees only "2 people answered, so the results stay private." When the group is small, the page people answer on still says: "Your answers are anonymous, but in a small team your boss may be able to guess who answered." (Claude).
+- Named answers (the person's choice, made fresh each time) also show individually to the boss, as they come in.
 - Comments shown as written, without names, in a random order.
 - Each result ends with one small next step for the boss, chosen from the lowest measure (for example "Ask your team what would ease the workload.").
 - Nothing in the pulse asks about risk or harm (experience rule 51).
@@ -495,7 +498,7 @@ The same figure for each team, then for each team below it. Shown at any team si
 ### M19.4 Self-reported figures (goal check, before and after, wellbeing)
 - Goal check and before and after ratings: shown only as anonymous group totals, never who said what, at any group size (Tim, 26 Oct, 17:35).
 - **The monthly Hardware and Software check-in never reaches an organisation, not even as a total (Tim, 26 Oct, 18:48),** keeping the promise "Your organisation never sees them."
-- **Unless the person chooses (Tim, 26 Oct, 18:48):** anyone can make their own wellbeing visible to their organisation. It then shows **named**, never anonymous: their Hardware and Software scores and areas, latest and over time. Never their answers, written goals or coach flags. Off by default, switched on and off on the "What [sponsor] sees" page, and switching it off hides past months too (Claude).
+- **Unless the person chooses (Tim, 26 Oct, 18:48):** anyone can make their own wellbeing visible to their organisation. It then shows **named**, never anonymous: their Hardware and Software scores and areas, latest and over time. Never their answers, written goals or coach flags. Off by default, switched on and off on the "What [sponsor] sees" page, and switching it off hides past months too (Claude). **Chosen separately for each organisation** a person has a seat in, one switch each (Tim, 27 Oct, 14:20).
 - Otherwise, organisation wellbeing comes only from the team pulse (M18).
 
 ### M19.5 What every organisation report says (from M21)
@@ -529,19 +532,23 @@ In plain words: each project is scored on how much it helps the organisation's C
 - Example (test case M20-1): "Data platform" scores 0 + 2 + 2 + 3 = 7 against 4 factors, so the maximum is 4 × 3 = 12, and 7 ÷ 12 × 100 = 58.33%, shown as **58%**.
 
 **Most in need of attention** = importance % × (5 − progress) ÷ 4 × (resource + 3) ÷ 8.
-- Progress 1 (Embryonic) keeps the full importance; progress 5 (Excellent) scores 0.
+- The progress gap (5 − progress) is 3 for Bad, 2 for Fair, 1 for Good and 0 for Excellent. **Embryonic counts as 2.5** (Tim, 27 Oct, 14:36: below Bad, above Fair; was 4), because a project that has only just started is too early to tell, not furthest behind.
 - The resource multiplier runs from 0.5 (Minimal) to 1 (Very high): 0.5, 0.625, 0.75, 0.875, 1.
 - A blank resource counts as Moderate (3), in the score and in the tie-break alike (fixed in Phase 1 step 0).
 - A project with no progress rating scores −1, so it sorts last.
 - The score stays out of 100.
 - **Ranking and tie-break:** highest attention score first; on a tie, the higher importance; then the higher resource (a blank counting as Moderate).
-- Examples (test case M20-2): Data platform (58.33%, Embryonic, Very high) = 58.33 × 4 ÷ 4 × 8 ÷ 8 = **58.33**. Leadership programme (41.67%, Bad, High) = 41.67 × 3 ÷ 4 × 7 ÷ 8 = **27.34**. Two projects at 50% with Fair progress: with resource Very high, 50 × 2 ÷ 4 × 8 ÷ 8 = 25.00, which ranks above resource Low, 50 × 2 ÷ 4 × 5 ÷ 8 = 15.63.
+- Examples (test case M20-2): Data platform (58.33%, Embryonic, Very high) = 58.33 × 2.5 ÷ 4 × 8 ÷ 8 = **36.46** (was 58.33 before 27 Oct). Leadership programme (41.67%, Bad, High) = 41.67 × 3 ÷ 4 × 7 ÷ 8 = **27.34**. Two projects at 50% with Fair progress: with resource Very high, 50 × 2 ÷ 4 × 8 ÷ 8 = 25.00, which ranks above resource Low, 50 × 2 ÷ 4 × 5 ÷ 8 = 15.63.
 
 **Where a project sits on the importance against progress chart:**
-- **Important and moving well** (green): importance above 50% with Good or Excellent progress.
-- **Important but behind** (needs attention first): importance above 50% with Embryonic or Bad progress.
-- Everything else is neutral: 50% or less, Fair progress (which sits on the line), or no progress rating. Exactly 50% is not above the line.
+Four states (Tim, 27 Oct, 08:33 and 14:36, after Adie's feedback; was three), each named in a key in words under the chart, on screen and in the PDF:
+- **Mint, "Important and moving well":** importance above 50% with Good or Excellent progress.
+- **Peach (#FFBD9E), "Important, needs managing":** importance above 50% with Fair progress.
+- **Coral, "Important and needs attention":** importance above 50% with Bad progress.
+- **Ring, "Less important, or too early to tell":** 50% or less at any progress, or Embryonic at any importance. Exactly 50% is not above the line.
 - Only projects with a progress rating are drawn on the chart.
+- **Definitions:** each Progress, Contribution and Resource level has one short line shown under its choice on the rating screen and in the PDF's notes (drafted by Claude, edited and approved by Adie Shariff; Tim, 27 Oct).
+- These rules apply to every Health Check, including ones finished before the change, when they're reopened; the answers given don't change, only how they're shown (Tim, 27 Oct, 14:36).
 
 **At a glance (PDF):** average strategic importance = the mean of the rated projects' exact importance, rounded; 0% when none is rated. The sentence counts the projects drawn that are important and moving well, and those important but behind.
 
@@ -551,7 +558,7 @@ In plain words: each project is scored on how much it helps the organisation's C
 
 In plain words: the person rates how satisfied they are with each area of their life, from 0 to 10. The review shows what rose and fell since the start of the period, and how far each area is from any target set. There is no overall score.
 
-**Areas:** the ten standard areas, in wheel order: Career / Work, Financial / Money, Health / Fitness, Relationships / Family, Romance / Partner, Personal Growth / Learning, Fun / Recreation, Physical Environment / Home, Contribution / Community, Purpose / Meaning. People can add their own areas (1 to 24 characters), which come after the standard ones in the order added. An area can be taken off the wheel and put back; its past scores are kept.
+**Areas:** the ten standard areas, in wheel order: Career / Work, Financial / Money, Health / Fitness, Relationships / Family, Romance / Partner, Personal Growth / Learning, Fun / Recreation, Physical Environment / Home, Contribution / Community, Purpose / Meaning (kept as "Purpose / Meaning" by Tim, 27 Oct, 14:20: it's about meaning in life, not the portal's My Mission; an agreed exception to design rule 8). People can add their own areas (1 to 24 characters), which come after the standard ones in the order added. An area can be taken off the wheel and put back; its past scores are kept.
 
 **Ratings:** each area **0 to 10** (the code and database allow 0; the earlier draft of this section said 1 to 10). Targets are also 0 to 10, one per area, optional.
 
@@ -603,6 +610,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 27 Oct 2026 | Tim's decisions: organisation seats have a fixed 85% standard (M7; 26 Oct, 23:49); pattern cards are rare but right, the planted-link target set at 2 swings (M14.7); pulse results show only once the pulse closes, with 3 or more answers, and the stress measure shows as Calm (M18); wellbeing shared per organisation (M19.4); the Health Check gets four dot states, Embryonic as a ring and 2.5 in the attention score, and definitions under every choice (M20.1); Purpose / Meaning kept (M20.2). |
 | 1.1 (repo) | 27 Oct 2026 | M14: the corrected chance threshold tightened from 5% to 2.6% by the go-live simulation; the planted-link target was not met, and the choice is Tim's (see "The pattern simulation" below). |
 | 1.1 (repo) | 27 Oct 2026 | M20 completed from the code in Phase 1 (Health Check: strategic importance, attention score, tie-break, chart areas, the PDF's average; Life balance review: areas, 0 to 10 ratings and every figure worked out). No arithmetic changed. |
 | 1.1 | 26 Oct 2026 | Scientific audit (Tim, 18:47): no pattern may contain its own cause (L3 uses the Strategy score without that habit; sleep habits left out of the day score); each half needs 3 weeks or 10 days per group; weekly re-checking named as a risk and covered by the any-time simulation; autocorrelation and nested habits added to the simulation; check-in changes judged against each area's typical swing once real data exist (M13); the bias in "looking back" ratings stated (M17); organisations never see check-in totals, only named wellbeing a person chooses to share (Tim, 18:48; M19.4); two new limits (easy targets, not yet validated) and a plan for checking the scores against real data (M23). |

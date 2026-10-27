@@ -458,6 +458,8 @@ test('M19: the headline counts, with nothing yet', () => {
 });
 
 // ---------------------------------------------------------------- M20
+// Methods 1.2 counts Embryonic as 2.5 (Data platform 36.46). The code keeps 4 until the
+// Health Check build changes both together (decisions part 2, 27 Oct, 14:45).
 test('M20-1 and M20-2: the Health Check, as the code works it out today (importance 58%; attention 58.33 and 27.34; the tie-break)', () => {
   const ids = ['a', 'b', 'c', 'd'];
   assert.equal(S.m0Round(S.m20StrategicImportance({ a: 0, b: 2, c: 2, d: 3 }, ids)), 58);
