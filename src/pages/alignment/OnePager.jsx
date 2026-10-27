@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import AlignmentChart from './AlignmentChart';
-import Chevron from '../../components/design/Chevron';
+import { Chevron } from '../../components/design';
 import { cleanItems } from './alignmentFlow';
 import { quadrant } from './chartLayout';
 import { importanceText, rankProjects, MAX_CONTRIBUTION } from '../../lib/alignmentScore';

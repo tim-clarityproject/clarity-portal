@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { defineConfig } from 'vite'
+import { defineConfig, build } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 
@@ -55,24 +55,47 @@ function buildVersion(id) {
   }
 }
 
+// The outside Strategic Alignment Health Check is its own small page
+// (health-check.html; vercel.json serves it for /health-check/*). It is built
+// in a second, separate pass once the portal's build has finished, into the
+// same folder, so the two never share a file: the portal's build is exactly
+// what it would be without the Health Check page. The colour mode boot goes
+// into its <head> too, so it is held in dark exactly as inside the portal;
+// it has no gallery and no version file.
+function healthCheckPage(buildId) {
+  let config
+  return {
+    name: 'clarity-health-check-page',
+    apply: 'build',
+    configResolved(resolved) {
+      config = resolved
+    },
+    async closeBundle() {
+      await build({
+        configFile: false,
+        root: config.root,
+        mode: config.mode,
+        logLevel: config.logLevel,
+        publicDir: false, // the portal's pass has already copied public/
+        plugins: [react(), colourMode()],
+        define: { __BUILD_ID__: JSON.stringify(buildId) },
+        build: {
+          outDir: config.build.outDir,
+          emptyOutDir: false,
+          sourcemap: config.build.sourcemap,
+          rollupOptions: { input: { healthCheck: resolve(config.root, 'health-check.html') } },
+        },
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
-// Two pages: the portal (index.html) and the outside Strategic Alignment
-// Health Check (health-check.html), which vercel.json serves for
-// /health-check/*. The colour mode boot goes into both (the Health Check's
-// design parts use it); the gallery swap only ever matches index.html.
 export default defineConfig(({ command }) => {
   const galleryEnabled = command === 'serve' || process.env.VERCEL_ENV === 'preview'
   const buildId = command === 'serve' ? 'dev' : (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()))
   return {
-    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId)],
+    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), healthCheckPage(buildId)],
     define: { __BUILD_ID__: JSON.stringify(buildId) },
-    build: {
-      rollupOptions: {
-        input: {
-          index: resolve(import.meta.dirname, 'index.html'),
-          healthCheck: resolve(import.meta.dirname, 'health-check.html'),
-        },
-      },
-    },
   }
 })

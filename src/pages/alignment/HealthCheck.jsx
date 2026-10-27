@@ -7,14 +7,7 @@ import { AuthPrimaryButton } from '../../components/auth/AuthButton';
 import LegalFooterLinks from '../../components/legal/LegalFooterLinks';
 import OnePager from './OnePager';
 import AccessCodeInput, { cleanCode } from './AccessCodeInput';
-// Each shared part straight from its own file, not the design index, so the
-// Health Check's own page (health-check.html) loads only what it uses.
-import { AddButton } from '../../components/design/Button';
-import Chevron from '../../components/design/Chevron';
-import { Loading } from '../../components/design/Status';
-import TextBox from '../../components/design/TextBox';
-import PdfChoice from '../../components/design/PdfChoice';
-import { savePdf, PDF_ERROR } from '../../components/design/pdfSave';
+import { AddButton, Chevron, Loading, TextBox, PdfChoice, savePdf, PDF_ERROR } from '../../components/design';
 import { formatUkDate } from '../../lib/dateFormatter';
 import { requestAlignmentEmail } from '../../lib/alignmentEmail';
 import { healthCheckPdf } from '../../lib/pdf/docs/healthCheck';
