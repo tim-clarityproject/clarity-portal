@@ -1,0 +1,680 @@
+[
+  {
+    "person": {
+      "id": "fc4a0fbf-3529-7669-8503-182023d8bb43",
+      "name": "Asha Invented"
+    },
+    "mission": "Build a sales team that grows without me in every deal",
+    "strategies": [
+      {
+        "from": {
+          "id": "0f2be1e8-43cb-aac7-e4a5-6aad95a3c735",
+          "name": "Grow through referrals"
+        },
+        "name": "Grow through referrals",
+        "description": "Ask, thank, follow up",
+        "tactics": [
+          {
+            "from": {
+              "id": "01568075-543c-0856-9ac5-ae6664a7f00d",
+              "action": "Referral conversations",
+              "type": "measurable",
+              "target_value": 3,
+              "unit": "per week",
+              "current_value": 1,
+              "is_done": false
+            },
+            "name": "Referral conversations",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "clear",
+            "reason": "A number done again and again (\"Referral conversations\", per week), so it becomes a habit counted each week.",
+            "habit": {
+              "measure": "count",
+              "target": 3,
+              "targetPer": "week",
+              "unit": null
+            }
+          },
+          {
+            "from": {
+              "id": "f3ac6158-645f-3248-12ab-6aa12c9a13cb",
+              "action": "Revenue from referrals",
+              "type": "measurable",
+              "target_value": 250000,
+              "unit": "£",
+              "current_value": 120000,
+              "is_done": false
+            },
+            "name": "Revenue from referrals",
+            "nameCut": false,
+            "becomes": "objective_measure",
+            "confidence": "clear",
+            "reason": "A result to move (\"Revenue from referrals\", £), so it becomes the measure of an Outcome Objective, starting at 120000 with a target of 250000.",
+            "objective": {
+              "kind": "number",
+              "direction": "up",
+              "start": 120000,
+              "target": 250000,
+              "unit": "£"
+            }
+          },
+          {
+            "from": {
+              "id": "b0b1cc60-0fa3-406c-ea7b-fc7a52bdf2ca",
+              "action": "Email three past clients",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Email three past clients",
+            "nameCut": false,
+            "becomes": "todo",
+            "confidence": "clear",
+            "reason": "A one-off action (\"Email three past clients\"), so it becomes a to-do in its Strategy.",
+            "todo": {}
+          }
+        ]
+      },
+      {
+        "from": {
+          "id": "d1ea9544-5ee1-e1ad-230d-df86b7836007",
+          "name": "Coach the team to close"
+        },
+        "name": "Coach the team to close",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "ae94ae08-d1cc-7ebc-0ae4-4dd380bfae90",
+              "action": "Weekly one-to-one with each rep",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Weekly one-to-one with each rep",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "clear",
+            "reason": "Something done every week (\"Weekly one-to-one with each rep\"), so it becomes a habit: yes or no once a week.",
+            "habit": {
+              "measure": "yes_no_weekly",
+              "target": null,
+              "targetPer": null,
+              "unit": null
+            }
+          },
+          {
+            "from": {
+              "id": "9db95042-7aac-4e8a-0828-6adcb4e2e2db",
+              "action": "Hire a second account executive",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Hire a second account executive",
+            "nameCut": false,
+            "becomes": "milestone",
+            "confidence": "check",
+            "reason": "A one-off result with an end point (\"Hire a second account executive\"), so it is proposed as a milestone. If it is a step towards a bigger result, it may be a to-do instead.",
+            "objective": {
+              "kind": "milestone"
+            }
+          }
+        ]
+      },
+      {
+        "from": {
+          "id": "b8108259-1867-8bba-63b8-2bca0efc32cb",
+          "name": "Sustain my energy"
+        },
+        "name": "Sustain my energy",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "bff1ed49-1e81-6abe-b5ef-75f38df0343c",
+              "action": "Training sessions",
+              "type": "measurable",
+              "target_value": 3,
+              "unit": "sessions",
+              "current_value": 2,
+              "is_done": false
+            },
+            "name": "Training sessions",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "clear",
+            "reason": "A number done again and again (\"Training sessions\", sessions), so it becomes a habit counted each week.",
+            "habit": {
+              "measure": "count",
+              "target": 3,
+              "targetPer": "week",
+              "unit": "sessions"
+            }
+          },
+          {
+            "from": {
+              "id": "edb4a69a-8bc2-551b-8b14-385fcf4ddd0d",
+              "action": "Book a holiday",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": true
+            },
+            "name": "Book a holiday",
+            "nameCut": false,
+            "becomes": "history",
+            "confidence": "clear",
+            "reason": "Already done (\"Book a holiday\"), so it stays in the old plan's history and isn't planned again."
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "strategies": 3,
+      "habits": 3,
+      "todos": 1,
+      "milestones": 1,
+      "objectiveMeasures": 1,
+      "history": 1,
+      "toCheck": 1
+    },
+    "keptAsHistory": {
+      "versions": 2,
+      "reviews": 1,
+      "archivedMissions": 0
+    },
+    "flags": []
+  },
+  {
+    "person": {
+      "id": "2daf20e8-1dba-809c-725a-8b102dcb7163",
+      "name": "Ben Invented"
+    },
+    "mission": "Lead the operations function so that the business can double without the wheels coming off, while keeping the people",
+    "strategies": [
+      {
+        "from": {
+          "id": "d81be83a-3c0e-3c9f-008d-16670ded6b8b",
+          "name": "Standardise how work flows across the three sites so that nobody has to reinvent the wheel every single week"
+        },
+        "name": "Standardise how work flows across the three sites so that nobody has to",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "e7f880a1-1ced-9ff9-8bb1-988d06668e6a",
+              "action": "Map the order-to-cash process",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Map the order-to-cash process",
+            "nameCut": false,
+            "becomes": "todo",
+            "confidence": "clear",
+            "reason": "A one-off action (\"Map the order-to-cash process\"), so it becomes a to-do in its Strategy.",
+            "todo": {}
+          },
+          {
+            "from": {
+              "id": "77a7adbd-1222-cc29-a15c-f812e3dfe18e",
+              "action": "Daily stand-up with site leads",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Daily stand-up with site leads",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "clear",
+            "reason": "Something done again and again (\"Daily stand-up with site leads\"), so it becomes a habit: yes or no each working day.",
+            "habit": {
+              "measure": "yes_no_days_target",
+              "target": null,
+              "targetPer": null,
+              "unit": null
+            }
+          }
+        ]
+      },
+      {
+        "from": {
+          "id": "a0196498-26ad-a4a2-0546-ad92827c4d17",
+          "name": "Hire ahead of growth"
+        },
+        "name": "Hire ahead of growth",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "ce0ce533-e8db-7e84-8f43-eb6e10616f7e",
+              "action": "Open roles filled",
+              "type": "measurable",
+              "target_value": 6,
+              "unit": null,
+              "current_value": 2,
+              "is_done": false
+            },
+            "name": "Open roles filled",
+            "nameCut": false,
+            "becomes": "objective_measure",
+            "confidence": "check",
+            "reason": "A number with a target but no sign of how often, so it is most likely a result: proposed as an Outcome Objective's measure. Check with the coach.",
+            "objective": {
+              "kind": "number",
+              "direction": "up",
+              "start": 2,
+              "target": 6,
+              "unit": null
+            }
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "strategies": 2,
+      "habits": 1,
+      "todos": 1,
+      "milestones": 0,
+      "objectiveMeasures": 1,
+      "history": 0,
+      "toCheck": 1
+    },
+    "keptAsHistory": {
+      "versions": 3,
+      "reviews": 2,
+      "archivedMissions": 0
+    },
+    "flags": [
+      "The mission is longer than 120 characters: shortened at a word break, for the client to reword.",
+      "The Strategy \"Standardise how work flows across the th…\" is longer than 80 characters: shortened."
+    ]
+  },
+  {
+    "person": {
+      "id": "5c680822-45e9-05ff-3c18-61b820491391",
+      "name": "Cleo Invented"
+    },
+    "mission": "Be the calm, clear head of a growing clinic",
+    "strategies": [
+      {
+        "from": {
+          "id": "a9676042-fbb0-27f8-ab61-18efdac9e49f",
+          "name": "Protect thinking time"
+        },
+        "name": "Protect thinking time",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "b5067034-f806-5c90-fe69-e552285bc2f6",
+              "action": "Two-hour thinking block every Monday morning",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Two-hour thinking block every Monday morning",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "clear",
+            "reason": "Something done again and again (\"Two-hour thinking block every Monday morning\"), so it becomes a habit: yes or no each working day.",
+            "habit": {
+              "measure": "yes_no_days_target",
+              "target": null,
+              "targetPer": null,
+              "unit": null
+            }
+          },
+          {
+            "from": {
+              "id": "b1f18f3c-f3b4-d477-87ac-ce81df3cf419",
+              "action": "Reading",
+              "type": "measurable",
+              "target_value": 20,
+              "unit": "minutes a day",
+              "current_value": 10,
+              "is_done": false
+            },
+            "name": "Reading",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "clear",
+            "reason": "A number done again and again (\"Reading\", minutes a day), so it becomes a habit counted each working day.",
+            "habit": {
+              "measure": "amount",
+              "target": 20,
+              "targetPer": "day",
+              "unit": "minutes"
+            }
+          }
+        ]
+      },
+      {
+        "from": {
+          "id": "def29b0f-7e17-d4ef-aef9-05b1bc8580de",
+          "name": "Grow the patient list"
+        },
+        "name": "Grow the patient list",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "c4747549-61f8-f75f-a60e-df8d8092c097",
+              "action": "Active patients",
+              "type": "measurable",
+              "target_value": 1200,
+              "unit": "patients",
+              "current_value": 950,
+              "is_done": false
+            },
+            "name": "Active patients",
+            "nameCut": false,
+            "becomes": "objective_measure",
+            "confidence": "check",
+            "reason": "A number with a target but no sign of how often, so it is most likely a result: proposed as an Outcome Objective's measure. Check with the coach.",
+            "objective": {
+              "kind": "number",
+              "direction": "up",
+              "start": 950,
+              "target": 1200,
+              "unit": "patients"
+            }
+          },
+          {
+            "from": {
+              "id": "1b84b6a7-85e3-7c96-c8db-5ae5a00b919e",
+              "action": "Launch the new booking site by March",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Launch the new booking site by March",
+            "nameCut": false,
+            "becomes": "milestone",
+            "confidence": "check",
+            "reason": "A one-off result with an end point (\"Launch the new booking site by March\"), so it is proposed as a milestone. If it is a step towards a bigger result, it may be a to-do instead.",
+            "objective": {
+              "kind": "milestone"
+            }
+          }
+        ]
+      },
+      {
+        "from": {
+          "id": "083a171e-bce2-6cac-7565-9ba96f61f765",
+          "name": "A strategy with nothing in it yet"
+        },
+        "name": "A strategy with nothing in it yet",
+        "description": null,
+        "tactics": []
+      }
+    ],
+    "summary": {
+      "strategies": 3,
+      "habits": 2,
+      "todos": 0,
+      "milestones": 1,
+      "objectiveMeasures": 1,
+      "history": 0,
+      "toCheck": 2
+    },
+    "keptAsHistory": {
+      "versions": 1,
+      "reviews": 3,
+      "archivedMissions": 0
+    },
+    "flags": [
+      "The Strategy \"A strategy with nothing in it yet\" has no tactics: the plan will flag it until something is added."
+    ]
+  },
+  {
+    "person": {
+      "id": "b76d0127-e2bd-9f25-e800-410707f3b1d5",
+      "name": "Dev Invented"
+    },
+    "mission": "Turn the product team into the best place to build things",
+    "strategies": [
+      {
+        "from": {
+          "id": "db6c2eec-ef60-a0e3-a901-aae21445bec6",
+          "name": "Ship smaller, sooner"
+        },
+        "name": "Ship smaller, sooner",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "ad94ab55-ba65-4d7b-1f05-733ebdbb106f",
+              "action": "Release every two weeks",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Release every two weeks",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "clear",
+            "reason": "Something done again and again (\"Release every two weeks\"), so it becomes a habit: yes or no each working day.",
+            "habit": {
+              "measure": "yes_no_days_target",
+              "target": null,
+              "targetPer": null,
+              "unit": null
+            }
+          },
+          {
+            "from": {
+              "id": "ac98a8c4-ae77-f780-a284-7374a12b0db5",
+              "action": "Customer NPS",
+              "type": "measurable",
+              "target_value": 50,
+              "unit": "NPS",
+              "current_value": 31,
+              "is_done": false
+            },
+            "name": "Customer NPS",
+            "nameCut": false,
+            "becomes": "objective_measure",
+            "confidence": "clear",
+            "reason": "A result to move (\"Customer NPS\", NPS), so it becomes the measure of an Outcome Objective, starting at 31 with a target of 50.",
+            "objective": {
+              "kind": "number",
+              "direction": "up",
+              "start": 31,
+              "target": 50,
+              "unit": "NPS"
+            }
+          },
+          {
+            "from": {
+              "id": "abe2041d-a610-4ef3-c77c-d98aa114cd06",
+              "action": "Talk to Priya about the roadmap 🚀",
+              "type": "tickable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Talk to Priya about the roadmap 🚀",
+            "nameCut": false,
+            "becomes": "todo",
+            "confidence": "clear",
+            "reason": "A one-off action (\"Talk to Priya about the roadmap 🚀\"), so it becomes a to-do in its Strategy.",
+            "todo": {}
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "strategies": 1,
+      "habits": 1,
+      "todos": 1,
+      "milestones": 0,
+      "objectiveMeasures": 1,
+      "history": 0,
+      "toCheck": 0
+    },
+    "keptAsHistory": {
+      "versions": 2,
+      "reviews": 4,
+      "archivedMissions": 0
+    },
+    "flags": []
+  },
+  {
+    "person": {
+      "id": "3c1f75bd-583c-92d2-e7f0-ba7226ce05ca",
+      "name": "Elif Invented"
+    },
+    "mission": "Steady growth with my health intact",
+    "strategies": [
+      {
+        "from": {
+          "id": "fada4e79-3d0e-d30e-ff3b-10d88ddc4e61",
+          "name": "Move every day"
+        },
+        "name": "Move every day",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "22c26967-b738-b125-552c-dec303f15d54",
+              "action": "Steps",
+              "type": "measurable",
+              "target_value": 8000,
+              "unit": "steps",
+              "current_value": 5000,
+              "is_done": false
+            },
+            "name": "Steps",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "clear",
+            "reason": "A number done again and again (\"Steps\", steps), so it becomes a habit counted each week.",
+            "habit": {
+              "measure": "amount",
+              "target": 8000,
+              "targetPer": "week",
+              "unit": "steps"
+            }
+          }
+        ]
+      },
+      {
+        "from": {
+          "id": "4e281d4f-57bb-f347-e4ac-cad28d8e6c15",
+          "name": "Grow revenue steadily"
+        },
+        "name": "Grow revenue steadily",
+        "description": null,
+        "tactics": [
+          {
+            "from": {
+              "id": "c688562d-93ca-c4f9-2260-176e9e9e01f9",
+              "action": "Monthly revenue",
+              "type": "measurable",
+              "target_value": 40000,
+              "unit": "GBP",
+              "current_value": 31000,
+              "is_done": false
+            },
+            "name": "Monthly revenue",
+            "nameCut": false,
+            "becomes": "objective_measure",
+            "confidence": "clear",
+            "reason": "A result to move (\"Monthly revenue\", GBP), so it becomes the measure of an Outcome Objective, starting at 31000 with a target of 40000.",
+            "objective": {
+              "kind": "number",
+              "direction": "up",
+              "start": 31000,
+              "target": 40000,
+              "unit": "GBP"
+            }
+          },
+          {
+            "from": {
+              "id": "ffd54844-adfd-e560-334e-0c172db4fcb7",
+              "action": "Something",
+              "type": "measurable",
+              "target_value": null,
+              "unit": null,
+              "current_value": null,
+              "is_done": false
+            },
+            "name": "Something",
+            "nameCut": false,
+            "becomes": "habit",
+            "confidence": "check",
+            "reason": "A number with no target or unit: proposed as a habit to count each week. Check with the coach.",
+            "habit": {
+              "measure": "count",
+              "target": null,
+              "targetPer": "week",
+              "unit": null
+            }
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "strategies": 2,
+      "habits": 2,
+      "todos": 0,
+      "milestones": 0,
+      "objectiveMeasures": 1,
+      "history": 0,
+      "toCheck": 1
+    },
+    "keptAsHistory": {
+      "versions": 3,
+      "reviews": 0,
+      "archivedMissions": 1
+    },
+    "flags": []
+  },
+  {
+    "person": {
+      "id": "a65b3194-6226-a232-aea0-306ba300bf1b",
+      "name": "Femi Invented"
+    },
+    "mission": null,
+    "strategies": [],
+    "summary": {
+      "strategies": 0,
+      "habits": 0,
+      "todos": 0,
+      "milestones": 0,
+      "objectiveMeasures": 0,
+      "history": 0,
+      "toCheck": 0
+    },
+    "keptAsHistory": {
+      "versions": 0,
+      "reviews": 0,
+      "archivedMissions": 1
+    },
+    "flags": [
+      "No live mission: the role mission is set with the coach.",
+      "No tactic looks like a result: all Outcome Objectives are set with the coach."
+    ]
+  }
+]
