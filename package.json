@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "stress-test": "node stress-test.js",
     "stress-test:comprehensive": "node stress-test-comprehensive.js",
-    "stress-test:full-coverage": "node stress-test-full-coverage.js"
+    "stress-test:full-coverage": "node stress-test-full-coverage.js",
+    "test:healthcheck": "node --test tests/healthcheck/*.test.mjs"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",

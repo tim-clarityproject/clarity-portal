@@ -3,14 +3,19 @@
 // with the drawing left to AlignmentChart.jsx. Pure and DOM-free except for
 // the optional text measuring function passed in.
 
+import { healthCheckState } from '../../lib/alignmentScore.js';
+
 export const PROGRESS_WORDS = ['Embryonic', 'Bad', 'Fair', 'Good', 'Excellent'];
+
+// Today's three drawn areas, from the four states (healthCheckState): moving
+// well is the good area, needs attention the behind area, and needs managing
+// and less important (Embryonic included) the neutral ring. The restyle draws
+// the four states on their own.
+const AREA = { moving_well: 'mi', needs_attention: 'co', needs_managing: 'n', less_important: 'n' };
 
 /** Quadrant colour key: 'mi' mint, 'co' coral, 'n' white ring. */
 export function quadrant(progress, importancePct) {
-  if (progress == null) return 'n';
-  if (progress > 3 && importancePct > 50) return 'mi';
-  if (progress < 3 && importancePct > 50) return 'co';
-  return 'n';
+  return AREA[healthCheckState(progress, importancePct)] ?? 'n';
 }
 
 /** Shorten very long names so a label cannot run off the chart. */
