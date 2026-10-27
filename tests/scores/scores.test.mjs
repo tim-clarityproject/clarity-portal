@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import * as S from '../../src/lib/scores/index.js';
 import { quadrant } from '../../src/pages/alignment/chartLayout.js';
 import fs from 'node:fs';
-import { M5_CASES, CALENDAR_CASES, M6_CASES, M9_CASES, M18_CASES, M18_SHOWN_CASES, M19_CASES } from './cases.mjs';
+import { M5_CASES, CALENDAR_CASES, M6_CASES, M9_CASES, M18_CASES, M18_SHOWN_CASES, M18_FIGURE_CASES, M19_CASES } from './cases.mjs';
 
 const near = (actual, expected, msg) => {
   if (expected == null) return assert.equal(actual, expected, msg);
@@ -462,6 +462,11 @@ test('M18: the boss\'s words, and the database runs the same cases (033 test)', 
   assert.equal(S.PULSE_MEASURES.find((m) => m.key === 'stress').name, 'Calm');
   assert.equal(S.PULSE_OPEN_DAYS, 7);
   const sql = fs.readFileSync(new URL('../../supabase/033_pulse_wellbeing_seat_standard_test.sql', import.meta.url), 'utf8');
+  for (const c of M18_FIGURE_CASES) {
+    assert.equal(S.m18FigureShown(c.input), c.shown, `${c.input.answers} answers, ${c.input.named} named`);
+    const call = `public.score_m18_figure_shown(${c.input.answers}, ${c.input.named})`;
+    assert.ok(sql.includes(call), `the 033 test runs ${call}`);
+  }
   for (const c of M18_SHOWN_CASES) {
     const call = `public.score_m18_shown(${c.input.closed}, ${c.input.answers}, ${c.input.named})`;
     assert.ok(sql.includes(call), `the 033 test runs ${c.id} (${call})`);

@@ -391,6 +391,20 @@ export const M18_SHOWN_CASES = [
   { id: 'M18-shown-all-named', input: { closed: true, answers: 3, named: 3 }, expect: { shown: true, reason: null, answers: 3 } },
 ];
 
+// One figure (a measure or a rating question), from the answers to it
+// (break-it test, 27 Oct). The 033 test runs the same cases against
+// public.score_m18_figure_shown.
+export const M18_FIGURE_CASES = [
+  { input: { answers: 0, named: 0 }, shown: false },
+  { input: { answers: 1, named: 0 }, shown: false },
+  { input: { answers: 2, named: 0 }, shown: false },
+  { input: { answers: 3, named: 0 }, shown: true },
+  { input: { answers: 3, named: 2 }, shown: false },
+  { input: { answers: 4, named: 2 }, shown: false },
+  { input: { answers: 4, named: 1 }, shown: true },
+  { input: { answers: 3, named: 3 }, shown: true },
+];
+
 export const M18_CASES = [
   {
     id: 'M18-1',

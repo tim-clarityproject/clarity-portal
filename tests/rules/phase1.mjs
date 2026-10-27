@@ -112,7 +112,7 @@ begin
   begin
     foreach k in array array['open', 'two', 'three'] loop
       insert into public.feedback_requests (asker_id, tool_key, question_set_id, token_hash, opens_at, expires_at, max_answers, switched_off_at)
-        values (${id('client')}, 'team_pulse', pq, encode(extensions.digest('rules-pulse-' || k, 'sha256'), 'hex'),
+        values (${id('client')}, 'team_pulse', pq, encode(extensions.digest(case k when 'open' then repeat('e', 64) else 'rules-pulse-' || k end, 'sha256'), 'hex'),
                 now() - interval '1 day', now() + interval '6 days', 8, case when k = 'open' then null else now() end) returning id into pr;
       insert into public.pulse_sends (boss_id, kind, request_id, went_to, opens_at, closes_at)
         values (${id('client')}, 'short', pr, 8, now() - interval '1 day', now() + interval '6 days') returning id into ps;
@@ -448,12 +448,17 @@ export const PHASE1_FUNCTIONS = [
   fn('my_fixed_standard()', 'public.my_fixed_standard()', SIGNED_IN, 'The person\'s own: 85 in an organisation seat.'),
   fn('fixed_standard_for(uuid)', `public.fixed_standard_for(${R})`, NOBODY, 'Would tell anyone who has a seat: for the rules only.'),
   fn('org_wellbeing_move_old_switches()', 'public.org_wellbeing_move_old_switches()', NOBODY, 'Run once by migration 033.'),
+  fn('score_m18_figure_shown(integer,integer)', 'public.score_m18_figure_shown(3, 0)', SIGNED_IN),
+  fn('pulse_figures(uuid)', `public.pulse_figures(${R})`, NOBODY, 'Inside part of the pulse functions.'),
+  fn('wellbeing_visible(uuid,uuid)', `public.wellbeing_visible(${R}, ${R})`, NOBODY, 'Inside part of may_see and org_wellbeing_in.'),
+  fn('org_wellbeing_in(uuid,uuid)', `count(*) from public.org_wellbeing_in(${R}, ${R})`, SIGNED_IN),
   fn('pulse_shown(uuid)', `public.pulse_shown(${R})`, NOBODY, 'Inside part of the pulse functions.'),
   // inside parts and triggers: nobody calls them directly
   ...['p1_touch()', 'p1_same_owner()', 'sharing_switch_check()', 'sharing_switch_log()', 'teams_check()', 'team_members_check()',
       'reporting_lines_check()', 'organisation_members_check()', 'outcome_objectives_check()', 'todos_record_move()', 'wins_to_evidence()',
       'day_plan_limits()', 'day_plans_odd_sleep()', 'checkins_score()', 'checkins_flag()', 'impact_raters_check()',
-      'org_wellbeing_switch_check()', 'org_wellbeing_switch_log()', 'sprints_seat_standard()', 'organisation_members_seat_standard()']
+      'org_wellbeing_switch_check()', 'org_wellbeing_switch_log()', 'sprints_seat_standard()', 'organisation_members_seat_standard()',
+      'organisation_members_wellbeing_off()', 'teams_keep_organisation()']
     .map((s) => fn(s, `public.${s}`, NOBODY, 'Runs only as a trigger.')),
   fn('sponsor_may_act_on(uuid)', `public.sponsor_may_act_on(${R})`, NOBODY, 'Inside part of the sponsor functions.'),
   fn('feedback_open_request(text,boolean)', "public.feedback_open_request('x', false)", NOBODY, 'Inside part of the feedback functions.'),
@@ -512,6 +517,9 @@ export const SCENARIOS = [
   s('... switched off for the first, the first sees nothing, past months too', [['org_client', WB('org2', true)], ['org_client', WB('org', false)], ['sponsor', n('select count(*) from public.org_wellbeing({org_client})')]], '0'),
   s('... while the second still does', [['org_client', WB('org2', true)], ['org_client', WB('org', false)], ['sponsor_two', n('select count(*) from public.org_wellbeing({org_client})')]], '1'),
   s('... and the second\'s sponsor never reads the first organisation\'s summary', [['sponsor_two', n("select count(*) from public.person_summaries({org_client}) p where p.sprint_number = 900")]], '0'),
+  s('The first organisation\'s pages show what was shared with it', [['sponsor', n("select count(*) from public.org_wellbeing_in({org_client}, current_setting('rules.org')::uuid)")]], '1'),
+  s('... and nothing through another organisation', [['sponsor', n("select count(*) from public.org_wellbeing_in({org_client}, current_setting('rules.org2')::uuid)")]], '0'),
+  s('Leaving switches that organisation\'s wellbeing off', [['leaver', n("select string_agg(is_on::text, ',') from public.org_wellbeing_switches")]], 'false'),
   s('Jordan lists both organisations with their switches', [['org_client', n("select string_agg(is_on::text, ',' order by organisation_name) from public.my_org_wellbeing_switches()")]], 'true,false'),
   s('Nobody can switch it on for an organisation they aren\'t in', [['no_coach', `with x as (insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values ({no_coach}, current_setting('rules.org')::uuid, true) returning 1) select count(*)::text from x`]], 'error 42501'),
   s('... or for someone else', [['sponsor', `with x as (insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values ({org_client}, current_setting('rules.org2')::uuid, true) returning 1) select count(*)::text from x`]], 'error 42501'),
@@ -563,7 +571,7 @@ export const SCENARIOS = [
   s('A giver can read nothing back', [['signed_out', n('select count(*) from public.feedback_answers')]], 'error 42501'),
   s('The asker reads the answers to their own request', [['client', n("select count(*) from public.feedback_request_answers(current_setting('rules.req_full')::uuid)")]], '1'),
   s('... nobody else can', [['org_client', n("select count(*) from public.feedback_request_answers(current_setting('rules.req_full')::uuid)")]], 'error 42501'),
-  // the team pulse (methods M18; Tim, 27 Oct, 14:20)
+  // the team pulse (methods M18; Tim, 27 Oct, 14:20); Sam's open pulse's link is repeat('e', 64)
   s('A boss can\'t read a pulse before it closes', [['client', n("select public.pulse_results(current_setting('rules.pulse_open')::uuid) ->> 'shown'")]], 'false'),
   s('... no totals, own questions or comments', [['client', n("select (r ? 'measures' or r ? 'own' or r ? 'comments' or r ? 'nextStep') from public.pulse_results(current_setting('rules.pulse_open')::uuid) r")]], 'false'),
   s('... not even how many have answered', [['client', n("select coalesce(answers::text, 'hidden') from public.feedback_my_requests() where id = current_setting('rules.pulse_req_open')::uuid")]], 'hidden'),
@@ -574,6 +582,9 @@ export const SCENARIOS = [
   s('... and can\'t reopen it to collect a third', [['client', n("select public.feedback_request_extend(current_setting('rules.pulse_req_two')::uuid, 1)")]], 'error 22023'),
   s('Closed with 3 answers: the results show, the stress question named Calm', [['client', n("select (r ->> 'shown') || ' ' || (r -> 'measures' -> 'stress' ->> 'name') from public.pulse_results(current_setting('rules.pulse_three')::uuid) r")]], 'true Calm'),
   s('Nobody but the boss reads a pulse', [['org_client', n("select public.pulse_results(current_setting('rules.pulse_three')::uuid)")]], 'error 42501'),
+  s('A boss can\'t answer their own pulse', [['client', n("select public.feedback_send(repeat('e', 64), '{}')")]], 'error 42501'),
+  s('... but their team can', [['signed_out', n("select public.feedback_send(repeat('e', 64), '{}')")]], 'sent'),
+  s('A pulse is made only through pulse_send_create', [['client', n("select count(*) from public.feedback_request_create('team_pulse', null, 500, false, 365)")]], 'error 22023'),
   s('A pulse can\'t stay open longer than 7 days', [['client', n("select count(*) from public.pulse_send_create('short', 5, now(), now() + interval '8 days')")]], 'error 22023'),
   // the organisation's own records
   s('Someone outside the organisation can\'t read it', [['no_coach', n("select count(*) from public.organisations where id = current_setting('rules.org')::uuid")]], '0'),

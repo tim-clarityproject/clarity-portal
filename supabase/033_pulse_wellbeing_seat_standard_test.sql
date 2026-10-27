@@ -98,7 +98,7 @@ declare
   f text[] := '{}';
   boss uuid; other uuid;
   p_open uuid; k_open text; p_two uuid; k_two text; p_three uuid; k_three text; p_next uuid; k_next text; p_full uuid; k_full text;
-  p_named uuid; k_named text;
+  p_named uuid; k_named text; p_skip uuid; k_skip text;
   r jsonb;
   mem uuid; spon_a uuid; spon_b uuid; lead_a uuid; adm_a uuid; outsider uuid; mover uuid; stayed_off uuid; spon_c uuid;
   org_a uuid; org_b uuid; org_c uuid; team_a uuid; m_a uuid; m_b uuid; m_c uuid;
@@ -208,6 +208,30 @@ begin
     r := public.pulse_results(p_named);
     f := f || pg_temp.t_eq('1ae all 3 named: the results show', (r ->> 'shown') || ' ' || jsonb_array_length(r -> 'named'), 'true 3');
 
+    -- 1aj. one figure at a time (the shared cases, M18_FIGURE_CASES)
+    f := f || pg_temp.t_eq('1aj figures', concat_ws(',', public.score_m18_figure_shown(0, 0), public.score_m18_figure_shown(1, 0), public.score_m18_figure_shown(2, 0),
+      public.score_m18_figure_shown(3, 0), public.score_m18_figure_shown(3, 2), public.score_m18_figure_shown(4, 2), public.score_m18_figure_shown(4, 1),
+      public.score_m18_figure_shown(3, 3)), 'f,f,f,t,f,f,t,t');
+    -- 1ak. 3 answers, but only one answers energy and the boss's question
+    select * into p_skip, k_skip from pg_temp.t_pulse(8, 0);
+    perform pg_temp.t_anon();
+    perform public.feedback_send(k_skip, '{"energy": "very_low", "sleep": "ok", "stress": "rarely", "workload": "often", "support": "often", "own": {"q1": 1}}');
+    perform public.feedback_send(k_skip, '{"sleep": "good", "stress": "rarely", "workload": "often", "support": "often"}');
+    perform public.feedback_send(k_skip, '{"sleep": "poor", "stress": "rarely", "workload": "often", "support": "often"}');
+    perform pg_temp.t_as(boss);
+    perform pg_temp.t_close(p_skip);
+    r := public.pulse_results(p_skip);
+    f := f || pg_temp.t_eq('1ak the pulse shows, but one person''s energy doesn''t', (r ->> 'shown') || ' ' || coalesce(r -> 'measures' -> 'energy' ->> 'figure', 'hidden') || ' ' || (r -> 'measures' -> 'energy' ->> 'shown'), 'true hidden false');
+    f := f || pg_temp.t_eq('1al ... nor their answer to the boss''s question', coalesce(r -> 'own' -> 'q1' ->> 'average', 'hidden'), 'hidden');
+    f := f || pg_temp.t_eq('1am ... the others show', ((r -> 'measures' -> 'sleep' ->> 'figure')::numeric = 50)::text, 'true');
+    f := f || pg_temp.t_eq('1an ... and the next step comes from a figure that shows (sleep, 50)', r ->> 'lowest', 'sleep');
+    -- 1ao. a boss can't answer their own pulse, or make one another way
+    f := f || pg_temp.t_eq('1ao a closed pulse takes nobody''s answers', pg_temp.t_n(format('select public.feedback_send(%L, ''{}'')', k_next)), 'closed');
+    select * into p_full, k_full from pg_temp.t_pulse(8, 0);
+    f := f || pg_temp.t_eq('1ap a boss can''t answer their own open pulse', pg_temp.t_n(format('select public.feedback_send(%L, ''{}'')', k_full)), 'error 42501');
+    f := f || pg_temp.t_eq('1aq a pulse is made only through pulse_send_create', pg_temp.t_n('select count(*) from public.feedback_request_create(''team_pulse'', null, 500, false, 365)'), 'error 22023');
+    f := f || pg_temp.t_eq('1ar ... other feedback links are as before', pg_temp.t_n('select count(*) from public.feedback_request_create(''before_after_impact'', null)'), '1');
+
     -- 1af. nobody else
     perform pg_temp.t_as(other);
     f := f || pg_temp.t_eq('1af nobody else reads the pulse', pg_temp.t_n(format('select public.pulse_results(%L)', p_three)), 'error 42501');
@@ -261,6 +285,14 @@ begin
     f := f || pg_temp.t_eq('2j ... nor does A''s leader', public.may_see(mem, 'org_wellbeing')::text, 'false');
     perform pg_temp.t_as(spon_b);
     f := f || pg_temp.t_eq('2k ... while B, switched on, still does', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L)', mem)), '1');
+    -- someone who sponsors the person in both A and B
+    perform pg_temp.t_admin();
+    insert into public.seat_sponsors (member_id, sponsor_user_id) values (m_a, spon_b);
+    perform pg_temp.t_as(spon_b);
+    f := f || pg_temp.t_eq('2k2 a sponsor in both: A''s pages show nothing (A is off)', pg_temp.t_n(format('select count(*) from public.org_wellbeing_in(%L, %L)', mem, org_a)), '0');
+    f := f || pg_temp.t_eq('2k3 ... B''s pages show it', pg_temp.t_n(format('select count(*) from public.org_wellbeing_in(%L, %L)', mem, org_b)), '1');
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('2k4 a team with people in it stays in its organisation', pg_temp.t_rows(format('update public.teams set organisation_id = %L where id = %L', org_b, team_a)), 'error 23514');
 
     perform pg_temp.t_as(mem);
     f := f || pg_temp.t_eq('2l a switch can''t be moved to another organisation', pg_temp.t_rows(format('update public.org_wellbeing_switches set organisation_id = %L where user_id = %L and organisation_id = %L', org_c, mem, org_a)), 'error 42501');
@@ -279,7 +311,8 @@ begin
     perform pg_temp.t_as(spon_b);
     f := f || pg_temp.t_eq('2s once they leave B, B sees nothing, though it was on', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L)', mem)), '0');
     perform pg_temp.t_as(mem);
-    f := f || pg_temp.t_eq('2t ... and they can switch it off there afterwards', pg_temp.t_rows(format('update public.org_wellbeing_switches set is_on = false where user_id = %L and organisation_id = %L', mem, org_b)), '1');
+    f := f || pg_temp.t_eq('2t0 leaving switched B off, so rejoining never shares it again by itself', (select is_on from public.org_wellbeing_switches where user_id = mem and organisation_id = org_b)::text, 'false');
+    f := f || pg_temp.t_eq('2t ... and they can still set it there afterwards', pg_temp.t_rows(format('update public.org_wellbeing_switches set is_on = false where user_id = %L and organisation_id = %L', mem, org_b)), '1');
 
     -- moving the old single switch over
     perform pg_temp.t_admin();

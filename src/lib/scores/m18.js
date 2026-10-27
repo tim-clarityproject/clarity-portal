@@ -56,6 +56,19 @@ export function m18ResultsShown({ closed, answers, named = 0 }) {
   return { shown: true, reason: null, answers, message: null };
 }
 
+/**
+ * M18: may one figure show (a measure, or one of the boss's own rating
+ * questions)? On the same terms as the pulse: 3 or more answers to that
+ * question, and not just 1 or 2 anonymous ones beside named answers, so
+ * someone skipping a question never leaves one person's answer on show.
+ * The database has a copy (public.score_m18_figure_shown, migration 033).
+ * @param {{ answers: number, named: number }} input answers to this question
+ */
+export function m18FigureShown({ answers, named = 0 }) {
+  const anonymous = answers - named;
+  return answers >= PULSE_MIN_ANSWERS && !(anonymous > 0 && anonymous < PULSE_MIN_ANSWERS);
+}
+
 /** The note on the answering page for a small team (Claude): fewer than 5 people. */
 export const SMALL_TEAM = 5;
 export function m18SmallTeam(wentTo) {

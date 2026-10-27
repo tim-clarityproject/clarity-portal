@@ -18,7 +18,13 @@
 --          totals, reopen it, and work out the next person's answers;
 --        - when only 1 or 2 people stayed anonymous beside named answers,
 --          the totals would give their answers away, so the results stay
---          private then too (Claude).
+--          private then too (Claude);
+--        - each figure (a measure, or one of the boss's own rating
+--          questions) follows the same rule on the answers to it, so
+--          someone skipping a question never leaves one answer on show;
+--        - a pulse is made only through pulse_send_create, and a boss can't
+--          answer their own pulse while signed in (signed out, nobody can
+--          tell who answers a link: a known limit in methods M18 and M21).
 --      A pulse is open for 7 days, or less if the boss chooses. The stress
 --      question is stored as before ('stress') and named Calm (higher is
 --      calmer) wherever the database names the measures.
@@ -29,7 +35,11 @@
 --      that organisation only. The old single switch moves over: "on"
 --      becomes "on" for each organisation the person is in today (the reach
 --      it had), so nothing already shared is lost or widened, and the
---      single switch is refused from then on.
+--      single switch is refused from then on. Leaving an organisation
+--      switches its wellbeing off. Organisation pages use org_wellbeing_in
+--      (person, organisation). A leader reaches wellbeing only through a
+--      team in the same organisation, and a team with people or teams in
+--      it can't be moved to another organisation.
 --   3. Organisation seats have a fixed standard of 85% (methods M7; Tim,
 --      26 Oct, 23:49)
 --      While someone holds an active, confirmed membership with a seat,
@@ -143,13 +153,15 @@ begin
     raise exception 'A pulse closes after it opens.' using errcode = '22023';
   end if;
   if closes > opens + interval '7 days' then
-    raise exception 'A pulse stays open for up to 7 days.' using errcode = '22023';
+    raise exception 'A pulse can stay open for up to 7 days. Choose a closing date within 7 days of opening.' using errcode = '22023';
   end if;
   days := greatest(1, ceil(extract(epoch from (closes - opens)) / 86400)::integer);
   -- The full check-in's questions are added as data when the pulse is built
   -- (tool team_checkin); until then sending one is refused.
+  perform set_config('clarity.pulse_sending', 'yes', true);
   select * into req from public.feedback_request_create(
     case when p_kind = 'short' then 'team_pulse' else 'team_checkin' end, null, p_went_to, false, days, opens, null);
+  perform set_config('clarity.pulse_sending', '', true);
   update public.feedback_requests set expires_at = closes where id = req.request_id;
   insert into public.pulse_sends (boss_id, kind, request_id, own_questions, went_to, opens_at, closes_at)
   values ((select auth.uid()), p_kind, req.request_id, p_own_questions, p_went_to, opens, closes)
@@ -207,13 +219,50 @@ begin
 end;
 $$;
 
+-- One figure (a measure, or one of the boss's own rating questions) shows
+-- only on the same terms as the pulse: 3 or more answers to that question,
+-- and not just 1 or 2 anonymous ones beside named answers (break-it test,
+-- 27 Oct: someone skipping a question could otherwise leave one person's
+-- answer on show). As m18FigureShown, tested on the same cases.
+create or replace function public.score_m18_figure_shown(p_answers integer, p_named integer)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(p_answers, 0) >= 3 and not (coalesce(p_answers, 0) - coalesce(p_named, 0) between 1 and 2);
+$$;
+revoke all on function public.score_m18_figure_shown(integer, integer) from public, anon;
+grant execute on function public.score_m18_figure_shown(integer, integer) to authenticated;
+
+-- One request's five measures: each figure, or null where it can't show.
+create or replace function public.pulse_figures(p_request uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with every_answer as (
+    select public.score_m18_pulse((select coalesce(jsonb_agg(a.answers), '[]') from public.feedback_answers a where a.request_id = p_request), null) -> 'measures' as m),
+  named_answers as (
+    select public.score_m18_pulse((select coalesce(jsonb_agg(a.answers), '[]') from public.feedback_answers a where a.request_id = p_request and a.name_added), null) -> 'measures' as m)
+  select coalesce(jsonb_object_agg(e.k, jsonb_build_object(
+           'figure', case when public.score_m18_figure_shown((e.v ->> 'answers')::integer, (n.m -> e.k ->> 'answers')::integer) then e.v -> 'figure' else 'null'::jsonb end,
+           'answers', e.v -> 'answers',
+           'shown', public.score_m18_figure_shown((e.v ->> 'answers')::integer, (n.m -> e.k ->> 'answers')::integer))), '{}')
+  from every_answer, named_answers n, jsonb_each(every_answer.m) e(k, v);
+$$;
+revoke all on function public.pulse_figures(uuid) from public, anon, authenticated;
+
 -- A boss's results for one send. Before it closes, or with fewer than 3
 -- answers: only whether it has closed, how many answered (once closed), the
--- named answers and how many it went to. Once it shows: the totals, the
--- change since the last pulse (only if that one showed too), their own
--- questions, comments as written without names in a random order, the named
--- answers and one small next step. Each measure carries its name (the
--- stress question is named Calm).
+-- named answers and how many it went to. Once it shows: each figure that
+-- may show (pulse_figures), the change since the last pulse where both
+-- figures showed, their own questions (ratings on the same terms), comments
+-- as written without names in a random order, the named answers and one
+-- small next step from the lowest figure shown. Each measure carries its
+-- name (the stress question is named Calm).
 create or replace function public.pulse_results(p_send uuid)
 returns jsonb
 language plpgsql
@@ -226,9 +275,10 @@ declare
   prev public.pulse_sends;
   shown jsonb;
   named jsonb;
-  answers jsonb;
-  prev_measures jsonb;
-  res jsonb;
+  cur jsonb;
+  before jsonb := '{}';
+  measures jsonb;
+  lowest text;
   names constant jsonb := '{"energy": "Energy to perform", "sleep": "Sleep", "stress": "Calm", "workload": "Workload", "support": "Support"}';
 begin
   select * into ps from public.pulse_sends where id = p_send and boss_id = (select auth.uid());
@@ -244,27 +294,37 @@ begin
     return shown || jsonb_build_object('wentTo', ps.went_to, 'closesAt', ps.closes_at, 'named', named, 'measureNames', names);
   end if;
 
-  select coalesce(jsonb_agg(a.answers), '[]') into answers from public.feedback_answers a where a.request_id = ps.request_id;
+  cur := public.pulse_figures(ps.request_id);
   -- last time: the boss's previous pulse of the same kind, used only if its
   -- own results showed (otherwise the change would give them away)
   select * into prev from public.pulse_sends p
    where p.boss_id = ps.boss_id and p.kind = ps.kind and p.opens_at < ps.opens_at order by p.opens_at desc limit 1;
   if prev.id is not null and (public.pulse_shown(prev.request_id) ->> 'shown')::boolean then
-    select jsonb_object_agg(k, v -> 'figure') into prev_measures
-      from jsonb_each(public.score_m18_pulse((select coalesce(jsonb_agg(a.answers), '[]') from public.feedback_answers a where a.request_id = prev.request_id), null) -> 'measures') e(k, v);
+    before := public.pulse_figures(prev.request_id);
   end if;
-  res := public.score_m18_pulse(answers, prev_measures);
-  res := jsonb_set(res, '{measures}', (select jsonb_object_agg(k, v || jsonb_build_object('name', names ->> k)) from jsonb_each(res -> 'measures') e(k, v)));
-  return res || shown || jsonb_build_object(
+  select jsonb_object_agg(m.key, (cur -> m.key) || jsonb_build_object(
+           'name', names ->> m.key,
+           'change', case when jsonb_typeof(cur -> m.key -> 'figure') = 'number' and jsonb_typeof(before -> m.key -> 'figure') = 'number'
+                          then public.score_round((cur -> m.key ->> 'figure')::numeric) - public.score_round((before -> m.key ->> 'figure')::numeric) end)),
+         (select m2.key from (values ('energy', 1), ('sleep', 2), ('stress', 3), ('workload', 4), ('support', 5)) m2(key, ord)
+           where jsonb_typeof(cur -> m2.key -> 'figure') = 'number' order by (cur -> m2.key ->> 'figure')::numeric, m2.ord limit 1)
+    into measures, lowest
+    from (values ('energy'), ('sleep'), ('stress'), ('workload'), ('support')) m(key);
+  return shown || jsonb_build_object(
+    'measures', measures,
+    'lowest', lowest,
     'wentTo', ps.went_to,
     'closesAt', ps.closes_at,
     'measureNames', names,
     'own', (select coalesce(jsonb_object_agg(q ->> 'id',
-              case when q ->> 'kind' = 'rating'
-                   then jsonb_build_object('average', (select avg((a.answers -> 'own' ->> (q ->> 'id'))::numeric) from public.feedback_answers a
-                                                       where a.request_id = ps.request_id and jsonb_typeof(a.answers -> 'own' -> (q ->> 'id')) = 'number'),
-                                           'answers', (select count(*) from public.feedback_answers a
-                                                       where a.request_id = ps.request_id and jsonb_typeof(a.answers -> 'own' -> (q ->> 'id')) = 'number'))
+              case when q ->> 'kind' = 'rating' then (
+                     select jsonb_build_object(
+                       'average', case when public.score_m18_figure_shown(count(*)::integer, (count(*) filter (where a.name_added))::integer)
+                                       then avg((a.answers -> 'own' ->> (q ->> 'id'))::numeric) end,
+                       'answers', count(*),
+                       'shown', public.score_m18_figure_shown(count(*)::integer, (count(*) filter (where a.name_added))::integer))
+                     from public.feedback_answers a
+                     where a.request_id = ps.request_id and jsonb_typeof(a.answers -> 'own' -> (q ->> 'id')) = 'number')
                    else jsonb_build_object('texts', (select coalesce(jsonb_agg(t order by random()), '[]') from (
                                                        select a.answers -> 'own' ->> (q ->> 'id') as t from public.feedback_answers a
                                                        where a.request_id = ps.request_id and coalesce(btrim(a.answers -> 'own' ->> (q ->> 'id')), '') <> '') x)) end), '{}')
@@ -273,12 +333,82 @@ begin
                    select a.answers ->> 'comment' as c from public.feedback_answers a
                    where a.request_id = ps.request_id and coalesce(btrim(a.answers ->> 'comment'), '') <> '') x),
     'named', named,
-    'nextStep', case res ->> 'lowest'
+    'nextStep', case lowest
                   when 'energy' then 'Ask your team what would give them more energy at work.'
                   when 'sleep' then 'Ask your team what gets in the way of a good night’s sleep.'
                   when 'stress' then 'Ask your team what is adding the most pressure right now.'
                   when 'workload' then 'Ask your team what would ease the workload.'
                   when 'support' then 'Ask each person what support would help them perform.' end);
+end;
+$$;
+
+-- A pulse is made only through pulse_send_create (so it always has its
+-- 7-day close and its results rules), and a boss can't answer their own
+-- pulse while signed in. (Signed out, nobody can tell who answers a link:
+-- methods M18 and M21 say so.)
+create or replace function public.feedback_request_create(
+  p_tool text, p_item uuid, p_max_answers integer default 1, p_hide_names_at_3 boolean default false,
+  p_days integer default 30, p_opens_at timestamptz default null, p_subject_first_name text default null)
+returns table (request_id uuid, token text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  qs uuid;
+  t text := encode(extensions.gen_random_bytes(32), 'hex');
+  opens timestamptz := coalesce(p_opens_at, now());
+begin
+  if (select auth.uid()) is null then
+    raise exception 'Sign in to ask for feedback.' using errcode = '42501';
+  end if;
+  if p_tool in ('team_pulse', 'team_checkin') and current_setting('clarity.pulse_sending', true) is distinct from 'yes' then
+    raise exception 'A team pulse is sent from the team pulse page. Send it from there.' using errcode = '22023';
+  end if;
+  if p_days is null or p_days not between 1 and 365 then
+    raise exception 'A link lasts 1 to 365 days.' using errcode = '22023';
+  end if;
+  select q.id into qs from public.feedback_question_sets q where q.tool_key = p_tool order by q.version desc limit 1;
+  if qs is null then
+    raise exception 'That tool has no questions yet.' using errcode = '22023';
+  end if;
+  insert into public.feedback_requests (asker_id, tool_key, item_id, question_set_id, token_hash, opens_at, expires_at,
+                                        max_answers, hide_names_at_3, subject_first_name)
+  values ((select auth.uid()), p_tool, p_item, qs, encode(extensions.digest(t, 'sha256'), 'hex'), opens,
+          opens + make_interval(days => p_days), greatest(1, least(coalesce(p_max_answers, 1), 500)),
+          coalesce(p_hide_names_at_3, false), left(btrim(p_subject_first_name), 60))
+  returning id into request_id;
+  token := t;
+  return next;
+end;
+$$;
+
+create or replace function public.feedback_send(p_token text, p_answers jsonb, p_name text default null, p_add_name boolean default false)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r public.feedback_requests;
+  nm text := nullif(btrim(coalesce(p_name, '')), '');
+begin
+  r := public.feedback_open_request(p_token, true);
+  if r.id is null then
+    return 'closed';
+  end if;
+  if r.tool_key in ('team_pulse', 'team_checkin') and r.asker_id = (select auth.uid()) then
+    raise exception 'This is your own pulse, so it can''t take your answers. Your team answers it.' using errcode = '42501';
+  end if;
+  if p_answers is null or jsonb_typeof(p_answers) <> 'object' or pg_column_size(p_answers) > 32768 then
+    raise exception 'Those answers can''t be read.' using errcode = '22023';
+  end if;
+  if coalesce(p_add_name, false) and (nm is null or char_length(nm) > 60) then
+    raise exception 'Add a name of up to 60 characters, or leave it off.' using errcode = '22023';
+  end if;
+  insert into public.feedback_answers (request_id, giver_name, name_added, answers)
+  values (r.id, case when p_add_name then nm end, coalesce(p_add_name, false), p_answers);
+  return 'sent';
 end;
 $$;
 
@@ -388,7 +518,7 @@ set search_path = ''
 as $$
 begin
   if new.part = 'org_wellbeing' then
-    raise exception 'Wellbeing is shared with each organisation separately now (public.org_wellbeing_switches).' using errcode = '22023';
+    raise exception 'Wellbeing is now shared with each organisation separately. Use the switch for that organisation.' using errcode = '22023';
   end if;
   if not exists (select 1 from public.sharing_parts() p where p.part = new.part and not p.per_item) then
     raise exception 'Unknown sharing part: %', new.part using errcode = '22023';
@@ -397,6 +527,34 @@ begin
   return new;
 end;
 $$;
+
+-- May the person signed in see this person's wellbeing, through a
+-- membership in p_org (or in any organisation when p_org is null)? Only by
+-- the person's choice for that organisation, to a sponsor of their seat
+-- there or a leader over one of their teams there (the team in the same
+-- organisation), while they are a confirmed member.
+create or replace function public.wellbeing_visible(p_owner uuid, p_org uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.organisation_members m
+    join public.org_wellbeing_switches w on w.user_id = m.user_id and w.organisation_id = m.organisation_id and w.is_on
+    where m.user_id = p_owner and m.ended_on is null and m.confirmed_at is not null
+      and (p_org is null or m.organisation_id = p_org)
+      and ((m.has_seat
+            and exists (select 1 from public.seat_sponsors s where s.member_id = m.id and s.sponsor_user_id = (select auth.uid()) and s.ended_on is null)
+            and not exists (select 1 from public.organisation_admins a where a.organisation_id = m.organisation_id and a.user_id = (select auth.uid())))
+           or exists (select 1 from public.team_members tm
+                      join public.teams t on t.id = tm.team_id and t.organisation_id = m.organisation_id
+                      where tm.member_id = m.id and tm.ended_on is null and tm.team_id in (select public.my_leader_team_ids())))
+  );
+$$;
+revoke all on function public.wellbeing_visible(uuid, uuid) from public, anon, authenticated;
 
 -- THE CHECKED HELPER (spec 5), as in 026, with wellbeing checked for each
 -- organisation: a sponsor of the person's seat there, or a leader over one
@@ -431,20 +589,8 @@ begin
     end if;
     return public.sharing_is_on(p_owner, p_part);
   end if;
-  -- organisation wellbeing: by the person's choice for that organisation,
-  -- to their sponsors and the leaders over their teams there, while they
-  -- are a confirmed member
-  return exists (
-    select 1
-    from public.organisation_members m
-    join public.org_wellbeing_switches w on w.user_id = m.user_id and w.organisation_id = m.organisation_id and w.is_on
-    where m.user_id = p_owner and m.ended_on is null and m.confirmed_at is not null
-      and ((m.has_seat
-            and exists (select 1 from public.seat_sponsors s where s.member_id = m.id and s.sponsor_user_id = viewer and s.ended_on is null)
-            and not exists (select 1 from public.organisation_admins a where a.organisation_id = m.organisation_id and a.user_id = viewer))
-           or exists (select 1 from public.team_members tm
-                      where tm.member_id = m.id and tm.ended_on is null and tm.team_id in (select public.my_leader_team_ids())))
-  );
+  -- organisation wellbeing: by the person's choice for each organisation
+  return public.wellbeing_visible(p_owner, null);
 end;
 $$;
 
@@ -466,6 +612,72 @@ as $$
 $$;
 revoke all on function public.my_org_wellbeing_switches() from public, anon;
 grant execute on function public.my_org_wellbeing_switches() to authenticated;
+
+-- Wellbeing for one organisation's pages: only what was shared with that
+-- organisation, even for someone who is a sponsor or leader in two.
+create or replace function public.org_wellbeing_in(p_person uuid, p_org uuid)
+returns table (month date, hardware_score numeric, software_score numeric, area_scores jsonb)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select c.month, c.hardware_score, c.software_score, c.area_scores
+  from public.checkins c
+  where c.user_id = p_person and c.status = 'finished'
+    and (p_person = (select auth.uid()) or public.wellbeing_visible(p_person, p_org))
+  order by c.month desc;
+$$;
+revoke all on function public.org_wellbeing_in(uuid, uuid) from public, anon;
+grant execute on function public.org_wellbeing_in(uuid, uuid) to authenticated;
+
+-- Leaving an organisation switches its wellbeing off, so rejoining later
+-- never shares it again without a fresh choice.
+create or replace function public.organisation_members_wellbeing_off()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if old.ended_on is null and new.ended_on is not null then
+    update public.org_wellbeing_switches set is_on = false
+     where user_id = new.user_id and organisation_id = new.organisation_id and is_on;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.organisation_members_wellbeing_off() from public, anon, authenticated;
+drop trigger if exists organisation_members_wellbeing_off on public.organisation_members;
+create trigger organisation_members_wellbeing_off after update on public.organisation_members
+  for each row execute function public.organisation_members_wellbeing_off();
+-- Anyone who has already left: switched off (safe to run twice).
+update public.org_wellbeing_switches w set is_on = false
+ where w.is_on and not exists (select 1 from public.organisation_members m
+                                where m.user_id = w.user_id and m.organisation_id = w.organisation_id and m.ended_on is null);
+
+-- A team with people or teams in it stays in its organisation, so a team's
+-- members can never sit in another organisation's team (break-it test).
+create or replace function public.teams_keep_organisation()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.organisation_id is distinct from old.organisation_id
+     and (exists (select 1 from public.team_members tm where tm.team_id = old.id)
+          or exists (select 1 from public.teams c where c.parent_team_id = old.id)) then
+    raise exception 'A team with people or teams in it stays in its organisation. Make a new team there instead.' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.teams_keep_organisation() from public, anon, authenticated;
+drop trigger if exists teams_keep_organisation on public.teams;
+create trigger teams_keep_organisation before update on public.teams
+  for each row execute function public.teams_keep_organisation();
+
 
 -- Moving the single switch over (once; safe to run twice): an "on" switch
 -- becomes an "on" switch for each organisation the person is in today,
