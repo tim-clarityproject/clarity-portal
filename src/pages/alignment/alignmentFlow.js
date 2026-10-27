@@ -91,8 +91,10 @@ export function emptyDraft() {
 /** Builds the draft from saved data. */
 export function draftFromData(data) {
   const d = data || {};
+  // A damaged item (not an object) is skipped rather than stopping the page.
   const items = (list) => (Array.isArray(list)
-    ? list.map((i) => ({ id: String(i.id), text: String(i.text ?? ''), ...projectDates(i) }))
+    ? list.filter((i) => i && typeof i === 'object')
+      .map((i) => ({ id: String(i.id), text: String(i.text ?? ''), ...projectDates(i) }))
     : []);
   const owner = d.ratings?.[OWNER] || {};
   const ratings = {};

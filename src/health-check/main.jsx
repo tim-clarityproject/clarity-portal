@@ -1,9 +1,9 @@
 import { StrictMode, lazy, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { ErrorBoundary } from '../components/ErrorBoundary';
 import { loadWithReload } from '../lib/loadWithReload';
 import { diag } from '../utils/diag';
+import PageError from './PageError';
 import './health-check.css';
 
 // The outside Strategic Alignment Health Check as its own small page
@@ -39,12 +39,12 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Diagnostics />
-      <ErrorBoundary>
+      <PageError>
         <Routes>
           <Route path="/health-check/:token" element={<Suspense fallback={blank}><HealthCheck /></Suspense>} />
           <Route path="*" element={<LeaveForPortal />} />
         </Routes>
-      </ErrorBoundary>
+      </PageError>
     </BrowserRouter>
   </StrictMode>,
 );
