@@ -188,6 +188,7 @@ In plain words: the standard is the weekly score you count as a good week. 85% m
 - Set per sprint. Default 85% (decided 21 Oct). Choices 75, 80, 85, 90 or Other, any whole number from 50 to 100 (Tim, 23 Oct).
 - A week **at your standard** is a week whose shown score is at or above it. Those weeks are mint; below-standard weeks are neutral grey (Tim, 22 Oct and 26 Oct).
 - **Organisation seats (Tim, 26 Oct, 23:49):** anyone in a seat an organisation pays for has a fixed standard of 85%; they can't change it. People who pay for themselves choose their own, 50 to 100, 85 suggested.
+- How it's kept (Claude, 27 Oct): while someone holds an active, confirmed seat, every new sprint and every change to a sprint's standard is saved as 85, and their running sprint is set to 85 when they take up the seat. A different figure is set to 85 rather than refused, so a save made before they joined keeps its other changes. Finished sprints keep the standard their weeks were scored at. Someone who leaves keeps 85 until they change it. Whether a coach can change it for one person is Tim's open question.
 - Known limit: the standard is the person's own choice, not a norm. 85% for one person and 85% for another are not the same achievement, so standards and scores are never compared between people.
 
 ---
@@ -463,6 +464,7 @@ Decided by Tim, 26 Oct, 17:35 to 17:38. The question wording below is a first dr
 - **One link for the whole team, open for 7 days** (Claude, 26 Oct).
 - **Results show only once the pulse closes, and only with 3 or more answers (Tim, 27 Oct, 14:20; replaces totals at any number, 26 Oct, 17:35).** Totals that changed after each answer would let a boss work out one person's answers. This covers the measures, the boss's own questions and the comments. With fewer than 3 answers the boss sees only "2 people answered, so the results stay private." When the group is small, the page people answer on still says: "Your answers are anonymous, but in a small team your boss may be able to guess who answered." (Claude).
 - Named answers (the person's choice, made fresh each time) also show individually to the boss, as they come in.
+- **When only 1 or 2 people stayed anonymous beside named answers, the results stay private too** (Claude, 27 Oct): the totals minus the named answers would give their answers away. The boss sees "4 people answered, but only 2 without a name, so the results stay private." The number of answers shows only once the pulse has closed, and a pulse can't be extended or reopened.
 - Comments shown as written, without names, in a random order.
 - Each result ends with one small next step for the boss, chosen from the lowest measure (for example "Ask your team what would ease the workload.").
 - Nothing in the pulse asks about risk or harm (experience rule 51).
@@ -498,7 +500,7 @@ The same figure for each team, then for each team below it. Shown at any team si
 ### M19.4 Self-reported figures (goal check, before and after, wellbeing)
 - Goal check and before and after ratings: shown only as anonymous group totals, never who said what, at any group size (Tim, 26 Oct, 17:35).
 - **The monthly Hardware and Software check-in never reaches an organisation, not even as a total (Tim, 26 Oct, 18:48),** keeping the promise "Your organisation never sees them."
-- **Unless the person chooses (Tim, 26 Oct, 18:48):** anyone can make their own wellbeing visible to their organisation. It then shows **named**, never anonymous: their Hardware and Software scores and areas, latest and over time. Never their answers, written goals or coach flags. Off by default, switched on and off on the "What [sponsor] sees" page, and switching it off hides past months too (Claude). **Chosen separately for each organisation** a person has a seat in, one switch each (Tim, 27 Oct, 14:20).
+- **Unless the person chooses (Tim, 26 Oct, 18:48):** anyone can make their own wellbeing visible to their organisation. It then shows **named**, never anonymous: their Hardware and Software scores and areas, latest and over time. Never their answers, written goals or coach flags. Off by default, switched on and off on the "What [sponsor] sees" page, and switching it off hides past months too (Claude). **Chosen separately for each organisation** a person has a seat in, one switch each (Tim, 27 Oct, 14:20). Switching one off hides past months from that organisation only. The earlier single switch became a switch for each organisation the person was in when it moved, which was exactly its reach (Claude).
 - Otherwise, organisation wellbeing comes only from the team pulse (M18).
 
 ### M19.5 What every organisation report says (from M21)
@@ -610,6 +612,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 (repo) | 27 Oct 2026 | Claude's calls in building 1.2 (migration 033): pulse results also stay private when only 1 or 2 people stayed anonymous beside named answers, and the count shows only once closed (M18); a seat's standard is set to 85 rather than refused, and set when the seat is taken up mid-sprint (M7); the single wellbeing switch moved to each organisation the person was in, which was its reach (M19.4). |
 | 1.2 (repo) | 27 Oct 2026 | M14: the rerun for Tim's "rare but right" answer, with the planted link at 2 swings, and option (3) tried and not adopted (see "The rerun, 27 Oct 2026" below). The threshold stays at 2.6%. No other arithmetic changed. |
 | 1.2 | 27 Oct 2026 | Tim's decisions: organisation seats have a fixed 85% standard (M7; 26 Oct, 23:49); pattern cards are rare but right, the planted-link target set at 2 swings (M14.7); pulse results show only once the pulse closes, with 3 or more answers, and the stress measure shows as Calm (M18); wellbeing shared per organisation (M19.4); the Health Check gets four dot states, Embryonic as a ring and 2.5 in the attention score, and definitions under every choice (M20.1); Purpose / Meaning kept (M20.2). |
 | 1.1 (repo) | 27 Oct 2026 | M14: the corrected chance threshold tightened from 5% to 2.6% by the go-live simulation; the planted-link target was not met, and the choice is Tim's (see "The pattern simulation" below). |

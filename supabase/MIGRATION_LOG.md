@@ -76,6 +76,7 @@ update public.migration_log
 | 030 | `030_organisations_feedback_pulse` | Phase 1: frozen summaries and what sponsors and leaders read, organisation measures, feedback links (hashed, locked), team pulse, impact | ☑ | ☐ | Test: `supabase/030_organisations_feedback_pulse_test.sql`. Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
 | 031 | `031_evidence_library` | Phase 1: the evidence library, seeded from the claims register 1.1 | ☑ | ☐ | Test: `supabase/031_evidence_library_test.sql`. Made by `scripts/make-evidence-seed.mjs`. Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
 | 032 | `032_scores_in_database` | Phase 1: database copies of the scores (M5, M6, M9, M18, M19 and what they rest on), freeze_week, make_sprint_summary, org_figures, pulse_results, impact_results | ☑ | ☐ | Test: `supabase/032_scores_in_database_test.sql` (written from `tests/scores/cases.mjs`). Live: at go-live. Test: run or confirmed by Tim, 27 Oct 2026 |
+| 033 | `033_pulse_wellbeing_seat_standard` | Phase 1 step 4: pulse results only once closed with 3 or more answers, the 7-day link and Calm; wellbeing shared per organisation (the old switch moved over); the fixed 85% standard for organisation seats | ☐ | ☐ | Test: `supabase/033_pulse_wellbeing_seat_standard_test.sql` (ALL CHECKS PASSED). Then `npm run test:rules -- --as-is`. Live: at go-live |
 | – | `add_personal_goal_to_profiles` | profiles.personal_goal | ☐ | ☐ | No number |
 | – | `add_show_mission_in_header_to_profiles` | profiles.show_mission_in_header | ☐ | ☐ | No number |
 
