@@ -1,0 +1,17 @@
+/* The outside Strategic Alignment Health Check's own page entry
+   (health-check.html), imported only by src/health-check/main.jsx.
+
+   It loads only the styles the Health Check uses today, so it looks exactly
+   as it does inside the portal: the root text size and reset (index.css),
+   the fonts, the design tokens, the shared classes its AuthShell, fields and
+   buttons use (components.css) and the phone text sizes (mobile.css). Its
+   own styles (alignment.css) come with the page. The portal's print and
+   installed-app styles are left out. The restyle (Health Check 2) replaces
+   these with the Health Check's own tokens and classes. */
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/500.css';
+@import '../index.css';
+@import '../styles/fonts.css';
+@import '../styles/tokens.css';
+@import '../styles/components.css';
+@import '../styles/mobile.css';
