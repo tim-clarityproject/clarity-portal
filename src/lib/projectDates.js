@@ -59,7 +59,8 @@ const inMonth = (day, month) => day.y === month.y && day.m === month.m;
  * @param {{started?: string, startedOn?: string, due?: string, dueOn?: string}} input
  * @returns {{ok: true, dates: Object} | {ok: false, field: string, message: string}}
  */
-export function checkProjectDates(input = {}) {
+export function checkProjectDates(dateInput) {
+  const input = dateInput && typeof dateInput === 'object' ? dateInput : {};
   const dates = {};
   const fail = (field, key) => ({ ok: false, field, message: DATE_MESSAGES[key] });
 

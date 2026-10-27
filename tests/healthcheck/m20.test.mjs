@@ -114,3 +114,11 @@ test("today's chart areas come from the four states", () => {
   assert.equal(quadrant(5, 50), 'n');
   assert.equal(quadrant(null, 80), 'n');
 });
+
+test('chart names are cut in whole characters, never splitting an emoji', async () => {
+  const { shortLabel, wrapLabel } = await import('../../src/pages/alignment/chartLayout.js');
+  const name = '🚀'.repeat(30);
+  assert.ok(!shortLabel(name, 10).includes('�'));
+  assert.equal(Array.from(shortLabel(name, 10)).length, 10);
+  wrapLabel(name, 7).forEach((line) => assert.ok(/^(🚀)+$/u.test(line), line));
+});

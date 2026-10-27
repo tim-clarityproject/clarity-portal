@@ -20,13 +20,15 @@ export function quadrant(progress, importancePct) {
 
 /** Shorten very long names so a label cannot run off the chart. */
 export function shortLabel(text, max) {
-  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+  // Counted and cut in whole characters, so an emoji is never split in half.
+  const chars = Array.from(text);
+  return chars.length > max ? `${chars.slice(0, max - 1).join('').trimEnd()}…` : text;
 }
 
 /** Break a name into lines of at most `max` characters, at spaces. */
 export function wrapLabel(text, max) {
   // A word longer than a line is cut into line-sized pieces.
-  const words = text.split(/\s+/).filter(Boolean).flatMap((w) => (w.length > max ? w.match(new RegExp(`.{1,${max}}`, 'g')) : [w]));
+  const words = text.split(/\s+/).filter(Boolean).flatMap((w) => (Array.from(w).length > max ? w.match(new RegExp(`.{1,${max}}`, 'gu')) : [w]));
   const lines = [];
   let line = '';
   words.forEach((w) => {

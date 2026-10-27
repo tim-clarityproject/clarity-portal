@@ -115,3 +115,13 @@ test('setProjectDates checks, sets and clears one project', () => {
   assert.equal(refused.ok, false);
   assert.equal(refused.message, 'The finish date can’t be before the start date.');
 });
+
+test('null or odd input to the check reads as blank', () => {
+  assert.deepEqual(checkProjectDates(null), { ok: true, dates: {} });
+  assert.deepEqual(checkProjectDates('2025-03'), { ok: true, dates: {} });
+});
+
+test('a damaged saved item is skipped, not fatal', () => {
+  const draft = draftFromData({ projects: [null, 'text', { id: 'p1', text: 'A', due: 'open' }] });
+  assert.deepEqual(dataFromDraft(draft).projects, [{ id: 'p1', text: 'A', due: 'open' }]);
+});

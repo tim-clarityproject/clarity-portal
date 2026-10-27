@@ -14,6 +14,7 @@ const TYPING_DEBOUNCE_MS = 1000;
 
 const GENERIC_ERROR = 'Those details don’t match. Check the email and access code you were sent.';
 const NETWORK_ERROR = 'We couldn’t reach the server. Check your connection and try again.';
+const SAVE_REFUSED = 'Your latest answers weren’t saved. Open your Health Check again to carry on. If it keeps happening, let your coach know.';
 
 /**
  * @typedef {Object} AlignmentData
@@ -256,9 +257,11 @@ export function createSaveQueue({ token, email, code, session }) {
       return;
     }
 
-    // invalid / locked / invalid_data: retrying will not help.
+    // invalid / locked / invalid_data: retrying will not help. The database's
+    // own wording for refused answers is technical, so it is never shown.
     halted = true;
-    setStatus('error', { message: result.message || GENERIC_ERROR, retryable: false });
+    const message = result.error === 'invalid_data' ? SAVE_REFUSED : (result.message || GENERIC_ERROR);
+    setStatus('error', { message, retryable: false });
   }
 
   const handleOnline = () => {
