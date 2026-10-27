@@ -15,6 +15,7 @@ export const INVENTED_PEOPLE = [
   { key: 'leader_child', label: 'Leader over the other child team (Riley)', role: 'authenticated' },
   { key: 'org_admin', label: 'Organisation admin (Avery)', role: 'authenticated' },
   { key: 'leaver', label: 'Leaver (Quinn)', role: 'authenticated' },
+  { key: 'sponsor_two', label: 'Sponsor in the second organisation (Drew)', role: 'authenticated' },
 ];
 
 // How they are linked (what the expectations below rely on). SETUP makes
@@ -34,7 +35,9 @@ const id = (key) => `current_setting('rules.${key}')::uuid`;
 // children); Riley leads child team two only; Avery is the admin. Alex is
 // the owner coach, coaching Sam; Priya coaches Jordan. Jordan shares
 // Progress, not the monthly check-in, and shares their wellbeing with the
-// organisation; Quinn shared theirs before leaving.
+// organisation (the first one only: wellbeing is chosen per organisation,
+// migration 033); Quinn shared theirs before leaving. Drew sponsors Jordan's
+// seat in a second organisation.
 export const SETUP = [`do $rel$
 declare oc uuid; sc uuid; org uuid; tp uuid; tc1 uuid; tc2 uuid; mj uuid; ml uuid; pj uuid; pl uuid; sj uuid; sl uuid; qs uuid; rq uuid;
 begin
@@ -59,8 +62,9 @@ begin
   perform set_config('clarity.confirming', '', true);
   insert into public.leader_teams (user_id, team_id) values (${id('leader_parent')}, tp), (${id('leader_child')}, tc2);
   insert into public.sharing_switches (user_id, part, is_on) values
-    (${id('org_client')}, 'progress', true), (${id('org_client')}, 'checkin', false), (${id('org_client')}, 'org_wellbeing', true),
-    (${id('leaver')}, 'org_wellbeing', true);
+    (${id('org_client')}, 'progress', true), (${id('org_client')}, 'checkin', false);
+  insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values
+    (${id('org_client')}, org, true), (${id('leaver')}, org, true);
   -- frozen summaries and a finished check-in for both seats
   insert into public.performance_plans (user_id, status) values (${id('org_client')}, 'archived') returning id into pj;
   insert into public.performance_plans (user_id, status) values (${id('leaver')}, 'archived') returning id into pl;
@@ -79,6 +83,8 @@ begin
     perform set_config('clarity.confirming', 'yes', true);
     update public.organisation_members set confirmed_at = now() where id = m2;
     perform set_config('clarity.confirming', '', true);
+    insert into public.seat_sponsors (member_id, sponsor_user_id) values (m2, ${id('sponsor_two')});
+    perform set_config('rules.org2', o2::text, true);
     insert into public.sprints (user_id, plan_id, number, start_on, status) values (${id('org_client')}, pj, 901, date '2026-04-06', 'finished') returning id into s2;
     insert into public.sprint_summaries (user_id, sprint_id, member_id, organisation_id, team_ids, sprint_number, sprint_start, sprint_end, summary, methods_version)
       values (${id('org_client')}, s2, m2, o2, '{}', 901, date '2026-04-06', date '2026-06-28', '{"objectives": [], "strategies": []}', '1.1');
@@ -359,6 +365,14 @@ export const PHASE1_TABLES = [
     access: { add: NOBODY, change: NOBODY }, note: 'Made only through pulse_send_create; the boss can remove one.',
   },
   {
+    table: 'org_wellbeing_switches', owner: 't.user_id', key: 'user_id', keyIsOwner: true, owners: ['org_client'],
+    handTo: ({ other }) => `user_id = ${other}`,
+    make: ({ owner }) => `insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (${owner}, current_setting('rules.org')::uuid, true) on conflict (user_id, organisation_id) do nothing`,
+    makeForCheck: ({ owner }) => `insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (${owner}, current_setting('rules.org2')::uuid, false)`,
+    change: 'is_on = t.is_on',
+    access: { remove: NOBODY }, note: 'One switch per organisation the person is in (033). Turned off, never removed.',
+  },
+  {
     table: 'pulse_saved_questions', owner: 't.boss_id', owners: OWNERS, handTo: ({ other }) => `boss_id = ${other}`,
     make: ({ owner, id: k }) => `insert into public.pulse_saved_questions (id, boss_id, kind, text) values (${k}, ${owner}, 'rating', 'Rules test')`,
     change: 'text = t.text',
@@ -389,7 +403,7 @@ const R = "'00000000-0000-0000-0000-000000000001'::uuid"; // matches nothing
 const fn = (sig, call, access, note) => ({ sig, call: `select ${call}`, access, note });
 export const PHASE1_FUNCTIONS = [
   // the checked helper and who-is-who: anyone signed in, for themselves
-  ...['is_owner()', 'is_coach()', 'my_leader_team_ids()', 'my_coach()', 'sharing_parts()', 'my_coach_notes()', 'sponsor_people()']
+  ...['is_owner()', 'is_coach()', 'my_leader_team_ids()', 'my_coach()', 'sharing_parts()', 'my_coach_notes()', 'sponsor_people()', 'my_org_wellbeing_switches()']
     .map((s) => fn(s, `count(*) from public.${s}`, SIGNED_IN, 'Answers only for the person signed in.')),
   ...['is_coach_of(uuid)', 'is_org_admin(uuid)', 'in_my_leader_scope(uuid)', 'is_sponsor_of(uuid)', 'can_manage_org(uuid)',
       'org_of_member(uuid)', 'org_of_team(uuid)', 'in_org(uuid)', 'leads_in_org(uuid)', 'membership_confirm(uuid)', 'org_wellbeing(uuid)']
@@ -431,11 +445,13 @@ export const PHASE1_FUNCTIONS = [
   fn('score_m13_checkin(jsonb)', "public.score_m13_checkin('{}')", SIGNED_IN),
   fn('score_m18_shown(boolean,integer,integer)', 'public.score_m18_shown(true, 3, 0)', SIGNED_IN),
   fn('pulse_request_closed(uuid)', `public.pulse_request_closed(${R})`, NOBODY, 'Inside part of the pulse functions.'),
+  fn('org_wellbeing_move_old_switches()', 'public.org_wellbeing_move_old_switches()', NOBODY, 'Run once by migration 033.'),
   fn('pulse_shown(uuid)', `public.pulse_shown(${R})`, NOBODY, 'Inside part of the pulse functions.'),
   // inside parts and triggers: nobody calls them directly
   ...['p1_touch()', 'p1_same_owner()', 'sharing_switch_check()', 'sharing_switch_log()', 'teams_check()', 'team_members_check()',
       'reporting_lines_check()', 'organisation_members_check()', 'outcome_objectives_check()', 'todos_record_move()', 'wins_to_evidence()',
-      'day_plan_limits()', 'day_plans_odd_sleep()', 'checkins_score()', 'checkins_flag()', 'impact_raters_check()']
+      'day_plan_limits()', 'day_plans_odd_sleep()', 'checkins_score()', 'checkins_flag()', 'impact_raters_check()',
+      'org_wellbeing_switch_check()', 'org_wellbeing_switch_log()']
     .map((s) => fn(s, `public.${s}`, NOBODY, 'Runs only as a trigger.')),
   fn('sponsor_may_act_on(uuid)', `public.sponsor_may_act_on(${R})`, NOBODY, 'Inside part of the sponsor functions.'),
   fn('feedback_open_request(text,boolean)', "public.feedback_open_request('x', false)", NOBODY, 'Inside part of the feedback functions.'),
@@ -451,6 +467,8 @@ export const PHASE1_FUNCTIONS = [
 // person's id.
 const s = (name, steps, expect) => ({ name, steps: steps.map(([as, sql]) => ({ as, sql })), expect });
 const n = (sql) => `select (${sql})::text`;
+// Wellbeing for one organisation ('org' or 'org2'), as the person signed in.
+const WB = (org, on) => `insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (auth.uid(), current_setting('rules.${org}')::uuid, ${on}) on conflict (user_id, organisation_id) do update set is_on = excluded.is_on returning 'switched'`;
 const SWITCH = (who, part, on) => `insert into public.sharing_switches (user_id, part, is_on) values ({${who}}, '${part}', ${on}) on conflict (user_id, part) do update set is_on = excluded.is_on returning 'switched'`;
 
 export const SCENARIOS = [
@@ -484,8 +502,18 @@ export const SCENARIOS = [
       + (select count(*) from public.journal_entries) + (select count(*) from public.checkins) + (select count(*) from public.weekly_debriefs)
       + (select count(*) from public.decisions) + (select count(*) from public.week_scores)`)]], '0'),
   s('Shared wellbeing reaches the sponsor, named: scores and areas', [['sponsor', n('select count(*) from public.org_wellbeing({org_client}) where hardware_score is not null')]], '1'),
-  s('... switched off, past months are hidden too', [['org_client', SWITCH('org_client', 'org_wellbeing', false)], ['sponsor', n('select count(*) from public.org_wellbeing({org_client})')]], '0'),
+  s('... switched off, past months are hidden too', [['org_client', WB('org', false)], ['sponsor', n('select count(*) from public.org_wellbeing({org_client})')]], '0'),
   s('Someone who isn\'t a member: no wellbeing', [['sponsor', n('select count(*) from public.org_wellbeing({client})')]], '0'),
+  // wellbeing, chosen per organisation (methods M19.4; Tim, 27 Oct, 14:20)
+  s('Jordan, in two organisations, shares wellbeing with the first only: the second\'s sponsor sees none', [['sponsor_two', n('select count(*) from public.org_wellbeing({org_client})')]], '0'),
+  s('... switched on for the second, its sponsor sees it', [['org_client', WB('org2', true)], ['sponsor_two', n('select count(*) from public.org_wellbeing({org_client})')]], '1'),
+  s('... switched off for the first, the first sees nothing, past months too', [['org_client', WB('org2', true)], ['org_client', WB('org', false)], ['sponsor', n('select count(*) from public.org_wellbeing({org_client})')]], '0'),
+  s('... while the second still does', [['org_client', WB('org2', true)], ['org_client', WB('org', false)], ['sponsor_two', n('select count(*) from public.org_wellbeing({org_client})')]], '1'),
+  s('... and the second\'s sponsor never reads the first organisation\'s summary', [['sponsor_two', n("select count(*) from public.person_summaries({org_client}) p where p.sprint_number = 900")]], '0'),
+  s('Jordan lists both organisations with their switches', [['org_client', n("select string_agg(is_on::text, ',' order by organisation_name) from public.my_org_wellbeing_switches()")]], 'true,false'),
+  s('Nobody can switch it on for an organisation they aren\'t in', [['no_coach', `with x as (insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values ({no_coach}, current_setting('rules.org')::uuid, true) returning 1) select count(*)::text from x`]], 'error 42501'),
+  s('... or for someone else', [['sponsor', `with x as (insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values ({org_client}, current_setting('rules.org2')::uuid, true) returning 1) select count(*)::text from x`]], 'error 42501'),
+  s('The single wellbeing switch is refused, with a clear message', [['org_client', SWITCH('org_client', 'org_wellbeing', true)]], 'error 22023'),
   // leaders
   s('A leader over the parent team sees the people below', [['leader_parent', n('select count(*) from public.leader_people()')]], '1'),
   s('... their summaries', [['leader_parent', n('select count(*) from public.person_summaries({org_client})')]], '1'),

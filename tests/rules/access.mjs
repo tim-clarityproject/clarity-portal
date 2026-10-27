@@ -10,6 +10,8 @@ export const ONLY = (...keys) => ({ viewer }) => keys.includes(viewer.key);
 
 // What each person shares once the rules test's set-up has run (phase1.mjs
 // SETUP). Anything not listed is the part's default (sharing_parts()).
+// org_wellbeing is for the first organisation (chosen per organisation from
+// migration 033).
 export const DEFAULT_SHARING = { mission: true, checkin: true, progress: false, org_wellbeing: false };
 export const SHARING = {
   org_client: { progress: true, checkin: false, org_wellbeing: true },

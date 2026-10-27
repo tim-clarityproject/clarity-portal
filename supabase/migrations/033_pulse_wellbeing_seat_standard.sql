@@ -22,6 +22,14 @@
 --      A pulse is open for 7 days, or less if the boss chooses. The stress
 --      question is stored as before ('stress') and named Calm (higher is
 --      calmer) wherever the database names the measures.
+--   2. Wellbeing shared per organisation (methods M19.4; Tim, 27 Oct)
+--      org_wellbeing_switches: one switch for each organisation the person
+--      is in. may_see checks the switch for the organisation the viewer
+--      sponsors or leads in, so switching one off hides past months from
+--      that organisation only. The old single switch moves over: "on"
+--      becomes "on" for each organisation the person is in today (the reach
+--      it had), so nothing already shared is lost or widened, and the
+--      single switch is refused from then on.
 --
 -- SAFE TO RUN TWICE
 --   Yes. Constraints are added only where missing; functions are replaced
@@ -263,5 +271,218 @@ begin
                   when 'support' then 'Ask each person what support would help them perform.' end);
 end;
 $$;
+
+-- ---------------------------------------------------------------- 2. wellbeing, per organisation
+-- One switch for each organisation the person is in (methods M19.4; Tim,
+-- 27 Oct, 14:20). Off by default (no row). Switched on only while they are
+-- a member there; switched off any time, which hides past months from that
+-- organisation only. A switch is turned off, never removed.
+create table if not exists public.org_wellbeing_switches (
+  user_id         uuid not null references auth.users (id) on delete cascade,
+  organisation_id uuid not null references public.organisations (id) on delete cascade,
+  is_on           boolean not null,
+  changed_at      timestamptz not null default now(),
+  primary key (user_id, organisation_id)
+);
+comment on table public.org_wellbeing_switches is
+  'Wellbeing (Hardware and Software scores and areas, named) shared with one organisation, by the person''s choice (methods M19.4). No row means off.';
+create index if not exists org_wellbeing_switches_org_idx on public.org_wellbeing_switches (organisation_id);
+
+-- The switch history keeps which organisation a wellbeing switch was for.
+alter table public.sharing_switch_history
+  add column if not exists organisation_id uuid references public.organisations (id) on delete set null;
+
+create or replace function public.org_wellbeing_switch_check()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE' and (new.user_id is distinct from old.user_id or new.organisation_id is distinct from old.organisation_id) then
+    raise exception 'A wellbeing switch stays with its person and organisation.' using errcode = '42501';
+  end if;
+  if new.is_on and not exists (select 1 from public.organisation_members m
+                                where m.user_id = new.user_id and m.organisation_id = new.organisation_id and m.ended_on is null) then
+    raise exception 'You can share your wellbeing only with an organisation you''re in.' using errcode = '42501';
+  end if;
+  new.changed_at := now();
+  return new;
+end;
+$$;
+
+create or replace function public.org_wellbeing_switch_log()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' or new.is_on is distinct from old.is_on then
+    insert into public.sharing_switch_history (user_id, part, is_on, changed_at, organisation_id)
+    values (new.user_id, 'org_wellbeing', new.is_on, new.changed_at, new.organisation_id);
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.org_wellbeing_switch_check() from public, anon, authenticated;
+revoke all on function public.org_wellbeing_switch_log() from public, anon, authenticated;
+
+drop trigger if exists org_wellbeing_switches_check on public.org_wellbeing_switches;
+create trigger org_wellbeing_switches_check before insert or update on public.org_wellbeing_switches
+  for each row execute function public.org_wellbeing_switch_check();
+drop trigger if exists org_wellbeing_switches_log on public.org_wellbeing_switches;
+create trigger org_wellbeing_switches_log after insert or update on public.org_wellbeing_switches
+  for each row execute function public.org_wellbeing_switch_log();
+
+alter table public.org_wellbeing_switches enable row level security;
+revoke all on public.org_wellbeing_switches from public, anon, authenticated;
+grant select, insert, update on public.org_wellbeing_switches to authenticated;
+drop policy if exists "Own wellbeing switches" on public.org_wellbeing_switches;
+drop policy if exists "Own wellbeing switches: read" on public.org_wellbeing_switches;
+create policy "Own wellbeing switches: read" on public.org_wellbeing_switches for select to authenticated
+  using (user_id = (select auth.uid()));
+drop policy if exists "Own wellbeing switches: add" on public.org_wellbeing_switches;
+create policy "Own wellbeing switches: add" on public.org_wellbeing_switches for insert to authenticated
+  with check (user_id = (select auth.uid()));
+drop policy if exists "Own wellbeing switches: change" on public.org_wellbeing_switches;
+create policy "Own wellbeing switches: change" on public.org_wellbeing_switches for update to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+
+-- The parts list: wellbeing is now chosen per organisation (shared one
+-- organisation at a time), so the single switch is refused with a clear
+-- message.
+create or replace function public.sharing_parts()
+returns table (part text, audience text, default_on boolean, per_item boolean, label text)
+language sql
+immutable
+set search_path = ''
+as $$
+  values
+    ('mission',         'coach',        true,  false, 'Mission'),
+    ('checkin',         'coach',        true,  false, 'Monthly check-in, including the First check-in'),
+    ('progress',        'coach',        false, false, 'Progress: scores, Outcome Objective figures, the sprint at a glance and patterns'),
+    ('debrief',         'coach',        false, true,  'Weekly debrief, chosen each week'),
+    ('sweet_spot',      'coach',        false, true,  'Find my sweet spot, chosen each time'),
+    ('session_prep',    'coach',        false, true,  'Session prep, chosen each time'),
+    ('evidence',        'coach',        false, true,  'Performance Evidence, chosen each time'),
+    ('recharge',        'coach',        false, true,  'Recovery: what would help you recharge, chosen each day'),
+    ('recovery_notice', 'coach',        true,  true,  'Recovery: that it started and until when ("Let [coach] know")'),
+    ('org_wellbeing',   'organisation', false, true,  'Wellbeing: Hardware and Software scores and areas, named, to the sponsor and leaders, chosen for each organisation')
+$$;
+
+create or replace function public.sharing_switch_check()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.part = 'org_wellbeing' then
+    raise exception 'Wellbeing is shared with each organisation separately now (public.org_wellbeing_switches).' using errcode = '22023';
+  end if;
+  if not exists (select 1 from public.sharing_parts() p where p.part = new.part and not p.per_item) then
+    raise exception 'Unknown sharing part: %', new.part using errcode = '22023';
+  end if;
+  new.changed_at := now();
+  return new;
+end;
+$$;
+
+-- THE CHECKED HELPER (spec 5), as in 026, with wellbeing checked for each
+-- organisation: a sponsor of the person's seat there, or a leader over one
+-- of their teams there, and only while that organisation's switch is on.
+create or replace function public.may_see(p_owner uuid, p_part text, p_item_shared boolean default null)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  viewer uuid := (select auth.uid());
+  p record;
+begin
+  if viewer is null or p_owner is null then
+    return false;
+  end if;
+  if viewer = p_owner then
+    return true;
+  end if;
+  select * into p from public.sharing_parts() sp where sp.part = p_part;
+  if not found then
+    raise exception 'Unknown sharing part: %', p_part using errcode = '22023';
+  end if;
+  if p.audience = 'coach' then
+    if not public.is_coach_of(p_owner) then
+      return false;
+    end if;
+    if p.per_item then
+      return coalesce(p_item_shared, false);
+    end if;
+    return public.sharing_is_on(p_owner, p_part);
+  end if;
+  -- organisation wellbeing: by the person's choice for that organisation,
+  -- to their sponsors and the leaders over their teams there, while they
+  -- are a confirmed member
+  return exists (
+    select 1
+    from public.organisation_members m
+    join public.org_wellbeing_switches w on w.user_id = m.user_id and w.organisation_id = m.organisation_id and w.is_on
+    where m.user_id = p_owner and m.ended_on is null and m.confirmed_at is not null
+      and ((m.has_seat
+            and exists (select 1 from public.seat_sponsors s where s.member_id = m.id and s.sponsor_user_id = viewer and s.ended_on is null)
+            and not exists (select 1 from public.organisation_admins a where a.organisation_id = m.organisation_id and a.user_id = viewer))
+           or exists (select 1 from public.team_members tm
+                      where tm.member_id = m.id and tm.ended_on is null and tm.team_id in (select public.my_leader_team_ids())))
+  );
+end;
+$$;
+
+-- The person's organisations, each with its wellbeing switch, for the
+-- "What [sponsor] sees" page.
+create or replace function public.my_org_wellbeing_switches()
+returns table (organisation_id uuid, organisation_name text, is_on boolean, changed_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select o.id, o.name, coalesce(w.is_on, false), w.changed_at
+  from public.organisation_members m
+  join public.organisations o on o.id = m.organisation_id
+  left join public.org_wellbeing_switches w on w.user_id = m.user_id and w.organisation_id = m.organisation_id
+  where m.user_id = (select auth.uid()) and m.ended_on is null
+  order by o.name;
+$$;
+revoke all on function public.my_org_wellbeing_switches() from public, anon;
+grant execute on function public.my_org_wellbeing_switches() to authenticated;
+
+-- Moving the single switch over (once; safe to run twice): an "on" switch
+-- becomes an "on" switch for each organisation the person is in today,
+-- which is exactly the reach it had, so nothing already shared is lost or
+-- widened. The old rows are then removed (their history stays), so running
+-- this again can never copy a switch into an organisation joined later.
+create or replace function public.org_wellbeing_move_old_switches()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  moved integer;
+begin
+  insert into public.org_wellbeing_switches (user_id, organisation_id, is_on)
+  select distinct s.user_id, m.organisation_id, true
+  from public.sharing_switches s
+  join public.organisation_members m on m.user_id = s.user_id and m.ended_on is null
+  where s.part = 'org_wellbeing' and s.is_on
+  on conflict (user_id, organisation_id) do nothing;
+  get diagnostics moved = row_count;
+  delete from public.sharing_switches where part = 'org_wellbeing';
+  return moved;
+end;
+$$;
+revoke all on function public.org_wellbeing_move_old_switches() from public, anon, authenticated;
+select public.org_wellbeing_move_old_switches();
 
 select public.record_migration(33, '033_pulse_wellbeing_seat_standard');

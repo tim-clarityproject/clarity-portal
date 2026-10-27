@@ -198,9 +198,15 @@ begin
     f := f || pg_temp.t_eq('5a off by default: the sponsor sees nothing', pg_temp.t_n(format('select public.may_see(%L, ''org_wellbeing'')', member_u)), 'false');
     f := f || pg_temp.t_eq('5b a sponsor never sees the coach parts', pg_temp.t_n(format('select public.may_see(%L, ''mission'')', member_u)), 'false');
     perform pg_temp.t_as(member_u);
-    perform pg_temp.t_rows(format('insert into public.sharing_switches (user_id, part, is_on) values (%L, ''org_wellbeing'', true)', member_u));
+    -- from migration 033 wellbeing is switched on for each organisation
+    perform pg_temp.t_rows(case when to_regclass('public.org_wellbeing_switches') is null
+      then format('insert into public.sharing_switches (user_id, part, is_on) values (%L, ''org_wellbeing'', true)', member_u)
+      else format('insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (%L, %L, true)', member_u, org1) end);
     perform pg_temp.t_as(leaver_u);
-    perform pg_temp.t_rows(format('insert into public.sharing_switches (user_id, part, is_on) values (%L, ''org_wellbeing'', true)', leaver_u));
+    -- from migration 033 wellbeing is switched on for each organisation
+    perform pg_temp.t_rows(case when to_regclass('public.org_wellbeing_switches') is null
+      then format('insert into public.sharing_switches (user_id, part, is_on) values (%L, ''org_wellbeing'', true)', leaver_u)
+      else format('insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (%L, %L, true)', leaver_u, org1) end);
     perform pg_temp.t_as(sponsor_u);
     f := f || pg_temp.t_eq('5c switched on: the sponsor sees it', pg_temp.t_n(format('select public.may_see(%L, ''org_wellbeing'')', member_u)), 'true');
     perform pg_temp.t_as(lead_parent);

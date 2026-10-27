@@ -7,7 +7,10 @@
 --   account) and checks:
 --     1. the team pulse: when results show (the shared cases from
 --        tests/scores/cases.mjs), every way a boss could read a pulse
---        early, the 7-day link, and the Calm name.
+--        early, the 7-day link, and the Calm name;
+--     2. wellbeing shared per organisation: a person in two organisations
+--        sharing with one, switching one off, who may switch, and moving
+--        the old single switch over without losing or widening anything.
 --   Everything it makes is undone at the end.
 --
 --   It ends with the notice ALL CHECKS PASSED, or stops with FAILED and a
@@ -94,6 +97,8 @@ declare
   p_open uuid; k_open text; p_two uuid; k_two text; p_three uuid; k_three text; p_next uuid; k_next text; p_full uuid; k_full text;
   p_named uuid; k_named text;
   r jsonb;
+  mem uuid; spon_a uuid; spon_b uuid; lead_a uuid; adm_a uuid; outsider uuid; mover uuid; stayed_off uuid; spon_c uuid;
+  org_a uuid; org_b uuid; org_c uuid; team_a uuid; m_a uuid; m_b uuid; m_c uuid;
 begin
   begin
     boss := pg_temp.t_user('boss'); other := pg_temp.t_user('other');
@@ -206,6 +211,99 @@ begin
     f := f || pg_temp.t_eq('1ah ... nor the inside parts', pg_temp.t_n(format('select public.pulse_shown(%L)', gen_random_uuid())), 'error 42501');
     perform pg_temp.t_as(boss);
     f := f || pg_temp.t_eq('1ai a boss can''t call the inside parts either', pg_temp.t_n(format('select public.pulse_request_closed(%L)', gen_random_uuid())), 'error 42501');
+
+    -- ------------------------------------------------ 2. wellbeing, per organisation (M19.4)
+    perform pg_temp.t_admin();
+    mem := pg_temp.t_user('member'); spon_a := pg_temp.t_user('sponsora'); spon_b := pg_temp.t_user('sponsorb'); lead_a := pg_temp.t_user('leadera');
+    adm_a := pg_temp.t_user('admina'); outsider := pg_temp.t_user('outsider'); mover := pg_temp.t_user('mover'); stayed_off := pg_temp.t_user('stayedoff');
+    spon_c := pg_temp.t_user('sponsorc');
+    insert into public.organisations (name) values ('Invented A') returning id into org_a;
+    insert into public.organisations (name) values ('Invented B') returning id into org_b;
+    insert into public.organisations (name) values ('Invented C') returning id into org_c;
+    insert into public.teams (organisation_id, name) values (org_a, 'Team A') returning id into team_a;
+    insert into public.organisation_admins (organisation_id, user_id) values (org_a, adm_a);
+    insert into public.organisation_members (organisation_id, user_id) values (org_a, mem) returning id into m_a;
+    insert into public.organisation_members (organisation_id, user_id) values (org_b, mem) returning id into m_b;
+    insert into public.team_members (member_id, team_id) values (m_a, team_a);
+    insert into public.seat_sponsors (member_id, sponsor_user_id) values (m_a, spon_a), (m_b, spon_b);
+    insert into public.leader_teams (user_id, team_id) values (lead_a, team_a);
+    perform pg_temp.t_as(mem); perform public.membership_confirm(m_a); perform public.membership_confirm(m_b);
+    perform pg_temp.t_admin();
+    insert into public.checkins (user_id, month, answers, status) values (mem, date '2031-01-01', '{"H3": "often"}', 'finished');
+
+    perform pg_temp.t_as(spon_a);
+    f := f || pg_temp.t_eq('2a off by default: sponsor A sees nothing', public.may_see(mem, 'org_wellbeing')::text, 'false');
+    perform pg_temp.t_as(mem);
+    f := f || pg_temp.t_eq('2b the person shares with organisation A', pg_temp.t_rows(format('insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (%L, %L, true)', mem, org_a)), '1');
+    f := f || pg_temp.t_eq('2c ... their page lists both organisations, A on and B off',
+      pg_temp.t_n('select string_agg(organisation_name || '' '' || is_on, '', '' order by organisation_name) from public.my_org_wellbeing_switches()'), 'Invented A true, Invented B false');
+    perform pg_temp.t_as(spon_a);
+    f := f || pg_temp.t_eq('2d sponsor A sees it, named, with past months', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L) where hardware_score is not null', mem)), '1');
+    perform pg_temp.t_as(lead_a);
+    f := f || pg_temp.t_eq('2e the leader over their team in A sees it', public.may_see(mem, 'org_wellbeing')::text, 'true');
+    perform pg_temp.t_as(spon_b);
+    f := f || pg_temp.t_eq('2f sponsor B (the other organisation) sees nothing', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L)', mem)), '0');
+    perform pg_temp.t_as(adm_a);
+    f := f || pg_temp.t_eq('2g A''s admin sees nothing', public.may_see(mem, 'org_wellbeing')::text, 'false');
+    f := f || pg_temp.t_eq('2h ... nor the switches', pg_temp.t_n(format('select count(*) from public.org_wellbeing_switches where user_id = %L', mem)), '0');
+
+    perform pg_temp.t_as(mem);
+    perform pg_temp.t_rows(format('insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (%L, %L, true)', mem, org_b));
+    perform pg_temp.t_rows(format('update public.org_wellbeing_switches set is_on = false where user_id = %L and organisation_id = %L', mem, org_a));
+    perform pg_temp.t_as(spon_a);
+    f := f || pg_temp.t_eq('2i switched off for A: A sees nothing, past months too', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L)', mem)), '0');
+    perform pg_temp.t_as(lead_a);
+    f := f || pg_temp.t_eq('2j ... nor does A''s leader', public.may_see(mem, 'org_wellbeing')::text, 'false');
+    perform pg_temp.t_as(spon_b);
+    f := f || pg_temp.t_eq('2k ... while B, switched on, still does', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L)', mem)), '1');
+
+    perform pg_temp.t_as(mem);
+    f := f || pg_temp.t_eq('2l a switch can''t be moved to another organisation', pg_temp.t_rows(format('update public.org_wellbeing_switches set organisation_id = %L where user_id = %L and organisation_id = %L', org_c, mem, org_a)), 'error 42501');
+    f := f || pg_temp.t_eq('2m ... or removed', pg_temp.t_rows(format('delete from public.org_wellbeing_switches where user_id = %L', mem)), 'error 42501');
+    f := f || pg_temp.t_eq('2n ... and can''t be switched on for an organisation they''re not in', pg_temp.t_rows(format('insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (%L, %L, true)', mem, org_c)), 'error 42501');
+    f := f || pg_temp.t_eq('2o the single switch is refused, with a clear message', pg_temp.t_rows(format('insert into public.sharing_switches (user_id, part, is_on) values (%L, ''org_wellbeing'', true)', mem)), 'error 22023');
+    f := f || pg_temp.t_eq('2p every change is kept, with its organisation',
+      pg_temp.t_n(format('select count(*) from public.sharing_switch_history where user_id = %L and part = ''org_wellbeing'' and organisation_id = %L', mem, org_a)), '2');
+    perform pg_temp.t_as(outsider);
+    f := f || pg_temp.t_eq('2q nobody can switch it on for someone else', pg_temp.t_rows(format('insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (%L, %L, true)', mem, org_c)), 'error 42501');
+    f := f || pg_temp.t_eq('2r ... or read their switches', pg_temp.t_n(format('select count(*) from public.org_wellbeing_switches where user_id = %L', mem)), '0');
+
+    -- leaving: the switch stays, but nothing reaches the organisation
+    perform pg_temp.t_admin();
+    update public.organisation_members set ended_on = current_date where id = m_b;
+    perform pg_temp.t_as(spon_b);
+    f := f || pg_temp.t_eq('2s once they leave B, B sees nothing, though it was on', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L)', mem)), '0');
+    perform pg_temp.t_as(mem);
+    f := f || pg_temp.t_eq('2t ... and they can switch it off there afterwards', pg_temp.t_rows(format('update public.org_wellbeing_switches set is_on = false where user_id = %L and organisation_id = %L', mem, org_b)), '1');
+
+    -- moving the old single switch over
+    perform pg_temp.t_admin();
+    insert into public.organisation_members (organisation_id, user_id) values (org_a, mover), (org_b, mover), (org_c, mover);
+    update public.organisation_members set confirmed_at = now() where false; -- confirmed below as the person
+    perform pg_temp.t_as(mover);
+    perform public.membership_confirm((select id from public.organisation_members where user_id = mover and organisation_id = org_a));
+    perform public.membership_confirm((select id from public.organisation_members where user_id = mover and organisation_id = org_b));
+    perform pg_temp.t_admin();
+    update public.organisation_members set ended_on = current_date where user_id = mover and organisation_id = org_b;
+    m_c := (select id from public.organisation_members where user_id = mover and organisation_id = org_c);
+    insert into public.seat_sponsors (member_id, sponsor_user_id) values (m_c, spon_c);
+    alter table public.sharing_switches disable trigger sharing_switches_check;
+    insert into public.sharing_switches (user_id, part, is_on) values (mover, 'org_wellbeing', true), (stayed_off, 'org_wellbeing', false);
+    alter table public.sharing_switches enable trigger sharing_switches_check;
+    f := f || pg_temp.t_eq('2u moving: two switches made (A, and C not yet confirmed)', public.org_wellbeing_move_old_switches()::text, '2');
+    f := f || pg_temp.t_eq('2v ... on for A and C, none for B, which they left',
+      (select string_agg(o.name, ', ' order by o.name) from public.org_wellbeing_switches w join public.organisations o on o.id = w.organisation_id where w.user_id = mover and w.is_on), 'Invented A, Invented C');
+    f := f || pg_temp.t_eq('2w ... someone whose switch was off gets none', (select count(*) from public.org_wellbeing_switches where user_id = stayed_off)::text, '0');
+    f := f || pg_temp.t_eq('2x ... the single switches are gone', (select count(*) from public.sharing_switches where part = 'org_wellbeing' and user_id in (mover, stayed_off))::text, '0');
+    f := f || pg_temp.t_eq('2y ... and moving again changes nothing', public.org_wellbeing_move_old_switches()::text, '0');
+    perform pg_temp.t_as(spon_c);
+    f := f || pg_temp.t_eq('2z not widened: C sees nothing until they confirm, as before', public.may_see(mover, 'org_wellbeing')::text, 'false');
+    perform pg_temp.t_as(mover);
+    perform public.membership_confirm(m_c);
+    perform pg_temp.t_as(spon_c);
+    f := f || pg_temp.t_eq('2aa ... and once they confirm, as before', public.may_see(mover, 'org_wellbeing')::text, 'true');
+    perform pg_temp.t_as(mover);
+    f := f || pg_temp.t_eq('2ab nobody can call the move', pg_temp.t_n('select public.org_wellbeing_move_old_switches()'), 'error 42501');
 
     raise exception using errcode = 'TT001', message = 'undo the test';
   exception when sqlstate 'TT001' then null;
