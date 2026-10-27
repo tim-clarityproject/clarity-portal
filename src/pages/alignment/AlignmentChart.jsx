@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { layoutChart, PROGRESS_WORDS } from './chartLayout';
 import { importanceText } from '../../lib/alignmentScore';
-import { ChartTips } from '../../components/design';
+import ChartTips from '../../components/design/ChartTips';
 
 // Strategic importance versus progress: SVG dot-matrix field, crosshair
 // centre lines and numbered project dots. Geometry comes from

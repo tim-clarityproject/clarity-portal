@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/health-check/(.*)",
+      "destination": "/health-check.html"
+    },
+    {
       "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }
@@ -52,6 +56,15 @@
         {
           "key": "Cache-Control",
           "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/health-check.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }

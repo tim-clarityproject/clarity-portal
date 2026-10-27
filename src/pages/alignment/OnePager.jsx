@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import AlignmentChart from './AlignmentChart';
-import { Chevron } from '../../components/design';
+import Chevron from '../../components/design/Chevron';
 import { cleanItems } from './alignmentFlow';
 import { quadrant } from './chartLayout';
 import { importanceText, rankProjects, MAX_CONTRIBUTION } from '../../lib/alignmentScore';
+import { projectDates } from '../../lib/projectDates';
 
 // The one-pager (everything below the title, which AuthShell draws). All
 // numbers come from src/lib/alignmentScore.js.
@@ -91,7 +92,7 @@ export default function OnePager({ draft, onEmailLink, onCreateAccount, onEdit, 
   // rank order (attention, ties to the higher importance); n never changes
   const ranked = useMemo(
     () => rankProjects(projects, factors, draft.ratings).map((r, i) => ({
-      ...r, id: r.project.id, text: r.project.text, n: i + 1,
+      ...r, id: r.project.id, text: r.project.text, dates: projectDates(r.project), n: i + 1,
     })),
     [projects, factors, draft.ratings],
   );

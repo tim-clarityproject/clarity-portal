@@ -510,15 +510,17 @@ test('M19: the headline counts, with nothing yet', () => {
 });
 
 // ---------------------------------------------------------------- M20
-// Methods 1.2 counts Embryonic as 2.5 (Data platform 36.46). The code keeps 4 until the
-// Health Check build changes both together (decisions part 2, 27 Oct, 14:45).
-test('M20-1 and M20-2: the Health Check, as the code works it out today (importance 58%; attention 58.33 and 27.34; the tie-break)', () => {
+// Methods 1.3: Embryonic counts as 2.5 in the attention score (Data platform 36.46, was 58.33).
+test('M20-1 and M20-2: the Health Check (importance 58%; attention 36.46, 27.34, 25.00 and 15.63; the tie-break)', () => {
   const ids = ['a', 'b', 'c', 'd'];
   assert.equal(S.m0Round(S.m20StrategicImportance({ a: 0, b: 2, c: 2, d: 3 }, ids)), 58);
   assert.equal(S.m20StrategicImportance({ a: 3, gone: 3 }, ['a', 'b']), 50, 'a deleted factor is ignored');
   assert.equal(S.m20IsRated({ gone: 2 }, ids), false);
-  near(S.m20AttentionScore(700 / 12, 1, 5), 58.333333, 'Data platform');
+  near(S.m20AttentionScore(700 / 12, 1, 5), 36.458333, 'Data platform (Embryonic counts as 2.5)');
   near(S.m20AttentionScore(500 / 12, 2, 4), 27.34375, 'Leadership programme');
+  near(S.m20AttentionScore(50, 3, 5), 25, 'Fair, Very high');
+  near(S.m20AttentionScore(50, 3, 2), 15.625, 'Fair, Low');
+  assert.deepEqual([1, 2, 3, 4, 5].map(S.m20ProgressGap), [2.5, 3, 2, 1, 0]);
   near(S.m20AttentionScore(50, 3, null), 18.75, 'a blank resource counts as Moderate');
   assert.equal(S.m20AttentionScore(50, null, 3), -1, 'no progress yet sorts last');
   const ranked = S.m20RankProjects(
@@ -527,24 +529,46 @@ test('M20-1 and M20-2: the Health Check, as the code works it out today (importa
     {
       p1: { contrib: { f1: 3, f2: 3 }, progress: 3, resource: 5 }, // 100 × 2/4 × 1 = 50
       p2: { contrib: { f1: 3, f2: 3 }, progress: 3, resource: 2 }, // 100 × 2/4 × 5/8 = 31.25
-      p3: { contrib: { f1: 3, f2: 0 }, progress: 1, resource: 2 }, // 50 × 1 × 5/8 = 31.25, lower importance
+      p3: { contrib: { f1: 3, f2: 0 }, progress: 1, resource: 2 }, // 50 × 2.5/4 × 5/8 = 19.53
       p4: { contrib: {}, progress: null },
     },
   );
-  assert.deepEqual(ranked.map((r) => r.project.id), ['p1', 'p2', 'p3', 'p4'], 'ties go to higher importance, then higher resource');
+  assert.deepEqual(ranked.map((r) => r.project.id), ['p1', 'p2', 'p3', 'p4'], 'highest attention first, no progress last');
+  const tied = S.m20RankProjects(
+    [{ id: 'a' }, { id: 'b' }, { id: 'c' }].map((p) => ({ ...p, text: p.id })),
+    [{ id: 'f1' }, { id: 'f2' }],
+    {
+      a: { contrib: { f1: 1, f2: 1 }, progress: 5, resource: 2 },
+      b: { contrib: { f1: 1, f2: 1 }, progress: 5 },
+      c: { contrib: { f1: 3, f2: 3 }, progress: 5, resource: 1 },
+    },
+  );
+  assert.deepEqual(tied.map((r) => r.project.id), ['c', 'b', 'a'], 'ties go to higher importance, then higher resource (a blank counting as Moderate)');
   assert.equal(ranked[3].rated, false);
   assert.equal(S.m20AverageImportance(ranked), 83);
   assert.equal(S.m20AverageImportance([]), 0);
   near(S.m20Alignment([{ rated: true, progress: 4, importance: 60 }, { rated: true, progress: 3, importance: 90 }, { rated: false, progress: 5, importance: 0 }]), 50, 'alignment');
 });
 
+test('M20.1: the four states (m20State)', () => {
+  assert.equal(S.m20State(4, 51), 'moving_well');
+  assert.equal(S.m20State(5, 100), 'moving_well');
+  assert.equal(S.m20State(3, 75), 'needs_managing');
+  assert.equal(S.m20State(2, 75), 'needs_attention');
+  for (const progress of [1, 2, 3, 4, 5]) assert.equal(S.m20State(progress, 30), 'less_important');
+  for (const progress of [2, 3, 4, 5]) assert.equal(S.m20State(progress, 50), 'less_important', 'exactly 50% is not above the line');
+  assert.equal(S.m20State(1, 90), 'less_important', 'Embryonic at 90% is too early to tell');
+  assert.equal(S.m20State(null, 90), null, 'no progress rating: not drawn');
+});
+
 test('M20.1: m20Area agrees with the chart\'s quadrant on every input', () => {
-  const map = { mi: 'good', co: 'behind', n: 'neutral' };
+  const map = { mi: 'good', co: 'attention', n: 'neutral' };
   for (const progress of [null, 1, 2, 3, 4, 5]) {
     for (let imp = 0; imp <= 100; imp += 0.5) assert.equal(S.m20Area(progress, imp), map[quadrant(progress, imp)]);
   }
   assert.equal(S.m20Area(4, 50), 'neutral', 'exactly 50% is not above the line');
-  assert.equal(S.m20Area(3, 99), 'neutral', 'Fair sits on the line');
+  assert.equal(S.m20Area(3, 99), 'neutral', 'Fair (needs managing) is drawn neutral today');
+  assert.equal(S.m20Area(1, 99), 'neutral', 'an important Embryonic project is drawn neutral (Tim, 27 Oct)');
 });
 
 test('M20-3: the Life balance review, from the code (0 to 10 per area; the mock-up\'s example)', () => {

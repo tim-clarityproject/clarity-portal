@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolve } from 'node:path'
 
 // The design gallery (/design-reference) exists only in local development
 // and on Vercel preview deployments, never on the live site. Vercel sets
@@ -55,11 +56,23 @@ function buildVersion(id) {
 }
 
 // https://vite.dev/config/
+// Two pages: the portal (index.html) and the outside Strategic Alignment
+// Health Check (health-check.html), which vercel.json serves for
+// /health-check/*. The colour mode boot goes into both (the Health Check's
+// design parts use it); the gallery swap only ever matches index.html.
 export default defineConfig(({ command }) => {
   const galleryEnabled = command === 'serve' || process.env.VERCEL_ENV === 'preview'
   const buildId = command === 'serve' ? 'dev' : (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()))
   return {
     plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId)],
     define: { __BUILD_ID__: JSON.stringify(buildId) },
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(import.meta.dirname, 'index.html'),
+          healthCheck: resolve(import.meta.dirname, 'health-check.html'),
+        },
+      },
+    },
   }
 })

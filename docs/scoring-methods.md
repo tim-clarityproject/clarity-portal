@@ -1,6 +1,6 @@
 # Methods: how every score in The Clarity Portal is worked out
 
-Version 1.2 (draft for the build), written 26 Oct 2026, 18:16 onwards, by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); scientific audit the same evening; Tim's decisions of 26 and 27 Oct added (see M22).
+Version 1.3 (draft for the build), written 26 Oct 2026, 18:16 onwards, by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); scientific audit the same evening; Tim's decisions of 26 and 27 Oct added (see M22).
 
 This is the single source of truth for every score, figure, flag and pattern the portal shows. The code follows it, the PDFs follow it, and the public "How it works" page is written from it. Where a mock-up shows a different figure, this document wins on the arithmetic and the decisions doc wins on everything else.
 
@@ -544,16 +544,19 @@ In plain words: each project is scored on how much it helps the organisation's C
 - Examples (test case M20-2): Data platform (58.33%, Embryonic, Very high) = 58.33 × 2.5 ÷ 4 × 8 ÷ 8 = **36.46** (was 58.33 before 27 Oct). Leadership programme (41.67%, Bad, High) = 41.67 × 3 ÷ 4 × 7 ÷ 8 = **27.34**. Two projects at 50% with Fair progress: with resource Very high, 50 × 2 ÷ 4 × 8 ÷ 8 = 25.00, which ranks above resource Low, 50 × 2 ÷ 4 × 5 ÷ 8 = 15.63.
 
 **Where a project sits on the importance against progress chart:**
-Four states (Tim, 27 Oct, 08:33 and 14:36, after Adie's feedback; was three), each named in a key in words under the chart, on screen and in the PDF:
-- **Mint, "Important and moving well":** importance above 50% with Good or Excellent progress.
-- **Peach (#FFBD9E), "Important, needs managing":** importance above 50% with Fair progress.
-- **Coral, "Important and needs attention":** importance above 50% with Bad progress.
-- **Ring, "Less important, or too early to tell":** 50% or less at any progress, or Embryonic at any importance. Exactly 50% is not above the line.
+Four states (Tim, 27 Oct, 08:33 and 14:36, after Adie's feedback; was three). How each is drawn changed with M7b version 3 (Tim, 27 Oct, 15:41 to 15:51), so the 26 Oct design rules hold: mint means good, coral is never a data colour, "needs you" is an outline and never a fill, and there is no key on screen. Each state has a fixed name in the code:
+- **Moving well** (`moving_well`): importance above 50% with Good or Excellent progress. A filled mint dot.
+- **Needs managing** (`needs_managing`): importance above 50% with Fair progress. An outline in the text colour. Peach (#FFBD9E) is no longer used.
+- **Needs attention** (`needs_attention`): importance above 50% with Bad progress. A soft coral outline with a second fine ring, never a fill.
+- **Less important, or too early to tell** (`less_important`): 50% or less at any progress, or Embryonic at any importance. A fine grey ring. Exactly 50% is not above the line.
 - Only projects with a progress rating are drawn on the chart.
+- **On screen there is no key** (26 Oct, 11:37): each area is named where it sits (Needs attention, Needs managing and Moving well along the top, Less important at the bottom), and each dot's pop-up gives "Project 3", its name, its state and its figures. **The PDF keeps a key in words** (PDF rules 18 and 21), using the same four names.
 - **Definitions:** each Progress, Contribution and Resource level has one short line shown under its choice on the rating screen and in the PDF's notes (drafted by Claude, edited and approved by Adie Shariff; Tim, 27 Oct).
 - These rules apply to every Health Check, including ones finished before the change, when they're reopened; the answers given don't change, only how they're shown (Tim, 27 Oct, 14:36).
 
-**At a glance (PDF):** average strategic importance = the mean of the rated projects' exact importance, rounded; 0% when none is rated. The sentence counts the projects drawn that are important and moving well, and those important but behind.
+**Project dates (Tim, 27 Oct, 15:43; not scored):** each project can store the month and year it started, the month and year it's due to finish or "Open-ended", and optionally an exact date for either. All are optional. They're saved with the project in the Health Check's answers (no database change), asked one project at a time in the rating steps, and shown under each project's name on the one-pager and in the PDF: "Started Mar 2025", then "Due to finish Jun 2027" or "Open-ended, with no agreed finish date". An exact date shows as "Due to finish 30 Jun 2027". A due month before the start month is refused with a calm line.
+
+**At a glance (PDF):** average strategic importance = the mean of the rated projects' exact importance, rounded; 0% when none is rated. The sentence counts the projects drawn that are moving well, and those that need attention.
 
 **Alignment over time (M19.3; Claude, not in the code yet):** for each version of a team's Health Check, the share of its rated projects (rated, with a progress rating) that are important and moving well.
 
@@ -615,6 +618,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 |---|---|---|
 | 1.2 (repo) | 27 Oct 2026 | Claude's calls in building 1.2 (migration 033): pulse results also stay private when only 1 or 2 people stayed anonymous beside named answers, and the count shows only once closed (M18); a seat's standard is set to 85 rather than refused, and set when the seat is taken up mid-sprint (M7); the single wellbeing switch moved to each organisation the person was in, which was its reach (M19.4). |
 | 1.2 (repo) | 27 Oct 2026 | M14: the rerun for Tim's "rare but right" answer, with the planted link at 2 swings, and option (3) tried and not adopted (see "The rerun, 27 Oct 2026" below). The threshold stays at 2.6%. No other arithmetic changed. |
+| 1.3 | 27 Oct 2026 | The Health Check's four states keep their rules but get fixed names (Moving well, Needs managing, Needs attention, Less important, or too early to tell) and are drawn to the 26 Oct design rules: mint for Moving well, outlines for the rest, no peach, no coral fill, no key on screen, a key in words in the PDF (Tim, 15:41 to 15:51); project dates saved with each project (Tim, 15:43); the At a glance sentence no longer says "behind" (M20.1). No arithmetic changed. |
 | 1.2 | 27 Oct 2026 | Tim's decisions: organisation seats have a fixed 85% standard (M7; 26 Oct, 23:49); pattern cards are rare but right, the planted-link target set at 2 swings (M14.7); pulse results show only once the pulse closes, with 3 or more answers, and the stress measure shows as Calm (M18); wellbeing shared per organisation (M19.4); the Health Check gets four dot states, Embryonic as a ring and 2.5 in the attention score, and definitions under every choice (M20.1); Purpose / Meaning kept (M20.2). |
 | 1.1 (repo) | 27 Oct 2026 | M14: the corrected chance threshold tightened from 5% to 2.6% by the go-live simulation; the planted-link target was not met, and the choice is Tim's (see "The pattern simulation" below). |
 | 1.1 (repo) | 27 Oct 2026 | M20 completed from the code in Phase 1 (Health Check: strategic importance, attention score, tie-break, chart areas, the PDF's average; Life balance review: areas, 0 to 10 ratings and every figure worked out). No arithmetic changed. |

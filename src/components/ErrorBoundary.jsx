@@ -1,5 +1,9 @@
 import { Component } from 'react';
-import { Button, CoachContext, keepsHappeningLine } from './design';
+// Each part from its own file (not the design index), so the Health Check's
+// own page can use this without loading the whole design set.
+import { Button } from './design/Button';
+import { CoachContext } from './design/coachContext';
+import { keepsHappeningLine } from './design/Status';
 
 // Catches a crash in any page and shows a calm, dark screen instead of a
 // blank one. The error itself is logged to the console for us (see
