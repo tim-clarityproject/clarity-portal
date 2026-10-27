@@ -14,7 +14,12 @@ import e7 from '@fontsource/noto-emoji/files/noto-emoji-7-400-normal.woff?url';
 import e8 from '@fontsource/noto-emoji/files/noto-emoji-8-400-normal.woff?url';
 import e9 from '@fontsource/noto-emoji/files/noto-emoji-9-400-normal.woff?url';
 import e10 from '@fontsource/noto-emoji/files/noto-emoji-10-400-normal.woff?url';
-import { emojiPartsFor, textOf } from './emoji';
+import cjkRanges from '@fontsource/noto-sans-sc/unicode.json';
+import { cjkPartsFor, emojiPartsFor, textOf } from './emoji';
+
+// The Chinese font's parts, fetched only when a document has Chinese text.
+const CJK = Object.fromEntries(Object.entries(import.meta.glob('/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-*-400-normal.woff', { query: '?url', import: 'default', eager: true }))
+  .map(([path, url]) => [`[${path.match(/noto-sans-sc-(\d+)-400/)[1]}]`, url]));
 
 // The fonts and logo files a PDF needs, fetched when a PDF is asked for (and
 // kept for the next one). The logo files are the supplied ones, used as they are.
@@ -47,13 +52,17 @@ function bytes(url) {
 
 /** @param {Object} spec the document, to find which emoji it uses */
 export async function loadPdfAssets(spec) {
-  const parts = emojiPartsFor(textOf(spec), emojiRanges);
+  const strings = textOf(spec);
+  const parts = emojiPartsFor(strings, emojiRanges);
+  const cjkParts = cjkPartsFor(strings, cjkRanges).filter((k) => CJK[k]);
   const names = ['Nekst', 'NekstLight', 'DMSans', 'DMSansExt', 'DMSansMedium', 'DMSansMediumExt'];
-  const [fontBytes, emoji] = await Promise.all([
+  const [fontBytes, emoji, cjk] = await Promise.all([
     Promise.all(names.map((n) => bytes(FILES[n]))),
     Promise.all(parts.map((k) => bytes(EMOJI[k]))),
+    Promise.all(cjkParts.map((k) => bytes(CJK[k]))),
   ]);
   const fonts = Object.fromEntries(names.map((n, i) => [n, fontBytes[i]]));
   fonts.emoji = emoji;
+  fonts.cjk = cjk;
   return { fonts };
 }

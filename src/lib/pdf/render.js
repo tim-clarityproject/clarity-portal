@@ -75,12 +75,17 @@ function registerFonts(doc, fonts) {
     add(`Emoji${i}`, bytes);
     return `Emoji${i}`;
   });
+  // Chinese text comes last in every chain, after the emoji font.
+  const cjk = (fonts.cjk || []).map((bytes, i) => {
+    add(`Cjk${i}`, bytes);
+    return `Cjk${i}`;
+  });
   const keep = (list) => list.filter((n) => names.includes(n));
   return {
-    nekst: keep(['Nekst', 'DMSans', 'DMSansExt', ...emoji]),
-    light: keep(['NekstLight', 'Nekst', 'DMSans', 'DMSansExt', ...emoji]),
-    body: keep(['DMSans', 'DMSansExt', ...emoji]),
-    medium: keep(['DMSansMedium', 'DMSansMediumExt', 'DMSans', 'DMSansExt', ...emoji]),
+    nekst: keep(['Nekst', 'DMSans', 'DMSansExt', ...emoji, ...cjk]),
+    light: keep(['NekstLight', 'Nekst', 'DMSans', 'DMSansExt', ...emoji, ...cjk]),
+    body: keep(['DMSans', 'DMSansExt', ...emoji, ...cjk]),
+    medium: keep(['DMSansMedium', 'DMSansMediumExt', 'DMSans', 'DMSansExt', ...emoji, ...cjk]),
   };
 }
 

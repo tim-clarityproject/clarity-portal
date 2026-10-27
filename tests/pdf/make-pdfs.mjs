@@ -20,7 +20,7 @@ mkdirSync(out, { recursive: true });
 
 const vite = await createServer({ root, logLevel: 'error', server: { middlewareMode: true }, appType: 'custom' });
 const load = (p) => vite.ssrLoadModule(p);
-const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPlanPdf }, { emojiPartsFor, textOf }] = await Promise.all([
+const [{ renderPdf }, { PAPER }, { samplePdf }, { healthCheckPdf }, { meetingPlanPdf }, { emojiPartsFor, cjkPartsFor, textOf }] = await Promise.all([
   load('/src/lib/pdf/render.js'), load('/src/lib/pdf/paper.js'), load('/src/lib/pdf/docs/sample.js'),
   load('/src/lib/pdf/docs/healthCheck.js'), load('/src/lib/pdf/docs/meetingPlan.js'), load('/src/lib/pdf/emoji.js'),
 ]);
@@ -36,8 +36,13 @@ const baseFonts = {
   DMSansMediumExt: file(`${fs}dm-sans/files/dm-sans-latin-ext-500-normal.woff`),
 };
 const ranges = JSON.parse(readFileSync(join(root, `${fs}noto-emoji/unicode.json`), 'utf8'));
+const cjkRanges = JSON.parse(readFileSync(join(root, `${fs}noto-sans-sc/unicode.json`), 'utf8'));
 const assetsFor = (spec) => ({
-  fonts: { ...baseFonts, emoji: emojiPartsFor(textOf(spec), ranges).map((k) => file(`${fs}noto-emoji/files/noto-emoji-${k.replace(/\D/g, '')}-400-normal.woff`)) },
+  fonts: {
+    ...baseFonts,
+    emoji: emojiPartsFor(textOf(spec), ranges).map((k) => file(`${fs}noto-emoji/files/noto-emoji-${k.replace(/\D/g, '')}-400-normal.woff`)),
+    cjk: cjkPartsFor(textOf(spec), cjkRanges).map((k) => file(`${fs}noto-sans-sc/files/noto-sans-sc-${k.replace(/\D/g, '')}-400-normal.woff`)),
+  },
 });
 
 // ---- invented content ---------------------------------------------------------
@@ -98,6 +103,34 @@ const HC = {
       factors: ['Speed ⚡', '', 'Happy people ❤️', 'Supercalifragilisticexpialidociousandevenlongerwordthatnevereverbreaksatallanywhere'],
       projects: ['👍', 'A project called “Ångström” with quotes, ampersands & slashes / backslashes \\', '', 'Project with no ratings at all'],
     }),
+  }),
+  'Health Check, Chinese': healthCheckPdf({
+    organisation: '北京未来科技有限公司',
+    completedAt: '2026-10-26T08:30:00',
+    draft: hcDraft({
+      objective: '到2027年底将经常性收入翻一番，同时保持客户满意度。',
+      factors: ['赢得美国企业客户', '客户离不开的产品', 'A team with the right skills 合适的团队'],
+      projects: ['企业销售团队', '定价审查与套餐调整', 'Data platform 数据平台'],
+    }),
+  }),
+  'Health Check, dates and states': healthCheckPdf({
+    organisation: 'Quillmark',
+    completedAt: '2026-10-26T08:30:00',
+    draft: (() => {
+      const d = hcDraft({
+        objective: 'Reach £40m in recurring revenue by the end of 2027.',
+        factors: ['Win enterprise customers in the US', 'A product customers can’t do without', 'Cash to reach break-even'],
+        projects: ['US enterprise sales team', 'AI assistant launch', 'Self-serve onboarding', 'Leadership hiring', 'Pricing and packaging'],
+      });
+      // one project in each state, with every kind of date
+      const set = [[3, 2, 5], [3, 1, 4], [3, 3, 3], [1, 4, 2], [3, 5, 1]];
+      const dates = [{ started: '2026-02', due: '2027-06' }, { started: '2026-09', startedOn: '2026-09-14', due: '2027-03', dueOn: '2027-03-31' }, { due: 'open', started: '2026-03' }, {}, { started: '2025-06', due: '2026-04' }];
+      d.projects = d.projects.map((p, i) => ({ ...p, ...dates[i] }));
+      d.projects.forEach((p, i) => {
+        d.ratings[p.id] = { contrib: Object.fromEntries(d.csfs.map((f) => [f.id, set[i][0]])), progress: set[i][1], resource: set[i][2] };
+      });
+      return d;
+    })(),
   }),
   'Health Check, blank answers': healthCheckPdf({
     organisation: '',
