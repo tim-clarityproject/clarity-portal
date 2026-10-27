@@ -1,0 +1,97 @@
+{
+  "run": "2026-10-27T00:25:29.959Z",
+  "methodsSection": "M14.7",
+  "people": 5000,
+  "planted": 1000,
+  "weeks": 26,
+  "firstCheck": 8,
+  "seed": 1,
+  "alpha": 0.026,
+  "tried": [
+    {
+      "alpha": 0.05,
+      "falseCardRate": 0.0656,
+      "high": 0.07280158040940725
+    },
+    {
+      "alpha": 0.04,
+      "falseCardRate": 0.0548,
+      "high": 0.0614570852157116
+    },
+    {
+      "alpha": 0.032,
+      "falseCardRate": 0.0454,
+      "high": 0.05152779387320616
+    },
+    {
+      "alpha": 0.026,
+      "falseCardRate": 0.038,
+      "high": 0.043664206258507865
+    }
+  ],
+  "noRealLinks": {
+    "falseCard": {
+      "k": 190,
+      "n": 5000,
+      "rate": 0.038,
+      "low": 0.033045176388616704,
+      "high": 0.043664206258507865
+    },
+    "coachOnlyFalseCard": {
+      "k": 204,
+      "n": 5000,
+      "rate": 0.0408,
+      "low": 0.03565984826404574,
+      "high": 0.04664523509430839
+    },
+    "target": "under 5%"
+  },
+  "plantedLinks": {
+    "effectInSwings": 1,
+    "foundAtWeek26": {
+      "k": 114,
+      "n": 1000,
+      "rate": 0.114,
+      "low": 0.09576134825357561,
+      "high": 0.1351930174551179
+    },
+    "foundAtAnyCheck": {
+      "k": 193,
+      "n": 1000,
+      "rate": 0.193,
+      "low": 0.16973260811821303,
+      "high": 0.21861710761383082
+    },
+    "target": "at least 80%",
+    "sensitivity": [
+      {
+        "effectInSwings": 1.5,
+        "foundAtWeek26": {
+          "k": 437,
+          "n": 1000,
+          "rate": 0.437,
+          "low": 0.4065556939663417,
+          "high": 0.46792649525554353
+        }
+      },
+      {
+        "effectInSwings": 2,
+        "foundAtWeek26": {
+          "k": 771,
+          "n": 1000,
+          "rate": 0.771,
+          "low": 0.7439485117358441,
+          "high": 0.7959773092303323
+        }
+      }
+    ]
+  },
+  "earlyStopping": {
+    "checks": 1000,
+    "checksAgree": 999,
+    "tests": 5163,
+    "testsAgree": 5154,
+    "earlyTests": 4986
+  },
+  "minutes": 0.7
+}
