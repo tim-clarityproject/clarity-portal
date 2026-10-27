@@ -665,8 +665,14 @@ as $$
   join public.organisation_members m on m.id = ss.member_id
   where ss.user_id = p_person
     and (p_person = (select auth.uid())
-         or (m.ended_on is null and m.confirmed_at is not null
-             and (public.is_sponsor_of(p_person) or public.in_my_leader_scope(p_person))))
+         or (m.ended_on is null and m.confirmed_at is not null and m.has_seat
+             -- the viewer's link must be with this membership, so a sponsor or
+             -- leader in one organisation never sees a summary made in another
+             and (exists (select 1 from public.seat_sponsors s
+                          where s.member_id = m.id and s.sponsor_user_id = (select auth.uid()) and s.ended_on is null)
+                  or exists (select 1 from public.team_members tm
+                             where tm.member_id = m.id and tm.ended_on is null
+                               and tm.team_id in (select public.my_leader_team_ids())))))
   order by ss.sprint_end desc
   limit least(greatest(coalesce(p_limit, 12), 1), 100) offset greatest(coalesce(p_offset, 0), 0);
 $$;

@@ -26,6 +26,8 @@
 --                           the monthly check-in never
 --     pulse_results         a boss's pulse results (M18)
 --     impact_results        a person's before and after impact (M17)
+--     coach_client_list     the coach's (or owner's) client list, paged and
+--                           filtered, with personal fields only where shared
 --
 -- SAFE TO RUN TWICE
 --   Yes. Functions are replaced with the same versions; two columns are
@@ -1017,5 +1019,71 @@ begin
   end loop;
 end
 $grants$;
+
+-- ---------------------------------------------------------------- the coach's client list
+-- A page of clients, with filters (coach, name, organisation). A coach sees
+-- their own clients; the owner sees every client's admin fields (name,
+-- email, coach, since when, organisation) and can filter by coach. The
+-- mission and the latest week score appear only where the checked helper
+-- allows, so only for the viewer's own clients and only while shared.
+create or replace function public.coach_client_list(p_coach uuid default null, p_search text default null, p_organisation uuid default null,
+                                                    p_limit integer default 50, p_offset integer default 0)
+returns table (client_id uuid, first_name text, last_name text, email text, coach_id uuid, coach_first_name text,
+               coaching_since timestamptz, organisation_name text, mission text, latest_week_score numeric, latest_week_end date, total bigint)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+#variable_conflict use_column
+declare
+  me uuid := (select auth.uid());
+  mine uuid;
+  owner boolean := public.is_owner();
+begin
+  select c.id into mine from public.coaches c where c.user_id = me and c.active;
+  if mine is null then
+    raise exception 'Only coaches see a client list.' using errcode = '42501';
+  end if;
+  if not owner and p_coach is not null and p_coach <> mine then
+    raise exception 'You see only your own clients.' using errcode = '42501';
+  end if;
+  return query
+  with base as (
+    select cc.client_id, cc.coach_id, cc.started_at
+    from public.coach_clients cc
+    where cc.ended_at is null
+      and case when owner then (p_coach is null or cc.coach_id = p_coach) else cc.coach_id = mine end
+  ),
+  filtered as (
+    select b.client_id, b.coach_id, b.started_at, p.first_name, p.last_name, p.email
+    from base b left join public.profiles p on p.id = b.client_id
+    where (p_search is null or btrim(p_search) = ''
+           or (coalesce(p.first_name, '') || ' ' || coalesce(p.last_name, '')) ilike '%' || btrim(p_search) || '%')
+      and (p_organisation is null or exists (select 1 from public.organisation_members m
+                                             where m.user_id = b.client_id and m.organisation_id = p_organisation and m.ended_on is null))
+  ),
+  paged as (
+    select f.*, count(*) over () as total
+    from filtered f
+    order by f.last_name nulls last, f.first_name nulls last, f.client_id
+    limit least(greatest(coalesce(p_limit, 50), 1), 200) offset greatest(coalesce(p_offset, 0), 0)
+  )
+  select pg.client_id, pg.first_name, pg.last_name, pg.email, pg.coach_id, c.display_first_name, pg.started_at,
+         (select o.name from public.organisation_members m join public.organisations o on o.id = m.organisation_id
+           where m.user_id = pg.client_id and m.ended_on is null order by m.started_on limit 1),
+         case when public.may_see(pg.client_id, 'mission')
+              then (select pp.mission from public.performance_plans pp where pp.user_id = pg.client_id and pp.status = 'active') end,
+         case when public.may_see(pg.client_id, 'progress')
+              then (select ws.score from public.week_scores ws where ws.user_id = pg.client_id order by ws.week_end desc limit 1) end,
+         case when public.may_see(pg.client_id, 'progress')
+              then (select max(ws.week_end) from public.week_scores ws where ws.user_id = pg.client_id) end,
+         pg.total
+  from paged pg join public.coaches c on c.id = pg.coach_id
+  order by pg.last_name nulls last, pg.first_name nulls last, pg.client_id;
+end;
+$$;
+revoke all on function public.coach_client_list(uuid, text, uuid, integer, integer) from public, anon;
+grant execute on function public.coach_client_list(uuid, text, uuid, integer, integer) to authenticated;
 
 select public.record_migration(32, '032_scores_in_database');

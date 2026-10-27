@@ -1003,24 +1003,29 @@ create policy "Memberships: owner removes" on public.organisation_members for de
 do $mgr$
 declare r record;
 begin
+  -- self_ok: an admin can't name themselves a seat's sponsor or give
+  -- themselves teams to lead (only the owner or another admin can), so an
+  -- admin never reaches summaries or wellbeing by their own hand.
   for r in select * from (values
     ('team_members', 'ended_on', 'public.org_of_member(member_id)',
-     'exists (select 1 from public.organisation_members m where m.id = member_id and m.user_id = (select auth.uid()))'),
+     'exists (select 1 from public.organisation_members m where m.id = member_id and m.user_id = (select auth.uid()))', 'true'),
     ('seat_sponsors', 'ended_on', 'public.org_of_member(member_id)',
-     'sponsor_user_id = (select auth.uid()) or exists (select 1 from public.organisation_members m where m.id = member_id and m.user_id = (select auth.uid()))'),
-    ('leader_teams', 'ended_at', 'public.org_of_team(team_id)', 'user_id = (select auth.uid())'),
+     'sponsor_user_id = (select auth.uid()) or exists (select 1 from public.organisation_members m where m.id = member_id and m.user_id = (select auth.uid()))',
+     '(sponsor_user_id <> (select auth.uid()) or (select public.is_owner()))'),
+    ('leader_teams', 'ended_at', 'public.org_of_team(team_id)', 'user_id = (select auth.uid())',
+     '(user_id <> (select auth.uid()) or (select public.is_owner()))'),
     ('reporting_lines', 'ended_on', 'organisation_id',
-     'exists (select 1 from public.organisation_members m where m.id in (member_id, reports_to_id) and m.user_id = (select auth.uid()))')
-  ) v(t, ended, org, own) loop
+     'exists (select 1 from public.organisation_members m where m.id in (member_id, reports_to_id) and m.user_id = (select auth.uid()))', 'true')
+  ) v(t, ended, org, own, self_ok) loop
     execute format('grant select, insert, update, delete on public.%I to authenticated', r.t);
     execute format('drop policy if exists "Managers: read current" on public.%I', r.t);
     execute format('create policy "Managers: read current" on public.%I for select to authenticated using (%s or (select public.is_owner()) or (%I is null and public.is_org_admin(%s)))',
                    r.t, r.own, r.ended, r.org);
     execute format('drop policy if exists "Managers: add" on public.%I', r.t);
-    execute format('create policy "Managers: add" on public.%I for insert to authenticated with check (%I is null and public.can_manage_org(%s))', r.t, r.ended, r.org);
+    execute format('create policy "Managers: add" on public.%I for insert to authenticated with check (%I is null and public.can_manage_org(%s) and %s)', r.t, r.ended, r.org, r.self_ok);
     execute format('drop policy if exists "Managers: change current" on public.%I', r.t);
-    execute format('create policy "Managers: change current" on public.%I for update to authenticated using ((select public.is_owner()) or (%I is null and public.is_org_admin(%s))) with check ((select public.is_owner()) or (%I is null and public.is_org_admin(%s)))',
-                   r.t, r.ended, r.org, r.ended, r.org);
+    execute format('create policy "Managers: change current" on public.%I for update to authenticated using ((select public.is_owner()) or (%I is null and public.is_org_admin(%s))) with check (((select public.is_owner()) or (%I is null and public.is_org_admin(%s))) and %s)',
+                   r.t, r.ended, r.org, r.ended, r.org, r.self_ok);
     execute format('drop policy if exists "Managers: remove current" on public.%I', r.t);
     execute format('create policy "Managers: remove current" on public.%I for delete to authenticated using ((select public.is_owner()) or (%I is null and public.is_org_admin(%s)))', r.t, r.ended, r.org);
   end loop;

@@ -4,32 +4,38 @@
 // Every check acts as one person (a viewer) on one row belonging to one
 // person (an owner), and compares what the database allowed with `access`.
 
+import { OWN, NOBODY, SIGNED_IN, ANYONE } from './access.mjs';
+import {
+  INVENTED_PEOPLE, PHASE1_RELATIONSHIPS, SETUP as PHASE1_SETUP, PHASE1_TABLES, PHASE1_LOCKED_TABLES,
+  PHASE1_FUNCTIONS, SCENARIOS as PHASE1_SCENARIOS,
+} from './phase1.mjs';
+
+export { OWN, NOBODY, SIGNED_IN, ANYONE };
+
 // ---------------------------------------------------------------- people
 // `email` is a test account on clarity-portal-test (scripts/README-test-
 // database.md, step 3). `role` is the database role the app uses for them.
-// Phase 1 adds: sponsor, viewer and organisation admin, each with a test
-// account, and relationships (coach of, sponsor of, admin of) in RELATIONSHIPS.
+// Phase 1's people (sponsor, leaders, organisation admin, someone without a
+// coach, someone who has left) are invented inside the rolled-back
+// transaction: see phase1.mjs.
 export const PEOPLE = [
   { key: 'owner_coach', label: 'Owner coach (Alex)', email: 'coach-owner@example.com', role: 'authenticated' },
   { key: 'second_coach', label: 'Second coach (Priya)', email: 'coach-two@example.com', role: 'authenticated' },
   { key: 'client', label: 'Client (Sam)', email: 'client@example.com', role: 'authenticated' },
   { key: 'org_client', label: 'Organisation client (Jordan)', email: 'org-client@example.com', role: 'authenticated' },
+  ...INVENTED_PEOPLE,
   { key: 'signed_out', label: 'Signed out', email: null, role: 'anon' },
 ];
 
-// Who is linked to whom. Empty today: there are no coach, sponsor or
-// organisation links in the database yet, so everyone sees only their own.
-// Phase 1 example: { from: 'owner_coach', kind: 'coach of', to: 'client' }.
-export const RELATIONSHIPS = [];
+// Who is linked to whom (Alex coaches Sam, Priya coaches Jordan, and the
+// organisation's links). phase1.mjs SETUP makes them in the database.
+export const RELATIONSHIPS = PHASE1_RELATIONSHIPS;
+
+// SQL run once, as the admin role, after the people are made.
+export const SETUP = PHASE1_SETUP;
 
 // ---------------------------------------------------------------- access
-// The answer to "may viewer do this to owner's row?". Write new ones here
-// for Phase 1, for example:
-//   ownOrCoach: ({ viewer, owner, related }) => OWN({ viewer, owner }) || related('coach of'),
-export const OWN = ({ viewer, owner }) => viewer.email !== null && viewer.key === owner.key;
-export const NOBODY = () => false;
-export const SIGNED_IN = ({ viewer }) => viewer.email !== null;
-export const ANYONE = () => true;
+// The answers to "may viewer do this to owner's row?" live in access.mjs.
 
 // ---------------------------------------------------------------- tables
 // table:   the table in public.
@@ -60,6 +66,7 @@ export const TABLES = [
     table: 'profiles',
     owner: 't.id',
     keyIsOwner: true, // every account already has one, made at sign-up
+    madeAtSignUp: true,
     make: ({ owner }) => `insert into public.profiles (id) values (${owner})`,
     change: 'first_name = t.first_name',
     handTo: ({ other }) => `id = ${other}`,
@@ -159,6 +166,7 @@ export const TABLES = [
     make: ({ owner, id }) => `insert into public.plans (id, user_id, name) values (${id}, ${owner}, 'Rules test')`,
     change: 'name = t.name',
   }),
+  ...PHASE1_TABLES,
 ];
 
 // Tables nobody reaches directly: rows belong to no one person, and every
@@ -181,6 +189,7 @@ export const LOCKED_TABLES = [
     make: ({ n }) => `insert into public.migration_log (name) values ('rules-test-' || ${n})`,
     change: 'note = t.note',
   },
+  ...PHASE1_LOCKED_TABLES,
 ];
 
 // ---------------------------------------------------------------- functions
@@ -211,7 +220,11 @@ export const FUNCTIONS = [
     note: 'Runs only as a trigger (020).' },
   { sig: 'record_migration(integer,text)', ifExists: true, call: "select public.record_migration(0, 'rules-test')", access: NOBODY,
     note: 'Tim only, in the SQL editor (025).' },
+  ...PHASE1_FUNCTIONS,
 ];
+
+// Checks that take several steps as different people (phase1.mjs).
+export const SCENARIOS = PHASE1_SCENARIOS;
 
 // ---------------------------------------------------------------- known gaps
 // Real gaps in today's rules, found by this test and not fixed yet. Each
