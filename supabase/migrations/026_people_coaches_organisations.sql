@@ -495,7 +495,12 @@ as $$
   with recursive scope as (
     select lt.team_id as id, 1 as depth
     from public.leader_teams lt
+    join public.teams t0 on t0.id = lt.team_id
     where lt.user_id = (select auth.uid()) and lt.ended_at is null
+      -- an organisation's admin is never also a leader there (so an admin
+      -- can't reach people by moving teams or members under a team they lead)
+      and not exists (select 1 from public.organisation_admins a
+                      where a.organisation_id = t0.organisation_id and a.user_id = (select auth.uid()))
     union
     select t.id, s.depth + 1
     from public.teams t
@@ -537,6 +542,8 @@ as $$
     join public.organisation_members m on m.id = s.member_id
     where m.user_id = p_person and m.ended_on is null and m.has_seat and m.confirmed_at is not null
       and s.sponsor_user_id = (select auth.uid()) and s.ended_on is null
+      and not exists (select 1 from public.organisation_admins a
+                      where a.organisation_id = m.organisation_id and a.user_id = (select auth.uid()))
   );
 $$;
 
@@ -774,6 +781,11 @@ begin
   update public.organisation_members set ended_on = p_ended_on where id = p_member;
   update public.team_members set ended_on = greatest(started_on, p_ended_on) where member_id = p_member and ended_on is null;
   update public.seat_sponsors set ended_on = greatest(started_on, p_ended_on) where member_id = p_member and ended_on is null;
+  -- and the seats they sponsored, and their admin role, in this organisation
+  update public.seat_sponsors s set ended_on = greatest(s.started_on, p_ended_on)
+   where s.sponsor_user_id = m.user_id and s.ended_on is null
+     and s.member_id in (select x.id from public.organisation_members x where x.organisation_id = m.organisation_id);
+  delete from public.organisation_admins where organisation_id = m.organisation_id and user_id = m.user_id;
   update public.reporting_lines set ended_on = greatest(started_on, p_ended_on)
    where (member_id = p_member or reports_to_id = p_member) and ended_on is null;
   delete from public.team_space_roles where member_id = p_member;
@@ -951,10 +963,21 @@ create policy "Access codes: managers" on public.organisation_access_codes for a
   using (public.can_manage_org(organisation_id)) with check (public.can_manage_org(organisation_id));
 grant select, insert, update on public.organisation_invites to authenticated;
 drop policy if exists "Invites: managers" on public.organisation_invites;
-create policy "Invites: managers" on public.organisation_invites for all to authenticated
-  using (public.can_manage_org(organisation_id))
-  with check (public.can_manage_org(organisation_id)
-              and (team_id is null or public.org_of_team(team_id) = organisation_id));
+-- An accepted invite whose person has since left is not shown to the
+-- organisation (it names them).
+drop policy if exists "Invites: managers read" on public.organisation_invites;
+create policy "Invites: managers read" on public.organisation_invites for select to authenticated
+  using ((select public.is_owner())
+         or (public.is_org_admin(organisation_id)
+             and (accepted_by is null or exists (select 1 from public.organisation_members m
+                   where m.user_id = accepted_by and m.organisation_id = organisation_invites.organisation_id and m.ended_on is null))));
+drop policy if exists "Invites: managers add" on public.organisation_invites;
+create policy "Invites: managers add" on public.organisation_invites for insert to authenticated
+  with check (public.can_manage_org(organisation_id) and (team_id is null or public.org_of_team(team_id) = organisation_id));
+drop policy if exists "Invites: managers change" on public.organisation_invites;
+create policy "Invites: managers change" on public.organisation_invites for update to authenticated
+  using (public.can_manage_org(organisation_id) and accepted_at is null)
+  with check (public.can_manage_org(organisation_id) and (team_id is null or public.org_of_team(team_id) = organisation_id));
 
 -- teams: managers change them; members of the organisation, its sponsors
 -- and leaders read them.

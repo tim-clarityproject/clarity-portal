@@ -14,7 +14,7 @@ insert into public.organisations (name) values ('Invented Org') returning id int
 insert into public.teams (organisation_id, name) values (org1, 'Team one') returning id into team1;
 insert into public.teams (organisation_id, name) values (org1, 'Team other') returning id into team_other;
 insert into public.organisation_admins (organisation_id, user_id) values (org1, admin_u);
-insert into public.organisation_members (organisation_id, user_id) values (org1, sam) returning id into m_sam;
+insert into public.organisation_members (organisation_id, user_id, started_on) values (org1, sam, mon - 30) returning id into m_sam;
 insert into public.team_members (member_id, team_id) values (m_sam, team1);
 insert into public.seat_sponsors (member_id, sponsor_user_id) values (m_sam, sponsor_u);
 insert into public.leader_teams (user_id, team_id) values (lead_u, team1), (lead_other, team_other);
@@ -117,6 +117,17 @@ f := f || pg_temp.t_eq('T27 three seats: use figures show', jsonb_typeof(r -> 'u
 f := f || pg_temp.t_near('T28 three seats: share at their own standard (Sam 34 and 90 of 85; 80 of 85)', (r -> 'behaviour' ->> 'atOwnStandard')::numeric, 33.333333);
 f := f || pg_temp.t_near('T29 three seats: average Strategy score', (r -> 'behaviour' ->> 'averageStrategyScore')::numeric, 67.222222);
 f := f || pg_temp.t_eq('T30 three seats: headline (on track, off track, reached)', r -> 'headline' ->> 'shown', '67');
+-- no subtraction: with Sam in team one and the other two in a team below it,
+-- team one minus that team is one seat, so the per-person figures stay hidden
+perform pg_temp.t_admin();
+insert into public.teams (id, organisation_id, name, parent_team_id) values (md5('subteam' || sam)::uuid, org1, 'Below team one', team1);
+update public.team_members set team_id = md5('subteam' || sam)::uuid where member_id in (m2, m3);
+perform pg_temp.t_as(lead_u);
+r := pg_temp.t_n('select public.org_figures()')::jsonb;
+f := f || pg_temp.t_eq('T30b no subtraction: 3 seats, but one team below holds 2 of them', coalesce(jsonb_typeof(r -> 'use'), 'missing') || ' ' || coalesce(jsonb_typeof(r -> 'behaviour' -> 'atOwnStandard'), 'missing'), 'null null');
+f := f || pg_temp.t_eq('T30c ... while objective figures still show', r -> 'headline' ->> 'counted', '3');
+perform pg_temp.t_admin();
+update public.team_members set team_id = team1 where member_id in (m2, m3);
 perform pg_temp.t_as(admin_u);
 perform public.membership_end(m3);
 perform pg_temp.t_as(lead_u);
@@ -163,11 +174,11 @@ perform public.feedback_send(t2e, jsonb_build_object('often', jsonb_build_object
 perform pg_temp.t_as(sam);
 r := pg_temp.t_n(format('select public.impact_results(%L)', sam))::jsonb;
 f := f || pg_temp.t_near('T41 impact: end minus start (62.5 − 37.5)', (r ->> 'change')::numeric, 25);
-f := f || pg_temp.t_near('T42 impact: against the looking-back rating', (r ->> 'lookingBackChange')::numeric, 37.5);
+f := f || pg_temp.t_near('T42 impact: against the looking-back rating, same raters and behaviours (75 − 25)', (r ->> 'lookingBackChange')::numeric, 50);
 f := f || pg_temp.t_eq('T43 impact: improved (10 points or more)', r ->> 'improved', 'true');
 perform pg_temp.t_as(sponsor_u);
 f := f || pg_temp.t_eq('T44 impact: not for the sponsor', pg_temp.t_n(format('select public.impact_results(%L)', sam)), 'error 42501');
 perform pg_temp.t_as(lead_u);
-f := f || pg_temp.t_eq('T45 impact: the organisation sees only the total across people', pg_temp.t_n('select public.org_figures() -> ''outcomes'' ->> ''impactPeople'''), '1');
+f := f || pg_temp.t_eq('T45 impact: a group under 3 seats doesn''t show it (each person''s is rated by others)', pg_temp.t_n('select public.org_figures() -> ''outcomes'' ->> ''impactPeople'''), 'null');
 perform pg_temp.t_anon();
 f := f || pg_temp.t_eq('T46 signed out reaches no score function', pg_temp.t_n('select public.score_round(1.5)'), 'error 42501');

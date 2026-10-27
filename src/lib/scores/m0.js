@@ -85,10 +85,12 @@ export function m0SprintCalendar(sprint, today) {
   // days after it aren't known yet.
   let horizon = Infinity;
   for (const r of sprint.recoveries || []) {
-    const from = dayNumber(r.start);
+    // only Recoveries that touch the sprint's possible span count (as the database)
+    if (dayNumber(r.start) > startN + total + 400 || (r.end && dayNumber(r.end) < startN)) continue;
+    const from = Math.max(dayNumber(r.start), startN);
     if (!r.end) {
       horizon = Math.min(horizon, from - 1);
-      for (let n = from; n <= Math.max(from, dayNumber(today)); n += 1) recoveryDays.add(fromDayNumber(n));
+      for (let n = from; n <= Math.min(Math.max(from, dayNumber(today)), startN + total + 400); n += 1) recoveryDays.add(fromDayNumber(n));
       continue;
     }
     for (let n = from; n <= dayNumber(r.end) - 1; n += 1) recoveryDays.add(fromDayNumber(n));

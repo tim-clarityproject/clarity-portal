@@ -171,6 +171,10 @@ test('A question whose result contains its cause is refused', () => {
   assert.equal(m14QuestionAllowed({ cause: { kind: 'habit', id: 'h1' }, result: { kind: 'strategy', id: 's1' } }, weeks).message, "That one would always look linked, so it can't be checked.");
   assert.equal(m14QuestionAllowed({ cause: { kind: 'habit', id: 'h1' }, result: { kind: 'strategy', id: 's2' } }, weeks).allowed, true);
   assert.equal(m14QuestionAllowed({ cause: { kind: 'stress' }, result: { kind: 'weekly_score' } }, weeks).allowed, true);
+  assert.equal(m14QuestionAllowed({ cause: { kind: 'stress' }, result: { kind: 'objective', id: 'o1' } }, weeks).allowed, false);
+  const p = { weeks: Array.from({ length: 26 }, (_, t) => ({ eligible: true, score: 70, stress: t % 2 ? 'a_little' : 'very_much', habits: {}, strategies: {}, objectives: {} })), days: [],
+    questions: [{ id: 'Q1', cause: { kind: 'stress' }, result: { kind: 'weekly_score' } }] };
+  assert.equal(m14Links(p).find((l) => l.id === 'Q1').sameWeek, true, 'a same-week question must reach Strong');
 });
 
 // ---------------------------------------------------------------- staying steady

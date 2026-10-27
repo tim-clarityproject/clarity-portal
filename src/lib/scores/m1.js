@@ -21,6 +21,8 @@ export const MEASURES = Object.freeze([
 const LIMITS_AND_RATINGS = new Set(['yes_no_days_limit', 'count_limit', 'rating']);
 
 const asNumber = (v) => (v === true ? 1 : v === false ? 0 : Number(v));
+// A value that isn't a number of 0 or more can't be scored, so it is left out.
+const usableValue = (v) => { const x = asNumber(v); return Number.isFinite(x) && x >= 0; };
 
 /**
  * M1 limit rule: at or under the limit scores 100; each one over takes an
@@ -74,7 +76,7 @@ export function m1TopNumber(habit) {
 export function m1HabitScore(habit, logs, week) {
   const until = week.soFarUntil || null;
   const inWeek = new Set(week.days);
-  const used = (logs || []).filter((l) => inWeek.has(l.date) && !l.toConfirm && l.value != null
+  const used = (logs || []).filter((l) => inWeek.has(l.date) && !l.toConfirm && l.value != null && usableValue(l.value)
     && (!until || l.date <= until));
   const working = (week.workingDays || []).filter((d) => !until || d <= until);
   const allWorking = week.workingDays || [];

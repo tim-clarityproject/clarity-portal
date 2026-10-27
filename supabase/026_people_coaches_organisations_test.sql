@@ -225,6 +225,20 @@ begin
     f := f || pg_temp.t_eq('5l once left, the sponsor sees no wellbeing', pg_temp.t_n(format('select public.may_see(%L, ''org_wellbeing'')', leaver_u)), 'false');
     perform pg_temp.t_as(lead_parent);
     f := f || pg_temp.t_eq('5m ... nor does the leader', pg_temp.t_n(format('select public.may_see(%L, ''org_wellbeing'')', leaver_u)), 'false');
+    -- someone who leaves loses the seats they sponsored and their admin role
+    perform pg_temp.t_admin();
+    insert into public.seat_sponsors (member_id, sponsor_user_id) values (m_member, outsider);
+    insert into public.organisation_members (organisation_id, user_id, confirmed_at) values (org1, outsider, now());
+    insert into public.organisation_admins (organisation_id, user_id) values (org1, outsider);
+    perform pg_temp.t_as(owner_u);
+    perform public.membership_end((select id from public.organisation_members where user_id = outsider and ended_on is null));
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('5n1 a leaver''s own sponsoring ends', (select count(*)::text from public.seat_sponsors where sponsor_user_id = outsider and ended_on is null), '0');
+    f := f || pg_temp.t_eq('5n2 ... and their admin role', (select count(*)::text from public.organisation_admins where user_id = outsider), '0');
+    -- an admin who also leads a team gets no leader's view in that organisation
+    insert into public.leader_teams (user_id, team_id) values (admin_u, t_parent);
+    perform pg_temp.t_as(admin_u);
+    f := f || pg_temp.t_eq('5n3 an admin who also leads sees no one as a leader', pg_temp.t_n('select count(*) from public.my_leader_team_ids()'), '0');
     perform pg_temp.t_as(leaver_u);
     f := f || pg_temp.t_eq('5n the leaver still sees their own past membership', pg_temp.t_n('select count(*) from public.organisation_members'), '1');
     perform pg_temp.t_as(owner_u);

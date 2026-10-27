@@ -49,7 +49,7 @@ export function m13Points(code, option) {
   if (option == null) return null;
   const table = code.startsWith('S') ? OPTIONS.S : OPTIONS[code];
   if (!table) return null;
-  const v = table[option];
+  const v = Object.hasOwn(table, option) ? table[option] : undefined;
   if (v === undefined) throw new Error(`Unknown answer ${option} for ${code}`);
   return v;
 }

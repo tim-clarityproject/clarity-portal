@@ -256,6 +256,11 @@ test('M9-1 sentences', () => {
   assert.equal(S.m9PaceSentence(rating, rr, fmt), "Reaching 9/10 by 30 Jun 2027 needs 0.2 points a month, and you've averaged 0.1.");
 });
 
+test('M9: missing dates don\'t crash', () => {
+  assert.equal(S.m9Objective({ kind: 'milestone', startOn: '2026-01-01' }, { asOf: '2026-10-26' }).status, 'too_early');
+  assert.equal(S.m9Objective({ kind: 'number', start: 1, target: 2, byWhen: '2027-01-01' }, { asOf: '2026-10-26' }).status, 'too_early');
+});
+
 test('M9.2: time left in the unit that fits', () => {
   assert.equal(S.m9TimeLeft('2026-10-26', '2026-10-26').text, 'due today');
   assert.equal(S.m9TimeLeft('2026-10-26', '2026-10-23').text, '3 days overdue');
@@ -393,6 +398,12 @@ test('M17: before and after impact', () => {
   const small = S.m17BeforeAndAfter([r('x', 'start', 'often'), r('x', 'end', 'often'), r('y', 'start', 'often'), r('y', 'end', 'always'), r('y', 'start', 'often', 'b2'), r('y', 'end', 'often', 'b2'), r('x', 'start', 'often', 'b2'), r('x', 'end', 'often', 'b2')]);
   assert.equal(small.change, 6.25);
   assert.equal(small.improved, false);
+  // an answer that can't be scored is no change; start and end cover the same behaviours
+  const bad = S.m17BeforeAndAfter([r('a', 'start', 'dont_know'), r('a', 'end', 'often'), r('b', 'start', 'dont_know'), r('b', 'end', 'often')]);
+  assert.equal(bad.enough, false);
+  const sameBeh = S.m17BeforeAndAfter([r('a', 'start', 'never', 'x'), r('a', 'start', 'always', 'y'), r('a', 'end', 'sometimes', 'x'),
+    r('b', 'start', 'never', 'x'), r('b', 'start', 'always', 'y'), r('b', 'end', 'sometimes', 'x')]);
+  assert.equal(sameBeh.change, 50);
 });
 
 for (const c of M18_CASES) {

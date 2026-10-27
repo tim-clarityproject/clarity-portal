@@ -83,6 +83,11 @@ function addMonths(day, k) {
  *   'off_track' or 'too_early' (M19.1)
  */
 export function m9Objective(objective, { asOf, sprintStart = null }) {
+  if (!objective.startOn) objective = { ...objective, startOn: asOf };
+  if (objective.kind === 'milestone' && !objective.dueOn) {
+    const reached = Boolean(objective.reachedOn && objective.reachedOn <= asOf);
+    return { kind: 'milestone', reached, onTrack: true, timeLeft: null, tooEarly: true, status: reached ? 'reached' : 'too_early' };
+  }
   const weeksSinceSet = m9FinishedWeeksSince(objective.startOn, asOf);
   const tooEarly = weeksSinceSet < PACE_AFTER_WEEKS;
 
@@ -134,6 +139,7 @@ export function m9Objective(objective, { asOf, sprintStart = null }) {
     rateNeeded,
     onPace,
     paceShown: !tooEarly,
+    asOf,
     improving,
     notMoving,
     tooEarly,
@@ -155,7 +161,7 @@ export function m9PaceSentence(objective, result, formatDate) {
   if (result.onPace) return `You're on pace to reach ${goal} by ${when}.`;
   const one = (x) => (Math.floor(Math.max(0, x) * 10 + 0.5 + 1e-9) / 10).toString();
   const unit = rating ? ' points' : objective.unit ? ` ${objective.unit}` : '';
-  if (result.rateNeeded == null) return `${goal} was due by ${when}.`;
+  if (result.rateNeeded == null) return objective.byWhen === undefined || objective.byWhen < result.asOf ? `${goal} was due by ${when}.` : `${goal} is due today.`;
   return `Reaching ${goal} by ${when} needs ${one(result.rateNeeded)}${unit} a month, and you've averaged ${one(result.rateSoFar ?? 0)}.`;
 }
 

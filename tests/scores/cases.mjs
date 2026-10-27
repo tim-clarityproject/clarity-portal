@@ -79,6 +79,30 @@ export const M5_CASES = [
     expect: { score: 100, shown: 100, strategies: { s: 100 } },
   },
   {
+    id: 'M5-so-far-later-todo',
+    note: 'So far on Tuesday: a to-do done on Thursday isn\'t done yet, as habits and wins after the day aren\'t counted.',
+    input: {
+      ...base,
+      soFarUntil: '2026-10-20',
+      strategies: [{ id: 's', served: 1 }],
+      habits: [{ id: 'h', strategyId: 's', impact: 2, measure: 'count', target: 5, targetPer: 'week' }],
+      logs: logs('h', { '2026-10-22': 3 }),
+      todos: [{ id: 'later', strategyId: 's', impact: 3, createdOn: '2026-10-18', plannedWeek: 1, moves: [], doneOn: '2026-10-22' }],
+    },
+    expect: { score: 0, shown: 0, strategies: { s: 0 } },
+  },
+  {
+    id: 'M5-unusable-values',
+    note: 'A value that isn\'t a number of 0 or more is left out, so no score goes outside 0 to 100.',
+    input: {
+      ...base,
+      strategies: [{ id: 's', served: 1 }],
+      habits: [{ id: 'h', strategyId: 's', impact: 2, measure: 'count', target: 3, targetPer: 'week' }],
+      logs: [...logs('h', { '2026-10-19': 1, '2026-10-20': -5 }), { habitId: 'h', date: '2026-10-21', value: 'abc' }],
+    },
+    expect: { score: 33.333333, shown: 33, strategies: { s: 33.333333 } },
+  },
+  {
     id: 'M5-so-far-weekly-yes-no',
     note: 'So far, a weekly yes or no not done yet is left out; done, it counts 100.',
     input: {

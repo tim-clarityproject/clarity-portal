@@ -76,11 +76,13 @@ export function m19GroupFigures({ seats = [], impact = [], goalChecks = [] }) {
       atOwnStandard: showUse ? pct(withAverage.filter((s) => m0AtStandard(s.averageScore, s.standard)).length, withAverage.length) : null,
       averageStrategyScore: mean(summaries.flatMap((s) => (s.strategies || []).map((x) => x.average)).filter((x) => x != null)),
     },
-    outcomes: {
+    // Before and after impact is rated by others for each person: groups of
+    // 3 or more seats only, like the use figures (Claude).
+    outcomes: showUse ? {
       impactPeople: enough.length,
       impactAverageChange: mean(enough.map((r) => r.change)),
       impactImproved: pct(enough.filter((r) => r.improved).length, enough.length),
-    },
+    } : { impactPeople: null, impactAverageChange: null, impactImproved: null },
     goalChecks: goalChecks.length ? Object.fromEntries(readings.map((r) => [r, goalChecks.filter((g) => g.reading === r).length])) : null,
     note: CONTRIBUTION_NOTE,
   };

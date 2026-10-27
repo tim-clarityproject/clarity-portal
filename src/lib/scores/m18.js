@@ -66,7 +66,7 @@ export function m18Shuffle(list, seed = Date.now()) {
 export function m18PulseResults({ answers = [], wentTo, ownQuestions = [], previous = null, seed }) {
   const measures = {};
   for (const m of PULSE_MEASURES) {
-    const v = answers.map((a) => m.scale[a[m.key]]).filter((x) => x !== undefined && x !== null);
+    const v = answers.map((a) => (Object.hasOwn(m.scale, a[m.key] ?? '') ? m.scale[a[m.key]] : undefined)).filter((x) => x !== undefined);
     const figure = mean(v);
     measures[m.key] = {
       figure,

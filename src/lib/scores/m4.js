@@ -7,7 +7,7 @@ export const IMPACT = Object.freeze({ low: 1, medium: 2, high: 3 });
 
 /** An impact as its weight: 1 to 3, or 'low' / 'medium' / 'high'; default Medium. */
 export function m4Weight(impact) {
-  if (typeof impact === 'string') return IMPACT[impact.toLowerCase()] ?? 2;
+  if (typeof impact === 'string') return ['1', '2', '3'].includes(impact) ? Number(impact) : (Object.hasOwn(IMPACT, impact.toLowerCase()) ? IMPACT[impact.toLowerCase()] : 2);
   return impact === 1 || impact === 2 || impact === 3 ? impact : 2;
 }
 

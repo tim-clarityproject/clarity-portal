@@ -21,28 +21,36 @@ const mean = (v) => (v.length ? v.reduce((a, b) => a + b, 0) / v.length : null);
  *   one who answered once doesn't move the change (Claude).
  */
 export function m17BeforeAndAfter(ratings) {
-  const by = (phase) => new Set((ratings || []).filter((r) => r.phase === phase).map((r) => r.raterId));
-  const startRaters = by('start');
-  const paired = [...by('end')].filter((id) => startRaters.has(id));
-  const pairedSet = new Set(paired);
-  if (paired.length < MIN_RATERS) {
-    return { enough: false, raters: paired.length, change: null, lookingBackChange: null, start: null, end: null, lookingBack: null, improved: null };
+  // Pairs: one rater's scoreable answers for one behaviour at both the start
+  // and the end (Claude), so the two averages cover the same behaviours and
+  // an answer that can't be scored never counts as a change.
+  const val = (phase) => {
+    const m = new Map();
+    for (const r of ratings || []) if (r.phase === phase && Object.hasOwn(OFTEN, r.answer)) m.set(`${r.raterId}|${r.behaviourId}`, OFTEN[r.answer]);
+    return m;
+  };
+  const s = val('start');
+  const e = val('end');
+  const lb = val('looking_back');
+  const pairs = [...e.keys()].filter((k) => s.has(k));
+  const raters = new Set(pairs.map((k) => k.split('|')[0])).size;
+  if (raters < MIN_RATERS) {
+    return { enough: false, raters, change: null, lookingBackChange: null, start: null, end: null, lookingBack: null, improved: null };
   }
-  const avg = (phase) => mean((ratings || [])
-    .filter((r) => r.phase === phase && pairedSet.has(r.raterId) && OFTEN[r.answer] !== undefined)
-    .map((r) => OFTEN[r.answer]));
-  const start = avg('start');
-  const end = avg('end');
-  const lookingBack = avg('looking_back');
+  const start = mean(pairs.map((k) => s.get(k)));
+  const end = mean(pairs.map((k) => e.get(k)));
+  const lbPairs = pairs.filter((k) => lb.has(k));
+  const lookingBack = lbPairs.length ? mean(lbPairs.map((k) => lb.get(k))) : null;
+  const endForLb = lbPairs.length ? mean(lbPairs.map((k) => e.get(k))) : null;
   const change = end - start;
   return {
     enough: true,
-    raters: paired.length,
+    raters,
     start,
     end,
     lookingBack,
     change,
-    lookingBackChange: lookingBack == null ? null : end - lookingBack,
+    lookingBackChange: lookingBack == null ? null : endForLb - lookingBack,
     improved: m0Round(change) >= IMPROVED_POINTS,
   };
 }

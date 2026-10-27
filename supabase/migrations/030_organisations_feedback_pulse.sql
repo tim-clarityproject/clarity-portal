@@ -41,7 +41,7 @@
 create table if not exists public.sprint_summaries (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users (id) on delete cascade,
-  sprint_id       uuid not null unique references public.sprints (id) on delete cascade,
+  sprint_id       uuid not null references public.sprints (id) on delete cascade,
   member_id       uuid not null references public.organisation_members (id) on delete cascade,
   organisation_id uuid not null references public.organisations (id) on delete cascade,
   team_ids        uuid[] not null default '{}'::uuid[],
@@ -54,6 +54,9 @@ create table if not exists public.sprint_summaries (
 );
 comment on table public.sprint_summaries is
   'Frozen at the sprint''s end (methods M0.6, M6): only organisation and development objectives with their figures, and each serving Strategy''s sprint score. Later edits never change it.';
+-- one per sprint and membership: someone with seats in two organisations
+-- gets a summary for each
+create unique index if not exists sprint_summaries_one_per_membership on public.sprint_summaries (sprint_id, member_id);
 create index if not exists sprint_summaries_member_idx on public.sprint_summaries (member_id, sprint_end desc);
 create index if not exists sprint_summaries_org_idx on public.sprint_summaries (organisation_id, sprint_end desc);
 create index if not exists sprint_summaries_user_idx on public.sprint_summaries (user_id, sprint_end desc);
@@ -621,6 +624,7 @@ as $$
   join public.organisations o on o.id = m.organisation_id
   left join public.profiles p on p.id = m.user_id
   where s.sponsor_user_id = (select auth.uid()) and s.ended_on is null
+    and not public.is_org_admin(m.organisation_id)
   order by p.last_name, p.first_name;
 $$;
 
@@ -669,7 +673,8 @@ as $$
              -- the viewer's link must be with this membership, so a sponsor or
              -- leader in one organisation never sees a summary made in another
              and (exists (select 1 from public.seat_sponsors s
-                          where s.member_id = m.id and s.sponsor_user_id = (select auth.uid()) and s.ended_on is null)
+                          where s.member_id = m.id and s.sponsor_user_id = (select auth.uid()) and s.ended_on is null
+                            and not public.is_org_admin(m.organisation_id))
                   or exists (select 1 from public.team_members tm
                              where tm.member_id = m.id and tm.ended_on is null
                                and tm.team_id in (select public.my_leader_team_ids())))))

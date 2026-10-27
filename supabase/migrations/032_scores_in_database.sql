@@ -79,11 +79,17 @@ declare
   open_rec boolean := false;
 begin
   for rec in select * from jsonb_array_elements(coalesce(p_sprint -> 'recoveries', '[]')) loop
+    -- only Recoveries that touch the sprint's possible span count
+    continue when (rec ->> 'start')::date > start_on + total + 400
+               or (rec ->> 'end' is not null and (rec ->> 'end')::date < start_on);
+    if (rec ->> 'start')::date < start_on then
+      rec := jsonb_set(rec, '{start}', to_jsonb(start_on));
+    end if;
     if rec ->> 'end' is null then
       open_rec := true;
       horizon := least(coalesce(horizon, (rec ->> 'start')::date - 1), (rec ->> 'start')::date - 1);
       d := (rec ->> 'start')::date;
-      while d <= greatest((rec ->> 'start')::date, p_today) loop
+      while d <= least(greatest((rec ->> 'start')::date, p_today), start_on + total + 400) loop
         rec_days := rec_days || d; d := d + 1;
       end loop;
     else
@@ -103,7 +109,7 @@ begin
   w := 0;
   while w * 7 < cardinality(sprint_days) loop
     wd := sprint_days[w * 7 + 1 : least(w * 7 + 7, cardinality(sprint_days))];
-    select count(*) into inside from unnest(rec_days) r where r between wd[1] and wd[cardinality(wd)];
+    select count(distinct r) into inside from unnest(rec_days) r where r between wd[1] and wd[cardinality(wd)];
     weeks := weeks || jsonb_build_object(
       'number', w + 1, 'start', wd[1], 'end', wd[cardinality(wd)], 'days', to_jsonb(wd),
       'recoveryDaysInside', inside, 'finished', cardinality(wd) = 7 and wd[cardinality(wd)] < p_today);
@@ -167,7 +173,8 @@ begin
     from jsonb_array_elements(coalesce(p_logs, '[]')) l
     where (l ->> 'date')::date = any (days)
       and not coalesce((l ->> 'toConfirm')::boolean, false)
-      and l -> 'value' is not null and jsonb_typeof(l -> 'value') <> 'null'
+      and l -> 'value' is not null and jsonb_typeof(l -> 'value') in ('number', 'boolean')
+      and (jsonb_typeof(l -> 'value') = 'boolean' or (l ->> 'value')::numeric >= 0)
       and (until is null or (l ->> 'date')::date <= until)
   )
   select count(*), coalesce(sum(v), 0), count(distinct day) filter (where v > 0), count(distinct day),
@@ -320,6 +327,9 @@ begin
     end if;
   end loop;
   for t in select * from jsonb_array_elements(coalesce(p -> 'todos', '[]')) loop
+    if so_far and t ->> 'doneOn' is not null and (t ->> 'doneOn')::date > (p ->> 'soFarUntil')::date then
+      t := t || '{"doneOn": null}';
+    end if;
     sc := public.score_m2_todo(t, p -> 'week', weeks, so_far);
     if sc is not null then
       items := items || jsonb_build_object('strategyId', t ->> 'strategyId', 'impact', coalesce(t -> 'impact', '2'::jsonb), 'score', sc);
@@ -452,20 +462,25 @@ immutable
 set search_path = ''
 as $$
   with r as (
-    select x ->> 'raterId' as rater, x ->> 'phase' as phase,
+    select distinct on (x ->> 'raterId', x ->> 'behaviourId', x ->> 'phase')
+           x ->> 'raterId' as rater, x ->> 'behaviourId' as beh, x ->> 'phase' as phase,
            case x ->> 'answer' when 'never' then 0 when 'rarely' then 25 when 'sometimes' then 50 when 'often' then 75 when 'always' then 100 end::numeric as v
-    from jsonb_array_elements(coalesce(p_ratings, '[]')) x
+    from jsonb_array_elements(coalesce(p_ratings, '[]')) with ordinality y(x, i)
+    where (x ->> 'answer') in ('never', 'rarely', 'sometimes', 'often', 'always')
+    order by x ->> 'raterId', x ->> 'behaviourId', x ->> 'phase', i desc
   ),
-  paired as (select rater from r where phase = 'start' intersect select rater from r where phase = 'end'),
+  pairs as (select s.rater, s.beh, s.v as sv, e.v as ev, lb.v as lbv
+            from r s join r e on e.rater = s.rater and e.beh = s.beh and e.phase = 'end'
+            left join r lb on lb.rater = s.rater and lb.beh = s.beh and lb.phase = 'looking_back'
+            where s.phase = 'start'),
   a as (
-    select (select count(*) from paired) as raters,
-           avg(v) filter (where phase = 'start') as s, avg(v) filter (where phase = 'end') as e,
-           avg(v) filter (where phase = 'looking_back') as lb
-    from r where rater in (select rater from paired) and v is not null
+    select count(distinct rater) as raters, avg(sv) as s, avg(ev) as e,
+           avg(lbv) as lb, avg(ev) filter (where lbv is not null) as e_lb
+    from pairs
   )
   select case when raters < 2 then jsonb_build_object('enough', false, 'raters', raters)
          else jsonb_build_object('enough', true, 'raters', raters, 'start', s, 'end', e, 'lookingBack', lb,
-                                 'change', e - s, 'lookingBackChange', e - lb, 'improved', public.score_round(e - s) >= 10) end
+                                 'change', e - s, 'lookingBackChange', e_lb - lb, 'improved', public.score_round(e - s) >= 10) end
   from a;
 $$;
 
@@ -541,9 +556,10 @@ as $$
       'averageStrategyScore', (select avg((g ->> 'average')::numeric) from summ, jsonb_array_elements(coalesce(s -> 'strategies', '[]')) g
                                where g -> 'average' is not null and jsonb_typeof(g -> 'average') <> 'null')),
     'outcomes', jsonb_build_object(
-      'impactPeople', (select count(*) from imp),
-      'impactAverageChange', (select avg((x ->> 'change')::numeric) from imp),
-      'impactImproved', case when (select count(*) from imp) > 0
+      -- impact is rated by others for each person: groups of 3 or more seats only
+      'impactPeople', case when n.seats >= 3 then (select count(*) from imp) end,
+      'impactAverageChange', case when n.seats >= 3 then (select avg((x ->> 'change')::numeric) from imp) end,
+      'impactImproved', case when n.seats >= 3 and (select count(*) from imp) > 0
                              then (select count(*) filter (where (x ->> 'improved')::boolean) from imp)::numeric / (select count(*) from imp) * 100 end),
     'goalChecks', case when jsonb_array_length(coalesce(p_goal_checks, '[]')) > 0 then (
       select jsonb_object_agg(r, (select count(*) from jsonb_array_elements(p_goal_checks) g where g ->> 'reading' = r))
@@ -684,6 +700,19 @@ revoke all on function public.week_input(uuid, integer, date, boolean) from publ
 revoke all on function public.sprint_calendar(uuid, date) from public, anon, authenticated;
 revoke all on function public.person_today(uuid) from public, anon, authenticated;
 
+-- The person themselves, or the admin role or the service role (the nightly
+-- job): never a signed-in token without an id.
+create or replace function public.acts_for(p_person uuid)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select case when (select auth.uid()) is not null then (select auth.uid()) = p_person
+              else coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '') not in ('authenticated', 'anon') end;
+$$;
+revoke all on function public.acts_for(uuid) from public, anon, authenticated;
+
 -- ---------------------------------------------------------------- freeze_week
 -- A finished week's score and Strategy scores into week_scores, with its
 -- eligibility (M0.5) and whether it is final (the debrief done, or 3 days
@@ -706,7 +735,7 @@ declare
   eligible boolean;
 begin
   select * into s from public.sprints where id = p_sprint;
-  if not found or ((select auth.uid()) is not null and (select auth.uid()) <> s.user_id) then
+  if not found or not public.acts_for(s.user_id) then
     raise exception 'That sprint isn''t yours.' using errcode = '42501';
   end if;
   today := public.person_today(s.user_id);
@@ -776,18 +805,8 @@ declare
   new_id uuid;
 begin
   select * into s from public.sprints where id = p_sprint;
-  if not found or ((select auth.uid()) is not null and (select auth.uid()) <> s.user_id) then
+  if not found or not public.acts_for(s.user_id) then
     raise exception 'That sprint isn''t yours.' using errcode = '42501';
-  end if;
-  select id into new_id from public.sprint_summaries where sprint_id = p_sprint;
-  if new_id is not null then
-    return new_id;
-  end if;
-  select * into m from public.organisation_members
-   where user_id = s.user_id and ended_on is null and has_seat and confirmed_at is not null
-   order by started_on limit 1;
-  if not found then
-    return null;
   end if;
   today := public.person_today(s.user_id);
   cal := public.sprint_calendar(p_sprint, today);
@@ -795,6 +814,44 @@ begin
   if s.status <> 'finished' and ends >= today then
     raise exception 'A summary is made when the sprint ends.' using errcode = '22023';
   end if;
+  -- one summary for each current, confirmed seat the person held when the sprint ended
+  for m in select * from public.organisation_members
+            where user_id = s.user_id and ended_on is null and has_seat and confirmed_at is not null and started_on <= ends
+            order by started_on loop
+    perform public.make_one_sprint_summary(p_sprint, m.id, ends);
+  end loop;
+  select id into new_id from public.sprint_summaries where sprint_id = p_sprint order by made_at, id limit 1;
+  return new_id;
+end;
+$$;
+
+-- One frozen summary, for one sprint and one membership (made once).
+create or replace function public.make_one_sprint_summary(p_sprint uuid, p_member uuid, p_ends date)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  s public.sprints;
+  m public.organisation_members;
+  today date;
+  cal jsonb;
+  ends date := p_ends;
+  w jsonb;
+  objectives jsonb;
+  strategies jsonb;
+  avg_score numeric;
+  new_id uuid;
+begin
+  select * into s from public.sprints where id = p_sprint;
+  select * into m from public.organisation_members where id = p_member;
+  select id into new_id from public.sprint_summaries where sprint_id = p_sprint and member_id = p_member;
+  if new_id is not null then
+    return new_id;
+  end if;
+  today := public.person_today(s.user_id);
+  cal := public.sprint_calendar(p_sprint, today);
   for w in select * from jsonb_array_elements(cal -> 'weeks') loop
     if (w ->> 'finished')::boolean then
       perform public.freeze_week(p_sprint, (w ->> 'number')::integer);
@@ -828,13 +885,14 @@ begin
           coalesce((select array_agg(tm.team_id) from public.team_members tm where tm.member_id = m.id and tm.ended_on is null), '{}'),
           s.number, s.start_on, ends,
           jsonb_build_object('objectives', objectives, 'strategies', strategies), '1.1', avg_score, s.standard)
-  on conflict (sprint_id) do nothing
+  on conflict (sprint_id, member_id) do nothing
   returning id into new_id;
   return new_id;
 end;
 $$;
 revoke all on function public.make_sprint_summary(uuid) from public, anon;
 grant execute on function public.make_sprint_summary(uuid) to authenticated;
+revoke all on function public.make_one_sprint_summary(uuid, uuid, date) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------- org_figures
 -- The four layers (M19) for a leader's teams: one team and every team below
@@ -855,6 +913,8 @@ declare
   leavers jsonb;
   impact jsonb;
   goal jsonb;
+  small boolean;
+  res jsonb;
 begin
   if (select auth.uid()) is null or cardinality(scope) = 0 then
     raise exception 'Only a leader sees organisation figures.' using errcode = '42501';
@@ -904,8 +964,27 @@ begin
                                                and m.ended_on is null and m.confirmed_at is not null
            where exists (select 1 from public.team_members tm where tm.member_id = m.id and tm.ended_on is null and tm.team_id = any (grp))
            order by g.objective_id, g.checked_on desc, g.created_at desc) g;
-  return public.score_m19_group(seats || leavers, impact, goal)
-         || jsonb_build_object('teams', cardinality(grp), 'methodsVersion', '1.1', 'asAt', 'As at each person''s last finished sprint.');
+  -- No subtraction: if this group minus any team below it would leave 1 or
+  -- 2 seats, the per-person figures stay hidden here too (the use figures,
+  -- the share at their own standard and impact), as for a group under 3.
+  select exists (
+    with seat_teams as (
+      select distinct m.id as member, tm.team_id
+      from public.organisation_members m
+      join public.team_members tm on tm.member_id = m.id and tm.ended_on is null and tm.team_id = any (grp)
+      where m.ended_on is null and m.confirmed_at is not null and m.has_seat),
+    total as (select count(distinct member) as n from seat_teams)
+    select 1 from unnest(grp) t, total
+    where total.n - (select count(distinct st.member) from seat_teams st
+                     where st.team_id in (with recursive below as (select t as id union select x.id from public.teams x join below b on x.parent_team_id = b.id)
+                                          select id from below)) between 1 and 2
+  ) into small;
+  res := public.score_m19_group(seats || leavers, impact, goal);
+  if small then
+    res := jsonb_set(jsonb_set(res, '{use}', 'null'), '{behaviour,atOwnStandard}', 'null')
+           || jsonb_build_object('outcomes', (res -> 'outcomes') || '{"impactPeople": null, "impactAverageChange": null, "impactImproved": null}');
+  end if;
+  return res || jsonb_build_object('teams', cardinality(grp), 'methodsVersion', '1.1', 'asAt', 'As at each person''s last finished sprint.');
 end;
 $$;
 
@@ -928,7 +1007,7 @@ as $$
     cross join lateral (values ('start', r.start_request_id, 'often'), ('end', r.end_request_id, 'often'),
                                ('looking_back', r.end_request_id, 'looking_back')) ph(phase, request_id, answer_key)
     join public.feedback_answers a on a.request_id = ph.request_id
-    cross join lateral jsonb_each(coalesce(a.answers -> ph.answer_key, '{}')) kv
+    cross join lateral jsonb_each(case when jsonb_typeof(a.answers -> ph.answer_key) = 'object' then a.answers -> ph.answer_key else '{}'::jsonb end) kv
     where r.user_id = p_person
       and kv.key in (select b.id::text from public.impact_behaviours b where b.user_id = p_person and b.archived_at is null)
   ) y;

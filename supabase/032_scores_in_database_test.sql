@@ -90,7 +90,7 @@ declare
   rq record; ptok text; psend uuid; b1 uuid; b2 uuid; t1s text; t1e text; t2s text; t2e text; q1s uuid; q1e uuid; q2s uuid; q2e uuid;
 begin
   begin
-    -- ------------------------------------------------ 1. the shared cases (31 cases)
+    -- ------------------------------------------------ 1. the shared cases (33 cases)
     r := public.score_week_raw($j${"week":{"number":1,"start":"2026-10-19","end":"2026-10-25","days":["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23","2026-10-24","2026-10-25"]},"weeks":[{"number":1,"start":"2026-10-19","end":"2026-10-25"},{"number":2,"start":"2026-10-26","end":"2026-11-01"},{"number":3,"start":"2026-11-02","end":"2026-11-08"}],"workingDays":["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],"soFarUntil":null,"strategies":[{"id":"grow","served":2},{"id":"energy","served":1},{"id":"craft","served":1}],"habits":[{"id":"referrals","strategyId":"grow","impact":3,"measure":"count","target":3,"targetPer":"week"},{"id":"training","strategyId":"energy","impact":3,"measure":"count","target":3,"targetPer":"week"},{"id":"late","strategyId":"energy","impact":2,"measure":"yes_no_days_limit","limit":2},{"id":"reading","strategyId":"craft","impact":1,"measure":"amount","target":20,"targetPer":"day"}],"logs":[{"habitId":"referrals","date":"2026-10-19","value":1},{"habitId":"referrals","date":"2026-10-21","value":1},{"habitId":"training","date":"2026-10-19","value":1},{"habitId":"training","date":"2026-10-21","value":1},{"habitId":"training","date":"2026-10-23","value":1},{"habitId":"late","date":"2026-10-19","value":1},{"habitId":"late","date":"2026-10-20","value":1},{"habitId":"late","date":"2026-10-21","value":1},{"habitId":"late","date":"2026-10-22","value":0},{"habitId":"late","date":"2026-10-23","value":0},{"habitId":"reading","date":"2026-10-19","value":30},{"habitId":"reading","date":"2026-10-20","value":30},{"habitId":"reading","date":"2026-10-21","value":30},{"habitId":"reading","date":"2026-10-22","value":30}],"todos":[{"id":"email","strategyId":"grow","impact":2,"createdOn":"2026-10-18","plannedWeek":1,"moves":[],"doneOn":"2026-10-20"},{"id":"record","strategyId":"craft","impact":3,"createdOn":"2026-10-18","plannedWeek":1,"moves":[],"doneOn":null}],"wins":[{"id":"win1","date":"2026-10-22","impact":1,"strategyIds":["grow"]}]}$j$::jsonb);
     f := f || pg_temp.t_near('M5-1: score', (r ->> 'score')::numeric, 67.916667);
     f := f || pg_temp.t_eq('M5-1: shown', public.score_round((r ->> 'score')::numeric)::text, '68');
@@ -110,6 +110,14 @@ begin
     f := f || pg_temp.t_near('M5-so-far: score', (r ->> 'score')::numeric, 100);
     f := f || pg_temp.t_eq('M5-so-far: shown', public.score_round((r ->> 'score')::numeric)::text, '100');
     f := f || pg_temp.t_near('M5-so-far: Strategy s', (select (x ->> 'score')::numeric from jsonb_array_elements(r -> 'strategies') x where x ->> 'id' = 's'), 100);
+    r := public.score_week_raw($j${"week":{"number":1,"start":"2026-10-19","end":"2026-10-25","days":["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23","2026-10-24","2026-10-25"]},"weeks":[{"number":1,"start":"2026-10-19","end":"2026-10-25"},{"number":2,"start":"2026-10-26","end":"2026-11-01"},{"number":3,"start":"2026-11-02","end":"2026-11-08"}],"workingDays":["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],"soFarUntil":"2026-10-20","strategies":[{"id":"s","served":1}],"habits":[{"id":"h","strategyId":"s","impact":2,"measure":"count","target":5,"targetPer":"week"}],"logs":[{"habitId":"h","date":"2026-10-22","value":3}],"todos":[{"id":"later","strategyId":"s","impact":3,"createdOn":"2026-10-18","plannedWeek":1,"moves":[],"doneOn":"2026-10-22"}],"wins":[]}$j$::jsonb);
+    f := f || pg_temp.t_near('M5-so-far-later-todo: score', (r ->> 'score')::numeric, 0);
+    f := f || pg_temp.t_eq('M5-so-far-later-todo: shown', public.score_round((r ->> 'score')::numeric)::text, '0');
+    f := f || pg_temp.t_near('M5-so-far-later-todo: Strategy s', (select (x ->> 'score')::numeric from jsonb_array_elements(r -> 'strategies') x where x ->> 'id' = 's'), 0);
+    r := public.score_week_raw($j${"week":{"number":1,"start":"2026-10-19","end":"2026-10-25","days":["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23","2026-10-24","2026-10-25"]},"weeks":[{"number":1,"start":"2026-10-19","end":"2026-10-25"},{"number":2,"start":"2026-10-26","end":"2026-11-01"},{"number":3,"start":"2026-11-02","end":"2026-11-08"}],"workingDays":["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],"soFarUntil":null,"strategies":[{"id":"s","served":1}],"habits":[{"id":"h","strategyId":"s","impact":2,"measure":"count","target":3,"targetPer":"week"}],"logs":[{"habitId":"h","date":"2026-10-19","value":1},{"habitId":"h","date":"2026-10-20","value":-5},{"habitId":"h","date":"2026-10-21","value":"abc"}],"todos":[],"wins":[]}$j$::jsonb);
+    f := f || pg_temp.t_near('M5-unusable-values: score', (r ->> 'score')::numeric, 33.333333);
+    f := f || pg_temp.t_eq('M5-unusable-values: shown', public.score_round((r ->> 'score')::numeric)::text, '33');
+    f := f || pg_temp.t_near('M5-unusable-values: Strategy s', (select (x ->> 'score')::numeric from jsonb_array_elements(r -> 'strategies') x where x ->> 'id' = 's'), 33.333333);
     r := public.score_week_raw($j${"week":{"number":1,"start":"2026-10-19","end":"2026-10-25","days":["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23","2026-10-24","2026-10-25"]},"weeks":[{"number":1,"start":"2026-10-19","end":"2026-10-25"},{"number":2,"start":"2026-10-26","end":"2026-11-01"},{"number":3,"start":"2026-11-02","end":"2026-11-08"}],"workingDays":["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],"soFarUntil":"2026-10-21","strategies":[{"id":"s","served":1}],"habits":[{"id":"block","strategyId":"s","impact":2,"measure":"yes_no_weekly"},{"id":"walk","strategyId":"s","impact":2,"measure":"yes_no_days_target","target":4}],"logs":[{"habitId":"walk","date":"2026-10-19","value":1},{"habitId":"walk","date":"2026-10-20","value":0},{"habitId":"walk","date":"2026-10-21","value":1}],"todos":[],"wins":[]}$j$::jsonb);
     f := f || pg_temp.t_near('M5-so-far-weekly-yes-no: score', (r ->> 'score')::numeric, 83.333333);
     f := f || pg_temp.t_eq('M5-so-far-weekly-yes-no: shown', public.score_round((r ->> 'score')::numeric)::text, '83');
@@ -318,7 +326,7 @@ begin
     insert into public.teams (organisation_id, name) values (org1, 'Team one') returning id into team1;
     insert into public.teams (organisation_id, name) values (org1, 'Team other') returning id into team_other;
     insert into public.organisation_admins (organisation_id, user_id) values (org1, admin_u);
-    insert into public.organisation_members (organisation_id, user_id) values (org1, sam) returning id into m_sam;
+    insert into public.organisation_members (organisation_id, user_id, started_on) values (org1, sam, mon - 30) returning id into m_sam;
     insert into public.team_members (member_id, team_id) values (m_sam, team1);
     insert into public.seat_sponsors (member_id, sponsor_user_id) values (m_sam, sponsor_u);
     insert into public.leader_teams (user_id, team_id) values (lead_u, team1), (lead_other, team_other);
@@ -421,6 +429,17 @@ begin
     f := f || pg_temp.t_near('T28 three seats: share at their own standard (Sam 34 and 90 of 85; 80 of 85)', (r -> 'behaviour' ->> 'atOwnStandard')::numeric, 33.333333);
     f := f || pg_temp.t_near('T29 three seats: average Strategy score', (r -> 'behaviour' ->> 'averageStrategyScore')::numeric, 67.222222);
     f := f || pg_temp.t_eq('T30 three seats: headline (on track, off track, reached)', r -> 'headline' ->> 'shown', '67');
+    -- no subtraction: with Sam in team one and the other two in a team below it,
+    -- team one minus that team is one seat, so the per-person figures stay hidden
+    perform pg_temp.t_admin();
+    insert into public.teams (id, organisation_id, name, parent_team_id) values (md5('subteam' || sam)::uuid, org1, 'Below team one', team1);
+    update public.team_members set team_id = md5('subteam' || sam)::uuid where member_id in (m2, m3);
+    perform pg_temp.t_as(lead_u);
+    r := pg_temp.t_n('select public.org_figures()')::jsonb;
+    f := f || pg_temp.t_eq('T30b no subtraction: 3 seats, but one team below holds 2 of them', coalesce(jsonb_typeof(r -> 'use'), 'missing') || ' ' || coalesce(jsonb_typeof(r -> 'behaviour' -> 'atOwnStandard'), 'missing'), 'null null');
+    f := f || pg_temp.t_eq('T30c ... while objective figures still show', r -> 'headline' ->> 'counted', '3');
+    perform pg_temp.t_admin();
+    update public.team_members set team_id = team1 where member_id in (m2, m3);
     perform pg_temp.t_as(admin_u);
     perform public.membership_end(m3);
     perform pg_temp.t_as(lead_u);
@@ -467,12 +486,12 @@ begin
     perform pg_temp.t_as(sam);
     r := pg_temp.t_n(format('select public.impact_results(%L)', sam))::jsonb;
     f := f || pg_temp.t_near('T41 impact: end minus start (62.5 − 37.5)', (r ->> 'change')::numeric, 25);
-    f := f || pg_temp.t_near('T42 impact: against the looking-back rating', (r ->> 'lookingBackChange')::numeric, 37.5);
+    f := f || pg_temp.t_near('T42 impact: against the looking-back rating, same raters and behaviours (75 − 25)', (r ->> 'lookingBackChange')::numeric, 50);
     f := f || pg_temp.t_eq('T43 impact: improved (10 points or more)', r ->> 'improved', 'true');
     perform pg_temp.t_as(sponsor_u);
     f := f || pg_temp.t_eq('T44 impact: not for the sponsor', pg_temp.t_n(format('select public.impact_results(%L)', sam)), 'error 42501');
     perform pg_temp.t_as(lead_u);
-    f := f || pg_temp.t_eq('T45 impact: the organisation sees only the total across people', pg_temp.t_n('select public.org_figures() -> ''outcomes'' ->> ''impactPeople'''), '1');
+    f := f || pg_temp.t_eq('T45 impact: a group under 3 seats doesn''t show it (each person''s is rated by others)', pg_temp.t_n('select public.org_figures() -> ''outcomes'' ->> ''impactPeople'''), 'null');
     perform pg_temp.t_anon();
     f := f || pg_temp.t_eq('T46 signed out reaches no score function', pg_temp.t_n('select public.score_round(1.5)'), 'error 42501');
 

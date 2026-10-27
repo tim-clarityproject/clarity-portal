@@ -350,6 +350,7 @@ as $$
     join public.seat_sponsors s on s.member_id = m.id and s.ended_on is null
     where o.id = p_objective and o.source in ('organisation', 'development') and o.archived_at is null
       and s.sponsor_user_id = (select auth.uid())
+      and not exists (select 1 from public.organisation_admins a where a.organisation_id = m.organisation_id and a.user_id = (select auth.uid()))
   );
 $$;
 revoke all on function public.sponsor_may_act_on(uuid) from public, anon, authenticated;
@@ -394,6 +395,18 @@ begin
       raise exception 'A sponsor can''t propose a change to %.', k using errcode = '22023';
     end if;
   end loop;
+  -- checked now, so a proposal can always be accepted
+  begin
+    perform (p_changes ->> 'target_value')::numeric, (p_changes ->> 'by_when')::date, (p_changes ->> 'due_on')::date;
+  exception when others then
+    raise exception 'A target is a number and a date is a date.' using errcode = '22023';
+  end;
+  if p_changes ? 'direction' and p_changes ->> 'direction' not in ('up', 'down') then
+    raise exception 'A direction is up or down.' using errcode = '22023';
+  end if;
+  if coalesce(char_length(p_changes ->> 'name'), 1) not between 1 and 80 or coalesce(char_length(p_changes ->> 'unit'), 0) > 30 then
+    raise exception 'A name is up to 80 characters and a unit up to 30.' using errcode = '22023';
+  end if;
   insert into public.objective_proposals (objective_id, user_id, proposed_by, changes, note)
   select o.id, o.user_id, (select auth.uid()), p_changes, left(p_note, 500)
   from public.outcome_objectives o where o.id = p_objective
@@ -413,6 +426,7 @@ as $$
 declare
   p public.objective_proposals;
   o public.outcome_objectives;
+  still boolean;
 begin
   select * into p from public.objective_proposals
    where id = p_proposal and user_id = (select auth.uid()) and status = 'waiting'
@@ -422,6 +436,9 @@ begin
   end if;
   if p_accept then
     select * into o from public.outcome_objectives where id = p.objective_id;
+    still := exists (select 1 from public.seat_sponsors s join public.organisation_members m on m.id = s.member_id
+                     where s.sponsor_user_id = p.proposed_by and s.ended_on is null and m.ended_on is null
+                       and m.user_id = o.user_id and m.organisation_id = o.organisation_id);
     perform set_config('clarity.sponsor_confirming', 'yes', true);
     update public.outcome_objectives set
       name = coalesce(p.changes ->> 'name', o.name),
@@ -430,8 +447,9 @@ begin
       due_on = coalesce((p.changes ->> 'due_on')::date, o.due_on),
       unit = coalesce(p.changes ->> 'unit', o.unit),
       direction = coalesce(p.changes ->> 'direction', o.direction),
-      confirmed_by = p.proposed_by,
-      confirmed_at = now()
+      -- confirmed only if the proposer still sponsors the seat
+      confirmed_by = case when still then p.proposed_by end,
+      confirmed_at = case when still then now() end
     where id = p.objective_id;
     perform set_config('clarity.sponsor_confirming', '', true);
   end if;

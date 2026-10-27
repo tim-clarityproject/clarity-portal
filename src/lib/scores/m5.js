@@ -62,7 +62,9 @@ export function m5WeekFromRaw(input) {
     habitResults.push({ id: h.id, score: r.score, notLogged: r.notLogged });
     if (r.score != null) items.push({ strategyId: h.strategyId, impact: h.impact ?? 2, score: r.score, kind: 'habit' });
   }
-  items.push(...m2TodoItems(input.todos, input.week, input.weeks || [input.week], { soFar }));
+  // So far, a to-do done after the so-far day isn't done yet.
+  const todos = soFar ? (input.todos || []).map((t) => (t.doneOn && t.doneOn > input.soFarUntil ? { ...t, doneOn: null } : t)) : input.todos;
+  items.push(...m2TodoItems(todos, input.week, input.weeks || [input.week], { soFar }));
   items.push(...m3WinItems(input.wins, input.week.days, { soFarUntil: input.soFarUntil }));
   const strategies = (input.strategies || []).map((s) => ({
     id: s.id,

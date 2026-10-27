@@ -138,7 +138,8 @@ create table if not exists public.recovery_periods (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
   check ((ended_at is null) = (end_on is null)),
-  check (end_on is null or end_on >= start_on)
+  check (end_on is null or end_on >= start_on),
+  check (start_on >= date '2020-01-01' and (end_on is null or end_on - start_on <= 120))
 );
 comment on table public.recovery_periods is
   'Recovery pauses sprint time from start_on until the day before end_on ("I''m ready to go again"; methods M0.4). The coach sees only that it started and until when, never why.';

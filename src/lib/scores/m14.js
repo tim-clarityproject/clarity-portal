@@ -303,7 +303,9 @@ export function m14Links(person) {
   for (const q of person.questions || []) {
     if (!m14QuestionAllowed(q, all).allowed) continue;
     links.push({
-      id: q.id, key: q.id, kind: 'weekly', resultIsScore: q.result.kind !== 'objective', sameWeek: Boolean(q.sameWeek),
+      // A cause measured in the same week as its result can't show its order,
+      // so it must reach Strong, as L4 and L5 (M14.5 rule 5).
+      id: q.id, key: q.id, kind: 'weekly', resultIsScore: true, sameWeek: q.cause.kind === 'stress' || q.cause.kind === 'way_of_being',
       units: weeklyUnits(weeks.map((w) => ({ t: w.t, cause: questionCause(q, w), result: questionResult(q, w) }))),
     });
   }
@@ -329,6 +331,10 @@ function questionResult(q, w) {
  * contains every habit).
  */
 export function m14QuestionAllowed(q, weeks) {
+  if (!['weekly_score', 'strategy'].includes(q.result?.kind)) {
+    // An objective's change as a result comes with the questions' screen.
+    return { allowed: false, message: "That result can't be checked yet." };
+  }
   if (q.cause.kind === 'habit') {
     const sid = (weeks || []).map((w) => w.habits?.[q.cause.id]?.strategyId).find(Boolean);
     if (q.result.kind === 'weekly_score' || (q.result.kind === 'strategy' && q.result.id === sid)) {
