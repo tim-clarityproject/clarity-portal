@@ -84,6 +84,9 @@ function toSession(row) {
     version: row.version,
     updatedAt: row.updated_at,
     completedAt: row.completed_at ?? null,
+    // The organisation name, from alignment_open once migration 022 has run;
+    // null before that, and the page and PDF then leave it out.
+    organisation: typeof row.client_label === 'string' && row.client_label.trim() ? row.client_label.trim() : null,
   };
 }
 

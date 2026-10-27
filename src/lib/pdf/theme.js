@@ -1,0 +1,34 @@
+// The two looks of every tool PDF (PDF rules 1, 9 and 16). Same layout, content
+// and page breaks; only these colours change. PDFs cannot read
+// the CSS variables in tokens.css, so their colours live here, in one place.
+
+export const PDF_THEMES = {
+  light: {
+    page: '#FFFFFF',
+    text: '#111110',
+    detail: '#636362',
+    line: '#DCDCD9',
+    panel: '#F4F4F3',
+    panelEdge: null,
+    coral: '#FF6F5C', // the title line only
+    good: '#0B7A52', // green: at or above the standard (Tim, 26 Oct), deep green on light pages
+    onGood: '#FFFFFF', // a number on a green dot
+    mark: '#000000', // the footer's bold crosshair: black on light pages (Tim, 26 Oct, 16:13)
+  },
+  dark: {
+    page: '#000000',
+    text: '#FFFFFF',
+    detail: '#A3A3A0',
+    line: '#262626',
+    panel: '#111110',
+    panelEdge: '#262626', // a thin edge so panels hold on a dim phone
+    coral: '#FF6F5C', // the title line only
+    good: '#5FEFBB', // mint on dark pages
+    onGood: '#000000',
+    mark: '#FFFFFF', // white on dark pages
+  },
+};
+
+export const PDF_AUTHOR = 'Dr. Tim Dutton, The Clarity Project LTD';
+export const PORTAL_ADDRESS = 'portal.theclarityproject.co.uk';
+export const PORTAL_URL = `https://${PORTAL_ADDRESS}`;

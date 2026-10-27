@@ -4,22 +4,22 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { loadWithReload } from '../lib/loadWithReload';
 import { diag } from '../utils/diag';
 import PageError from './PageError';
-import './health-check.css';
+import './hc.css';
 
 // The outside Strategic Alignment Health Check as its own small page
 // (health-check.html; vercel.json sends /health-check/* here). It renders only
-// the Health Check: no sign-in, menu, Breathe button or portal styles beyond
-// what the Health Check uses. The portal keeps its own /health-check route
+// the Health Check, in the new design (mock-up M7b version 4), with its own
+// styles only: no sign-in, menu, Breathe button or portal styles. The portal keeps its own /health-check route
 // for now, so rolling back is only the vercel.json line.
 
 // Reloads once if a tab opened before a deploy asks for a file that has gone.
-const HealthCheck = lazy(() => loadWithReload(() => import('../pages/alignment/HealthCheck')));
+const HealthCheck = lazy(() => loadWithReload(() => import('./HealthCheckPage')));
 
 // The private link carries a secret token in the path: never write it into
 // the local diagnostics log (as the portal's App.jsx).
 const redactHealthCheckToken = (pathname) => pathname.replace(/^(\/health-check\/).*/, '$1[token]');
 
-const blank = <div className="ui-root" style={{ minHeight: '100dvh', background: 'var(--bg)' }} />;
+const blank = <div className="ui-root hc" />;
 
 function Diagnostics() {
   const location = useLocation();
