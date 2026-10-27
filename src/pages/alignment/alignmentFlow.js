@@ -1,7 +1,8 @@
 // Strategic Alignment Health Check: pure helpers (no React, no network).
 // The page keeps ONE draft of the answers; screens only read and write it.
 //
-// draft  = { objective, csfs: [{id, text}], projects: [{id, text}], ratings }
+// draft  = { objective, csfs: [{id, text}], projects: [{id, text, ...dates}], ratings }
+//          dates: started, startedOn, due, dueOn, all optional (src/lib/projectDates.js)
 //          rows may be blank while typing; ratings = ratings.owner of the saved
 //          data: { [projectId]: { contrib: {[csfId]: 0..3}, progress, resource } }
 // step   = { screen, pi, mode, highlight }
@@ -14,6 +15,8 @@
 //          highlight: factor ids to point out when a new factor needs rating
 //          queue: for 'gaps' / 'project': numbers, project index * 2 + kind
 //                 (kind 1 = all three screens, 0 = Contribution only)
+
+import { DATE_FIELDS, checkProjectDates, projectDates } from '../../lib/projectDates.js';
 
 export const OWNER = 'owner';
 export const MAX_FACTORS = 12;
@@ -46,11 +49,32 @@ function padRows(rows) {
   return out;
 }
 
-/** Non-blank rows only, text trimmed. These are the real items. */
+/**
+ * Non-blank rows only, text trimmed. These are the real items. A project's
+ * valid dates are kept; anything else on an item is dropped.
+ */
 export function cleanItems(rows) {
   return rows
     .filter((r) => r.text.trim())
-    .map((r) => ({ id: r.id, text: r.text.trim() }));
+    .map((r) => ({ id: r.id, text: r.text.trim(), ...projectDates(r) }));
+}
+
+/**
+ * Sets one project's dates after checking them (real months and dates, years
+ * 1990 to 2100, an exact date inside its month, the finish not before the
+ * start). Blank fields clear that date.
+ * @returns {{ok: true, draft: Object} | {ok: false, field: string, message: string}}
+ */
+export function setProjectDates(draft, projectId, input) {
+  const check = checkProjectDates(input);
+  if (!check.ok) return check;
+  const projects = draft.projects.map((row) => {
+    if (row.id !== projectId) return row;
+    const next = { ...row };
+    DATE_FIELDS.forEach((field) => { delete next[field]; });
+    return { ...next, ...check.dates };
+  });
+  return { ok: true, draft: { ...draft, projects } };
 }
 
 /** A fresh draft (three blank boxes each). */
@@ -67,7 +91,9 @@ export function emptyDraft() {
 /** Builds the draft from saved data. */
 export function draftFromData(data) {
   const d = data || {};
-  const items = (list) => (Array.isArray(list) ? list.map((i) => ({ id: String(i.id), text: String(i.text ?? '') })) : []);
+  const items = (list) => (Array.isArray(list)
+    ? list.map((i) => ({ id: String(i.id), text: String(i.text ?? ''), ...projectDates(i) }))
+    : []);
   const owner = d.ratings?.[OWNER] || {};
   const ratings = {};
   Object.keys(owner).forEach((pid) => {

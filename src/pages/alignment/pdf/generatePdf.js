@@ -1,6 +1,7 @@
 import { cleanItems } from '../alignmentFlow';
 import { loadWithReload } from '../../../lib/loadWithReload';
 import { rankProjects } from '../../../lib/alignmentScore';
+import { projectDates } from '../../../lib/projectDates';
 import { formatUkDate, getLocalDateKey, parseDbTimestamp } from '../../../lib/dateFormatter';
 
 // Builds and downloads the PDF. @react-pdf/renderer is imported only when a
@@ -39,7 +40,7 @@ export async function buildPdfBlob(draft, variant, completedAt) {
   const factors = cleanItems(draft.csfs);
   const projects = cleanItems(draft.projects);
   const ranked = rankProjects(projects, factors, draft.ratings).map((r, i) => ({
-    id: r.project.id, text: r.project.text, importance: r.importance, rated: r.rated, progress: r.progress, resource: r.resource, n: i + 1,
+    id: r.project.id, text: r.project.text, dates: projectDates(r.project), importance: r.importance, rated: r.rated, progress: r.progress, resource: r.resource, n: i + 1,
   }));
   const element = React.createElement(AlignmentPdf, {
     variant,

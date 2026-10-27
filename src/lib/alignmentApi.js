@@ -19,7 +19,8 @@ const NETWORK_ERROR = 'We couldn’t reach the server. Check your connection and
  * @typedef {Object} AlignmentData
  * @property {string} [objective]
  * @property {{id: string, text: string}[]} [csfs]
- * @property {{id: string, text: string}[]} [projects]
+ * @property {{id: string, text: string, started?: string, startedOn?: string, due?: string, dueOn?: string}[]} [projects]
+ *   Project dates are optional (src/lib/projectDates.js).
  * @property {Object<string, Object<string, {contrib?: Object<string, number>, progress?: number, resource?: number}>>} [ratings]
  *   Keyed rater -> project id -> ratings. Rater key is "owner" for now.
  */
