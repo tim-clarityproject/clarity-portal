@@ -30,6 +30,16 @@
 --      becomes "on" for each organisation the person is in today (the reach
 --      it had), so nothing already shared is lost or widened, and the
 --      single switch is refused from then on.
+--   3. Organisation seats have a fixed standard of 85% (methods M7; Tim,
+--      26 Oct, 23:49)
+--      While someone holds an active, confirmed membership with a seat,
+--      every sprint they start, and every change to a sprint's standard,
+--      gets 85, and their running sprint always has it. A different standard
+--      is set to 85 rather than refused (Claude: a save made before they
+--      joined, or waiting offline, keeps their other changes). People who
+--      pay for themselves keep 50 to 100. Someone who leaves keeps 85 until
+--      they change it. The rule lives in one function, fixed_standard_for,
+--      where a coach override could be added later (not decided, not built).
 --
 -- SAFE TO RUN TWICE
 --   Yes. Constraints are added only where missing; functions are replaced
@@ -484,5 +494,95 @@ end;
 $$;
 revoke all on function public.org_wellbeing_move_old_switches() from public, anon, authenticated;
 select public.org_wellbeing_move_old_switches();
+
+-- ---------------------------------------------------------------- 3. the fixed standard for organisation seats
+-- The standard a person's sprints must have, or null when they choose their
+-- own (50 to 100, 85 suggested). 85 while they hold an active, confirmed
+-- membership with a seat (Tim, 26 Oct, 23:49; methods M7; spec section 6).
+-- This is the one place the rule lives: a coach override (Tim's open
+-- question, not decided) would be added here and nowhere else.
+create or replace function public.fixed_standard_for(p_user uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case when exists (
+    select 1 from public.organisation_members m
+    where m.user_id = p_user and m.has_seat and m.ended_on is null and m.confirmed_at is not null
+  ) then 85 end;
+$$;
+revoke all on function public.fixed_standard_for(uuid) from public, anon, authenticated;
+
+-- For the screens: the signed-in person's fixed standard, or null when they
+-- choose their own.
+create or replace function public.my_fixed_standard()
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.fixed_standard_for((select auth.uid()));
+$$;
+revoke all on function public.my_fixed_standard() from public, anon;
+grant execute on function public.my_fixed_standard() to authenticated;
+
+-- Every sprint someone in a seat starts, and every change to its standard,
+-- gets 85; a running sprint always has it. A different standard is set to
+-- 85 rather than refused (Claude), so a save made before they joined (a
+-- draft, or one waiting offline in the sync queue) still keeps their other
+-- changes instead of failing. Finished sprints keep the standard their
+-- weeks were scored at unless the standard itself is changed. Someone who
+-- leaves keeps 85 until they change it themselves.
+create or replace function public.sprints_seat_standard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  fixed integer := public.fixed_standard_for(new.user_id);
+begin
+  if fixed is not null
+     and (tg_op = 'INSERT' or new.status = 'running' or new.standard is distinct from old.standard) then
+    new.standard := fixed;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.sprints_seat_standard() from public, anon, authenticated;
+drop trigger if exists sprints_seat_standard on public.sprints;
+create trigger sprints_seat_standard before insert or update on public.sprints
+  for each row execute function public.sprints_seat_standard();
+
+-- Taking up a seat (confirming it, or a membership becoming a seat) sets
+-- the sprint they are running to 85 too, so the summary their organisation
+-- gets at its end is at 85 (Claude).
+create or replace function public.organisation_members_seat_standard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.has_seat and new.ended_on is null and new.confirmed_at is not null
+     and (tg_op = 'INSERT' or not (old.has_seat and old.ended_on is null and old.confirmed_at is not null)) then
+    update public.sprints set standard = 85
+     where user_id = new.user_id and status = 'running' and standard is distinct from 85;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.organisation_members_seat_standard() from public, anon, authenticated;
+drop trigger if exists organisation_members_seat_standard on public.organisation_members;
+create trigger organisation_members_seat_standard after insert or update on public.organisation_members
+  for each row execute function public.organisation_members_seat_standard();
+
+-- Sprints already running for someone in a seat (none on live yet; safe to
+-- run twice).
+update public.sprints s set standard = 85
+ where s.status = 'running' and s.standard is distinct from 85 and public.fixed_standard_for(s.user_id) = 85;
 
 select public.record_migration(33, '033_pulse_wellbeing_seat_standard');

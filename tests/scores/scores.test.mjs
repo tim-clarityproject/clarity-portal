@@ -224,6 +224,30 @@ test('M7: standards', () => {
   assert.equal(S.m7WeekColour(null, 85), 'none');
 });
 
+test('M7: an organisation seat\'s weeks are always judged against 85 (Tim, 26 Oct, 23:49)', () => {
+  assert.equal(S.ORG_SEAT_STANDARD, 85);
+  for (let chosen = 50; chosen <= 100; chosen += 1) {
+    assert.equal(S.m7StandardFor({ orgSeat: true, chosen }), 85, `chose ${chosen}`);
+  }
+  assert.equal(S.m7StandardFor({ orgSeat: true, chosen: 'anything' }), 85);
+  assert.equal(S.m7MayChooseStandard({ orgSeat: true }), false);
+  // a week of 84 is below for a seat, even if the person had picked 80
+  assert.equal(S.m7WeekColour(84, S.m7StandardFor({ orgSeat: true, chosen: 80 })), 'below');
+  assert.equal(S.m7WeekColour(84.5, S.m7StandardFor({ orgSeat: true, chosen: 90 })), 'good');
+  // M6 for a seat: weeks at the standard counted against 85
+  const weeks = [84, 85, 90, 70].map((score, i) => ({ number: i + 1, score, finished: true }));
+  assert.equal(S.m6SprintFigures(weeks, S.m7StandardFor({ orgSeat: true, chosen: 70 })).weeksAtStandard, 2);
+});
+
+test('M7: people who pay for themselves choose 50 to 100, 85 suggested', () => {
+  assert.equal(S.m7MayChooseStandard({ orgSeat: false }), true);
+  assert.equal(S.m7MayChooseStandard(), true);
+  assert.equal(S.m7StandardFor({ chosen: 70 }), 70);
+  assert.equal(S.m7StandardFor({ chosen: 100 }), 100);
+  assert.equal(S.m7StandardFor({ chosen: 49 }), 85, 'not a valid choice: the suggested 85');
+  assert.equal(S.m7StandardFor(), 85);
+});
+
 test('M8-1: weeks 78, 82, 85, 74, 88, 90, 81, 79 give a usual range of 79 to 86%', () => {
   assert.deepEqual(S.m8UsualRange([78, 82, 85, 74, 88, 90, 81, 79]), { low: 79, high: 86, weeks: 8 });
 });

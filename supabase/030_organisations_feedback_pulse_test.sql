@@ -205,7 +205,12 @@ begin
     f := f || pg_temp.t_eq('5l ... and no one as a sponsor or leader', pg_temp.t_n('select (select count(*) from public.sponsor_people()) + (select count(*) from public.leader_people())'), '0');
     -- wellbeing switched on, by the person
     perform pg_temp.t_as(member_u);
-    insert into public.sharing_switches (user_id, part, is_on) values (member_u, 'org_wellbeing', true);
+    -- from migration 033 wellbeing is switched on for each organisation
+    if to_regclass('public.org_wellbeing_switches') is null then
+      insert into public.sharing_switches (user_id, part, is_on) values (member_u, 'org_wellbeing', true);
+    else
+      execute format('insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (%L, %L, true)', member_u, org1);
+    end if;
     perform pg_temp.t_as(sponsor_u);
     f := f || pg_temp.t_eq('5m switched on: the sponsor sees scores, named', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L) where hardware_score is not null', member_u)), '1');
     f := f || pg_temp.t_eq('5n ... never the answers', pg_temp.t_n($q$select count(*) from information_schema.routines r join information_schema.parameters p on p.specific_name = r.specific_name where r.routine_name = 'org_wellbeing' and p.parameter_mode = 'OUT' and p.parameter_name in ('answers', 'goals')$q$), '0');
@@ -214,7 +219,11 @@ begin
     perform pg_temp.t_as(lead_other);
     f := f || pg_temp.t_eq('5p not a leader outside their teams', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L)', member_u)), '0');
     perform pg_temp.t_as(member_u);
-    update public.sharing_switches set is_on = false where user_id = member_u and part = 'org_wellbeing';
+    if to_regclass('public.org_wellbeing_switches') is null then
+      update public.sharing_switches set is_on = false where user_id = member_u and part = 'org_wellbeing';
+    else
+      execute format('update public.org_wellbeing_switches set is_on = false where user_id = %L', member_u);
+    end if;
     perform pg_temp.t_as(sponsor_u);
     f := f || pg_temp.t_eq('5q switched off: past months hidden too', pg_temp.t_n(format('select count(*) from public.org_wellbeing(%L)', member_u)), '0');
     -- the leaver leaves

@@ -445,13 +445,15 @@ export const PHASE1_FUNCTIONS = [
   fn('score_m13_checkin(jsonb)', "public.score_m13_checkin('{}')", SIGNED_IN),
   fn('score_m18_shown(boolean,integer,integer)', 'public.score_m18_shown(true, 3, 0)', SIGNED_IN),
   fn('pulse_request_closed(uuid)', `public.pulse_request_closed(${R})`, NOBODY, 'Inside part of the pulse functions.'),
+  fn('my_fixed_standard()', 'public.my_fixed_standard()', SIGNED_IN, 'The person\'s own: 85 in an organisation seat.'),
+  fn('fixed_standard_for(uuid)', `public.fixed_standard_for(${R})`, NOBODY, 'Would tell anyone who has a seat: for the rules only.'),
   fn('org_wellbeing_move_old_switches()', 'public.org_wellbeing_move_old_switches()', NOBODY, 'Run once by migration 033.'),
   fn('pulse_shown(uuid)', `public.pulse_shown(${R})`, NOBODY, 'Inside part of the pulse functions.'),
   // inside parts and triggers: nobody calls them directly
   ...['p1_touch()', 'p1_same_owner()', 'sharing_switch_check()', 'sharing_switch_log()', 'teams_check()', 'team_members_check()',
       'reporting_lines_check()', 'organisation_members_check()', 'outcome_objectives_check()', 'todos_record_move()', 'wins_to_evidence()',
       'day_plan_limits()', 'day_plans_odd_sleep()', 'checkins_score()', 'checkins_flag()', 'impact_raters_check()',
-      'org_wellbeing_switch_check()', 'org_wellbeing_switch_log()']
+      'org_wellbeing_switch_check()', 'org_wellbeing_switch_log()', 'sprints_seat_standard()', 'organisation_members_seat_standard()']
     .map((s) => fn(s, `public.${s}`, NOBODY, 'Runs only as a trigger.')),
   fn('sponsor_may_act_on(uuid)', `public.sponsor_may_act_on(${R})`, NOBODY, 'Inside part of the sponsor functions.'),
   fn('feedback_open_request(text,boolean)', "public.feedback_open_request('x', false)", NOBODY, 'Inside part of the feedback functions.'),
@@ -514,6 +516,15 @@ export const SCENARIOS = [
   s('Nobody can switch it on for an organisation they aren\'t in', [['no_coach', `with x as (insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values ({no_coach}, current_setting('rules.org')::uuid, true) returning 1) select count(*)::text from x`]], 'error 42501'),
   s('... or for someone else', [['sponsor', `with x as (insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values ({org_client}, current_setting('rules.org2')::uuid, true) returning 1) select count(*)::text from x`]], 'error 42501'),
   s('The single wellbeing switch is refused, with a clear message', [['org_client', SWITCH('org_client', 'org_wellbeing', true)]], 'error 22023'),
+  // the fixed standard for organisation seats (methods M7; Tim, 26 Oct, 23:49)
+  s('An organisation seat\'s new sprint is 85, whatever is asked', [['org_client', `with x as (insert into public.sprints (user_id, plan_id, number, start_on, status, standard) values ({org_client}, (select id from public.performance_plans where user_id = {org_client} limit 1), 950, current_date, 'finished', 70) returning standard) select standard::text from x`]], '85'),
+  s('... and changing a sprint\'s standard is set back to 85', [['org_client', "with x as (update public.sprints set standard = 60 where user_id = {org_client} and number = 900 returning standard) select standard::text from x"]], '85'),
+  s('... and the screens learn it is fixed', [['org_client', n('select public.my_fixed_standard()')]], '85'),
+  s('Someone who pays for themselves chooses their own', [['client', `with x as (insert into public.sprints (user_id, plan_id, number, start_on, status, standard) values ({client}, (select id from public.performance_plans where user_id = {client} limit 1), 950, current_date, 'finished', 70) returning standard) select standard::text from x`]], '70'),
+  s('... with no fixed standard', [['client', n('select public.my_fixed_standard()')]], 'null'),
+  s('Someone who has left keeps 85', [['leaver', n('select standard from public.sprints where user_id = {leaver} and number = 900')]], '85'),
+  s('... until they change it themselves', [['leaver', "with x as (update public.sprints set standard = 75 where user_id = {leaver} and number = 900 returning standard) select standard::text from x"]], '75'),
+  s('Nobody can ask whether someone else has a seat', [['client', n('select public.fixed_standard_for({org_client})')]], 'error 42501'),
   // leaders
   s('A leader over the parent team sees the people below', [['leader_parent', n('select count(*) from public.leader_people()')]], '1'),
   s('... their summaries', [['leader_parent', n('select count(*) from public.person_summaries({org_client})')]], '1'),

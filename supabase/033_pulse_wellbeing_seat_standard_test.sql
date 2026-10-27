@@ -10,7 +10,10 @@
 --        early, the 7-day link, and the Calm name;
 --     2. wellbeing shared per organisation: a person in two organisations
 --        sharing with one, switching one off, who may switch, and moving
---        the old single switch over without losing or widening anything.
+--        the old single switch over without losing or widening anything;
+--     3. the fixed standard of 85 for organisation seats: new sprints,
+--        changes, a membership not yet confirmed or without a seat, taking
+--        up a seat mid-sprint, leaving, and people who pay for themselves.
 --   Everything it makes is undone at the end.
 --
 --   It ends with the notice ALL CHECKS PASSED, or stops with FAILED and a
@@ -99,6 +102,8 @@ declare
   r jsonb;
   mem uuid; spon_a uuid; spon_b uuid; lead_a uuid; adm_a uuid; outsider uuid; mover uuid; stayed_off uuid; spon_c uuid;
   org_a uuid; org_b uuid; org_c uuid; team_a uuid; m_a uuid; m_b uuid; m_c uuid;
+  self_u uuid; seat_u uuid; viewer_u uuid; org_s uuid; m_seat uuid; m_view uuid; plan_self uuid; plan_seat uuid; plan_view uuid;
+  spr_old uuid; spr_run uuid;
 begin
   begin
     boss := pg_temp.t_user('boss'); other := pg_temp.t_user('other');
@@ -304,6 +309,68 @@ begin
     f := f || pg_temp.t_eq('2aa ... and once they confirm, as before', public.may_see(mover, 'org_wellbeing')::text, 'true');
     perform pg_temp.t_as(mover);
     f := f || pg_temp.t_eq('2ab nobody can call the move', pg_temp.t_n('select public.org_wellbeing_move_old_switches()'), 'error 42501');
+
+    -- ------------------------------------------------ 3. the fixed standard (M7)
+    perform pg_temp.t_admin();
+    self_u := pg_temp.t_user('selfpay'); seat_u := pg_temp.t_user('seat'); viewer_u := pg_temp.t_user('viewer');
+    insert into public.organisations (name) values ('Invented S') returning id into org_s;
+    insert into public.performance_plans (user_id) values (self_u) returning id into plan_self;
+    insert into public.performance_plans (user_id) values (seat_u) returning id into plan_seat;
+    insert into public.performance_plans (user_id) values (viewer_u) returning id into plan_view;
+
+    -- someone who pays for themselves
+    perform pg_temp.t_as(self_u);
+    f := f || pg_temp.t_eq('3a paying for themselves: their own standard', pg_temp.t_n(format('with x as (insert into public.sprints (user_id, plan_id, number, start_on, status, standard) values (%L, %L, 1, date ''2026-01-05'', ''finished'', 70) returning standard) select standard from x', self_u, plan_self)), '70');
+    f := f || pg_temp.t_eq('3b ... changed to 100', pg_temp.t_n(format('with x as (update public.sprints set standard = 100 where user_id = %L returning standard) select standard from x', self_u)), '100');
+    f := f || pg_temp.t_eq('3c ... never above 100', pg_temp.t_rows(format('update public.sprints set standard = 101 where user_id = %L', self_u)), 'error 23514');
+    f := f || pg_temp.t_eq('3d ... nor below 50', pg_temp.t_rows(format('update public.sprints set standard = 49 where user_id = %L', self_u)), 'error 23514');
+    f := f || pg_temp.t_eq('3e ... and no fixed standard', pg_temp.t_n('select coalesce(public.my_fixed_standard()::text, ''none'')'), 'none');
+
+    -- before taking up a seat: a finished sprint at 75 and a running one at 80
+    perform pg_temp.t_as(seat_u);
+    insert into public.sprints (user_id, plan_id, number, start_on, status, standard) values (seat_u, plan_seat, 1, date '2026-01-05', 'finished', 75) returning id into spr_old;
+    perform pg_temp.t_admin();
+    insert into public.sprints (user_id, plan_id, number, start_on, status, standard) values (seat_u, plan_seat, 2, date '2026-04-06', 'running', 80) returning id into spr_run;
+    insert into public.organisation_members (organisation_id, user_id) values (org_s, seat_u) returning id into m_seat;
+    f := f || pg_temp.t_eq('3f a seat not yet confirmed: nothing changes', (select standard from public.sprints where id = spr_run)::text, '80');
+    perform pg_temp.t_as(seat_u);
+    perform public.membership_confirm(m_seat);
+    f := f || pg_temp.t_eq('3g confirming the seat sets the running sprint to 85', pg_temp.t_n(format('select standard from public.sprints where id = %L', spr_run)), '85');
+    f := f || pg_temp.t_eq('3h ... the finished one keeps the 75 its weeks were scored at', pg_temp.t_n(format('select standard from public.sprints where id = %L', spr_old)), '75');
+    f := f || pg_temp.t_eq('3i ... and its label can still change without moving it', pg_temp.t_n(format('with x as (update public.sprints set label = ''Spring'' where id = %L returning standard) select standard from x', spr_old)), '75');
+    f := f || pg_temp.t_eq('3j the screens learn the standard is fixed', pg_temp.t_n('select public.my_fixed_standard()'), '85');
+
+    -- in a seat: they can't choose another
+    f := f || pg_temp.t_eq('3k changing the running sprint''s standard: set to 85', pg_temp.t_n(format('with x as (update public.sprints set standard = 60 where id = %L returning standard) select standard from x', spr_run)), '85');
+    f := f || pg_temp.t_eq('3l changing a finished sprint''s standard: set to 85', pg_temp.t_n(format('with x as (update public.sprints set standard = 95 where id = %L returning standard) select standard from x', spr_old)), '85');
+    perform pg_temp.t_rows(format('update public.sprints set status = ''finished'' where id = %L', spr_run));
+    f := f || pg_temp.t_eq('3m a new sprint asking for 70: saved as 85', pg_temp.t_n(format('with x as (insert into public.sprints (user_id, plan_id, number, start_on, standard) values (%L, %L, 3, date ''2026-07-06'', 70) returning standard) select standard from x', seat_u, plan_seat)), '85');
+    f := f || pg_temp.t_eq('3n a new sprint with no standard given: 85', pg_temp.t_n(format('with x as (insert into public.sprints (user_id, plan_id, number, start_on, status) values (%L, %L, 4, date ''2026-01-05'', ''finished'') returning standard) select standard from x', seat_u, plan_seat)), '85');
+    f := f || pg_temp.t_eq('3o every sprint they have now is 85', pg_temp.t_n(format('select string_agg(distinct standard::text, '','') from public.sprints where user_id = %L', seat_u)), '85');
+
+    -- leaving: 85 stays until they change it
+    perform pg_temp.t_admin();
+    update public.organisation_members set ended_on = current_date where id = m_seat;
+    perform pg_temp.t_as(seat_u);
+    f := f || pg_temp.t_eq('3p after leaving: the running sprint is still 85', pg_temp.t_n(format('select standard from public.sprints where user_id = %L and status = ''running''', seat_u)), '85');
+    f := f || pg_temp.t_eq('3q ... no fixed standard any more', pg_temp.t_n('select coalesce(public.my_fixed_standard()::text, ''none'')'), 'none');
+    f := f || pg_temp.t_eq('3r ... until they change it themselves', pg_temp.t_n(format('with x as (update public.sprints set standard = 75 where user_id = %L and status = ''running'' returning standard) select standard from x', seat_u)), '75');
+
+    -- a membership without a seat (a viewer) doesn't fix the standard
+    perform pg_temp.t_admin();
+    insert into public.organisation_members (organisation_id, user_id, has_seat) values (org_s, viewer_u, false) returning id into m_view;
+    perform pg_temp.t_as(viewer_u);
+    perform public.membership_confirm(m_view);
+    f := f || pg_temp.t_eq('3s a member without a seat chooses their own', pg_temp.t_n(format('with x as (insert into public.sprints (user_id, plan_id, number, start_on, standard) values (%L, %L, 1, date ''2026-01-05'', 70) returning standard) select standard from x', viewer_u, plan_view)), '70');
+    perform pg_temp.t_admin();
+    update public.organisation_members set has_seat = true where id = m_view;
+    f := f || pg_temp.t_eq('3t ... until they are given a seat: then 85', (select standard from public.sprints where user_id = viewer_u and status = 'running')::text, '85');
+
+    -- the inside parts
+    perform pg_temp.t_as(seat_u);
+    f := f || pg_temp.t_eq('3u nobody calls fixed_standard_for directly (it would tell who has a seat)', pg_temp.t_n(format('select public.fixed_standard_for(%L)', viewer_u)), 'error 42501');
+    perform pg_temp.t_anon();
+    f := f || pg_temp.t_eq('3v signed out: no standard', pg_temp.t_n('select public.my_fixed_standard()'), 'error 42501');
 
     raise exception using errcode = 'TT001', message = 'undo the test';
   exception when sqlstate 'TT001' then null;
