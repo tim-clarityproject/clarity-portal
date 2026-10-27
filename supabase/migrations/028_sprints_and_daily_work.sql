@@ -197,6 +197,7 @@ create table if not exists public.todos (
 comment on column public.todos.move_on is
   'The person''s local day of their latest move, set by the app with the move; recorded in todo_moves (methods M2).';
 create index if not exists todos_week_idx on public.todos (user_id, sprint_id, planned_week) where deleted_at is null;
+create index if not exists todos_user_idx on public.todos (user_id, created_on);
 create index if not exists todos_sprint_idx on public.todos (sprint_id, planned_week);
 create index if not exists todos_strategy_idx on public.todos (strategy_id);
 create index if not exists todos_done_idx on public.todos (user_id, done_on) where done_on is not null;
@@ -227,7 +228,7 @@ create table if not exists public.wins (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index if not exists wins_user_date_idx on public.wins (user_id, local_date) where deleted_at is null;
+create index if not exists wins_user_date_idx on public.wins (user_id, local_date);
 
 create table if not exists public.win_strategies (
   win_id      uuid not null references public.wins (id) on delete cascade,
@@ -252,7 +253,7 @@ create table if not exists public.performance_evidence (
   updated_at        timestamptz not null default now(),
   check ((kind = 'win') = (win_id is not null))
 );
-create index if not exists performance_evidence_user_idx on public.performance_evidence (user_id, local_date desc) where deleted_at is null;
+create index if not exists performance_evidence_user_idx on public.performance_evidence (user_id, local_date desc);
 create index if not exists performance_evidence_strategy_idx on public.performance_evidence (strategy_id);
 
 create table if not exists public.day_plans (

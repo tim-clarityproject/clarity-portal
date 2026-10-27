@@ -1,0 +1,117 @@
+{
+  "run": "2026-10-27T00:38:16.324Z",
+  "rows": "habit_logs 1048000, todos 159000, week_scores 52000, objective_figures 156000, checkins 12000, sprint_summaries 1600, feedback_answers 3360",
+  "reads": [
+    {
+      "read": "Sprint week: the week's logs, as the person",
+      "ms": 1,
+      "fullScans": null
+    },
+    {
+      "read": "Sprint week: the week's to-dos, as the person",
+      "ms": 0.3,
+      "fullScans": null
+    },
+    {
+      "read": "Sprint week: the score so far, worked out in the database",
+      "ms": 7.2,
+      "fullScans": null
+    },
+    {
+      "read": "Sprint week: freezing a finished week (freeze_week)",
+      "ms": 4,
+      "fullScans": null
+    },
+    {
+      "read": "Dashboard: this sprint's week scores",
+      "ms": 0.2,
+      "fullScans": null
+    },
+    {
+      "read": "Dashboard: the usual range (last 16 eligible weeks)",
+      "ms": 0.2,
+      "fullScans": null
+    },
+    {
+      "read": "Dashboard: a year of week scores across sprints",
+      "ms": 0.2,
+      "fullScans": null
+    },
+    {
+      "read": "Dashboard: objectives with their latest figures",
+      "ms": 0.4,
+      "fullScans": null
+    },
+    {
+      "read": "Dashboard: a year of check-ins",
+      "ms": 0.2,
+      "fullScans": null
+    },
+    {
+      "read": "Coach: client list, first page (67 clients)",
+      "ms": 42.4,
+      "fullScans": null
+    },
+    {
+      "read": "Coach: client list, searched by name",
+      "ms": 8.1,
+      "fullScans": null
+    },
+    {
+      "read": "Owner: every client, first page (1,000 clients)",
+      "ms": 31.2,
+      "fullScans": null
+    },
+    {
+      "read": "Owner: every client, page 20",
+      "ms": 30.8,
+      "fullScans": null
+    },
+    {
+      "read": "Owner: filtered by coach and organisation",
+      "ms": 2.3,
+      "fullScans": null
+    },
+    {
+      "read": "Coach: a client's objectives, through the rules",
+      "ms": 1.2,
+      "fullScans": null
+    },
+    {
+      "read": "Coach: a client's week scores, through the rules",
+      "ms": 10.8,
+      "fullScans": null
+    },
+    {
+      "read": "Leader: organisation figures (20 seats, 10 teams)",
+      "ms": 18.5,
+      "fullScans": null
+    },
+    {
+      "read": "Leader: one child team's figures",
+      "ms": 11.3,
+      "fullScans": null
+    },
+    {
+      "read": "Leader: people list, first page",
+      "ms": 2.8,
+      "fullScans": null
+    },
+    {
+      "read": "Sponsor: their seats",
+      "ms": 1.4,
+      "fullScans": null
+    },
+    {
+      "read": "Sponsor: one seat's summaries",
+      "ms": 1,
+      "fullScans": null
+    },
+    {
+      "read": "Pulse: one send's results, with the change since the last",
+      "ms": 3.2,
+      "fullScans": null
+    }
+  ],
+  "minutes": 4
+}

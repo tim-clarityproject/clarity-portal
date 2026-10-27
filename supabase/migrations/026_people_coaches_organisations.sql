@@ -278,7 +278,7 @@ create table if not exists public.organisation_members (
 comment on column public.organisation_members.confirmed_at is
   'Set only by the person (public.membership_confirm). Until then no sponsor or leader reaches anything of theirs, so nobody can be added to an organisation and seen without knowing.';
 create unique index if not exists organisation_members_one_current on public.organisation_members (organisation_id, user_id) where ended_on is null;
-create index if not exists organisation_members_user_idx on public.organisation_members (user_id) where ended_on is null;
+create index if not exists organisation_members_user_idx on public.organisation_members (user_id);
 create index if not exists organisation_members_org_idx on public.organisation_members (organisation_id, started_on) where ended_on is null;
 create index if not exists organisation_members_created_by_idx on public.organisation_members (created_by);
 

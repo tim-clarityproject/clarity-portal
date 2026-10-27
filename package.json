@@ -13,7 +13,10 @@
     "test:rules": "node tests/rules/run.mjs",
     "test:scores": "node --import ./tests/scores/register.mjs --test tests/scores/*.test.mjs && node tests/scores/make-db-test.mjs --check && node scripts/make-evidence-seed.mjs --check",
     "test:patterns": "node --test tests/patterns/*.test.mjs",
-    "sim:patterns": "node scripts/sim-patterns.mjs"
+    "sim:patterns": "node scripts/sim-patterns.mjs",
+    "test:scale": "node tests/scale/run.mjs",
+    "test:convert": "node --test tests/convert/*.test.mjs",
+    "convert:plans": "node scripts/convert-plans/run.mjs"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",

@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   M14, m14Rng, m14WeeklyResiduals, m14DailyResiduals, m14ShuffleTest, m14BenjaminiHochberg,
-  m14Evaluate, m14Links, m14Check, m14Steady, m14QuestionAllowed, m14HowWorkedOut,
+  m14Links, m14Check, m14Steady, m14QuestionAllowed, m14HowWorkedOut,
 } from '../../src/lib/scores/m14.js';
 
 const near = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg}: expected ${b} ± ${tol}, got ${a}`);

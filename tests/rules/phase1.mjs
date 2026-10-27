@@ -5,7 +5,7 @@
 // Invented people have no account on the test project: run.mjs makes them
 // inside the rolled-back transaction, with made-up ids, so nothing is kept.
 
-import { OWN, NOBODY, SIGNED_IN, ANYONE, ONLY, COACH_SEES, OWN_OR_COACH, COACH_ONLY } from './access.mjs';
+import { NOBODY, SIGNED_IN, ANYONE, ONLY, COACH_SEES, OWN_OR_COACH, COACH_ONLY } from './access.mjs';
 
 // ---------------------------------------------------------------- people
 export const INVENTED_PEOPLE = [

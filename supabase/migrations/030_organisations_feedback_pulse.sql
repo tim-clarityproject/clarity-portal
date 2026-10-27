@@ -195,7 +195,7 @@ create table if not exists public.impact_behaviours (
   archived_at timestamptz,
   created_at  timestamptz not null default now()
 );
-create index if not exists impact_behaviours_user_idx on public.impact_behaviours (user_id) where archived_at is null;
+create index if not exists impact_behaviours_user_idx on public.impact_behaviours (user_id);
 create index if not exists impact_behaviours_member_idx on public.impact_behaviours (member_id);
 
 create table if not exists public.impact_raters (

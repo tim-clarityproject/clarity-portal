@@ -236,7 +236,7 @@ create table if not exists public.pattern_cards (
 );
 comment on table public.pattern_cards is
   'Methods M14. figures holds what "How was this worked out?" shows: groups, sizes, averages, usual swing, chance. A negative link is coach-only (pattern rule 18).';
-create index if not exists pattern_cards_user_idx on public.pattern_cards (user_id) where removed_at is null;
+create index if not exists pattern_cards_user_idx on public.pattern_cards (user_id);
 create index if not exists pattern_cards_question_idx on public.pattern_cards (question_id);
 create index if not exists pattern_cards_hidden_by_idx on public.pattern_cards (hidden_by);
 

@@ -105,7 +105,7 @@ create table if not exists public.outcome_objectives (
 create unique index if not exists outcome_objectives_one_development
   on public.outcome_objectives (plan_id) where source = 'development' and archived_at is null;
 create index if not exists outcome_objectives_plan_idx on public.outcome_objectives (plan_id, sort_order);
-create index if not exists outcome_objectives_user_idx on public.outcome_objectives (user_id) where archived_at is null;
+create index if not exists outcome_objectives_user_idx on public.outcome_objectives (user_id);
 create index if not exists outcome_objectives_org_idx on public.outcome_objectives (organisation_id) where organisation_id is not null;
 create index if not exists outcome_objectives_confirmed_by_idx on public.outcome_objectives (confirmed_by);
 
@@ -149,7 +149,7 @@ create table if not exists public.plan_strategies (
   updated_at  timestamptz not null default now()
 );
 create index if not exists plan_strategies_plan_idx on public.plan_strategies (plan_id, sort_order);
-create index if not exists plan_strategies_user_idx on public.plan_strategies (user_id) where archived_at is null;
+create index if not exists plan_strategies_user_idx on public.plan_strategies (user_id);
 
 create table if not exists public.strategy_objectives (
   strategy_id  uuid not null references public.plan_strategies (id) on delete cascade,
@@ -195,7 +195,7 @@ comment on table public.habits is
   'Tactics that repeat (methods M1). Stored in one unit; converted for display. Never visible to a coach, sponsor or leader.';
 create index if not exists habits_plan_idx on public.habits (plan_id, sort_order);
 create index if not exists habits_strategy_idx on public.habits (strategy_id);
-create index if not exists habits_user_idx on public.habits (user_id) where archived_at is null;
+create index if not exists habits_user_idx on public.habits (user_id);
 
 -- ---------------------------------------------------------------- same owner
 do $owner$
