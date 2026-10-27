@@ -18,7 +18,7 @@ import cjkRanges from '@fontsource/noto-sans-sc/unicode.json';
 import { cjkPartsFor, emojiPartsFor, textOf } from './emoji';
 
 // The Chinese font's parts, fetched only when a document has Chinese text.
-const CJK = Object.fromEntries(Object.entries(import.meta.glob('/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-*-400-normal.woff', { query: '?url', import: 'default', eager: true }))
+const CJK = Object.fromEntries(Object.entries(import.meta.glob('/node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-[0-9]*-400-normal.woff', { query: '?url', import: 'default', eager: true }))
   .map(([path, url]) => [`[${path.match(/noto-sans-sc-(\d+)-400/)[1]}]`, url]));
 
 // The fonts and logo files a PDF needs, fetched when a PDF is asked for (and
