@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { layoutChart, PROGRESS_WORDS } from './chartLayout';
-import { roundPct } from '../../lib/alignmentScore';
+import { importanceText } from '../../lib/alignmentScore';
 
 // Strategic importance versus progress: SVG dot-matrix field, crosshair
 // centre lines and numbered project dots. Geometry comes from
@@ -143,7 +143,7 @@ export default function AlignmentChart({ rows, highlight, onHighlight, onOpen })
         {pts.map((p, i) => {
           const solid = p.q !== 'n';
           const c = FILL[p.q];
-          const name = `${p.n}, ${p.text}, strategic importance ${roundPct(p.importance)}%, progress ${PROGRESS_WORDS[p.progress - 1]}`;
+          const name = `${p.n}, ${p.text}, strategic importance ${importanceText(p).toLowerCase()}, progress ${PROGRESS_WORDS[p.progress - 1]}`;
           return (
             <g
               key={p.id ?? p.n}

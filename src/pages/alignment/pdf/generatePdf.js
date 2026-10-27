@@ -39,7 +39,7 @@ export async function buildPdfBlob(draft, variant, completedAt) {
   const factors = cleanItems(draft.csfs);
   const projects = cleanItems(draft.projects);
   const ranked = rankProjects(projects, factors, draft.ratings).map((r, i) => ({
-    id: r.project.id, text: r.project.text, importance: r.importance, progress: r.progress, resource: r.resource, n: i + 1,
+    id: r.project.id, text: r.project.text, importance: r.importance, rated: r.rated, progress: r.progress, resource: r.resource, n: i + 1,
   }));
   const element = React.createElement(AlignmentPdf, {
     variant,

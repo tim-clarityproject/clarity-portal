@@ -2,6 +2,7 @@ import { Document, Page, View, Text, Svg, G, Circle, Line, Image, Font } from '@
 import dm400 from '@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff?url';
 import dm500 from '@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff?url';
 import { layoutChart, quadrant, PROGRESS_WORDS } from '../chartLayout';
+import { importanceText } from '../../../lib/alignmentScore';
 
 // The Strategic Alignment Health Check as a printed A4 document: a vector PDF
 // (selectable text, crisp chart), drawn here rather than copied from the page.
@@ -41,7 +42,6 @@ const MAX_NAMED = 10; // beyond this the chart shows numbered dots only
 const COL = { project: 214, importance: 124, progress: 54, resource: 100 };
 
 const pad = (n) => (n < 10 ? `0${n}` : String(n));
-const pct = (v) => `${Math.round(v)}%`;
 
 const label = (c) => ({ fontFamily: 'Nekst', fontSize: 6.5, letterSpacing: 1.5, textTransform: 'uppercase', color: c });
 
@@ -138,9 +138,9 @@ function Row({ t, r }) {
       <Text style={{ width: COL.project, fontFamily: 'DM Sans', fontSize: 9.5, lineHeight: 1.25, color: t.text, paddingRight: 10 }}>{r.text}</Text>
       <View style={{ width: COL.importance, flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ width: 76, height: 1.5, backgroundColor: t.track }}>
-          <View style={{ width: `${r.importance}%`, height: 1.5, backgroundColor: t.text }} />
+          <View style={{ width: `${r.rated ? r.importance : 0}%`, height: 1.5, backgroundColor: t.text }} />
         </View>
-        <Text style={{ fontFamily: 'Nekst', fontSize: 7, color: t.text, marginLeft: 8 }}>{pct(r.importance)}</Text>
+        <Text style={{ fontFamily: 'Nekst', fontSize: 7, color: t.text, marginLeft: 8 }}>{importanceText(r)}</Text>
       </View>
       <View style={{ width: COL.progress, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
         {[1, 2, 3, 4, 5].map((k) => (

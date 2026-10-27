@@ -3,7 +3,7 @@ import AlignmentChart from './AlignmentChart';
 import PdfChoice from './PdfChoice';
 import { cleanItems } from './alignmentFlow';
 import { quadrant } from './chartLayout';
-import { rankProjects, roundPct, MAX_CONTRIBUTION } from '../../lib/alignmentScore';
+import { importanceText, rankProjects, MAX_CONTRIBUTION } from '../../lib/alignmentScore';
 
 // The one-pager (everything below the title, which AuthShell draws). All
 // numbers come from src/lib/alignmentScore.js.
@@ -239,8 +239,8 @@ export default function OnePager({ draft, onDownloadPdf, onEmailLink, onCreateAc
                   <div className="al-c al-ci">
                     <small>Strategic importance</small>
                     <div className="al-ibar">
-                      <div className="al-tr"><i style={{ width: `${r.importance.toFixed(1)}%` }} /></div>
-                      <span className="al-vv">{roundPct(r.importance)}%</span>
+                      <div className="al-tr"><i style={{ width: `${r.rated ? r.importance.toFixed(1) : 0}%` }} /></div>
+                      <span className="al-vv">{importanceText(r)}</span>
                     </div>
                   </div>
                   <div className="al-c al-cp">
