@@ -40,7 +40,11 @@ A table whose rows hang off another table (as strategies do off missions) uses `
 
 `phase1.mjs` holds Phase 1's part: invented people (someone without a coach, a sponsor, a leader over a parent team, a leader over one child team, an organisation admin, someone who has left), made inside the rolled-back transaction with made-up ids, never as real accounts; `SETUP`, which links them (coaches and clients, the organisation's teams, seats, sponsors, leaders, sharing switches, frozen summaries, feedback links with known test links); every new personal table; every new function; and `SCENARIOS`, checks of several steps as different people (switching a part off hides its past; the owner sees admin fields, not personal content; nothing named about a leaver; use figures never for a group under 3 seats; a feedback link refused once expired, switched off or full). `access.mjs` holds the shared answers (OWN, COACH_SEES(part) and the rest) and what each person shares.
 
-Migrations 024 onwards run first in the same rolled-back transaction, so the rules are checked as they will be once Tim has run them. `--as-is` checks the test database exactly as it is.
+Migrations Tim hasn't run on the test database yet run first in the same rolled-back transaction, so the rules are checked as they will be once he has. Since 27 Oct 2026 (024 to 032 run) that is 033 onwards (`FIRST_PENDING` in `run.mjs`). `--as-is` checks the test database exactly as it is.
+
+## Step 4 (migration 033)
+
+The team pulse (results only once closed, with 3 or more answers; the 7-day link; Calm), wellbeing shared per organisation, and the fixed 85% standard for organisation seats each have scenarios in `phase1.mjs`, and the new table and functions are in its lists.
 
 ## Adding a role (Phase 1: sponsor, viewer, organisation admin)
 

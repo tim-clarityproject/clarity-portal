@@ -1,10 +1,13 @@
 // M18. Team pulse (docs/scoring-methods.md, M18).
 //
 // The short pulse's five measures, each scored 0 to 100; the team figure is
-// the average of the answers to each measure. Totals show at any number of
-// answers (Tim, 26 Oct, 17:35). The question wording is a first draft for
-// Tim to confirm with the M17 mock-up. The database has a copy
-// (public.score_m18_pulse, migration 032), tested on the same cases.
+// the average of the answers to each measure. Results show only once the
+// pulse closes, and only with 3 or more answers (Tim, 27 Oct, 14:20): see
+// m18ResultsShown. The stress question is stored as 'stress' and shown as
+// Calm (higher is calmer). The question wording is a first draft for Tim to
+// confirm with the M17 mock-up. The database has copies
+// (public.score_m18_pulse, migration 032; public.score_m18_shown, 033),
+// tested on the same cases.
 
 import { m0Change } from './m0.js';
 
@@ -17,13 +20,41 @@ export const PULSE_MEASURES = Object.freeze([
     step: 'Ask your team what would give them more energy at work.' },
   { key: 'sleep', name: 'Sleep', scale: five(['very_poor', 'poor', 'ok', 'good', 'very_good']),
     step: 'Ask your team what gets in the way of a good night’s sleep.' },
-  { key: 'stress', name: 'Stress', scale: { never: 100, rarely: 75, sometimes: 50, often: 25, always: 0 },
+  { key: 'stress', name: 'Calm', scale: { never: 100, rarely: 75, sometimes: 50, often: 25, always: 0 },
     step: 'Ask your team what is adding the most pressure right now.' },
   { key: 'workload', name: 'Workload', scale: OFTEN_UP,
     step: 'Ask your team what would ease the workload.' },
   { key: 'support', name: 'Support', scale: OFTEN_UP,
     step: 'Ask each person what support would help them perform.' },
 ]);
+
+/** A pulse stays open for 7 days, or less if the boss chooses (M18). */
+export const PULSE_OPEN_DAYS = 7;
+/** Results need at least this many answers (M18). */
+export const PULSE_MIN_ANSWERS = 3;
+
+/**
+ * M18: may the boss see this pulse's results (the measures, their own
+ * questions and the comments)? Only once it has closed, with 3 or more
+ * answers. Named answers show one by one, so the totals would also give away
+ * the answers of the 1 or 2 people who stayed anonymous; then the results
+ * stay private too (Claude, 27 Oct). Named answers always show as they come
+ * in; the number of answers shows only once the pulse closes.
+ * @param {{ closed: boolean, answers: number, named: number }} input
+ * @returns {{ shown: boolean, reason: 'open'|'too_few'|'too_few_anonymous'|null, answers: number|null, message: string|null }}
+ */
+export function m18ResultsShown({ closed, answers, named = 0 }) {
+  if (!closed) return { shown: false, reason: 'open', answers: null, message: 'Results show once the pulse closes.' };
+  const people = answers === 1 ? '1 person' : `${answers} people`;
+  if (answers < PULSE_MIN_ANSWERS) {
+    return { shown: false, reason: 'too_few', answers, message: `${people} answered, so the results stay private.` };
+  }
+  const anonymous = answers - named;
+  if (anonymous > 0 && anonymous < PULSE_MIN_ANSWERS) {
+    return { shown: false, reason: 'too_few_anonymous', answers, message: `${people} answered, but only ${anonymous} without a name, so the results stay private.` };
+  }
+  return { shown: true, reason: null, answers, message: null };
+}
 
 /** The note on the answering page for a small team (Claude): fewer than 5 people. */
 export const SMALL_TEAM = 5;

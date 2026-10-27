@@ -459,6 +459,8 @@ begin
     perform public.feedback_send(ptok, '{"energy": "very_high", "sleep": "very_good", "stress": "rarely", "workload": "often", "support": "always"}', 'Ola', true);
     perform public.feedback_send(ptok, '{"energy": "low", "sleep": "poor", "stress": "always", "workload": "rarely", "support": "sometimes", "comment": "Fewer meetings."}');
     perform pg_temp.t_as(boss);
+    -- closed first: from migration 033 results show only once the pulse closes
+    perform public.feedback_request_switch_off((select s.request_id from public.pulse_sends s where s.id = psend));
     r := pg_temp.t_n(format('select public.pulse_results(%L)', psend))::jsonb;
     f := f || pg_temp.t_eq('T35 the pulse: answers from how many', (r ->> 'answers') || ' of ' || (r ->> 'wentTo'), '4 of 6');
     f := f || pg_temp.t_near('T36 the pulse: workload as in M18-1', (r -> 'measures' -> 'workload' ->> 'figure')::numeric, 56.25);

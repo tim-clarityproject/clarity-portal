@@ -99,6 +99,24 @@ begin
     values (${id('client')}, 'before_after_impact', qs, encode(extensions.digest(repeat('d', 64), 'sha256'), 'hex'), 1) returning id into rq;
   insert into public.feedback_answers (request_id, answers) values (rq, '{}');
   perform set_config('rules.req_full', rq::text, true);
+  -- Sam's team pulses (methods M18): one open with 3 answers (1 named), one
+  -- closed with 2 answers, one closed with 3.
+  declare pq uuid := (select q.id from public.feedback_question_sets q where q.tool_key = 'team_pulse' order by q.version desc limit 1);
+          pr uuid; ps uuid; k text; a text := '{"energy": "high", "sleep": "good", "stress": "rarely", "workload": "often", "support": "often", "comment": "Fewer meetings."}';
+  begin
+    foreach k in array array['open', 'two', 'three'] loop
+      insert into public.feedback_requests (asker_id, tool_key, question_set_id, token_hash, opens_at, expires_at, max_answers, switched_off_at)
+        values (${id('client')}, 'team_pulse', pq, encode(extensions.digest('rules-pulse-' || k, 'sha256'), 'hex'),
+                now() - interval '1 day', now() + interval '6 days', 8, case when k = 'open' then null else now() end) returning id into pr;
+      insert into public.pulse_sends (boss_id, kind, request_id, went_to, opens_at, closes_at)
+        values (${id('client')}, 'short', pr, 8, now() - interval '1 day', now() + interval '6 days') returning id into ps;
+      insert into public.feedback_answers (request_id, answers) select pr, a::jsonb from generate_series(1, case k when 'two' then 2 else 3 end);
+      perform set_config('rules.pulse_' || k, ps::text, true);
+      perform set_config('rules.pulse_req_' || k, pr::text, true);
+    end loop;
+    update public.feedback_answers set giver_name = 'Ola', name_added = true
+     where id = (select id from public.feedback_answers where request_id = current_setting('rules.pulse_req_open')::uuid limit 1);
+  end;
 end
 $rel$;`];
 
@@ -411,6 +429,9 @@ export const PHASE1_FUNCTIONS = [
     .map((s) => fn(s, s.startsWith('score_round') ? 'public.score_round(1.5)' : 'public.score_m15_reading(3, 3, 3, 3)', SIGNED_IN)),
   fn('score_week_raw(jsonb)', `public.score_week_raw('{"week": {"days": []}}')`, SIGNED_IN),
   fn('score_m13_checkin(jsonb)', "public.score_m13_checkin('{}')", SIGNED_IN),
+  fn('score_m18_shown(boolean,integer,integer)', 'public.score_m18_shown(true, 3, 0)', SIGNED_IN),
+  fn('pulse_request_closed(uuid)', `public.pulse_request_closed(${R})`, NOBODY, 'Inside part of the pulse functions.'),
+  fn('pulse_shown(uuid)', `public.pulse_shown(${R})`, NOBODY, 'Inside part of the pulse functions.'),
   // inside parts and triggers: nobody calls them directly
   ...['p1_touch()', 'p1_same_owner()', 'sharing_switch_check()', 'sharing_switch_log()', 'teams_check()', 'team_members_check()',
       'reporting_lines_check()', 'organisation_members_check()', 'outcome_objectives_check()', 'todos_record_move()', 'wins_to_evidence()',
@@ -503,6 +524,18 @@ export const SCENARIOS = [
   s('A giver can read nothing back', [['signed_out', n('select count(*) from public.feedback_answers')]], 'error 42501'),
   s('The asker reads the answers to their own request', [['client', n("select count(*) from public.feedback_request_answers(current_setting('rules.req_full')::uuid)")]], '1'),
   s('... nobody else can', [['org_client', n("select count(*) from public.feedback_request_answers(current_setting('rules.req_full')::uuid)")]], 'error 42501'),
+  // the team pulse (methods M18; Tim, 27 Oct, 14:20)
+  s('A boss can\'t read a pulse before it closes', [['client', n("select public.pulse_results(current_setting('rules.pulse_open')::uuid) ->> 'shown'")]], 'false'),
+  s('... no totals, own questions or comments', [['client', n("select (r ? 'measures' or r ? 'own' or r ? 'comments' or r ? 'nextStep') from public.pulse_results(current_setting('rules.pulse_open')::uuid) r")]], 'false'),
+  s('... not even how many have answered', [['client', n("select coalesce(answers::text, 'hidden') from public.feedback_my_requests() where id = current_setting('rules.pulse_req_open')::uuid")]], 'hidden'),
+  s('... but a named answer shows as it comes in', [['client', n("select jsonb_array_length(public.pulse_results(current_setting('rules.pulse_open')::uuid) -> 'named')")]], '1'),
+  s('... its answers never come one by one', [['client', n("select count(*) from public.feedback_request_answers(current_setting('rules.pulse_req_open')::uuid)")]], 'error 42501'),
+  s('... and it can\'t be kept open longer', [['client', n("select public.feedback_request_extend(current_setting('rules.pulse_req_open')::uuid, 7)")]], 'error 22023'),
+  s('Closed with 2 answers: the boss sees only how many answered', [['client', n("select (r ->> 'shown') || ' ' || (r ->> 'answers') || ' ' || (r ? 'measures' or r ? 'comments' or r ? 'own') from public.pulse_results(current_setting('rules.pulse_two')::uuid) r")]], 'false 2 false'),
+  s('... and can\'t reopen it to collect a third', [['client', n("select public.feedback_request_extend(current_setting('rules.pulse_req_two')::uuid, 1)")]], 'error 22023'),
+  s('Closed with 3 answers: the results show, the stress question named Calm', [['client', n("select (r ->> 'shown') || ' ' || (r -> 'measures' -> 'stress' ->> 'name') from public.pulse_results(current_setting('rules.pulse_three')::uuid) r")]], 'true Calm'),
+  s('Nobody but the boss reads a pulse', [['org_client', n("select public.pulse_results(current_setting('rules.pulse_three')::uuid)")]], 'error 42501'),
+  s('A pulse can\'t stay open longer than 7 days', [['client', n("select count(*) from public.pulse_send_create('short', 5, now(), now() + interval '8 days')")]], 'error 22023'),
   // the organisation's own records
   s('Someone outside the organisation can\'t read it', [['no_coach', n("select count(*) from public.organisations where id = current_setting('rules.org')::uuid")]], '0'),
   s('A member reads their organisation', [['org_client', n("select count(*) from public.organisations where id = current_setting('rules.org')::uuid")]], '1'),

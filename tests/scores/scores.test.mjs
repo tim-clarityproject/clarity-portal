@@ -6,7 +6,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as S from '../../src/lib/scores/index.js';
 import { quadrant } from '../../src/pages/alignment/chartLayout.js';
-import { M5_CASES, CALENDAR_CASES, M6_CASES, M9_CASES, M18_CASES, M19_CASES } from './cases.mjs';
+import fs from 'node:fs';
+import { M5_CASES, CALENDAR_CASES, M6_CASES, M9_CASES, M18_CASES, M18_SHOWN_CASES, M19_CASES } from './cases.mjs';
 
 const near = (actual, expected, msg) => {
   if (expected == null) return assert.equal(actual, expected, msg);
@@ -420,6 +421,28 @@ for (const c of M18_CASES) {
     assert.equal(r.comments.length, c.expect.comments);
   });
 }
+
+for (const c of M18_SHOWN_CASES) {
+  test(`${c.id}: results ${c.expect.shown ? 'show' : `stay private (${c.expect.reason})`}`, () => {
+    const r = S.m18ResultsShown(c.input);
+    assert.equal(r.shown, c.expect.shown);
+    assert.equal(r.reason, c.expect.reason);
+    assert.equal(r.answers, c.expect.answers);
+  });
+}
+
+test('M18: the boss\'s words, and the database runs the same cases (033 test)', () => {
+  assert.equal(S.m18ResultsShown({ closed: true, answers: 2 }).message, '2 people answered, so the results stay private.');
+  assert.equal(S.m18ResultsShown({ closed: true, answers: 1 }).message, '1 person answered, so the results stay private.');
+  assert.equal(S.m18ResultsShown({ closed: false, answers: 2 }).message, 'Results show once the pulse closes.');
+  assert.equal(S.PULSE_MEASURES.find((m) => m.key === 'stress').name, 'Calm');
+  assert.equal(S.PULSE_OPEN_DAYS, 7);
+  const sql = fs.readFileSync(new URL('../../supabase/033_pulse_wellbeing_seat_standard_test.sql', import.meta.url), 'utf8');
+  for (const c of M18_SHOWN_CASES) {
+    const call = `public.score_m18_shown(${c.input.closed}, ${c.input.answers}, ${c.input.named})`;
+    assert.ok(sql.includes(call), `the 033 test runs ${c.id} (${call})`);
+  }
+});
 
 test('M18: own questions, comment order, small teams', () => {
   const r = S.m18PulseResults({

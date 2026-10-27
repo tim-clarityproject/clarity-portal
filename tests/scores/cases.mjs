@@ -375,6 +375,22 @@ export const M9_CASES = [
 ];
 
 // ------------------------------------------------------------------ M18
+// When a boss may see a pulse's results (Tim, 27 Oct, 14:20): once it has
+// closed, with 3 or more answers, and never when only 1 or 2 stayed
+// anonymous beside named answers. supabase/033_..._test.sql runs the same
+// cases against public.score_m18_shown.
+export const M18_SHOWN_CASES = [
+  { id: 'M18-shown-open', input: { closed: false, answers: 5, named: 0 }, expect: { shown: false, reason: 'open', answers: null } },
+  { id: 'M18-shown-open-few', input: { closed: false, answers: 2, named: 1 }, expect: { shown: false, reason: 'open', answers: null } },
+  { id: 'M18-shown-none', input: { closed: true, answers: 0, named: 0 }, expect: { shown: false, reason: 'too_few', answers: 0 } },
+  { id: 'M18-shown-two', input: { closed: true, answers: 2, named: 0 }, expect: { shown: false, reason: 'too_few', answers: 2 } },
+  { id: 'M18-shown-three', input: { closed: true, answers: 3, named: 0 }, expect: { shown: true, reason: null, answers: 3 } },
+  { id: 'M18-shown-one-anonymous', input: { closed: true, answers: 3, named: 2 }, expect: { shown: false, reason: 'too_few_anonymous', answers: 3 } },
+  { id: 'M18-shown-two-anonymous', input: { closed: true, answers: 4, named: 2 }, expect: { shown: false, reason: 'too_few_anonymous', answers: 4 } },
+  { id: 'M18-shown-three-anonymous', input: { closed: true, answers: 4, named: 1 }, expect: { shown: true, reason: null, answers: 4 } },
+  { id: 'M18-shown-all-named', input: { closed: true, answers: 3, named: 3 }, expect: { shown: true, reason: null, answers: 3 } },
+];
+
 export const M18_CASES = [
   {
     id: 'M18-1',
@@ -405,7 +421,7 @@ export const M18_CASES = [
   },
   {
     id: 'M18-one',
-    note: 'Totals show at any number of answers, even one.',
+    note: 'The arithmetic for a single answer (a boss never sees it: results need 3 or more answers, M18-shown).',
     input: { wentTo: 2, previous: null, answers: [{ energy: 'ok', sleep: 'ok', stress: 'never', workload: 'always', support: 'never' }] },
     expect: {
       answers: 1,
