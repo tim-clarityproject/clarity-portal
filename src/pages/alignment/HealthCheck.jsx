@@ -754,7 +754,7 @@ export default function HealthCheck() {
             loading={pdf.busy}
             aria-haspopup="dialog"
             aria-expanded={pdfMenu === 'footer'}
-            onClick={() => setPdfMenu((m) => (m === 'footer' ? null : 'footer'))}
+            onClick={() => { if (!pdf.busy) setPdfMenu((m) => (m === 'footer' ? null : 'footer')); }}
           >
             Download PDF
           </AuthPrimaryButton>
