@@ -1,5 +1,5 @@
 {
-  "run": "2026-10-27T00:25:29.959Z",
+  "run": "2026-10-27T14:47:18.675Z",
   "methodsSection": "M14.7",
   "people": 5000,
   "planted": 1000,
@@ -7,22 +7,8 @@
   "firstCheck": 8,
   "seed": 1,
   "alpha": 0.026,
+  "keptShare": null,
   "tried": [
-    {
-      "alpha": 0.05,
-      "falseCardRate": 0.0656,
-      "high": 0.07280158040940725
-    },
-    {
-      "alpha": 0.04,
-      "falseCardRate": 0.0548,
-      "high": 0.0614570852157116
-    },
-    {
-      "alpha": 0.032,
-      "falseCardRate": 0.0454,
-      "high": 0.05152779387320616
-    },
     {
       "alpha": 0.026,
       "falseCardRate": 0.038,
@@ -47,23 +33,33 @@
     "target": "under 5%"
   },
   "plantedLinks": {
-    "effectInSwings": 1,
+    "effectInSwings": 2,
     "foundAtWeek26": {
-      "k": 114,
+      "k": 740,
       "n": 1000,
-      "rate": 0.114,
-      "low": 0.09576134825357561,
-      "high": 0.1351930174551179
+      "rate": 0.74,
+      "low": 0.7119312432576527,
+      "high": 0.76623184542088
     },
     "foundAtAnyCheck": {
-      "k": 193,
+      "k": 792,
       "n": 1000,
-      "rate": 0.193,
-      "low": 0.16973260811821303,
-      "high": 0.21861710761383082
+      "rate": 0.792,
+      "low": 0.7657493669472101,
+      "high": 0.816015724278338
     },
-    "target": "at least 80%",
+    "target": "at least 75%",
     "sensitivity": [
+      {
+        "effectInSwings": 1,
+        "foundAtWeek26": {
+          "k": 153,
+          "n": 1000,
+          "rate": 0.153,
+          "low": 0.13201885442660544,
+          "high": 0.1766370131923496
+        }
+      },
       {
         "effectInSwings": 1.5,
         "foundAtWeek26": {
@@ -72,16 +68,6 @@
           "rate": 0.437,
           "low": 0.4065556939663417,
           "high": 0.46792649525554353
-        }
-      },
-      {
-        "effectInSwings": 2,
-        "foundAtWeek26": {
-          "k": 771,
-          "n": 1000,
-          "rate": 0.771,
-          "low": 0.7439485117358441,
-          "high": 0.7959773092303323
         }
       }
     ]
@@ -93,5 +79,5 @@
     "testsAgree": 5154,
     "earlyTests": 4986
   },
-  "minutes": 0.7
+  "minutes": 0.3
 }

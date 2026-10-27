@@ -13,14 +13,18 @@
 //      anyone who would see a false card at any weekly check. Target: fewer
 //      than 1 in 20.
 //   2. Planted links: 1,000 people with one planted link (a habit and its
-//      Strategy's score without it), the size of their usual swing, with at
-//      least 12 weeks in each group. Target: at least 8 in 10 found.
+//      Strategy's score without it), 2 of their usual swings, with at least
+//      12 weeks in each group. Target: at least 3 in 4 found (Tim, 27 Oct,
+//      "rare but right"; was 8 in 10 at one swing).
 //   3. Early stopping against the full 10,000 shuffles, on a sample of
 //      weekly checks: how often the decisions agree.
 //
 // Options: --people 5000 --planted 1000 --alpha 0.05 --workers N --agree 1000 --seed 1
-// Uses worker threads. Prints the results and writes them to
-// tests/patterns/sim-results.json.
+//          --effect 2 (the planted link in usual swings) --effects 1,1.5 (for information)
+//          --kept-share 0.25,0.75 (option 3: check a habit only when kept in that
+//          share of its eligible weeks) --no-tighten (keep the threshold given)
+//          --out tests/patterns/sim-results.json
+// Uses worker threads. Prints the results and writes them to the --out file.
 
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import os from 'node:os';
@@ -170,7 +174,7 @@ export function makePerson(seed, { planted = false, effect = 1 } = {}) {
 }
 
 // One person through every weekly check, with the 4-week rule on.
-function runPerson(seed, { planted, alpha, effect = 1, earlyStop = true }) {
+function runPerson(seed, { planted, alpha, effect = 1, earlyStop = true, keptShare = null }) {
   const { person, plantedKey } = makePerson(seed, { planted, effect });
   const rng = m14Rng(seed * 7919 + 13);
   let state = { cards: [] };
@@ -182,7 +186,7 @@ function runPerson(seed, { planted, alpha, effect = 1, earlyStop = true }) {
   for (let week = FIRST_CHECK; week <= WEEKS; week += 1) {
     const sofar = { weeks: person.weeks.slice(0, week), days: person.days.slice(0, week * 7), questions: [] };
     const fullFor = new Set(state.cards.map((c) => c.key));
-    const results = m14Check(sofar, { rng, alpha, earlyStop, fullFor });
+    const results = m14Check(sofar, { rng, alpha, earlyStop, fullFor, keptShare });
     state = m14Steady(results, state, week);
     const positive = state.cards.filter((c) => c.positive);
     if (positive.length && !anyCard) { anyCard = true; firstCardWeek = week; }
@@ -193,13 +197,13 @@ function runPerson(seed, { planted, alpha, effect = 1, earlyStop = true }) {
 }
 
 // Early stopping against the full run, on one person's checks.
-function agreement(seed, alpha) {
+function agreement(seed, alpha, keptShare = null) {
   const { person } = makePerson(seed, {});
   const out = { checks: 0, checksAgree: 0, tests: 0, testsAgree: 0, earlyTests: 0 };
   for (const week of [FIRST_CHECK + 4, WEEKS]) {
     const sofar = { weeks: person.weeks.slice(0, week), days: person.days.slice(0, week * 7), questions: [] };
-    const a = m14Check(sofar, { rng: m14Rng(seed * 31 + week), alpha, earlyStop: true });
-    const b = m14Check(sofar, { rng: m14Rng(seed * 37 + week), alpha, earlyStop: false });
+    const a = m14Check(sofar, { rng: m14Rng(seed * 31 + week), alpha, earlyStop: true, keptShare });
+    const b = m14Check(sofar, { rng: m14Rng(seed * 37 + week), alpha, earlyStop: false, keptShare });
     out.checks += 1;
     const pa = a.filter((r) => r.passes).map((r) => r.key).sort().join();
     const pb = b.filter((r) => r.passes).map((r) => r.key).sort().join();
@@ -214,11 +218,11 @@ function agreement(seed, alpha) {
 }
 
 if (!isMainThread) {
-  const { kind, from, to, alpha, seed, effect } = workerData;
+  const { kind, from, to, alpha, seed, effect, keptShare } = workerData;
   const results = [];
   for (let i = from; i < to; i += 1) {
     const s = seed * 1000003 + i + (kind === 'planted' ? 500000 : kind === 'agree' ? 900000 : 0);
-    results.push(kind === 'agree' ? agreement(s, alpha) : runPerson(s, { planted: kind === 'planted', alpha, effect }));
+    results.push(kind === 'agree' ? agreement(s, alpha, keptShare) : runPerson(s, { planted: kind === 'planted', alpha, effect, keptShare }));
   }
   parentPort.postMessage(results);
 }
@@ -229,7 +233,7 @@ const arg = (name, def) => {
   return i >= 0 ? Number(process.argv[i + 1]) : def;
 };
 
-function runAll(kind, count, alpha, workers, seed, effect = 1) {
+function runAll(kind, count, alpha, workers, seed, effect = 1, keptShare = null) {
   const per = Math.ceil(count / workers);
   const jobs = [];
   for (let w = 0; w < workers; w += 1) {
@@ -237,7 +241,7 @@ function runAll(kind, count, alpha, workers, seed, effect = 1) {
     const to = Math.min(count, from + per);
     if (from >= to) continue;
     jobs.push(new Promise((resolve, reject) => {
-      const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { kind, from, to, alpha, seed, effect } });
+      const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { kind, from, to, alpha, seed, effect, keptShare } });
       worker.on('message', resolve);
       worker.on('error', reject);
     }));
@@ -262,41 +266,52 @@ async function main() {
   const agreeN = arg('agree', 1000);
   const seed = arg('seed', 1);
   let alpha = arg('alpha', M14.alpha);
+  const effect = arg('effect', 2);
+  const listArg = (name, def) => {
+    const i = process.argv.indexOf(`--${name}`);
+    return (i >= 0 ? process.argv[i + 1] : def).split(',').map(Number).filter(Number.isFinite);
+  };
+  const ks = process.argv.includes('--kept-share') ? listArg('kept-share', '') : M14.l3KeptShare;
+  const keptShare = ks && ks.length === 2 ? ks : null;
+  const tighten = !process.argv.includes('--no-tighten');
+  const outArg = process.argv.indexOf('--out');
+  const outFile = outArg >= 0 ? process.argv[outArg + 1] : 'tests/patterns/sim-results.json';
   const started = Date.now();
+  console.log(`Checking ${keptShare ? `a habit only when kept in ${keptShare[0] * 100}% to ${keptShare[1] * 100}% of its eligible weeks` : 'every habit'}.`);
   const tried = [];
 
   // 1. No real links; tighten the corrected chance threshold until it passes.
   let nullRes;
   for (;;) {
-    const res = await runAll('null', people, alpha, workers, seed);
+    const res = await runAll('null', people, alpha, workers, seed, 1, keptShare);
     nullRes = { alpha, any: rate(res.filter((r) => r.anyCard).length, people), coach: rate(res.filter((r) => r.anyCoachCard).length, people) };
     tried.push({ alpha, falseCardRate: nullRes.any.rate, high: nullRes.any.high });
     console.log(`No real links, alpha ${alpha}: ${pct(nullRes.any)} saw a false card at some weekly check; coach-only false cards: ${pct(nullRes.coach)}.`);
     // Safe choice (Claude): the whole 95% interval below 1 in 20, for the
     // person's cards and for coach-only cards alike.
-    if ((nullRes.any.high < 0.05 && nullRes.coach.high < 0.05) || alpha <= 0.001) break;
+    if ((nullRes.any.high < 0.05 && nullRes.coach.high < 0.05) || alpha <= 0.001 || !tighten) break;
     alpha = Number((alpha * (alpha > 0.02 ? 0.8 : 0.6)).toPrecision(2));
     console.log(`Not safely under 1 in 20: tightening the corrected chance threshold to ${alpha}.`);
   }
 
   // 2. Planted links, at the threshold that passed.
-  const pres = await runAll('planted', plantedN, alpha, workers, seed);
+  const pres = await runAll('planted', plantedN, alpha, workers, seed, effect, keptShare);
   const foundEnd = rate(pres.filter((r) => r.foundAtEnd).length, plantedN);
   const foundEver = rate(pres.filter((r) => r.foundEver).length, plantedN);
-  console.log(`Planted links, alpha ${alpha}: found at week 26: ${pct(foundEnd)}; found at any check: ${pct(foundEver)}.`);
+  console.log(`Planted links of ${effect} swings, alpha ${alpha}: found at week 26: ${pct(foundEnd)}; found at any check: ${pct(foundEver)}.`);
 
   // Sensitivity: the same, with bigger planted links (not a target; for Tim).
   const sensitivity = [];
-  for (const effect of String(process.argv.includes('--effects') ? process.argv[process.argv.indexOf('--effects') + 1] : '1.5,2').split(',').map(Number).filter(Boolean)) {
-    const r = await runAll('planted', plantedN, alpha, workers, seed + 17, effect);
+  for (const size of listArg('effects', '1,1.5')) {
+    const r = await runAll('planted', plantedN, alpha, workers, seed + 17, size, keptShare);
     const f = rate(r.filter((x) => x.foundAtEnd).length, plantedN);
-    sensitivity.push({ effectInSwings: effect, foundAtWeek26: f });
-    console.log(`  Planted links of ${effect} swings: found at week 26: ${pct(f)}.`);
+    sensitivity.push({ effectInSwings: size, foundAtWeek26: f });
+    console.log(`  Planted links of ${size} swings: found at week 26: ${pct(f)}.`);
   }
 
   // 3. Early stopping against full runs.
   const people3 = Math.ceil(agreeN / 2);
-  const ares = await runAll('agree', people3, alpha, workers, seed);
+  const ares = agreeN > 0 ? await runAll('agree', people3, alpha, workers, seed, 1, keptShare) : [];
   const sum = (k) => ares.reduce((a, r) => a + r[k], 0);
   const agree = {
     checks: sum('checks'), checksAgree: sum('checksAgree'), tests: sum('tests'), testsAgree: sum('testsAgree'), earlyTests: sum('earlyTests'),
@@ -308,15 +323,16 @@ async function main() {
     methodsSection: 'M14.7',
     people, planted: plantedN, weeks: WEEKS, firstCheck: FIRST_CHECK, seed,
     alpha,
+    keptShare,
     tried,
     noRealLinks: { falseCard: nullRes.any, coachOnlyFalseCard: nullRes.coach, target: 'under 5%' },
-    plantedLinks: { effectInSwings: 1, foundAtWeek26: foundEnd, foundAtAnyCheck: foundEver, target: 'at least 80%', sensitivity },
+    plantedLinks: { effectInSwings: effect, foundAtWeek26: foundEnd, foundAtAnyCheck: foundEver, target: effect === 2 ? 'at least 75%' : 'none (the target is set at 2 swings)', sensitivity },
     earlyStopping: agree,
     minutes: Number(((Date.now() - started) / 60000).toFixed(1)),
   };
-  const file = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../tests/patterns/sim-results.json');
+  const file = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', outFile);
   fs.writeFileSync(file, `${JSON.stringify(out, null, 2)}\n`);
-  console.log(`Written to tests/patterns/sim-results.json (${out.minutes} minutes).`);
+  console.log(`Written to ${outFile} (${out.minutes} minutes).`);
 }
 
 if (isMainThread && process.argv[1] === fileURLToPath(import.meta.url)) {

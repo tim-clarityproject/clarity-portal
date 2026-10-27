@@ -1,0 +1,86 @@
+{
+  "run": "2026-10-27T14:48:39.736Z",
+  "methodsSection": "M14.7",
+  "people": 5000,
+  "planted": 1000,
+  "weeks": 26,
+  "firstCheck": 8,
+  "seed": 1,
+  "alpha": 0.026,
+  "keptShare": [
+    0.33,
+    0.67
+  ],
+  "tried": [
+    {
+      "alpha": 0.026,
+      "falseCardRate": 0.038,
+      "high": 0.043664206258507865
+    }
+  ],
+  "noRealLinks": {
+    "falseCard": {
+      "k": 190,
+      "n": 5000,
+      "rate": 0.038,
+      "low": 0.033045176388616704,
+      "high": 0.043664206258507865
+    },
+    "coachOnlyFalseCard": {
+      "k": 209,
+      "n": 5000,
+      "rate": 0.0418,
+      "low": 0.03659538520665388,
+      "high": 0.04770816269142507
+    },
+    "target": "under 5%"
+  },
+  "plantedLinks": {
+    "effectInSwings": 2,
+    "foundAtWeek26": {
+      "k": 758,
+      "n": 1000,
+      "rate": 0.758,
+      "low": 0.7304991577735996,
+      "high": 0.7835261625558229
+    },
+    "foundAtAnyCheck": {
+      "k": 809,
+      "n": 1000,
+      "rate": 0.809,
+      "low": 0.7834715055777532,
+      "high": 0.8321634710958576
+    },
+    "target": "at least 75%",
+    "sensitivity": [
+      {
+        "effectInSwings": 1,
+        "foundAtWeek26": {
+          "k": 161,
+          "n": 1000,
+          "rate": 0.161,
+          "low": 0.13952416184016234,
+          "high": 0.1850704754014105
+        }
+      },
+      {
+        "effectInSwings": 1.5,
+        "foundAtWeek26": {
+          "k": 458,
+          "n": 1000,
+          "rate": 0.458,
+          "low": 0.42733866245855345,
+          "high": 0.48898279702270353
+        }
+      }
+    ]
+  },
+  "earlyStopping": {
+    "checks": 0,
+    "checksAgree": 0,
+    "tests": 0,
+    "testsAgree": 0,
+    "earlyTests": 0
+  },
+  "minutes": 0.3
+}

@@ -43,6 +43,10 @@ export const M14 = Object.freeze({
   stayWeeks: 4,
   clearlyFails: 0.2,
   maxCards: 4,
+  // Option (3) of the simulation report (M22): check a habit (L3) only when it
+  // was kept in between these shares of its eligible weeks. null checks every
+  // habit. Tried on 27 Oct 2026; see M22 for the result.
+  l3KeptShare: null,
 });
 
 const GOOD_STRESS = new Set(['not_at_all', 'a_little']);
@@ -239,7 +243,7 @@ function weeklyUnits(points) {
  * it, and L1 and L2 use a day score worked out without any sleep habit.
  * @returns {{ id: string, key: string, kind: string, units: object[], resultIsScore: boolean, sameWeek: boolean }[]}
  */
-export function m14Links(person) {
+export function m14Links(person, { keptShare = M14.l3KeptShare } = {}) {
   const weeks = lastWeeks(person.weeks || []).map((w, t) => ({ ...w, t })).filter((w) => w.eligible);
   const links = [];
 
@@ -261,6 +265,11 @@ export function m14Links(person) {
   const habitIds = new Set(weeks.flatMap((w) => Object.keys(w.habits || {})));
   for (const hid of habitIds) {
     const sid = weeks.map((w) => w.habits?.[hid]?.strategyId).find(Boolean);
+    if (keptShare) {
+      const known = weeks.map((w) => w.habits?.[hid]?.kept).filter((k) => k === true || k === false);
+      const share = known.length ? known.filter(Boolean).length / known.length : 0;
+      if (share < keptShare[0] || share > keptShare[1]) continue;
+    }
     links.push({
       id: 'L3', key: `L3:${hid}`, subject: hid, kind: 'weekly', resultIsScore: true, sameWeek: false,
       units: weeklyUnits(weeks.map((w) => ({ t: w.t, cause: w.habits?.[hid]?.kept ?? null, result: w.strategies?.[sid]?.without?.[hid] ?? null }))),
@@ -348,14 +357,16 @@ export function m14QuestionAllowed(q, weeks) {
 /**
  * M14.5: every link checked, corrected together, and judged.
  * @param {object} person see the top of this file
- * @param {{ rng: () => number, alpha?: number, earlyStop?: boolean, fullFor?: Set<string> }} opts
+ * @param {{ rng: () => number, alpha?: number, earlyStop?: boolean, fullFor?: Set<string>, keptShare?: number[]|null }} opts
  *   fullFor: links that get the full 10,000 shuffles (cards already shown)
+ *   keptShare: overrides M14.l3KeptShare (for the simulation)
  * @returns {object[]} each evaluated link with q, passes, strength, positive
  */
 export function m14Check(person, opts) {
   const alpha = opts.alpha ?? M14.alpha;
   const evaluated = [];
-  for (const link of m14Links(person)) {
+  const linkOpts = 'keptShare' in opts ? { keptShare: opts.keptShare } : {};
+  for (const link of m14Links(person, linkOpts)) {
     const full = !opts.earlyStop || (opts.fullFor && opts.fullFor.has(link.key));
     const e = m14Evaluate(link, { rng: opts.rng, stopAbove: full ? null : alpha });
     if (e) evaluated.push({ ...e, key: link.key, subject: link.subject ?? null });

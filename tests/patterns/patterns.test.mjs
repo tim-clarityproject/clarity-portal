@@ -211,3 +211,20 @@ test('The settings are the methods document\'s (alpha as set by the simulation, 
   assert.equal(M14.shuffles, 10000);
   assert.ok(M14.alpha <= 0.05);
 });
+
+test('Rare but right (Tim, 27 Oct): the threshold stays at 2.6%, and every habit is checked (option 3 not adopted, M22)', () => {
+  assert.equal(M14.alpha, 0.026);
+  assert.equal(M14.l3KeptShare, null);
+});
+
+test('Option 3, when switched on, leaves out a habit kept in under a quarter or over three quarters of its weeks', () => {
+  const weeks = Array.from({ length: 20 }, (_, t) => ({
+    eligible: true,
+    score: 70,
+    habits: { often: { strategyId: 's', kept: t < 18 }, half: { strategyId: 's', kept: t % 2 === 0 } },
+    strategies: { s: { score: 70, without: { often: 70, half: 70 }, atStandard: false } },
+  }));
+  const l3 = (opts) => m14Links({ weeks, days: [] }, opts).filter((l) => l.id === 'L3').map((l) => l.key).sort();
+  assert.deepEqual(l3(), ['L3:half', 'L3:often'], 'off: every habit');
+  assert.deepEqual(l3({ keptShare: [0.25, 0.75] }), ['L3:half'], 'kept in 18 of 20 weeks is left out');
+});

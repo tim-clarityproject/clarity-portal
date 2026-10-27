@@ -610,6 +610,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 (repo) | 27 Oct 2026 | M14: the rerun for Tim's "rare but right" answer, with the planted link at 2 swings, and option (3) tried and not adopted (see "The rerun, 27 Oct 2026" below). The threshold stays at 2.6%. No other arithmetic changed. |
 | 1.2 | 27 Oct 2026 | Tim's decisions: organisation seats have a fixed 85% standard (M7; 26 Oct, 23:49); pattern cards are rare but right, the planted-link target set at 2 swings (M14.7); pulse results show only once the pulse closes, with 3 or more answers, and the stress measure shows as Calm (M18); wellbeing shared per organisation (M19.4); the Health Check gets four dot states, Embryonic as a ring and 2.5 in the attention score, and definitions under every choice (M20.1); Purpose / Meaning kept (M20.2). |
 | 1.1 (repo) | 27 Oct 2026 | M14: the corrected chance threshold tightened from 5% to 2.6% by the go-live simulation; the planted-link target was not met, and the choice is Tim's (see "The pattern simulation" below). |
 | 1.1 (repo) | 27 Oct 2026 | M20 completed from the code in Phase 1 (Health Check: strategic importance, attention score, tie-break, chart areas, the PDF's average; Life balance review: areas, 0 to 10 ratings and every figure worked out). No arithmetic changed. |
@@ -626,6 +627,24 @@ Run by `npm run sim:patterns` (`scripts/sim-patterns.mjs`) on the engine itself 
 - **Why:** with 12 weeks in each group, a gap of one usual swing is about as big as chance alone often gives. On its own, a planted link typically has a chance of 1 to 10 in 100. Correcting for the 8 to 13 links checked together each week, then needing both halves to agree and the gap to be at least half the swing, filters most of them out. Keeping false cards under 1 in 20 and finding 8 in 10 one-swing links within 26 weeks can't both be met with this method and this much data.
 - **Early stopping:** a test may stop shuffling once its chance is clearly above the threshold (a test that far from passing can't change any decision). Against full 10,000-shuffle runs: 999 of 1,000 weekly checks gave the same cards, and 5,154 of 5,163 tests the same decision (4,986 of them had stopped early).
 - **For Tim to decide** (nothing else was changed): (1) accept that cards are rare and appear for links of about 2 swings or more, which fits "never feel misled"; (2) need more data before a card can show, for example a year rather than 26 weeks; (3) check fewer links together, for example only habits kept in between a quarter and three quarters of weeks, since the others rarely have 6 weeks in each group; or (4) set the planted target at 2 swings. Claude Code can rerun the simulation for any of these in under a minute.
+
+### The rerun, 27 Oct 2026 (Tim's answer: rare but right)
+
+Run by `npm run sim:patterns -- --seed N --no-tighten` at the 2.6% threshold, with the planted link at 2 usual swings (the new target, M14.7) and 1 and 1.5 swings for information. Every person was checked every week from week 8 to week 26, with the 4-week rule on. Figures are at week 26, with the 95% interval. Files: `tests/patterns/sim-results.json` and `sim-results-seed2.json` (every habit checked), `sim-results-option3.json` and `sim-results-option3-seed2.json` (option 3), `sim-results-option3-narrow-seed1.json` and `-seed2.json` (a narrower band, for information).
+
+| How links are checked | Set of people | False cards, the person's | False cards, coach-only | Found: 2 swings | 1.5 swings | 1 swing |
+|---|---|---|---|---|---|---|
+| Every habit (as now) | First | 3.8% (3.3% to 4.4%) | 4.1% (3.6% to 4.7%) | 74.0% (71.2% to 76.6%) | 43.7% | 15.3% |
+| Every habit (as now) | Fresh | 3.5% (3.0% to 4.0%) | 3.5% (3.0% to 4.1%) | 76.5% (73.8% to 79.0%) | 43.9% | 13.3% |
+| Option 3: habits kept in 25% to 75% of eligible weeks | First | 3.8% (3.3% to 4.4%) | 4.1% (3.6% to 4.7%) | 74.2% (71.4% to 76.8%) | 43.9% | 15.4% |
+| Option 3: habits kept in 25% to 75% of eligible weeks | Fresh | 3.5% (3.0% to 4.0%) | 3.5% (3.0% to 4.1%) | 76.5% (73.8% to 79.0%) | 44.1% | 13.3% |
+| For information: 33% to 67% | First | 3.8% (3.3% to 4.4%) | 4.2% (3.7% to 4.8%) | 75.8% (73.0% to 78.4%) | 45.8% | 16.1% |
+| For information: 33% to 67% | Fresh | 3.6% (3.1% to 4.2%) | 3.5% (3.0% to 4.1%) | 78.2% (75.5% to 80.6%) | 46.0% | 13.9% |
+
+- **False cards stay under 1 in 20** for the whole 95% interval, for the person's cards and coach-only cards alike, in every row.
+- **The 2-swing target (3 in 4) is met on the fresh set and only just missed on the first:** 74.0%, with an interval from 71.2% to 76.6%. Across both sets, 1,505 of 2,000 (75.3%) were found. A link of 2 swings is right at the edge of what half a year of data can show.
+- **Option 3 is not adopted (Claude, by Tim's rule: adopt it only if the 2-swing rate rises).** It changed almost nothing (74.0% to 74.2%, and 76.5% to 76.5%), because the engine already leaves out any habit without 6 weeks in each group, which over 26 weeks is about 27% to 73% kept. The narrower band adds about 2 points, but the simulation flatters it: every planted habit is kept about half the time, so a real link on a habit kept in 30% or 70% of weeks would never be checked. The setting stays in the code, switched off (`M14.l3KeptShare`), so it can be rerun.
+- The figures for 1 swing differ from the first run (11.4% then, 15.3% now) only because the information rows now use a different set of invented people (seed + 17); the method is unchanged.
 
 ### Claude's calls in version 1.0 (for Tim to change if he wants)
 1. Comparisons with the standard use the rounded figure people see (M0.1).
