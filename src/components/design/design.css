@@ -2857,8 +2857,8 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  min-height: var(--space-px20) !important;
-  padding: var(--space-px10) 0 !important;
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
   margin-top: var(--space-1);
   font-family: var(--font-body);
   font-size: var(--fs-note) !important;
@@ -3032,7 +3032,9 @@
 .ui-root .ds-guide-summary-change {
   all: unset;
   cursor: pointer;
-  min-height: var(--space-5) !important;
+  display: inline-flex;
+  align-items: flex-start;
+  min-height: var(--tap-min) !important;
   padding: 0 !important;
   font-family: var(--font-body);
   font-size: var(--fs-note) !important;
@@ -3148,7 +3150,8 @@
     height: var(--space-px18);
   }
 
-  .ui-root .ds-guide-back span {
+  /* The words go; the chevron (a span too) stays. */
+  .ui-root .ds-guide-back span:not(.ds-chevron) {
     display: none;
   }
 
@@ -4681,6 +4684,331 @@
   .ui-root .ds-stile,
   .ui-root .ds-stile-name,
   .ui-root .ds-onum--tip {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Build your plan (M6): the objective and habit editors, the set-up
+   sprint dial, and the sprint's length, start and standard.
+   --------------------------------------------------------------- */
+
+/* A figure box as tall and wide as a text box. */
+.ui-root .ds-num.ds-num--box {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--box-min-h);
+  padding: 0 var(--box-pad-x);
+  border-radius: var(--radius-field);
+}
+
+.ui-root .ds-num.ds-num--box input.ds-num-input {
+  width: 100%;
+}
+
+/* One Outcome Objective or habit being written (M6 .card, .hcard). */
+.ui-root .ds-objed,
+.ui-root .ds-habed {
+  box-sizing: border-box;
+  margin-top: var(--space-px14);
+  padding: var(--space-px20);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-objed:first-child,
+.ui-root .ds-habed:first-child {
+  margin-top: 0;
+}
+
+.ui-root .ds-objed > .ds-choice,
+.ui-root .ds-habed > .ds-choice,
+.ui-root .ds-habed > .ds-textbox-field {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .ds-objed-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tap-min);
+  gap: var(--space-px6);
+  align-items: center;
+}
+
+.ui-root .ds-objed-lines {
+  margin-top: var(--space-2);
+}
+
+.ui-root .ds-objed-lines .ds-hint {
+  margin: 0;
+}
+
+.ui-root .ds-objed-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-px12);
+  align-items: end;
+  margin-top: var(--space-px22);
+}
+
+.ui-root .ds-objed-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ui-root .ds-objed-field {
+  min-width: 0;
+}
+
+.ui-root .ds-objed-field .ds-choice {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-objed-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ui-root .ds-objed-grid--two,
+  .ui-root .ds-objed-date {
+    grid-column: 1 / -1;
+  }
+
+  .ui-root .ds-objed-grid--two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ui-root .ds-habed-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px14) var(--space-px18);
+  align-items: flex-start;
+  margin-top: var(--space-px22);
+}
+
+.ui-root .ds-habed-target {
+  min-width: 0;
+}
+
+.ui-root .ds-habed-target-box,
+.ui-root .ds-sprintset-figure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-px10);
+}
+
+.ui-root .ds-habed-target-box .ds-num--box,
+.ui-root .ds-sprintset-figure .ds-num--box {
+  width: var(--figure-box-w);
+  flex: none;
+}
+
+.ui-root .ds-habed-suffix,
+.ui-root .ds-sprintset-figure > span {
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+.ui-root .ds-habed-impact {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ui-root .ds-habed-impact .ds-choice {
+  margin: 0;
+}
+
+/* The set-up sprint dial: faint weeks, the crosshair at the top, the
+   length in the middle. */
+.ui-root .ds-sdial {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+.ui-root .ds-sdial-ring {
+  position: relative;
+  width: var(--sprint-dial);
+}
+
+.ui-root .ds-sdial-ring svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ui-root .ds-sdial-seg--next {
+  fill: var(--to-come);
+}
+
+/* The ring's top: the middle of the 16-wide ring, 44 of the drawing's
+   360 units down (SprintDial.jsx). */
+.ui-root .ds-sdial-cross {
+  position: absolute;
+  left: 50%;
+  top: calc(100% * 44 / 360);
+  display: flex;
+  transform: translate(-50%, -50%);
+}
+
+.ui-root .ds-sdial-cross .ds-cross {
+  width: var(--sprint-dial-cross);
+  height: var(--sprint-dial-cross);
+}
+
+.ui-root .ds-sdial-centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  pointer-events: none;
+}
+
+.ui-root .ds-sdial-small {
+  font-size: var(--fs-dial-small);
+  color: var(--label);
+}
+
+.ui-root .ds-sdial-big {
+  font-family: var(--font-display);
+  font-size: var(--fs-dial-big);
+  line-height: 1;
+  color: var(--text);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-sdial-ring {
+    width: var(--sprint-dial-phone);
+  }
+}
+
+/* The sprint's length, start and standard. */
+.ui-root .ds-lens {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+  max-width: var(--mission-panel-w);
+}
+
+.ui-root .ds-lens-tile {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: var(--lens-min-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-px2);
+  padding: var(--space-2) var(--space-1);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  color: var(--text-2);
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-lens-big {
+  font-family: var(--font-display);
+  font-size: var(--fs-lens);
+  line-height: 1.1;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-lens-big--word {
+  font-family: var(--font-body);
+  font-size: var(--fs-option);
+}
+
+.ui-root .ds-lens-tile small {
+  font-family: var(--font-body);
+  font-size: var(--fs-min);
+  color: var(--label);
+}
+
+.ui-root .ds-lens-tile[aria-checked='true'] {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.ui-root .ds-lens-tile:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-lens-tile:hover {
+    color: var(--text);
+    border-color: var(--quiet-line);
+  }
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-lens {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.ui-root .ds-toggle-tile {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: var(--mission-panel-w);
+  margin-top: var(--space-px12);
+  padding: var(--space-3) var(--space-px18);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  font-family: var(--font-body);
+  letter-spacing: normal;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-toggle-tile-title {
+  display: block;
+  font-size: var(--fs-option);
+  color: var(--text);
+}
+
+.ui-root .ds-toggle-tile small {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ds-toggle-tile[aria-pressed='true'] {
+  outline: var(--line-w) solid var(--text);
+}
+
+.ui-root .ds-toggle-tile:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+.ui-root .ds-rows-tail {
+  max-width: var(--row-max-w);
+  margin-top: var(--space-2);
+}
+
+.ui-root .ds-sprintset-other {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .ds-sprintset-fixed {
+  margin: 0;
+  font-size: var(--fs-text);
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-lens-tile {
     transition: none;
   }
 }

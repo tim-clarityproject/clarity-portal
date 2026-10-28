@@ -6,3 +6,4 @@ export * from './alignment';
 export * from './words';
 export * from './rows';
 export * from './view';
+export * from './builder';

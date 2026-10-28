@@ -118,6 +118,45 @@ export async function loadSprintWeekRows(userId, sprint) {
   return { sprintHabits, sprintSettings: settings, logs, todos, todoMoves, wins, winLinks };
 }
 
+/**
+ * Everything Build your plan and editing the plan need, as rows: the active
+ * plan (or none yet), its live objectives, Strategies, links and habits,
+ * the last version's snapshot (what a change is compared with), the
+ * working days, the role (for the examples), the coach and the sharing
+ * switches (for the eyes) and an organisation seat's fixed standard.
+ */
+export async function loadPlanEditor(userId) {
+  const [plan, personSettings, workingPatterns, switches, coach, fixedStandard] = await Promise.all([
+    loadActivePlan(userId),
+    one(supabase.from('person_settings').select('time_zone, describes_you').eq('user_id', userId).limit(1)),
+    rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
+    rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId)),
+    loadMyCoach().catch(() => null),
+    loadFixedStandard().catch(() => null),
+  ]);
+  const base = { personSettings, workingPatterns, switches, coach, fixedStandard };
+  if (!plan) return { plan: null, objectives: [], strategies: [], links: [], habits: [], latestVersion: null, ...base };
+  const [objectives, strategies, links, habits, latestVersion] = await Promise.all([
+    rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS)
+      .eq('plan_id', plan.id).is('archived_at', null).order('sort_order')),
+    rows(supabase.from('plan_strategies').select(STRATEGY_COLS)
+      .eq('plan_id', plan.id).is('archived_at', null).order('sort_order')),
+    rows(supabase.from('strategy_objectives').select('strategy_id, objective_id').eq('user_id', userId)),
+    rows(supabase.from('habits').select(HABIT_COLS)
+      .eq('plan_id', plan.id).is('archived_at', null).order('sort_order')),
+    one(supabase.from('plan_versions').select('major, minor, kind, snapshot, created_at')
+      .eq('plan_id', plan.id).order('major', { ascending: false }).order('minor', { ascending: false }).limit(1)),
+  ]);
+  return { plan, objectives, strategies, links, habits, latestVersion, ...base };
+}
+
+/** An organisation seat's fixed standard (85), or null to choose one. Online only. */
+export async function loadFixedStandard() {
+  const { data, error } = await supabase.rpc('my_fixed_standard');
+  if (error) throw error;
+  return data ?? null;
+}
+
 /** Every version of the active plan, newest first. */
 export async function loadPlanVersions(userId) {
   const plan = await loadActivePlan(userId);
@@ -209,6 +248,29 @@ export function archivePlanRow(userId, table, id) {
     kind: 'update',
     match: { id, user_id: userId },
     values: { archived_at: new Date().toISOString() },
+  });
+}
+
+/** Delete a row of the plan that no version holds (it was added and removed while building). */
+export function deletePlanRow(userId, table, id) {
+  if (!['outcome_objectives', 'plan_strategies', 'habits'].includes(table)) throw new Error(`Not a plan table: ${table}`);
+  return saveOrQueue(userId, {
+    table,
+    kind: 'delete',
+    match: { id, user_id: userId },
+  });
+}
+
+/**
+ * The working days (methods M0.3), from a day on: a change saved on a
+ * week's first day applies to that week. One row per day it changed.
+ */
+export function saveWorkingDays(userId, startsOn, days) {
+  return saveOrQueue(userId, {
+    table: 'working_patterns',
+    kind: 'upsert',
+    onConflict: 'user_id,starts_on',
+    values: { user_id: userId, starts_on: startsOn, days },
   });
 }
 

@@ -57,6 +57,7 @@ import './design.css';
 // autoFocus: framed only, move focus to the question when it appears
 //           (e.g. when a finished tool starts again in place).
 // progress: 'steps' or 'percent'.
+// initialStep: the key of the step to open on (instead of where it was left).
 
 const NEXT_GUARD_MS = 400;     // a second tap this soon after a move is ignored
 const TIP_PREFIX = 'ds-tip-seen:';
@@ -182,11 +183,17 @@ export default function GuidedTool({
   onClose,
   onFinish,
   autoFocus = false,
+  initialStep,
 }) {
   const scope = useThemeScope();
   const fullscreen = layout === 'fullscreen';
   const saved = draftKey ? readJson(STEP_PREFIX + draftKey, null) : null;
-  const [index, setIndex] = useState(() => Math.min(saved?.index ?? 0, steps.length - 1));
+  // initialStep (a step's key) opens the tool on that step, e.g. "Edit
+  // this Strategy"; otherwise it carries on where it was left.
+  const [index, setIndex] = useState(() => {
+    const asked = initialStep ? steps.findIndex((s) => s.key === initialStep) : -1;
+    return asked >= 0 ? asked : Math.min(saved?.index ?? 0, steps.length - 1);
+  });
   const [skipped, setSkipped] = useState(() => new Set(saved?.skipped || []));
   const [direction, setDirection] = useState('none');
   const rootRef = useRef(null);

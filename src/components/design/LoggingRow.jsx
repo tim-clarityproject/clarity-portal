@@ -8,9 +8,11 @@ import './design.css';
 // to store it.
 // maxDigits keeps entries to a sensible size; grouping commas typed or
 // pasted in whole numbers ("12,000") are accepted and dropped.
-export function NumberField({ value, onChange, unit, label, decimals = false, maxDigits = 7, ...rest }) {
+// size 'box': as tall and wide as a text box, for a form's figure boxes
+// ("Where are you now?" in Build your plan).
+export function NumberField({ value, onChange, unit, label, decimals = false, maxDigits = 7, size, ...rest }) {
   return (
-    <label className="ds-num">
+    <label className={`ds-num${size === 'box' ? ' ds-num--box' : ''}`}>
       <input
         className="ds-num-input"
         type="text"

@@ -4,6 +4,8 @@
 //
 //   node scripts/seed-test-plan.mjs           adds the plan if there is none
 //   node scripts/seed-test-plan.mjs --reset   removes the client's plan first
+//   node scripts/seed-test-plan.mjs --empty   removes it and adds nothing, so
+//                                             Build your plan starts from empty
 //
 // Signed in as the test client (~/.clarity-test-accounts.env, never
 // printed), it writes only what the app itself writes, through the same
@@ -48,9 +50,10 @@ const day = (key, n) => {
 };
 const weekday = (key) => (new Date(`${key}T12:00:00Z`).getUTCDay() + 6) % 7; // Monday 0
 
+const empty = process.argv.includes('--empty');
 const { data: existing } = await db.from('performance_plans').select('id').eq('user_id', me).eq('status', 'active');
-if (existing?.length) {
-  if (!process.argv.includes('--reset')) {
+if (existing?.length || empty) {
+  if (!process.argv.includes('--reset') && !empty) {
     console.log('The test client already has a plan. Run with --reset to replace it.');
     process.exit(0);
   }
@@ -61,7 +64,12 @@ if (existing?.length) {
   await db.from('sprints').delete().eq('user_id', me);
   const { error } = await db.from('performance_plans').delete().eq('user_id', me);
   if (error) throw error;
+  await db.from('working_patterns').delete().eq('user_id', me);
   console.log('Removed the old plan.');
+}
+if (empty) {
+  console.log('The test client now has no plan.');
+  process.exit(0);
 }
 
 await db.from('person_settings').upsert({ user_id: me, time_zone: 'Europe/London', units: 'metric' }, { onConflict: 'user_id' });

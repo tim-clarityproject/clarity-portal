@@ -47,3 +47,15 @@ export function HubCard({ name, description, onClick, ...rest }) {
 export function TileGrid({ children, className = '' }) {
   return <div className={`ds-tiles ${className}`.trim()}>{children}</div>;
 }
+
+// A tile that turns on and off (M6 .tmpl, "Just started a new role?"):
+// a title, a grey line under it, and an outline in the text colour while
+// it is on. One tap turns it on, another off.
+export function ToggleTile({ pressed, onClick, title, line, className = '' }) {
+  return (
+    <button type="button" className={`ds-toggle-tile ${className}`.trim()} aria-pressed={pressed} onClick={onClick}>
+      <span className="ds-toggle-tile-title">{title}</span>
+      {line && <small>{line}</small>}
+    </button>
+  );
+}

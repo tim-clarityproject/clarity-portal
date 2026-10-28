@@ -8,7 +8,8 @@ import './design.css';
 // chosen option. Not tick boxes: those are only for lists.
 //
 // hint: a short line under the question ("Pick all that apply.").
-export default function MultiChoice({ label, hint, options, values, onChange, who, coachName }) {
+// ariaLabel: names the group when the screen's question is its label.
+export default function MultiChoice({ label, ariaLabel, hint, options, values, onChange, who, coachName }) {
   const labelId = useId();
   const hintId = useId();
   const toggle = (value) => onChange(values.includes(value) ? values.filter((v) => v !== value) : [...values, value]);
@@ -16,7 +17,7 @@ export default function MultiChoice({ label, hint, options, values, onChange, wh
     <div className="ds-choice">
       <FieldLabel label={label} id={labelId} who={who} coachName={coachName} />
       {hint && <p id={hintId} className="ds-hint ds-hint--above">{hint}</p>}
-      <div className="ds-rows" role="group" aria-labelledby={labelId} aria-describedby={hint ? hintId : undefined}>
+      <div className="ds-rows" role="group" aria-labelledby={label ? labelId : undefined} aria-label={label ? undefined : ariaLabel} aria-describedby={hint ? hintId : undefined}>
         {options.map((option) => (
           <button
             key={option.value}

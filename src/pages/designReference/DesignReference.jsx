@@ -1,6 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   AlignmentCheck,
+  HabitEditor,
+  ObjectiveEditor,
+  SprintDial,
+  nextMondayKey,
+  SprintLengthChoice,
+  SprintStartChoice,
+  StandardChoice,
   MissionPanel,
   ObjectiveCard,
   ObjectiveGrid,
@@ -73,6 +80,7 @@ import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView 
 import SprintTool from './SprintTool';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
+import { startingSprint, withMeasure } from '../../lib/performance';
 import './designReference.css';
 
 // The design gallery: every shared component from src/components/design,
@@ -307,6 +315,50 @@ function MissionPanelDemo() {
         onOpenPlan={() => setOpen(false)}
       />
       <PerformanceSystem open={system} onClose={() => setSystem(false)} />
+    </div>
+  );
+}
+
+// Build your plan's parts (M6): an objective and a habit being written,
+// and the first sprint's settings with the set-up dial. Invented text;
+// nothing is saved.
+function ObjectiveEditorDemo() {
+  const [list, setList] = useState([
+    { id: 'o1', name: 'Coaching clients', kind: 'number', start: '31', target: '40', date: '2027-12-31' },
+    { id: 'o2', name: 'Confidence leading group workshops', kind: 'rating', start: '6', target: '12', date: '' },
+  ]);
+  const change = (id, patch) => setList((l) => l.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  return (
+    <div className="dr-stack dr-stack--fill">
+      {list.map((o) => <ObjectiveEditor key={o.id} objective={o} onChange={(p) => change(o.id, p)} onRemove={() => {}} />)}
+    </div>
+  );
+}
+
+function HabitEditorDemo() {
+  const [list, setList] = useState([
+    { id: 'h1', strategyId: 's1', name: 'Steps', measure: 'amount', target: '10000', unit: 'steps', per: 'day', direction: 'higher', impact: 2 },
+    { id: 'h2', strategyId: 's1', name: 'Focus', measure: 'rating', target: '5', unit: '', per: 'week', direction: 'lower', impact: 3 },
+  ]);
+  const change = (id, patch) => setList((l) => l.map((h) => (h.id === id ? (patch.measure ? withMeasure({ ...h, ...patch }, patch.measure) : { ...h, ...patch }) : h)));
+  return (
+    <div className="dr-stack dr-stack--fill">
+      {list.map((h) => <HabitEditor key={h.id} habit={h} onChange={(p) => change(h.id, p)} onRemove={() => {}} />)}
+    </div>
+  );
+}
+
+function SprintSetupDemo() {
+  const [sprint, setSprint] = useState(() => startingSprint(nextMondayKey()));
+  const set = (patch) => setSprint((x) => ({ ...x, ...patch }));
+  const weeks = sprint.tpl ? 13 : sprint.other ? Number(sprint.otherLen) || 12 : sprint.len;
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <SprintDial length={weeks} />
+      <SprintLengthChoice sprint={sprint} onChange={set} />
+      <SprintStartChoice sprint={sprint} onChange={set} />
+      <StandardChoice sprint={sprint} onChange={set} />
+      <StandardChoice sprint={sprint} onChange={set} fixed={85} />
     </div>
   );
 }
@@ -1309,6 +1361,33 @@ function Gallery() {
             <p>It drops below the header on a laptop and rises from the bottom on a phone.</p>
             <p><New /><b>The Individual Performance System</b> pop-up uses the one-pager’s words, one sentence per line.</p>
             <p>The two-way link uses the turned chevron, never a text arrow, and the plan’s box is outlined in the text colour, never coral.</p>
+          </>
+        )} />
+
+        <GallerySection id="c36" title="Writing an Outcome Objective" wide demo={ObjectiveEditorDemo} rules={(
+          <>
+            <p><New /><b>What result, how it is tracked, then the figures and the date</b> (M6).</p>
+            <p>A number, a milestone or a rating out of 10, with two lines under the choice saying what each means.</p>
+            <p>The date comes from the calendar, never typed; a figure out of range says what to type, as a full sentence.</p>
+            <p>The 45° crosshair removes it, with “Deleted” and Undo.</p>
+          </>
+        )} />
+
+        <GallerySection id="c37" title="Writing a habit" wide demo={HabitEditorDemo} rules={(
+          <>
+            <p><New /><b>The seven ways to measure</b> in the branded drop-down, each with its example.</p>
+            <p>The target box has its words after it: “a day”, “a week”, “days a week”, “days at most”, “average”.</p>
+            <p>An amount asks for its unit, and a rating asks whether higher or lower is better, as the methods need.</p>
+            <p>How much impact is Low, Medium or High, Medium to start.</p>
+          </>
+        )} />
+
+        <GallerySection id="c38" title="Setting up a sprint" wide demo={SprintSetupDemo} rules={(
+          <>
+            <p><New /><b>The set-up dial</b>: one faint segment per week, parallel gaps, the crosshair at the top marking the start and the end.</p>
+            <p>Length as tiles, 12 suggested, Other for 2 to 16, and “Just started a new role?” which turns on and off.</p>
+            <p>Today, next Monday (suggested) or another day from the calendar.</p>
+            <p>The standard: 75, 80, 85 or 90%, or Other from 50 to 100; an organisation seat’s is 85% and can’t change.</p>
           </>
         )} />
 

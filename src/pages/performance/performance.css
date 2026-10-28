@@ -114,3 +114,113 @@
 .ui-root .ipp-coming p + p {
   margin-top: var(--space-1);
 }
+
+/* Build your plan and editing it (M6): the page behind the full-screen
+   tool, and the spacing of the tool's own rows. */
+.ui-root.plan-builder-wait {
+  min-height: 100dvh;
+  padding: var(--space-5) var(--space-3);
+  background: var(--bg);
+}
+
+.ui-root .plan-add {
+  margin-top: var(--space-3);
+}
+
+.ui-root .plan-muted {
+  margin: 0;
+  font-size: var(--fs-nudge);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .plan-help-link {
+  margin-top: var(--space-px14);
+}
+
+.ui-root .plan-help-card {
+  margin-top: var(--space-2);
+  padding: var(--space-px20);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+.ui-root .plan-help-card .ds-textbox-field + .ds-textbox-field {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .plan-help-act {
+  margin-top: var(--space-3);
+}
+
+.ui-root .plan-strategy-help {
+  margin-bottom: var(--space-px22);
+}
+
+.ui-root .plan-strategy-help .ds-help-panel {
+  margin-top: 0;
+}
+
+/* Strategy rows (M6 .srow): the number, the name, the remove crosshair. */
+.ui-root .plan-srow {
+  display: grid;
+  grid-template-columns: var(--space-4) minmax(0, 1fr) var(--tap-min);
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) 0;
+}
+
+.ui-root .plan-srow-n {
+  font-family: var(--font-display);
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .plan-picks {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  margin-top: var(--space-px22);
+}
+
+.ui-root .plan-picks .ds-label-row {
+  justify-self: stretch;
+}
+
+.ui-root .plan-picks .ds-label-row {
+  margin-bottom: var(--space-px2);
+}
+
+.ui-root .plan-picks .ds-add {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.ui-root .plan-habits {
+  margin-top: var(--space-3);
+}
+
+.ui-root .plan-days .ds-rows {
+  max-width: var(--row-max-w);
+}
+
+/* Ready: an objective or Strategy per line, its detail small under it. */
+.ui-root .plan-sum-list {
+  display: grid;
+  gap: var(--space-px10);
+}
+
+.ui-root .plan-sum-item {
+  display: grid;
+  gap: var(--space-px2);
+}
+
+.ui-root .plan-sum-item small,
+.ui-root .plan-sum-note {
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .plan-ready-align {
+  margin-top: var(--space-4);
+}

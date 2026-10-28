@@ -202,7 +202,9 @@ export function CalendarPopover({ open, onClose, anchorRef, title, value, onChan
 
 // A date field: the box shows the date as "Mon 26 Oct" (or "Pick a
 // date"), and opens the calendar with the question as its title.
-export default function DatePicker({ label, who, coachName, value, onChange, min, max, placeholder = 'Pick a date' }) {
+// format: how the chosen date reads in the box, e.g. "31 Dec 2027" for an
+// Outcome Objective's date (M6).
+export default function DatePicker({ label, who, coachName, value, onChange, min, max, placeholder = 'Pick a date', format = dayLabel }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
   const labelId = useId();
@@ -219,7 +221,7 @@ export default function DatePicker({ label, who, coachName, value, onChange, min
         aria-labelledby={`${labelId} ${valueId}`}
         onClick={() => setOpen((v) => !v)}
       >
-        <span id={valueId} className="ds-dd-value">{value ? dayLabel(value) : placeholder}</span>
+        <span id={valueId} className="ds-dd-value">{value ? format(value) : placeholder}</span>
         <DisclosureArrow open={open} />
       </button>
       <CalendarPopover

@@ -242,6 +242,14 @@
   --system-popup-w: 620px;   /* The Individual Performance System pop-up */
   --system-num: 24px;        /* the numbered circles in its chain */
   --plan-tile-min: 280px;    /* two Strategy tiles or objective cards side by side */
+  --sprint-dial: 220px;      /* the set-up sprint dial (M6 dial) */
+  --sprint-dial-phone: 190px;
+  --sprint-dial-cross: 16px; /* the crosshair at its top: never under 14px */
+  --fs-dial-small: calc(13 * var(--u));     /* "Weeks" in its centre */
+  --fs-dial-big: calc(34 * var(--u-big));   /* the length in its centre, Nekst */
+  --fs-lens: calc(18 * var(--u-big));       /* a length tile's figure, Nekst (M6 .lens) */
+  --lens-min-h: 72px;
+  --figure-box-w: 120px;     /* a figure box beside its words ("weeks", "%") */
   --fs-tip: calc(13 * var(--u));
   --fs-tip-value: calc(14 * var(--u));      /* the value comes first, and larger (M4: 14px against 13px) */
   --fs-tip-kind: calc(12 * var(--u));       /* "Outcome Objective 2", small, before a name */
@@ -286,7 +294,7 @@
   --radius-example: 12px;
   --cross-tool: 20px;        /* the close crosshair in the top bar */
   --cross-tip: 16px;
-  --tip-close: 40px;
+  --tip-close: 44px;        /* a full tap area (was 40px) */
   --slide-dist: 24px;        /* how far a step slides in */
   --summary-label-w: 190px;  /* the summary's label column */
   --pct-text-w: 38px;
