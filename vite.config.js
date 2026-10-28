@@ -59,9 +59,9 @@ function buildVersion(id) {
 // (health-check.html; vercel.json serves it for /health-check/*). It is built
 // in a second, separate pass once the portal's build has finished, into the
 // same folder, so the two never share a file: the portal's build is exactly
-// what it would be without the Health Check page. The colour mode boot goes
-// into its <head> too, so it is held in dark exactly as inside the portal;
-// it has no gallery and no version file.
+// what it would be without the Health Check page. The page has its own dark
+// and light, following the device (src/health-check/hc.css), so it gets no
+// colour mode boot, gallery or version file.
 function healthCheckPage(buildId) {
   let config
   return {
@@ -77,7 +77,7 @@ function healthCheckPage(buildId) {
         mode: config.mode,
         logLevel: config.logLevel,
         publicDir: false, // the portal's pass has already copied public/
-        plugins: [react(), colourMode()],
+        plugins: [react()],
         define: { __BUILD_ID__: JSON.stringify(buildId) },
         build: {
           outDir: config.build.outDir,

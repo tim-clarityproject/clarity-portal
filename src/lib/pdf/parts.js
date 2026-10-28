@@ -298,16 +298,21 @@ function tableBlock(L, b, parent, title) {
 
   const units = [headUnit(false)];
   rows.forEach((r, ri) => {
+    // A cell is text, or { text, detail }: the detail goes underneath, small and grey.
     const cells = b.columns.map((c, i) => {
       const style = c.align === 'right' ? STYLES.cellNum : STYLES.cell;
-      return { style, lines: blank(r[i]) ? [] : ts.wrap(String(r[i]), style, cellW(i)) };
+      const v = r[i];
+      const main = v && typeof v === 'object' ? v.text : v;
+      const detail = v && typeof v === 'object' && !blank(v.detail) ? ts.wrap(String(v.detail), STYLES.small, cellW(i)) : [];
+      return { style, lines: blank(main) ? [] : ts.wrap(String(main), style, cellW(i)), detail };
     });
-    const n = Math.max(1, ...cells.map((c) => c.lines.length));
+    const cellH = (c) => c.lines.length * c.style.lh + c.detail.length * STYLES.small.lh;
+    const n = Math.max(1, ...cells.map((c) => c.lines.length + c.detail.length));
     units.push({
       kind: 'row',
       table: state,
       row: ri,
-      h: n * STYLES.cell.lh + 12,
+      h: Math.max(STYLES.cell.lh, ...cells.map(cellH)) + 12,
       gap: 0,
       lines: n,
       draw(ctx, x, y, { first }) {
@@ -315,7 +320,10 @@ function tableBlock(L, b, parent, title) {
           ctx.artifact(() => ctx.doc.moveTo(x, y + 0.25).lineTo(x + L.contentW, y + 0.25).lineWidth(0.5).stroke(ctx.t.line));
         }
         const tr = tagNode('TR', table);
-        cells.forEach((c, i) => ctx.mark(tagNode('TD', tr), () => drawCell(ctx, c.lines, c.style, i, x, y + 6, ctx.t.text)));
+        cells.forEach((c, i) => ctx.mark(tagNode('TD', tr), () => {
+          drawCell(ctx, c.lines, c.style, i, x, y + 6, ctx.t.text);
+          if (c.detail.length) drawCell(ctx, c.detail, STYLES.small, i, x, y + 6 + c.lines.length * c.style.lh, ctx.t.detail);
+        }));
       },
     });
   });
@@ -457,6 +465,16 @@ function barsBlock(L, b, parent, maxH) {
  *      yMax, xCentre, yCentre, axisX, axisY, quadrants?: { topLeft, topRight,
  *      bottomLeft, bottomRight }, keyGood, keyOther, listNote, sentence, alt }
  */
+const dotKind = (pt) => (pt.state != null ? pt.state : (pt.good ? 'mi' : ''));
+
+/** One dot's mark, at x, y (page units), radius r. */
+function drawDotMark(doc, kind, x, y, r, t) {
+  if (kind === 'mi') { doc.circle(x, y, r).fill(t.good); return; }
+  if (kind === 'co') doc.circle(x, y, r + 2.5).lineWidth(0.75).stroke(t.text);
+  if (kind === 'pe' || kind === 'co') { doc.circle(x, y, r - 0.6).lineWidth(1.2).fillAndStroke(t.page, t.text); return; }
+  doc.circle(x, y, r - 0.375).lineWidth(0.75).fillAndStroke(t.page, t.detail);
+}
+
 function dotsBlock(L, b, parent, maxH) {
   const { ts } = L;
   const W = L.contentW;
@@ -584,9 +602,10 @@ function dotsBlock(L, b, parent, maxH) {
   const titleH = STYLES.smallMedium.lh + 4;
   const bandH = b.quadrants ? tick.lh + 4 : 0; // the quadrant names, when given
   const belowH = 4 + tick.lh + bandH + 4 + STYLES.smallMedium.lh;
+  // The key: b.key lists each kind of dot ({ state, text }); older documents
+  // give keyGood and keyOther.
   const keyItems = [
-    { good: true, text: b.keyGood },
-    { good: false, text: b.keyOther },
+    ...(b.key || [{ state: 'mi', text: b.keyGood }, { state: '', text: b.keyOther }]),
     ...(b.listNote ? [{ note: true, text: b.listNote }] : []),
   ].map((it) => ({ ...it, w: (it.note ? 0 : 16) + ts.width(it.text, STYLES.small) }));
   const keyLines = [];
@@ -726,15 +745,18 @@ function dotsBlock(L, b, parent, maxH) {
         const axisXY = bandY + bandH;
         ts.draw(b.axisX, X(gm.Lx + gm.plotW / 2 - ts.width(b.axisX, s) / 2), Y(axisXY + ts.baseline(s)), s, t.text);
 
-        // the dots, each with its number
+        // the dots, each with its number. Four kinds (methods M20.1), told
+        // apart by shape as well as colour: 'mi' filled green (moving well),
+        // 'pe' an outline in the text colour (needs managing), 'co' the same
+        // with a second ring (needs attention), '' a fine grey ring.
         pts.forEach((pt) => {
+          const kind = dotKind(pt);
           // the soft halo around each dot, as on the results page
-          doc.circle(X(pt.cx), Y(pt.cy), R + 4).fillOpacity(pt.good ? 0.16 : 0.07).fill(pt.good ? t.good : t.detail);
+          doc.circle(X(pt.cx), Y(pt.cy), R + 4).fillOpacity(kind === 'mi' ? 0.16 : 0.07).fill(kind === 'mi' ? t.good : t.detail);
           doc.fillOpacity(1);
-          if (pt.good) doc.circle(X(pt.cx), Y(pt.cy), R).fill(t.good);
-          else doc.circle(X(pt.cx), Y(pt.cy), R - 0.375).lineWidth(0.75).fillAndStroke(t.page, t.detail);
+          drawDotMark(doc, kind, X(pt.cx), Y(pt.cy), R, t);
           const num = String(pt.n);
-          ts.draw(num, X(pt.cx - ts.width(num, numStyle) / 2), Y(pt.cy + numStyle.size * 0.36), numStyle, pt.good ? t.onGood : t.text);
+          ts.draw(num, X(pt.cx - ts.width(num, numStyle) / 2), Y(pt.cy + numStyle.size * 0.36), numStyle, kind === 'mi' ? t.onGood : t.text);
         });
         if (names) {
           names.forEach((nm) => nm.lines.forEach((line, i) => (
@@ -758,10 +780,7 @@ function dotsBlock(L, b, parent, maxH) {
           let kx = 0;
           line.forEach((it) => {
             const my = ky + STYLES.small.lh / 2;
-            if (!it.note) {
-              if (it.good) doc.circle(X(kx + 5), Y(my), 5).fill(t.good);
-              else doc.circle(X(kx + 5), Y(my), 4.6).lineWidth(0.75).fillAndStroke(t.page, t.detail);
-            }
+            if (!it.note) drawDotMark(doc, it.state ?? (it.good ? 'mi' : ''), X(kx + 5), Y(my), it.state === 'co' ? 3.6 : 5, t);
             ts.draw(it.text, X(kx + (it.note ? 0 : 16)), Y(ky + ts.baseline(STYLES.small)), STYLES.small, t.text);
             kx += it.w + 16;
           });
