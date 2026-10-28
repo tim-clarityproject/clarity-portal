@@ -549,6 +549,58 @@ export async function loadYearPage(userId) {
 }
 
 /**
+ * Everything the end-of-sprint review needs, as rows: the running sprint's
+ * rows as the sprint page loads them (its weeks are scored the same way),
+ * every sprint (the one before, the first), the plan's live objectives
+ * with their figures and its habits (to keep, change or retire, and to add
+ * a habit that stuck), the latest version's snapshot (what a change is
+ * compared with), the finished check-ins (Hardware, for "Since you
+ * started"), the first name, the role (for the examples) and the coach.
+ */
+export async function loadSprintReview(userId) {
+  const page = await loadSprintPage(userId);
+  const planId = page.sprint?.plan_id || page.plan?.id || null;
+  const [sprints, planObjectives, figures, planHabits, latestVersion, checkins, profile, role, coach] = await Promise.all([
+    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    planId ? rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).eq('plan_id', planId).is('archived_at', null).order('sort_order')) : [],
+    rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, created_at').eq('user_id', userId).order('recorded_on')),
+    planId ? rows(supabase.from('habits').select(HABIT_COLS).eq('plan_id', planId).is('archived_at', null).order('sort_order')) : [],
+    planId ? one(supabase.from('plan_versions').select('major, minor, kind, snapshot, created_at')
+      .eq('plan_id', planId).order('major', { ascending: false }).order('minor', { ascending: false }).limit(1)) : null,
+    rows(supabase.from('checkins').select('month, hardware_score').eq('user_id', userId).eq('status', 'finished').order('month')),
+    one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)),
+    one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)),
+    loadMyCoach().catch(() => null),
+  ]);
+  const plan = page.plan && page.plan.id === planId
+    ? page.plan
+    : planId ? await one(supabase.from('performance_plans').select(PLAN_COLS).eq('id', planId).limit(1)) : null;
+  return {
+    ...page,
+    plan,
+    sprints,
+    planObjectives,
+    figures,
+    planHabits,
+    latestVersion,
+    checkins,
+    firstName: profile?.first_name || '',
+    describesYou: role?.describes_you || null,
+    coach,
+  };
+}
+
+/** A habit that stuck, added to the plan from this sprint: its sprint habit now points at it. */
+export function linkSprintHabit(userId, sprintHabitId, habitId) {
+  return saveOrQueue(userId, {
+    table: 'sprint_habits',
+    kind: 'update',
+    match: { id: sprintHabitId, user_id: userId },
+    values: { habit_id: habitId },
+  });
+}
+
+/**
  * A finished week's score into week_scores (R3: the coach reads only
  * those, and nothing else writes them yet). Online only, best effort: a
  * week that isn't frozen now is frozen on the next visit.

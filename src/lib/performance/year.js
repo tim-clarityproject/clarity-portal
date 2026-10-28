@@ -73,7 +73,7 @@ export function heldWeeks(sprint, recoveries, today) {
  * with its state and pop-up as the sprint page shows them. A week with no
  * frozen row yet has no score ("Not scored yet"); the page freezes it.
  */
-function frozenWeeks(sprint, recoveries, weekScores, today) {
+export function frozenWeeks(sprint, recoveries, weekScores, today) {
   const { weeks } = heldWeeks(sprint, recoveries, today);
   const frozen = new Map((weekScores || []).filter((w) => w.sprint_id === sprint.id).map((w) => [w.sprint_week, w]));
   return weeks.map((wk) => {

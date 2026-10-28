@@ -37,3 +37,17 @@ export const SPRINT_LABEL_PLACEHOLDER = {
   coach: 'e.g. Pre-season, In-season block 2',
   leader: 'e.g. Q1, New team',
 };
+
+/** "See an example" on the end-of-sprint review's "What worked best in this sprint?" (M6 EXM.worked). */
+export const REVIEW_WORKED_EXAMPLE = {
+  ceo: 'Blocking Monday mornings for strategic work. I kept it 7 weeks out of 8.',
+  coach: 'Reviewing every session with my staff the same day. It kept us sharp.',
+  leader: 'A one-to-one with each of my team every week. I kept it up 7 weeks out of 8.',
+};
+
+/** "See an example" on "What would make the next sprint even better?" (M6 EXM.next). */
+export const REVIEW_NEXT_EXAMPLE = {
+  ceo: 'Finish by 18:30 on 4 nights a week, so training doesn’t slip.',
+  coach: 'Protect one full rest day a week, even in-season.',
+  leader: 'Say no to one meeting a week that I don’t need to be in.',
+};

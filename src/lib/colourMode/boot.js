@@ -34,7 +34,7 @@
   var BACKGROUND = { dark: '#000000', light: '#F9F8F5' };
 
   // Pages rebuilt for both modes (path prefixes).
-  var BOTH_MODES = ['/design-reference', '/performance-plan', '/performance-sprint'];
+  var BOTH_MODES = ['/design-reference', '/performance-plan', '/performance-sprint', '/recovery'];
 
   var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
 

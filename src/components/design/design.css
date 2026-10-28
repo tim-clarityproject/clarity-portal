@@ -5377,9 +5377,38 @@
   margin-top: var(--space-px14);
 }
 
+.ui-root .ds-carry-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* "In your plan", with the mint tick (M6 .inplan). */
+.ui-root .ds-inplan {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--icon-gap);
+  min-height: var(--tap-min);
+  font-size: var(--fs-who);
+  color: var(--good);
+}
+
+.ui-root .ds-inplan svg {
+  width: var(--who-icon);
+  height: var(--who-icon);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 @media (max-width: 600px) {
   .ui-root .ds-carry-head {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ui-root .ds-carry-action {
+    justify-content: flex-start;
   }
 }
 
@@ -5669,5 +5698,59 @@
   .ui-root .ds-ychart-axis,
   .ui-root .ds-ychart-month:not(.ds-ychart-month--quarter) {
     display: none;
+  }
+}
+
+/* The finished dial (the end-of-sprint review, M6 dial2): each week
+   draws itself in, in turn, then the crosshair glows mint for a moment
+   (experience rule 15). Still with reduced motion. */
+.ui-root .ds-sdial--finished .ds-sdial-ring {
+  width: var(--sprint-dial-finished);
+  max-width: 100%;
+}
+
+.ui-root .ds-sdial--finished .ds-sdial-seg {
+  animation: ds-sdial-in var(--dur-slow) var(--ease) both;
+  animation-delay: calc(var(--dur) + var(--k) * var(--dur-fast));
+}
+
+.ui-root .ds-sdial--finished .ds-sdial-cross .ds-cross {
+  animation: ds-sdial-glow var(--dur-pulse) var(--ease) both;
+  animation-delay: calc(var(--dur) + var(--n) * var(--dur-fast));
+}
+
+.ui-root .ds-sdial--finished [data-tip] {
+  cursor: default;
+  outline: none;
+}
+
+.ui-root .ds-sdial--finished [data-tip]:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+.ui-root .ds-sdial-centre--finished {
+  gap: var(--space-px2);
+}
+
+@keyframes ds-sdial-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ds-sdial-glow {
+  0%, 100% { background-color: var(--text); }
+  20%, 70% { background-color: var(--good); }
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-sdial--finished .ds-sdial-ring {
+    width: var(--sprint-dial-finished-phone);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-sdial--finished .ds-sdial-seg,
+  .ui-root .ds-sdial--finished .ds-sdial-cross .ds-cross {
+    animation: none;
   }
 }

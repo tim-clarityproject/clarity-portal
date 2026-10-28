@@ -56,7 +56,7 @@ export { default as ObjectiveEditor } from './ObjectiveEditor';
 export { default as HabitEditor } from './HabitEditor';
 export { default as SprintDial } from './SprintDial';
 export { SprintLengthChoice, SprintStartChoice, StandardChoice } from './SprintSettings';
-export { default as KeepChangeRow } from './KeepChangeRow';
+export { default as KeepChangeRow, InPlan } from './KeepChangeRow';
 export { default as PerformanceSystem, PerformanceSystemBody } from './PerformanceSystem';
 export { default as EmptyState } from './EmptyState';
 export { default as FloatingOrb } from './FloatingOrb';

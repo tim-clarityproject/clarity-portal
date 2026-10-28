@@ -71,7 +71,8 @@ import PlanHistory from './pages/performance/PlanHistory';
 import PlanVersion from './pages/performance/PlanVersion';
 import PlanBuilder from './pages/performance/PlanBuilder';
 import SprintStart from './pages/performance/SprintStart';
-import SprintStandIn from './pages/performance/SprintStandIn';
+import SprintReview from './pages/performance/SprintReview';
+import RecoveryStandIn from './pages/performance/RecoveryStandIn';
 import SprintYear from './pages/performance/SprintYear';
 import PerformanceSprint from './pages/performance/PerformanceSprint';
 import PersonalOperatingPlanArchived from './pages/PersonalOperatingPlanArchived';
@@ -323,7 +324,8 @@ function AppContent() {
           <Route path="/performance-plan/edit" element={<PlanBuilder editing />} />
           <Route path="/performance-sprint" element={<PerformanceSprint />} />
           <Route path="/performance-sprint/start" element={<SprintStart />} />
-          <Route path="/performance-sprint/review" element={<SprintStandIn page="review" />} />
+          <Route path="/performance-sprint/review" element={<SprintReview />} />
+          <Route path="/recovery" element={<RecoveryStandIn />} />
           <Route path="/performance-sprint/year" element={<SprintYear />} />
           <Route path="/personal-operating-plan-archived/:missionId" element={<PersonalOperatingPlanArchivedOne />} />
           <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />

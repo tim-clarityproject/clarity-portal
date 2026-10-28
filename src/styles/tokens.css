@@ -253,6 +253,8 @@
   --fs-dial-score: calc(44 * var(--u-big));       /* this week's score in its middle, Nekst Light (M1 .dc) */
   --fs-dial-score-phone: calc(32 * var(--u-big));
   --fs-dial-week: calc(16 * var(--u-big));        /* the week numbers round it, in the drawing's units */
+  --sprint-dial-finished: 250px;       /* the end-of-sprint review's dial (M6 .dm2.big) */
+  --sprint-dial-finished-phone: 210px;
   --year-chart-h: 200px;     /* View your year (M1 R.year: a 200-high plot) */
   --year-chart-h-phone: 150px;
   --year-bar-w: 5px;         /* each week's slim bar (M1: 5 of a 15.8 slot) */

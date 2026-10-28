@@ -18,7 +18,7 @@
 //     removed, one changed, one added; a double tap on Start makes one
 //     sprint, finishes Sprint 1 and copies the habits.
 //  5. A refresh mid-save sends the same rows again: no second sprint.
-//  6. The review stand-in leads straight into the steps; no plan says
+//  6. The review of a sprint not over says so; no plan says
 //     to build one.
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
@@ -311,11 +311,13 @@ try {
   const { context, page } = await signedIn({ width: 390, mode: 'light' });
   await page.goto(`${APP}/performance-sprint/review`);
   await page.waitForSelector('.ipp-coming', { timeout: 30000 });
-  const r = await pageChecks(page, '390px light review stand-in');
-  pass('review stand-in: says it is coming', /The end-of-sprint review is coming soon\./.test(r.text));
-  await page.getByRole('button', { name: 'Start a sprint' }).click();
+  const r = await pageChecks(page, '390px light review of a sprint not over');
+  pass('review: a sprint that isn’t over says so first', /is still running\.|hasn’t started yet\./.test(r.text), r.text.slice(0, 120));
+  await page.goto(`${APP}/performance-sprint/start`);
+  await page.waitForSelector('.ipp-coming', { timeout: 30000 });
+  await page.getByRole('button', { name: 'Start a new sprint' }).click();
   await page.waitForSelector('.ds-guide', { timeout: 10000 });
-  pass('review stand-in: leads straight into the steps', /How long is this sprint\?/.test(await heading(page)));
+  pass('start: Start a new sprint leads into the steps', /How long is this sprint\?/.test(await heading(page)));
   // Hold the habit settings back, so the save stops part-way.
   let hold = true;
   await page.route('**/rest/v1/sprint_habit_settings*', async (route) => {

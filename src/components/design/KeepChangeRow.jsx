@@ -12,6 +12,9 @@ import './design.css';
 //
 // options: [{ value, label }]; the first is the starting choice.
 // removeValue: the option that strikes the name through.
+// action: something to do or a status instead of the choice (the
+//         end-of-sprint review's habits that stuck: "Add to my plan", or
+//         "In your plan" with a mint tick, M6).
 const KEEP_CHANGE_REMOVE = Object.freeze([
   { value: 'keep', label: 'Keep' },
   { value: 'change', label: 'Change' },
@@ -26,6 +29,7 @@ export default function KeepChangeRow({
   options = KEEP_CHANGE_REMOVE,
   removeValue = 'remove',
   changeValue = 'change',
+  action,
   children,
 }) {
   const current = value || options[0].value;
@@ -37,16 +41,28 @@ export default function KeepChangeRow({
           <span className="ds-carry-name">{name}</span>
           {lines.filter(Boolean).map((l) => <small key={l} className="ds-carry-line">{l}</small>)}
         </div>
-        <Choice
-          form="pills"
-          ariaLabel={`What happens to ${name}?`}
-          options={options}
-          value={current}
-          onChange={onChange}
-          className="ds-carry-choice"
-        />
+        {action ? <div className="ds-carry-action">{action}</div> : (
+          <Choice
+            form="pills"
+            ariaLabel={`What happens to ${name}?`}
+            options={options}
+            value={current}
+            onChange={onChange}
+            className="ds-carry-choice"
+          />
+        )}
       </div>
       {current === changeValue && children ? <div className="ds-carry-edit">{children}</div> : null}
     </div>
+  );
+}
+
+/** "In your plan" with the mint tick (M6 .inplan): a habit that stuck, now in the plan. */
+export function InPlan({ children = 'In your plan' }) {
+  return (
+    <span className="ds-inplan">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+      {children}
+    </span>
   );
 }

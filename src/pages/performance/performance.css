@@ -639,3 +639,46 @@
     text-align: left;
   }
 }
+
+/* The end-of-sprint review (M6 F.end). */
+.ui-root .review-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-px12);
+  margin-top: var(--space-px22);
+}
+
+.ui-root .review-facts .ds-stat {
+  padding: var(--space-px20);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.ui-root .review-since {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .review-added {
+  margin-top: var(--space-3);
+}
+
+.ui-root .review-added > * + * {
+  margin-top: var(--space-3);
+}
+
+.ui-root .review-lines p + p {
+  margin-top: var(--space-1);
+}
+
+.ui-root .review-gap {
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .ui-root .review-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

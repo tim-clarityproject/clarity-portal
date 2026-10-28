@@ -3,6 +3,7 @@ import {
   AlignmentCheck,
   HabitEditor,
   KeepChangeRow,
+  InPlan,
   ObjectiveEditor,
   SprintDial,
   YearChart,
@@ -373,6 +374,11 @@ function KeepChangeDemo() {
           </KeepChangeRow>
         ))}
       </div>
+      <div className="ds-carry">
+        <KeepChangeRow name="Coaching clients" lines={['34 of 40', 'Up 3 this sprint', 'By 31 Dec 2027']} options={[{ value: 'keep', label: 'Keep' }, { value: 'change', label: 'Change' }, { value: 'retire', label: 'Retire' }]} removeValue="retire" value={carry.o1} onChange={(v) => setCarry((c) => ({ ...c, o1: v }))} />
+        <KeepChangeRow name="Mobility sessions" lines={['3 sessions a week', 'Kept up in 8 of 8 weeks']} action={carry.stuck ? <InPlan /> : <Button onClick={() => setCarry((c) => ({ ...c, stuck: true }))}>Add to my plan</Button>} />
+        <KeepChangeRow name="Training sessions" lines={['4 times a week', 'Kept up in 7 of 8 weeks']} action={<InPlan />} />
+      </div>
     </div>
   );
 }
@@ -421,6 +427,13 @@ function SprintDialDemo() {
         dayInWeek={5}
         centre={{ small: 'Performance score this week so far', big: '88%', good: true }}
         label="Performance Sprint 2, week 5 of 5"
+      />
+      <SprintDial
+        finished
+        weeks={[86, 72, 91, 94, 88, 79, 84, 90].map((v, i) => ({ state: v >= 85 ? 'good' : 'below', tip: { value: `Performance score ${v}%`, when: `Week ${i + 1}`, extra: [v >= 85 ? 'At or above your standard' : 'Below your standard'] } }))}
+        centre={{ small: 'Average', big: '86%', good: true, note: 'Standard 85%' }}
+        crossTip={{ value: 'Start and end of the sprint', when: 'Mon 31 Aug to Sun 25 Oct', extra: ['Last sprint, 4 of 8 weeks were at your standard.'] }}
+        label="Performance Sprint 4: 5 of 8 weeks at your standard, average 86%"
       />
     </div>
   );
@@ -1580,6 +1593,7 @@ function Gallery() {
             <p>The name, then its lines in grey, then Keep, Change or Remove (Retire for objectives) as 44px pills.</p>
             <p>Change opens the editor under the row; a removed one stays, struck through in grey, so it can come back.</p>
             <p>The choice sits beside the name on a wide screen and under it on a phone.</p>
+            <p><New />A habit that stuck has “Add to my plan” in place of the choice, or “In your plan” with the mint tick.</p>
           </>
         )} />
 
@@ -1590,6 +1604,7 @@ function Gallery() {
             <p>Day ticks sit outside the ring, longer at the week edges, with a dot for today. Week numbers show on a wide screen only.</p>
             <p><b>No key.</b> Every week, today’s dot and the crosshair have a pop-up.</p>
             <p>The middle says “Performance score this week so far”, mint at the standard.</p>
+            <p><New /><b>Finished</b> (the end-of-sprint review): thinner, with a wider gap at the top; each week draws itself in, then the crosshair glows mint for a moment. Still with reduced motion. The middle says “Average”, the figure and the standard.</p>
           </>
         )} />
 
