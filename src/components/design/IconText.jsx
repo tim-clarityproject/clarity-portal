@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import './design.css';
+import LineIcon from './LineIcon';
 
 // Icons with words, one standard (Tim, 26 Oct; design reference v15):
 // the eye (who can see this), the "i" (learn more) and any other small
@@ -42,12 +43,7 @@ export function IconTextRow({ children, className = '' }) {
   return <div className={`ds-iconwords ${className}`.trim()}>{children}</div>;
 }
 
-// The eye: only ever means who can see this.
+// The eye: only ever means who can see this. From the one icon set.
 export function EyeIcon() {
-  return (
-    <svg className="ds-eye" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M1.2 8C2.7 5.2 5.1 3.6 8 3.6s5.3 1.6 6.8 4.4C13.3 10.8 10.9 12.4 8 12.4S2.7 10.8 1.2 8Z" />
-      <circle cx="8" cy="8" r="2.1" />
-    </svg>
-  );
+  return <LineIcon name="eye" className="ds-eye" />;
 }

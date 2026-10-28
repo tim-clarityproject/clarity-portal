@@ -12,6 +12,7 @@ export { Dial, WeekChart } from './Charts';
 export { AddButton, Button, IconButton, SystemLink } from './Button';
 export { default as PageHeader } from './PageHeader';
 export { default as InfoIcon } from './InfoIcon';
+export { default as LineIcon, LINE_ICONS } from './LineIcon';
 export { default as Section } from './Section';
 export { Stat, StatGroup, Bar } from './Stat';
 export { List, ListRow } from './ListRow';

@@ -299,19 +299,23 @@
   height: var(--info-size);
   overflow: visible;
 }
-.ui-root .ds-info-ring {
+/* The one icon set (LineIcon): outlines in the colour of the words, 1.5px
+   lines with round ends and corners; the i's dot is the one fill. */
+.ui-root .ds-icon {
+  flex: none;
+  display: block;
+  width: var(--who-icon);
+  height: var(--who-icon);
+  overflow: visible;
   fill: none;
   stroke: currentColor;
   stroke-width: var(--icon-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.ui-root .ds-info-dot {
+.ui-root .ds-icon .f {
   fill: currentColor;
   stroke: none;
-}
-.ui-root .ds-info-stem {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: var(--icon-line);
 }
 
 /* ---------- Page header ---------- */
@@ -2172,6 +2176,9 @@
   display: inline-flex;
   width: var(--who-icon);
   height: var(--who-icon);
+  /* the one icon set's lines stop 0.25px inside the box, so the words sit
+     6px from the icon's visible edge (as the mock-up, M7b version 26) */
+  margin-right: -0.25px;
 }
 
 .ui-root .ds-iconword-icon > svg,
@@ -2182,10 +2189,6 @@
 
 .ui-root .ds-eye {
   display: block;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: var(--icon-line);
-  stroke-linejoin: round;
 }
 
 .ui-root .ds-iconword--tap {
