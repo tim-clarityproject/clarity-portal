@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { BOLD_CROSS_PATHS, BOLD_CROSS_STROKE, BOLD_CROSS_VIEWBOX } from '../lib/boldCrosshair';
+import Icon from './Icon';
 
 // The Health Check's own parts, built to the mock-up (M7b version 4): every
 // hover and focus is coral, every control is at least 44px to tap.
@@ -19,12 +20,6 @@ export function BoldCross({ size = 26 }) {
 }
 
 export const TICK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
-const EYE = (
-  <svg viewBox="0 0 16 16" aria-hidden="true">
-    <path d="M1.2 8C2.7 5.2 5.1 3.6 8 3.6s5.3 1.6 6.8 4.4C13.3 10.8 10.9 12.4 8 12.4S2.7 10.8 1.2 8Z" />
-    <circle cx="8" cy="8" r="2.1" />
-  </svg>
-);
 
 /** A phone layout (the mock-up's phone frame) below this width. */
 export const PHONE = '(max-width: 640px)';
@@ -55,15 +50,15 @@ export function IconRow({ coach, onWho, onHow, onGuide, style }) {
   return (
     <div className="iw rv" style={style}>
       <button type="button" className="ilink" aria-haspopup="dialog" onClick={onWho}>
-        {EYE}<span className="vh">Who can see this: </span>You and {coach}
+        <Icon name="eye" /><span className="vh">Who can see this: </span>You and {coach}
       </button>
       {onHow && (
         <button type="button" className="ilink" aria-haspopup="dialog" onClick={onHow}>
-          <span className="ic i" aria-hidden="true" />How it works
+          <Icon name="info" />How it works
         </button>
       )}
       <button type="button" className="ilink" aria-haspopup="dialog" onClick={onGuide}>
-        <span className="ic pl" aria-hidden="true" />Quick guide
+        <Icon name="play" />Quick guide
       </button>
     </div>
   );
@@ -171,7 +166,7 @@ export function InfoButton({ lines, label }) {
   const { isOpen, ...t } = useTipTarget(lines, { wide: true });
   return (
     <button type="button" className="ipb" aria-label={label} aria-expanded={isOpen} {...t}>
-      <span className="ic i" aria-hidden="true" />
+      <Icon name="info" />
     </button>
   );
 }
