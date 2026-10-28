@@ -472,3 +472,170 @@
 .ui-root .sprint-habit-panel .ds-log {
   border-bottom: 0;
 }
+
+/* View your year (M1 R.year). */
+.ui-root .year-chart {
+  margin-top: var(--space-px28);
+}
+
+.ui-root .year-sel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-px22);
+  padding: var(--space-px18) var(--space-px20);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.ui-root .year-sel-text p {
+  margin: 0;
+}
+
+.ui-root .year-sel-text .year-sel-score {
+  margin-top: var(--space-2);
+}
+
+.ui-root .year-sel-title {
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .year-sel-line {
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .year-sel-score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-px10);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .year-sel-figure {
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-tile-figure);
+  color: var(--text);
+}
+
+.ui-root .year-sel-figure--good {
+  color: var(--good);
+}
+
+.ui-root .year-table {
+  margin-top: var(--space-3);
+}
+
+.ui-root .year-tbl {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+}
+
+.ui-root .year-tbl th {
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  text-align: left;
+  font-weight: var(--fw-regular);
+  color: var(--label);
+  white-space: nowrap;
+}
+
+.ui-root .year-tbl td {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  border-top: var(--line-w) solid var(--line);
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+.ui-root .year-tbl th:first-child {
+  width: 22%;
+}
+
+@media (max-width: 600px) {
+  .ui-root .year-tbl thead {
+    display: none;
+  }
+
+  .ui-root .year-tbl tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-top: var(--line-w) solid var(--line);
+  }
+
+  .ui-root .year-tbl td {
+    display: block;
+    width: auto;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .ui-root .year-tbl td:first-child {
+    color: var(--text);
+  }
+}
+
+.ui-root .year-sprints {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .year-sprint {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2) var(--space-px12);
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .year-sprint-text,
+.ui-root .year-sprint-avg {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ui-root .year-sprint-avg {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.ui-root .year-sprint-name {
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .year-sprint-line {
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .year-sprint-figure {
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-lens);
+  color: var(--text);
+}
+
+@media (max-width: 600px) {
+  .ui-root .year-sprint-avg {
+    align-items: flex-start;
+    text-align: left;
+  }
+}

@@ -10,6 +10,7 @@ export const pageText = {
   personalOperatingPlanEdit: 'Your mission is the anchor. Strategies are how you pursue it. Tactics are what you do every day.',
   performancePlan: 'Your plan says what you aim for and how.',
   performanceSprint: 'Your sprint is where you carry out your plan, week by week.',
+  performanceYear: 'Each bar is one week of your year, with your sprints and Recovery marked.',
   performancePlanHistory: 'A version is kept each time your plan changes. Open one to see what your plan said then.',
   personalOperatingPlanHistory: 'Every time you save a change, a copy is kept. Look back at any earlier Version of your plan, or restore it.',
   personalOperatingPlanArchived: 'Plans you have archived. Open one to read it, or restore it as your current plan. Their Versions and reviews are kept.',

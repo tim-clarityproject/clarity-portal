@@ -6,6 +6,11 @@
 //   node scripts/seed-test-plan.mjs --reset   removes the client's plan first
 //   node scripts/seed-test-plan.mjs --empty   removes it and adds nothing, so
 //                                             Build your plan starts from empty
+//   node scripts/seed-test-plan.mjs --ended   removes it and adds the plan with a
+//                                             finished Performance Sprint 1, a
+//                                             Recovery, and Sprint 2 ended but not
+//                                             reviewed (for the end-of-sprint review
+//                                             and View your year)
 //
 // Signed in as the test client (~/.clarity-test-accounts.env, never
 // printed), it writes only what the app itself writes, through the same
@@ -51,9 +56,10 @@ const day = (key, n) => {
 const weekday = (key) => (new Date(`${key}T12:00:00Z`).getUTCDay() + 6) % 7; // Monday 0
 
 const empty = process.argv.includes('--empty');
+const ended = process.argv.includes('--ended');
 const { data: existing } = await db.from('performance_plans').select('id').eq('user_id', me).eq('status', 'active');
 if (existing?.length || empty) {
-  if (!process.argv.includes('--reset') && !empty) {
+  if (!process.argv.includes('--reset') && !empty && !ended) {
     console.log('The test client already has a plan. Run with --reset to replace it.');
     process.exit(0);
   }
@@ -138,22 +144,29 @@ await put('plan_versions', versions.map(([major, minor, kind, created_at, snapsh
   id: randomUUID(), plan_id: planId, user_id: me, major, minor, kind, created_at, snapshot,
 })));
 
-// A running 8-week sprint, in its fourth week today.
-const startOn = day(day(today, -weekday(today)), -21);
-const sprintId = randomUUID();
-await put('sprints', [{ id: sprintId, user_id: me, plan_id: planId, number: 1, start_on: startOn, length_weeks: 8, standard: 85 }]);
-const SH = {};
-const sprintHabits = habits.map((h, i) => {
-  SH[habitList[i][0]] = randomUUID();
-  return { id: SH[habitList[i][0]], sprint_id: sprintId, user_id: me, habit_id: h.id, strategy_id: h.strategy_id, name: h.name, sort_order: i };
-});
-await put('sprint_habits', sprintHabits);
-await put('sprint_habit_settings', habits.map((h, i) => ({
-  id: randomUUID(), sprint_habit_id: sprintHabits[i].id, user_id: me, from_week: 1,
-  measure: h.measure, unit: h.unit ?? null, target: h.target ?? null, target_per: h.target_per ?? null,
-  limit_value: h.limit_value ?? null, limit_per: h.limit_per ?? null, direction: h.direction ?? null,
-  top_number: h.top_number ?? null, impact: h.impact,
-})));
+// A sprint: its row, each plan habit copied in (plus any for this sprint
+// only), with settings from week 1.
+async function makeSprint({ number, startOn, length, status = 'running', actualEnd = null, extra = [] }) {
+  const id = randomUUID();
+  await put('sprints', [{
+    id, user_id: me, plan_id: planId, number, start_on: startOn, length_weeks: length, standard: 85,
+    status, actual_end_on: actualEnd, finished_at: status === 'finished' ? `${actualEnd}T20:00:00Z` : null,
+  }]);
+  const keys = {};
+  const all = [...habits.map((h, i) => ({ key: habitList[i][0], habit_id: h.id, ...h })), ...extra];
+  const rowsOf = all.map((h, i) => {
+    keys[h.key] = randomUUID();
+    return { id: keys[h.key], sprint_id: id, user_id: me, habit_id: h.habit_id || null, strategy_id: h.strategy_id, name: h.name, sort_order: i };
+  });
+  await put('sprint_habits', rowsOf);
+  await put('sprint_habit_settings', all.map((h, i) => ({
+    id: randomUUID(), sprint_habit_id: rowsOf[i].id, user_id: me, from_week: 1,
+    measure: h.measure, unit: h.unit ?? null, target: h.target ?? null, target_per: h.target_per ?? null,
+    limit_value: h.limit_value ?? null, limit_per: h.limit_per ?? null, direction: h.direction ?? null,
+    top_number: h.top_number ?? null, impact: h.impact,
+  })));
+  return { id, keys };
+}
 
 // Logs: three fuller weeks, then this week so far (M1's EXA and EXD).
 const week = [
@@ -162,19 +175,64 @@ const week = [
   { steps: [12000, 10400, 11000, 10200, 12500, 8000, 9000], train: [1, 1, 0, 1, 0, 1, 0], water: [2, 2, 2, 2, 2, 2, 2], late: [0, 0, 1, 0, 0, 0, 0], focus: [4, 4, 5, 4, 4, null, null], notes: [1, 1, 1, 1, 1, 1, 0], read: [1, 0, 1, 0, 0.5, 0.5, 0], msgs: [2, 1, 1, 1, 1, 0, 0], block: [null, 1, null, null, null, null, null], screens: [1, 1, 1, 1, 0, null, null], coffee: [2, 1, 2, 2, 1, null, null] },
   { steps: [11200, 8400, null, null, null, null, null], train: [1, 0, null, null, null, null, null], water: [2, 1.5, null, null, null, null, null], late: [0, 1, null, null, null, null, null], focus: [4, 3, null, null, null, null, null], notes: [2, 1, null, null, null, null, null], read: [0.5, 0, null, null, null, null, null], msgs: [1, 2, null, null, null, null, null], block: [null, null, null, null, null, null, null], screens: [1, 0, null, null, null, null, null], coffee: [2, 2, null, null, null, null, null] },
 ];
-const logs = [];
-week.forEach((w, wi) => {
-  Object.entries(w).forEach(([key, values]) => {
-    values.forEach((v, di) => {
-      const date = day(startOn, wi * 7 + di);
-      if (v == null || date >= today) return;
-      logs.push({ id: randomUUID(), user_id: me, sprint_habit_id: SH[key], local_date: date, value: v });
+// Each week's logs from the pattern, every day before today.
+function logsFor(sprintKeys, startOn, pattern) {
+  const out = [];
+  pattern.forEach((w, wi) => {
+    Object.entries(w).forEach(([key, values]) => {
+      if (!sprintKeys[key]) return;
+      values.forEach((v, di) => {
+        const date = day(startOn, wi * 7 + di);
+        if (v == null || date >= today) return;
+        out.push({ id: randomUUID(), user_id: me, sprint_habit_id: sprintKeys[key], local_date: date, value: v });
+      });
     });
   });
-});
-await put('habit_logs', logs);
+  return out;
+}
 
 const monday = day(today, -weekday(today));
+if (ended) {
+  // Sprint 1: six weeks, finished. Then a Recovery of 10 days. Then
+  // Sprint 2: eight weeks, its last day eight days ago, still running
+  // because it hasn't been reviewed (R5). It has one habit for this
+  // sprint only, kept up every week, for "Which habits have stuck?".
+  const s2Start = day(monday, -63);
+  const recStart = day(s2Start, -10);
+  const s1Start = day(recStart, -42);
+  const one = await makeSprint({ number: 1, startOn: s1Start, length: 6, status: 'finished', actualEnd: day(recStart, -1) });
+  const mobility = { key: 'mobility', strategy_id: S[0], name: 'Mobility sessions', measure: 'count', unit: 'sessions', target: 3, target_per: 'week', top_number: 3, impact: 2 };
+  const two = await makeSprint({ number: 2, startOn: s2Start, length: 8, extra: [mobility] });
+  const full = week.slice(0, 3);
+  const pattern = (n) => Array.from({ length: n }, (_, i) => ({ ...full[i % 3], mobility: [1, 0, 1, 0, 1, 0, 0] }));
+  const logs1 = logsFor(one.keys, s1Start, pattern(6).map((w, i) => (i === 1 ? week[1] : w)));
+  const logs2 = logsFor(two.keys, s2Start, pattern(8).map((w, i) => (i === 5 ? { ...week[1], mobility: [1, 0, 1, 0, 1, 0, 0] } : w)));
+  await put('habit_logs', [...logs1, ...logs2]);
+  await put('recovery_periods', [{ user_id: me, sprint_id: null, start_on: recStart, chosen_days: 7, extended_days: 3, ended_at: `${s2Start}T08:00:00Z`, end_on: s2Start, let_coach_know: false }]);
+  await put('objective_figures', [
+    { objective_id: O[0], value: 28, recorded_on: day(s2Start, -2) },
+    { objective_id: O[1], value: 6, recorded_on: day(s2Start, -2) },
+  ].map((f) => ({ ...f, id: randomUUID(), user_id: me })));
+  await put('todos', [
+    { strategy_id: S[2], text: 'Ask Evan for an introduction to Harbour', impact: 3, planned_week: 2, created_on: day(s2Start, 2), done_on: day(s2Start, 9) },
+    { strategy_id: S[1], text: 'Book a supervision session', impact: 2, planned_week: 4, created_on: day(s2Start, 2), done_on: day(s2Start, 23) },
+  ].map((t) => ({ ...t, id: randomUUID(), user_id: me, sprint_id: two.id, source: 'manual' })));
+  // Sprint 1's weeks frozen, as its sprint page would have done.
+  for (let w = 1; w <= 6; w += 1) {
+    const { error } = await db.rpc('freeze_week', { p_sprint: one.id, p_week: w });
+    if (error) throw new Error(`freeze_week: ${error.message}`);
+  }
+  console.log(`Seeded the test client's plan with Sprint 1 finished (from ${s1Start}), a Recovery and Sprint 2 ended on ${day(s2Start, 55)}, not reviewed.`);
+  process.exit(0);
+}
+
+// A running 8-week sprint, in its fourth week today.
+const startOn = day(day(today, -weekday(today)), -21);
+const { id: sprintId, keys: SH } = await makeSprint({ number: 1, startOn, length: 8 });
+
+const logs = logsFor(SH, startOn, week);
+await put('habit_logs', logs);
+
 await put('todos', [
   { strategy_id: S[0], text: 'Book a physio assessment', impact: 2, planned_week: 3, created_on: day(startOn, 14) },
   { strategy_id: S[2], text: 'Ask Evan for an introduction to Harbour', impact: 3, planned_week: 4, created_on: day(startOn, 16), done_on: monday },

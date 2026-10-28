@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useCachedLoad } from '../pageCache';
-import { loadActivePlan, loadPlanPage, loadPlanVersions, loadSprintPage } from './api';
+import { loadActivePlan, loadPlanPage, loadPlanVersions, loadSprintPage, loadYearPage } from './api';
 import { planView } from './view';
 
 // The plan's React hooks: each page shows its last data at once from the
@@ -29,4 +29,9 @@ export const SPRINT_CACHE = 'performance-sprint';
 
 export function useSprintPage(userId) {
   return useCachedLoad({ userId, name: SPRINT_CACHE, load: () => loadSprintPage(userId) });
+}
+
+/** View your year's rows. */
+export function useYearPage(userId) {
+  return useCachedLoad({ userId, name: 'performance-year', load: () => loadYearPage(userId) });
 }

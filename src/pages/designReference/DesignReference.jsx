@@ -5,6 +5,7 @@ import {
   KeepChangeRow,
   ObjectiveEditor,
   SprintDial,
+  YearChart,
   LoggingWeekRow,
   TodoRow,
   TodoList,
@@ -87,7 +88,7 @@ import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView 
 import SprintTool from './SprintTool';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
-import { startingSprint, withMeasure } from '../../lib/performance';
+import { selectedWeek, startingSprint, withMeasure, yearView } from '../../lib/performance';
 import './designReference.css';
 
 // The design gallery: every shared component from src/components/design,
@@ -452,6 +453,45 @@ function LoggingKindsDemo() {
         <LoggingWeekRow name="Steps" detail="19,600 of 50,000 steps this week" days={DEMO_DAYS} texts={boxes} onChange={(d, t) => setBoxes((b) => ({ ...b, [d]: t }))} progress={0.65} onMore={more} />
         <LoggingWeekRow name="No screens after 21:00" detail="1 of 4 days this week" kind="yesno" days={DEMO_DAYS} values={v.screens} onChange={(d, x) => setV((s) => ({ ...s, screens: { ...s.screens, [d]: x } }))} progress={0.4} onMore={more} />
       </div>
+    </div>
+  );
+}
+
+// The year chart (M1 R.year) on invented rows, through the same yearView
+// the page uses: three finished sprints, Recovery between two of them,
+// one early week still to be scored, and this week so far in Sprint 4.
+const YEAR_ROWS = (() => {
+  const sprint = (id, number, start, length, end) => ({ id, plan_id: 'p', number, label: null, start_on: start, length_weeks: length, standard: 85, status: 'finished', actual_end_on: end });
+  const sprints = [sprint('y1', 1, '2026-01-05', 12, '2026-03-29'), sprint('y2', 2, '2026-04-06', 12, '2026-06-28'), sprint('y3', 3, '2026-07-27', 8, '2026-09-20'), sprint('y4', 4, '2026-09-28', 8, '2026-11-22')];
+  const weekScores = [];
+  sprints.slice(0, 3).forEach((s) => {
+    for (let w = 1; w <= s.length_weeks; w += 1) {
+      const x = Math.sin((s.number * 20 + w) * 12.9898) * 43758.5453;
+      weekScores.push({ sprint_id: s.id, sprint_week: w, week_end: '2026-01-01', score: Math.round(64 + (x - Math.floor(x)) * 36), eligible: true, final: true });
+    }
+  });
+  [88, 79, 91, 86].forEach((score, i) => weekScores.push({ sprint_id: 'y4', sprint_week: i + 1, week_end: '2026-01-01', score, eligible: true, final: true }));
+  return {
+    sprints,
+    weekScores,
+    recoveries: [{ id: 'r', sprint_id: null, start_on: '2026-06-29', chosen_days: 28, extended_days: 0, ended_at: '2026-07-27T08:00:00Z', end_on: '2026-07-27' }],
+    allDebriefs: [],
+    workingPatterns: [],
+  };
+})();
+
+function YearDemo() {
+  const view = yearView(YEAR_ROWS, { today: '2026-10-28' });
+  // This week so far, as the running sprint shows it on the real page.
+  const now = view.slots[43];
+  Object.assign(now, { state: 'now', score: 79, tip: { value: 'Performance score 79%', when: 'Performance Sprint 4, week 5', extra: ['This week so far'] } });
+  view.sprints[3].running = true;
+  const [week, setWeek] = useState(44);
+  const sel = selectedWeek(view, week);
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <YearChart slots={view.slots} sprints={view.sprints} standardLines={view.standardLines} months={view.months} selected={week} onSelect={setWeek} label="Performance score by week, 2026" />
+      <p className="dr-small">{[sel.title, ...sel.lines, sel.score != null ? `Performance score ${sel.score}%` : null].filter(Boolean).join('. ')}</p>
     </div>
   );
 }
@@ -1568,6 +1608,16 @@ function Gallery() {
             <p>A to-do moved out after its week started keeps its place with its tick off, because it counts as not done that week.</p>
             <p>A win is always ticked mint, tagged “Unplanned win” and its day.</p>
             <p>The add panels keep one order: what, which Strategy, how much, then when.</p>
+          </>
+        )} />
+
+        <GallerySection id="c43" title="The year chart" wide demo={YearDemo} rules={(
+          <>
+            <p><New /><b>One slim bar per week of the year</b> (M1 View your year), in the same colours as every dial: mint at or above the standard, grey below, this week in the text colour, a short stub for a week with nothing.</p>
+            <p>Recovery is hatched in grey, and says Recovery in its pop-up, never colour alone.</p>
+            <p><b>No key.</b> Each sprint is named above its weeks, the standard is a dashed line labelled at its right end, and every week has a pop-up.</p>
+            <p>Picking a week outlines it and the page says more about it underneath.</p>
+            <p>On a phone it runs full width, without the week numbers, with a month every quarter.</p>
           </>
         )} />
 

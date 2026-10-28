@@ -5498,3 +5498,176 @@
     flex: 1 1 auto;
   }
 }
+
+/* The year chart (M1 R.year): a slim bar per week, the sprints named
+   above, the standard dashed and labelled at its right end, week numbers
+   and months below. Mint at or above the standard, grey below, this
+   week in the text colour, Recovery hatched in grey. */
+.ui-root .ds-ychart {
+  display: block;
+  width: 100%;
+}
+
+.ui-root .ds-ychart-sprints,
+.ui-root .ds-ychart-axis,
+.ui-root .ds-ychart-months {
+  position: relative;
+  height: var(--year-label-h);
+}
+
+.ui-root .ds-ychart-sprint {
+  position: absolute;
+  bottom: var(--space-1);
+  border-top: var(--line-w) solid var(--field-line);
+}
+
+.ui-root .ds-ychart-sprint-name {
+  position: absolute;
+  left: 0;
+  bottom: var(--space-1);
+  font-size: var(--fs-chart);
+  line-height: 1.2;
+  color: var(--label);
+  white-space: nowrap;
+}
+
+.ui-root .ds-ychart-sprint--now {
+  border-top-color: var(--text);
+}
+
+.ui-root .ds-ychart-sprint--now .ds-ychart-sprint-name {
+  color: var(--text);
+}
+
+.ui-root .ds-ychart-sprint--short {
+  display: none;
+}
+
+.ui-root .ds-ychart-plot {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: var(--year-chart-h);
+  margin-top: var(--space-2);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-ychart-std {
+  position: absolute;
+  z-index: 1;
+  border-top: var(--line-w) dashed var(--text-2);
+  pointer-events: none;
+}
+
+.ui-root .ds-ychart-std-label {
+  position: absolute;
+  right: 0;
+  bottom: var(--space-px3);
+  padding-left: var(--space-1);
+  background: var(--bg);
+  font-size: var(--fs-chart);
+  line-height: 1.2;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.ui-root .ds-ychart-col {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: var(--radius-bar);
+  outline: none;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-ychart-col:hover {
+    background: var(--surface);
+  }
+}
+
+.ui-root .ds-ychart-col:focus-visible {
+  box-shadow: inset 0 0 0 var(--focus-w) var(--coral-text);
+}
+
+/* The week picked: outlined, as M1. */
+.ui-root .ds-ychart-col--picked::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-1)) var(--space-px2) calc(-1 * var(--space-1));
+  border: var(--line-w) solid var(--text-2);
+  border-radius: var(--radius-bar);
+  pointer-events: none;
+}
+
+.ui-root .ds-ychart-bar {
+  display: block;
+  width: min(var(--year-bar-w), 70%);
+  border-radius: var(--radius-bar) var(--radius-bar) 0 0;
+  background: var(--to-come);
+}
+
+.ui-root .ds-ychart-bar--good { background: var(--good); }
+.ui-root .ds-ychart-bar--below { background: var(--below); }
+.ui-root .ds-ychart-bar--now { background: var(--text); }
+
+.ui-root .ds-ychart-bar--stub {
+  height: var(--space-px2);
+  border-radius: 0;
+  background: var(--line);
+}
+
+.ui-root .ds-ychart-bar--stub.ds-ychart-bar--now {
+  background: var(--text);
+}
+
+.ui-root .ds-ychart-rec {
+  display: block;
+  width: 60%;
+  height: var(--year-rec-h);
+}
+
+.ui-root .ds-ychart-rec pattern rect {
+  fill: var(--below);
+}
+
+.ui-root .ds-ychart-wn,
+.ui-root .ds-ychart-month {
+  position: absolute;
+  top: var(--space-1);
+  font-size: var(--fs-chart);
+  line-height: 1.2;
+  color: var(--label);
+  white-space: nowrap;
+}
+
+.ui-root .ds-ychart-wn {
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+}
+
+.ui-root .ds-ychart-wn--now {
+  color: var(--text);
+}
+
+.ui-root .ds-ychart-month {
+  top: 0;
+  color: var(--text-2);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-ychart-plot {
+    height: var(--year-chart-h-phone);
+  }
+
+  .ui-root .ds-ychart-sprint:not(.ds-ychart-sprint--latest),
+  .ui-root .ds-ychart-axis,
+  .ui-root .ds-ychart-month:not(.ds-ychart-month--quarter) {
+    display: none;
+  }
+}

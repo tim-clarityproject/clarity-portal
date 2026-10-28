@@ -9,6 +9,7 @@ export { default as Chevron } from './Chevron';
 export { IconText, IconTextRow, EyeIcon } from './IconText';
 export { default as ChartTips, tipProps } from './ChartTips';
 export { Dial, WeekChart } from './Charts';
+export { default as YearChart } from './YearChart';
 export { AddButton, Button, IconButton, SystemLink } from './Button';
 export { default as PageHeader } from './PageHeader';
 export { default as InfoIcon } from './InfoIcon';

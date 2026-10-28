@@ -535,6 +535,20 @@ export async function loadSprintPage(userId) {
 }
 
 /**
+ * Everything View your year shows, as rows: the running sprint's rows as
+ * the sprint page loads them (its weeks are worked out the same way),
+ * every sprint, and every debrief ("Debriefed" under a week).
+ */
+export async function loadYearPage(userId) {
+  const [page, sprints, allDebriefs] = await Promise.all([
+    loadSprintPage(userId),
+    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    rows(supabase.from('weekly_debriefs').select('sprint_id, sprint_week, status').eq('user_id', userId)),
+  ]);
+  return { ...page, sprints, allDebriefs };
+}
+
+/**
  * A finished week's score into week_scores (R3: the coach reads only
  * those, and nothing else writes them yet). Online only, best effort: a
  * week that isn't frozen now is frozen on the next visit.

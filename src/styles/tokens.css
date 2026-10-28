@@ -253,6 +253,11 @@
   --fs-dial-score: calc(44 * var(--u-big));       /* this week's score in its middle, Nekst Light (M1 .dc) */
   --fs-dial-score-phone: calc(32 * var(--u-big));
   --fs-dial-week: calc(16 * var(--u-big));        /* the week numbers round it, in the drawing's units */
+  --year-chart-h: 200px;     /* View your year (M1 R.year: a 200-high plot) */
+  --year-chart-h-phone: 150px;
+  --year-bar-w: 5px;         /* each week's slim bar (M1: 5 of a 15.8 slot) */
+  --year-rec-h: 23%;         /* Recovery's hatched block (M1: 46 of 200) */
+  --year-label-h: 22px;      /* the sprint names above, the week numbers and months below */
   --fs-lens: calc(18 * var(--u-big));       /* a length tile's figure, Nekst (M6 .lens) */
   --lens-min-h: 72px;
   --figure-box-w: 120px;     /* a figure box beside its words ("weeks", "%") */
