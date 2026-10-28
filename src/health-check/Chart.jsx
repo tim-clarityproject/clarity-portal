@@ -68,12 +68,17 @@ function Dot({ dot, r0, top, phone, PT, PL, W, others = [] }) {
   const below = above - 12 - (nameLines.length - 1) * 15 < PT + 4;
   const labelY = below ? y + r0 + (q === 'co' ? 22 : 18) : above;
   // The name is drawn only where it covers no other dot (its pop-up and the list always name it).
-  const halfW = Math.max(...nameLines.map((l) => Array.from(l).length)) * 3.4;
+  // A safe width estimate at 12.5px: wide letters and Chinese count as a full em.
+  const lineW = (l) => Array.from(l).reduce((w, ch) => w + (/[\u2E80-\uFFEF]|[MW@%]/u.test(ch) ? 12.5 : /[A-Z0-9]/.test(ch) ? 8.5 : 7), 0);
+  const halfW = Math.max(...nameLines.map(lineW)) / 2;
   const boxTop = below ? labelY - 12 : labelY - 12 - (nameLines.length - 1) * 15;
   const boxBottom = boxTop + 12 + (nameLines.length - 1) * 15 + 4;
   // Kept inside the chart: a name near an edge is moved in, not cut off.
   const lx = Math.min(W - halfW - 4, Math.max(PL + halfW, x));
-  const covers = others.some((o) => o !== dot && Math.abs(o.x - lx) < halfW + r0 && o.y + r0 > boxTop && o.y - r0 < boxBottom);
+  const centre = PL + (W - PL) / 2;
+  const covers = others.some((o) => o !== dot && Math.abs(o.x - lx) < halfW + r0 && o.y + r0 > boxTop && o.y - r0 < boxBottom)
+    || lx - halfW < PL + 2 || lx + halfW > W - 2 // never over the axis or off the chart
+    || (lx - halfW < centre && lx + halfW > centre); // never across the Fair line
   const lines = [
     { label: `Project ${row.n}` },
     { bold: row.text },

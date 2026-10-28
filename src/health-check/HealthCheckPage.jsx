@@ -10,7 +10,7 @@ import {
   blankRow, cleanItems, emptyDraft, draftFromData, dataFromDraft, setProjectDates,
 } from '../pages/alignment/alignmentFlow';
 import { at, clampStep, isLast, isValid, nextStep, percent, prevStep, stepFromJson, stepToJson, hasGaps } from './flow';
-import { CON, PROG, RES, howLines, resultRows } from './words';
+import { CON, PROG, RES, howLines } from './words';
 import {
   BoldCross, Chev, Choices, CodeBoxes, Dropdown, GrowBox, IconRow, InfoButton, PctBar, Rows, SaveLine, Sheet, TipProvider, Toast, cleanCode, useIsPhone,
 } from './parts';
@@ -28,6 +28,16 @@ const SITE = 'https://theclarityproject.co.uk';
 const COACH = 'your coach';
 const PAGE_TITLE = 'Strategic Alignment Health Check';
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Keeps at most `max` characters (as the database counts them) without
+// splitting an emoji or an accented letter in two.
+const segmenter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('en', { granularity: 'grapheme' }) : null;
+function clip(v, max) {
+  if (Array.from(v).length <= max) return v;
+  const parts = segmenter ? Array.from(segmenter.segment(v), (x) => x.segment) : Array.from(v);
+  let out = '';
+  for (const g of parts) { if (Array.from(out + g).length > max) break; out += g; }
+  return out;
+}
 const looksLikeEmail = (v) => /^\S+@\S+\.\S+$/.test(v.trim());
 
 const accessKey = (token) => `alignment-access:${token}`;
@@ -110,7 +120,9 @@ function Page() {
   const [organisation, setOrganisation] = useState(null);
   const [serverCompletedAt, setServerCompletedAt] = useState(null);
   const [toast, setToast] = useState(null);
-  const [panel, setPanel] = useState(null); // 'who' | 'how' | 'guide' | 'exact:s' | 'exact:f'
+  const [panel, setPanel] = useState(null);
+  const panelRef = useRef(null);
+  useEffect(() => { panelRef.current = panel; }, [panel]); // 'who' | 'how' | 'guide' | 'exact:s' | 'exact:f'
   const [sort, setSort] = useState('att');
   const [dateMsg, setDateMsg] = useState({});
   const [pdf, setPdf] = useState({ busy: false, open: false });
@@ -300,7 +312,13 @@ function Page() {
   // Each new screen puts focus on its heading, for keyboards and screen readers
   // (not when choosing by keyboard moves focus to the next choices).
   useEffect(() => {
-    if (focusChoices || enterKey === 0) return;
+    if (enterKey === 0) return;
+    if (focusChoices) {
+      // A keyboard choice moved on: the next screen's choices take focus; one with
+      // none (When) gives it to its first drop-down.
+      if (!document.querySelector('.hc-main .opts5')) document.querySelector('.hc-main .dd')?.focus({ preventScroll: true });
+      return;
+    }
     const h = document.querySelector('.hc-main .page h2');
     if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
   }, [enterKey, focusChoices]);
@@ -331,7 +349,8 @@ function Page() {
   // ---- editing the answers ----
   const edit = (d, immediate = false) => commit(d, stepRef.current, immediate);
   const listKey = { csf: 'csfs', projects: 'projects' };
-  const changeRow = (kind, id, text) => {
+  const changeRow = (kind, id, rawText) => {
+    const text = clip(rawText, MAX_ITEM);
     const k = listKey[kind];
     edit({ ...draftRef.current, [k]: draftRef.current[k].map((r) => (r.id === id ? { ...r, text } : r)) });
   };
@@ -382,7 +401,7 @@ function Page() {
     clearTimeout(advanceTimer.current);
     const here = stepRef.current;
     advanceTimer.current = setTimeout(() => {
-      if (stepRef.current !== here) return;
+      if (stepRef.current !== here || panelRef.current) return; // a panel opened meanwhile: Next moves on
       moveTo(nextStep(here, draftRef.current, reached), { focus: fromKeys });
     }, 320);
   };
@@ -427,16 +446,6 @@ function Page() {
     const e = credsRef.current?.email || '';
     window.open(`/auth/sign-up?email=${encodeURIComponent(e)}`, '_blank', 'noopener');
   };
-  const talk = () => {
-    const top = resultRows(draftRef.current)[0];
-    const subject = 'My Strategic Alignment Health Check';
-    const body = [
-      'I’d like to talk through my Strategic Alignment Health Check.',
-      top ? `It suggests I start with “${top.text}”.` : '',
-      `My results: ${window.location.origin}/health-check/${token}`,
-    ].filter(Boolean).join('\n\n');
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  };
 
   // ---- the screens ----
   const head = (q, nudge) => (
@@ -447,13 +456,10 @@ function Page() {
       <p className="nudge rv" style={{ '--i': 1 }}>{nudge}</p>
     </>
   );
-  const subject = (withFactor) => (
+  const subject = () => (
     <div className="subj rv" style={{ '--i': 2 }}>
       <small>Project {step.pi + 1} of {projects.length}</small>
       {project?.text}
-      {withFactor && factors[step.fi] && (
-        <div className="subf"><small>CSF {step.fi + 1} of {factors.length}</small>{factors[step.fi].text}</div>
-      )}
     </div>
   );
 
@@ -466,7 +472,7 @@ function Page() {
         <p className="lead rv" style={{ '--i': 1 }}>Check whether the work your team does every day matches what it’s trying to achieve.</p>
         <p className="dur rv" style={{ '--i': 1 }}>~15 minutes</p>
         <GuideCard style={{ '--i': 2 }} onWatched={() => setWatched(true)} />
-        <button type="button" className={`btn full rv${watched ? '' : ' quiet'}`} style={{ '--i': 3 }} onClick={() => { setRet(false); setPhase('signin'); setEnterKey((k) => k + 1); }}>Begin my Health Check</button>
+        <button type="button" className={`btn full rv${watched ? '' : ' quiet'}`} style={{ '--i': 3 }} onClick={() => { setRet(false); setPhase('signin'); setEnterKey((k) => k + 1); }}>Begin the Health Check</button>
       </div>
     );
   } else if (phase === 'signin') {
@@ -494,7 +500,7 @@ function Page() {
           <p className="privl">Only you and {COACH} see your answers.<InfoButton label="How your answers are kept" lines={[{ bold: 'Private and confidential' }, { line: 'Your answers are stored securely.' }, { line: 'They’re kept for 2 years after your last visit.' }]} /></p>
           <p className="privl">It saves as you go, so you can stop and come back.</p>
           {openError && <p className="err" role="alert">{openError}</p>}
-          <button type="submit" className="btn full" aria-disabled={opening}>{ret ? 'Pick up where you left off' : 'Start my Health Check'}</button>
+          <button type="submit" className="btn full" aria-disabled={opening}>{ret ? 'Pick up where you left off' : 'Start the Health Check'}</button>
         </form>
         <div className="legal rv" style={{ '--i': 6 }}>
           {!ret && <button type="button" onClick={() => { setSort('att'); setPhase('example'); window.scrollTo(0, 0); }}>See an example report</button>}
@@ -515,7 +521,7 @@ function Page() {
           <p>It’s backed by private equity and is 2 years into a plan to double in size.</p>
           <p>Its leadership team rated 8 projects against 5 Critical Success Factors (CSFs).</p>
         </div>
-        <Results draft={EXAMPLE.draft} theirs phone={phone} sort={sort} onSort={setSort} coach={COACH}
+        <Results draft={EXAMPLE.draft} theirs phone={phone} sort={sort} onSort={setSort}
           onExampleEdit={() => showToast('The example can’t be changed, so start your own to rate your projects.')} />
         <div className="acts"><button type="button" className="btn" onClick={() => { setPhase('welcome'); window.scrollTo(0, 0); }}>Start my Health Check</button></div>
       </>
@@ -527,24 +533,23 @@ function Page() {
       <>
         {head('What is your team trying to achieve?', 'Write it in one sentence.')}
         <div className="rv" style={{ '--i': 2 }}>
-          <GrowBox rows={2} style={{ marginTop: 22 }} aria-label="Objective" placeholder="e.g. Double recurring revenue by 2028" maxLength={MAX_OBJECTIVE}
-            value={draft.objective} onChange={(v) => edit({ ...draftRef.current, objective: v.replace(/\n/g, ' ') })} />
+          <GrowBox rows={2} style={{ marginTop: 22 }} aria-label="Objective" placeholder="e.g. Double recurring revenue by 2028"
+            value={draft.objective} onChange={(v) => edit({ ...draftRef.current, objective: clip(v.replace(/\n/g, ' '), MAX_OBJECTIVE) })} />
         </div>
       </>
     );
   } else if (step.screen === 'csf') {
     body = (
       <>
-        {head('How will you achieve your objective?', 'List the 3 to 6 medium to long-term approaches that will get you there.')}
+        {head('How will you achieve your objective?', 'List the 3 to 6 medium to long-term approaches that are critical for achieving your outcome.')}
         <div className="rv" style={{ '--i': 2 }}>
-          <span className="fl">Critical Success Factors (CSFs)</span>
+          <span className="fl">Critical Success Factors (CSFs)<InfoButton label="What is a Critical Success Factor?" lines={[{ bold: 'What is a Critical Success Factor (CSF)?' }, { line: 'It’s one of the few things that must go right for you to reach your objective.' }]} /></span>
           <Rows kind="csf" rows={draft.csfs} placeholder="e.g. Win enterprise customers in the US" label="Critical Success Factor" max={MAX_FACTORS} maxItem={MAX_ITEM}
             addLabel="Add a CSF" onChange={(id, v) => changeRow('csf', id, v)} onAdd={() => addRow('csf')} onRemove={(id) => removeRow('csf', id)} />
         </div>
       </>
     );
   } else if (step.screen === 'projects') {
-    const n = projects.length;
     body = (
       <>
         <PctBar pct={percent(step, draft)} />
@@ -555,7 +560,6 @@ function Page() {
           <span className="fl">Projects</span>
           <Rows kind="projects" rows={draft.projects} placeholder="e.g. New CRM roll-out" label="Project" max={MAX_PROJECTS} maxItem={MAX_ITEM}
             addLabel="Add a project" onChange={(id, v) => changeRow('projects', id, v)} onAdd={() => addRow('projects')} onRemove={(id) => removeRow('projects', id)} />
-          <p className="count">{n ? `You’ve listed ${n} project${n === 1 ? '' : 's'}.` : ''}</p>
         </div>
       </>
     );
@@ -563,9 +567,13 @@ function Page() {
     const f = factors[step.fi];
     body = (
       <>
-        {head('How much does this project contribute to this CSF?', 'Choose one level.')}
-        {subject(true)}
-        <Choices key={`${step.pi}:${step.fi}`} options={CON} value={rating.contrib?.[f?.id]} label={f?.text} style={{ '--i': 3 }} focusFirst={focusChoices} onPick={pickContribution} />
+        {/* The question names the project and the CSF, with small counters above it and no panel (Tim, 27 Oct, 23:35). */}
+        <PctBar pct={percent(step, draft)} />
+        <IconRow coach={COACH} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
+        <p className="cnt2 rv" style={{ '--i': 1 }}><span>Project {step.pi + 1} of {projects.length}</span><span>CSF {step.fi + 1} of {factors.length}</span></p>
+        <h2 className="qh rv" style={{ '--i': 1 }}>How much does “<bdi>{project?.text}</bdi>” contribute to “<bdi>{f?.text}</bdi>”?</h2>
+        <p className="nudge rv" style={{ '--i': 1 }}>Rate the level of impact.</p>
+        <Choices key={`${step.pi}:${step.fi}`} options={CON} value={rating.contrib?.[f?.id]} label={`How much does “${project?.text}” contribute to “${f?.text}”? Project ${step.pi + 1} of ${projects.length}, CSF ${step.fi + 1} of ${factors.length}.`} style={{ '--i': 3 }} focusFirst={focusChoices} onPick={pickContribution} />
       </>
     );
   } else if (step.screen === 'when') {
@@ -584,7 +592,7 @@ function Page() {
     body = (
       <>
         {head('When did this project start, and when is it due to finish?', 'Choose a month for each.')}
-        {subject(false)}
+        {subject()}
         <div className="dts rv" style={{ '--i': 3 }}>
           <div>
             <span className="fl" id="hc-started">Started</span>
@@ -611,7 +619,7 @@ function Page() {
     body = (
       <>
         {head('How far along is this project?', 'Choose the one that fits best.')}
-        {subject(false)}
+        {subject()}
         <Choices key={`p${step.pi}`} options={PROG.slice(1)} start={1} value={rating.progress} label="Progress" style={{ '--i': 3 }} focusFirst={focusChoices} onPick={(v) => setRating(() => ({ progress: v }))} />
       </>
     );
@@ -619,7 +627,7 @@ function Page() {
     body = (
       <>
         {head('How much resource will this project need?', 'Count time, people, money and technology.')}
-        {subject(false)}
+        {subject()}
         <Choices key={`r${step.pi}`} options={RES.slice(1)} start={1} value={rating.resource} label="Resource required" style={{ '--i': 3 }} onPick={(v) => setRating(() => ({ resource: v }))} />
       </>
     );
@@ -631,7 +639,7 @@ function Page() {
         <h2 className="t rv">Strategic Alignment Health Check</h2>
         <div className="meta rv" style={{ '--i': 1 }}>{organisation && <span>{organisation}</span>}{done && <span>{shortDate(done)}</span>}</div>
         <IconRow coach={COACH} style={{ '--i': 1 }} onWho={() => setPanel('who')} onHow={() => setPanel('how')} onGuide={() => setPanel('guide')} />
-        <Results draft={draft} phone={phone} sort={sort} onSort={setSort} coach={COACH} onTalk={talk}
+        <Results draft={draft} phone={phone} sort={sort} onSort={setSort}
           onChange={(screen) => go(at(screen))}
           onEditProject={(id) => {
             const pi = cleanItems(draftRef.current.projects).findIndex((p) => p.id === id);
