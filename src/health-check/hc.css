@@ -160,7 +160,6 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .hc textarea.one { min-height: 58px; }
 .hc .inp::placeholder, .hc textarea::placeholder { color: var(--ph); }
 .hc textarea:focus, .hc .inp:focus { border-color: var(--accent); }
-.hc textarea:hover, .hc .inp:hover { border-color: var(--accent); }
 .fieldmsg { margin: 8px 0 0; font-size: 14px; color: var(--soft); }
 
 /* drop-downs: a list below the box on a laptop, a slide-up panel on a phone, a coral tick on the chosen one */
@@ -238,7 +237,6 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .otp { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .otp b { height: 58px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card); display: flex; align-items: center; justify-content: center; font-family: var(--body); font-weight: 400; font-size: 20px; color: var(--fg); }
 .otp.fo b.on { border-color: var(--accent); }
-.otp:hover b { border-color: var(--accent); }
 .otp input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; font-size: 16px; cursor: text; }
 @media (max-width: 640px) { .otp b { height: 52px; font-size: 18px; } }
 .privl { margin: 22px 0 0; font-size: 15px; color: var(--t2); }

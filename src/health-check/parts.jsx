@@ -84,8 +84,8 @@ export function TipProvider({ children }) {
     if (!tip || !box || !tip.el?.isConnected) return;
     const G = 12;
     const r = tip.el.getBoundingClientRect();
-    const tw = box.offsetWidth;
-    const th = box.offsetHeight;
+    // exact sizes (offsetWidth rounds, which could put a pop-up half a pixel past the 12px edge)
+    const { width: tw, height: th } = box.getBoundingClientRect();
     const vw = document.documentElement.clientWidth;
     const x = Math.max(G, Math.min(vw - G - tw, r.left + r.width / 2 - tw / 2));
     const vh = document.documentElement.clientHeight;
