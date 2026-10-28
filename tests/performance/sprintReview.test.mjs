@@ -24,8 +24,8 @@ test('the opening: great at or above the standard (on the shown figure), calm be
 });
 
 test('Since you started says only the parts with data', () => {
-  assert.equal(sinceStartedLine({ averageChange: 5, hardwareChange: 12, objectivesReached: 1 }), 'Since you started: average up 5, Hardware score up 12, 1 objective reached.');
-  assert.equal(sinceStartedLine({ averageChange: -3, hardwareChange: null, objectivesReached: 2 }), 'Since you started: average down 3, 2 objectives reached.');
+  assert.equal(sinceStartedLine({ averageChange: 5, hardwareChange: 12, objectivesReached: 1 }), 'Since you started, your average is up 5 points, your Hardware score is up 12 points and you’ve reached 1 objective.');
+  assert.equal(sinceStartedLine({ averageChange: -3, hardwareChange: null, objectivesReached: 2 }), 'Since you started, your average is down 3 points and you’ve reached 2 objectives.');
   assert.equal(sinceStartedLine({ averageChange: null, hardwareChange: null, objectivesReached: 0 }), null);
 });
 
@@ -101,7 +101,7 @@ test('the review of an ended sprint: figures from the scores library', () => {
   assert.deepEqual(v.best, { value: 'Week 1, 100%', range: 'Mon 5 Oct to Sun 11 Oct', good: true });
   assert.equal(v.lastSprintLine, 'Last sprint, 1 of 2 weeks were at your standard.');
   // Sprint 1 averaged 85, this one 75: down 10; Hardware 60 to 72; the book is reached.
-  assert.equal(v.sinceLine, 'Since you started: average down 10, Hardware score up 12, 1 objective reached.');
+  assert.equal(v.sinceLine, 'Since you started, your average is down 10 points, your Hardware score is up 12 points and you’ve reached 1 objective.');
   assert.deepEqual(v.objectives[0].lines, ['34 of 40', 'Up 3 this sprint', 'By 31 Dec 2027']);
   assert.deepEqual(v.objectives[1].lines, ['Milestone', 'Done', 'By 30 Jun 2027']);
   // Kept up in 2 of 2 (stuck); the block 1 of 2 (50%, not stuck).

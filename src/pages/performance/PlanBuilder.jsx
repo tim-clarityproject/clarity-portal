@@ -558,7 +558,9 @@ function PlanTool({ userId, data, mode }) {
           )}
           {fresh.length > 0 && (
             <div className="plan-picks">
-              <FieldLabel label="Need ideas? Pick one, then make it yours." />
+              {/* M6's "Need ideas? Pick one, then make it yours." as two lines: one sentence per line (writing rule 49). */}
+              <FieldLabel label="Need ideas?" />
+              <p className="plan-muted plan-picks-nudge">Pick one, then make it yours.</p>
               {fresh.map((idea) => <AddButton key={idea} onClick={() => addStrategy(o?.id || null, idea)}>{idea}</AddButton>)}
             </div>
           )}

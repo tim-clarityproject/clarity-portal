@@ -49,16 +49,22 @@ export function reviewOpening(average, standard, firstName) {
   return { great: false, question: 'Not your strongest sprint. What still went well?' };
 }
 
-const change = (n) => (n > 0 ? `up ${plainNumber(n)}` : n < 0 ? `down ${plainNumber(-n)}` : 'the same');
+const change = (n) => (n > 0 ? `up ${plainNumber(n)} ${n === 1 ? 'point' : 'points'}` : n < 0 ? `down ${plainNumber(-n)} ${n === -1 ? 'point' : 'points'}` : 'the same');
 
-/** "Since you started: average up 5, Hardware score up 12, 1 objective reached." Only the parts with data. */
+/**
+ * "Since you started, your average is up 5 points, your Hardware score is
+ * up 12 points and you’ve reached 1 objective." Only the parts with data,
+ * as one full sentence (writing rule 48; M6 drew "Since you started: …").
+ */
 export function sinceStartedLine(since) {
   if (!since) return null;
   const parts = [];
-  if (since.averageChange != null) parts.push(`average ${change(since.averageChange)}`);
-  if (since.hardwareChange != null) parts.push(`Hardware score ${change(since.hardwareChange)}`);
-  if (since.objectivesReached) parts.push(`${since.objectivesReached} ${since.objectivesReached === 1 ? 'objective' : 'objectives'} reached`);
-  return parts.length ? `Since you started: ${parts.join(', ')}.` : null;
+  if (since.averageChange != null) parts.push(`your average is ${change(since.averageChange)}`);
+  if (since.hardwareChange != null) parts.push(`your Hardware score is ${change(since.hardwareChange)}`);
+  if (since.objectivesReached) parts.push(`you’ve reached ${since.objectivesReached} ${since.objectivesReached === 1 ? 'objective' : 'objectives'}`);
+  if (!parts.length) return null;
+  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+  return `Since you started, ${list}.`;
 }
 
 /** An objective's grey lines on its Keep, Change or Retire row (M6). */

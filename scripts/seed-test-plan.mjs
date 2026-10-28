@@ -11,6 +11,11 @@
 //                                             Recovery, and Sprint 2 ended but not
 //                                             reviewed (for the end-of-sprint review
 //                                             and View your year)
+//   node scripts/seed-test-plan.mjs --worked  removes it and adds the worked example
+//                                             M5-1 of docs/scoring-methods.md: a
+//                                             2-week sprint whose week 1 (last
+//                                             week) holds exactly M5-1's items, and
+//                                             M9-1's objective figures
 //   node scripts/seed-test-plan.mjs --reset --recovery[=N,M]
 //                                             the usual plan and running sprint,
 //                                             with a Recovery started N days ago
@@ -62,9 +67,10 @@ const weekday = (key) => (new Date(`${key}T12:00:00Z`).getUTCDay() + 6) % 7; // 
 
 const empty = process.argv.includes('--empty');
 const ended = process.argv.includes('--ended');
+const worked = process.argv.includes('--worked');
 const { data: existing } = await db.from('performance_plans').select('id').eq('user_id', me).eq('status', 'active');
 if (existing?.length || empty) {
-  if (!process.argv.includes('--reset') && !empty && !ended) {
+  if (!process.argv.includes('--reset') && !empty && !ended && !worked) {
     console.log('The test client already has a plan. Run with --reset to replace it.');
     process.exit(0);
   }
@@ -82,6 +88,7 @@ if (empty) {
   console.log('The test client now has no plan.');
   process.exit(0);
 }
+if (process.argv.includes('--worked')) await seedWorkedExample();
 
 await db.from('person_settings').upsert({ user_id: me, time_zone: 'Europe/London', units: 'metric' }, { onConflict: 'user_id' });
 
@@ -263,3 +270,71 @@ if (recoveryArg) {
 }
 
 console.log(`Seeded the test client's plan (version 3.2) and Performance Sprint 1 (8 weeks from ${startOn}), ${logs.length} logs.`);
+
+// The worked example M5-1 (docs/scoring-methods.md), with M9-1's figures on
+// the first objective: Sam works Monday to Friday, standard 85%. Sprint 1
+// is 2 weeks from last Monday, so week 1 is finished and scores 67.9%,
+// shown as 68% (grey); week 2 is this week, with nothing logged yet.
+async function seedWorkedExample() {
+  const plan = randomUUID();
+  const missionText = 'Be a world-class high-performance coach';
+  await put('performance_plans', [{ id: plan, user_id: me, mission: missionText, major: 1, minor: 0, created_at: '2026-01-01T09:00:00Z' }]);
+  const o = [randomUUID(), randomUUID(), randomUUID()];
+  const objs = [
+    { id: o[0], name: 'Coaching clients', kind: 'number', unit: null, direction: 'up', start_value: 20, target_value: 38, by_when: '2027-06-30', due_on: null, sort_order: 0 },
+    { id: o[1], name: 'How world-class is my coaching?', kind: 'rating', unit: null, direction: 'up', start_value: 6, target_value: 9, by_when: '2027-06-30', due_on: null, sort_order: 1 },
+    { id: o[2], name: 'Run a half marathon', kind: 'milestone', unit: null, direction: 'up', start_value: null, target_value: null, by_when: null, due_on: '2027-06-30', sort_order: 2 },
+  ];
+  await put('outcome_objectives', objs.map((x) => ({ ...x, user_id: me, plan_id: plan, start_set_on: '2026-01-01' })));
+  await put('objective_figures', [{ id: randomUUID(), user_id: me, objective_id: o[0], value: 31, recorded_on: '2026-10-26' < today ? '2026-10-26' : today }]);
+  const s = [randomUUID(), randomUUID(), randomUUID()];
+  const strats = [
+    { id: s[0], name: 'Grow through referrals', sort_order: 0 },
+    { id: s[1], name: 'Sustain my energy', sort_order: 1 },
+    { id: s[2], name: 'Deepen my coaching craft', sort_order: 2 },
+  ];
+  await put('plan_strategies', strats.map((x) => ({ ...x, user_id: me, plan_id: plan })));
+  const lk = [[s[0], o[0]], [s[0], o[1]], [s[1], o[2]], [s[2], o[1]]].map(([strategy_id, objective_id]) => ({ strategy_id, objective_id, user_id: me }));
+  await put('strategy_objectives', lk);
+  const hs = [
+    { key: 'referrals', strategy_id: s[0], name: 'Referral conversations', measure: 'count', unit: 'conversations', target: 3, target_per: 'week', impact: 3 },
+    { key: 'train', strategy_id: s[1], name: 'Training sessions', measure: 'count', unit: 'sessions', target: 3, target_per: 'week', impact: 3 },
+    { key: 'late', strategy_id: s[1], name: 'Late finishes', measure: 'yes_no_days_limit', limit_value: 2, impact: 2 },
+    { key: 'read', strategy_id: s[2], name: 'Reading', measure: 'amount', unit: 'minutes', target: 100, target_per: 'week', impact: 1 },
+  ].map((h, i) => ({ ...h, id: randomUUID(), sort_order: i }));
+  const habitRows = hs.map(({ key: _key, ...h }) => ({ ...h, user_id: me, plan_id: plan }));
+  await put('habits', habitRows);
+  await put('plan_versions', [{ id: randomUUID(), plan_id: plan, user_id: me, major: 1, minor: 0, kind: 'start', created_at: '2026-01-01T09:30:00Z', snapshot: planSnapshot({ mission: missionText, objectives: objs, strategies: strats, links: lk, habits: habitRows }) }]);
+
+  const start = day(day(today, -weekday(today)), -7);
+  const sprint = randomUUID();
+  await put('sprints', [{ id: sprint, user_id: me, plan_id: plan, number: 1, start_on: start, length_weeks: 2, standard: 85, status: 'running' }]);
+  const sh = {};
+  await put('sprint_habits', hs.map((h, i) => {
+    sh[h.key] = randomUUID();
+    return { id: sh[h.key], sprint_id: sprint, user_id: me, habit_id: h.id, strategy_id: h.strategy_id, name: h.name, sort_order: i };
+  }));
+  await put('sprint_habit_settings', hs.map((h) => ({
+    id: randomUUID(), sprint_habit_id: sh[h.key], user_id: me, from_week: 1, measure: h.measure, unit: h.unit ?? null,
+    target: h.target ?? null, target_per: h.target_per ?? null, limit_value: h.limit_value ?? null, limit_per: null,
+    direction: null, top_number: null, impact: h.impact,
+  })));
+  // Week 1: referral conversations 2 of 3, training 3 of 3, late finishes
+  // on 3 days against a limit of 2, reading 120 of 100 minutes.
+  const log = (key, offset, value) => ({ id: randomUUID(), user_id: me, sprint_habit_id: sh[key], local_date: day(start, offset), value });
+  await put('habit_logs', [
+    log('referrals', 0, 1), log('referrals', 2, 1),
+    log('train', 0, 1), log('train', 2, 1), log('train', 4, 1),
+    log('late', 0, 1), log('late', 1, 1), log('late', 3, 1), log('late', 2, 0), log('late', 4, 0),
+    log('read', 1, 60), log('read', 3, 60),
+  ]);
+  await put('todos', [
+    { strategy_id: s[0], text: 'Email three past clients', impact: 2, planned_week: 1, created_on: start, done_on: day(start, 3) },
+    { strategy_id: s[2], text: 'Record a session review', impact: 3, planned_week: 1, created_on: start },
+  ].map((t) => ({ ...t, id: randomUUID(), user_id: me, sprint_id: sprint, source: 'manual' })));
+  const win = randomUUID();
+  await put('wins', [{ id: win, user_id: me, what: 'A past client introduced me to their new team', local_date: day(start, 2), impact: 1 }]);
+  await put('win_strategies', [{ win_id: win, strategy_id: s[0], user_id: me }]);
+  console.log(`Seeded the worked example M5-1: Sprint 1 of 2 weeks from ${start}, week 1 finished.`);
+  process.exit(0);
+}

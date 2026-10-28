@@ -32,7 +32,7 @@ export const TEMPLATE_LABEL = 'First 90 days in a new role';
 
 /** How an objective is tracked (decisions "Three ways to track"), with M6's two lines under the choice. */
 export const OBJECTIVE_KINDS = Object.freeze([
-  { value: 'number', label: 'Number', lines: ['A figure you move towards a target.', 'Can’t count it? Rate it out of 10 instead.'] },
+  { value: 'number', label: 'Number', lines: ['A figure you move towards a target.', 'If you can’t count it, rate it out of 10 instead.'] },
   { value: 'milestone', label: 'Milestone', lines: ['Something you get done once, by a date.', 'Tick it off when it’s done.'] },
   { value: 'rating', label: 'Rating /10', lines: ['Your own honest score out of 10.', 'You update it in each Weekly performance debrief.'] },
 ]);

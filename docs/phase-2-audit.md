@@ -233,6 +233,13 @@ Not components, but missing helpers the screens need (pure code in `src/lib/`): 
   - "Plan, review and logging reminders pause" is said although no reminders exist yet; harmless, kept word for word.
   - "Let [coach] know" is a single tick box on a form row, which the 23 Oct tick-box rule limits to lists; M15 (26 Oct) is newer and approved, so the tick stays.
 
+### Step 8, checks (measured by `tests/phase2/compare.mjs`)
+- Every Phase 2 screen and state is measured against its mock-up frame; the approved differences are listed with their reasons in the script's `ALLOWED` list, so a new difference shows as "to check".
+- Fixed: "Since you started: …" in the end-of-sprint review becomes one full sentence with no colon ("Since you started, your average is down 6 points…", writing rule 48); M6's "Need ideas? Pick one, then make it yours." and "Can’t count it? Rate it out of 10 instead." held two sentences on one line (rule 49): now "Need ideas?" above the line "Pick one, then make it yours.", and "If you can’t count it, rate it out of 10 instead."
+- Kept word for word: "For example: …" help lines (rule 23), "Not your strongest sprint. What still went well?" (rule 20) and M6's link "Not sure? Answer 3 questions".
+- For Tim: the page title's "i" (shared PageHeader) sits 18px after the title, not 6px (rule 25 speaks of an "i" ending a sentence).
+- Figures: `tests/phase2/figures.mjs` seeds M5-1 exactly (`scripts/seed-test-plan.mjs --worked`) and finds 68%, grey, on the sprint page, View your year and in the database's frozen copy.
+
 ---
 
 ## 4. Figures and statuses the methods don't define, and database needs

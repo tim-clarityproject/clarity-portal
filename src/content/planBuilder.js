@@ -24,7 +24,7 @@ export const MISSION_PLACEHOLDER = {
   leader: 'e.g. Lead a team that delivers under pressure',
 };
 
-/** "Need ideas? Pick one, then make it yours." Three per role (the reading list limit). */
+/** Strategy ideas under "Need ideas?". Three per role (the reading list limit). */
 export const STRATEGY_IDEAS = {
   ceo: ['Build a leadership team I can trust', 'Protect time for strategic work', 'Keep the board close'],
   coach: ['Develop players through daily habits', 'Build trust with the owner', 'Make every session count'],

@@ -191,6 +191,10 @@
   margin-bottom: var(--space-px2);
 }
 
+.ui-root .plan-picks-nudge {
+  margin-top: calc(-1 * var(--space-1));
+}
+
 .ui-root .plan-picks .ds-add {
   justify-content: flex-start;
   text-align: left;
