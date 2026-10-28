@@ -71,7 +71,8 @@ export function titleUnits(L, spec, parent) {
     keep: true,
     lines: ATOMIC,
     draw(ctx, x, y) {
-      ctx.mark(h1, () => lines.forEach((line, i) => ts.draw(line, x, y + i * style.lh + ts.baseline(style), style, ctx.t.text)));
+      const words = ts.writtenLines(spec.title, lines);
+      ctx.mark(h1, () => lines.forEach((line, i) => ts.draw(line, x, y + i * style.lh + ts.baseline(style), style, ctx.t.text, 'left', words[i])));
       ctx.artifact(() => ctx.doc.rect(x, y + ruleY, 56, 1.5).fill(ctx.t.coral));
       if (detailLines.length) {
         ctx.mark(p, () => detailLines.forEach((line, i) => (
@@ -193,7 +194,8 @@ export function headingUnit(L, title, node, { artifact = false } = {}) {
     keep: true,
     lines: 0,
     draw(ctx, x, y) {
-      const fn = () => lines.forEach((line, i) => ts.draw(line, x, y + i * s.lh + ts.baseline(s), s, ctx.t.text));
+      const words = ts.writtenLines(title, lines);
+      const fn = () => lines.forEach((line, i) => ts.draw(line, x, y + i * s.lh + ts.baseline(s), s, ctx.t.text, 'left', words[i]));
       if (artifact) ctx.artifact(fn);
       else ctx.mark(node, fn);
     },
@@ -475,6 +477,55 @@ function drawDotMark(doc, kind, x, y, r, t) {
   doc.circle(x, y, r - 0.375).lineWidth(0.75).fillAndStroke(t.page, t.detail);
 }
 
+/**
+ * Where each dot of a dot chart goes, as on the results page (placeDots in
+ * src/health-check/Chart.jsx): dots that would touch are moved apart, but
+ * only within the dot's own area (the same side of both centre lines; a dot
+ * on the middle category stays near its line), so a moved dot never shows a
+ * false place. When the area is full, a dot takes the spot that overlaps least.
+ * gm: { Lx, plotW, plotH, top, xs, ys, mx, my } from dotsBlock's geometry.
+ */
+export function placeChartDots(pts0, gm, { R, k, xCentre, yCentre }) {
+  const gap = R * 2 + 3; // clear space between neighbours
+  const step = R * 2 + 5;
+  const minX = gm.Lx + R + 1;
+  const maxX = gm.Lx + gm.plotW - R - 1;
+  const minY = gm.top + R + 1;
+  const maxY = gm.top + gm.plotH - R - 1;
+  const placed = [];
+  const clash = (x, y) => placed.reduce((m, o) => Math.min(m, Math.hypot(o.cx - x, o.cy - y)), Infinity);
+  const free = (x, y) => !placed.some((o) => Math.abs(o.cx - x) < gap && Math.abs(o.cy - y) < gap);
+  pts0.forEach((p) => {
+    const x0 = gm.xs(p.x);
+    const y0 = gm.ys(p.y);
+    const [x1, x2] = p.x < xCentre ? [minX, gm.mx - R - 2]
+      : p.x > xCentre ? [gm.mx + R + 2, maxX]
+        : [Math.max(minX, gm.mx - step * 1.5), Math.min(maxX, gm.mx + step * 1.5)];
+    const [y1, y2] = p.y > yCentre ? [minY, gm.my - R - 2] : [Math.min(y0, gm.my + R + 2), maxY];
+    const inArea = ([x, y]) => x >= x1 && x <= x2 && y >= y1 && y <= y2;
+    const ring = (u, rings) => {
+      const out = [[x0, y0]];
+      const dir = p.x >= k ? -1 : 1; // the first moves: sideways, away from the edge
+      for (let t = 1; t <= 6; t += 1) out.push([x0 + dir * u * t, y0]);
+      for (let r = 1; r <= rings; r += 1) {
+        for (let dy = -r; dy <= r; dy += 1) for (let dx = -r; dx <= r; dx += 1) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) === r) out.push([x0 + dx * u, y0 + dy * u * 0.8]);
+        }
+      }
+      return out.filter(inArea);
+    };
+    let spot = ring(step, 14).find(([x, y]) => free(x, y));
+    if (!spot) {
+      // The area is full: the spot furthest from every other dot.
+      const fine = ring(step / 3, 40);
+      spot = (fine.length ? fine : [[Math.min(x2, Math.max(x1, x0)), Math.min(y2, Math.max(y1, y0))]])
+        .reduce((best, c) => (clash(...c) > clash(...best) ? c : best));
+    }
+    placed.push({ ...p, cx: spot[0], cy: spot[1] });
+  });
+  return placed;
+}
+
 function dotsBlock(L, b, parent, maxH) {
   const { ts } = L;
   const W = L.contentW;
@@ -499,47 +550,7 @@ function dotsBlock(L, b, parent, maxH) {
     return { Lx, plotW, plotH, top, xs, ys, mx: xs(b.xCentre), my: ys(b.yCentre) };
   };
 
-  // Dots at their true places, then pushed apart (and kept inside the frame)
-  // until none touch.
-  const placeDots = (gm) => {
-    const pts = pts0.map((p) => ({ ...p, cx: gm.xs(p.x), cy: gm.ys(p.y) }));
-    const seen = {};
-    pts.forEach((p) => {
-      const key = `${p.x}|${Math.round(p.y)}`;
-      seen[key] = (seen[key] || 0) + 1;
-      const s = seen[key] - 1;
-      if (s) p.cx += (s % 2 ? 1 : -1) * Math.ceil(s / 2) * 0.5;
-    });
-    const minX = gm.Lx + R + 1;
-    const maxX = gm.Lx + gm.plotW - R - 1;
-    const minY = gm.top + R + 1;
-    const maxY = gm.top + gm.plotH - R - 1;
-    const need = R * 2 + 2;
-    for (let pass = 0; pass < 400; pass += 1) {
-      let moved = false;
-      for (let i = 0; i < pts.length; i += 1) {
-        for (let j = 0; j < i; j += 1) {
-          const p = pts[i];
-          const o = pts[j];
-          let dx = p.cx - o.cx;
-          let dy = p.cy - o.cy;
-          let d = Math.hypot(dx, dy);
-          if (d >= need - 0.01) continue;
-          if (d < 0.01) { dx = 1; dy = 0; d = 1; }
-          const push = (need - d) / 2 + 0.1;
-          p.cx += (dx / d) * push; p.cy += (dy / d) * push;
-          o.cx -= (dx / d) * push; o.cy -= (dy / d) * push;
-          moved = true;
-        }
-      }
-      pts.forEach((p) => {
-        p.cx = Math.min(maxX, Math.max(minX, p.cx));
-        p.cy = Math.min(maxY, Math.max(minY, p.cy));
-      });
-      if (!moved) break;
-    }
-    return pts;
-  };
+  const placeDots = (gm) => placeChartDots(pts0, gm, { R, k, xCentre: b.xCentre, yCentre: b.yCentre });
 
   // Names beside the dots, or null when any one cannot be placed cleanly.
   const placeNames = (gm, pts) => {
@@ -671,6 +682,8 @@ function dotsBlock(L, b, parent, maxH) {
   return [{
     kind: 'chart',
     h,
+    // where the dots went, for the PDF checks (tests/pdf/make-pdfs.mjs)
+    dots: { pts, gm, R, xCentre: b.xCentre, yCentre: b.yCentre },
     gap: 0,
     lines: ATOMIC,
     draw(ctx, x, y) {

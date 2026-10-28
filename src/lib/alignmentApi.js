@@ -87,6 +87,9 @@ function toSession(row) {
     // The organisation name, from alignment_open once migration 022 has run;
     // null before that, and the page and PDF then leave it out.
     organisation: typeof row.client_label === 'string' && row.client_label.trim() ? row.client_label.trim() : null,
+    // The first name of the coach who sent the link, from alignment_open once
+    // migration 034 has run; null before that, and the page says "your coach".
+    coachName: typeof row.coach_name === 'string' && row.coach_name.trim() ? row.coach_name.trim() : null,
   };
 }
 

@@ -189,7 +189,47 @@ const MP = {
   'Meeting plan, blank answers': meetingPlanPdf({ personName: '', meeting: meeting({ title: '', date: '', time: '', objectives: [], flowItems: [] }) }),
 };
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...MP };
+// Every project with the same score, so every dot starts in one place: they
+// must move apart only within their own area (Health Check 2c, part 2).
+const SAME = { 'moving well': [3, 4], 'needs managing': [3, 3], 'needs attention': [3, 2], 'less important': [0, 2], embryonic: [3, 1], excellent: [3, 5] };
+const HC_SAME = {};
+for (const n of [8, 20, 40]) {
+  for (const [state, [contrib, progress]] of Object.entries(SAME)) {
+    const d = hcDraft({
+      objective: 'Reach £40m in recurring revenue by the end of 2027.',
+      factors: ['Win enterprise customers in the US', 'A product customers can’t do without', 'Cash to reach break-even'],
+      projects: Array.from({ length: n }, (_, i) => `Project ${i + 1}`),
+    });
+    d.projects.forEach((pr) => { d.ratings[pr.id] = { contrib: Object.fromEntries(d.csfs.map((f) => [f.id, contrib])), progress, resource: 3 }; });
+    HC_SAME[`Health Check, ${n} the same, ${state}`] = healthCheckPdf({ organisation: 'Quillmark', completedAt: '2026-10-26T08:30:00', draft: d });
+  }
+}
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...MP };
+
+// ---- dot charts: dots stay in their own area, and how many touch ----------------------
+// A dot is in its own area when it is on the same side of both centre lines
+// as its true place (a dot on the middle category stays near its line). Two
+// dots touch when their centres are closer than two radii.
+function checkDots(layout) {
+  const problems = [];
+  let touching = 0;
+  let dots = 0;
+  layout.flat().filter((it) => it.dots).forEach(({ dots: { pts, gm, R, xCentre, yCentre } }) => {
+    dots += pts.length;
+    pts.forEach((p, i) => {
+      const xOk = p.x < xCentre ? p.cx <= gm.mx - R : p.x > xCentre ? p.cx >= gm.mx + R : Math.abs(p.cx - gm.mx) <= 2 * R * 2;
+      // (a dot may stay at its true place even when that is near the line)
+      const y0 = gm.ys(p.y);
+      const yOk = p.y > yCentre ? p.cy <= Math.max(y0, gm.my - R) + 0.01 : p.y < yCentre ? p.cy >= Math.min(y0, gm.my + R) - 0.01 : p.cy >= gm.my - 0.01;
+      const inFrame = p.cx - R >= gm.Lx && p.cx + R <= gm.Lx + gm.plotW && p.cy - R >= gm.top && p.cy + R <= gm.top + gm.plotH;
+      if (!xOk || !yOk) problems.push(`dot ${p.n} moved out of its own area`);
+      if (!inFrame) problems.push(`dot ${p.n} crosses the chart's edge`);
+      for (let j = 0; j < i; j += 1) if (Math.hypot(p.cx - pts[j].cx, p.cy - pts[j].cy) < 2 * R - 0.01) touching += 1;
+    });
+  });
+  return { problems, touching, dots };
+}
 
 // ---- page-break checks (rules 23 to 29) -------------------------------------------
 
@@ -247,6 +287,16 @@ function readStruct(file) {
   }).join('\n');
 }
 
+let minerMissing = false;
+function guessedText(file) {
+  try {
+    return execFileSync(process.env.PDF2TXT || 'pdf2txt.py', [file], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
+  } catch {
+    minerMissing = true;
+    return null;
+  }
+}
+
 function checkWords(file, spec, res) {
   const problems = [];
   const expected = [spec.title, 'At a glance', 'Contents', ...(spec.sections || []).map((x) => x.title)].map(squash);
@@ -276,6 +326,24 @@ function checkWords(file, spec, res) {
   outline.forEach((o) => {
     if (!expected.includes(squash(o.title))) problems.push(`bookmark "${o.title}" is not a section name as written`);
   });
+  // A contents list in every PDF, each section once (PDF rule 33, Tim, 28 Oct).
+  if (!outline.length) problems.push('the PDF has no contents list (bookmarks)');
+  const seenMarks = outline.map((o) => squash(o.title));
+  seenMarks.forEach((t, i) => { if (seenMarks.indexOf(t) !== i) problems.push(`bookmark "${t}" is there twice`); });
+  if (seenMarks.some((t) => /, continued$/.test(t))) problems.push('a table carried on has its own bookmark');
+  // Rule 33: a reader that guesses the gaps between words from where the
+  // letters sit (and ignores the PDF's written words) still reads every
+  // heading whole. Uses pdfminer (pip3 install pdfminer.six); without it, says so.
+  const guessed = guessedText(file);
+  if (guessed != null) {
+    const g = squash(guessed);
+    const gl = g.toLocaleLowerCase('en-GB');
+    expected.forEach((e) => {
+      if (!e) return;
+      const el = e.toLocaleLowerCase('en-GB');
+      if (gl.replace(/\s+/g, '').includes(el.replace(/\s+/g, '')) && !gl.includes(el)) problems.push(`a reader that guesses word gaps splits "${e}"`);
+    });
+  }
   // heading tags: H1 "Written words" (block), then the drawn line(s)
   const lines = struct.split('\n');
   lines.forEach((line, i) => {
@@ -313,9 +381,11 @@ for (const [name, spec] of Object.entries(DOCS)) {
       const fname = `${name}, ${paper.name}${variant === 'dark' ? ' (dark)' : ''}.pdf`;
       writeFileSync(join(out, fname), res.bytes);
       layouts[variant] = res;
-      const problems = [...check(res.layout), ...checkWords(join(out, fname), spec, res)];
+      const dotCheck = checkDots(res.layout);
+      const problems = [...check(res.layout), ...checkWords(join(out, fname), spec, res), ...dotCheck.problems];
       if (problems.length) failed += 1;
       report.push(`${fname}\n  file name in the app: ${res.fileName}\n  ${res.pages} page(s), ${(res.bytes.length / 1024).toFixed(0)} KB${problems.length ? `\n  PROBLEMS:\n    ${problems.join('\n    ')}` : '\n  breaks: all checks pass'}`);
+      if (dotCheck.dots) report.push(`  dots: ${dotCheck.dots}${dotCheck.problems.length ? '' : ', all in their own area'}${dotCheck.touching ? `; ${dotCheck.touching} pair(s) touch (the area is full)` : ', none touching'}`);
       report.push(`  pages: ${res.layout.map((p, i) => `${i + 1}[${p.map((x) => `${x.cont ? '+' : ''}${x.kind}${x.lines && x.lines < 99 ? x.lines : ''}`).join(' ')}]`).join('  ')}`);
     }
     if (JSON.stringify(layouts.light.layout) !== JSON.stringify(layouts.dark.layout)) {
@@ -366,6 +436,7 @@ for (const [name, spec] of Object.entries(DOCS)) {
 writeFileSync(join(out, 'break-report.txt'), `${report.join('\n')}\n`);
 console.log(report.join('\n'));
 if (toolsMissing) console.log('\nThe whole-words check was skipped: install poppler and qpdf to run it.');
+if (minerMissing) console.log('\nThe guessed-gaps check (rule 33) was skipped: install pdfminer (pip3 install pdfminer.six), or set PDF2TXT to its pdf2txt.py.');
 console.log(failed ? `\n${failed} problem(s)` : '\nAll page-break and whole-word checks pass.');
 await vite.close();
 process.exit(failed ? 1 : 0);
