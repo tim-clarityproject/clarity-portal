@@ -413,8 +413,8 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .hc h2[tabindex="-1"]:focus { outline: none; }
 
 /* the reading pop-up: the Privacy Policy and Data Storage Notice (a centred panel; full screen on a phone) */
-.vp.rd { display: flex; flex-direction: column; max-height: calc(100dvh - 48px); }
-.rdb { flex: 1; min-height: 0; overflow: auto; padding: 4px 22px 28px; outline: none; }
+.vp.rd { display: flex; flex-direction: column; height: calc(100dvh - 48px); max-height: 900px; }
+.rdb { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 4px 22px 28px; outline: none; }
 .rdb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .rdn { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; color: var(--t2); text-decoration: none; }
 .rdn:hover, .rdn:focus-visible { color: var(--accent); }
@@ -426,4 +426,6 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .rd strong { font-weight: 400; color: var(--fg); }
 .rdk { color: var(--fg); text-decoration: underline; text-underline-offset: 2px; }
 .rdk:hover, .rdk:focus-visible { color: var(--accent); }
-@media (max-width: 640px) { .vp.rd { max-height: none; } .rdb { padding: 4px 20px 32px; } }
+@media (max-width: 640px) { .vp.rd { height: 100%; max-height: none; } .rdb { padding: 4px 20px 32px; } }
+/* a very long coach name wraps instead of pushing the page sideways */
+.ilink.who { white-space: normal; overflow-wrap: anywhere; min-width: 0; }

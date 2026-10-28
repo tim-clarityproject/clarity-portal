@@ -128,6 +128,7 @@ function Page() {
   const [toast, setToast] = useState(null);
   const [panel, setPanel] = useState(null);
   const panelRef = useRef(null);
+  const docLinkRef = useRef(null);
   useEffect(() => { panelRef.current = panel; }, [panel]); // 'who' | 'how' | 'guide' | 'exact:s' | 'exact:f' | 'doc:privacy' | 'doc:dataStorage'
   const [sort, setSort] = useState('att');
   const [dateMsg, setDateMsg] = useState({});
@@ -517,6 +518,7 @@ function Page() {
             <a key={d.key} href={d.href} target="_blank" rel="noopener noreferrer" aria-haspopup="dialog" onClick={(e) => {
               if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // a new tab when asked for one
               e.preventDefault();
+              docLinkRef.current = e.currentTarget;
               setPanel(`doc:${d.key}`);
             }}>{d.title}</a>
           ))}
@@ -739,7 +741,7 @@ function Page() {
         </Sheet>
       )}
       {panel === 'guide' && <GuidePanel onClose={() => setPanel(null)} />}
-      {panel?.startsWith('doc:') && <ReadingPanel doc={READING[panel.slice(4)]} onClose={() => setPanel(null)} />}
+      {panel?.startsWith('doc:') && <ReadingPanel doc={READING[panel.slice(4)]} returnFocus={docLinkRef} onClose={() => setPanel(null)} />}
       {panel?.startsWith('exact:') && project && (() => {
         const kind = panel.slice(6);
         const d = projectDates(project);

@@ -233,16 +233,20 @@ export function createTypesetter(doc, chains) {
       });
     });
     const shown = width(t, { ...style, upper: false });
-    const words = `${written ?? t} `;
-    const plain = { ...style, tracking: 0, upper: false };
-    const natural = runs(words, plain).reduce((w, r) => {
+    // The written words; a letter no font has, such as "ﬁ", is written in
+    // its plain form ("fi") where the fonts have that.
+    const drawn = (g) => /\s/.test(g) || chains[style.font].some((n) => has(n, g));
+    const plain = (g) => (drawn(g) ? g : (graphemes(g.normalize('NFKC')).every(drawn) ? g.normalize('NFKC') : g));
+    const words = `${written != null ? graphemes(written).map(plain).join('') : t} `;
+    const flat = { ...style, tracking: 0, upper: false };
+    const natural = runs(words, flat).reduce((w, r) => {
       doc.font(r.font).fontSize(style.size);
       return w + doc.widthOfString(r.text, { features: style.features });
     }, 0);
     const scale = natural > 0 ? (shown / natural) * 100 : 100;
     let wx = x;
     doc.addContent('3 Tr'); // invisible
-    for (const r of runs(words, plain)) {
+    for (const r of runs(words, flat)) {
       doc.font(r.font).fontSize(style.size).fillColor(colour);
       doc.text(r.text, wx, y, { lineBreak: false, baseline: 'alphabetic', horizontalScaling: scale, features: style.features });
       wx += doc.widthOfString(r.text, { horizontalScaling: scale, features: style.features });
@@ -258,12 +262,23 @@ export function createTypesetter(doc, chains) {
    */
   function writtenLines(source, lines) {
     const words = String(source).split(/[ \t\u00a0\n]+/).filter(Boolean);
-    let at = 0;
+    const upper = words.map((w) => w.toLocaleUpperCase('en-GB'));
+    let wi = 0;
+    let ci = 0; // how far into words[wi] the lines have reached (a word broken across lines)
     return lines.map((line) => {
-      const n = line.split(/[ \t\u00a0]+/).filter(Boolean).length;
-      const part = words.slice(at, at + n);
-      at += n;
-      return part.join(' ').toLocaleUpperCase('en-GB') === line.trim() ? part.join(' ') : null;
+      const parts = [];
+      let ok = true;
+      for (const piece of line.split(/[ \t\u00a0]+/).filter(Boolean)) {
+        const up = upper[wi];
+        if (up == null || !up.startsWith(piece, ci)) { ok = false; break; }
+        // a piece of a word keeps its own letters when capitals don't change its length
+        if (ci === 0 && piece === up) parts.push(words[wi]);
+        else if (up.length === words[wi].length) parts.push(words[wi].slice(ci, ci + piece.length));
+        else ok = false;
+        ci += piece.length;
+        if (ci >= up.length) { wi += 1; ci = 0; }
+      }
+      return ok ? parts.join(' ') : null;
     });
   }
 

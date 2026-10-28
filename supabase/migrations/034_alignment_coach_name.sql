@@ -4,7 +4,9 @@
 --
 -- WHAT THIS DOES (plain English)
 --   1. Adds coach_name (text, may be empty) to alignment_sessions: the first
---      name of the coach who made the link, as their profile has it.
+--      name of the coach who made the link: the name they chose to show
+--      clients (coaches, from 026) where that is there, otherwise the first
+--      name on their profile, at most 60 characters.
 --   2. Making a link fills it in:
 --        select public.create_alignment_session('Acme Ltd', 'ceo@acme.com', 'coach@example.com');
 --      The third value is the coach's own portal email; their first name is
@@ -37,6 +39,35 @@ comment on column public.alignment_sessions.coach_name is
   'First name of the coach who made the link, from their profile (034). Empty means the page says "your coach".';
 
 -- -----------------------------------------------------------------------------
+-- Internal helper: an account's first name as clients see it. The name the
+-- coach chose to show (coaches.display_first_name, from Phase 1's 026) where
+-- that table is there, otherwise the first name on their profile; at most 60
+-- characters, as 026 allows.
+-- -----------------------------------------------------------------------------
+create or replace function public._alignment_first_name(p_user uuid)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_name text;
+begin
+  if to_regclass('public.coaches') is not null then
+    execute 'select nullif(btrim(display_first_name), '''') from public.coaches where user_id = $1'
+      into v_name using p_user;
+  end if;
+  if v_name is null then
+    select nullif(btrim(p.first_name), '') into v_name from public.profiles p where p.id = p_user;
+  end if;
+  return left(v_name, 60);
+end;
+$$;
+
+revoke all on function public._alignment_first_name(uuid) from public, anon, authenticated;
+
+-- -----------------------------------------------------------------------------
 -- Internal helper: the coach's first name, from a signed-in coach or the
 -- account with the given email. Null when there is no such account or no name.
 -- Raises when an email is given but no account has it, so a typo is noticed.
@@ -60,9 +91,11 @@ begin
   if v_id is null then
     return null;
   end if;
-  return (select nullif(btrim(p.first_name), '') from public.profiles p where p.id = v_id);
+  return public._alignment_first_name(v_id);
 end;
 $$;
+
+revoke all on function public._alignment_coach_name(text) from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- create_alignment_session with the coach (Tim only)
@@ -117,6 +150,8 @@ begin
 end;
 $$;
 
+revoke all on function public.create_alignment_session(text, text, text) from public, anon, authenticated;
+
 -- The two-value form, as in 018, now passing on to the one above.
 create or replace function public.create_alignment_session(
   p_client_label text,
@@ -170,20 +205,18 @@ $$;
 -- Existing links: filled where the coach who made them is known
 -- -----------------------------------------------------------------------------
 update public.alignment_sessions s
-   set coach_name = nullif(btrim(p.first_name), '')
+   set coach_name = public._alignment_first_name(u.id)
   from auth.users u
-  join public.profiles p on p.id = u.id
  where s.coach_name is null
-   and nullif(btrim(p.first_name), '') is not null
+   and public._alignment_first_name(u.id) is not null
    and (s.created_by = u.id::text or lower(s.created_by) = lower(u.email));
 
 -- -----------------------------------------------------------------------------
--- Who may call what (as 018: making links is Tim only; alignment_open keeps
--- its grants, as "create or replace" keeps them)
+-- Who may call what (as 018: making links is Tim only; each new function is
+-- closed straight after it is made, above; alignment_open keeps its grants,
+-- as "create or replace" keeps them)
 -- -----------------------------------------------------------------------------
-revoke all on function public._alignment_coach_name(text)                     from public, anon, authenticated;
-revoke all on function public.create_alignment_session(text, text, text)      from public, anon, authenticated;
-revoke all on function public.create_alignment_session(text, text)            from public, anon, authenticated;
+revoke all on function public.create_alignment_session(text, text) from public, anon, authenticated;
 
 -- Records itself where the migration log (025) is there; on a database
 -- without it yet, this does nothing rather than stop the migration.

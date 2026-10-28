@@ -18,9 +18,9 @@ declare
   v_failed boolean;
 begin
   -- A portal account with a first name, to act as the coach.
-  select u.email, btrim(p.first_name) into v_email, v_first
-    from auth.users u join public.profiles p on p.id = u.id
-   where nullif(btrim(p.first_name), '') is not null and u.email is not null
+  select u.email, public._alignment_first_name(u.id) into v_email, v_first
+    from auth.users u
+   where public._alignment_first_name(u.id) is not null and u.email is not null
    order by u.created_at limit 1;
   if v_email is null then
     raise exception 'FAILED: the test project has no account with a first name to use as the coach.';
@@ -77,9 +77,9 @@ begin
   update public.alignment_sessions set created_by = upper(v_email), coach_name = null
    where respondent_email = '034-test-two@example.invalid';
   update public.alignment_sessions s
-     set coach_name = nullif(btrim(p.first_name), '')
-    from auth.users u join public.profiles p on p.id = u.id
-   where s.coach_name is null and nullif(btrim(p.first_name), '') is not null
+     set coach_name = public._alignment_first_name(u.id)
+    from auth.users u
+   where s.coach_name is null and public._alignment_first_name(u.id) is not null
      and (s.created_by = u.id::text or lower(s.created_by) = lower(u.email))
      and s.respondent_email = '034-test-two@example.invalid';
   if (select coach_name from public.alignment_sessions where respondent_email = '034-test-two@example.invalid') is distinct from v_first then
@@ -91,13 +91,30 @@ begin
   if has_function_privilege('anon', 'public.create_alignment_session(text,text,text)', 'execute')
      or has_function_privilege('authenticated', 'public.create_alignment_session(text,text,text)', 'execute')
      or has_function_privilege('anon', 'public.create_alignment_session(text,text)', 'execute')
-     or has_function_privilege('anon', 'public._alignment_coach_name(text)', 'execute') then
+     or has_function_privilege('anon', 'public._alignment_coach_name(text)', 'execute')
+     or has_function_privilege('anon', 'public._alignment_first_name(uuid)', 'execute')
+     or has_function_privilege('authenticated', 'public._alignment_first_name(uuid)', 'execute') then
     raise exception 'FAILED: making a link can be called with the public key.';
   end if;
   if not has_function_privilege('anon', 'public.alignment_open(text,text,text)', 'execute') then
     raise exception 'FAILED: the outside page can no longer open a Health Check.';
   end if;
   raise notice 'ok 6: making links is closed to the public key; opening is still open.';
+
+  -- 7. Where Phase 1's coaches table is there, the name the coach chose wins.
+  if to_regclass('public.coaches') is not null then
+    execute 'insert into public.coaches (user_id, display_first_name)
+             select u.id, ''Chosen'' from auth.users u where lower(u.email) = lower($1)
+             on conflict (user_id) do update set display_first_name = ''Chosen'''
+      using v_email;
+    r := public.create_alignment_session('034 test organisation', '034-test-four@example.invalid', v_email);
+    if r ->> 'coach_name' is distinct from 'Chosen' then
+      raise exception 'FAILED: the coach''s chosen name was not used (%).', r ->> 'coach_name';
+    end if;
+    raise notice 'ok 7: the name the coach chose to show is used.';
+  else
+    raise notice 'ok 7: skipped (no coaches table on this database).';
+  end if;
 
   delete from public.alignment_sessions where respondent_email like '034-test-%@example.invalid';
   raise notice '034 CHECKS PASSED';

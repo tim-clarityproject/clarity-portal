@@ -293,9 +293,9 @@ export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, ass
   pages.forEach((p, pi) => p.items.forEach(({ u, cont }) => {
     if (u.kind !== 'heading' || u.section == null || cont || marked.has(u.section)) return;
     marked.add(u.section);
-    doc.outline.addItem(sections[u.section].title, { pageNumber: pi });
+    doc.outline.addItem(String(sections[u.section].title).replace(/\s+/g, ' ').trim(), { pageNumber: pi });
   }));
-  if (!marked.size) doc.outline.addItem(String(spec.title || '').trim() || title, { pageNumber: 0 });
+  if (!marked.size) doc.outline.addItem(String(spec.title || '').replace(/\s+/g, ' ').trim() || title, { pageNumber: 0 });
 
   root.el.end();
   doc.end();

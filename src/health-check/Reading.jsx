@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { loadWithReload } from '../lib/loadWithReload';
+import { useEffect, useRef, useState } from 'react';
 import { Cross, useDialog } from './parts';
 
 // The reading pop-up for the Privacy Policy and Data Storage Notice (mock-up
@@ -12,15 +11,24 @@ import { Cross, useDialog } from './parts';
 
 const CLASSES = { heading: 'rdh', paragraph: 'rdp', list: 'rdl', listItem: 'rdli', link: 'rdk' };
 
-export function ReadingPanel({ doc, onClose }) {
-  const { boxRef, closeRef } = useDialog(onClose);
+// returnFocus: the link that opened it (Safari doesn't focus a link on click).
+export function ReadingPanel({ doc, onClose, returnFocus }) {
+  const { boxRef, closeRef } = useDialog(onClose, returnFocus);
   const [state, setState] = useState({ status: 'loading' });
+  // A double-click on the link mustn't close it again with its second click.
+  const settled = useRef(false);
+  useEffect(() => {
+    const t = setTimeout(() => { settled.current = true; }, 500);
+    return () => clearTimeout(t);
+  }, []);
+  const fromScrim = () => { if (settled.current) onClose(); };
 
   useEffect(() => {
     let live = true;
+    // A plain import: if it can't load, the pop-up says so and the page stays as it is.
     Promise.all([
-      loadWithReload(() => import('../content/legal')),
-      loadWithReload(() => import('../components/legal/LegalDocBody')),
+      import('../content/legal'),
+      import('../components/legal/LegalDocBody'),
     ]).then(([{ legalDocuments }, { default: Body }]) => {
       if (live) setState({ status: 'ready', text: legalDocuments[doc.key], Body });
     }).catch(() => {
@@ -32,7 +40,7 @@ export function ReadingPanel({ doc, onClose }) {
   const { text, Body } = state;
   return (
     <>
-      <div className="vscrim" onClick={onClose} aria-hidden="true" />
+      <div className="vscrim" onClick={fromScrim} aria-hidden="true" />
       <div className="vp rd" role="dialog" aria-modal="true" aria-label={doc.title} ref={boxRef}>
         <div className="vph">
           <h3>{doc.title}</h3>
