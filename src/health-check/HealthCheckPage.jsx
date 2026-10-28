@@ -10,22 +10,23 @@ import {
   blankRow, cleanItems, emptyDraft, draftFromData, dataFromDraft, setProjectDates,
 } from '../pages/alignment/alignmentFlow';
 import { at, clampStep, isLast, isValid, nextStep, percent, prevStep, stepFromJson, stepToJson, hasGaps } from './flow';
-import { CON, PROG, RES, howLines } from './words';
+import { CON, PROG, READING, RES, howLines } from './words';
 import {
   BoldCross, Chev, Choices, CodeBoxes, Dropdown, GrowBox, IconRow, InfoButton, PctBar, Rows, SaveLine, Sheet, TipProvider, Toast, cleanCode, useIsPhone,
 } from './parts';
 import Results from './Results';
 import { EXAMPLE } from './example';
 import { GuideCard, GuidePanel, readWatched } from './QuickGuide';
+import { ReadingPanel } from './Reading';
 
 // The outside Strategic Alignment Health Check, built to the approved mock-up
 // (M7b version 4). Its answers, saving, backup and emails use the same code
 // and database functions as before (src/lib/alignmentApi.js and friends).
 
 const SITE = 'https://theclarityproject.co.uk';
-// The coach who sent the link isn't stored with a Health Check yet (it needs
-// a migration), so the page says "your coach" for now.
-const COACH = 'your coach';
+// The coach who sent the link, by first name (alignment_open, from migration
+// 034), or "your coach" when the name is empty or not known yet.
+const NO_COACH = 'your coach';
 const PAGE_TITLE = 'Strategic Alignment Health Check';
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 // Keeps at most `max` characters (as the database counts them) without
@@ -43,6 +44,9 @@ const looksLikeEmail = (v) => /^\S+@\S+\.\S+$/.test(v.trim());
 const accessKey = (token) => `alignment-access:${token}`;
 const lastSavedKey = (token) => `hc-last-saved:${token}`;
 const seenKey = (token) => `hc-seen:${token}`;
+// The coach's first name from the last time this link opened on this device,
+// so the email and code screen can name them on a return visit.
+const coachKey = (token) => `hc-coach:${token}`;
 const store = {
   get(area, key) { try { return window[area].getItem(key); } catch { return null; } },
   set(area, key, v) { try { window[area].setItem(key, v); } catch { /* storage blocked: nothing kept */ } },
@@ -118,11 +122,14 @@ function Page() {
   const [reached, setReached] = useState(false);
   const [saveState, setSaveState] = useState('idle');
   const [organisation, setOrganisation] = useState(null);
+  const [coachName, setCoachName] = useState(() => store.get('localStorage', coachKey(token)) || null);
+  const coach = coachName || NO_COACH;
   const [serverCompletedAt, setServerCompletedAt] = useState(null);
   const [toast, setToast] = useState(null);
   const [panel, setPanel] = useState(null);
   const panelRef = useRef(null);
-  useEffect(() => { panelRef.current = panel; }, [panel]); // 'who' | 'how' | 'guide' | 'exact:s' | 'exact:f'
+  const docLinkRef = useRef(null);
+  useEffect(() => { panelRef.current = panel; }, [panel]); // 'who' | 'how' | 'guide' | 'exact:s' | 'exact:f' | 'doc:privacy' | 'doc:dataStorage'
   const [sort, setSort] = useState('att');
   const [dateMsg, setDateMsg] = useState({});
   const [pdf, setPdf] = useState({ busy: false, open: false });
@@ -211,6 +218,9 @@ function Page() {
     if (session.updatedAt) store.set('localStorage', lastSavedKey(token), session.updatedAt);
     completeRef.current = session.status === 'complete';
     setOrganisation(session.organisation || null);
+    setCoachName(session.coachName || null);
+    if (session.coachName) store.set('localStorage', coachKey(token), session.coachName);
+    else store.del('localStorage', coachKey(token));
     setServerCompletedAt(session.completedAt || null);
     // The browser copy is used only if it holds unsaved changes made against
     // the same version the server returned; otherwise the server copy wins.
@@ -451,7 +461,7 @@ function Page() {
   const head = (q, nudge) => (
     <>
       <PctBar pct={percent(step, draft)} />
-      <IconRow coach={COACH} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
+      <IconRow coach={coach} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
       <h2 className="qh rv" style={{ '--i': 1 }}>{q}</h2>
       <p className="nudge rv" style={{ '--i': 1 }}>{nudge}</p>
     </>
@@ -497,15 +507,21 @@ function Page() {
           <input className="inp" id="hc-email" type="email" value={email} placeholder="you@company.com" autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
           <label className="fl" htmlFor="hc-code">Access code</label>
           <CodeBoxes id="hc-code" value={code} onChange={setCode} onEnter={() => !opening && open(email, code)} />
-          <p className="privl">Only you and {COACH} see your answers.<InfoButton label="How your answers are kept" lines={[{ bold: 'Private and confidential' }, { line: 'Your answers are stored securely.' }, { line: 'They’re kept for 2 years after your last visit.' }]} /></p>
+          <p className="privl">Only you and {coach} see your answers.<InfoButton label="How your answers are kept" lines={[{ bold: 'Private and confidential' }, { line: 'Your answers are stored securely.' }, { line: 'They’re kept for 2 years after your last visit.' }]} /></p>
           <p className="privl">It saves as you go, so you can stop and come back.</p>
           {openError && <p className="err" role="alert">{openError}</p>}
           <button type="submit" className="btn full" aria-disabled={opening}>{ret ? 'Pick up where you left off' : 'Start the Health Check'}</button>
         </form>
         <div className="legal rv" style={{ '--i': 6 }}>
           {!ret && <button type="button" onClick={() => { setSort('att'); setPhase('example'); window.scrollTo(0, 0); }}>See an example report</button>}
-          <a href="/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-          <a href="/legal/data-storage" target="_blank" rel="noopener noreferrer">Data Storage Notice</a>
+          {[READING.privacy, READING.dataStorage].map((d) => (
+            <a key={d.key} href={d.href} target="_blank" rel="noopener noreferrer" aria-haspopup="dialog" onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // a new tab when asked for one
+              e.preventDefault();
+              docLinkRef.current = e.currentTarget;
+              setPanel(`doc:${d.key}`);
+            }}>{d.title}</a>
+          ))}
         </div>
       </div>
     );
@@ -553,7 +569,7 @@ function Page() {
     body = (
       <>
         <PctBar pct={percent(step, draft)} />
-        <IconRow coach={COACH} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
+        <IconRow coach={coach} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
         <h2 className="qh rv" style={{ '--i': 1 }}>What is your team working on?</h2>
         <p className="nudge rv" style={{ '--i': 1 }}>List every project or line of effort, now or in the pipeline.<InfoButton label="What counts as a project" lines={[{ bold: 'Projects' }, { line: 'Include anything that takes your team’s time, money or people.' }]} /></p>
         <div className="rv" style={{ '--i': 2 }}>
@@ -569,7 +585,7 @@ function Page() {
       <>
         {/* The question names the project and the CSF, with small counters above it and no panel (Tim, 27 Oct, 23:35). */}
         <PctBar pct={percent(step, draft)} />
-        <IconRow coach={COACH} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
+        <IconRow coach={coach} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
         <p className="cnt2 rv" style={{ '--i': 1 }}><span>Project {step.pi + 1} of {projects.length}</span><span>CSF {step.fi + 1} of {factors.length}</span></p>
         <h2 className="qh rv" style={{ '--i': 1 }}>How much does “<bdi>{project?.text}</bdi>” contribute to “<bdi>{f?.text}</bdi>”?</h2>
         <p className="nudge rv" style={{ '--i': 1 }}>Rate the level of impact.</p>
@@ -638,7 +654,7 @@ function Page() {
       <>
         <h2 className="t rv">Strategic Alignment Health Check</h2>
         <div className="meta rv" style={{ '--i': 1 }}>{organisation && <span>{organisation}</span>}{done && <span>{shortDate(done)}</span>}</div>
-        <IconRow coach={COACH} style={{ '--i': 1 }} onWho={() => setPanel('who')} onHow={() => setPanel('how')} onGuide={() => setPanel('guide')} />
+        <IconRow coach={coach} style={{ '--i': 1 }} onWho={() => setPanel('who')} onHow={() => setPanel('how')} onGuide={() => setPanel('guide')} />
         <Results draft={draft} phone={phone} sort={sort} onSort={setSort}
           onChange={(screen) => go(at(screen))}
           onEditProject={(id) => {
@@ -714,8 +730,8 @@ function Page() {
       <Toast toast={toast} onUndo={undo} />
       {panel === 'who' && (
         <Sheet title="Who can see this?" onClose={() => setPanel(null)}>
-          <div className="wsr"><span>You and {COACH}</span></div>
-          <p>Your answers are shared with {COACH}, who sent you this link.</p>
+          <div className="wsr"><span>You and {coach}</span></div>
+          <p>Your answers are shared with {coach}, who sent you this link.</p>
           <p>Nobody else can see them.</p>
         </Sheet>
       )}
@@ -725,6 +741,7 @@ function Page() {
         </Sheet>
       )}
       {panel === 'guide' && <GuidePanel onClose={() => setPanel(null)} />}
+      {panel?.startsWith('doc:') && <ReadingPanel doc={READING[panel.slice(4)]} returnFocus={docLinkRef} onClose={() => setPanel(null)} />}
       {panel?.startsWith('exact:') && project && (() => {
         const kind = panel.slice(6);
         const d = projectDates(project);

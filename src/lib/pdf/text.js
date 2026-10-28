@@ -181,9 +181,10 @@ export function createTypesetter(doc, chains) {
    * Draws one line with its baseline at y.
    * @param {'left'|'right'} [align] right: x is the right edge
    */
-  function draw(text, x, y, style, colour, align = 'left') {
+  function draw(text, x, y, style, colour, align = 'left', written = null) {
     const t = style.upper ? text.toLocaleUpperCase('en-GB') : text;
     let cx = align === 'right' ? x - width(t, { ...style, upper: false }) : x;
+    if (style.tracking && drawSpaced(t, cx, y, style, colour, written ?? (text !== t ? text : null))) return;
     // An invisible space ends every line, so copied, searched or read-aloud
     // text never runs the last word of one line into the next.
     const rs = runs(t, style);
@@ -195,8 +196,94 @@ export function createTypesetter(doc, chains) {
     }
   }
 
+  // Spaced capitals, PDF rule 33 (Tim, 28 Oct): readers that don't use a
+  // heading's written words guess the gaps between words from the spacing of
+  // the letters, and the letter-spacing sits near where they guess a space
+  // ("OBJ EC TIVE"). So the capitals are drawn with the font's own letter
+  // shapes, one after another with the same spacing, and the words lie over
+  // them as one run of invisible text without letter-spacing, stretched to the
+  // same width: copied, searched and read-aloud text is always whole words.
+  // `written` is the line as written (sentence case); without it the capitals.
+  // Returns false (and draws nothing) when a font has no letter shapes to draw.
+  function drawSpaced(t, x, y, style, colour, written) {
+    const rs = runs(t, style);
+    const laid = [];
+    for (const r of rs) {
+      doc.font(r.font).fontSize(style.size);
+      const f = doc._font;
+      if (typeof f?.layout !== 'function' || !f.font) return false;
+      const run = f.layout(r.text, opts(style).features);
+      if (run.glyphs.some((g) => !g.path)) return false;
+      laid.push({ run, upem: f.font.unitsPerEm });
+    }
+    const k = style.size / 1000;
+    let cx = x;
+    laid.forEach(({ run, upem }) => {
+      run.glyphs.forEach((g, i) => {
+        const pos = run.positions[i];
+        const svg = g.path.toSVG();
+        if (svg) {
+          const s = style.size / upem;
+          doc.save();
+          doc.transform(s, 0, 0, -s, cx + pos.xOffset * k, y - pos.yOffset * k);
+          doc.path(svg).fill(colour);
+          doc.restore();
+        }
+        cx += pos.xAdvance * k + style.tracking;
+      });
+    });
+    const shown = width(t, { ...style, upper: false });
+    // The written words; a letter no font has, such as "ﬁ", is written in
+    // its plain form ("fi") where the fonts have that.
+    const drawn = (g) => /\s/.test(g) || chains[style.font].some((n) => has(n, g));
+    const plain = (g) => (drawn(g) ? g : (graphemes(g.normalize('NFKC')).every(drawn) ? g.normalize('NFKC') : g));
+    const words = `${written != null ? graphemes(written).map(plain).join('') : t} `;
+    const flat = { ...style, tracking: 0, upper: false };
+    const natural = runs(words, flat).reduce((w, r) => {
+      doc.font(r.font).fontSize(style.size);
+      return w + doc.widthOfString(r.text, { features: style.features });
+    }, 0);
+    const scale = natural > 0 ? (shown / natural) * 100 : 100;
+    let wx = x;
+    doc.addContent('3 Tr'); // invisible
+    for (const r of runs(words, flat)) {
+      doc.font(r.font).fontSize(style.size).fillColor(colour);
+      doc.text(r.text, wx, y, { lineBreak: false, baseline: 'alphabetic', horizontalScaling: scale, features: style.features });
+      wx += doc.widthOfString(r.text, { horizontalScaling: scale, features: style.features });
+    }
+    doc.addContent('0 Tr');
+    return true;
+  }
+
+  /**
+   * The written words of each wrapped line of spaced capitals, so a heading
+   * keeps its sentence case under its capitals. null for a line that doesn't
+   * line up word for word (a very long word broken mid-word).
+   */
+  function writtenLines(source, lines) {
+    const words = String(source).split(/[ \t\u00a0\n]+/).filter(Boolean);
+    const upper = words.map((w) => w.toLocaleUpperCase('en-GB'));
+    let wi = 0;
+    let ci = 0; // how far into words[wi] the lines have reached (a word broken across lines)
+    return lines.map((line) => {
+      const parts = [];
+      let ok = true;
+      for (const piece of line.split(/[ \t\u00a0]+/).filter(Boolean)) {
+        const up = upper[wi];
+        if (up == null || !up.startsWith(piece, ci)) { ok = false; break; }
+        // a piece of a word keeps its own letters when capitals don't change its length
+        if (ci === 0 && piece === up) parts.push(words[wi]);
+        else if (up.length === words[wi].length) parts.push(words[wi].slice(ci, ci + piece.length));
+        else ok = false;
+        ci += piece.length;
+        if (ci >= up.length) { wi += 1; ci = 0; }
+      }
+      return ok ? parts.join(' ') : null;
+    });
+  }
+
   /** Distance from the top of a line box to its baseline. */
   const baseline = (style) => style.lh / 2 + style.size * 0.35;
 
-  return { width, wrap, shrink, draw, baseline };
+  return { width, wrap, shrink, draw, baseline, writtenLines };
 }

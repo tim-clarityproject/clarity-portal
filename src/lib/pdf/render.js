@@ -286,12 +286,16 @@ export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, ass
     }, 'Pagination');
   });
 
-  // section bookmarks when it is over two pages
-  if (pages.length > 2) {
-    pages.forEach((p, pi) => p.items.forEach(({ u }) => {
-      if (u.kind === 'heading' && u.section != null) doc.outline.addItem(sections[u.section].title, { pageNumber: pi });
-    }));
-  }
+  // A contents list (bookmarks) in every PDF (PDF rule 33, Tim, 28 Oct): each
+  // section once, by its name as written, on the page where it starts (never
+  // again for a table carried on). With no sections, the title alone.
+  const marked = new Set();
+  pages.forEach((p, pi) => p.items.forEach(({ u, cont }) => {
+    if (u.kind !== 'heading' || u.section == null || cont || marked.has(u.section)) return;
+    marked.add(u.section);
+    doc.outline.addItem(String(sections[u.section].title).replace(/\s+/g, ' ').trim(), { pageNumber: pi });
+  }));
+  if (!marked.size) doc.outline.addItem(String(spec.title || '').replace(/\s+/g, ' ').trim() || title, { pageNumber: 0 });
 
   root.el.end();
   doc.end();
@@ -304,6 +308,6 @@ export async function renderPdf(spec, { variant = 'light', paper = PAPER.A4, ass
     at += c.length;
   });
   // `layout` lists what sits on each page, for the page-break checks
-  const layout = pages.map((p) => p.items.map(({ u, cont }) => ({ kind: u.kind, lines: u.lines, h: Math.round(u.h), group: u.group ?? null, keep: !!u.keep, cont: !!cont })));
+  const layout = pages.map((p) => p.items.map(({ u, cont }) => ({ kind: u.kind, lines: u.lines, h: Math.round(u.h), group: u.group ?? null, keep: !!u.keep, cont: !!cont, ...(u.dots ? { dots: u.dots } : {}) })));
   return { bytes, pages: pages.length, fileName, title, layout };
 }

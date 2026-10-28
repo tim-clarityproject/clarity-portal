@@ -117,3 +117,9 @@ export function sortRows(rows, key) {
   if (cmp) out.sort((a, b) => cmp(a, b) || a.n - b.n);
   return out;
 }
+
+// The documents the reading pop-up opens (Reading.jsx), with their own pages.
+export const READING = {
+  privacy: { key: 'privacy', title: 'Privacy Policy', href: '/legal/privacy' },
+  dataStorage: { key: 'dataStorage', title: 'Data Storage Notice', href: '/legal/data-storage' },
+};

@@ -49,7 +49,7 @@ export function PctBar({ pct }) {
 export function IconRow({ coach, onWho, onHow, onGuide, style }) {
   return (
     <div className="iw rv" style={style}>
-      <button type="button" className="ilink" aria-haspopup="dialog" onClick={onWho}>
+      <button type="button" className="ilink who" aria-haspopup="dialog" onClick={onWho}>
         <Icon name="eye" /><span className="vh">Who can see this: </span>You and {coach}
       </button>
       {onHow && (
