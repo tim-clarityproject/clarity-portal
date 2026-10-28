@@ -121,7 +121,7 @@ export function TipProvider({ children }) {
   return (
     <TipContext.Provider value={{ show, hide, open: tip }}>
       {children}
-      <div ref={boxRef} className={`ctip${tip?.wide ? ' wide' : ''}`} role="tooltip" id="hc-tip" hidden={!tip}>
+      <div ref={boxRef} className={`ui-root ctip${tip?.wide ? ' wide' : ''}`} role="tooltip" id="hc-tip" hidden={!tip}>
         {tip && <TipLines lines={tip.lines} />}
       </div>
     </TipContext.Provider>
@@ -145,6 +145,7 @@ export function useTipTarget(lines, opts = {}) {
   const ref = useRef(null);
   const owner = useId();
   const isOpen = tipApi.open?.owner === owner;
+  const wasOpen = useRef(false);
   const open = () => ref.current && tipApi.show(ref.current, lines, { ...opts, owner });
   return {
     ref,
@@ -153,7 +154,9 @@ export function useTipTarget(lines, opts = {}) {
     onMouseLeave: () => tipApi.hide(owner),
     onFocus: open,
     onBlur: () => tipApi.hide(owner),
-    onClick: (e) => { e.stopPropagation(); if (isOpen) tipApi.hide(); else open(); },
+    // Focus (from the same press) opens it; the press closes it only if it was already open.
+    onPointerDown: () => { wasOpen.current = isOpen; },
+    onClick: (e) => { e.stopPropagation(); if (wasOpen.current) { wasOpen.current = false; tipApi.hide(); } else open(); },
     'aria-describedby': isOpen ? 'hc-tip' : undefined,
   };
 }

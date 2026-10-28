@@ -12,7 +12,8 @@
 @font-face { font-family: 'Nekst'; src: url('/fonts/Nekst-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Nekst'; src: url('/fonts/Nekst-Light.woff2') format('woff2'); font-weight: 300; font-display: swap; }
 
-.hc {
+/* The tokens sit on the page root and on the pop-up box, which is rendered beside it. */
+.hc, .ctip {
   --display: "Nekst", "DM Sans", "Helvetica Neue", Arial, sans-serif;
   --body: "DM Sans", "Helvetica Neue", Arial, sans-serif;
   --ease: cubic-bezier(.22, 1, .36, 1);
@@ -28,7 +29,7 @@
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
-  .hc {
+  .hc, .ctip {
     --bg: #F9F8F5; --surface: #EFEDE8; --card: #FFFFFF; --line: #DCDAD3; --line2: #E9E7E1; --edge: #858480; --btn: #B9B7B1;
     --fg: #000; --on-fg: #fff; --t2: #4A4A49; --ph: #636362; --g4: #B9B7B1; --accent: #C2412E; --soft: #A84E28;
     --mint: #0B7A52; --on-mint: #fff; --scrim: rgba(20, 20, 18, .28); --scrim2: rgba(249, 248, 245, .95);
@@ -82,9 +83,9 @@
 /* type */
 h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .1em; font-size: 28px; line-height: 1.2; text-wrap: balance; overflow-wrap: normal; }
 .qh { margin: 28px 0 0; font-size: 24px; line-height: 1.3; font-weight: 400; text-wrap: balance; }
-.nudge { margin: 10px 0 0; color: var(--t2); font-size: 16px; max-width: 52ch; }
+.nudge { margin: 10px 0 0; color: var(--t2); font-size: 16px; max-width: 35.6em; }
 .nudge + .nudge { margin-top: 4px; }
-.lead { margin: 12px 0 0; color: var(--t2); max-width: 56ch; }
+.lead { margin: 12px 0 0; color: var(--t2); max-width: 38.4em; }
 .dur { margin: 10px 0 0; font-size: 15px; color: var(--ph); }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 20px; margin-top: 10px; font-size: 14px; color: var(--t2); }
 .subj { margin-top: 20px; padding: 14px 20px; border-radius: 16px; background: var(--surface); font-size: 18px; line-height: 1.4; color: var(--fg); }
@@ -224,7 +225,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 /* the date picker (an exact date inside the chosen month) */
 .cal { margin-top: 12px; }
 .cal-head { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; font-size: 12px; color: var(--ph); text-align: center; margin-bottom: 4px; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
 .cal-grid button { all: unset; cursor: pointer; box-sizing: border-box; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 999px; border: 1px solid transparent; font-size: 15px; color: var(--fg); font-variant-numeric: tabular-nums; }
 .cal-grid button:hover { border-color: var(--accent); }
 .cal-grid button[aria-pressed="true"] { border-color: var(--accent); color: var(--fg); }
@@ -250,7 +251,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 .sec { margin-top: 44px; border-top: 1px solid var(--line); padding-top: 30px; }
 .sech { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
 .sech h3 { margin: 0; font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .12em; font-size: 16px; line-height: 1.3; overflow-wrap: normal; }
-.sech p { margin: 8px 0 0; color: var(--t2); font-size: 15px; max-width: 58ch; }
+.sech p { margin: 8px 0 0; color: var(--t2); font-size: 15px; max-width: 39.7em; }
 .sech p + p { margin-top: 4px; }
 .chg { all: unset; cursor: pointer; font-size: 14px; color: var(--t2); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--g4); min-height: 44px; display: inline-flex; align-items: center; flex: none; }
 .chg:hover, .chg:focus-visible { color: var(--accent); }
@@ -273,6 +274,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--body); }
 .chart svg g.dot { cursor: pointer; }
 .chart svg g.dot:focus { outline: none; }
+.chart svg g.dot .hit { fill: transparent; stroke: none; }
 .chart svg g.dot:focus-visible .hit, .chart svg g.dot:hover .hit { stroke: var(--accent); stroke-width: 2; }
 .chart-empty { margin-top: 18px; font-size: 15px; color: var(--t2); }
 .nxt { margin-top: 16px; font-size: 17px; }
@@ -316,7 +318,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 }
 
 /* pop-ups: what kind of thing first, the value large, one fact per line; 12px inside both edges */
-.ctip { position: fixed; z-index: 40; pointer-events: none; display: block; background: var(--toast-bg); color: var(--toast-fg); border: 1px solid var(--toast-line); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.4; max-width: 260px; width: max-content; white-space: normal; text-align: left; }
+.ctip { position: fixed; z-index: 40; font-family: var(--body); font-weight: 400; -webkit-font-smoothing: antialiased; overflow-wrap: anywhere; pointer-events: none; display: block; background: var(--toast-bg); color: var(--toast-fg); border: 1px solid var(--toast-line); border-radius: 12px; padding: 10px 14px; font-size: 13px; line-height: 1.4; max-width: 260px; width: max-content; white-space: normal; text-align: left; }
 .ctip[hidden] { display: none !important; }
 .ctip.wide { max-width: 300px; pointer-events: auto; }
 .ctip .tlab { display: block; font-size: 12px; opacity: .75; }
@@ -395,7 +397,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 .bigplay.done .bpc svg { fill: var(--fg); }
 .bigplay.done:hover .bpc { border-color: var(--accent); }
 .bigplay b { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .12em; font-size: 15px; color: var(--fg); }
-.bigplay small { font-size: 15px; color: var(--t2); max-width: 34ch; }
+.bigplay small { font-size: 15px; color: var(--t2); max-width: 23.3em; }
 .bigplay:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 
 /* loading */

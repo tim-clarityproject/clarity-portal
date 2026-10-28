@@ -47,7 +47,14 @@ function Dot({ dot, r0, top, phone, PT }) {
   const q = row.q;
   // The top project's name sits above its dot, or below it when the area names are in the way.
   const above = y - r0 - (q === 'co' ? 14 : 10);
-  const labelY = above - 12 < PT + 4 ? y + r0 + (q === 'co' ? 22 : 18) : above;
+  const words = row.text.split(/\s+/).flatMap((w) => (Array.from(w).length > 40 ? Array.from(w).join('').match(/.{1,40}/gu) : [w]));
+  const nameLines = words.reduce((ls, w) => {
+    const last = ls[ls.length - 1];
+    if (last && Array.from(`${last} ${w}`).length <= 40) ls[ls.length - 1] = `${last} ${w}`; else ls.push(w);
+    return ls;
+  }, []);
+  const below = above - 12 - (nameLines.length - 1) * 15 < PT + 4;
+  const labelY = below ? y + r0 + (q === 'co' ? 22 : 18) : above;
   const lines = [
     { label: `Project ${row.n}` },
     { bold: row.text },
@@ -62,12 +69,15 @@ function Dot({ dot, r0, top, phone, PT }) {
   const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); t.onFocus(); } };
   return (
     <g className="dot" tabIndex={0} role="button" aria-label={`Project ${row.n}, ${row.text}. ${stateSentence(row)}`} {...t} onKeyDown={onKey}>
-      <circle className="hit" cx={x} cy={y} r={22} style={{ fill: 'transparent', stroke: 'none' }} />
+      <circle className="hit" cx={x} cy={y} r={22} />
       {q === 'co' && <circle cx={x} cy={y} r={r0 + 4} style={{ fill: 'none', stroke: 'var(--soft)' }} strokeWidth={1} />}
       <circle cx={x} cy={y} r={r0} style={{ fill, stroke }} strokeWidth={q ? 1.5 : 1} />
       <text x={x} y={y + 4} textAnchor="middle" fontSize={12} style={{ fill: tc }}>{row.n}</text>
       {top && !phone && (q === 'co' || q === 'pe') && (
-        <text x={x} y={labelY} textAnchor="middle" fontSize={12.5} style={{ fill: 'var(--fg)' }}>{row.text.length > 48 ? `${Array.from(row.text).slice(0, 46).join('').trimEnd()}…` : row.text}</text>
+        <text x={x} y={labelY} textAnchor="middle" fontSize={12.5} style={{ fill: 'var(--fg)' }}>
+          {/* never cut off: a long name wraps onto more lines, upwards above the dot or downwards below it */}
+          {nameLines.map((line, i) => <tspan key={i} x={x} dy={i === 0 ? (below ? 0 : -(nameLines.length - 1) * 15) : 15}>{line}</tspan>)}
+        </text>
       )}
     </g>
   );

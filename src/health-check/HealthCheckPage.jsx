@@ -518,7 +518,7 @@ function Page() {
       const day = kind === 's' ? dates.startedOn : dates.dueOn;
       if (!month || month === 'open') return null;
       return (
-        <div className="dto">
+        <div className="dto rv" style={{ '--i': 4 }}>
           {day && <span className="exact">{formatDocDate(day).slice(4)}</span>}
           <button type="button" className="text" onClick={() => setPanel(`exact:${kind}`)}>{day ? 'Change the exact date' : 'Add an exact date'}</button>
         </div>
@@ -533,15 +533,15 @@ function Page() {
             <span className="fl" id="hc-started">Started</span>
             <Dropdown label="Started" title="Started" value={dates.started || ''} options={monthOptions('s', dates.started)} onChange={(v) => setDates('s', v)} />
             {dateMsg.s && <p className="fieldmsg" role="alert">{dateMsg.s}</p>}
-            {exact('s')}
           </div>
           <div>
             <span className="fl" id="hc-due">Due to finish</span>
             <Dropdown label="Due to finish" title="Due to finish" value={dates.due || ''} options={monthOptions('f', dates.due)} onChange={(v) => setDates('f', v)} />
             {dateMsg.f && <p className="fieldmsg" role="alert">{dateMsg.f}</p>}
-            {exact('f')}
           </div>
         </div>
+        {/* As the mock-up: one link under the pair, once Due to finish is a month. */}
+        {exact('f')}
       </>
     );
   } else if (step.screen === 'progress') {

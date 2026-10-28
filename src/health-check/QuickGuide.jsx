@@ -63,6 +63,7 @@ function Player({ inline, autoPlay, onWatched }) {
     v.addEventListener('ended', onEnd);
     v.addEventListener('play', () => setPlaying(true));
     v.addEventListener('pause', () => setPlaying(false));
+    onTime(); // the video may already be ready when this runs
     if (autoPlay) v.play().then(() => setStarted(true)).catch(() => {});
     return () => {
       track?.removeEventListener('cuechange', onCue);
