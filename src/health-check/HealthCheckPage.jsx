@@ -30,6 +30,7 @@ const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct
 const looksLikeEmail = (v) => /^\S+@\S+\.\S+$/.test(v.trim());
 
 const accessKey = (token) => `alignment-access:${token}`;
+const lastSavedKey = (token) => `hc-last-saved:${token}`;
 const seenKey = (token) => `hc-seen:${token}`;
 const store = {
   get(area, key) { try { return window[area].getItem(key); } catch { return null; } },
@@ -121,6 +122,8 @@ function Page() {
   const draftRef = useRef(draft);
   const stepRef = useRef(step);
   const notifyRef = useRef(false);
+  const completeRef = useRef(false);
+  const keyboardRef = useRef(false);
   const toastTimer = useRef(null);
   const undoRef = useRef(null);
   const advanceTimer = useRef(null);
@@ -153,7 +156,11 @@ function Page() {
     let d = nextDraft;
     if (nextStepValue.screen === 'results' && !d.completedAt) {
       d = { ...d, completedAt: new Date().toISOString() };
-      notifyRef.current = true; // the first completion: tell the coach once the save lands
+      // The first completion tells the coach once the save lands; a Health
+      // Check the server already has as complete (an older one, saved
+      // without completedAt) never asks again.
+      if (!completeRef.current) notifyRef.current = true;
+      completeRef.current = true;
     }
     draftRef.current = d;
     setDraft(d);
@@ -187,6 +194,8 @@ function Page() {
     credsRef.current = creds;
     store.set('sessionStorage', accessKey(token), JSON.stringify(creds));
     store.set('localStorage', seenKey(token), '1');
+    if (session.updatedAt) store.set('localStorage', lastSavedKey(token), session.updatedAt);
+    completeRef.current = session.status === 'complete';
     setOrganisation(session.organisation || null);
     setServerCompletedAt(session.completedAt || null);
     // The browser copy is used only if it holds unsaved changes made against
@@ -215,6 +224,7 @@ function Page() {
     queueRef.current = queue;
     queue.on('status', (state, detail) => {
       setSaveState(state);
+      if (state === 'saved') store.set('localStorage', lastSavedKey(token), new Date().toISOString());
       if (state === 'saved' && notifyRef.current && credsRef.current) {
         notifyRef.current = false;
         // The server sends it once only, so a repeat does no harm; a failure isn't shown.
@@ -258,6 +268,15 @@ function Page() {
   useEffect(() => {
     if (phase === 'boot' && firstAccess) open(firstAccess.email, firstAccess.code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Was the last thing done with the keyboard? (A tap or click also focuses a choice.)
+  useEffect(() => {
+    const onKey = () => { keyboardRef.current = true; };
+    const onPointer = () => { keyboardRef.current = false; };
+    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('pointerdown', onPointer, true);
+    return () => { document.removeEventListener('keydown', onKey, true); document.removeEventListener('pointerdown', onPointer, true); };
   }, []);
 
   // Send anything waiting when the page is hidden or closed.
@@ -322,7 +341,7 @@ function Page() {
   };
   const pickContribution = (v) => {
     const f = factors[stepRef.current.fi];
-    const fromKeys = !!document.activeElement?.closest?.('.opts5');
+    const fromKeys = keyboardRef.current && !!document.activeElement?.closest?.('.opts5');
     setRating((r) => ({ contrib: { ...(r.contrib || {}), [f.id]: v } }));
     // Choosing one moves on by itself after about a third of a second.
     clearTimeout(advanceTimer.current);
@@ -413,7 +432,7 @@ function Page() {
       </div>
     );
   } else if (phase === 'signin') {
-    const savedAt = backup?.savedAt;
+    const savedAt = store.get('localStorage', lastSavedKey(token)) || backup?.savedAt;
     body = (
       <div className="wlc">
         {!ret && <button type="button" className="backl" onClick={() => setPhase('welcome')}><Chev dir="lf" />Back</button>}

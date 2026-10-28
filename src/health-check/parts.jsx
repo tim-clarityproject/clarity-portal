@@ -279,7 +279,6 @@ export function CodeBoxes({ id, value, onChange, onEnter }) {
       <input
         id={id}
         value={value}
-        maxLength={6}
         autoComplete="one-time-code"
         autoCapitalize="characters"
         spellCheck={false}

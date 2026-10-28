@@ -59,11 +59,17 @@ export function isValid(step, draft) {
   }
 }
 
-/** The first missing answer after (or, with from = -1, anywhere in) the run. */
+/**
+ * Does this step need visiting to fill a gap? A missing answer does; so does
+ * When for a project whose progress isn't rated yet (a new project).
+ */
+const needed = (s, draft) => isMissing(s, draft) || (s.screen === 'when' && isMissing({ screen: 'progress', pi: s.pi }, draft));
+
+/** The first step to fill a gap after (or, with from = -1, anywhere in) the run. */
 function firstMissing(seq, draft, from = -1) {
   for (let i = from + 1; i < seq.length; i += 1) {
     const s = seq[i];
-    if (PROJECT_SCREENS.includes(s.screen) && isMissing(s, draft)) return s;
+    if (PROJECT_SCREENS.includes(s.screen) && needed(s, draft)) return s;
   }
   return null;
 }
@@ -90,9 +96,7 @@ export function nextStep(step, draft, reached) {
     return gap ? { ...gap, mode: 'gaps' } : at('results');
   }
   if (step.mode === 'gaps') {
-    // Within a project, go through its screens; then on to the next gap.
-    const n = seq[i + 1];
-    if (n && n.pi === step.pi && PROJECT_SCREENS.includes(n.screen)) return { ...n, mode: 'gaps' };
+    // Only what's missing: straight on to the next gap.
     const gap = firstMissing(seq, draft, i);
     return gap ? { ...gap, mode: 'gaps' } : at('results');
   }
@@ -157,6 +161,12 @@ export function stepFromJson(json, draft, complete = false) {
   const fi = Math.min(Math.max(Number.isInteger(json.factor) ? json.factor : 0, 0), Math.max(0, factors.length - 1));
   const mode = ['gaps', 'edit'].includes(json.mode) ? json.mode : (complete ? 'gaps' : 'full');
   if (name === 'contrib' && !factors.length) return at('csf');
+  if (name === 'contrib' && !Number.isInteger(json.factor)) {
+    // The older page saved no CSF number: open on the first one still to rate.
+    const r = draft.ratings[projects[pi].id] || {};
+    const gap = factors.findIndex((f) => r.contrib?.[f.id] == null);
+    return at(name, { pi, fi: Math.max(0, gap), mode });
+  }
   return at(name, { pi, fi: name === 'contrib' ? fi : 0, mode });
 }
 
