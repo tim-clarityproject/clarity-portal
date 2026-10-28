@@ -27,13 +27,24 @@ import './design.css';
 //   with reduced motion. The middle says "Average", the figure, then
 //   "Standard 85%". No ticks or week numbers; a pop-up on every week and
 //   on the crosshair.
-// The paused and welcome-back states come with Recovery (step 7).
+// - paused (Recovery, M15 rdial(true)): give `weeks` and `paused`. The
+//   set-up ring with no ticks; finished weeks in a quiet neutral ('done':
+//   scores are hidden, so no mint and no grey), the week it paused at
+//   drawn as a dashed outline ('paused'), weeks to come faint. The middle
+//   says "Week 4 of 8" over "Paused". With "Show my results" the finished
+//   weeks take their mint and grey ('good', 'below'). A pop-up on every
+//   week.
+// - welcome back (M15 rdial(false)): the running state with the middle
+//   saying "Week" over "4 of 8": give `centre` with `words`.
 //
 // length:  the number of weeks (set-up)
 // weeks:   [{ state: 'good'|'below'|'none'|'now'|'next', tip: { value, when, extra } }]
+//          (paused also 'done' and 'paused')
 // finished: the finished state (with weeks)
+// paused:  the paused state (with weeks)
 // dayInWeek: today's place in this week, 0 to 6 (running)
-// centre:  { small, big, good, note } what the middle says (running, finished)
+// centre:  { small, big, good, note, words } what the middle says (running,
+//          finished, paused); `words` sets big as words in Nekst capitals, not a score
 // todayTip: the today dot's pop-up words, e.g. { value: 'Today', when: 'Wed 28 Oct' }
 // crossTip: the crosshair's, e.g. { value: 'Start and end of the sprint', when: 'Mon 5 Oct to Sun 29 Nov' }
 // label:   what a screen reader hears for the whole dial
@@ -92,9 +103,10 @@ function layout(g, n) {
   return { step, base, edge, gap, dayAngle };
 }
 
-export default function SprintDial({ length, weeks, dayInWeek = 0, centre, todayTip, crossTip, label, finished = false }) {
+export default function SprintDial({ length, weeks, dayInWeek = 0, centre, todayTip, crossTip, label, finished = false, paused = false }) {
   const withWeeks = Array.isArray(weeks) && weeks.length > 0;
-  const running = withWeeks && !finished;
+  const stopped = withWeeks && paused && !finished;
+  const running = withWeeks && !finished && !paused;
   const ended = withWeeks && finished;
   const g = ended ? RING_FINISHED : RING;
   const mid = (g.out + g.in) / 2;
@@ -121,11 +133,26 @@ export default function SprintDial({ length, weeks, dayInWeek = 0, centre, today
         </g>
       );
     }
+    if (w.state === 'paused' && stopped) {
+      // The week it paused at: dashes along the ring (M15 rdial(true)).
+      const a0 = from + half(L.gap(i), mid);
+      const a1 = to - half(L.gap(i + 1), mid);
+      return (
+        <g key={i} className="ds-sdial-week" {...tip}>
+          <path className="ds-sdial-seg ds-sdial-seg--next" d={d} />
+          <path className="ds-sdial-paused" d={`M${f(point(a0, mid))}A${mid} ${mid} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${f(point(a1, mid))}`} strokeWidth={g.out - g.in} />
+        </g>
+      );
+    }
     // The finished dial: each week draws itself in, in turn (M6).
     return <path key={i} className={`ds-sdial-seg ds-sdial-seg--${w.state}`} d={d} style={ended ? { '--k': i } : undefined} {...tip} />;
   });
 
   let marks = null;
+  if (stopped) {
+    const cx = point(-90, mid);
+    marks = <rect className="ds-sdial-crosstip" x={cx[0] - 14} y={cx[1] - 14} width="28" height="28" {...tipProps(crossTip || { value: 'Start and end of the sprint' })} />;
+  }
   if (ended) {
     const cx = point(-90, mid);
     marks = <rect className="ds-sdial-crosstip" x={cx[0] - 14} y={cx[1] - 14} width="28" height="28" {...tipProps(crossTip || { value: 'Start and end of the sprint' })} />;
@@ -164,7 +191,17 @@ export default function SprintDial({ length, weeks, dayInWeek = 0, centre, today
     );
   }
 
-  const middle = ended && centre
+  const big = (cls) => (centre.words
+    ? <span className="ds-sdial-big ds-sdial-big--words">{centre.big}</span>
+    : <span className={`ds-sdial-big ${cls}${centre.good ? ' ds-sdial-big--good' : ''}`}>{centre.big}</span>);
+  const middle = stopped && centre
+    ? (
+      <span className="ds-sdial-centre ds-sdial-centre--running ds-sdial-centre--paused" aria-hidden="true">
+        <span className="ds-sdial-small">{centre.small}</span>
+        {centre.big != null && <span className="ds-sdial-big ds-sdial-big--words">{centre.big}</span>}
+      </span>
+    )
+    : ended && centre
     ? (
       <span className="ds-sdial-centre ds-sdial-centre--running ds-sdial-centre--finished" aria-hidden="true">
         <span className="ds-sdial-small">{centre.small}</span>
@@ -176,7 +213,7 @@ export default function SprintDial({ length, weeks, dayInWeek = 0, centre, today
     ? (
       <span className="ds-sdial-centre ds-sdial-centre--running" aria-hidden="true">
         <span className="ds-sdial-small">{centre.small}</span>
-        {centre.big != null && <span className={`ds-sdial-big ds-sdial-big--score${centre.good ? ' ds-sdial-big--good' : ''}`}>{centre.big}</span>}
+        {centre.big != null && big('ds-sdial-big--score')}
       </span>
     )
     : (
@@ -194,7 +231,7 @@ export default function SprintDial({ length, weeks, dayInWeek = 0, centre, today
   );
 
   return (
-    <div className={`ds-sdial${running ? ' ds-sdial--running' : ''}${ended ? ' ds-sdial--finished' : ''}`} style={ended ? { '--n': n } : undefined}>
+    <div className={`ds-sdial${running ? ' ds-sdial--running' : ''}${ended ? ' ds-sdial--finished' : ''}${stopped ? ' ds-sdial--paused' : ''}`} style={ended ? { '--n': n } : undefined}>
       <div className="ds-sdial-ring">
         {withWeeks ? <ChartTips className="ds-sdial-tips">{svg}</ChartTips> : svg}
         <span className="ds-sdial-cross" aria-hidden="true" style={{ top: `${(crossTop * 100).toFixed(3)}%` }}><Crosshair tone="white" /></span>

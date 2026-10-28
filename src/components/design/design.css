@@ -1009,6 +1009,11 @@
   overflow-wrap: break-word;
 }
 
+.ui-root .ds-tile-note {
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
 .ui-root .ds-tile-foot {
   margin-top: auto;
   display: flex;
@@ -5752,5 +5757,183 @@
   .ui-root .ds-sdial--finished .ds-sdial-seg,
   .ui-root .ds-sdial--finished .ds-sdial-cross .ds-cross {
     animation: none;
+  }
+}
+
+/* ---------- Recovery (M15) ---------- */
+
+/* The paused dial (M15 rdial(true)): no ticks, finished weeks in a quiet
+   neutral (scores hidden), the week it paused at in dashes. */
+.ui-root .ds-sdial--paused .ds-sdial-ring {
+  width: var(--sprint-dial-paused);
+}
+
+.ui-root .ds-sdial-seg--done { fill: var(--paused-done); }
+
+.ui-root .ds-sdial-paused {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-dasharray: var(--dash-paused);
+}
+
+.ui-root .ds-sdial--paused [data-tip] {
+  cursor: default;
+  outline: none;
+}
+
+.ui-root .ds-sdial--paused [data-tip]:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+/* Words in the middle (Paused, 4 of 8): Nekst capitals (CLAUDE.md rule 4). */
+.ui-root .ds-sdial-big--words {
+  font-size: var(--fs-dial-words);
+  letter-spacing: var(--ls-page-title);
+  text-transform: uppercase;
+}
+
+/* The day counter (M15 .dstp): a pill with minus and plus either side of
+   the number of days, and "suggested" under the suggested length. */
+.ui-root .ds-daycount {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-pill);
+}
+
+.ui-root .ds-daycount-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: var(--daycount-btn);
+  height: var(--daycount-btn);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+}
+
+.ui-root .ds-daycount-btn .ds-cross,
+.ui-root .ds-daycount-minus {
+  background-color: var(--text-2);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-daycount-minus {
+  display: block;
+  width: var(--daycount-minus);
+  height: var(--line-w);
+}
+
+.ui-root .ds-daycount-btn:hover .ds-cross,
+.ui-root .ds-daycount-btn:hover .ds-daycount-minus,
+.ui-root .ds-daycount-btn:focus-visible .ds-cross,
+.ui-root .ds-daycount-btn:focus-visible .ds-daycount-minus {
+  background-color: var(--coral-text);
+}
+
+.ui-root .ds-daycount-btn:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc(-1 * var(--focus-w));
+}
+
+.ui-root .ds-daycount-btn[aria-disabled='true'] {
+  cursor: default;
+  opacity: var(--disabled-opacity);
+}
+
+.ui-root .ds-daycount-btn[aria-disabled='true']:hover .ds-cross,
+.ui-root .ds-daycount-btn[aria-disabled='true']:hover .ds-daycount-minus {
+  background-color: var(--text-2);
+}
+
+.ui-root .ds-daycount-value {
+  min-width: var(--daycount-value-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: var(--fs-statement);
+  line-height: var(--lh-question);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-root .ds-daycount-value small {
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-daycount-value small.ds-daycount-hide {
+  visibility: hidden;
+}
+
+/* The calm panel where scores are hidden (M15 .rcalm) and the banner at
+   the top of the recovery day (M15 .rbanner). */
+.ui-root .ds-rec-notice,
+.ui-root .ds-rec-banner {
+  box-sizing: border-box;
+  max-width: var(--rec-panel-max);
+  padding: var(--space-px22);
+  border-radius: var(--radius-tile);
+  background: var(--raised);
+}
+
+.ui-root .ds-rec-lead {
+  margin: 0;
+  font-size: var(--fs-statement);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ds-rec-line {
+  margin: var(--space-px6) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-rec-show {
+  margin-top: var(--space-1);
+}
+
+.ui-root .ds-rec-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-px18) var(--space-px20);
+}
+
+.ui-root .ds-rec-banner p {
+  margin: 0;
+  line-height: var(--lh-text);
+}
+
+.ui-root .ds-rec-banner-lead {
+  font-size: var(--fs-text);
+  color: var(--text);
+}
+
+.ui-root .ds-rec-banner-left {
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ds-rec-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-px28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-daycount-btn .ds-cross,
+  .ui-root .ds-daycount-minus {
+    transition: none;
   }
 }

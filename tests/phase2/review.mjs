@@ -339,9 +339,9 @@ seed('--ended');
   pass('Recovery first opens /recovery', Boolean(await until(async () => page.url().endsWith('/recovery'), 20000)), page.url());
   const s = (await db.from('sprints').select('status').eq('user_id', me).eq('number', 2)).data[0];
   pass('Recovery first: the sprint is finished', s?.status === 'finished');
-  await page.waitForSelector('.ipp-coming');
-  await layoutChecks(page, '390px dark Recovery stand-in', 'dark');
-  await shot(page, 'recovery-stand-in');
+  await page.waitForSelector('.rec-question');
+  await layoutChecks(page, '390px dark Take a recovery week', 'dark');
+  await shot(page, 'recovery-start');
   await context.close();
 }
 

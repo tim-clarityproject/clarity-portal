@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
@@ -19,6 +19,8 @@ import {
   MoveTodoPanel,
   PageHeader,
   PerformanceSystem,
+  RecoveryLinks,
+  RecoveryNotice,
   SaveStatus,
   Section,
   SegmentedControl,
@@ -41,7 +43,8 @@ import {
   setTodoDeleted,
   setWinDeleted,
 } from '../../lib/performance/api';
-import { doneToast, localToday, moveOptions, settingForWeek, sprintPageView } from '../../lib/performance';
+import { dayName, doneToast, localToday, moveOptions, recoveryLead, settingForWeek, sprintPageView } from '../../lib/performance';
+import { useRecoveryActions } from './recoveryActions';
 import { toStored } from '../../lib/units';
 import { newId, useQueueState } from '../../lib/syncQueue';
 import { isOnline } from '../../lib/connection';
@@ -65,8 +68,12 @@ import './performance.css';
 // Finished weeks are frozen for the coach (freeze_week) when online
 // (risk R3); nothing else writes week_scores yet.
 //
-// Recovery (Phase 2 step 7, M15) pauses this page: the 'paused' state is
-// the hook, drawn by SprintPaused below until that step builds it.
+// Recovery (M15) pauses this page: the paused dial, when it picks up and
+// its new end, Add a few more days and I'm ready to go again, with the
+// scores hidden until "Show my results" (this visit only). Once the
+// chosen end has come, the end check-in shows instead. On the first day
+// back the top of the page says "Welcome back" (M15 "Welcome back. Let's
+// start with this week."). "Take a recovery week" sits beside the dial.
 
 const SAVE_DELAY_MS = 700; // typing in a number box saves this long after the last key, or on leaving the box
 const IMPACT_WORD = { 1: 'Low', 2: 'Medium', 3: 'High' };
@@ -88,6 +95,7 @@ export default function PerformanceSprint() {
   const { user } = useContext(AuthContext);
   const userId = user?.id;
   const { data, loading, error, setData } = useSprintPage(userId);
+  const recovery = useRecoveryActions({ setData });
   const today = localToday(data?.personSettings?.time_zone);
   const view = useMemo(() => (data ? sprintPageView(data, { today }) : null), [data, today]);
   const queue = useQueueState();
@@ -347,9 +355,13 @@ export default function PerformanceSprint() {
     ref.current?.querySelector('h2')?.focus({ preventScroll: true });
   };
 
-  const meta = view?.state === 'running'
+  const welcome = Boolean(view?.welcomeBack) && (view.state === 'running' || view.state === 'none');
+  const meta = welcome
+    ? []
+    : view?.state === 'running'
     ? [`Week ${view.current} of ${view.lengthWeeks}`, view.dates.text]
     : view?.dates ? [view.dates.text] : [];
+  const back = { label: 'Performance Sprint', to: '/performance-sprint' };
 
   let body;
   if (!data && loading) body = <Loading label="Loading your sprint" className="ds-loading--page" />;
@@ -359,9 +371,27 @@ export default function PerformanceSprint() {
         <ErrorMessage keepsHappening>Your sprint didn’t load. Check your connection and try again.</ErrorMessage>
       </div>
     );
+  } else if (view.state === 'paused' && view.pause.due) {
+    // The chosen end has come with no answer yet (audit 4.7): it stays
+    // paused, and the end check-in shows on every visit.
+    body = <Navigate to="/recovery/check-in" replace />;
   } else if (view.state === 'none') {
     body = (
       <div className="ipp-gap">
+        {view.recovery && (
+          // Recovery with no sprint running (after "Recovery first" at the end of a review).
+          <div className="rec-nosprint">
+            <RecoveryNotice lead={recoveryLead(view.recovery, today)} lines={['No sprint is running, so nothing is tracked.']} />
+            <RecoveryLinks
+              className="rec-links"
+              links={[
+                { label: 'Add a few more days', onClick: () => navigate('/recovery/check-in?add=1', { state: { back } }) },
+                { label: 'I’m ready to go again', onClick: () => recovery.end(view.recovery, today), disabled: recovery.working },
+                { label: 'Open my recovery day', onClick: () => navigate('/recovery/today') },
+              ]}
+            />
+          </div>
+        )}
         <EmptyState
           question="Ready to start a Performance Sprint?"
           action={{ label: 'Start a sprint', onClick: () => navigate('/performance-sprint/start') }}
@@ -405,7 +435,15 @@ export default function PerformanceSprint() {
       </>
     );
   } else if (view.state === 'paused') {
-    body = <SprintPaused view={view} onPlan={() => navigate('/performance-plan')} />;
+    body = (
+      <SprintPaused
+        view={view}
+        working={recovery.working}
+        onMore={() => navigate('/recovery/check-in?add=1', { state: { back } })}
+        onReady={() => recovery.end(view.recovery, today)}
+        onToday={() => navigate('/recovery/today')}
+      />
+    );
   } else {
     body = (
       <SprintBody
@@ -428,6 +466,7 @@ export default function PerformanceSprint() {
         onAddTodo={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.current))); setPanel('todo'); }}
         onAddWin={() => { setWinForm((f) => (f.text ? f : emptyWin(today))); setPanel('win'); }}
         navigate={navigate}
+        welcome={welcome}
       />
     );
   }
@@ -443,11 +482,12 @@ export default function PerformanceSprint() {
       <div className="plan-page ipp-page sprint-page">
         <div className="plan-back-row"><BackLink onClick={() => navigate('/plan-section')} label="Plan" /></div>
         <PageHeader
-          title={view?.name || 'Performance Sprint'}
+          title={welcome ? `Welcome back${data.firstName ? `, ${data.firstName}` : ''}` : view?.name || 'Performance Sprint'}
           meta={meta}
           info={pageText.performanceSprint}
           onSystemLink={() => setSystem(true)}
         />
+        {welcome && <p className="rec-welcome">Let’s start with this week.</p>}
         {body}
       </div>
 
@@ -505,15 +545,39 @@ export default function PerformanceSprint() {
 
 function SprintBody({
   view, mode, setMode, save, typed, logRef, todoRef, onJump, onLog, onType, onLeave, onTick, onHabit,
-  onToggleTodo, onMove, onAddTodo, onAddWin, navigate,
+  onToggleTodo, onMove, onAddTodo, onAddWin, navigate, welcome,
 }) {
   const centre = view.soFar
     ? { small: 'Performance score this week so far', big: `${view.soFar.value}%`, good: view.soFar.good }
     : { small: 'Nothing is scored yet this week.', big: null };
   const day = mode === 'day';
   const t = view.todos;
+  const hero = welcome ? (
+    // The first day back (M15 "Welcome back"): only the top changes, for today.
+    <>
+      <div className="rec-sprint">
+        <SprintDial
+          weeks={view.weeks}
+          dayInWeek={view.dayInWeek}
+          centre={{ small: 'Week', big: `${view.current} of ${view.lengthWeeks}`, words: true }}
+          todayTip={{ value: 'Today', when: view.todayText }}
+          crossTip={{ value: 'Start and end of the sprint', when: view.dates.text }}
+          label={`${view.name}, week ${view.current} of ${view.lengthWeeks}`}
+        />
+        <div className="rec-sprint-lines">
+          <p className="rec-sprint-lead">{`Sprint ${view.number} picks up today, at week ${view.current} of ${view.lengthWeeks}.`}</p>
+          <p className="rec-sprint-line">{`It ends on ${dayName(view.dates.end, view.today)}.`}</p>
+        </div>
+      </div>
+      <div className="ds-actions ipp-actions sprint-welcome-actions">
+        <Button variant="primary" onClick={() => onJump(logRef)}>Log today</Button>
+        <Button onClick={() => navigate('/plan-my-day')}>Plan my day</Button>
+      </div>
+    </>
+  ) : null;
   return (
     <>
+      {welcome ? hero : (
       <div className="sprint-hero">
         <SprintDial
           weeks={view.weeks}
@@ -566,8 +630,12 @@ function SprintBody({
               </dl>
             </Collapsible>
           </div>
+          <div className="sprint-recovery">
+            <Button variant="text" onClick={() => navigate('/recovery')}>Take a recovery week</Button>
+          </div>
         </div>
       </div>
+      )}
 
       <div ref={logRef} className="sprint-anchor">
         <Section
@@ -789,19 +857,60 @@ function HabitPanel({ habit, view, typed, data, onClose, onType, onLeave, onLog,
   );
 }
 
-// Recovery pauses the sprint (M15). Phase 2 step 7 replaces this with
-// the paused dial, the end check-in and "I'm ready to go again"; until
-// then it says the sprint is paused, with scores and standards hidden.
-function SprintPaused({ view, onPlan }) {
+// Recovery pauses the sprint (M15 "Sprint, paused"): the paused dial,
+// the week it paused at, when it picks up and its new end, then Add a few
+// more days and I'm ready to go again. Scores and standards are hidden
+// (no mint, no grey) until "Show my results", for this visit only: it is
+// never stored, so the next visit hides them again (M15 "Your results").
+function SprintPaused({ view, working, onMore, onReady, onToday }) {
+  const [show, setShow] = useState(false);
+  const p = view.pause;
   return (
     <>
-      <div className="ipp-gap ipp-coming">
-        <p>{`${view.name} is paused while you recover.`}</p>
-        <p>Your scores and standards are hidden until you’re back.</p>
+      <div className="rec-sprint">
+        <SprintDial
+          paused
+          weeks={show ? view.weeks : view.hiddenWeeks}
+          centre={{ small: `Week ${p.week} of ${view.lengthWeeks}`, big: 'Paused' }}
+          crossTip={{ value: 'Start and end of the sprint', when: view.dates.text }}
+          label={`${view.name}, week ${p.week} of ${view.lengthWeeks}, paused`}
+        />
+        <div className="rec-sprint-lines">
+          {p.complete ? (
+            <>
+              <p className="rec-sprint-lead">{`${view.name} ended on ${p.endedOn}.`}</p>
+              <p className="rec-sprint-line">Its review opens when you’re back.</p>
+            </>
+          ) : (
+            <>
+              <p className="rec-sprint-lead">{`Sprint ${view.number} is paused at week ${p.week} of ${view.lengthWeeks}.`}</p>
+              <p className="rec-sprint-line">{`It picks up on ${p.picksUpOn}.`}</p>
+              <p className="rec-sprint-line">{p.moved ? `It now ends on ${p.endOn} instead of ${p.endBefore}.` : `It ends on ${p.endOn}.`}</p>
+            </>
+          )}
+          {show ? (
+            <div className="rec-results" aria-live="polite">
+              <p className="rec-sprint-line">
+                {view.average ? <>Your average performance score so far is <span className="sprint-figure">{view.average}</span>.</> : 'No week of this sprint has a score yet.'}
+              </p>
+              <p className="rec-sprint-line">Your standard is <span className="sprint-figure">{`${view.standard}%`}</span>.</p>
+            </div>
+          ) : (
+            <div className="rec-results">
+              <p className="rec-sprint-line">Your scores and standards are hidden until you’re back.</p>
+              <Button variant="text" onClick={() => setShow(true)}>Show my results</Button>
+            </div>
+          )}
+        </div>
       </div>
-      <div className="ds-actions ipp-actions">
-        <Button variant="primary" onClick={onPlan}>Open my plan</Button>
-      </div>
+      <RecoveryLinks
+        className="rec-links"
+        links={[
+          { label: 'Add a few more days', onClick: onMore },
+          { label: 'I’m ready to go again', onClick: onReady, disabled: working },
+          { label: 'Open my recovery day', onClick: onToday },
+        ]}
+      />
     </>
   );
 }

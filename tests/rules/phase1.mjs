@@ -488,6 +488,11 @@ const n = (sql) => `select (${sql})::text`;
 const WB = (org, on) => `insert into public.org_wellbeing_switches (user_id, organisation_id, is_on) values (auth.uid(), current_setting('rules.${org}')::uuid, ${on}) on conflict (user_id, organisation_id) do update set is_on = excluded.is_on returning 'switched'`;
 const SWITCH = (who, part, on) => `insert into public.sharing_switches (user_id, part, is_on) values ({${who}}, '${part}', ${on}) on conflict (user_id, part) do update set is_on = excluded.is_on returning 'switched'`;
 
+// A Recovery started today for 9 days (the table checks' own rows are 7), and one with a recharge answer, as the client.
+const REC = (tell) => `insert into public.recovery_periods (user_id, start_on, chosen_days, let_coach_know) values ({client}, current_date, 9, ${tell}) returning 'started'`;
+const RECHARGE = (shared) => `with r as (insert into public.recovery_periods (user_id, start_on, chosen_days, let_coach_know) values ({client}, current_date, 9, true) returning id)
+  insert into public.recovery_recharge_answers (recovery_id, user_id, local_date, answer, shared) select id, {client}, current_date, 'An evening with no screens', ${shared} from r returning 'answered'`;
+
 export const SCENARIOS = [
   // a coach and the parts their clients share
   s('A coach sees their client\'s mission while it is shared', [['owner_coach', n('select count(*) from public.performance_plans where user_id = {client}')]], '1'),
@@ -506,6 +511,14 @@ export const SCENARIOS = [
   s('A coach lists only their own clients', [['second_coach', n('select count(*) from public.coach_client_list()')]], '1'),
   s('... and can\'t ask for another coach\'s', [['second_coach', n("select count(*) from public.coach_client_list(current_setting('rules.owner_coach_c')::uuid)")]], 'error 42501'),
   s('A client gets no client list', [['client', n('select count(*) from public.coach_client_list()')]], 'error 42501'),
+  // Recovery (M15): the coach sees only that it started and until when, and only when "Let [coach] know" is ticked
+  s('A Recovery with Let [coach] know ticked: the coach sees that it started, and until when', [['client', REC(true)], ['owner_coach', n('select count(*) from public.recovery_periods where user_id = {client} and start_on = current_date and chosen_days = 9 and ended_at is null')]], '1'),
+  s('... unticked, the coach sees nothing of it', [['client', REC(false)], ['owner_coach', n('select count(*) from public.recovery_periods where user_id = {client} and chosen_days = 9')]], '0'),
+  s('... another coach sees nothing of it', [['client', REC(true)], ['second_coach', n('select count(*) from public.recovery_periods where user_id = {client} and chosen_days = 9')]], '0'),
+  s('... and the coach can\'t change it', [['client', REC(true)], ['owner_coach', 'with x as (update public.recovery_periods set extended_days = 5 where user_id = {client} and chosen_days = 9 returning 1) select count(*)::text from x']], '0'),
+  s('The recharge answer stays Only you unless shared', [['client', RECHARGE(false)], ['owner_coach', n('select count(*) from public.recovery_recharge_answers where user_id = {client} and answer = \'An evening with no screens\'')]], '0'),
+  s('... shared, the coach reads that one answer', [['client', RECHARGE(true)], ['owner_coach', n('select count(*) from public.recovery_recharge_answers where user_id = {client} and answer = \'An evening with no screens\'')]], '1'),
+  s('Only one Recovery is open at a time', [['client', REC(true)], ['client', REC(true)]], 'error 23505'),
   // the sponsor
   s('The sponsor lists their current seat only (not the leaver)', [['sponsor', n('select count(*) from public.sponsor_people()')]], '1'),
   s('The sponsor reads the seat\'s frozen summary, and none made in another organisation', [['sponsor', n('select count(*) from public.person_summaries({org_client})')]], '1'),

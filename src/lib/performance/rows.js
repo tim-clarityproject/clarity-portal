@@ -4,6 +4,7 @@
 // and a sprint week for M5, so no screen works out a score itself.
 
 import { getLocalDateKey } from '../dateFormatter';
+import { addDays } from '../scores/dates.js';
 import {
   m0SprintCalendar,
   m0WeekOfDay,
@@ -130,6 +131,61 @@ export function openRecovery(rows = []) {
 }
 
 /**
+ * The day a Recovery ends: for one still running, its start plus the days
+ * chosen and added (M15 "Your recovery ends on Mon 2 Nov."), the day the
+ * sprint picks up; for one that has ended, its end_on ("I'm ready to go
+ * again").
+ */
+export function recoveryEndOn(row) {
+  if (!row) return null;
+  if (row.ended_at) return row.end_on;
+  return addDays(row.start_on, (row.chosen_days || 0) + (row.extended_days || 0));
+}
+
+/**
+ * Where a running sprint stands while a Recovery is open (M15 "Sprint 4
+ * is paused at week 4 of 8."). The methods (M0.4) leave the end unknown
+ * until "I'm ready to go again"; the screen shows the end it would have
+ * if the Recovery ends as chosen (UNDEFINED in the methods, audit 4.6:
+ * the open Recovery taken to end on start + chosen + added days, or today
+ * once that has passed, as it stays paused until the person answers),
+ * and the end it had before this Recovery.
+ *
+ * @returns {{ calendar, week: number, complete: boolean, endedOn: string|null,
+ *   picksUpOn: string, endOn: string, endBefore: string }}
+ *   week: the week it is paused at; complete: its weeks were all done
+ *   before the Recovery began (so nothing is paused and it has ended).
+ */
+export function sprintPause(sprint, recoveries = [], today) {
+  const open = openRecovery(recoveries);
+  const base = { start: sprint.start_on, lengthWeeks: sprint.length_weeks };
+  const calendar = m0SprintCalendar({ ...base, recoveries: toRecoveries(recoveries) }, today);
+  const n = sprint.length_weeks;
+  const last = calendar.weeks[calendar.weeks.length - 1] || null;
+  const complete = calendar.weeks.length === n && last?.days.length === 7;
+  const week = !last ? 1 : last.days.length < 7 ? last.number : Math.min(n, last.number + 1);
+  const chosenEnd = recoveryEndOn(open);
+  const picksUpOn = open && chosenEnd < today ? today : chosenEnd;
+  const assumed = recoveries.map((r) => (r === open ? { ...r, ended_at: 'assumed', end_on: picksUpOn } : r));
+  const projected = m0SprintCalendar({ ...base, recoveries: toRecoveries(assumed) }, today);
+  const before = m0SprintCalendar({ ...base, recoveries: toRecoveries(recoveries.filter((r) => r !== open)) }, today);
+  return {
+    calendar,
+    week,
+    complete,
+    endedOn: complete ? last.end : null,
+    picksUpOn,
+    endOn: complete ? last.end : projected.actualEnd || projected.plannedEnd,
+    endBefore: before.actualEnd || before.plannedEnd,
+  };
+}
+
+/** The Recovery that ended today, if any: the sprint's first day back (M15 "Welcome back"). */
+export function backToday(rows = [], today) {
+  return rows.find((r) => r.ended_at && r.end_on === today) || null;
+}
+
+/**
  * How many objectives each Strategy serves (for M5's weighting), from the
  * plan's links and its live objectives.
  */
@@ -144,21 +200,31 @@ export function servedCounts(strategies, links, objectives) {
 /**
  * The running sprint's week for today, scored so far (M5 "This week so
  * far"). Returns null when there's no sprint, it hasn't started, its weeks
- * are over, or a Recovery is running (scores are hidden then).
+ * are over, or a Recovery is running (scores are hidden then), unless
+ * `paused` asks for the week it paused in ("Show my results").
  *
  * @param {object} d rows: sprint, recoveries, workingPatterns, strategies,
  *   links, objectives, sprintHabits, sprintSettings, logs, todos, todoMoves, wins, winLinks
  * @param {string} today the person's local today
  */
-export function sprintWeekSoFar(d, today) {
+export function sprintWeekSoFar(d, today, { paused = false } = {}) {
   const { sprint } = d;
   if (!sprint || sprint.status !== 'running' || today < sprint.start_on) return null;
   const recoveries = d.recoveries || [];
-  if (openRecovery(recoveries)) return null;
+  const open = openRecovery(recoveries);
+  if (open && !paused) return null;
   const calendar = m0SprintCalendar(
     { start: sprint.start_on, lengthWeeks: sprint.length_weeks, recoveries: toRecoveries(recoveries) },
     today,
   );
+  if (open) {
+    // "Show my results" in Recovery (M15): the week the sprint paused in,
+    // scored up to its last day before the Recovery began.
+    const last = calendar.weeks[calendar.weeks.length - 1];
+    if (!last) return null;
+    const { week, result } = sprintWeekResult(d, calendar, last.number, last.finished ? null : last.end);
+    return { calendar, number: last.number, week, result, standard: sprint.standard, paused: true };
+  }
   const number = m0WeekOfDay(calendar.weeks, today);
   if (!number) return null;
   const { week, result } = sprintWeekResult(d, calendar, number, today);

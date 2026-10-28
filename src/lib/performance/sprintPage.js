@@ -27,7 +27,7 @@ import {
   USUAL_RANGE_MIN_WEEKS,
 } from '../scores/index.js';
 import { shownUnit, toShown } from '../units.js';
-import { openRecovery, settingForWeek, sprintWeekResult, toMeasure, toRecoveries, toTodo } from './rows';
+import { backToday, openRecovery, recoveryEndOn, settingForWeek, sprintPause, sprintWeekResult, toMeasure, toRecoveries, toTodo } from './rows';
 import { habitMeasureLine, plainNumber } from './words';
 
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -238,7 +238,9 @@ export function moveOptions(calendar, number, lengthWeeks, todo, today) {
 export function sprintPageView(d, { today }) {
   if (!d) return null;
   const sprint = d.sprint || null;
-  if (!sprint) return { state: 'none', today, hasPlan: Boolean(d.plan) };
+  if (!sprint) {
+    return { state: 'none', today, hasPlan: Boolean(d.plan), recovery: openRecovery(d.recoveries || []), welcomeBack: Boolean(backToday(d.recoveries || [], today)) };
+  }
   const name = `Performance Sprint ${sprint.number}`;
   const standard = sprint.standard;
   const base = { today, name, label: sprint.label || null, sprintId: sprint.id, number: sprint.number, lengthWeeks: sprint.length_weeks, standard };
@@ -252,9 +254,9 @@ export function sprintPageView(d, { today }) {
   if (today < sprint.start_on) {
     return { ...base, state: 'future', dates, startsOn: dayName(sprint.start_on, today) };
   }
-  // Recovery (Step 7 builds this state from M15): the sprint is paused and
-  // its scores and standards are hidden, so nothing is scored here.
-  if (recovery) return { ...base, state: 'paused', dates, recovery };
+  // Recovery (M15): the sprint is paused. Its finished weeks keep their
+  // scores, which the page hides unless "Show my results" is tapped.
+  if (recovery) return pausedView(d, { base, calendar, recovery, today });
 
   const current = m0WeekOfDay(calendar.weeks, today);
   const debriefs = new Map((d.debriefs || []).map((x) => [x.sprint_week, x]));
@@ -349,6 +351,9 @@ export function sprintPageView(d, { today }) {
   return {
     ...common,
     state: 'running',
+    // The first day back from a Recovery (M15 "Welcome back. Let's start
+    // with this week."): the top of the page changes for that day only.
+    welcomeBack: Boolean(backToday(d.recoveries || [], today)),
     current,
     week: { number: current, start: week.start, end: week.end, days: week.days, range: weekRange(week, today) },
     dayInWeek: week.days.indexOf(today),
@@ -363,3 +368,67 @@ export function sprintPageView(d, { today }) {
     calendar,
   };
 }
+
+/** A finished week's score, colour and pop-up, as the running page shows it. */
+function finishedWeek(d, calendar, wk, standard, today) {
+  const r = sprintWeekResult(d, calendar, wk.number, null);
+  const raw = r.result.score;
+  const score = raw == null ? null : m0Round(raw);
+  const colour = m7WeekColour(raw, standard);
+  const state = colour === 'none' ? 'none' : colour;
+  const when = `Week ${wk.number}, ${weekRange(wk, today)}`;
+  const tip = state === 'none'
+    ? { value: 'Nothing planned this week', when }
+    : { value: `Performance score ${score}%`, when, extra: [state === 'good' ? 'At or above your standard' : 'Below your standard'] };
+  return { number: wk.number, start: wk.start, end: wk.end, days: wk.days, finished: true, raw, score, state, tip };
+}
+
+/**
+ * The page while a Recovery is open (M15 "Sprint, paused"): the week it
+ * is paused at, when it picks up, its end now and before this Recovery
+ * (rows.js sprintPause), and every week for the dial. `weeks` carries the
+ * finished weeks' scores for "Show my results"; `hiddenWeeks` is the same
+ * dial with the scores hidden (no mint, no grey: M15 rdial(true)).
+ */
+function pausedView(d, { base, calendar, recovery, today }) {
+  const sprint = d.sprint;
+  const pause = sprintPause(sprint, d.recoveries || [], today);
+  const dates = { start: sprint.start_on, end: pause.endOn, text: `${dayName(sprint.start_on, today)} to ${dayName(pause.endOn, today)}` };
+  const weeks = Array.from({ length: sprint.length_weeks }, (_, i) => {
+    const wk = calendar.weeks[i];
+    const number = i + 1;
+    if (wk?.finished) return finishedWeek(d, calendar, wk, sprint.standard, today);
+    if (number === pause.week && !pause.complete) {
+      return { number, finished: false, raw: null, score: null, state: 'paused', tip: { value: 'Paused for your recovery', when: `Week ${number}`, extra: [`It picks up on ${dayName(pause.picksUpOn, today)}.`] } };
+    }
+    return { number, finished: false, raw: null, score: null, state: 'next', tip: { value: 'To come', when: `Week ${number}` } };
+  });
+  const hiddenWeeks = weeks.map((w) => (w.finished
+    ? { ...w, state: 'done', tip: { value: 'Finished', when: w.tip.when, extra: ['Your scores are hidden while you’re in recovery.'] } }
+    : w));
+  const figures = m6SprintFigures(weeks.map((w) => ({ number: w.number, score: w.raw, finished: w.finished })), sprint.standard);
+  const frozen = new Map((d.weekScores || []).filter((w) => w.sprint_id === sprint.id).map((w) => [w.sprint_week, w]));
+  return {
+    ...base,
+    state: 'paused',
+    dates,
+    recovery,
+    pause: {
+      week: pause.week,
+      complete: pause.complete,
+      endedOn: pause.endedOn ? dayName(pause.endedOn, today) : null,
+      picksUpOn: dayName(pause.picksUpOn, today),
+      endOn: dayName(pause.endOn, today),
+      endBefore: dayName(pause.endBefore, today),
+      moved: pause.endOn !== pause.endBefore,
+      // The chosen end has come with no answer yet (UNDEFINED, audit 4.7):
+      // the sprint stays paused and the end check-in shows.
+      due: recoveryEndOn(recovery) <= today,
+    },
+    weeks,
+    hiddenWeeks,
+    average: figures.average == null ? null : `${m0Round(figures.average)}%`,
+    toFreeze: weeks.filter((w) => w.finished && !frozen.get(w.number)?.final).map((w) => w.number),
+  };
+}
+

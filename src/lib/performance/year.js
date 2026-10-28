@@ -99,14 +99,18 @@ export function frozenWeeks(sprint, recoveries, weekScores, today) {
  * @param {object} d rows from loadYearPage: the running sprint's rows as
  *   loadSprintPage, plus every sprint (`sprints`) and every debrief
  *   (`allDebriefs`)
- * @param {{ today: string }} opts the person's local today
+ * @param {{ today: string, showResults?: boolean }} opts the person's local today
  */
-export function yearView(d, { today }) {
+export function yearView(d, { today, showResults = false }) {
   if (!d) return null;
   const { year, week: thisWeek } = isoWeek(today);
   const count = isoWeeksInYear(year);
   const recoveries = d.recoveries || [];
-  const hidden = Boolean(openRecovery(recoveries));
+  // In Recovery the running sprint is paused, so its weeks come from the
+  // frozen scores like any other; they are hidden unless "Show my
+  // results" was tapped on this visit (M15).
+  const paused = Boolean(openRecovery(recoveries));
+  const hidden = paused && !showResults;
   const debriefDone = new Set((d.allDebriefs || []).filter((x) => x.status === 'finished').map((x) => `${x.sprint_id}:${x.sprint_week}`));
 
   const slots = Array.from({ length: count }, (_, i) => {
@@ -128,7 +132,7 @@ export function yearView(d, { today }) {
   // it (this week so far included), the others from week_scores.
   const sprints = [...(d.sprints || [])].sort((a, b) => a.number - b.number);
   const running = d.sprint || null;
-  const runningView = running && !hidden ? sprintPageView(d, { today }) : null;
+  const runningView = running && !paused ? sprintPageView(d, { today }) : null;
   const toFreeze = [];
   const list = [];
   for (const s of sprints) {
@@ -217,6 +221,7 @@ export function yearView(d, { today }) {
     count,
     thisWeek,
     hidden,
+    paused,
     slots,
     sprints: list,
     standardLines,

@@ -682,3 +682,258 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Recovery (M15): Take a recovery week, the recovery day and the end
+   check-in. Calm and quiet: the soft surface colour, grey lines, one
+   coral button at most. */
+.ui-root .rec-label {
+  margin: var(--space-px18) 0 0;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .rec-page .rec-question {
+  max-width: 30ch;
+  margin-top: var(--space-px6) !important;
+}
+
+.ui-root .rec-nudge {
+  max-width: var(--nudge-max);
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-nudge);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .rec-nudge + .rec-nudge {
+  margin-top: var(--space-px2);
+}
+
+.ui-root .rec-counter {
+  margin-top: var(--space-px18);
+}
+
+.ui-root .rec-note {
+  margin: var(--space-px12) 0 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .rec-box {
+  box-sizing: border-box;
+  max-width: var(--rec-box-max);
+  margin-top: var(--space-px26);
+  padding: var(--space-px18) var(--space-px20);
+  border-radius: var(--radius-card);
+  background: var(--raised);
+}
+
+.ui-root .rec-box-title {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .rec-list {
+  margin: var(--space-px10) 0 0;
+  padding-left: var(--space-px18);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .rec-list li + li {
+  margin-top: var(--space-px6);
+}
+
+.ui-root .rec-tick {
+  max-width: var(--rec-box-max);
+  margin-top: var(--space-px18);
+}
+
+.ui-root .rec-tick .ds-check {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.ui-root .rec-tick .ds-check-label {
+  max-width: none;
+  padding-top: var(--space-px10);
+}
+
+.ui-root .rec-tick-name {
+  display: block;
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+
+.ui-root .rec-tick-line {
+  display: block;
+  margin-top: var(--space-px2);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .rec-actions {
+  margin-top: var(--space-px28);
+}
+
+.ui-root .rec-banner {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .rec-q {
+  max-width: var(--rec-panel-max);
+  margin-top: var(--space-5);
+}
+
+.ui-root .rec-qh {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-rec-question);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-question);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+}
+
+.ui-root .rec-text {
+  margin-top: var(--space-px10);
+}
+
+.ui-root .rec-qfoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
+}
+
+.ui-root .rec-hint {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .rec-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-px10);
+  max-width: var(--rec-panel-max);
+  margin-top: var(--space-px26);
+}
+
+.ui-root .rec-links {
+  margin-top: var(--space-px26);
+}
+
+.ui-root .rec-feel {
+  max-width: var(--rec-box-max);
+  margin-top: var(--space-px18);
+}
+
+.ui-root .rec-q2 {
+  margin: var(--space-px22) 0 0;
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+
+.ui-root .rec-sleep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ui-root .rec-sleep-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.ui-root .rec-problem {
+  margin: 0;
+  font-size: var(--fs-note);
+  color: var(--coral-soft-text);
+}
+
+/* The paused sprint and Welcome back (M15 .rsp): the dial beside its lines. */
+.ui-root .rec-sprint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-px22) var(--space-5);
+  margin-top: var(--space-px26);
+}
+
+.ui-root .rec-sprint .ds-sdial {
+  margin-top: 0;
+}
+
+.ui-root .rec-sprint-lines {
+  flex: 1 1 16em;
+  min-width: 0;
+}
+
+.ui-root .rec-sprint-lines p {
+  margin: 0;
+}
+
+.ui-root .rec-sprint-lead {
+  font-size: var(--fs-statement);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .rec-sprint-line {
+  margin-top: var(--space-px6) !important;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .rec-welcome {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-statement);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .rec-notice {
+  margin-top: var(--space-px26);
+}
+
+@media (max-width: 600px) {
+  .ui-root .rec-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ui-root .rec-actions .ds-btn {
+    width: 100%;
+  }
+}
+
+.ui-root .sprint-recovery {
+  margin-top: var(--space-2);
+}
+
+.ui-root .rec-results {
+  margin-top: var(--space-2);
+}
+
+.ui-root .sprint-welcome-actions {
+  margin-top: var(--space-4);
+}
+
+.ui-root .ipp-recovery {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.ui-root .rec-nosprint {
+  margin-bottom: var(--space-5);
+}

@@ -71,3 +71,5 @@ export { savePdf, PDF_ERROR } from './pdfSave';
 export { default as TodoRow, TodoList } from './TodoRow';
 export { AddTodoPanel, AddWinPanel, MoveTodoPanel } from './TodoPanels';
 export { IMPACT_OPTIONS } from './impact';
+export { default as DayCounter } from './DayCounter';
+export { RecoveryNotice, RecoveryBanner, RecoveryLinks } from './Recovery';

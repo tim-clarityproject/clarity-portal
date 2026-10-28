@@ -15,7 +15,8 @@
 
 import { STANDARD_CHOICES, m0SprintCalendar } from '../scores/index.js';
 import { SPRINT_LENGTHS, habitRow, habitComplete, startingSprint, TEMPLATE_LABEL } from './builder';
-import { toMeasure, toRecoveries } from './rows';
+import { openRecovery, toMeasure, toRecoveries } from './rows';
+import { endValues } from './recovery';
 
 export const LABEL_MAX = 60; // sprints.label
 
@@ -173,8 +174,9 @@ export function sprintAnswersFrom(setup, nextMonday) {
  *
  * @param {() => string} makeId newId on the device
  */
-export function pendingStart({ planId, number, startOn, lengthWeeks, standard, label = null, habits = [], finish = null }, makeId) {
+export function pendingStart({ planId, number, startOn, lengthWeeks, standard, label = null, habits = [], finish = null, endRecovery = null }, makeId) {
   return {
+    endRecovery: endRecovery ? { id: endRecovery.id, values: { ...endRecovery.values } } : null,
     sprintId: makeId(),
     planId,
     number,
@@ -204,4 +206,23 @@ export function pendingAction(pending, sprints = [], now = Date.now()) {
   const sameNumber = sprints.find((s) => s.number === pending.number);
   if (sameNumber && sameNumber.id !== pending.sprintId) return 'drop';
   return 'resend';
+}
+
+// ---------------------------------------------------------------- Recovery
+
+/**
+ * A Recovery still open when a new sprint starts (Claude's call, M15):
+ * starting a sprint means being ready to go again, so the Recovery ends
+ * today first (as "I'm ready to go again"), and the sprint it paused is
+ * finished as it stands then. Null when none is open.
+ */
+export function recoveryToEnd(recoveries = [], today, now = new Date()) {
+  const open = openRecovery(recoveries);
+  return open ? { id: open.id, values: endValues(open, today, now) } : null;
+}
+
+/** The Recovery rows as they will be once an open one has ended (for finishDay). */
+export function recoveriesEnded(recoveries = [], ending) {
+  if (!ending) return recoveries;
+  return recoveries.map((r) => (r.id === ending.id ? { ...r, ...ending.values } : r));
 }

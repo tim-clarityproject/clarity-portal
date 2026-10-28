@@ -11,12 +11,13 @@ import {
   Loading,
   PageHeader,
   PerformanceSystem,
+  RecoveryNotice,
   Section,
   YearChart,
 } from '../../components/design';
 import { useYearPage } from '../../lib/performance/hooks';
 import { freezeWeek } from '../../lib/performance/api';
-import { localToday, selectedWeek, yearView } from '../../lib/performance';
+import { localToday, openRecovery, recoveryLead, selectedWeek, yearView } from '../../lib/performance';
 import { useQueueState } from '../../lib/syncQueue';
 import { isOnline } from '../../lib/connection';
 import pageText from '../../content/pageText';
@@ -46,7 +47,10 @@ export default function SprintYear() {
   const userId = user?.id;
   const { data, loading, error, reload } = useYearPage(userId);
   const today = localToday(data?.personSettings?.time_zone);
-  const view = useMemo(() => (data ? yearView(data, { today }) : null), [data, today]);
+  // "Show my results" in Recovery: this visit only, never stored (M15).
+  const [showResults, setShowResults] = useState(false);
+  const view = useMemo(() => (data ? yearView(data, { today, showResults }) : null), [data, today, showResults]);
+  const recovery = openRecovery(data?.recoveries || []);
   const queue = useQueueState();
   const [picked, setPicked] = useState(null);
   const [system, setSystem] = useState(false);
@@ -98,11 +102,13 @@ export default function SprintYear() {
   } else {
     body = (
       <>
-        {view.hidden && (
-          <div className="ipp-gap ipp-coming">
-            <p>You’re in recovery.</p>
-            <p>Your scores and standards are hidden until you’re back.</p>
-          </div>
+        {recovery && (
+          <RecoveryNotice
+            className="ipp-recovery"
+            lead={recoveryLead(recovery, today)}
+            lines={[showResults ? 'Your results show as normal for this visit.' : 'Your scores and standards are hidden until you’re back.']}
+            action={showResults ? null : { label: 'Show my results', onClick: () => setShowResults(true) }}
+          />
         )}
         <div className="year-chart">
           <YearChart

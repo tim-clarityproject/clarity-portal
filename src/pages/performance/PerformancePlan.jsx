@@ -13,6 +13,7 @@ import {
   ObjectiveGrid,
   PageHeader,
   PerformanceSystem,
+  RecoveryNotice,
   Section,
   SlidePanel,
   StrategyDetail,
@@ -25,7 +26,7 @@ import {
 } from '../../components/design';
 import { usePlanPage } from '../../lib/performance/hooks';
 import { saveMilestoneReached, saveSharing } from '../../lib/performance/api';
-import { versionLabel } from '../../lib/performance';
+import { recoveryLead, versionLabel } from '../../lib/performance';
 import { friendlyError } from '../../lib/friendlyError';
 import pageText from '../../content/pageText';
 import { dayWords } from './planDates';
@@ -50,7 +51,9 @@ export default function PerformancePlan() {
   const isPhone = useIsPhone();
   const { user } = useContext(AuthContext);
   const userId = user?.id;
-  const { view, loading, error, setData } = usePlanPage(userId);
+  // "Show my results" in Recovery: this visit only, never stored (M15).
+  const [showResults, setShowResults] = useState(false);
+  const { view, loading, error, setData } = usePlanPage(userId, { showResults });
   const [openId, setOpenId] = useState(null);
   const [system, setSystem] = useState(false);
 
@@ -115,9 +118,12 @@ export default function PerformancePlan() {
   };
 
   const scoreNote = (s) => {
+    if (view.pausedWeek) return s.score ? null : `This Strategy had no score in week ${view.pausedWeek}.`;
     if (!view.sprintRunning || s.score) return null;
     return 'This Strategy has no score yet this week.';
   };
+  const hideScores = view?.inRecovery && !showResults;
+  const scoreLabel = view?.pausedWeek ? `Performance score in week ${view.pausedWeek}, before your recovery` : SCORE_LABEL;
 
   const editStrategy = (id) => navigate(`/performance-plan/edit?strategy=${encodeURIComponent(id)}`);
   const meta = view
@@ -151,6 +157,14 @@ export default function PerformancePlan() {
           </div>
         ) : (
           <>
+            {view.inRecovery && (
+              <RecoveryNotice
+                className="ipp-recovery"
+                lead={recoveryLead(view.recovery, view.today)}
+                lines={[showResults ? 'Your results show as normal for this visit.' : 'Your scores and standards are hidden until you’re back.']}
+                action={showResults ? null : { label: 'Show my results', onClick: () => setShowResults(true) }}
+              />
+            )}
             <section className="ds-mission-card" aria-labelledby="ipp-mission">
               <div className="ds-mission-card-head">
                 <h2 id="ipp-mission" className="ds-mission-card-label">My Mission</h2>
@@ -196,12 +210,12 @@ export default function PerformancePlan() {
                   {view.strategies.map((s) => (
                     <StrategyTile
                       key={s.id}
-                      strategy={view.inRecovery ? { ...s, score: null } : s}
+                      strategy={hideScores ? { ...s, score: null } : s}
                       open={openId === s.id}
                       controls={!isPhone && openId === s.id ? 'ipp-strategy-detail' : undefined}
                       onOpen={() => setOpenId((id) => (id === s.id ? null : s.id))}
-                      scoreLabel={SCORE_LABEL}
-                      scoreNote={view.inRecovery ? null : scoreNote(s)}
+                      scoreLabel={scoreLabel}
+                      scoreNote={hideScores ? null : scoreNote(s)}
                     />
                   ))}
                 </StrategyTiles>

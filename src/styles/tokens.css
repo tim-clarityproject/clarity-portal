@@ -255,6 +255,14 @@
   --fs-dial-week: calc(16 * var(--u-big));        /* the week numbers round it, in the drawing's units */
   --sprint-dial-finished: 250px;       /* the end-of-sprint review's dial (M6 .dm2.big) */
   --sprint-dial-finished-phone: 210px;
+  --fs-dial-words: calc(16 * var(--u-big)); /* words in a dial's middle: Paused, 4 of 8 (M15 rdial 16px) */
+  --sprint-dial-paused: 180px;         /* Recovery's paused and welcome-back dial (M15 .rdial 150px, plus room for its words) */
+  --daycount-btn: 48px;                /* the day counter's minus and plus (M15 .dstp) */
+  --daycount-value-w: 110px;           /* its number box keeps this width, so nothing moves (M15) */
+  --daycount-minus: 12px;              /* the minus line */
+  --dash-paused: 6 6;                  /* the paused week's dashes, in the dial drawing's units */
+  --rec-panel-max: 620px;              /* Recovery's panels and question (M15 .rq, .rcalm) */
+  --rec-box-max: 520px;                /* the start screen's panel and tick line (M15 .rbox, .rtick) */
   --year-chart-h: 200px;     /* View your year (M1 R.year: a 200-high plot) */
   --year-chart-h-phone: 150px;
   --year-bar-w: 5px;         /* each week's slim bar (M1: 5 of a 15.8 slot) */
@@ -290,6 +298,7 @@
   --guide-page-max: 640px;
   --fs-question: calc(24 * var(--u));       /* the question heading, DM Sans */
   --fs-question-phone: calc(21 * var(--u));
+  --fs-rec-question: calc(20 * var(--u));   /* Recovery's daily question (M15 .rqh) */
   --fs-title-guide-phone: calc(20 * var(--u-big)); /* a step's Nekst title on phone (M6) */
   --lh-question: 1.3;
   --fs-nudge: calc(16 * var(--u));
@@ -378,6 +387,7 @@
   --below: #636362;          /* weeks under the standard: neutral grey, never coral */
   --to-come: #262626;        /* weeks to come on the dial */
   --dial-done: #7F7F7C;
+  --paused-done: #4A4A49;    /* finished weeks on a paused dial: scores hidden, so neither mint nor grey (M15) */
   --day-off: #3A3A39;        /* past days in the calendar */
   --coral-text-raised: #FF6F5C; /* coral words on the raised surface */
   --coral-hover: #FF8A7A;    /* the coral button on hover: a slightly brighter coral, never like disabled */
@@ -448,6 +458,7 @@
   --below: #8F8D88;
   --to-come: #DCDAD3;
   --dial-done: #8F8D88;
+  --paused-done: #B9B7B1;
   --day-off: #C9C7C1;
   --scrim: rgba(20, 20, 18, 0.28); /* dims less in light, so it never looks muddy */
   --toast-bg: #000000;       /* toasts are black with white text in both modes */

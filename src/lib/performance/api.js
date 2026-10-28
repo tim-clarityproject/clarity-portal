@@ -404,6 +404,10 @@ export async function startSprint(userId, p) {
     const r = await saveOrQueue(userId, op);
     if (r?.status === 'queued') queued = true;
   };
+  // An open Recovery ends first (starting a sprint means being ready to go again).
+  if (p.endRecovery) {
+    await send({ table: 'recovery_periods', kind: 'update', match: { id: p.endRecovery.id, user_id: userId }, values: p.endRecovery.values });
+  }
   if (p.finish) await send(finishSprintOp(userId, p.finish.sprintId, p.finish.endOn));
   await send({
     table: 'sprints',
@@ -512,7 +516,7 @@ export function saveTodoDone(userId, todoId, doneOn) {
  * sprint's debriefs (an unusual week is left out of the range, M0.5).
  */
 export async function loadSprintPage(userId) {
-  const [plan, sprint, recoveries, workingPatterns, personSettings, weekScores] = await Promise.all([
+  const [plan, sprint, recoveries, workingPatterns, personSettings, weekScores, profile] = await Promise.all([
     loadActivePlan(userId),
     one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
     rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
@@ -521,8 +525,10 @@ export async function loadSprintPage(userId) {
     one(supabase.from('person_settings').select('time_zone, units').eq('user_id', userId).limit(1)),
     rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, eligible, final')
       .eq('user_id', userId).order('week_end')),
+    // The first name, for "Welcome back, Sam" after a Recovery (M15).
+    one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)).catch(() => null),
   ]);
-  const base = { plan, sprint, recoveries, workingPatterns, personSettings, weekScores };
+  const base = { plan, sprint, recoveries, workingPatterns, personSettings, weekScores, firstName: profile?.first_name || '' };
   if (!sprint) return { ...base, objectives: [], strategies: [], links: [] };
   const [objectives, strategies, links, debriefs, week] = await Promise.all([
     rows(supabase.from('outcome_objectives').select('id').eq('plan_id', sprint.plan_id).is('archived_at', null)),
@@ -701,4 +707,87 @@ export function saveHabitSettingFrom(userId, setting, fromWeek, changes) {
     onConflict: 'sprint_habit_id,from_week',
     values: { ...rest, ...changes, user_id: userId, from_week: fromWeek },
   });
+}
+
+// ---------------------------------------------------------------- Recovery
+
+const RECOVERY_COLS = 'id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know';
+
+/**
+ * Everything the Recovery pages show, as rows (M15): the running sprint
+ * (which a Recovery pauses), every Recovery (M0.4 counts them all), the
+ * time zone, the first name ("Good morning, Sam"), the coach ("Let
+ * [coach] know"; none means no such line) and the open Recovery's
+ * recharge answers.
+ */
+export async function loadRecoveryPage(userId) {
+  const [sprint, recoveries, personSettings, profile, coach] = await Promise.all([
+    one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
+    rows(supabase.from('recovery_periods').select(RECOVERY_COLS).eq('user_id', userId).order('start_on')),
+    one(supabase.from('person_settings').select('time_zone').eq('user_id', userId).limit(1)),
+    one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)),
+    loadMyCoach().catch(() => null),
+  ]);
+  const open = recoveries.find((r) => !r.ended_at);
+  const answers = open
+    ? await rows(supabase.from('recovery_recharge_answers').select('id, recovery_id, local_date, answer, shared')
+      .eq('recovery_id', open.id).order('local_date'))
+    : [];
+  return { sprint, recoveries, personSettings, firstName: profile?.first_name || '', coach, answers };
+}
+
+/** Start a Recovery (M15 "Start my recovery"): its id comes from the device, so a resend writes the same row. */
+export function startRecovery(userId, row) {
+  return saveOrQueue(userId, { table: 'recovery_periods', kind: 'upsert', values: { ...row, user_id: userId } });
+}
+
+/** End a Recovery, or add days to it (recovery.js endValues, extendValues). */
+export function changeRecovery(userId, recoveryId, values) {
+  return saveOrQueue(userId, {
+    table: 'recovery_periods',
+    kind: 'update',
+    match: { id: recoveryId, user_id: userId },
+    values,
+  });
+}
+
+/**
+ * Today's answer to "What would help you recharge today?" (one per day,
+ * found by its Recovery and day, so a change keeps the same row); an
+ * empty answer removes it. `shared` is whether the coach sees it.
+ */
+export function saveRechargeAnswer(userId, recoveryId, localDate, answer, shared) {
+  const text = (answer || '').trim();
+  if (!text) {
+    return saveOrQueue(userId, {
+      table: 'recovery_recharge_answers',
+      kind: 'delete',
+      match: { recovery_id: recoveryId, local_date: localDate, user_id: userId },
+    });
+  }
+  return saveOrQueue(userId, {
+    table: 'recovery_recharge_answers',
+    kind: 'upsert',
+    onConflict: 'recovery_id,local_date',
+    values: { user_id: userId, recovery_id: recoveryId, local_date: localDate, answer: text, shared: Boolean(shared) },
+  });
+}
+
+/**
+ * Last night's sleep (M15's Sleep tile, "How did you sleep last night?"),
+ * on today's day plan: found by the person and day, so Plan my day later
+ * finds the same row. Only the sleep fields are written.
+ */
+export function saveSleep(userId, localDate, { hours, quality }) {
+  return saveOrQueue(userId, {
+    table: 'day_plans',
+    kind: 'upsert',
+    onConflict: 'user_id,local_date',
+    values: { user_id: userId, local_date: localDate, sleep_hours: hours, sleep_quality: quality },
+  });
+}
+
+/** Today's day plan's sleep, if any. */
+export async function loadSleep(userId, localDate) {
+  return one(supabase.from('day_plans').select('sleep_hours, sleep_quality').eq('user_id', userId).eq('local_date', localDate).limit(1));
 }

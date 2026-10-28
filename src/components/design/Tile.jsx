@@ -10,7 +10,9 @@ import './design.css';
 // score:  { label, value } shown at the bottom, label first.
 // flag:   words for something that needs them ("No habits yet"), shown in
 //         soft coral with a soft coral edge. Never colour alone.
-export function Tile({ name, description, serves = [], score, flag, onClick, ...rest }) {
+// note:   a small grey line at the bottom, such as how long a tool takes
+//         ("~1 minute", M15's Sleep and Breathe tiles).
+export function Tile({ name, description, serves = [], score, flag, note, onClick, ...rest }) {
   return (
     <button type="button" className={`ds-tile${flag ? ' ds-tile--flagged' : ''}`} onClick={onClick} {...rest}>
       {serves.length > 0 && (
@@ -28,6 +30,7 @@ export function Tile({ name, description, serves = [], score, flag, onClick, ...
       <span className="ds-tile-name">{name}</span>
       {description && <span className="ds-tile-desc">{description}</span>}
       {flag && <span className="ds-tile-flag">{flag}</span>}
+      {note && <span className="ds-tile-note">{note}</span>}
       {score && (
         <span className="ds-tile-foot">
           <span>{score.label}</span>

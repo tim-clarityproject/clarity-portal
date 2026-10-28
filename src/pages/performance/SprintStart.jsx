@@ -37,6 +37,9 @@ import {
   draftFromRows,
   emptyHabit,
   finishDay,
+  openRecovery,
+  recoveriesEnded,
+  recoveryToEnd,
   habitCountWords,
   habitFromPlanRow,
   habitMeasureLine,
@@ -174,6 +177,7 @@ function SprintStartView({ userId, data }) {
       return {
         kind: 'starting',
         pending: pendingStart({
+          endRecovery: recoveryToEnd(data.recoveries || [], today),
           planId: data.plan.id,
           number: 1,
           startOn: handover.startOn,
@@ -550,6 +554,9 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
         {running && (
           <p className="plan-muted sprint-start-gap">{`Starting it finishes Performance Sprint ${running.number}.`}</p>
         )}
+        {openRecovery(data.recoveries || []) && (
+          <p className="plan-muted sprint-start-gap">Starting it ends your recovery today.</p>
+        )}
       </div>
     ),
   });
@@ -570,6 +577,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       return;
     }
     leaving.current = true;
+    const ending = recoveryToEnd(data.recoveries || [], today);
     onStart(pendingStart({
       planId: data.plan.id,
       number,
@@ -578,7 +586,8 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       standard,
       label,
       habits: chosen.habits,
-      finish: running ? { sprintId: running.id, number: running.number, endOn: finishDay(running, data.recoveries, today, sprint.start) } : null,
+      finish: running ? { sprintId: running.id, number: running.number, endOn: finishDay(running, recoveriesEnded(data.recoveries, ending), today, sprint.start) } : null,
+      endRecovery: ending,
     }, newId));
   };
 

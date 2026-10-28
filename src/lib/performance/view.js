@@ -28,7 +28,7 @@ const capital = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 /**
  * @param {object} data rows from loadPlanPage
- * @param {{ today?: string }} [opts]
+ * @param {{ today?: string, showResults?: boolean }} [opts]
  */
 export function planView(data, opts = {}) {
   if (!data?.plan) return null;
@@ -39,7 +39,9 @@ export function planView(data, opts = {}) {
   const check = alignmentCheck(objectivesRows, strategiesRows, links);
   const numberOf = new Map(objectivesRows.map((o, i) => [o.id, i + 1]));
   const recovery = openRecovery(data.recoveries || []);
-  const week = recovery ? null : sprintWeekSoFar({
+  // In Recovery the scores are hidden unless "Show my results" was tapped
+  // on this visit (M15): then the week the sprint paused in.
+  const week = recovery && !opts.showResults ? null : sprintWeekSoFar({
     sprint: data.sprint,
     recoveries: data.recoveries,
     workingPatterns: data.workingPatterns,
@@ -53,7 +55,7 @@ export function planView(data, opts = {}) {
     todoMoves: data.todoMoves,
     wins: data.wins,
     winLinks: data.winLinks,
-  }, today);
+  }, today, { paused: Boolean(recovery) });
   const standard = data.sprint?.standard ?? null;
   const scoreOf = (raw) => {
     if (raw == null) return null;
@@ -98,7 +100,7 @@ export function planView(data, opts = {}) {
         limit: h.limit_value, limitPer: h.limit_per, direction: h.direction,
       }),
     }));
-    const todos = week
+    const todos = week && !week.paused
       ? todosRows
         .filter((t) => t.strategy_id === s.id && t.planned_week != null && t.planned_week >= week.number)
         .sort((a, b) => a.planned_week - b.planned_week)
@@ -134,7 +136,9 @@ export function planView(data, opts = {}) {
     alignment: alignmentLines(check),
     alignmentOk: check.ok,
     inRecovery: Boolean(recovery),
-    sprintRunning: Boolean(week),
+    recovery,
+    pausedWeek: week?.paused ? week.number : null,
+    sprintRunning: Boolean(week) && !week.paused,
     weekScore: week ? scoreOf(week.result.score) : null,
     standard,
     coachName,

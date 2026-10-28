@@ -11,6 +11,11 @@
 //                                             Recovery, and Sprint 2 ended but not
 //                                             reviewed (for the end-of-sprint review
 //                                             and View your year)
+//   node scripts/seed-test-plan.mjs --reset --recovery[=N,M]
+//                                             the usual plan and running sprint,
+//                                             with a Recovery started N days ago
+//                                             for M days (default 3 and 7), still
+//                                             open, "Let [coach] know" ticked
 //
 // Signed in as the test client (~/.clarity-test-accounts.env, never
 // printed), it writes only what the app itself writes, through the same
@@ -247,5 +252,14 @@ await put('todos', [
 const winId = randomUUID();
 await put('wins', [{ id: winId, user_id: me, what: 'Spoke at a breakfast event and two people asked about coaching', local_date: day(monday, 1) < today ? day(monday, 1) : monday, impact: 3 }]);
 await put('win_strategies', [{ win_id: winId, strategy_id: S[2], user_id: me }]);
+
+const recoveryArg = process.argv.find((a) => a === '--recovery' || a.startsWith('--recovery='));
+if (recoveryArg) {
+  const [ago, chosen] = (recoveryArg.split('=')[1] || '3,7').split(',').map(Number);
+  await put('recovery_periods', [{
+    user_id: me, sprint_id: sprintId, start_on: day(today, -(ago || 0)), chosen_days: chosen || 7, let_coach_know: true,
+  }]);
+  console.log(`Added an open Recovery from ${day(today, -(ago || 0))} for ${chosen || 7} days.`);
+}
 
 console.log(`Seeded the test client's plan (version 3.2) and Performance Sprint 1 (8 weeks from ${startOn}), ${logs.length} logs.`);

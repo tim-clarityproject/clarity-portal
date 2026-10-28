@@ -1,5 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 import {
+  DayCounter,
+  RecoveryBanner,
+  RecoveryLinks,
+  RecoveryNotice,
   AlignmentCheck,
   HabitEditor,
   KeepChangeRow,
@@ -89,7 +93,7 @@ import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView 
 import SprintTool from './SprintTool';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
-import { selectedWeek, startingSprint, withMeasure, yearView } from '../../lib/performance';
+import { dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, withMeasure, yearView } from '../../lib/performance';
 import './designReference.css';
 
 // The design gallery: every shared component from src/components/design,
@@ -429,6 +433,23 @@ function SprintDialDemo() {
         label="Performance Sprint 2, week 5 of 5"
       />
       <SprintDial
+        paused
+        weeks={DIAL_WEEKS.slice(0, 3).map((w) => ({ state: 'done', tip: { value: 'Finished', when: w.tip?.when || 'Week', extra: ['Your scores are hidden while you’re in recovery.'] } }))
+          .concat([{ state: 'paused', tip: { value: 'Paused for your recovery', when: 'Week 4', extra: ['It picks up on Mon 2 Nov.'] } }])
+          .concat(Array.from({ length: 4 }, (_, i) => ({ state: 'next', tip: { value: 'To come', when: `Week ${i + 5}` } })))}
+        centre={{ small: 'Week 4 of 8', big: 'Paused' }}
+        crossTip={{ value: 'Start and end of the sprint', when: 'Mon 5 Oct to Sun 6 Dec' }}
+        label="Performance Sprint 4, week 4 of 8, paused"
+      />
+      <SprintDial
+        weeks={DIAL_WEEKS}
+        dayInWeek={0}
+        centre={{ small: 'Week', big: '4 of 8', words: true }}
+        todayTip={{ value: 'Today', when: 'Mon 2 Nov' }}
+        crossTip={{ value: 'Start and end of the sprint', when: 'Mon 5 Oct to Sun 6 Dec' }}
+        label="Performance Sprint 4, week 4 of 8"
+      />
+      <SprintDial
         finished
         weeks={[86, 72, 91, 94, 88, 79, 84, 90].map((v, i) => ({ state: v >= 85 ? 'good' : 'below', tip: { value: `Performance score ${v}%`, when: `Week ${i + 1}`, extra: [v >= 85 ? 'At or above your standard' : 'Below your standard'] } }))}
         centre={{ small: 'Average', big: '86%', good: true, note: 'Standard 85%' }}
@@ -492,6 +513,24 @@ const YEAR_ROWS = (() => {
     workingPatterns: [],
   };
 })();
+
+function RecoveryDemo() {
+  const [days, setDays] = useState(7);
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <DayCounter value={days} onChange={setDays} min={1} max={30} words={dayCountWords} suggested={7} label="How many days?" />
+      <span className="dr-small">{`Your recovery ends on ${dayName(shiftDay('2026-10-26', days), '2026-10-26')}.`}</span>
+      <RecoveryBanner until="You’re in recovery until Mon 2 Nov." left="4 days left." />
+      <RecoveryNotice
+        lead="You’re in recovery until Mon 2 Nov."
+        lines={[shown ? 'Your results show as normal for this visit.' : 'Your scores and standards are hidden until you’re back.']}
+        action={shown ? null : { label: 'Show my results', onClick: () => setShown(true) }}
+      />
+      <RecoveryLinks links={[{ label: 'Add a few more days', onClick: () => {} }, { label: 'I’m ready to go again', onClick: () => {} }]} />
+    </div>
+  );
+}
 
 function YearDemo() {
   const view = yearView(YEAR_ROWS, { today: '2026-10-28' });
@@ -1604,6 +1643,8 @@ function Gallery() {
             <p>Day ticks sit outside the ring, longer at the week edges, with a dot for today. Week numbers show on a wide screen only.</p>
             <p><b>No key.</b> Every week, today’s dot and the crosshair have a pop-up.</p>
             <p>The middle says “Performance score this week so far”, mint at the standard.</p>
+            <p><New /><b>Paused</b> (Recovery, M15): no ticks; finished weeks in a quiet neutral, as scores are hidden, so neither mint nor grey; the week it paused at in dashes; “Week 4 of 8” over “Paused”.</p>
+            <p><New /><b>Welcome back</b>: the running dial with “Week” over “4 of 8” in the middle.</p>
             <p><New /><b>Finished</b> (the end-of-sprint review): thinner, with a wider gap at the top; each week draws itself in, then the crosshair glows mint for a moment. Still with reduced motion. The middle says “Average”, the figure and the standard.</p>
           </>
         )} />
@@ -1633,6 +1674,16 @@ function Gallery() {
             <p><b>No key.</b> Each sprint is named above its weeks, the standard is a dashed line labelled at its right end, and every week has a pop-up.</p>
             <p>Picking a week outlines it and the page says more about it underneath.</p>
             <p>On a phone it runs full width, without the week numbers, with a month every quarter.</p>
+          </>
+        )} />
+
+        <GallerySection id="c44" title="Recovery" wide demo={RecoveryDemo} rules={(
+          <>
+            <p><New /><b>The day counter</b> (M15): minus and plus, one day at a time, from 1 to 30. Whole weeks read “1 week” and “2 weeks”, and the suggested length says “suggested” under it.</p>
+            <p>The number keeps its width, so changing it never moves anything else, and only the number and the end date under it change.</p>
+            <p><b>Calm panels</b> on the soft surface colour, with no border and no colour: the banner at the top of the recovery day, and the panel wherever scores are hidden, with one quiet “Show my results” for that visit only.</p>
+            <p>“Add a few more days” and “I’m ready to go again” are quiet text links, never coral.</p>
+            <p>The paused dial and the welcome-back dial are in The sprint dial.</p>
           </>
         )} />
 
