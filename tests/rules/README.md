@@ -62,3 +62,7 @@ Every table and function is then checked for the new role automatically.
 ## Seeing the SQL
 
 `node tests/rules/run.mjs --sql` writes the SQL it would run to a temporary file and prints where, without running it.
+
+## Step 5 (migration 035): guest links
+
+`guests.mjs` holds the guest part: one more invented person (someone who used a guest link and later makes an account with the same, confirmed email), invented guests with no account made in `GUEST_SETUP` with known test links, codes and visit keys (only their hashes are stored, as the functions would), the locked guest tables, every guest and coach function with who may call it, Send to client, and `GUEST_SCENARIOS`: a guest reaches only their own rows and only with the right link, email and code; expired, switched-off and locked links refuse; earlier work only once the email is confirmed; each coach sees only their own links, guests and answers (the owner lists all, but reads only their own guests' answers); claiming moves every row once; deleting removes only what it should; codes and tokens are never returned except once to the coach who made the link. On a database without 035 every guest check is skipped.

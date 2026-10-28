@@ -225,6 +225,20 @@ begin
     perform pg_temp.t_anon();
     f := f || pg_temp.t_eq('7m a code more than 10 minutes old doesn''t work', public.guest_email_confirm(vc, code) ->> 'error', 'invalid');
 
+    -- an account can't hand its own row to a guest
+    perform pg_temp.t_as(client_u);
+    f := f || pg_temp.t_eq('7n an account can''t hand its row to a guest', pg_temp.t_n(format('update public.decisions set guest_id = (select guest_id from public.decisions where id = %L), user_id = null where user_id = %L', d1 ->> 'id', client_u)), 'error 42501');
+    f := f || pg_temp.t_eq('7o ... or give its row a second owner', pg_temp.t_n(format('update public.decisions set guest_id = %L where user_id = %L returning 1', gen_random_uuid(), client_u)), 'error 23514');
+    -- ten codes a day at most for one email
+    perform pg_temp.t_service();
+    for i in 1..12 loop
+      perform public.guest_email_code_issue(public.guest_return_start('guest.a@example.com') ->> 'visit');
+    end loop;
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('7p at most 10 email codes a day for one email', pg_temp.t_n('select count(*) <= 10 from public.guest_email_codes c join public.guests g on g.id = c.guest_id where g.email = ''guest.a@example.com'' and c.created_at > now() - interval ''1 day'''), 'true');
+    delete from public.guest_email_codes where guest_id = (select id from public.guests where email = 'guest.a@example.com');
+    delete from public.guest_visits where guest_id = (select id from public.guests where email = 'guest.a@example.com') and link_id is null;
+
     -- ------------------------------------------------ 8. coming back without a link
     perform pg_temp.t_anon();
     vr := public.guest_return_start('GUEST.A@example.com') ->> 'visit';

@@ -9,6 +9,7 @@ import {
   INVENTED_PEOPLE, PHASE1_RELATIONSHIPS, SETUP as PHASE1_SETUP, PHASE1_TABLES, PHASE1_LOCKED_TABLES,
   PHASE1_FUNCTIONS, SCENARIOS as PHASE1_SCENARIOS,
 } from './phase1.mjs';
+import { GUEST_PEOPLE, GUEST_SETUP, GUEST_TABLES, GUEST_LOCKED_TABLES, GUEST_FUNCTIONS, GUEST_SCENARIOS } from './guests.mjs';
 
 export { OWN, NOBODY, SIGNED_IN, ANYONE };
 
@@ -24,6 +25,7 @@ export const PEOPLE = [
   { key: 'client', label: 'Client (Sam)', email: 'client@example.com', role: 'authenticated' },
   { key: 'org_client', label: 'Organisation client (Jordan)', email: 'org-client@example.com', role: 'authenticated' },
   ...INVENTED_PEOPLE,
+  ...GUEST_PEOPLE,
   { key: 'signed_out', label: 'Signed out', email: null, role: 'anon' },
 ];
 
@@ -32,7 +34,7 @@ export const PEOPLE = [
 export const RELATIONSHIPS = PHASE1_RELATIONSHIPS;
 
 // SQL run once, as the admin role, after the people are made.
-export const SETUP = PHASE1_SETUP;
+export const SETUP = [...PHASE1_SETUP, ...GUEST_SETUP];
 
 // ---------------------------------------------------------------- access
 // The answers to "may viewer do this to owner's row?" live in access.mjs.
@@ -167,6 +169,7 @@ export const TABLES = [
     change: 'name = t.name',
   }),
   ...PHASE1_TABLES,
+  ...GUEST_TABLES,
 ];
 
 // Tables nobody reaches directly: rows belong to no one person, and every
@@ -190,6 +193,7 @@ export const LOCKED_TABLES = [
     change: 'note = t.note',
   },
   ...PHASE1_LOCKED_TABLES,
+  ...GUEST_LOCKED_TABLES,
 ];
 
 // ---------------------------------------------------------------- functions
@@ -227,10 +231,11 @@ export const FUNCTIONS = [
   { sig: 'record_migration(integer,text)', ifExists: true, call: "select public.record_migration(0, 'rules-test')", access: NOBODY,
     note: 'Tim only, in the SQL editor (025).' },
   ...PHASE1_FUNCTIONS,
+  ...GUEST_FUNCTIONS,
 ];
 
 // Checks that take several steps as different people (phase1.mjs).
-export const SCENARIOS = PHASE1_SCENARIOS;
+export const SCENARIOS = [...PHASE1_SCENARIOS, ...GUEST_SCENARIOS];
 
 // ---------------------------------------------------------------- known gaps
 // Real gaps in today's rules, found by this test and not fixed yet. Each

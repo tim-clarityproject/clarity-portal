@@ -337,6 +337,20 @@ as $$
   where t.table_name = p_table;
 $$;
 
+-- The guest tables that are set up for guests (have guest_id), in claim
+-- order: a row in guest_tables for a table not yet enabled is ignored.
+create or replace function public._guest_ready_tables()
+returns setof public.guest_tables
+language sql
+stable
+set search_path = ''
+as $$
+  select t.* from public.guest_tables t
+  where exists (select 1 from pg_catalog.pg_attribute a
+                where a.attrelid = to_regclass('public.' || quote_ident(t.table_name)) and a.attname = 'guest_id' and not a.attisdropped)
+  order by t.claim_order;
+$$;
+
 -- The visit for a key: refused (42501) when unknown, ended, or its link has
 -- closed before the email was confirmed. Touches the visit and the guest.
 create or replace function public._guest_visit(p_key text)
@@ -396,7 +410,7 @@ set search_path = ''
 as $$
 declare t public.guest_tables;
 begin
-  for t in select * from public.guest_tables loop
+  for t in select * from public._guest_ready_tables() loop
     execute format('delete from public.guest_items i where i.guest_id = $1 and i.table_name = %L
                     and not exists (select 1 from public.%I x where %s = i.row_key)',
                    t.table_name, t.table_name, public._guest_key_sql(t.table_name, 'x'))
@@ -409,7 +423,7 @@ do $rv$
 declare f text;
 begin
   foreach f in array array['_guest_hash(text)', '_guest_random_key()', '_guest_key(text,jsonb)', '_guest_key_sql(text,text)',
-                           '_guest_visit(text)', '_guest_sees(public.guest_visits,text,text)', '_guest_items_tidy(uuid)'] loop
+                           '_guest_ready_tables()', '_guest_visit(text)', '_guest_sees(public.guest_visits,text,text)', '_guest_items_tidy(uuid)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
 end
@@ -570,7 +584,7 @@ begin
   if not exists (select 1 from public.guest_links where id = p_link and coach_user_id = (select auth.uid())) then
     raise exception 'That link isn''t yours.' using errcode = '42501';
   end if;
-  for t in select * from public.guest_tables order by claim_order loop
+  for t in select * from public._guest_ready_tables() loop
     execute format('select jsonb_agg(to_jsonb(x) - ''user_id'' - ''guest_id'' order by x.created_at)
                     from public.%I x join public.guest_items i on i.table_name = %L and i.row_key = %s
                     where i.link_id = $1 and x.guest_id = i.guest_id',
@@ -695,8 +709,8 @@ end;
 $$;
 
 -- For the server only: a new 6-digit code for a visit, to email to the
--- guest. At most 5 a visit and 10 a guest each hour; a new one replaces the
--- last. Nothing for an unknown or already confirmed visit.
+-- guest. At most 5 a visit each hour and 10 a guest each day (so at most 50
+-- guesses a day at an email's earlier work); a new one replaces the last. Nothing for an unknown or already confirmed visit.
 create or replace function public.guest_email_code_issue(p_visit text)
 returns jsonb
 language plpgsql
@@ -713,7 +727,7 @@ begin
   select * into s from public.guest_visits where key_hash = public._guest_hash(p_visit) and expires_at > now();
   if s.id is null or s.confirmed
      or (select count(*) from public.guest_email_codes c where c.visit_id = s.id and c.created_at > now() - interval '1 hour') >= 5
-     or (select count(*) from public.guest_email_codes c where c.guest_id = s.guest_id and c.created_at > now() - interval '1 hour') >= 10 then
+     or (select count(*) from public.guest_email_codes c where c.guest_id = s.guest_id and c.created_at > now() - interval '1 day') >= 10 then
     return jsonb_build_object('ok', false);
   end if;
   v_code := lpad((('x' || encode(extensions.gen_random_bytes(4), 'hex'))::bit(32)::bigint % 1000000)::text, 6, '0');
@@ -776,7 +790,7 @@ declare
   s public.guest_visits := public._guest_visit(p_visit);
   v_out jsonb;
 begin
-  if not exists (select 1 from public.guest_tables where table_name = p_table) then
+  if not exists (select 1 from public._guest_ready_tables() where table_name = p_table) then
     raise exception 'That isn''t a guest table.' using errcode = '22023';
   end if;
   execute format('select coalesce(jsonb_agg(to_jsonb(x) - ''user_id'' - ''guest_id'' order by x.created_at), ''[]'')
@@ -811,7 +825,7 @@ declare
   v_taken boolean;
   p jsonb;
 begin
-  select * into t from public.guest_tables where table_name = p_table;
+  select * into t from public._guest_ready_tables() where table_name = p_table;
   if t.table_name is null or jsonb_typeof(v_row) <> 'object' then
     raise exception 'That can''t be saved here.' using errcode = '22023';
   end if;
@@ -918,7 +932,7 @@ begin
   if s.link_id is null then
     raise exception 'Open the link to delete what you gave through it.' using errcode = '42501';
   end if;
-  for t in select * from public.guest_tables order by claim_order desc loop
+  for t in select * from public._guest_ready_tables() order by claim_order desc loop
     execute format('delete from public.%I x using public.guest_items i
                     where i.table_name = %L and i.row_key = %s and i.guest_id = $1 and x.guest_id = $1
                       and i.link_id = $2 and ($3 or i.visit_id = $4)',
@@ -973,7 +987,7 @@ begin
   if exists (select 1 from public.performance_plans where user_id = p_user and status = 'active') then
     update public.performance_plans set status = 'archived' where guest_id = p_guest and status = 'active';
   end if;
-  for t in select * from public.guest_tables order by claim_order loop
+  for t in select * from public._guest_ready_tables() loop
     execute format('update public.%I set user_id = $1, guest_id = null where guest_id = $2', t.table_name)
       using p_user, p_guest;
     get diagnostics n = row_count;
