@@ -3969,3 +3969,718 @@
 .ui-root .ds-status--failed {
   color: var(--coral-soft-text);
 }
+
+/* ==========================================================================
+   The Individual Performance Plan's parts (Phase 2, M1)
+   ========================================================================== */
+
+.ui-root .ds-section-aside {
+  margin-left: auto;
+  flex: none;
+}
+
+/* A bar under the standard: grey, never coral (Tim, 22 Oct). */
+.ui-root .ds-bar.ds-bar--below > span {
+  background: var(--below);
+}
+
+/* ---------- Circled objective numbers with their pop-up ---------- */
+
+.ui-root .ds-onum--tip {
+  position: relative;
+  cursor: default;
+  outline: none;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+/* The 44px tap area, without moving anything. */
+.ui-root .ds-onum--tip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  transform: translate(-50%, -50%);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-onum--tip:hover {
+    border-color: var(--coral-text);
+    color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-onum--tip:focus-visible {
+  border-color: var(--coral-text);
+  color: var(--coral-text);
+  box-shadow: 0 0 0 var(--focus-w) var(--coral-text);
+}
+
+/* ---------- Outcome Objective cards ---------- */
+
+.ui-root .ds-objectives {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--plan-tile-min), 100%), 1fr));
+  gap: var(--space-px12);
+}
+
+.ui-root .ds-objective {
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-px20);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-objective--flagged {
+  border-color: var(--coral-soft-text);
+}
+
+.ui-root .ds-objective-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-px12);
+  margin: 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-objective .ds-objective-name {
+  margin: var(--space-px6) 0 0 !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body) !important;
+  line-height: var(--lh-tile);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-objective-figure {
+  margin: auto 0 0;
+  padding-top: var(--space-px14);
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-objective-figure);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-objective-target {
+  margin-left: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-note);
+  color: var(--label);
+}
+
+.ui-root .ds-objective-milestone {
+  margin-top: auto;
+  padding-top: var(--space-px14);
+}
+
+.ui-root .ds-objective-milestone .ds-status-action-state,
+.ui-root .ds-objective-status {
+  margin: 0;
+  font-size: var(--fs-objective-status);
+  line-height: var(--lh-title);
+  color: var(--text-2);
+}
+
+.ui-root .ds-objective-status--done {
+  color: var(--mint-text);
+}
+
+.ui-root .ds-objective .ds-objective-bar {
+  width: 100%;
+  margin-top: var(--space-px12);
+}
+
+.ui-root .ds-objective-milestone .ds-status-action-link {
+  margin-top: var(--space-px10);
+}
+
+.ui-root .ds-objective-foot {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-objective--flagged .ds-objective-foot {
+  color: var(--coral-soft-text);
+}
+
+/* ---------- The alignment check ---------- */
+
+.ui-root .ds-align {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-px18);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  color: var(--text-2);
+}
+
+.ui-root .ds-align li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ui-root .ds-align-mark {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  background: var(--good);
+}
+
+.ui-root .ds-align-gap {
+  color: var(--coral-soft-text);
+}
+
+/* Needs you: an outlined ring, never a fill (START-HERE 5, Colour). */
+.ui-root .ds-align-gap .ds-align-mark {
+  background: none;
+  border: var(--line-w-strong) solid var(--coral-soft-text);
+}
+
+/* ---------- Strategy tiles ---------- */
+
+.ui-root .ds-stiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--plan-tile-min), 100%), 1fr));
+  gap: var(--space-px12);
+}
+
+.ui-root .ds-stile {
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-px14);
+  padding: var(--space-px22);
+  border-radius: var(--radius-tile);
+  background: var(--raised);
+  letter-spacing: normal;
+  transition: outline-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-stile--open {
+  outline: var(--line-w) solid var(--quiet-line);
+}
+
+.ui-root .ds-stile--flagged {
+  outline: var(--line-w) solid var(--coral-soft-text);
+}
+
+/* The circled numbers sit above the tile's button, so each has its own pop-up. */
+.ui-root .ds-stile-top {
+  position: relative;
+  z-index: 1;
+  min-height: var(--onum-size);
+  align-self: flex-start;
+}
+
+.ui-root .ds-stile-flag {
+  font-size: var(--fs-meta);
+  line-height: var(--onum-size);
+  color: var(--coral-soft-text);
+}
+
+.ui-root .ds-stile-btn {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  min-height: 0 !important;
+  padding: 0 !important;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The whole tile is the button. */
+.ui-root .ds-stile-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-tile);
+}
+
+.ui-root .ds-stile-btn:focus-visible::after {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-stile-name {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--fs-tile-title) !important;
+  line-height: var(--lh-tile);
+  color: var(--text);
+  overflow-wrap: break-word;
+  transition: color var(--dur) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-stile:hover .ds-stile-name {
+    color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-stile-score {
+  margin-top: auto;
+}
+
+.ui-root .ds-stile-score-label {
+  display: block;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-stile-figure {
+  display: block;
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-tile-figure);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ui-root .ds-stile-figure--good {
+  color: var(--good);
+}
+
+.ui-root .ds-stile .ds-bar {
+  width: 100%;
+  margin-top: var(--space-px10);
+}
+
+.ui-root .ds-stile-note {
+  margin: auto 0 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+/* ---------- Strategy detail ---------- */
+
+.ui-root .ds-sdetail {
+  margin-top: var(--space-px12);
+  padding: var(--space-px26);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-tile);
+  letter-spacing: normal;
+  animation: ds-sdetail-in var(--dur-slow) var(--ease);
+}
+
+@keyframes ds-sdetail-in {
+  from { opacity: 0; transform: translateY(var(--space-2)); }
+  to { opacity: 1; transform: none; }
+}
+
+.ui-root .ds-sdetail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: calc(-1 * var(--space-px10)) calc(-1 * var(--space-px10)) 0 0;
+}
+
+.ui-root .ds-sdetail .ds-sdetail-title {
+  margin: 0 !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-detail-title) !important;
+  line-height: var(--lh-title);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+}
+
+.ui-root .ds-sdetail-serves {
+  margin: var(--space-px6) 0 0;
+  font-size: var(--fs-note);
+  color: var(--label);
+}
+
+.ui-root .ds-sdetail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--plan-tile-min), 100%), 1fr));
+  gap: var(--space-px28);
+  margin-top: var(--space-px22);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-sdetail-col {
+  min-width: 0;
+}
+
+.ui-root .ds-sdetail-col .ds-sdetail-label {
+  margin: 0 0 var(--space-px6) !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-meta) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--label);
+}
+
+.ui-root .ds-sdetail-col .ds-sdetail-label--next {
+  margin-top: var(--space-px22) !important;
+}
+
+.ui-root .ds-sdetail-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .ds-sdetail-rows li {
+  padding: var(--space-px12) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-sdetail-rows li span {
+  display: block;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ds-sdetail-none {
+  margin: 0;
+  padding: var(--space-px12) 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-sdetail-none--after {
+  padding-top: 0;
+}
+
+.ui-root .ds-sdetail-actions {
+  margin-top: var(--space-px22);
+}
+
+/* ---------- The My Mission panel ---------- */
+
+@media (min-width: 769px) {
+  .ui-root .ds-dialog.ds-drop:not(.ds-dialog--phone) {
+    top: calc(var(--header-h-desktop) + var(--space-px12));
+    width: min(var(--mission-panel-w), calc(100% - 2 * var(--space-3)));
+    max-height: calc(100dvh - var(--header-h-desktop) - 2 * var(--space-4));
+    transform: translate(-50%, var(--space-2));
+  }
+
+  .ui-root.ds-modal--shown .ds-dialog.ds-drop:not(.ds-dialog--phone) {
+    transform: translate(-50%, 0);
+  }
+}
+
+.ui-root .ds-drop .ds-dialog-title {
+  font-family: var(--font-display) !important;
+  font-size: var(--fs-glyph) !important;
+  letter-spacing: var(--ls-overline) !important;
+  text-transform: uppercase !important;
+  color: var(--text-2) !important;
+}
+
+.ui-root .ds-mpanel {
+  letter-spacing: normal;
+}
+
+.ui-root .ds-mpanel-who {
+  display: flex;
+}
+
+.ui-root .ds-mpanel-mission {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-mission-panel);
+  line-height: var(--lh-question);
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-mpanel-objectives {
+  margin: var(--space-px18) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-mpanel-objectives li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-px12);
+  padding: var(--space-px12) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-mpanel-objectives li span {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-mpanel-objectives b {
+  flex: none;
+  max-width: 50%;
+  font-weight: var(--fw-regular);
+  text-align: right;
+  color: var(--text);
+}
+
+.ui-root .ds-mpanel-week {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+  margin-top: var(--space-px14);
+}
+
+.ui-root .ds-mpanel-score {
+  margin: 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ds-mpanel-score strong {
+  margin-left: var(--space-2);
+  font-weight: var(--fw-regular);
+  color: var(--text);
+}
+
+.ui-root .ds-mpanel-score strong.ds-mpanel-score--good {
+  color: var(--good);
+}
+
+.ui-root .ds-mpanel-actions {
+  margin-top: var(--space-3);
+}
+
+/* ---------- The Individual Performance System pop-up ---------- */
+
+@media (min-width: 769px) {
+  .ui-root .ds-popup:has(.ds-system) {
+    width: min(var(--system-popup-w), calc(100% - 2 * var(--space-3)));
+  }
+}
+
+.ui-root .ds-system {
+  letter-spacing: normal;
+}
+
+.ui-root .ds-system-lead p,
+.ui-root .ds-system-line {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-system-lead p + p,
+.ui-root .ds-system-line + .ds-system-line {
+  margin-top: var(--space-px6);
+}
+
+.ui-root .ds-system-box {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: var(--line-w) solid var(--quiet-line);
+  border-radius: var(--radius-card);
+}
+
+/* The plan is the part that leads: outlined in the text colour, never coral. */
+.ui-root .ds-system-box--plan {
+  border-color: var(--text);
+}
+
+.ui-root .ds-system-box--dash {
+  border-style: dashed;
+}
+
+.ui-root .ds-system .ds-system-name {
+  margin: 0 0 var(--space-1) !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+}
+
+.ui-root .ds-system-chain {
+  margin: var(--space-px12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .ds-system-layer {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--system-num) minmax(0, 1fr);
+  gap: var(--space-px12);
+  padding: var(--space-px10) 0;
+}
+
+/* The dashed line joining each layer to the next. */
+.ui-root .ds-system-layer:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--system-num) / 2);
+  top: calc(var(--space-px10) + var(--system-num));
+  bottom: calc(-1 * var(--space-px10));
+  border-left: var(--line-w) dashed var(--quiet-line);
+}
+
+.ui-root .ds-system-num {
+  box-sizing: border-box;
+  width: var(--system-num);
+  height: var(--system-num);
+  border: var(--line-w) solid var(--quiet-line);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  font-family: var(--font-display);
+  font-size: var(--fs-glyph);
+  line-height: 1;
+  color: var(--text-2);
+}
+
+.ui-root .ds-system-term {
+  margin: 0 0 var(--space-px2);
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ds-system-join {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-min);
+  font-style: italic;
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-system-link {
+  margin-top: var(--space-px14);
+  padding-left: var(--space-3);
+}
+
+.ui-root .ds-system-link p {
+  display: flex;
+  align-items: center;
+  gap: var(--space-px6);
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-system-link p + p {
+  margin-top: var(--space-1);
+}
+
+.ui-root .ds-system-gap {
+  height: var(--space-px12);
+}
+
+/* ---------- The plan page ---------- */
+
+.ui-root .ds-mission-card {
+  margin-top: var(--space-5);
+  padding: var(--space-px26) var(--space-px28);
+  border-radius: var(--radius-sheet-desktop);
+  background: var(--raised);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-mission-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+}
+
+.ui-root .ds-mission-card .ds-mission-card-label {
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-glyph) !important;
+  line-height: 1.2;
+  letter-spacing: var(--ls-overline);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .ds-mission-card-text {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-mission);
+  line-height: var(--lh-question);
+  color: var(--text);
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.ui-root .ds-mission-card-note {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-mission-card-note + .ds-mission-card-note {
+  margin-top: var(--space-1);
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-mission-card {
+    padding: var(--space-px22) var(--space-px20);
+  }
+
+  .ui-root .ds-mission-card-text {
+    font-size: var(--fs-mission-phone);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-sdetail {
+    animation: none;
+  }
+
+  .ui-root .ds-stile,
+  .ui-root .ds-stile-name,
+  .ui-root .ds-onum--tip {
+    transition: none;
+  }
+}

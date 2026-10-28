@@ -17,7 +17,7 @@ import './design.css';
 // - dim the page underneath strongly in dark and lightly in light.
 
 const SWIPE_CLOSE_PX = 90;
-const KIND_CLASS = { panel: 'ds-panel', popup: 'ds-popup', sheet: 'ds-choice-sheet' };
+const KIND_CLASS = { panel: 'ds-panel', popup: 'ds-popup', sheet: 'ds-choice-sheet', drop: 'ds-choice-sheet ds-drop' };
 const DOUBLE_CLICK_MS = 400;
 
 function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, closeLabel = 'Close' }) {
@@ -27,7 +27,8 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
   const [mounted, setMounted] = useState(open);
   const [shown, setShown] = useState(false);
   // Phone or laptop form, decided when it opens and kept until it closes.
-  const [phoneForm, setPhoneForm] = useState(false);
+  // (A dialog first rendered already open decides it straight away.)
+  const [phoneForm, setPhoneForm] = useState(() => Boolean(open) && isPhoneWidth());
   const dialogRef = useRef(null);
   const bodyRef = useRef(null);
   const drag = useRef(null);
@@ -169,7 +170,7 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
       >
-        {kind === 'sheet' && phoneForm && <span className="ds-sheet-grab" aria-hidden="true" />}
+        {(kind === 'sheet' || kind === 'drop') && phoneForm && <span className="ds-sheet-grab" aria-hidden="true" />}
         <div className="ds-dialog-head">
           <h2 id={titleId} className="ds-dialog-title">{title}</h2>
           <IconButton label={closeLabel} onClick={() => onCloseRef.current?.()} />
@@ -200,4 +201,11 @@ export function Popup(props) {
 // who can see something.
 export function Sheet(props) {
   return <Modal kind="sheet" {...props} />;
+}
+
+// The panel under the header's My Mission pill (M1 mpanel): on a laptop
+// it drops down just below the header, centred under the pill; on a phone
+// it rises from the bottom like the Sheet, near the thumb.
+export function DropPanel(props) {
+  return <Modal kind="drop" {...props} />;
 }

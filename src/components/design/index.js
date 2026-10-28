@@ -44,7 +44,14 @@ export { SavingIndicator, SavedIndicator, WillSyncIndicator, SaveStatus, Loading
 export { ToastProvider } from './Toast';
 export { default as ConnectionNotice, OFFLINE_WORDS } from './ConnectionNotice';
 export { useToast, ERROR_MESSAGE } from './toastContext';
-export { SlidePanel, Popup, Sheet } from './Dialogs';
+export { SlidePanel, Popup, Sheet, DropPanel } from './Dialogs';
+export { default as ObjectiveNumber, ObjectiveNumbers } from './ObjectiveNumber';
+export { default as ObjectiveCard, ObjectiveGrid } from './ObjectiveCard';
+export { default as AlignmentCheck } from './AlignmentCheck';
+export { default as StrategyTile, StrategyTiles } from './StrategyTile';
+export { default as StrategyDetail, StrategyDetailBody } from './StrategyDetail';
+export { default as MissionPanel } from './MissionPanel';
+export { default as PerformanceSystem, PerformanceSystemBody } from './PerformanceSystem';
 export { default as EmptyState } from './EmptyState';
 export { default as FloatingOrb } from './FloatingOrb';
 export { default as ChatButton } from './ChatButton';

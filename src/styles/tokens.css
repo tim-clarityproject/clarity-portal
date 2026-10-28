@@ -229,6 +229,19 @@
   --tip-edge: 12px;          /* never closer than this to a screen edge */
   --tip-gap: 8px;            /* between the mark and the pop-up */
   --tip-max-w: 240px;
+  /* The Individual Performance Plan (M1, Phase 2) */
+  --fs-mission: calc(24 * var(--u-big));        /* the mission on its panel */
+  --fs-mission-phone: calc(20 * var(--u-big));
+  --fs-mission-panel: calc(20 * var(--u-big));  /* the mission in the My Mission panel */
+  --fs-objective-figure: calc(26 * var(--u-big)); /* an Outcome Objective's figure, Nekst */
+  --fs-objective-status: calc(20 * var(--u-big)); /* a milestone's Not yet or Done */
+  --fs-tile-title: calc(19 * var(--u));       /* a Strategy's name on its tile */
+  --fs-tile-figure: calc(22 * var(--u-big));    /* a Strategy's score on its tile, Nekst */
+  --fs-detail-title: calc(21 * var(--u-big));   /* a Strategy's name in its detail */
+  --mission-panel-w: 560px;  /* the My Mission panel on desktop */
+  --system-popup-w: 620px;   /* The Individual Performance System pop-up */
+  --system-num: 24px;        /* the numbered circles in its chain */
+  --plan-tile-min: 280px;    /* two Strategy tiles or objective cards side by side */
   --fs-tip: calc(13 * var(--u));
   --fs-tip-value: calc(14 * var(--u));      /* the value comes first, and larger (M4: 14px against 13px) */
   --fs-tip-kind: calc(12 * var(--u));       /* "Outcome Objective 2", small, before a name */

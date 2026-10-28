@@ -1,5 +1,14 @@
 import { useCallback, useRef, useState } from 'react';
 import {
+  AlignmentCheck,
+  MissionPanel,
+  ObjectiveCard,
+  ObjectiveGrid,
+  ObjectiveNumbers,
+  PerformanceSystem,
+  StrategyDetail,
+  StrategyTile,
+  StrategyTiles,
   BoldCrosshair,
   BrandMark,
   CalendarPopover,
@@ -39,7 +48,6 @@ import {
   LoggingRow,
   PageHeader,
   PdfDownload,
-  Popup,
   SavedIndicator,
   SaveStatus,
   SavingIndicator,
@@ -79,6 +87,7 @@ const TOC = [
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c8', 'Dial and charts'], ['c9', 'Lists'], ['c10', 'Logging rows'],
   ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
+  ['c32', 'Outcome Objectives'], ['c33', 'Alignment check'], ['c34', 'Strategy tiles'], ['c35', 'My Mission panel'],
   ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
 
@@ -191,31 +200,114 @@ function PageHeaderDemo() {
   );
 }
 
+// The real Individual Performance System pop-up, in the one-pager's words.
 function SystemPopup({ open, onClose }) {
-  const [part, setPart] = useState('plan');
+  return <PerformanceSystem open={open} onClose={onClose} />;
+}
+
+
+// Invented example plan (M1's): four objectives, four Strategies.
+const PLAN_OBJECTIVES = [
+  { id: 'o1', number: 1, name: 'Coaching clients', kind: 'number', kindLabel: null, dateText: 'By 31 Dec 2027', timeLeft: '14 months left', figure: '31', target: 'of 40', progress: 0.78, strategyCount: 2, stripFigure: '31 of 40' },
+  { id: 'o2', number: 2, name: 'How world-class is my coaching?', kind: 'rating', kindLabel: 'Rated out of 10', dateText: 'By 31 Dec 2027', timeLeft: '14 months left', figure: '7/10', target: 'target 9/10', progress: 0.78, strategyCount: 2, stripFigure: '7/10 of 9/10' },
+  { id: 'o3', number: 3, name: 'Annual revenue', kind: 'number', kindLabel: null, dateText: 'By 31 Dec 2027', timeLeft: '14 months left', figure: '£172k', target: 'of £250k', progress: 0.69, strategyCount: 0, flagged: true, stripFigure: '£172k of £250k' },
+  { id: 'o4', number: 4, name: 'Publish my coaching book', kind: 'milestone', kindLabel: 'Milestone', dateText: 'By 30 Jun 2027', timeLeft: '8 months left', strategyCount: 1, stripFigure: 'Not yet, by 30 Jun 2027' },
+];
+
+const PLAN_STRATEGY = {
+  id: 's1',
+  name: 'Maintain my availability to do good work',
+  serves: [1, 2],
+  objectiveNames: ['Coaching clients', 'How world-class is my coaching?'],
+  servesLine: 'Serves objectives 1 and 2',
+  score: { value: 88, good: true },
+  habits: [
+    { id: 'h1', name: 'Steps', line: '10,000 steps a day' },
+    { id: 'h2', name: 'Training sessions', line: '4 sessions a week' },
+    { id: 'h3', name: 'Late finishes', line: 'Yes or no each day, no more than 2 days a week' },
+  ],
+  todos: [{ id: 't1', text: 'Book a physio assessment', when: 'This week' }],
+};
+
+function ObjectivesDemo() {
+  const toast = useToast();
+  const [done, setDone] = useState(false);
   return (
-    <Popup open={open} onClose={onClose} title="How it fits together">
-      <div className="dr-stack dr-stack--fill">
-        <Choice
-          label="Which part would you like to read about?"
-          options={[{ value: 'plan', label: 'The plan' }, { value: 'sprint', label: 'The sprint' }]}
-          value={part}
-          onChange={setPart}
+    <div className="dr-stack dr-stack--fill">
+      <ObjectiveNumbers items={[{ number: 1, name: 'Coaching clients' }, { number: 2, name: 'How world-class is my coaching?' }]} />
+      <ObjectiveGrid>
+        {PLAN_OBJECTIVES.map((o) => (
+          <ObjectiveCard
+            key={o.id}
+            as="h4"
+            objective={o.kind === 'milestone' ? { ...o, reached: done, progress: done ? 1 : 0 } : o}
+            onMarkDone={o.kind === 'milestone' ? (next) => { setDone(next); if (next) toast.saved({ message: `Done. ${o.name}.`, onUndo: () => setDone(false) }); } : undefined}
+          />
+        ))}
+      </ObjectiveGrid>
+    </div>
+  );
+}
+
+function AlignmentDemo() {
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <AlignmentCheck lines={[{ good: true, text: 'Every objective has a Strategy' }, { good: true, text: 'Every Strategy serves an objective' }]} />
+      <AlignmentCheck lines={[{ good: false, text: 'Annual revenue has no Strategy working on it' }]} />
+    </div>
+  );
+}
+
+function StrategyDemo() {
+  const toast = useToast();
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <StrategyTiles>
+        <StrategyTile strategy={PLAN_STRATEGY} open={open} onOpen={() => setOpen((o) => !o)} scoreLabel="Performance score this week so far" controls="dr-sdetail" />
+        <StrategyTile
+          strategy={{ id: 's2', name: 'Grow through referrals', serves: [1], objectiveNames: ['Coaching clients'], score: { value: 72, good: false } }}
+          onOpen={() => toast.show('This Strategy opens here.')}
+          scoreLabel="Performance score this week so far"
         />
-        {part === 'plan' ? (
-          <div>
-            <p className="dr-quiet">My Mission sits at the top.</p>
-            <p className="dr-quiet">Under it, a few Outcome Objectives say what you want to be true.</p>
-            <p className="dr-quiet">Strategies are how you’ll get there.</p>
-          </div>
-        ) : (
-          <div>
-            <p className="dr-quiet">Each Performance Sprint holds the habits and to-dos you log.</p>
-            <p className="dr-quiet">Your Performance score shows how much of the week’s plan you did.</p>
-          </div>
-        )}
-      </div>
-    </Popup>
+        <StrategyTile
+          strategy={{ id: 's3', name: 'Build The Clarity Portal', serves: [], flagged: true, score: null }}
+          onOpen={() => toast.show('This Strategy opens here.')}
+          scoreNote="This Strategy has no score yet this week."
+        />
+      </StrategyTiles>
+      {open && (
+        <StrategyDetail
+          id="dr-sdetail"
+          strategy={PLAN_STRATEGY}
+          onClose={() => setOpen(false)}
+          onEdit={() => toast.show('The Strategy’s editor opens here.')}
+        />
+      )}
+    </div>
+  );
+}
+
+function MissionPanelDemo() {
+  const [open, setOpen] = useState(false);
+  const [system, setSystem] = useState(false);
+  const [shared, setShared] = useState(true);
+  return (
+    <div className="dr-row">
+      <Button onClick={() => setOpen(true)}>Open the My Mission panel</Button>
+      <Button onClick={() => setSystem(true)}>How the system fits together</Button>
+      <MissionPanel
+        open={open}
+        onClose={() => setOpen(false)}
+        mission="Be a world-class high-performance coach"
+        objectives={PLAN_OBJECTIVES}
+        score={{ value: 88, good: true }}
+        who={{ audience: shared ? 'coach' : 'me', name: 'Your mission', onChange: async (next) => setShared(next === 'coach') }}
+        onSystemLink={() => { setOpen(false); setSystem(true); }}
+        onOpenPlan={() => setOpen(false)}
+      />
+      <PerformanceSystem open={system} onClose={() => setSystem(false)} />
+    </div>
   );
 }
 
@@ -1178,6 +1270,45 @@ function Gallery() {
           <>
             <p><New /><b>A question, then the button.</b></p>
             <p>No tours, no long explanations.</p>
+          </>
+        )} />
+
+        <GallerySection id="c32" title="Outcome Objectives" wide demo={ObjectivesDemo} rules={(
+          <>
+            <p><New /><b>Three ways to track</b>: a number, a rating out of 10, or a milestone.</p>
+            <p>The label line says which objective, its kind, its date and the time left, in the unit that fits.</p>
+            <p>Progress is a thin mint bar; a reached milestone is a full mint bar with a mint “Done”.</p>
+            <p>A milestone’s status sits on its own, with a quiet “Mark as done” link under it.</p>
+            <p>An objective no Strategy works on says so in soft coral, with a soft coral outline.</p>
+            <p><b>Every circled number opens “Outcome Objective 2”, then the name</b>, on hover, tap and keyboard focus, 12px inside both screen edges.</p>
+          </>
+        )} />
+
+        <GallerySection id="c33" title="Alignment check" demo={AlignmentDemo} rules={(
+          <>
+            <p><New /><b>Every objective has a Strategy, and every Strategy serves an objective.</b></p>
+            <p>When the plan lines up, two quiet lines, each with a small mint dot.</p>
+            <p>Each gap is a line of its own in soft coral with an outlined ring, never a filled dot, so it is never told from good by colour alone.</p>
+          </>
+        )} />
+
+        <GallerySection id="c34" title="Strategy tiles" wide demo={StrategyDemo} rules={(
+          <>
+            <p><New /><b>Serves, the name, then the score this week so far.</b></p>
+            <p>The score is mint at or above the standard, the text colour below it, with a grey bar.</p>
+            <p>The whole tile opens the Strategy’s detail; the circled numbers sit above it so each opens its own pop-up.</p>
+            <p>The detail lists the habits with their measure, the to-dos this sprint and the work tagged to it, then “Edit this Strategy”.</p>
+            <p>On a laptop it opens under the tiles with the rotated crosshair to close it; on a phone it opens in the full-screen panel.</p>
+          </>
+        )} />
+
+        <GallerySection id="c35" title="My Mission panel" demo={MissionPanelDemo} rules={(
+          <>
+            <p><New /><b>Opened from the header’s My Mission pill.</b></p>
+            <p>Who sees the mission (the eye can be tapped), the mission, each objective with its figure on the right, the score this week so far, the system link and “Open my plan”.</p>
+            <p>It drops below the header on a laptop and rises from the bottom on a phone.</p>
+            <p><New /><b>The Individual Performance System</b> pop-up uses the one-pager’s words, one sentence per line.</p>
+            <p>The two-way link uses the turned chevron, never a text arrow, and the plan’s box is outlined in the text colour, never coral.</p>
           </>
         )} />
 

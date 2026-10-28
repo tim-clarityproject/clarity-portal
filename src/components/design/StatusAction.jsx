@@ -7,6 +7,9 @@ import './design.css';
 // as not done" once done). Never a tick box beside a title, and nothing
 // beside a title bigger than the title. The link's tap area is 44px but
 // doesn't push the layout.
+//
+// between: anything that sits between the status and its link, such as an
+// objective's progress bar (M1).
 export default function StatusAction({
   done,
   onChange,
@@ -14,12 +17,14 @@ export default function StatusAction({
   notDoneLabel = 'Not yet',
   markDone = 'Mark as done',
   markNotDone = 'Mark as not done',
+  between = null,
 }) {
   return (
     <div className="ds-status-action">
       <p className={`ds-status-action-state${done ? ' ds-status-action-state--done' : ''}`} aria-live="polite">
         {done ? doneLabel : notDoneLabel}
       </p>
+      {between}
       <button type="button" className="ds-status-action-link" onClick={() => onChange(!done)}>
         {done ? markNotDone : markDone}
       </button>

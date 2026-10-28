@@ -1,0 +1,116 @@
+/* The Individual Performance Plan pages (Phase 2, M1). The shared parts
+   carry their own styles (src/components/design/design.css); this is
+   only the page's spacing. Every value is a token. */
+
+.ui-root .ipp-gap {
+  margin-top: var(--space-5);
+}
+
+.ui-root .ipp-align {
+  margin-top: var(--space-px14);
+}
+
+.ui-root .ipp-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+}
+
+.ui-root .ipp-section .ds-section-body {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .ipp-actions {
+  margin-top: var(--space-6);
+}
+
+.ui-root .ipp-muted {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-mission-card-text.ipp-muted {
+  font-size: var(--fs-mission-phone);
+}
+
+.ui-root .ipp-panel-title {
+  font-family: var(--font-body);
+  font-size: var(--fs-detail-title);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.ui-root .ipp-panel-serves {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+/* Version history */
+
+.ui-root .ipp-version-meta {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ipp-version-list {
+  margin-top: var(--space-5);
+}
+
+.ui-root .ipp-version-block {
+  margin-top: var(--space-6);
+}
+
+.ui-root .ipp-version-block .ds-section-body {
+  margin-top: var(--space-px18);
+}
+
+.ui-root .ipp-version-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .ipp-version-rows > li {
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ipp-version-rows .ipp-version-line {
+  display: block;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ipp-version-habits {
+  margin: var(--space-2) 0 0;
+  padding: 0 0 0 var(--space-3);
+  list-style: none;
+  border-left: var(--line-w) solid var(--line);
+}
+
+.ui-root .ipp-version-habits li {
+  padding: var(--space-1) 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+/* The page that waits for Build your plan (Phase 2, step 2). */
+.ui-root .ipp-coming p {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ipp-coming p + p {
+  margin-top: var(--space-1);
+}

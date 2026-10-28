@@ -2,9 +2,12 @@ import { useContext, useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
+import { AuthContext } from '../context/AuthContext';
 import { BoldCrosshair, ChatButton } from './design';
 import { useStartChat } from './coach/startChat';
+import { useActivePlan } from '../lib/performance/hooks';
 import DesignDrawer from './DesignDrawer';
+import PlanMissionPanel from './PlanMissionPanel';
 
 // The header (approved Home mock-up M2, version 3; decisions "Header").
 //
@@ -19,13 +22,26 @@ import DesignDrawer from './DesignDrawer';
 // the full mission with Edit mission on phone. With no mission it reads
 // "Add your mission when you're ready" and opens the mission step in My
 // Account.
+//
+// Someone with an Individual Performance Plan (Phase 2) sees the plan's
+// mission instead, and the pill opens the My Mission panel (M1 mpanel) on
+// desktop and phone. Everyone else keeps the pill as it was.
 const NO_MISSION = 'Add your mission when you’re ready';
 
 export default function DesignHeader({ className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const startChat = useStartChat();
-  const { mission, showInHeader } = useContext(MissionContext);
+  const { mission: oldMission, showInHeader } = useContext(MissionContext);
+  const { user } = useContext(AuthContext);
+  const activePlan = useActivePlan(user?.id).data;
+  const [planPanelOpen, setPlanPanelOpen] = useState(false);
+  const [planPanelUsed, setPlanPanelUsed] = useState(false);
+  const mission = activePlan ? (activePlan.mission || '') : oldMission;
+  const openPlanPanel = () => {
+    setPlanPanelUsed(true);
+    setPlanPanelOpen(true);
+  };
   const [expandedPanel, setExpandedPanel] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -265,7 +281,17 @@ export default function DesignHeader({ className = '' }) {
         {/* PHONE HEADER */}
         {showPill && (
           <div className="hdr-phone">
-            {hasMission ? (
+            {activePlan ? (
+              <button
+                type="button"
+                className={`hdr-mis${hasMission ? '' : ' hdr-mis--none'}`}
+                onClick={openPlanPanel}
+                aria-haspopup="dialog"
+              >
+                <span className="hdr-mis-label">My Mission</span>
+                <span className="hdr-mis-text">{hasMission ? mission : NO_MISSION}</span>
+              </button>
+            ) : hasMission ? (
               <div className={`hdr-mis-card${expandedPanel ? ' open' : ''}`}>
                 <button
                   type="button"
@@ -314,7 +340,8 @@ export default function DesignHeader({ className = '' }) {
             <button
               type="button"
               className={`hdr-mis${hasMission ? '' : ' hdr-mis--none'}`}
-              onClick={hasMission ? () => navigate('/personal-operating-plan') : openMissionStep}
+              onClick={activePlan ? openPlanPanel : hasMission ? () => navigate('/personal-operating-plan') : openMissionStep}
+              aria-haspopup={activePlan ? 'dialog' : undefined}
             >
               <span className="hdr-mis-label">My Mission</span>
               <span className="hdr-mis-text">{hasMission ? mission : NO_MISSION}</span>
@@ -340,6 +367,11 @@ export default function DesignHeader({ className = '' }) {
           />
         </div>,
         document.body,
+      )}
+
+      {/* The My Mission panel, for someone with an Individual Performance Plan */}
+      {activePlan && planPanelUsed && (
+        <PlanMissionPanel open={planPanelOpen} onClose={() => setPlanPanelOpen(false)} />
       )}
 
       {/* The drawer, opened by the menu button above */}

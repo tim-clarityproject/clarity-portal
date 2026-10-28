@@ -20,7 +20,9 @@ function readSeen(key) {
 //          then collapses to a small "i" beside the title that opens it
 //          again (decisions: "Help text").
 // as:      the heading element (h2 on a real page).
-export default function Section({ title, line, helpKey, as: Heading = 'h2', id, children, className = '' }) {
+// aside:   something small at the right of the title, such as who can see
+//          the section (WhoSees), as M1.
+export default function Section({ title, line, helpKey, as: Heading = 'h2', id, aside, children, className = '' }) {
   const lineId = useId();
   const [collapsed] = useState(() => (helpKey ? readSeen(helpKey) : false));
   const [helpOpen, setHelpOpen] = useState(false);
@@ -52,6 +54,7 @@ export default function Section({ title, line, helpKey, as: Heading = 'h2', id, 
             <InfoIcon />
           </button>
         )}
+        {aside && <div className="ds-section-aside">{aside}</div>}
       </div>
       {line && (
         <p id={lineId} className="ds-section-line" hidden={!showLine}>

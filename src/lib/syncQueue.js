@@ -9,9 +9,12 @@ import { deviceKey, readJson, writeJson } from './deviceStore';
 // typed is ever lost.
 //
 // A save is one write to one table:
-//   { table, kind: 'upsert' | 'update' | 'delete', values, match, onConflict }
+//   { table, kind: 'upsert' | 'update' | 'delete', values, match, onConflict,
+//     ignoreDuplicates }
 // Every new row carries an id made on the device (newId()), so sending it
-// twice can never make two rows.
+// twice can never make two rows. ignoreDuplicates is for rows that are
+// never changed once written (plan history): a second send of the same
+// row does nothing, and the table needs no right to change rows.
 
 const listeners = new Set();
 let flushPromise = null;
@@ -72,7 +75,10 @@ export function newId() {
 async function perform(op) {
   let query = supabase.from(op.table);
   if (op.kind === 'upsert') {
-    query = query.upsert(op.values, op.onConflict ? { onConflict: op.onConflict } : undefined);
+    const options = {};
+    if (op.onConflict) options.onConflict = op.onConflict;
+    if (op.ignoreDuplicates) options.ignoreDuplicates = true;
+    query = query.upsert(op.values, Object.keys(options).length ? options : undefined);
   } else if (op.kind === 'update') {
     query = query.update(op.values);
     Object.entries(op.match || {}).forEach(([k, v]) => { query = query.eq(k, v); });
