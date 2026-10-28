@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import videoUrl from './media/quick-guide-PLACEHOLDER.mp4?url';
 import captionsUrl from './media/quick-guide-PLACEHOLDER.vtt?url';
-import { Cross } from './parts';
+import { Cross, useDialog } from './parts';
 
 // The Quick guide video (mock-up M7b version 4): a card on the welcome, ready
 // to play, and a panel from the play icon (centred on a laptop, full screen on
@@ -180,18 +180,11 @@ export function GuideCard({ onWatched, style }) {
 
 /** The panel from the play icon. */
 export function GuidePanel({ onClose }) {
-  const closeRef = useRef(null);
-  useEffect(() => {
-    const back = document.activeElement;
-    closeRef.current?.focus({ preventScroll: true });
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('keydown', onKey); if (back?.isConnected) back.focus({ preventScroll: true }); };
-  }, [onClose]);
+  const { boxRef, closeRef } = useDialog(onClose);
   return (
     <>
       <div className="vscrim" onClick={onClose} aria-hidden="true" />
-      <div className="vp" role="dialog" aria-modal="true" aria-label="Quick guide">
+      <div className="vp" role="dialog" aria-modal="true" aria-label="Quick guide" ref={boxRef}>
         <div className="vph">
           <h3>Quick guide</h3>
           <button ref={closeRef} type="button" className="iconbtn" aria-label="Close" onClick={onClose}><Cross className="close" /></button>

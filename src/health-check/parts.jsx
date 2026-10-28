@@ -93,8 +93,11 @@ export function TipProvider({ children }) {
     const th = box.offsetHeight;
     const vw = document.documentElement.clientWidth;
     const x = Math.max(G, Math.min(vw - G - tw, r.left + r.width / 2 - tw / 2));
+    const vh = document.documentElement.clientHeight;
     let top = r.top - th - 8;
     if (top < G) top = r.bottom + 8;
+    // Room neither above nor below: keep it inside the screen, over its target.
+    if (top + th > vh - G) top = Math.max(G, vh - G - th);
     box.style.left = `${x}px`;
     box.style.top = `${top}px`;
   }, [tip]);
@@ -146,16 +149,18 @@ export function useTipTarget(lines, opts = {}) {
   const owner = useId();
   const isOpen = tipApi.open?.owner === owner;
   const wasOpen = useRef(false);
+  const touch = useRef(false);
   const open = () => ref.current && tipApi.show(ref.current, lines, { ...opts, owner });
   return {
     ref,
     isOpen,
     onMouseEnter: open,
-    onMouseLeave: () => tipApi.hide(owner),
+    // A tap fires a mouse-out straight after it; only a real pointer leaving closes it.
+    onMouseLeave: () => { if (!touch.current) tipApi.hide(owner); },
     onFocus: open,
     onBlur: () => tipApi.hide(owner),
     // Focus (from the same press) opens it; the press closes it only if it was already open.
-    onPointerDown: () => { wasOpen.current = isOpen; },
+    onPointerDown: (e) => { wasOpen.current = isOpen; touch.current = e.pointerType !== 'mouse'; },
     onClick: (e) => { e.stopPropagation(); if (wasOpen.current) { wasOpen.current = false; tipApi.hide(); } else open(); },
     'aria-describedby': isOpen ? 'hc-tip' : undefined,
   };
@@ -173,22 +178,41 @@ export function InfoButton({ lines, label }) {
 
 // ---- the panel: centred on a laptop, sliding up from the bottom on a phone ---
 
-export function Sheet({ title, onClose, children, returnFocus }) {
+/** Keeps Tab inside a dialog, and closes it on Escape; focus goes in on open and back on close. */
+export function useDialog(onClose, returnFocus) {
+  const boxRef = useRef(null);
   const closeRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
   useEffect(() => {
     const back = returnFocus?.current || document.activeElement;
     closeRef.current?.focus({ preventScroll: true });
-    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); onCloseRef.current(); return; }
+      if (e.key !== 'Tab' || !boxRef.current) return;
+      const items = [...boxRef.current.querySelectorAll('button, [href], input, [tabindex="0"], video')].filter((el) => !el.disabled && el.getClientRects().length);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!boxRef.current.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
       if (back?.isConnected) back.focus({ preventScroll: true });
     };
-  }, [onClose, returnFocus]);
+  }, [returnFocus]);
+  return { boxRef, closeRef };
+}
+
+export function Sheet({ title, onClose, children, returnFocus }) {
+  const { boxRef, closeRef } = useDialog(onClose, returnFocus);
   return (
     <>
       <div className="ascrim" onClick={onClose} aria-hidden="true" />
-      <div className="bs" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="bs" role="dialog" aria-modal="true" aria-label={title} ref={boxRef}>
         <div className="grab" />
         <div className="bsh">
           <h3>{title}</h3>

@@ -407,3 +407,6 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 @media (prefers-reduced-motion: reduce) {
   .hc *, .hc *::before, .hc *::after { animation: none !important; transition: none !important; }
 }
+
+/* A heading given focus when a screen opens shows no ring (it isn't a control). */
+.hc h2[tabindex="-1"]:focus { outline: none; }

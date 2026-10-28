@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { openSession, createSaveQueue, readBackup, clearBackup } from '../lib/alignmentApi';
+import { openSession, createSaveQueue, readBackup, clearBackup, SAVE_REFUSED } from '../lib/alignmentApi';
+import { loadWithReload } from '../lib/loadWithReload';
 import { requestAlignmentEmail } from '../lib/alignmentEmail';
 import { formatClockTime, formatDocDate, parseDbTimestamp } from '../lib/dateFormatter';
 import { projectDates } from '../lib/projectDates';
@@ -146,6 +147,7 @@ function Page() {
     stepRef.current = next;
     setStep(next);
     setPanel(null);
+    setDateMsg({});
     setEnterKey((k) => k + 1);
     setFocusChoices(focus);
     if (!focus) window.scrollTo(0, 0);
@@ -226,17 +228,32 @@ function Page() {
       setSaveState(state);
       if (state === 'saved') store.set('localStorage', lastSavedKey(token), new Date().toISOString());
       if (state === 'saved' && notifyRef.current && credsRef.current) {
-        notifyRef.current = false;
-        // The server sends it once only, so a repeat does no harm; a failure isn't shown.
-        requestAlignmentEmail({ token, email: credsRef.current.email, code: credsRef.current.code, kind: 'complete' });
+        // A conflict is reported straight after 'saved': wait a moment, so it can cancel this.
+        setTimeout(() => {
+          if (!notifyRef.current || !credsRef.current) return;
+          notifyRef.current = false;
+          // The server sends it once only, so a repeat does no harm; a failure isn't shown.
+          requestAlignmentEmail({ token, email: credsRef.current.email, code: credsRef.current.code, kind: 'complete' });
+        }, 0);
       }
-      if (state === 'error' && detail?.retryable === false) leave(detail.message);
+      if (state === 'error' && detail?.retryable === false) {
+        // Answers the server refuses can never be saved: drop the browser copy,
+        // or every reopen would send them again and be refused again.
+        if (detail.message === SAVE_REFUSED) clearBackup(token);
+        leave(detail.message);
+      }
     });
-    queue.on('conflict', ({ data: serverData }) => {
+    queue.on('conflict', ({ data: serverData, currentStep: serverStep, status }) => {
+      notifyRef.current = false;
+      completeRef.current = status === 'complete';
       const sd = draftFromData(serverData);
       draftRef.current = sd;
       setDraft(sd);
-      const s2 = clampStep(stepRef.current, sd);
+      setReached(status === 'complete' || !!sd.completedAt);
+      // Results that were never saved aren't shown: go where the server copy is.
+      const s2 = stepRef.current.screen === 'results' && status !== 'complete'
+        ? stepFromJson(serverStep, sd, false)
+        : clampStep(stepRef.current, sd);
       stepRef.current = s2;
       setStep(s2);
       showToast('Your answers were updated in another window.');
@@ -269,6 +286,24 @@ function Page() {
     if (phase === 'boot' && firstAccess) open(firstAccess.email, firstAccess.code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The Download PDF menu closes on Escape and on a click outside it.
+  useEffect(() => {
+    if (!pdf.open) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setPdf((p) => ({ ...p, open: false })); };
+    const onDown = (e) => { if (!e.target.closest?.('.pdfm')) setPdf((p) => ({ ...p, open: false })); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown); };
+  }, [pdf.open]);
+
+  // Each new screen puts focus on its heading, for keyboards and screen readers
+  // (not when choosing by keyboard moves focus to the next choices).
+  useEffect(() => {
+    if (focusChoices || enterKey === 0) return;
+    const h = document.querySelector('.hc-main .page h2');
+    if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+  }, [enterKey, focusChoices]);
 
   // Was the last thing done with the keyboard? (A tap or click also focuses a choice.)
   useEffect(() => {
@@ -360,7 +395,7 @@ function Page() {
     if (kind === 'sOn') input.startedOn = value;
     if (kind === 'fOn') input.dueOn = value;
     const res = setProjectDates(draftRef.current, p.id, input);
-    if (!res.ok) { setDateMsg({ [res.field === 'startedOn' || res.field === 'started' ? 's' : 'f']: res.message }); return false; }
+    if (!res.ok) { setDateMsg({ [res.field === 'startedOn' || res.field === 'started' ? 's' : 'f']: res.message, panel: res.message }); return false; }
     setDateMsg({});
     commit(res.draft, stepRef.current, true);
     return true;
@@ -370,7 +405,10 @@ function Page() {
   const doPdf = async (variant) => {
     setPdf({ busy: true, open: false });
     try {
-      const [{ downloadPdf }, { healthCheckPdf }] = await Promise.all([import('../lib/pdf/download'), import('../lib/pdf/docs/healthCheck')]);
+      const [{ downloadPdf }, { healthCheckPdf }] = await Promise.all([
+        loadWithReload(() => import('../lib/pdf/download')),
+        loadWithReload(() => import('../lib/pdf/docs/healthCheck')),
+      ]);
       const done = serverCompletedAt || draftRef.current.completedAt || null;
       await downloadPdf(healthCheckPdf({ draft: draftRef.current, completedAt: done, updatedAt: null, organisation }), variant);
     } catch {
@@ -552,6 +590,12 @@ function Page() {
             <span className="fl" id="hc-started">Started</span>
             <Dropdown label="Started" title="Started" value={dates.started || ''} options={monthOptions('s', dates.started)} onChange={(v) => setDates('s', v)} />
             {dateMsg.s && <p className="fieldmsg" role="alert">{dateMsg.s}</p>}
+            {dates.startedOn && (
+              <div className="dto">
+                <span className="exact">{formatDocDate(dates.startedOn).slice(4)}</span>
+                <button type="button" className="text" onClick={() => setDates('sOn', undefined)}>Remove the exact start date</button>
+              </div>
+            )}
           </div>
           <div>
             <span className="fl" id="hc-due">Due to finish</span>
@@ -630,7 +674,7 @@ function Page() {
         <button type="button" className="btn" aria-haspopup="menu" aria-expanded={pdf.open} disabled={pdf.busy} style={{ width: phone ? '100%' : undefined }}
           onClick={() => setPdf((p) => ({ ...p, open: !p.open }))}>{pdf.busy ? 'Making your PDF' : 'Download PDF'}</button>
         {pdf.open && (
-          <div className="pdfopts" role="menu" onKeyDown={(e) => { if (e.key === 'Escape') setPdf((p) => ({ ...p, open: false })); }}>
+          <div className="pdfopts" role="menu">
             <button type="button" role="menuitem" autoFocus onClick={() => doPdf('light')}>Light, for printing</button>
             <button type="button" role="menuitem" onClick={() => doPdf('dark')}>Dark, for sharing</button>
           </div>
@@ -680,6 +724,7 @@ function Page() {
         if (!month || month === 'open') return null;
         return (
           <Sheet title={kind === 's' ? 'Exact start date' : 'Exact finish date'} onClose={() => setPanel(null)}>
+            {dateMsg.panel && <p className="fieldmsg" role="alert">{dateMsg.panel}</p>}
             <DayPicker month={month} value={kind === 's' ? d.startedOn : d.dueOn}
               onPick={(v) => { if (setDates(`${kind}On`, v)) setPanel(null); }}
               onClear={() => { setDates(`${kind}On`, undefined); setPanel(null); }} />

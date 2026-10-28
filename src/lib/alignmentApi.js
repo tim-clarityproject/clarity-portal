@@ -14,7 +14,7 @@ const TYPING_DEBOUNCE_MS = 1000;
 
 const GENERIC_ERROR = 'Those details don’t match. Check the email and access code you were sent.';
 const NETWORK_ERROR = 'We couldn’t reach the server. Check your connection and try again.';
-const SAVE_REFUSED = 'Your latest answers weren’t saved. Open your Health Check again to carry on. If it keeps happening, let your coach know.';
+export const SAVE_REFUSED = 'Your latest answers weren’t saved. Open your Health Check again to carry on. If it keeps happening, let your coach know.';
 
 /**
  * @typedef {Object} AlignmentData
