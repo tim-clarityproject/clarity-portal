@@ -442,7 +442,9 @@ expected (kind, key, val) as (values
 later_version (kind, key, val, migration) as (values
     ('function', 'alignment_open(text,text,text)', 'e4051cae7f3cdbadd0336526d48c5902', '022'),
     ('function', 'alignment_open(text,text,text)', '63afb02a4bba308894e5245ee7694928', '034'),
-    ('function', 'create_alignment_session(text,text)', '498565d6ba6631cf18170c3c6b51f5ba', '034')
+    ('function', 'create_alignment_session(text,text)', '498565d6ba6631cf18170c3c6b51f5ba', '034'),
+    ('column', 'decisions.user_id', 'uuid', '035'),
+    ('constraint', 'decisions.decisions_tool_type_check', 'CHECK ((tool_type = ANY (ARRAY[''grow''::text, ''inversion''::text, ''tough-conversation''::text, ''strategic-alignment''::text, ''if_then_planning''::text, ''daily_plan''::text, ''plan_meeting''::text, ''stop_doing_audit''::text, ''difficult-conversation''::text])))', '035')
 ),
 -- Things later migrations add. They are listed as notes, not differences.
 -- (kind and key are LIKE patterns.)
@@ -454,7 +456,17 @@ later_addition (kind, key, migration) as (values
     ('column note', 'alignment_sessions.coach_name', '034'),
     ('function', 'create_alignment_session(text,text,text)', '034'),
     ('function', '_alignment_coach_name(%', '034'),
-    ('function', '_alignment_first_name(%', '034')
+    ('function', '_alignment_first_name(%', '034'),
+    ('column', 'decisions.guest_id', '035'),
+    ('constraint', 'decisions.decisions_guest_id_fkey', '035'),
+    ('constraint', 'decisions.decisions_one_owner', '035'),
+    ('index', 'decisions.decisions_guest_idx', '035'),
+    ('table', 'guest%', '035'),
+    ('table', 'client_suggestions', '035'),
+    ('function', '%guest%', '035'),
+    ('function', 'coach_links(%', '035'),
+    ('function', '%suggestion%', '035'),
+    ('function', 'suggest_tool(%', '035')
 ),
 actual (kind, key, val) as (
   select 'table'::text as kind, c.relname::text as key,
