@@ -231,11 +231,11 @@ begin
     f := f || pg_temp.t_eq('7o ... or give its row a second owner', pg_temp.t_n(format('update public.decisions set guest_id = %L where user_id = %L returning 1', gen_random_uuid(), client_u)), 'error 23514');
     -- ten codes a day at most for one email
     perform pg_temp.t_service();
-    for i in 1..12 loop
+    for i in 1..25 loop
       perform public.guest_email_code_issue(public.guest_return_start('guest.a@example.com') ->> 'visit');
     end loop;
     perform pg_temp.t_admin();
-    f := f || pg_temp.t_eq('7p at most 10 email codes a day for one email', pg_temp.t_n('select count(*) <= 10 from public.guest_email_codes c join public.guests g on g.id = c.guest_id where g.email = ''guest.a@example.com'' and c.created_at > now() - interval ''1 day'''), 'true');
+    f := f || pg_temp.t_eq('7p at most 20 email codes an hour for one email', pg_temp.t_n('select count(*) <= 20 from public.guest_email_codes c join public.guests g on g.id = c.guest_id where g.email = ''guest.a@example.com'' and c.created_at > now() - interval ''1 hour'''), 'true');
     delete from public.guest_email_codes where guest_id = (select id from public.guests where email = 'guest.a@example.com');
     delete from public.guest_visits where guest_id = (select id from public.guests where email = 'guest.a@example.com') and link_id is null;
 
@@ -252,6 +252,20 @@ begin
     f := f || pg_temp.t_eq('8d after confirming: their work shows, even from a closed link', jsonb_array_length(public.guest_rows(vr, 'decisions'))::text, '2');
     f := f || pg_temp.t_eq('8e ... and can be changed', public.guest_save(vr, 'decisions', jsonb_build_object('id', d2 ->> 'id', 'title', 'Second GROW, done')) ->> 'title', 'Second GROW, done');
     f := f || pg_temp.t_eq('8f ... but new work needs a link', pg_temp.t_n(format('select public.guest_save(%L, ''decisions'', ''{"title": "x"}'') ->> ''id''', vr)), 'error 42501');
+    f := f || pg_temp.t_eq('8g each row says which link, tool and coach it came from', (select string_agg(distinct (x -> '_from' ->> 'tool') || ' ' || (x -> '_from' ->> 'coach_first_name'), ',') from jsonb_array_elements(public.guest_rows(vr, 'decisions')) x), 'grow Alex');
+    f := f || pg_temp.t_eq('8h the guest lists their links once confirmed', jsonb_array_length(public.guest_my_links(vr))::text, '3');
+    f := f || pg_temp.t_eq('8i ... only this visit''s link before', jsonb_array_length(public.guest_my_links(va))::text, '1');
+
+    -- twenty wrong codes in a day: no more codes for that email today
+    perform pg_temp.t_admin();
+    update public.guest_email_codes set tries = 20 where id = (select id from public.guest_email_codes where guest_id = (select id from public.guests where email = 'guest.a@example.com') order by created_at desc limit 1);
+    perform pg_temp.t_anon();
+    vx := public.guest_return_start('guest.a@example.com') ->> 'visit';
+    f := f || pg_temp.t_eq('8j twenty wrong codes in a day: confirming waits until tomorrow', public.guest_email_confirm(vx, '123456') ->> 'error', 'locked');
+    perform pg_temp.t_service();
+    f := f || pg_temp.t_eq('8k ... and no new code is sent', public.guest_email_code_issue(vx) ->> 'ok', 'false');
+    perform pg_temp.t_admin();
+    delete from public.guest_email_codes where guest_id = (select id from public.guests where email = 'guest.a@example.com');
 
     -- ------------------------------------------------ 9. what each coach sees
     perform pg_temp.t_as(owner_u);
@@ -267,13 +281,34 @@ begin
     f := f || pg_temp.t_eq('9h ... and links', pg_temp.t_n('select count(*) from public.coach_links()'), '1');
     f := f || pg_temp.t_eq('9i ... can''t ask for another coach''s', pg_temp.t_n(format('select count(*) from public.coach_guests(%L)', owner_u)), 'error 42501');
     f := f || pg_temp.t_eq('9j ... reads their own guest''s plan', pg_temp.t_n(format('select jsonb_array_length(public.coach_guest_answers(%L) -> ''habits'')', l3 ->> 'link_id')), '1');
+    -- guest B comes back without the link, confirms, and adds a Strategy: it counts under the plan's link
+    perform pg_temp.t_anon();
+    vx := public.guest_return_start('guest.b@example.com') ->> 'visit';
+    perform pg_temp.t_service();
+    code := public.guest_email_code_issue(vx) ->> 'code';
+    perform pg_temp.t_anon();
+    perform public.guest_email_confirm(vx, code);
+    perform public.guest_save(vx, 'plan_strategies', jsonb_build_object('plan_id', plan_b ->> 'id', 'name', 'Added later'));
+    perform pg_temp.t_as(coach2);
+    f := f || pg_temp.t_eq('9q work added when coming back counts under its link', pg_temp.t_n(format('select jsonb_array_length(public.coach_guest_answers(%L) -> ''plan_strategies'')', l3 ->> 'link_id')), '2');
+    perform pg_temp.t_anon();
+    f := f || pg_temp.t_eq('9r a value the table can''t take gets one plain message', pg_temp.t_n(format('select public.guest_save(%L, ''habits'', %L) ->> ''id''', vb, jsonb_build_object('plan_id', plan_b ->> 'id', 'strategy_id', strat_b ->> 'id', 'name', 'x', 'measure', 'lots'))), 'error 22023');
+    -- a second plan link: a new plan, and the earlier one is kept, archived
+    perform pg_temp.t_as(coach2);
+    l2 := public.guest_link_create('performance-plan');
+    perform pg_temp.t_anon();
+    vc := public.guest_open(pg_temp.t_tok(l2), 'guest.b@example.com', l2 ->> 'code') ->> 'visit';
+    f := f || pg_temp.t_eq('9s a guest with a plan starts a new one on a new link', (public.guest_save(vc, 'performance_plans', '{"mission": "Second plan"}') ->> 'status'), 'active');
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('9t ... the earlier one is kept, archived', pg_temp.t_n(format('select status from public.performance_plans where id = %L', plan_b ->> 'id')), 'archived');
+    perform pg_temp.t_as(coach2);
     f := f || pg_temp.t_eq('9k ... can''t read another coach''s guest''s answers', pg_temp.t_n(format('select public.coach_guest_answers(%L)', l1 ->> 'link_id')), 'error 42501');
     f := f || pg_temp.t_eq('9l a coach invites their own guest to an account', pg_temp.t_n(format('select public.guest_invite((select guest_id from public.coach_links() limit 1) ) ->> ''email''')), 'guest.b@example.com');
-    f := f || pg_temp.t_eq('9m the list shows what was finished', pg_temp.t_n('select links -> 0 ->> ''finished_at'' from public.coach_guests()'), 'null');
+    f := f || pg_temp.t_eq('9m the list shows what was finished', pg_temp.t_n('select bool_or((x ->> ''finished_at'') is not null) from public.coach_guests(), jsonb_array_elements(links) x'), 'false');
     perform pg_temp.t_anon();
     perform public.guest_finish(vb);
     perform pg_temp.t_as(coach2);
-    f := f || pg_temp.t_eq('9n ... once the guest finishes', pg_temp.t_n('select (links -> 0 ->> ''finished_at'') is not null from public.coach_guests()'), 'true');
+    f := f || pg_temp.t_eq('9n ... once the guest finishes', pg_temp.t_n('select bool_or((x ->> ''finished_at'') is not null) from public.coach_guests(), jsonb_array_elements(links) x'), 'true');
     perform pg_temp.t_as(client_u);
     f := f || pg_temp.t_eq('9o a client has no guests', pg_temp.t_n('select count(*) from public.coach_guests()'), 'error 42501');
     perform pg_temp.t_as(owner_u);
@@ -317,9 +352,14 @@ begin
     f := f || pg_temp.t_eq('11e nothing is left with the guest', pg_temp.t_n('select (select count(*) from public.performance_plans p join public.guests g on g.id = p.guest_id where g.email = ''guest.b@example.com'') + (select count(*) from public.habits h join public.guests g on g.id = h.guest_id where g.email = ''guest.b@example.com'')'), '0');
     f := f || pg_temp.t_eq('11f the guest is marked claimed by the account', pg_temp.t_n(format('select (claimed_by = %L and claimed_at is not null)::text from public.guests where email = ''guest.b@example.com''', acct_b)), 'true');
     perform pg_temp.t_as(acct_b);
-    f := f || pg_temp.t_eq('11g the account now reads its plan the normal way', pg_temp.t_n('select mission from public.performance_plans'), 'Lead a calm, fast team');
+    f := f || pg_temp.t_eq('11g the account now reads its plans the normal way', pg_temp.t_n('select string_agg(mission, '','' order by mission) from public.performance_plans'), 'Lead a calm, fast team,Second plan');
     perform pg_temp.t_anon();
     f := f || pg_temp.t_eq('11h the old guest visit stops', pg_temp.t_n(format('select public.guest_rows(%L, ''performance_plans'')', vb)), 'error 42501');
+    begin
+      perform public.guest_rows(vb, 'performance_plans');
+    exception when others then
+      f := f || pg_temp.t_eq('11h2 ... and says to sign in', sqlerrm, 'This work has moved into an account. Sign in to see it.');
+    end;
     f := f || pg_temp.t_eq('11i the link says to sign in', public.guest_open(pg_temp.t_tok(l3), 'guest.b@example.com', l3 ->> 'code') ->> 'error', 'has_account');
     -- an account that already has an active plan gets the guest's archived
     perform pg_temp.t_as(owner_u);
@@ -351,10 +391,11 @@ begin
     -- ------------------------------------------------ 13. Send to client
     perform pg_temp.t_as(owner_u);
     sug := public.suggest_tool(client_u, 'grow');
+    f := f || pg_temp.t_eq('13z the same tool again is one suggestion', (public.suggest_tool(client_u, 'grow') = sug)::text, 'true');
     perform pg_temp.t_as(coach2);
     f := f || pg_temp.t_eq('13a a coach suggests only to their own clients', pg_temp.t_n(format('select public.suggest_tool(%L, ''grow'')', client_u)), 'error 42501');
     perform pg_temp.t_as(client_u);
-    f := f || pg_temp.t_eq('13b the client sees "Alex suggests: GROW"', pg_temp.t_n('select coach_first_name || '' suggests: '' || tool from public.my_suggestions()'), 'Alex suggests: grow');
+    f := f || pg_temp.t_eq('13b the client sees "Alex suggests: Get unstuck"', pg_temp.t_n('select coach_first_name || '' suggests: '' || tool_label from public.my_suggestions()'), 'Alex suggests: Get unstuck');
     f := f || pg_temp.t_eq('13c ... can''t add one directly', pg_temp.t_n(format('insert into public.client_suggestions (coach_user_id, client_id, tool) values (%L, %L, ''grow'') returning 1', owner_u, client_u)), 'error 42501');
     f := f || pg_temp.t_eq('13d ... opens it', public.suggestion_opened(sug)::text, 'true');
     f := f || pg_temp.t_eq('13e ... dismisses it', public.suggestion_dismissed(sug)::text, 'true');

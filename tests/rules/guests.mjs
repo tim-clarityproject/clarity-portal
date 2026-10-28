@@ -113,6 +113,7 @@ export const GUEST_FUNCTIONS = [
   fn('guest_email_confirm(text,text)', `public.guest_email_confirm(${K}, '000000')`, ANYONE, 'The visit key and code are checked inside.'),
   fn('guest_email_code_issue(text)', `public.guest_email_code_issue(${K})`, NOBODY, 'The server only (service role): it emails the code.'),
   fn('guest_rows(text,text)', `public.guest_rows(${K}, 'decisions')`, NOBODY, 'Refused without a real visit key.'),
+  fn('guest_my_links(text)', `public.guest_my_links(${K})`, NOBODY, 'Refused without a real visit key.'),
   fn('guest_save(text,text,jsonb)', `public.guest_save(${K}, 'decisions', '{}')`, NOBODY, 'Refused without a real visit key.'),
   fn('guest_delete(text,text,jsonb)', `public.guest_delete(${K}, 'decisions', '{}')`, NOBODY, 'Refused without a real visit key.'),
   fn('guest_delete_link_answers(text)', `public.guest_delete_link_answers(${K})`, NOBODY, 'Refused without a real visit key.'),
@@ -128,6 +129,7 @@ export const GUEST_FUNCTIONS = [
     .map((s) => fn(s, `public.${s.replace(/\(.*\)/, (a) => ({
       '(uuid,uuid)': `(${R}, ${R})`, '(text)': "('decisions')", '(uuid)': `(${R})`, '()': '()',
       '(text,jsonb)': "('decisions', '{}')", '(text,text)': "('decisions', 'x')" }[a]))}`, NOBODY, 'Inside part of the guest functions.')),
+  fn('_coach_first_name(uuid)', `public._coach_first_name(${R})`, NOBODY, 'Inside part of the guest functions.'),
   fn('_guest_sees(guest_visits,text,text)', "public._guest_sees(null::public.guest_visits, 'decisions', 'x')", NOBODY, 'Inside part of the guest functions.'),
 ];
 
