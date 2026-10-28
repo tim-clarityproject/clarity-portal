@@ -67,7 +67,8 @@
 create table if not exists public.guests (
   id                 uuid primary key default gen_random_uuid(),
   email              text not null unique
-                     check (email = lower(btrim(email)) and char_length(email) between 3 and 254 and email like '%_@_%'),
+                     check (email = lower(email) and email !~ '[[:space:][:cntrl:]\u00a0\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff]'
+                            and char_length(email) between 3 and 254 and email like '%_@_%'),
   first_confirmed_at timestamptz,
   last_visit_at      timestamptz not null default now(),
   claimed_by         uuid references auth.users (id) on delete set null,
@@ -114,6 +115,7 @@ create table if not exists public.guest_tables (
   columns     text[] not null,                 -- what a guest may write (never user_id, guest_id or approvals)
   parents     jsonb not null default '[]',     -- [{"col": ..., "table": ...}]: must be the guest's own, and visible
   top_level   boolean not null default false,  -- a new one needs a link for its tool
+  changeable  boolean not null default true,   -- false: rows are only added (plan history)
   claim_order integer not null
 );
 comment on table public.guest_tables is
@@ -136,6 +138,8 @@ insert into public.guest_tables (table_name, tools, key_cols, columns, parents, 
   ('decisions', array['grow', 'give-feedback', 'prepare-conversation'], array['id'], array['title', 'form_data', 'status', 'draft'], '[]', true, 7)
 on conflict (table_name) do update set tools = excluded.tools, key_cols = excluded.key_cols, columns = excluded.columns,
   parents = excluded.parents, top_level = excluded.top_level, claim_order = excluded.claim_order;
+-- Plan history is only ever added to, as for an account (027).
+update public.guest_tables set changeable = (table_name <> 'plan_versions');
 
 -- A tool table a guest can own rows in: guest_id beside user_id, exactly one
 -- of the two on every row, and an index. Safe to run twice.
@@ -180,7 +184,7 @@ begin
   if parent is null
      or (parent ->> 'user_id') is distinct from (to_jsonb(new) ->> 'user_id')
      or (parent ->> 'guest_id') is distinct from (to_jsonb(new) ->> 'guest_id') then
-    raise exception 'That % belongs to someone else.', tg_argv[0] using errcode = '42501';
+    raise exception 'That belongs to someone else, so it wasn''t saved. Go back and try again.' using errcode = '42501';
   end if;
   return new;
 end;
@@ -219,7 +223,7 @@ create index if not exists guest_link_attempts_link_idx on public.guest_link_att
 create table if not exists public.guest_visits (
   id           uuid primary key default gen_random_uuid(),
   key_hash     text not null unique check (key_hash ~ '^[0-9a-f]{64}$'),
-  guest_id     uuid not null references public.guests (id) on delete cascade,
+  guest_id     uuid references public.guests (id) on delete cascade,  -- empty: coming back with an email that has no work
   link_id      uuid references public.guest_links (id) on delete cascade,
   confirmed    boolean not null default false,
   created_at   timestamptz not null default now(),
@@ -351,6 +355,39 @@ as $$
   order by t.claim_order;
 $$;
 
+-- An email as typed, made plain: lowercased, with spaces around it removed;
+-- null when it holds a space or hidden character inside, or isn't an email.
+create or replace function public._guest_email(p text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case when e ~ '[[:space:][:cntrl:]\u00a0\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff]'
+                or char_length(e) not between 3 and 254 or e not like '%_@_%' then null else e end
+  from (select lower(regexp_replace(coalesce(p, ''), '^[[:space:]\u00a0\u2000-\u200b\u202f\u205f\u3000\ufeff]+|[[:space:]\u00a0\u2000-\u200b\u202f\u205f\u3000\ufeff]+$', '', 'g')) as e) x;
+$$;
+
+-- One wrong try at a link: recorded, and five in 15 minutes (since the
+-- last right one) lock it for 15 minutes.
+create or replace function public._guest_link_wrong(p_link uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare v_wrong integer;
+begin
+  insert into public.guest_link_attempts (link_id, ok) values (p_link, false);
+  select count(*) into v_wrong from public.guest_link_attempts a
+   where a.link_id = p_link and not a.ok and a.at > clock_timestamp() - interval '15 minutes'
+     and a.at > coalesce((select max(b.at) from public.guest_link_attempts b where b.link_id = p_link and b.ok), '-infinity');
+  if v_wrong >= 5 then
+    update public.guest_links set locked_until = now() + interval '15 minutes' where id = p_link;
+  end if;
+end;
+$$;
+
 -- A coach's first name as clients see it: the name they chose to show
 -- (coaches), otherwise their profile's, at most 60 characters.
 create or replace function public._coach_first_name(p_user uuid)
@@ -437,7 +474,7 @@ do $rv$
 declare f text;
 begin
   foreach f in array array['_guest_hash(text)', '_guest_random_key()', '_guest_key(text,jsonb)', '_guest_key_sql(text,text)',
-                           '_guest_ready_tables()', '_coach_first_name(uuid)', '_guest_visit(text)', '_guest_sees(public.guest_visits,text,text)', '_guest_items_tidy(uuid)'] loop
+                           '_guest_ready_tables()', '_coach_first_name(uuid)', '_guest_email(text)', '_guest_link_wrong(uuid)', '_guest_visit(text)', '_guest_sees(public.guest_visits,text,text)', '_guest_items_tidy(uuid)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
 end
@@ -565,7 +602,8 @@ begin
     raise exception 'Those guests aren''t yours.' using errcode = '42501';
   end if;
   return query
-    select g.id, g.email, g.last_visit_at, g.first_confirmed_at, g.claimed_at is not null, g.last_invited_at,
+    select g.id, g.email, g.last_visit_at, g.first_confirmed_at, g.claimed_at is not null,
+           case when v_scope is null or g.last_invited_by = v_scope then g.last_invited_at end,
            (select jsonb_agg(jsonb_build_object('link_id', l.id, 'tool', l.tool, 'tool_label', (select t.label from public.guest_tools t where t.tool = l.tool),
                                                 'coach_user_id', l.coach_user_id, 'created_at', l.created_at,
                                                 'expires_at', l.expires_at, 'switched_off_at', l.switched_off_at,
@@ -596,7 +634,7 @@ declare
   v_rows jsonb;
   v_out jsonb := '{}';
 begin
-  if not exists (select 1 from public.guest_links where id = p_link and coach_user_id = (select auth.uid())) then
+  if not public.is_coach() or not exists (select 1 from public.guest_links where id = p_link and coach_user_id = (select auth.uid())) then
     raise exception 'That link isn''t yours.' using errcode = '42501';
   end if;
   for t in select * from public._guest_ready_tables() loop
@@ -623,7 +661,7 @@ set search_path = ''
 as $$
 declare g public.guests;
 begin
-  if not exists (select 1 from public.guest_links where guest_id = p_guest and coach_user_id = (select auth.uid())) then
+  if not public.is_coach() or not exists (select 1 from public.guest_links where guest_id = p_guest and coach_user_id = (select auth.uid())) then
     raise exception 'That guest isn''t yours.' using errcode = '42501';
   end if;
   update public.guests set last_invited_at = now(), last_invited_by = (select auth.uid()) where id = p_guest returning * into g;
@@ -650,9 +688,8 @@ declare
     'message', 'That link, email or code isn''t right. Check them and try again.');
   l public.guest_links;
   g public.guests;
-  v_email text := lower(btrim(coalesce(p_email, '')));
+  v_email text := public._guest_email(p_email);
   v_key text := public._guest_random_key();
-  v_wrong integer;
   v_coach text;
 begin
   if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
@@ -666,28 +703,25 @@ begin
     return jsonb_build_object('ok', false, 'error', 'locked',
       'message', 'Too many tries. Wait 15 minutes, then try again.');
   end if;
-  if char_length(v_email) not between 3 and 254 or v_email not like '%_@_%' or p_code is null
+  if v_email is null or p_code is null
      or l.code_hash <> extensions.crypt(upper(btrim(p_code)), l.code_hash)
      or (l.guest_id is not null and not exists (select 1 from public.guests where id = l.guest_id and email = v_email)) then
-    insert into public.guest_link_attempts (link_id, ok) values (l.id, false);
-    select count(*) into v_wrong from public.guest_link_attempts a
-     where a.link_id = l.id and not a.ok and a.at > clock_timestamp() - interval '15 minutes'
-       and a.at > coalesce((select max(b.at) from public.guest_link_attempts b where b.link_id = l.id and b.ok), '-infinity');
-    if v_wrong >= 5 then
-      update public.guest_links set locked_until = now() + interval '15 minutes' where id = l.id;
-    end if;
+    perform public._guest_link_wrong(l.id);
     return bad;
   end if;
-  insert into public.guest_link_attempts (link_id, ok) values (l.id, true);
   if l.switched_off_at is not null or l.expires_at <= now() then
+    insert into public.guest_link_attempts (link_id, ok) values (l.id, true);
     return jsonb_build_object('ok', false, 'error', 'closed',
       'message', 'This link has closed. To see your work, use your email to come back.');
   end if;
-  insert into public.guests (email) values (v_email) on conflict (email) do update set last_visit_at = now() returning * into g;
-  if g.claimed_at is not null then
+  if exists (select 1 from public.guests where email = v_email and claimed_at is not null) then
+    -- counted as a wrong try, so a link can't be used to ask about many emails
+    perform public._guest_link_wrong(l.id);
     return jsonb_build_object('ok', false, 'error', 'has_account',
       'message', 'This email has an account with The Clarity Portal. Sign in to use the tool there.');
   end if;
+  insert into public.guest_link_attempts (link_id, ok) values (l.id, true);
+  insert into public.guests (email) values (v_email) on conflict (email) do update set last_visit_at = now() returning * into g;
   update public.guest_links set guest_id = g.id, first_used_at = coalesce(first_used_at, now()) where id = l.id;
   insert into public.guest_visits (key_hash, guest_id, link_id) values (public._guest_hash(v_key), g.id, l.id);
   v_coach := public._coach_first_name(l.coach_user_id);
@@ -710,10 +744,11 @@ declare
   g public.guests;
   v_key text := public._guest_random_key();
 begin
-  select * into g from public.guests where email = lower(btrim(coalesce(p_email, ''))) and claimed_at is null;
-  if g.id is not null
-     and (select count(*) from public.guest_visits s where s.guest_id = g.id and s.link_id is null
-          and s.created_at > now() - interval '1 hour') < 50 then
+  select * into g from public.guests where email = public._guest_email(p_email) and claimed_at is null;
+  -- a visit is kept whether or not the email has work (then it belongs to no
+  -- guest and never matches anything), so every answer after this is the same
+  if g.id is null or (select count(*) from public.guest_visits s where s.guest_id = g.id and s.link_id is null
+                      and s.created_at > now() - interval '1 hour') < 50 then
     insert into public.guest_visits (key_hash, guest_id) values (public._guest_hash(v_key), g.id);
   end if;
   return jsonb_build_object('ok', true, 'visit', v_key, 'confirmed', false);
@@ -739,7 +774,7 @@ begin
     return jsonb_build_object('ok', false);
   end if;
   select * into s from public.guest_visits where key_hash = public._guest_hash(p_visit) and expires_at > now();
-  if s.id is null or s.confirmed
+  if s.id is null or s.guest_id is null or s.confirmed
      or (select count(*) from public.guest_email_codes c where c.visit_id = s.id and c.created_at > now() - interval '1 hour') >= 5
      or (select count(*) from public.guest_email_codes c where c.guest_id = s.guest_id and c.created_at > now() - interval '1 hour') >= 20
      or (select coalesce(sum(c.tries), 0) from public.guest_email_codes c where c.guest_id = s.guest_id and c.created_at > now() - interval '1 day') >= 20 then
@@ -871,8 +906,11 @@ declare
   p jsonb;
 begin
   select * into t from public._guest_ready_tables() where table_name = p_table;
-  if t.table_name is null or jsonb_typeof(v_row) <> 'object' then
+  if t.table_name is null or jsonb_typeof(v_row) is distinct from 'object' then
     raise exception 'That can''t be saved here. Go back to the tool and try again.' using errcode = '22023';
+  end if;
+  if s.link_id is null and not s.confirmed then
+    raise exception 'Confirm your email with the code we send to it, then try again.' using errcode = '42501';
   end if;
   if s.link_id is not null then
     select gt.* into v_tool from public.guest_tools gt join public.guest_links l on l.tool = gt.tool where l.id = s.link_id;
@@ -885,6 +923,9 @@ begin
     -- a change to an existing row
     if not public._guest_sees(s, p_table, v_key) then
       raise exception 'That isn''t yours, so it wasn''t changed. Open your own link to carry on.' using errcode = '42501';
+    end if;
+    if not t.changeable then
+      raise exception 'Plan history can''t be changed. Save a new version instead.' using errcode = '42501';
     end if;
     select array_agg(c) into v_cols from unnest(t.columns) c where v_row ? c and not c = any (t.key_cols);
     if v_cols is not null then
@@ -906,23 +947,31 @@ begin
     if t.top_level and (v_tool.tool is null or not v_tool.tool = any (t.tools)) then
       raise exception 'Starting new work needs the link for this tool. Ask your coach for one.' using errcode = '42501';
     end if;
+    if t.top_level and exists (select 1 from public.guest_links l where l.id = s.link_id and (l.switched_off_at is not null or l.expires_at <= now())) then
+      raise exception 'This link has closed, so new work can''t start here. Ask your coach for a new link.' using errcode = '42501';
+    end if;
     if not t.top_level and s.link_id is not null and not v_tool.tool = any (t.tools) then
       raise exception 'That can''t be saved with this link. Ask your coach for the link for this tool.' using errcode = '42501';
     end if;
     if p_table = 'decisions' then
       v_row := v_row || jsonb_build_object('tool_type', v_tool.decision_type);
     end if;
-    -- a new plan on a new link: the guest's earlier plan is kept, archived
+    -- a new plan on a new link: the guest's earlier plan is kept, archived,
+    -- but only one this visit may see; another is left alone
     if p_table = 'performance_plans' then
-      update public.performance_plans set status = 'archived' where guest_id = s.guest_id and status = 'active';
+      update public.performance_plans x set status = 'archived'
+       where x.guest_id = s.guest_id and x.status = 'active' and public._guest_sees(s, 'performance_plans', x.id::text);
+      if exists (select 1 from public.performance_plans x where x.guest_id = s.guest_id and x.status = 'active') then
+        raise exception 'You already have a plan with this email. Confirm your email to see it, then start a new one.' using errcode = '42501';
+      end if;
     end if;
     select array_agg(c) into v_cols from unnest(t.columns || t.key_cols || case when p_table = 'decisions' then array['tool_type'] else '{}'::text[] end) c
      where v_row ? c;
     v_cols := array(select distinct unnest(v_cols));
-    execute format('insert into public.%I (%s, guest_id) select %s, $2 from jsonb_populate_record(null::public.%I, $1) r returning to_jsonb(%I)',
+    execute format('insert into public.%I (%s) select %s from jsonb_populate_record(null::public.%I, $1) r returning to_jsonb(%I)',
                    p_table,
-                   (select string_agg(format('%I', c), ', ') from unnest(v_cols) c),
-                   (select string_agg(format('r.%I', c), ', ') from unnest(v_cols) c),
+                   (select string_agg(format('%I', c), ', ') from unnest(v_cols || array['guest_id']) c),
+                   coalesce((select string_agg(format('r.%I', c), ', ') from unnest(v_cols) c) || ', ', '') || '$2',
                    p_table, p_table)
       into v_saved using v_row, s.guest_id;
     v_key := public._guest_key(p_table, v_saved);
@@ -955,8 +1004,10 @@ begin
   return v_saved - 'user_id' - 'guest_id';
 exception
   -- answers the table can't take (a missing or badly formed value): one plain message
-  when not_null_violation or foreign_key_violation or unique_violation or check_violation or invalid_text_representation
-       or invalid_datetime_format or datetime_field_overflow or numeric_value_out_of_range or string_data_right_truncation then
+  when integrity_constraint_violation or data_exception then
+    if sqlerrm = 'That can''t be saved here. Go back to the tool and try again.' then
+      raise; -- our own plain message
+    end if;
     raise exception 'Some of that couldn''t be saved as it is. Check it and try again.' using errcode = '22023';
 end;
 $$;
@@ -974,6 +1025,9 @@ declare
 begin
   if v_key is null or not public._guest_sees(s, p_table, v_key) then
     raise exception 'That isn''t yours, so it wasn''t changed. Open your own link to carry on.' using errcode = '42501';
+  end if;
+  if not (select changeable from public.guest_tables where table_name = p_table) then
+    raise exception 'Plan history can''t be changed. Save a new version instead.' using errcode = '42501';
   end if;
   execute format('delete from public.%I x where %s = $1 and x.guest_id = $2', p_table, public._guest_key_sql(p_table, 'x'))
     using v_key, s.guest_id;
@@ -1137,6 +1191,8 @@ as $$
          s.suggested_at, s.opened_at
   from public.client_suggestions s
   where s.client_id = (select auth.uid()) and s.dismissed_at is null
+    and exists (select 1 from public.coach_clients cc join public.coaches c on c.id = cc.coach_id
+                where cc.client_id = s.client_id and c.user_id = s.coach_user_id and cc.ended_at is null and c.active)
   order by s.suggested_at desc
   limit 20;
 $$;
@@ -1180,8 +1236,9 @@ as $$
 declare n integer;
 begin
   -- the server (service role), the owner, or a job run in the database itself (no caller's claims)
-  if coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '') not in ('service_role', '')
-     and not public.is_owner() then
+  if not (coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '') = 'service_role'
+          or (coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '') = '' and (select auth.uid()) is null)
+          or public.is_owner()) then
     raise exception 'Only the owner can do this. Ask them to do it.' using errcode = '42501';
   end if;
   -- unclaimed guests with everything they own; a claimed guest's record
@@ -1191,6 +1248,7 @@ begin
       or claimed_at < now() - interval '2 years';
   get diagnostics n = row_count;
   delete from public.guest_link_attempts where at < now() - interval '2 years';
+  delete from public.guest_visits where expires_at < now() - interval '1 day';
   return n;
 end;
 $$;

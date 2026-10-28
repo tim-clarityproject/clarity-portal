@@ -68,7 +68,7 @@ declare
   owner_u uuid; coach2 uuid; client_u uuid; stranger uuid; acct_b uuid; acct_unconf uuid; acct_plan uuid;
   owner_c uuid; coach2_c uuid;
   l1 jsonb; l2 jsonb; l3 jsonb; l4 jsonb; l5 jsonb; l6 jsonb;
-  va text; va2 text; vb text; vr text; vx text; vc text;
+  va text; va2 text; vb text; vr text; vx text; vc text; vz text;
   d1 jsonb; d2 jsonb; plan_b jsonb; strat_b jsonb; obj_b jsonb; hab_b jsonb; plan_c jsonb;
   j jsonb; code text; n_before integer; n_after integer;
   sug uuid;
@@ -298,7 +298,12 @@ begin
     l2 := public.guest_link_create('performance-plan');
     perform pg_temp.t_anon();
     vc := public.guest_open(pg_temp.t_tok(l2), 'guest.b@example.com', l2 ->> 'code') ->> 'visit';
-    f := f || pg_temp.t_eq('9s a guest with a plan starts a new one on a new link', (public.guest_save(vc, 'performance_plans', '{"mission": "Second plan"}') ->> 'status'), 'active');
+    f := f || pg_temp.t_eq('9s a new plan link can''t replace a plan the visit can''t see', pg_temp.t_n(format('select public.guest_save(%L, ''performance_plans'', ''{"mission": "x"}'') ->> ''id''', vc)), 'error 42501');
+    perform pg_temp.t_service();
+    code := public.guest_email_code_issue(vc) ->> 'code';
+    perform pg_temp.t_anon();
+    perform public.guest_email_confirm(vc, code);
+    f := f || pg_temp.t_eq('9s2 ... once confirmed, a guest with a plan starts a new one', (public.guest_save(vc, 'performance_plans', '{"mission": "Second plan"}') ->> 'status'), 'active');
     perform pg_temp.t_admin();
     f := f || pg_temp.t_eq('9t ... the earlier one is kept, archived', pg_temp.t_n(format('select status from public.performance_plans where id = %L', plan_b ->> 'id')), 'archived');
     perform pg_temp.t_as(coach2);
@@ -313,6 +318,52 @@ begin
     f := f || pg_temp.t_eq('9o a client has no guests', pg_temp.t_n('select count(*) from public.coach_guests()'), 'error 42501');
     perform pg_temp.t_as(owner_u);
     f := f || pg_temp.t_eq('9p a coach can''t invite a guest they never sent a link', pg_temp.t_n(format('select public.guest_invite((select guest_id from public.coach_guests(%L) limit 1))', coach2)), 'error 42501');
+
+    -- ------------------------------------------------ 9b. from the break-it pass
+    perform pg_temp.t_anon();
+    vx := public.guest_return_start('nobody.here@example.com') ->> 'visit';
+    vz := public.guest_return_start('guest.b@example.com') ->> 'visit';
+    f := f || pg_temp.t_eq('9u coming back: an email with no work reads the same as one with work', (public.guest_rows(vx, 'decisions')::text = public.guest_rows(vz, 'decisions')::text)::text, 'true');
+    f := f || pg_temp.t_eq('9v ... the same list of links', (public.guest_my_links(vx)::text = public.guest_my_links(vz)::text)::text, 'true');
+    f := f || pg_temp.t_eq('9w ... the same answer to saving', (pg_temp.t_n(format('select public.guest_save(%L, ''plan_strategies'', ''{"name": "x"}'')', vx)) = pg_temp.t_n(format('select public.guest_save(%L, ''plan_strategies'', ''{"name": "x"}'')', vz)))::text, 'true');
+    f := f || pg_temp.t_eq('9x ... and to finishing', (public.guest_finish(vx) = public.guest_finish(vz))::text, 'true');
+    j := public.guest_save(vb, 'plan_versions', jsonb_build_object('plan_id', plan_b ->> 'id', 'major', 1, 'minor', 0, 'kind', 'start', 'snapshot', '{}'::jsonb));
+    f := f || pg_temp.t_eq('9y plan history is added to', (j ->> 'kind'), 'start');
+    f := f || pg_temp.t_eq('9z ... never changed', pg_temp.t_n(format('select public.guest_save(%L, ''plan_versions'', %L)', vb, jsonb_build_object('id', j ->> 'id', 'change_note', 'x'))), 'error 42501');
+    f := f || pg_temp.t_eq('9z2 ... or deleted', pg_temp.t_n(format('select public.guest_delete(%L, ''plan_versions'', %L)', vb, jsonb_build_object('id', j ->> 'id'))), 'error 42501');
+    f := f || pg_temp.t_eq('9z3 an empty row gets the plain message', pg_temp.t_n(format('select public.guest_save(%L, ''plan_strategies'', ''{}'')', vb)), 'error 22023');
+    begin
+      perform public.guest_save(vb, 'plan_strategies', jsonb_build_object('plan_id', plan_b ->> 'id', 'name', 'x', 'archived_at', '2026-01-01 00:00:00 Mars/Olympus'));
+    exception when others then
+      f := f || pg_temp.t_eq('9z4 an odd date gets the plain message', sqlerrm, 'Some of that couldn''t be saved as it is. Check it and try again.');
+    end;
+    f := f || pg_temp.t_eq('9z5 an email with a space inside is refused', public.guest_open(pg_temp.t_tok(l5), 'guest.a@exam ple.com', l5 ->> 'code') ->> 'error', 'invalid');
+    f := f || pg_temp.t_eq('9z6 a tab after the email is the same guest', public.guest_open(pg_temp.t_tok(l1), 'guest.a@example.com' || chr(9), l1 ->> 'code') ->> 'ok', 'true');
+    perform pg_temp.t_admin();
+    f := f || pg_temp.t_eq('9z7 ... with no second record', pg_temp.t_n('select count(*) from public.guests where email like ''guest.a%'''), '1');
+    -- a switched-off link: a confirmed visit edits, but starts nothing new
+    perform pg_temp.t_service();
+    code := public.guest_email_code_issue(public.guest_open(pg_temp.t_tok(l1), 'guest.a@example.com', l1 ->> 'code') ->> 'visit') ->> 'code';
+    perform pg_temp.t_anon();
+    vx := public.guest_open(pg_temp.t_tok(l1), 'guest.a@example.com', l1 ->> 'code') ->> 'visit';
+    perform pg_temp.t_service();
+    code := public.guest_email_code_issue(vx) ->> 'code';
+    perform pg_temp.t_anon();
+    perform public.guest_email_confirm(vx, code);
+    perform pg_temp.t_as(owner_u);
+    perform public.guest_link_switch_off((l1 ->> 'link_id')::uuid);
+    perform pg_temp.t_anon();
+    f := f || pg_temp.t_eq('9z8 a closed link starts no new work, even confirmed', pg_temp.t_n(format('select public.guest_save(%L, ''decisions'', ''{"title": "x"}'')', vx)), 'error 42501');
+    f := f || pg_temp.t_eq('9z9 ... but earlier work can still be changed', public.guest_save(vx, 'decisions', jsonb_build_object('id', d1 ->> 'id', 'title', 'Hiring, step 3')) ->> 'title', 'Hiring, step 3');
+    -- has_account answers count as wrong tries
+    perform pg_temp.t_admin();
+    perform pg_temp.t_user('hasacct', 'claimed.person@example.com', true);
+    insert into public.guests (email, claimed_at) values ('claimed.person@example.com', now());
+    perform pg_temp.t_as(owner_u);
+    l4 := public.guest_link_create('grow');
+    perform pg_temp.t_anon();
+    for i in 1..5 loop perform public.guest_open(pg_temp.t_tok(l4), 'claimed.person@example.com', l4 ->> 'code'); end loop;
+    f := f || pg_temp.t_eq('9z10 asking about emails with accounts locks the link too', public.guest_open(pg_temp.t_tok(l4), 'new.person@example.com', l4 ->> 'code') ->> 'error', 'locked');
 
     -- ------------------------------------------------ 10. deleting
     perform pg_temp.t_anon();
@@ -333,7 +384,8 @@ begin
       union all select id::text from public.plan_strategies where guest_id = (select id from public.guests where email = 'guest.b@example.com')
       union all select id::text from public.outcome_objectives where guest_id = (select id from public.guests where email = 'guest.b@example.com')
       union all select strategy_id::text from public.strategy_objectives where guest_id = (select id from public.guests where email = 'guest.b@example.com')
-      union all select id::text from public.habits where guest_id = (select id from public.guests where email = 'guest.b@example.com')) x;
+      union all select id::text from public.habits where guest_id = (select id from public.guests where email = 'guest.b@example.com')
+      union all select id::text from public.plan_versions where guest_id = (select id from public.guests where email = 'guest.b@example.com')) x;
     acct_unconf := pg_temp.t_user('unconfirmed', 'guest.b@example.com', false);
     perform pg_temp.t_as(acct_unconf);
     f := f || pg_temp.t_eq('11a an account with the email not yet confirmed claims nothing', public.guest_claim()::text, '0');
@@ -347,7 +399,7 @@ begin
     select count(*) into n_after from (
       select id from public.performance_plans where user_id = acct_b union all select id from public.plan_strategies where user_id = acct_b
       union all select id from public.outcome_objectives where user_id = acct_b union all select strategy_id from public.strategy_objectives where user_id = acct_b
-      union all select id from public.habits where user_id = acct_b) x;
+      union all select id from public.habits where user_id = acct_b union all select id from public.plan_versions where user_id = acct_b) x;
     f := f || pg_temp.t_eq('11d every row arrived once, nothing copied', n_after::text, n_before::text);
     f := f || pg_temp.t_eq('11e nothing is left with the guest', pg_temp.t_n('select (select count(*) from public.performance_plans p join public.guests g on g.id = p.guest_id where g.email = ''guest.b@example.com'') + (select count(*) from public.habits h join public.guests g on g.id = h.guest_id where g.email = ''guest.b@example.com'')'), '0');
     f := f || pg_temp.t_eq('11f the guest is marked claimed by the account', pg_temp.t_n(format('select (claimed_by = %L and claimed_at is not null)::text from public.guests where email = ''guest.b@example.com''', acct_b)), 'true');
@@ -384,7 +436,7 @@ begin
     perform pg_temp.t_as(owner_u);
     f := f || pg_temp.t_eq('12b old unclaimed guests go, with their work', pg_temp.t_n('select public.guest_purge_old()'), '1');
     perform pg_temp.t_admin();
-    f := f || pg_temp.t_eq('12c a recent guest and a claimed one stay', pg_temp.t_n('select string_agg(email, '','' order by email) from public.guests'), 'guest.a@example.com,guest.b@example.com,guest.d@example.com');
+    f := f || pg_temp.t_eq('12c a recent guest and a claimed one stay', pg_temp.t_n('select string_agg(email, '','' order by email) from public.guests'), 'claimed.person@example.com,guest.a@example.com,guest.b@example.com,guest.d@example.com');
     perform pg_temp.t_service();
     f := f || pg_temp.t_eq('12d the server can run it too', pg_temp.t_n('select public.guest_purge_old()'), '0');
 
