@@ -38,6 +38,7 @@ function Player({ inline, autoPlay, onWatched }) {
   const [started, setStarted] = useState(false);
   const [ended, setEnded] = useState(false);
   const [watched, setWatched] = useState(readWatched);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const v = ref.current;
@@ -63,6 +64,10 @@ function Player({ inline, autoPlay, onWatched }) {
     v.addEventListener('ended', onEnd);
     v.addEventListener('play', () => setPlaying(true));
     v.addEventListener('pause', () => setPlaying(false));
+    // A file that can't load (missing after a deploy, or offline) says so in the caption bar.
+    const onFail = () => setFailed(true);
+    v.addEventListener('error', onFail);
+    if (v.error) onFail(); // it may have failed before this ran
     onTime(); // the video may already be ready when this runs
     if (autoPlay) v.play().then(() => setStarted(true)).catch(() => {});
     return () => {
@@ -72,6 +77,7 @@ function Player({ inline, autoPlay, onWatched }) {
       v.removeEventListener('durationchange', onTime);
       trackEl?.removeEventListener('load', onTime);
       v.removeEventListener('ended', onEnd);
+      v.removeEventListener('error', onFail);
     };
   }, [autoPlay, onWatched]);
 
@@ -129,9 +135,11 @@ function Player({ inline, autoPlay, onWatched }) {
     else return;
     e.preventDefault();
   };
-  const showBig = inline && !playing && (!started || ended);
+  const showBig = inline && !playing && !failed && (!started || ended);
   const pct = dur ? Math.min(100, (t / dur) * 100) : 0;
-  const caption = inline && !started ? 'Watch with sound for the voice-over, or read the captions.' : cap;
+  const caption = failed
+    ? 'The video didn’t load. Check your connection, then reload the page.'
+    : inline && !started ? 'Watch with sound for the voice-over, or read the captions.' : cap;
   return (
     <>
       {/* Tapping the picture pauses or plays it; the Play button does the same for keyboards. */}

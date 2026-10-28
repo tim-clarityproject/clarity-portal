@@ -366,7 +366,7 @@ export function GrowBox({ value, onChange, className = '', inputRef, ...rest }) 
 }
 
 /** Numbered rows: one box each, the crosshair to remove, and the outlined add button. */
-export function Rows({ kind, rows, placeholder, label, max, maxItem, addLabel, onChange, onAdd, onRemove }) {
+export function Rows({ kind, rows, placeholder, label, max, addLabel, onChange, onAdd, onRemove }) {
   const refs = useRef({});
   const lastAdded = useRef(null);
   useEffect(() => {
@@ -385,7 +385,6 @@ export function Rows({ kind, rows, placeholder, label, max, maxItem, addLabel, o
             className="one"
             rows={1}
             value={row.text}
-            maxLength={maxItem}
             placeholder={i === 0 ? placeholder : ''}
             aria-label={`${label} ${i + 1}`}
             autoComplete="off"
@@ -393,7 +392,12 @@ export function Rows({ kind, rows, placeholder, label, max, maxItem, addLabel, o
             onChange={(v) => onChange(row.id, v.replace(/\n/g, ' '))}
             onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
           />
-          <button type="button" className="rm" aria-label={`Remove ${label.toLowerCase()} ${i + 1}`} disabled={rows.length < 2} onClick={() => onRemove(row.id)}>
+          <button type="button" className="rm" aria-label={`Remove ${label.toLowerCase()} ${i + 1}`} disabled={rows.length < 2} onClick={() => {
+            // Focus goes to the next row (or the one before), never lost.
+            const to = rows[i + 1] || rows[i - 1];
+            onRemove(row.id);
+            setTimeout(() => refs.current[to?.id]?.focus(), 0);
+          }}>
             <Cross />
           </button>
         </div>

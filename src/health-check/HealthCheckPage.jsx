@@ -28,6 +28,16 @@ const SITE = 'https://theclarityproject.co.uk';
 const COACH = 'your coach';
 const PAGE_TITLE = 'Strategic Alignment Health Check';
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Keeps at most `max` characters (as the database counts them) without
+// splitting an emoji or an accented letter in two.
+const segmenter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('en', { granularity: 'grapheme' }) : null;
+function clip(v, max) {
+  if (Array.from(v).length <= max) return v;
+  const parts = segmenter ? Array.from(segmenter.segment(v), (x) => x.segment) : Array.from(v);
+  let out = '';
+  for (const g of parts) { if (Array.from(out + g).length > max) break; out += g; }
+  return out;
+}
 const looksLikeEmail = (v) => /^\S+@\S+\.\S+$/.test(v.trim());
 
 const accessKey = (token) => `alignment-access:${token}`;
@@ -110,7 +120,9 @@ function Page() {
   const [organisation, setOrganisation] = useState(null);
   const [serverCompletedAt, setServerCompletedAt] = useState(null);
   const [toast, setToast] = useState(null);
-  const [panel, setPanel] = useState(null); // 'who' | 'how' | 'guide' | 'exact:s' | 'exact:f'
+  const [panel, setPanel] = useState(null);
+  const panelRef = useRef(null);
+  useEffect(() => { panelRef.current = panel; }, [panel]); // 'who' | 'how' | 'guide' | 'exact:s' | 'exact:f'
   const [sort, setSort] = useState('att');
   const [dateMsg, setDateMsg] = useState({});
   const [pdf, setPdf] = useState({ busy: false, open: false });
@@ -300,7 +312,13 @@ function Page() {
   // Each new screen puts focus on its heading, for keyboards and screen readers
   // (not when choosing by keyboard moves focus to the next choices).
   useEffect(() => {
-    if (focusChoices || enterKey === 0) return;
+    if (enterKey === 0) return;
+    if (focusChoices) {
+      // A keyboard choice moved on: the next screen's choices take focus; one with
+      // none (When) gives it to its first drop-down.
+      if (!document.querySelector('.hc-main .opts5')) document.querySelector('.hc-main .dd')?.focus({ preventScroll: true });
+      return;
+    }
     const h = document.querySelector('.hc-main .page h2');
     if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
   }, [enterKey, focusChoices]);
@@ -331,7 +349,8 @@ function Page() {
   // ---- editing the answers ----
   const edit = (d, immediate = false) => commit(d, stepRef.current, immediate);
   const listKey = { csf: 'csfs', projects: 'projects' };
-  const changeRow = (kind, id, text) => {
+  const changeRow = (kind, id, rawText) => {
+    const text = clip(rawText, MAX_ITEM);
     const k = listKey[kind];
     edit({ ...draftRef.current, [k]: draftRef.current[k].map((r) => (r.id === id ? { ...r, text } : r)) });
   };
@@ -382,7 +401,7 @@ function Page() {
     clearTimeout(advanceTimer.current);
     const here = stepRef.current;
     advanceTimer.current = setTimeout(() => {
-      if (stepRef.current !== here) return;
+      if (stepRef.current !== here || panelRef.current) return; // a panel opened meanwhile: Next moves on
       moveTo(nextStep(here, draftRef.current, reached), { focus: fromKeys });
     }, 320);
   };
@@ -514,8 +533,8 @@ function Page() {
       <>
         {head('What is your team trying to achieve?', 'Write it in one sentence.')}
         <div className="rv" style={{ '--i': 2 }}>
-          <GrowBox rows={2} style={{ marginTop: 22 }} aria-label="Objective" placeholder="e.g. Double recurring revenue by 2028" maxLength={MAX_OBJECTIVE}
-            value={draft.objective} onChange={(v) => edit({ ...draftRef.current, objective: v.replace(/\n/g, ' ') })} />
+          <GrowBox rows={2} style={{ marginTop: 22 }} aria-label="Objective" placeholder="e.g. Double recurring revenue by 2028"
+            value={draft.objective} onChange={(v) => edit({ ...draftRef.current, objective: clip(v.replace(/\n/g, ' '), MAX_OBJECTIVE) })} />
         </div>
       </>
     );
@@ -552,9 +571,9 @@ function Page() {
         <PctBar pct={percent(step, draft)} />
         <IconRow coach={COACH} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
         <p className="cnt2 rv" style={{ '--i': 1 }}><span>Project {step.pi + 1} of {projects.length}</span><span>CSF {step.fi + 1} of {factors.length}</span></p>
-        <h2 className="qh rv" style={{ '--i': 1 }}>How much does “{project?.text}” contribute to “{f?.text}”?</h2>
+        <h2 className="qh rv" style={{ '--i': 1 }}>How much does “<bdi>{project?.text}</bdi>” contribute to “<bdi>{f?.text}</bdi>”?</h2>
         <p className="nudge rv" style={{ '--i': 1 }}>Rate the level of impact.</p>
-        <Choices key={`${step.pi}:${step.fi}`} options={CON} value={rating.contrib?.[f?.id]} label={f?.text} style={{ '--i': 3 }} focusFirst={focusChoices} onPick={pickContribution} />
+        <Choices key={`${step.pi}:${step.fi}`} options={CON} value={rating.contrib?.[f?.id]} label={`How much does “${project?.text}” contribute to “${f?.text}”? Project ${step.pi + 1} of ${projects.length}, CSF ${step.fi + 1} of ${factors.length}.`} style={{ '--i': 3 }} focusFirst={focusChoices} onPick={pickContribution} />
       </>
     );
   } else if (step.screen === 'when') {
