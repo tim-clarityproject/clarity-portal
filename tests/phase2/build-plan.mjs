@@ -17,7 +17,7 @@
 //     working days, 8 weeks, the suggested start and 80%; Saving and
 //     Saved; a half-filled objective stays on the device; Ready's summary
 //     and alignment check; "Start Performance Sprint 1" keeps version 1.0
-//     and hands the sprint on.
+//     and hands the sprint to Start a sprint, which makes Sprint 1.
 //  3. Build again is refused: it opens the editor (never a second plan).
 //  4. Edit: a new target (minor, 1.1), then a new objective (major, 2.0),
 //     and the versions on /performance-plan/history.
@@ -310,13 +310,14 @@ try {
   pass('build: the set-up dial shows 8 weeks', (await page.locator('.ds-sdial-seg').count()) === 8 && (await page.locator('.ds-sdial-big').textContent()) === '8');
   await shot(page, 'flow-ready');
   await page.getByRole('button', { name: 'Start Performance Sprint 1' }).click();
-  await page.waitForURL(/\/performance-sprint\/start/, { timeout: 20000 });
+  // Start a sprint (step 3) makes Sprint 1 from the hand-over at once.
+  await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
   await page.waitForTimeout(800);
-  pass('build: the sprint is handed to Start a sprint', (await page.locator('.ipp-coming').textContent()).includes('8 weeks'));
+  const made = (await db.from('sprints').select('number, length_weeks, standard, status').eq('user_id', me)).data;
+  pass('build: Start a sprint makes Sprint 1 as chosen', made.length === 1 && made[0].number === 1 && made[0].length_weeks === 8 && made[0].standard === 80 && made[0].status === 'running', JSON.stringify(made));
   await shot(page, 'flow-sprint-handover');
   const versions = (await db.from('plan_versions').select('major, minor, kind').eq('user_id', me)).data;
   pass('build: version 1.0 kept', versions.length === 1 && versions[0].major === 1 && versions[0].minor === 0 && versions[0].kind === 'start', JSON.stringify(versions));
-  pass('build: no sprint is created here (Start a sprint creates it)', (await count('sprints')) === 0);
 
   // ---------------------------------------------------------------- 3. one plan only
   await page.goto(`${APP}/performance-plan/build`);

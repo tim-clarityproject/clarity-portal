@@ -5012,3 +5012,58 @@
     transition: none;
   }
 }
+
+/* Keep, change or remove (M6 .carry, .cr): rows divided by lines, the
+   name and its grey lines, the choice beside it on a wide screen and
+   under it on a phone. */
+.ui-root .ds-carry {
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-carry-row {
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-carry-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2) var(--space-px14);
+  align-items: center;
+}
+
+.ui-root .ds-carry-text {
+  min-width: 0;
+}
+
+.ui-root .ds-carry-name {
+  display: block;
+  font-size: var(--fs-body);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-carry-line {
+  display: block;
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+}
+
+.ui-root .ds-carry-row--removed .ds-carry-name {
+  color: var(--text-2);
+  text-decoration: line-through;
+}
+
+.ui-root .ds-carry-head .ds-carry-choice {
+  margin-top: 0;
+}
+
+.ui-root .ds-carry-edit {
+  margin-top: var(--space-px14);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-carry-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

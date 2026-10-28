@@ -362,56 +362,114 @@ export async function recordPlanVersion(userId, plan, { before, after, note = nu
 }
 
 /**
- * Start a sprint: the sprint row, then each of the plan's habits copied in
- * as a sprint habit with its settings from week 1 (spec section 3: the
- * plan's habits are copied when a sprint starts). The previous sprint must
- * be finished first (one running sprint per person).
+ * Everything Start a sprint needs, as rows: the active plan (or none), its
+ * live Strategies and habits (the sprint copies the habits), every sprint
+ * so far (the next number, and the one still running), Recovery (which
+ * moves a running sprint's end), the role (for the label's example), the
+ * coach (for the eyes) and an organisation seat's fixed standard.
  */
-export async function startSprint(userId, { planId, number, startOn, lengthWeeks, standard, label = null, habits = [] }) {
-  const sprintId = newId();
-  await saveOrQueue(userId, {
+export async function loadSprintStart(userId) {
+  const [plan, sprints, recoveries, personSettings, coach, fixedStandard] = await Promise.all([
+    loadActivePlan(userId),
+    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
+      .eq('user_id', userId).order('start_on')),
+    one(supabase.from('person_settings').select('time_zone, describes_you').eq('user_id', userId).limit(1)),
+    loadMyCoach().catch(() => null),
+    loadFixedStandard().catch(() => null),
+  ]);
+  const base = { plan, sprints, recoveries, personSettings, coach, fixedStandard };
+  if (!plan) return { ...base, strategies: [], habits: [] };
+  const [strategies, habits] = await Promise.all([
+    rows(supabase.from('plan_strategies').select(STRATEGY_COLS)
+      .eq('plan_id', plan.id).is('archived_at', null).order('sort_order')),
+    rows(supabase.from('habits').select(HABIT_COLS)
+      .eq('plan_id', plan.id).is('archived_at', null).order('sort_order')),
+  ]);
+  return { ...base, strategies, habits };
+}
+
+/**
+ * Start a sprint from its pending record (sprintStart.js pendingStart):
+ * the running sprint finished first (one running sprint per person), then
+ * the sprint row, then each habit copied in as a sprint habit with its
+ * settings from week 1 (spec section 3: the plan's habits are copied when
+ * a sprint starts). Every id comes from the record, so sending it again
+ * after a refresh or a second tap writes the same rows, never new ones.
+ * @returns {Promise<{ queued: boolean }>}
+ */
+export async function startSprint(userId, p) {
+  let queued = false;
+  const send = async (op) => {
+    const r = await saveOrQueue(userId, op);
+    if (r?.status === 'queued') queued = true;
+  };
+  if (p.finish) await send(finishSprintOp(userId, p.finish.sprintId, p.finish.endOn));
+  await send({
     table: 'sprints',
     kind: 'upsert',
-    values: { id: sprintId, user_id: userId, plan_id: planId, number, start_on: startOn, length_weeks: lengthWeeks, standard, label },
+    values: {
+      id: p.sprintId,
+      user_id: userId,
+      plan_id: p.planId,
+      number: p.number,
+      start_on: p.startOn,
+      length_weeks: p.lengthWeeks,
+      standard: p.standard,
+      label: p.label || null,
+    },
   });
-  for (const [i, h] of habits.entries()) {
-    const sprintHabitId = newId();
-    await saveOrQueue(userId, {
+  for (const h of p.habits) {
+    await send({
       table: 'sprint_habits',
       kind: 'upsert',
-      values: { id: sprintHabitId, sprint_id: sprintId, user_id: userId, habit_id: h.id || null, strategy_id: h.strategy_id ?? h.strategyId, name: h.name, sort_order: i },
+      values: { id: h.sprintHabitId, sprint_id: p.sprintId, user_id: userId, habit_id: h.habitId || null, strategy_id: h.strategyId, name: h.name, sort_order: h.sortOrder },
     });
-    await saveOrQueue(userId, {
+    await send({
       table: 'sprint_habit_settings',
       kind: 'upsert',
       values: {
-        id: newId(),
-        sprint_habit_id: sprintHabitId,
+        id: h.settingId,
+        sprint_habit_id: h.sprintHabitId,
         user_id: userId,
         from_week: 1,
         measure: h.measure,
         unit: h.unit ?? null,
         target: h.target ?? null,
-        target_per: h.target_per ?? h.targetPer ?? null,
-        limit_value: h.limit_value ?? h.limit ?? null,
-        limit_per: h.limit_per ?? h.limitPer ?? null,
+        target_per: h.targetPer ?? null,
+        limit_value: h.limit ?? null,
+        limit_per: h.limitPer ?? null,
         direction: h.direction ?? null,
-        top_number: h.top_number ?? h.topNumber ?? null,
+        top_number: h.topNumber ?? null,
         impact: h.impact ?? 2,
       },
     });
   }
-  return sprintId;
+  return { queued };
 }
 
-/** Finish a sprint (its review, or starting the next one). */
-export function finishSprint(userId, sprintId, actualEndOn) {
-  return saveOrQueue(userId, {
+/**
+ * The frozen end-of-sprint summary for an organisation seat (M6; does
+ * nothing for someone without one). Online only, best effort: a finished
+ * sprint without one can have it made later.
+ */
+export async function makeSprintSummary(sprintId) {
+  const { error } = await supabase.rpc('make_sprint_summary', { p_sprint: sprintId });
+  if (error) throw error;
+}
+
+function finishSprintOp(userId, sprintId, actualEndOn) {
+  return {
     table: 'sprints',
     kind: 'update',
     match: { id: sprintId, user_id: userId },
     values: { status: 'finished', actual_end_on: actualEndOn, finished_at: new Date().toISOString() },
-  });
+  };
+}
+
+/** Finish a sprint (its review, or starting the next one). */
+export function finishSprint(userId, sprintId, actualEndOn) {
+  return saveOrQueue(userId, finishSprintOp(userId, sprintId, actualEndOn));
 }
 
 /** One day's log for a sprint habit; null clears it (a log can't be empty). */

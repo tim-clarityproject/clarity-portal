@@ -23,3 +23,21 @@ export function readSprintSetup(userId) {
 export function clearSprintSetup(userId) {
   if (userId) removeKey(deviceKey('draft', userId, NAME));
 }
+
+// A sprint start under way (sprintStart.js pendingStart): kept before
+// anything is sent, so a refresh or a second tap sends the same rows
+// again instead of making a second sprint, and cleared once it is all
+// saved (or waiting in the offline queue).
+const PENDING = 'sprint-start-pending';
+
+export function keepPendingStart(userId, pending) {
+  if (userId) writeJson(deviceKey('draft', userId, PENDING), pending);
+}
+
+export function readPendingStart(userId) {
+  return userId ? readJson(deviceKey('draft', userId, PENDING)) : null;
+}
+
+export function clearPendingStart(userId) {
+  if (userId) removeKey(deviceKey('draft', userId, PENDING));
+}

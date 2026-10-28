@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import {
   AlignmentCheck,
   HabitEditor,
+  KeepChangeRow,
   ObjectiveEditor,
   SprintDial,
   nextMondayKey,
@@ -344,6 +345,27 @@ function HabitEditorDemo() {
   return (
     <div className="dr-stack dr-stack--fill">
       {list.map((h) => <HabitEditor key={h.id} habit={h} onChange={(p) => change(h.id, p)} onRemove={() => {}} />)}
+    </div>
+  );
+}
+
+function KeepChangeDemo() {
+  const [carry, setCarry] = useState({ h2: 'remove' });
+  const [edit, setEdit] = useState({ id: 'h1', strategyId: 's1', name: 'Training sessions', measure: 'count', target: '4', unit: '', per: 'week', direction: 'higher', impact: 3 });
+  const rows = [
+    ['h1', 'Training sessions', ['4 times a week', 'High impact']],
+    ['h2', 'Water', ['2 litres a day', 'Low impact']],
+    ['h3', 'Strategic block', ['Once a week', 'High impact']],
+  ];
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <div className="ds-carry">
+        {rows.map(([id, name, lines]) => (
+          <KeepChangeRow key={id} name={name} lines={lines} value={carry[id]} onChange={(v) => setCarry((c) => ({ ...c, [id]: v }))}>
+            {id === 'h1' && <HabitEditor habit={edit} onChange={(p) => setEdit((h) => (p.measure ? withMeasure({ ...h, ...p }, p.measure) : { ...h, ...p }))} />}
+          </KeepChangeRow>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1388,6 +1410,15 @@ function Gallery() {
             <p>Length as tiles, 12 suggested, Other for 2 to 16, and “Just started a new role?” which turns on and off.</p>
             <p>Today, next Monday (suggested) or another day from the calendar.</p>
             <p>The standard: 75, 80, 85 or 90%, or Other from 50 to 100; an organisation seat’s is 85% and can’t change.</p>
+          </>
+        )} />
+
+        <GallerySection id="c39" title="Keep, change or remove" wide demo={KeepChangeDemo} rules={(
+          <>
+            <p><New /><b>One row for each thing carried into what comes next</b> (M6): the habits a new sprint brings across, and the objectives at the end-of-sprint review.</p>
+            <p>The name, then its lines in grey, then Keep, Change or Remove (Retire for objectives) as 44px pills.</p>
+            <p>Change opens the editor under the row; a removed one stays, struck through in grey, so it can come back.</p>
+            <p>The choice sits beside the name on a wide screen and under it on a phone.</p>
           </>
         )} />
 
