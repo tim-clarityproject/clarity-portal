@@ -124,8 +124,12 @@ const TextBox = forwardRef(function TextBox({
   return (
     <div ref={fieldRef} tabIndex={writer ? -1 : undefined} className={`ds-textbox-field ${className}`.trim()}>
       <FieldLabel label={label} htmlFor={label ? boxId : undefined} who={who} coachName={coachName} />
-      {/* The trailing space keeps an empty last line its height. */}
-      <div className={`ds-grow${one ? ' ds-grow--one' : ''}`} data-value={`${text} `}>
+      {/* The trailing space keeps an empty last line its height. Until the
+          words typed are longer than the example, the box keeps the
+          example's height, so a long example never hides behind the box's
+          edge (a phone at a large text size) and the first letter typed
+          doesn't make the page jump. */}
+      <div className={`ds-grow${one ? ' ds-grow--one' : ''}`} data-value={`${placeholder && text.length < placeholder.length && !text.includes('\n') ? placeholder : text} `}>
         <textarea
           ref={ref}
           id={boxId}

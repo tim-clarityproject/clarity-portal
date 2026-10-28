@@ -342,16 +342,39 @@
   overflow-wrap: break-word;
 }
 
+/* The "i" sits 6px after the title's last word, on its last line, centred
+   on that line's capitals (CLAUDE.md rule 25; Tim, 28 Oct). The title runs
+   inline inside the row, so the "i" follows its last word wherever the
+   title wraps; the row's nowrap keeps the "i" from ever taking a line on
+   its own (the gap between the last letter and the "i" belongs to the row,
+   the gaps between words to the title). The row carries the title's type
+   so its lines are the title's lines. */
 .ui-root .ds-page-title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   min-width: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--fs-page-title);
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-page-title);
 }
 
+.ui-root .ds-page-title-row .ds-page-title {
+  display: inline;
+  white-space: normal;
+}
+
+/* The 44px button gives the tap area with padding; the margins take the
+   padding (and the letter-spacing after the last letter) back, so the gap
+   to the visible icon is 6px and the line keeps the title's height. The
+   icon is lifted from the line's middle to the middle of the capitals. */
 .ui-root .ds-page-title-row .ds-page-info-toggle {
-  flex: none;
+  display: inline-flex;
+  vertical-align: middle;
+  position: relative;
+  top: var(--page-info-lift);
   margin: calc((var(--tap-min) - var(--info-size)) / -2) 0;
+  margin-left: calc(var(--info-gap) - (var(--tap-min) - var(--info-size)) / 2 - var(--ls-page-title));
+  letter-spacing: normal;
 }
 
 .ui-root .ds-page-info {
@@ -405,6 +428,9 @@
 
 .ui-root .ds-section-head {
   display: flex;
+  /* At a large text size the aside (the eye) takes its own line rather
+     than running off a phone. */
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
@@ -556,8 +582,12 @@
   cursor: pointer;
   box-sizing: border-box;
   width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  /* Title and date side by side; when there isn't room (a phone at a
+     large text size) the date drops under the title rather than squeezing
+     it into broken words (CLAUDE.md rule 20). */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   gap: var(--space-1) var(--space-3);
   align-items: center;
   min-height: var(--tap-min) !important;
@@ -581,6 +611,7 @@
 }
 
 .ui-root .ds-row-main {
+  flex: 1 1 10em;
   min-width: 0;
 }
 
@@ -595,8 +626,10 @@
 .ui-root .ds-row-type {
   display: block;
   font-size: var(--fs-meta);
-  /* On the title's line height, as v3, so rows keep their rhythm. */
-  line-height: calc(var(--fs-text) * var(--lh-text));
+  /* One line takes the title's line height, as v3, so rows keep their
+     rhythm; a type that wraps keeps its own line spacing. */
+  line-height: var(--lh-text);
+  padding-block: calc((var(--fs-text) - var(--fs-meta)) * var(--lh-text) / 2);
   color: var(--label);
 }
 
@@ -715,6 +748,12 @@
   .ui-root .ds-log.ds-log--more {
     grid-template-columns: minmax(0, 1fr) var(--tap-min);
     grid-template-areas: "n m" "c c" "b b";
+  }
+
+  /* On its own line the week's tick box lines up with the name above it
+     and the other rows' entries; its 44px tap area reaches into the gutter. */
+  .ui-root .ds-log--more .ds-log-entry > .ds-check-box {
+    margin-left: calc((var(--tap-min) - var(--checkbox-box)) / -2);
   }
 }
 
@@ -2373,10 +2412,15 @@
   gap: var(--space-1) var(--icon-item-gap);
 }
 
+/* Never wider than its line: at a large text size on a phone the words
+   wrap under themselves, the icon staying on the middle of the first
+   line (one line looks just as before). */
 .ui-root .ds-iconword {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--icon-gap);
   font-family: var(--font-body);
   font-size: var(--fs-who);
@@ -2386,7 +2430,11 @@
   text-transform: none;
   text-align: left;
   color: var(--text-2);
-  white-space: nowrap;
+}
+
+.ui-root .ds-iconword-text {
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .ui-root .ds-iconword-icon {
@@ -2394,9 +2442,16 @@
   display: inline-flex;
   width: var(--who-icon);
   height: var(--who-icon);
+
   /* the one icon set's lines stop 0.25px inside the box, so the words sit
      6px from the icon's visible edge (as the mock-up, M7b version 26) */
   margin-right: -0.25px;
+}
+
+/* Centred on the first line (1.3 line height); a tappable one stays
+   centred in its 44px. */
+.ui-root .ds-iconword:not(.ds-iconword--tap) .ds-iconword-icon {
+  margin-top: calc((1.3em - var(--who-icon)) / 2);
 }
 
 .ui-root .ds-iconword-icon > svg,
@@ -2413,7 +2468,9 @@
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
   gap: var(--icon-gap);
@@ -2424,7 +2481,6 @@
   line-height: 1.3;
   letter-spacing: normal;
   color: var(--text-2);
-  white-space: nowrap;
   transition: color var(--dur-fast) var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
@@ -2814,7 +2870,7 @@
   align-items: center;
   gap: var(--space-px14);
   box-sizing: border-box;
-  height: calc(var(--guide-bar-h) + env(safe-area-inset-top, 0px));
+  min-height: calc(var(--guide-bar-h) + env(safe-area-inset-top, 0px));
   padding: env(safe-area-inset-top, 0px) var(--space-px20) 0 var(--space-px28);
   border-bottom: var(--line-w) solid var(--line);
   background: var(--bg);
@@ -2829,9 +2885,9 @@
   letter-spacing: var(--ls-tool-name);
   text-transform: uppercase;
   color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Never cut short with "…": at a large text size the name wraps and
+     the bar grows to hold it. */
+  overflow-wrap: break-word;
 }
 
 .ui-root .ds-guide-close .ds-cross--close {
@@ -4354,9 +4410,11 @@
   color: var(--text-2);
 }
 
+/* The dot sits on the middle of the first line, so a check that wraps
+   at a large text size keeps its dot beside its first words. */
 .ui-root .ds-align li {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
 }
 
@@ -4365,6 +4423,7 @@
   box-sizing: border-box;
   width: var(--dot);
   height: var(--dot);
+  margin-top: calc((1em * var(--lh-text) - var(--dot)) / 2);
   border-radius: 50%;
   background: var(--good);
 }
@@ -5178,7 +5237,7 @@
 }
 
 .ui-root .ds-sdial-centre--running .ds-sdial-small {
-  font-size: var(--fs-chart);
+  font-size: var(--fs-dial-label);
   line-height: var(--lh-question);
 }
 
@@ -5421,6 +5480,9 @@
 
 .ui-root .ds-todos {
   border-top: var(--line-w) solid var(--line-soft);
+  /* The list's own width decides whether Move fits beside the words. */
+  container-type: inline-size;
+  font-size: var(--fs-text);
 }
 
 .ui-root .ds-todo {
@@ -5486,6 +5548,24 @@
   min-width: var(--tap-min);
   justify-content: center;
   font-size: var(--fs-note);
+}
+
+/* A narrow list for its text size (a phone at a large text size): Move
+   goes under the words, so they keep the width and never break inside a
+   word. At the standard size a phone keeps Move beside them. */
+@container (max-width: 17em) {
+  .ui-root .ds-todo {
+    grid-template-columns: var(--tap-min) minmax(0, 1fr);
+  }
+
+  .ui-root .ds-todo-move {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .ui-root .ds-todo > span:empty {
+    display: none;
+  }
 }
 
 /* The add panels: one field after another, a short note under a field,

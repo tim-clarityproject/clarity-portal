@@ -166,10 +166,9 @@ function measure({ side, frame, CORAL, MINT, BANNED, guided, scope }) {
     // The "i" after a sentence or title: 6px after the last word.
     for (const svg of root.querySelectorAll('.ds-info')) {
       const btn = svg.closest('button');
-      // The page title's "i" (the shared PageHeader, since Phase 0) sits in
-      // its 44px button 4px after the title box: rule 25's 6px is for an "i"
-      // at the end of a sentence. Left out here and noted in the report.
-      if (!btn || outside(btn) || !vis(btn) || btn.closest('.ds-iconword') || btn.matches('.ds-page-info-toggle')) continue;
+      // The page title's "i" counts too: 6px after the title's last word, on
+      // its last line (Tim, 28 Oct).
+      if (!btn || outside(btn) || !vis(btn) || btn.closest('.ds-iconword')) continue;
       const host = btn.parentElement;
       const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
       let last = null;
@@ -185,8 +184,17 @@ function measure({ side, frame, CORAL, MINT, BANNED, guided, scope }) {
       const ch = range.getBoundingClientRect();
       const icon = svg.getBoundingClientRect();
       if (Math.abs(icon.top + icon.height / 2 - (ch.top + ch.height / 2)) > ch.height) continue; // not on the same line
-      const off = icon.top + icon.height / 2 - capMiddle(last.parentElement);
-      icons.push({ what: `i after "${last.textContent.trim().slice(-24)}"`, off: +off.toFixed(2), gap: +(icon.left - ch.right).toFixed(2), size: +icon.width.toFixed(1), info: true });
+      // The middle of the capitals on the last word's own line, from the
+      // font's metrics (a probe added to the text could re-wrap a title).
+      const cs = getComputedStyle(last.parentElement);
+      const ctx = document.createElement('canvas').getContext('2d');
+      ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const mt = ctx.measureText('H');
+      const base = ch.top + (ch.height - mt.fontBoundingBoxAscent - mt.fontBoundingBoxDescent) / 2 + mt.fontBoundingBoxAscent;
+      const off = icon.top + icon.height / 2 - (base - mt.actualBoundingBoxAscent / 2);
+      // Letter-spacing after the last letter is empty space, not the word.
+      const ls = parseFloat(cs.letterSpacing) || 0;
+      icons.push({ what: `i after "${last.textContent.trim().slice(-24)}"`, off: +off.toFixed(2), gap: +(icon.left - (ch.right - ls)).toFixed(2), size: +icon.width.toFixed(1), info: true });
     }
   }
 

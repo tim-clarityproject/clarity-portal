@@ -84,6 +84,11 @@
   overflow-wrap: break-word;
 }
 
+/* Lines only between rows: the next section brings its own line. */
+.ui-root .ipp-version-rows > li:last-child {
+  border-bottom: 0;
+}
+
 .ui-root .ipp-version-rows .ipp-version-line {
   display: block;
   font-size: var(--fs-meta);
@@ -361,6 +366,11 @@
 
 .ui-root .sprint-habits {
   margin-top: var(--space-2);
+}
+
+/* The last row's line would sit just above the next section's own line. */
+.ui-root .sprint-habits > .ds-log:last-child {
+  border-bottom: 0;
 }
 
 .ui-root .sprint-gap {
@@ -743,6 +753,8 @@
 .ui-root .rec-list {
   margin: var(--space-px10) 0 0;
   padding-left: var(--space-px18);
+  /* M15 .rul keeps its bullets (the app's reset takes them away). */
+  list-style: disc;
   font-size: var(--fs-secondary);
   line-height: var(--lh-text);
   color: var(--text-2);

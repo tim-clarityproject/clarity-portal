@@ -1048,6 +1048,8 @@ html:has(.ui-root) {
   font-size: var(--fs-button) !important;
   text-transform: uppercase;
   letter-spacing: 0.16em;
+  /* A long label that wraps at a large text size reads from the left. */
+  text-align: left;
   transition: color var(--dur-slow) var(--ease);
 }
 

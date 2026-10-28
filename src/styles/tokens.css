@@ -180,6 +180,7 @@
   --arrow-shift: 22%;        /* keeps the half-crosshair centred as it turns */
   --info-size: 16px;         /* the one "i", drawn like ⓘ */
   --info-gap: 6px;           /* from the last word of a sentence to its "i" */
+  --page-info-lift: -0.088em; /* the page title's "i", from its line's middle up to the middle of the capitals (measured on Nekst) */
   --onum-size: 22px;         /* circled objective numbers */
   --checkbox-box: 18px;      /* one tick box size everywhere (Tim, 23 Oct: 22px felt too large) */
   --tick-size: 12px;
@@ -245,7 +246,10 @@
   --sprint-dial: 220px;      /* the set-up sprint dial (M6 dial) */
   --sprint-dial-phone: 190px;
   --sprint-dial-cross: 16px; /* the crosshair at its top: never under 14px */
-  --fs-dial-small: calc(13 * var(--u));     /* "Weeks" in its centre */
+  /* Words inside a dial's ring grow at most a quarter, like big display
+     text, so they stay inside the ring at the largest text size. */
+  --fs-dial-small: calc(13 * var(--u-big)); /* "Weeks" in its centre */
+  --fs-dial-label: calc(12 * var(--u-big)); /* "Performance score this week so far" in the running dial */
   --fs-dial-big: calc(34 * var(--u-big));   /* the length in its centre, Nekst */
   --sprint-dial-running: 330px;       /* the Performance Sprint page's dial (M1 .dialw) */
   --sprint-dial-running-phone: 250px; /* M1's 224px, plus the room kept for the week numbers */
