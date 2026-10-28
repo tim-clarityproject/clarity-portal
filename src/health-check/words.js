@@ -26,7 +26,7 @@ export const RES = [null,
   ['Low', 'It needs a small amount of someone’s time or budget.'],
   ['Moderate', 'It needs real time from a few people, or a noticeable budget.'],
   ['High', 'It needs a dedicated team or a large budget.'],
-  ['Very high', 'It’s one of the biggest calls on the organisation’s people or money.'],
+  ['Very high', 'It’s one of the biggest demands on the organisation’s people or money.'],
 ];
 
 export const SORTS = [

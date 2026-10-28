@@ -77,7 +77,8 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
     ],
     sections: [
       { title: 'Objective', blocks: [{ type: 'text', text: draft.objective || '' }] },
-      { title: 'Critical Success Factors (CSFs)', blocks: [{ type: 'list', ordered: true, items: factors.map((f) => f.text) }] },
+      // Headings are set in capitals, where the abbreviation would read "CSFS", so they never carry it.
+      { title: 'Critical Success Factors', blocks: [{ type: 'list', ordered: true, items: factors.map((f) => f.text) }] },
       {
         title: 'Strategic importance against progress',
         blocks: plotted.length ? [{

@@ -39,7 +39,7 @@ function ProjectRow({ row, onOpen }) {
  * @param {Object} props.draft the answers
  * @param {boolean} [props.theirs] the example report ("their", read only)
  */
-export default function Results({ draft, theirs = false, phone, sort, onSort, coach, onChange, onEditProject, onTalk, onExampleEdit }) {
+export default function Results({ draft, theirs = false, phone, sort, onSort, onChange, onEditProject, onExampleEdit }) {
   const rows = useMemo(() => resultRows(draft), [draft]);
   const factors = cleanItems(draft.csfs);
   const nf = factors.length;
@@ -55,7 +55,8 @@ export default function Results({ draft, theirs = false, phone, sort, onSort, co
       </div>
       <div className="sec" style={{ marginTop: 32, paddingTop: 24, borderTop: 0 }}>
         <div className="sech">
-          <div><h3>Critical Success Factors (CSFs)</h3></div>
+          {/* In capitals the abbreviation would read "CSFS", so headings never carry it. */}
+          <div><h3>Critical Success Factors</h3></div>
           {!theirs && <button type="button" className="chg" onClick={() => onChange('csf')}>Change</button>}
         </div>
         <div className="csfs">
@@ -72,7 +73,6 @@ export default function Results({ draft, theirs = false, phone, sort, onSort, co
         <div className="sec">
           <div className="sech"><div><h3>Next step</h3></div></div>
           <p className="nxt">{theirs ? 'Their next step is to start with “' : 'Start with “'}{top.text}”.</p>
-          {!theirs && <button type="button" className="text" onClick={onTalk}>Talk it through with {coach}</button>}
         </div>
       )}
       <div className="sec">
