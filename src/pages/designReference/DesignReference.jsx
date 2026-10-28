@@ -5,6 +5,12 @@ import {
   KeepChangeRow,
   ObjectiveEditor,
   SprintDial,
+  LoggingWeekRow,
+  TodoRow,
+  TodoList,
+  AddTodoPanel,
+  AddWinPanel,
+  MoveTodoPanel,
   nextMondayKey,
   SprintLengthChoice,
   SprintStartChoice,
@@ -381,6 +387,121 @@ function SprintSetupDemo() {
       <SprintStartChoice sprint={sprint} onChange={set} />
       <StandardChoice sprint={sprint} onChange={set} />
       <StandardChoice sprint={sprint} onChange={set} fixed={85} />
+    </div>
+  );
+}
+
+// The running sprint dial (M1), with invented weeks: three finished (two
+// at the standard, one below), this week on its third day, four to come.
+const DIAL_WEEKS = [
+  { state: 'good', tip: { value: 'Performance score 86%', when: 'Week 1, Mon 5 Oct to Sun 11 Oct', extra: ['At or above your standard'] } },
+  { state: 'below', tip: { value: 'Performance score 72%', when: 'Week 2, Mon 12 Oct to Sun 18 Oct', extra: ['Below your standard'] } },
+  { state: 'good', tip: { value: 'Performance score 91%', when: 'Week 3, Mon 19 Oct to Sun 25 Oct', extra: ['At or above your standard'] } },
+  { state: 'now', tip: { value: 'Performance score 79%', when: 'Week 4, this week so far' } },
+  ...[5, 6, 7, 8].map((w) => ({ state: 'next', tip: { value: 'To come', when: `Week ${w}` } })),
+];
+
+function SprintDialDemo() {
+  const [n, setN] = useState(8);
+  const weeks = n === 8 ? DIAL_WEEKS : [...DIAL_WEEKS.slice(0, 4), ...Array.from({ length: n - 4 }, (_, i) => ({ state: 'next', tip: { value: 'To come', when: `Week ${i + 5}` } }))];
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <SegmentedControl label="Sprint length" options={[{ value: 5, label: '5 weeks' }, { value: 8, label: '8 weeks' }, { value: 16, label: '16 weeks' }]} value={n} onChange={setN} />
+      <SprintDial
+        weeks={weeks}
+        dayInWeek={2}
+        centre={{ small: 'Performance score this week so far', big: '79%', good: false }}
+        todayTip={{ value: 'Today', when: 'Wed 28 Oct' }}
+        crossTip={{ value: 'Start and end of the sprint', when: 'Mon 5 Oct to Sun 29 Nov' }}
+        label={`Performance Sprint 4, week 4 of ${n}`}
+      />
+      <SprintDial
+        weeks={DIAL_WEEKS.slice(0, 4).map((w, i) => (i === 3 ? { state: 'good', tip: { value: 'Performance score 88%', when: 'Week 4, this week so far' } } : w)).concat(DIAL_WEEKS.slice(3, 4).map(() => ({ state: 'now', tip: { value: 'Performance score 88%', when: 'Week 5, this week so far' } })))}
+        dayInWeek={5}
+        centre={{ small: 'Performance score this week so far', big: '88%', good: true }}
+        label="Performance Sprint 2, week 5 of 5"
+      />
+    </div>
+  );
+}
+
+const DEMO_DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr'].map((box, i) => ({
+  key: `2026-10-${26 + i}`,
+  box,
+  full: ['Monday 26 Oct', 'Tuesday 27 Oct', 'Wednesday 28 Oct', 'Thursday 29 Oct', 'Friday 30 Oct'][i],
+  today: i === 2,
+  later: i > 2,
+}));
+
+function LoggingKindsDemo() {
+  const [v, setV] = useState({ late: 0, focus: 4, coffee: 2, block: false, screens: { '2026-10-26': 1, '2026-10-27': 0 } });
+  const [boxes, setBoxes] = useState({ '2026-10-26': '11,200', '2026-10-27': '8400', '2026-10-28': '' });
+  const set = (k, x) => setV((s) => ({ ...s, [k]: x }));
+  const more = () => {};
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <span className="dr-small">Today</span>
+      <div>
+        <LoggingRow name="Late finishes" detail="1 this week, no more than 2" kind="yesno" value={v.late} onChange={(x) => set('late', x)} entryLabel="Late finishes today" progress={1} onMore={more} />
+        <LoggingRow name="Focus" detail="Rated 1 to 5 today, aim for 4" kind="rating" value={v.focus} onChange={(x) => set('focus', x)} entryLabel="Focus today" progress={0.67} onMore={more} />
+        <LoggingRow name="Coffees" detail={`${v.coffee} today, no more than 2`} kind="stepper" value={v.coffee} onChange={(x) => set('coffee', x)} min={0} max={6} entryLabel="Coffees today" progress={1} onMore={more} />
+        <LoggingRow name="Weekly strategic block" detail={v.block ? 'Done this week' : 'Once this week'} kind="tick" value={v.block} onChange={(x) => set('block', x)} progress={v.block ? 1 : 0} onMore={more} />
+      </div>
+      <span className="dr-small">This week</span>
+      <div>
+        <LoggingWeekRow name="Steps" detail="19,600 of 50,000 steps this week" days={DEMO_DAYS} texts={boxes} onChange={(d, t) => setBoxes((b) => ({ ...b, [d]: t }))} progress={0.65} onMore={more} />
+        <LoggingWeekRow name="No screens after 21:00" detail="1 of 4 days this week" kind="yesno" days={DEMO_DAYS} values={v.screens} onChange={(d, x) => setV((s) => ({ ...s, screens: { ...s.screens, [d]: x } }))} progress={0.4} onMore={more} />
+      </div>
+    </div>
+  );
+}
+
+const DEMO_STRATEGIES = [{ value: 's1', label: 'Maintain my availability to do good work' }, { value: 's2', label: 'Grow through referrals' }];
+
+function TodosDemo() {
+  const toast = useToast();
+  const [done, setDone] = useState({ a: false, b: true });
+  const [panel, setPanel] = useState(null);
+  const [todo, setTodo] = useState({ text: '', strategyId: null, impact: 2, week: 4 });
+  const [win, setWin] = useState({ text: '', strategyIds: [], impact: 2, day: 'we' });
+  return (
+    <div className="dr-stack dr-stack--fill">
+      <TodoList label="To-dos this week">
+        <TodoRow text="Book a physio assessment" strategyName="Maintain my availability to do good work" tags={['rolled over from week 3']} done={done.a} onToggle={(x) => setDone((d) => ({ ...d, a: x }))} onMove={() => setPanel('move')} />
+        <TodoRow text="Ask Evan for an introduction to Harbour" strategyName="Grow through referrals" done={done.b} onToggle={(x) => setDone((d) => ({ ...d, b: x }))} />
+        <TodoRow text="Update my LinkedIn profile" strategyName="Grow through referrals" tags={['moved to week 5']} disabled />
+        <TodoRow win text="Spoke at a breakfast event and two people asked about coaching" strategyName="Grow through referrals" winTag="Unplanned win, Tue" />
+      </TodoList>
+      <div className="dr-row">
+        <AddButton onClick={() => setPanel('todo')}>Add a to-do</AddButton>
+        <AddButton onClick={() => setPanel('win')}>Add an unplanned win</AddButton>
+      </div>
+      <AddTodoPanel
+        open={panel === 'todo'}
+        onClose={() => setPanel(null)}
+        form={todo}
+        onFormChange={setTodo}
+        strategies={DEMO_STRATEGIES}
+        weeks={[{ value: 4, label: 'This week, Mon 26 Oct to Sun 1 Nov' }, { value: 5, label: 'Week 5, Mon 2 Nov to Sun 8 Nov' }]}
+        onAdd={() => { setPanel(null); setTodo((t) => ({ ...t, text: '' })); toast.saved({ message: 'Added to this week.', onUndo: () => {} }); }}
+      />
+      <AddWinPanel
+        open={panel === 'win'}
+        onClose={() => setPanel(null)}
+        form={win}
+        onFormChange={setWin}
+        strategies={DEMO_STRATEGIES}
+        days={[{ value: 'mo', label: 'Mon' }, { value: 'tu', label: 'Tue' }, { value: 'we', label: 'Wed' }]}
+        onAdd={() => { setPanel(null); setWin((w) => ({ ...w, text: '', strategyIds: [] })); toast.saved({ message: 'Win added to Grow through referrals.', onUndo: () => {} }); }}
+      />
+      <MoveTodoPanel
+        open={panel === 'move'}
+        onClose={() => setPanel(null)}
+        text="Book a physio assessment"
+        started="This week has started, so it won’t count as done in week 4."
+        options={[{ value: 5, label: 'Week 5, Mon 2 Nov to Sun 8 Nov' }, { value: 6, label: 'Week 6, Mon 9 Nov to Sun 15 Nov' }]}
+        onMove={(w) => { setPanel(null); toast.saved({ message: `Moved to week ${w}.`, onUndo: () => {} }); }}
+      />
     </div>
   );
 }
@@ -1419,6 +1540,34 @@ function Gallery() {
             <p>The name, then its lines in grey, then Keep, Change or Remove (Retire for objectives) as 44px pills.</p>
             <p>Change opens the editor under the row; a removed one stays, struck through in grey, so it can come back.</p>
             <p>The choice sits beside the name on a wide screen and under it on a phone.</p>
+          </>
+        )} />
+
+        <GallerySection id="c40" title="The sprint dial" wide demo={SprintDialDemo} rules={(
+          <>
+            <p><New /><b>One thin segment per week</b>, any length from 2 to 16, with parallel gaps and the crosshair at the top marking the start and the end.</p>
+            <p>Finished weeks are mint at or above the standard and grey below; this week fills in the text colour as its days pass; weeks to come are faint.</p>
+            <p>Day ticks sit outside the ring, longer at the week edges, with a dot for today. Week numbers show on a wide screen only.</p>
+            <p><b>No key.</b> Every week, today’s dot and the crosshair have a pop-up.</p>
+            <p>The middle says “Performance score this week so far”, mint at the standard.</p>
+          </>
+        )} />
+
+        <GallerySection id="c41" title="Logging every way to measure" wide demo={LoggingKindsDemo} rules={(
+          <>
+            <p><New /><b>One habit per row</b> for each of the seven ways to measure: a number with its unit, a count with minus and plus up to its top number, No and Yes, 1 to 5, and a tick for once a week.</p>
+            <p>Tapping the chosen No, Yes or rating again clears it, so a day can go back to not logged.</p>
+            <p>The chevron at the end of each row opens the habit’s week, target and impact.</p>
+            <p><b>This week</b>: a box for each working day (and any day off already logged), later days greyed, today marked; or Yes and No in words for each day, never colour alone.</p>
+          </>
+        )} />
+
+        <GallerySection id="c42" title="To-dos and wins" wide demo={TodosDemo} rules={(
+          <>
+            <p><New /><b>Every row in one list looks alike</b>: the tick, the words, the Strategy and its tags in grey, and Move.</p>
+            <p>A to-do moved out after its week started keeps its place with its tick off, because it counts as not done that week.</p>
+            <p>A win is always ticked mint, tagged “Unplanned win” and its day.</p>
+            <p>The add panels keep one order: what, which Strategy, how much, then when.</p>
           </>
         )} />
 

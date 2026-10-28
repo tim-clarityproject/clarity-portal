@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useCachedLoad } from '../pageCache';
-import { loadActivePlan, loadPlanPage, loadPlanVersions } from './api';
+import { loadActivePlan, loadPlanPage, loadPlanVersions, loadSprintPage } from './api';
 import { planView } from './view';
 
 // The plan's React hooks: each page shows its last data at once from the
@@ -22,4 +22,11 @@ export function useActivePlan(userId) {
 
 export function usePlanVersions(userId) {
   return useCachedLoad({ userId, name: 'performance-plan-versions', load: () => loadPlanVersions(userId) });
+}
+
+/** The Performance Sprint page's rows. */
+export const SPRINT_CACHE = 'performance-sprint';
+
+export function useSprintPage(userId) {
+  return useCachedLoad({ userId, name: SPRINT_CACHE, load: () => loadSprintPage(userId) });
 }

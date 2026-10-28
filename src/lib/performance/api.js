@@ -110,7 +110,7 @@ export async function loadSprintWeekRows(userId, sprint) {
       .in('sprint_habit_id', ids).gte('local_date', sprint.start_on)) : [],
     rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, move_on, deleted_at')
       .eq('user_id', userId).eq('sprint_id', sprint.id).is('deleted_at', null)),
-    rows(supabase.from('todo_moves').select('todo_id, moved_on, from_sprint_id, from_week, to_sprint_id, to_week').eq('user_id', userId)),
+    rows(supabase.from('todo_moves').select('todo_id, moved_on, from_sprint_id, from_week, to_sprint_id, to_week, created_at').eq('user_id', userId)),
     rows(supabase.from('wins').select('id, what, local_date, impact, deleted_at')
       .eq('user_id', userId).gte('local_date', sprint.start_on).is('deleted_at', null)),
     rows(supabase.from('win_strategies').select('win_id, strategy_id').eq('user_id', userId)),
@@ -498,5 +498,141 @@ export function saveTodoDone(userId, todoId, doneOn) {
     kind: 'update',
     match: { id: todoId, user_id: userId },
     values: { done_on: doneOn },
+  });
+}
+
+// ---------------------------------------------------------------- the sprint page
+
+/**
+ * Everything the Performance Sprint page shows, as rows: the running
+ * sprint (or none), the plan's live objectives, Strategies and links (for
+ * the week's weighting, M5), the sprint's habits, settings, logs, to-dos,
+ * moves and wins, the working days and Recovery (M0.3, M0.4), the units,
+ * every frozen week (the usual range runs across sprints, M8) and this
+ * sprint's debriefs (an unusual week is left out of the range, M0.5).
+ */
+export async function loadSprintPage(userId) {
+  const [plan, sprint, recoveries, workingPatterns, personSettings, weekScores] = await Promise.all([
+    loadActivePlan(userId),
+    one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
+    rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
+      .eq('user_id', userId).order('start_on')),
+    rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
+    one(supabase.from('person_settings').select('time_zone, units').eq('user_id', userId).limit(1)),
+    rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, eligible, final')
+      .eq('user_id', userId).order('week_end')),
+  ]);
+  const base = { plan, sprint, recoveries, workingPatterns, personSettings, weekScores };
+  if (!sprint) return { ...base, objectives: [], strategies: [], links: [] };
+  const [objectives, strategies, links, debriefs, week] = await Promise.all([
+    rows(supabase.from('outcome_objectives').select('id').eq('plan_id', sprint.plan_id).is('archived_at', null)),
+    rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', sprint.plan_id).is('archived_at', null).order('sort_order')),
+    rows(supabase.from('strategy_objectives').select('strategy_id, objective_id').eq('user_id', userId)),
+    rows(supabase.from('weekly_debriefs').select('sprint_week, unusual, status').eq('sprint_id', sprint.id)),
+    loadSprintWeekRows(userId, sprint),
+  ]);
+  return { ...base, objectives, strategies, links, debriefs, ...week };
+}
+
+/**
+ * A finished week's score into week_scores (R3: the coach reads only
+ * those, and nothing else writes them yet). Online only, best effort: a
+ * week that isn't frozen now is frozen on the next visit.
+ */
+export async function freezeWeek(sprintId, week) {
+  const { error } = await supabase.rpc('freeze_week', { p_sprint: sprintId, p_week: week });
+  if (error) throw error;
+}
+
+/** A new to-do for a week of the sprint (M1 "Add a to-do"). */
+export function saveTodo(userId, t) {
+  return saveOrQueue(userId, {
+    table: 'todos',
+    kind: 'upsert',
+    values: {
+      id: t.id,
+      user_id: userId,
+      strategy_id: t.strategyId,
+      text: t.text,
+      impact: t.impact,
+      sprint_id: t.sprintId,
+      planned_week: t.week,
+      created_on: t.createdOn,
+      source: 'manual',
+    },
+  });
+}
+
+/**
+ * A to-do moved to another week of the sprint, on the person's local day
+ * (the database records the move in todo_moves, which M2 reads).
+ */
+export function moveTodo(userId, todoId, { sprintId, week, on }) {
+  return saveOrQueue(userId, {
+    table: 'todos',
+    kind: 'update',
+    match: { id: todoId, user_id: userId },
+    values: { sprint_id: sprintId, planned_week: week, move_on: on },
+  });
+}
+
+/** A to-do taken away (Undo after adding), or brought back (null). Kept, never deleted. */
+export function setTodoDeleted(userId, todoId, deletedAt) {
+  return saveOrQueue(userId, {
+    table: 'todos',
+    kind: 'update',
+    match: { id: todoId, user_id: userId },
+    values: { deleted_at: deletedAt },
+  });
+}
+
+/**
+ * An unplanned win and the Strategies it helped (M3). The database saves
+ * every win to Performance Evidence as well (trigger wins_to_evidence).
+ */
+export async function saveWin(userId, w) {
+  let queued = false;
+  const r = await saveOrQueue(userId, {
+    table: 'wins',
+    kind: 'upsert',
+    values: { id: w.id, user_id: userId, what: w.what, local_date: w.date, impact: w.impact },
+  });
+  if (r?.status === 'queued') queued = true;
+  for (const strategyId of w.strategyIds) {
+    const l = await saveOrQueue(userId, {
+      table: 'win_strategies',
+      kind: 'upsert',
+      onConflict: 'win_id,strategy_id',
+      ignoreDuplicates: true,
+      values: { win_id: w.id, strategy_id: strategyId, user_id: userId },
+    });
+    if (l?.status === 'queued') queued = true;
+  }
+  return { status: queued ? 'queued' : 'saved' };
+}
+
+/** A win taken away (Undo), which takes it out of Performance Evidence too. */
+export function setWinDeleted(userId, winId, deletedAt) {
+  return saveOrQueue(userId, {
+    table: 'wins',
+    kind: 'update',
+    match: { id: winId, user_id: userId },
+    values: { deleted_at: deletedAt },
+  });
+}
+
+/**
+ * A habit's impact for this sprint from a later week (M1 "Changes
+ * mid-sprint": from next week; past weeks keep what they had). The
+ * setting in force is copied with the new impact; one row per week it
+ * changed from.
+ */
+export function saveHabitSettingFrom(userId, setting, fromWeek, changes) {
+  const { id: _id, created_at: _c, updated_at: _u, ...rest } = setting;
+  return saveOrQueue(userId, {
+    table: 'sprint_habit_settings',
+    kind: 'upsert',
+    onConflict: 'sprint_habit_id,from_week',
+    values: { ...rest, ...changes, user_id: userId, from_week: fromWeek },
   });
 }

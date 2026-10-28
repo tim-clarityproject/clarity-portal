@@ -73,20 +73,33 @@ export function settingForWeek(settings, sprintHabitId, weekNumber) {
   return best;
 }
 
-/** A todos row and its moves, as M2 reads it (a move to another sprint has no week here). */
+/**
+ * A todos row and its moves, as M2 reads it. M2 starts from the week the
+ * to-do was first planned for and applies each move in turn, so with
+ * moves the planned week is the first move's starting week (the row
+ * itself holds where the last move left it). A week in another sprint
+ * has no week here.
+ */
 export function toTodo(row, moves = [], sprintId = row.sprint_id) {
+  const own = moves
+    .filter((m) => m.todo_id === row.id)
+    .sort((a, b) => (a.moved_on < b.moved_on ? -1 : a.moved_on > b.moved_on ? 1 : (a.created_at || '') < (b.created_at || '') ? -1 : 1));
+  const first = own[0];
+  const plannedWeek = first
+    ? (first.from_sprint_id === sprintId ? first.from_week : null)
+    : (row.sprint_id === sprintId ? row.planned_week : null);
   return {
     id: row.id,
     strategyId: row.strategy_id,
     impact: row.impact ?? 2,
     text: row.text,
     createdOn: row.created_on,
-    plannedWeek: row.sprint_id === sprintId ? row.planned_week : null,
+    plannedWeek: plannedWeek ?? null,
+    // Where it is planned now (after every move).
+    currentWeek: row.sprint_id === sprintId ? row.planned_week : null,
     doneOn: row.done_on,
     deleted: Boolean(row.deleted_at),
-    moves: moves
-      .filter((m) => m.todo_id === row.id)
-      .map((m) => ({ on: m.moved_on, toWeek: m.to_sprint_id === sprintId ? m.to_week : null })),
+    moves: own.map((m) => ({ on: m.moved_on, toWeek: m.to_sprint_id === sprintId ? m.to_week : null })),
   };
 }
 
@@ -148,6 +161,18 @@ export function sprintWeekSoFar(d, today) {
   );
   const number = m0WeekOfDay(calendar.weeks, today);
   if (!number) return null;
+  const { week, result } = sprintWeekResult(d, calendar, number, today);
+  return { calendar, number, week, result, standard: sprint.standard };
+}
+
+/**
+ * One sprint week scored by M5: final once it has finished, or "so far"
+ * up to and including `soFarUntil` (M5 "This week so far"). The habits
+ * use the settings in force that week (M1 "Changes mid-sprint").
+ * @returns {{ week: object, workingDays: string[], result: object }}
+ */
+export function sprintWeekResult(d, calendar, number, soFarUntil = null) {
+  const { sprint } = d;
   const week = calendar.weeks[number - 1];
   const workingDays = m0WorkingDaysOfWeek(toWorkingHistory(d.workingPatterns), week.days);
   const habits = [];
@@ -164,14 +189,14 @@ export function sprintWeekSoFar(d, today) {
     week,
     weeks: calendar.weeks,
     workingDays,
-    soFarUntil: today,
+    soFarUntil: soFarUntil || undefined,
     strategies: servedCounts(d.strategies || [], d.links || [], d.objectives || []),
     habits,
     logs,
     todos: (d.todos || []).map((t) => toTodo(t, d.todoMoves || [], sprint.id)),
     wins: (d.wins || []).map((w) => toWin(w, d.winLinks || [])),
   });
-  return { calendar, number, week, result, standard: sprint.standard };
+  return { week, workingDays, result };
 }
 
 /** Each objective's M9 result today. */

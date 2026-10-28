@@ -224,3 +224,251 @@
 .ui-root .plan-ready-align {
   margin-top: var(--space-4);
 }
+
+/* The Performance Sprint page (M1 R.sprint). */
+
+.ui-root .sprint-hero {
+  display: grid;
+  grid-template-columns: var(--sprint-dial-running) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: center;
+  margin-top: var(--space-5);
+}
+
+.ui-root .sprint-side {
+  min-width: 0;
+}
+
+.ui-root .sprint-usual p,
+.ui-root .sprint-std {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .sprint-usual p + p {
+  margin-top: var(--space-px2);
+}
+
+.ui-root .sprint-figure {
+  color: var(--text);
+}
+
+.ui-root .sprint-std {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  color: var(--good);
+}
+
+.ui-root .sprint-std-tick {
+  display: inline-flex;
+  flex: none;
+}
+
+.ui-root .sprint-std-tick svg {
+  width: var(--tick-size);
+  height: var(--tick-size);
+  fill: none;
+  stroke: var(--good);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ui-root .sprint-hero-actions {
+  margin-top: var(--space-4);
+}
+
+.ui-root .sprint-details {
+  margin-top: var(--space-3);
+}
+
+.ui-root .sprint-dl {
+  margin: 0;
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .sprint-dl > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-px12) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .sprint-dl dt {
+  min-width: 0;
+}
+
+.ui-root .sprint-dl dd {
+  margin: 0;
+  text-align: right;
+}
+
+.ui-root .sprint-dd-note {
+  display: block;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .sprint-anchor {
+  scroll-margin-top: var(--space-6);
+}
+
+.ui-root .sprint-section .ds-section-head {
+  flex-wrap: wrap;
+}
+
+.ui-root .sprint-subrow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--fs-note);
+  color: var(--label);
+}
+
+.ui-root .sprint-subrow-left {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.ui-root .sprint-dayoff {
+  margin-top: var(--space-3);
+}
+
+.ui-root .sprint-dayoff p {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .sprint-habits {
+  margin-top: var(--space-2);
+}
+
+.ui-root .sprint-gap {
+  margin-top: var(--space-3);
+}
+
+.ui-root .sprint-add {
+  margin-top: var(--space-4);
+}
+
+.ui-root .sprint-later {
+  margin-top: var(--space-4);
+}
+
+.ui-root .sprint-later-head {
+  display: block;
+  text-align: left;
+}
+
+.ui-root .sprint-later-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-note);
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .sprint-later-line {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.ui-root .sprint-habit-panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ui-root .sprint-habit-facts {
+  margin: 0;
+}
+
+.ui-root .sprint-habit-facts dt {
+  font-size: var(--fs-note);
+  color: var(--label);
+}
+
+.ui-root .sprint-habit-facts dd {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-text);
+  color: var(--text);
+}
+
+.ui-root .sprint-habit-edit {
+  margin-top: var(--space-4);
+}
+
+.ui-root .sprint-habit-lines {
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.ui-root .sprint-habit-lines p {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+@media (max-width: 768px) {
+  .ui-root .sprint-hero {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: var(--space-3);
+  }
+
+  .ui-root .sprint-side {
+    width: 100%;
+    text-align: center;
+  }
+
+  .ui-root .sprint-std {
+    justify-content: center;
+  }
+
+  .ui-root .sprint-hero-actions {
+    justify-content: center;
+  }
+
+  .ui-root .sprint-dl {
+    text-align: left;
+  }
+}
+
+@media (max-width: 600px) {
+  /* The Today / This week switch on its own line under the title (M1 phone). */
+  .ui-root .sprint-log .ds-section-aside {
+    position: relative;
+    flex: 1 1 100%;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .ui-root .sprint-hero-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.ui-root .sprint-habit-panel .ds-log {
+  border-bottom: 0;
+}

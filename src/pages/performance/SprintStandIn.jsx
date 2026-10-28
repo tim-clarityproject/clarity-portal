@@ -8,11 +8,11 @@ import { usePlanPage } from '../../lib/performance/hooks';
 import { localToday } from '../../lib/performance';
 import './performance.css';
 
-// Stand-ins for the Performance Sprint page (Phase 2 step 4) and the
-// end-of-sprint review (step 6), at their own routes, so starting a sprint
-// never leads to nothing in the meantime. Each says where the person's
-// sprint stands, with the one next step. The steps that build these
-// pages replace them.
+// The stand-in for the end-of-sprint review (Phase 2 step 6), at its own
+// route, so finishing a sprint never leads to nothing in the meantime. It
+// says where the person's sprint stands, with the one next step. (The
+// Performance Sprint page itself is PerformanceSprint.jsx, step 4; the
+// 'sprint' form here is no longer routed.) Step 6 replaces this.
 //
 // page: 'sprint' (/performance-sprint) or 'review' (/performance-sprint/review)
 export default function SprintStandIn({ page = 'sprint' }) {

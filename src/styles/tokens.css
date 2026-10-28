@@ -247,6 +247,12 @@
   --sprint-dial-cross: 16px; /* the crosshair at its top: never under 14px */
   --fs-dial-small: calc(13 * var(--u));     /* "Weeks" in its centre */
   --fs-dial-big: calc(34 * var(--u-big));   /* the length in its centre, Nekst */
+  --sprint-dial-running: 330px;       /* the Performance Sprint page's dial (M1 .dialw) */
+  --sprint-dial-running-phone: 250px; /* M1's 224px, plus the room kept for the week numbers */
+  --sprint-dial-centre-w: 46%;        /* the words in its middle stay inside the ring */
+  --fs-dial-score: calc(44 * var(--u-big));       /* this week's score in its middle, Nekst Light (M1 .dc) */
+  --fs-dial-score-phone: calc(32 * var(--u-big));
+  --fs-dial-week: calc(16 * var(--u-big));        /* the week numbers round it, in the drawing's units */
   --fs-lens: calc(18 * var(--u-big));       /* a length tile's figure, Nekst (M6 .lens) */
   --lens-min-h: 72px;
   --figure-box-w: 120px;     /* a figure box beside its words ("weeks", "%") */

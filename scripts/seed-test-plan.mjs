@@ -116,6 +116,8 @@ const habitList = [
   ['read', S[1], 'Reading', { measure: 'amount', unit: 'hours', target: 3, target_per: 'week', impact: 1 }],
   ['msgs', S[2], 'Check-in messages', { measure: 'count', unit: 'messages', target: 5, target_per: 'week', impact: 3 }],
   ['block', S[3], 'Weekly strategic block', { measure: 'yes_no_weekly', impact: 3 }],
+  ['screens', S[0], 'No screens after 21:00', { measure: 'yes_no_days_target', target: 4, impact: 2 }],
+  ['coffee', S[0], 'Coffees', { measure: 'count_limit', unit: 'coffees', limit_value: 2, limit_per: 'day', impact: 1 }],
 ];
 const habits = habitList.map(([key, strategyId, name, m], i) => {
   H[key] = randomUUID();
@@ -155,10 +157,10 @@ await put('sprint_habit_settings', habits.map((h, i) => ({
 
 // Logs: three fuller weeks, then this week so far (M1's EXA and EXD).
 const week = [
-  { steps: [11200, 8400, 10300, 9800, 12100, null, 6400], train: [1, 0, 1, 0, 1, 1, 0], water: [2, 1.5, 2, 2, 1.5, 2, null], late: [0, 1, 0, 1, 0, 0, 0], focus: [4, 3, 4, 4, 3, null, 4], notes: [2, 1, 1, 1, 1, 0, 0], read: [0.5, 0, 1, 0, 0.5, 1, 0], msgs: [1, 2, 0, 1, 0, 0, 0], block: [1, null, null, null, null, null, null] },
-  { steps: [9000, 7600, 10100, 8800, 9900, 4000, null], train: [1, 0, 1, 0, 0, 1, 0], water: [1.5, 1.5, 2, 1, 1.5, null, null], late: [1, 1, 0, 1, 0, 0, 0], focus: [3, 3, 4, 3, 3, null, null], notes: [1, 1, 0, 1, 1, 0, 0], read: [0, 0, 1, 0, 0.5, 0, 0], msgs: [1, 1, 0, 1, 0, 0, 0], block: [null, null, null, 0, null, null, null] },
-  { steps: [12000, 10400, 11000, 10200, 12500, 8000, 9000], train: [1, 1, 0, 1, 0, 1, 0], water: [2, 2, 2, 2, 2, 2, 2], late: [0, 0, 1, 0, 0, 0, 0], focus: [4, 4, 5, 4, 4, null, null], notes: [1, 1, 1, 1, 1, 1, 0], read: [1, 0, 1, 0, 0.5, 0.5, 0], msgs: [2, 1, 1, 1, 1, 0, 0], block: [null, 1, null, null, null, null, null] },
-  { steps: [11200, 8400, null, null, null, null, null], train: [1, 0, null, null, null, null, null], water: [2, 1.5, null, null, null, null, null], late: [0, 1, null, null, null, null, null], focus: [4, 3, null, null, null, null, null], notes: [2, 1, null, null, null, null, null], read: [0.5, 0, null, null, null, null, null], msgs: [1, 2, null, null, null, null, null], block: [null, null, null, null, null, null, null] },
+  { steps: [11200, 8400, 10300, 9800, 12100, null, 6400], train: [1, 0, 1, 0, 1, 1, 0], water: [2, 1.5, 2, 2, 1.5, 2, null], late: [0, 1, 0, 1, 0, 0, 0], focus: [4, 3, 4, 4, 3, null, 4], notes: [2, 1, 1, 1, 1, 0, 0], read: [0.5, 0, 1, 0, 0.5, 1, 0], msgs: [1, 2, 0, 1, 0, 0, 0], block: [1, null, null, null, null, null, null], screens: [1, 1, 0, 1, 1, null, null], coffee: [2, 3, 1, 2, 2, null, null] },
+  { steps: [9000, 7600, 10100, 8800, 9900, 4000, null], train: [1, 0, 1, 0, 0, 1, 0], water: [1.5, 1.5, 2, 1, 1.5, null, null], late: [1, 1, 0, 1, 0, 0, 0], focus: [3, 3, 4, 3, 3, null, null], notes: [1, 1, 0, 1, 1, 0, 0], read: [0, 0, 1, 0, 0.5, 0, 0], msgs: [1, 1, 0, 1, 0, 0, 0], block: [null, null, null, 0, null, null, null], screens: [0, 1, 0, 1, 0, null, null], coffee: [3, 2, 2, 3, 2, null, null] },
+  { steps: [12000, 10400, 11000, 10200, 12500, 8000, 9000], train: [1, 1, 0, 1, 0, 1, 0], water: [2, 2, 2, 2, 2, 2, 2], late: [0, 0, 1, 0, 0, 0, 0], focus: [4, 4, 5, 4, 4, null, null], notes: [1, 1, 1, 1, 1, 1, 0], read: [1, 0, 1, 0, 0.5, 0.5, 0], msgs: [2, 1, 1, 1, 1, 0, 0], block: [null, 1, null, null, null, null, null], screens: [1, 1, 1, 1, 0, null, null], coffee: [2, 1, 2, 2, 1, null, null] },
+  { steps: [11200, 8400, null, null, null, null, null], train: [1, 0, null, null, null, null, null], water: [2, 1.5, null, null, null, null, null], late: [0, 1, null, null, null, null, null], focus: [4, 3, null, null, null, null, null], notes: [2, 1, null, null, null, null, null], read: [0.5, 0, null, null, null, null, null], msgs: [1, 2, null, null, null, null, null], block: [null, null, null, null, null, null, null], screens: [1, 0, null, null, null, null, null], coffee: [2, 2, null, null, null, null, null] },
 ];
 const logs = [];
 week.forEach((w, wi) => {
@@ -174,7 +176,7 @@ await put('habit_logs', logs);
 
 const monday = day(today, -weekday(today));
 await put('todos', [
-  { strategy_id: S[0], text: 'Book a physio assessment', impact: 2, planned_week: 4, created_on: day(startOn, 14) },
+  { strategy_id: S[0], text: 'Book a physio assessment', impact: 2, planned_week: 3, created_on: day(startOn, 14) },
   { strategy_id: S[2], text: 'Ask Evan for an introduction to Harbour', impact: 3, planned_week: 4, created_on: day(startOn, 16), done_on: monday },
   { strategy_id: S[2], text: 'Draft the Harbour case study', impact: 3, planned_week: 4, created_on: day(startOn, 16) },
   { strategy_id: S[3], text: 'Shortlist breathing sound loops', impact: 1, planned_week: 4, created_on: day(startOn, 18) },

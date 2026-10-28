@@ -8,3 +8,4 @@ export * from './rows';
 export * from './view';
 export * from './builder';
 export * from './sprintStart';
+export * from './sprintPage';

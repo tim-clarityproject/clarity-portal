@@ -645,6 +645,219 @@
   margin-top: var(--space-1);
 }
 
+/* A habit's row with its ">" (M1 hrow): name and line, the entry, the
+   button; the bar underneath. On a phone the entry has its own line. */
+.ui-root .ds-log.ds-log--more,
+.ui-root .ds-log.ds-logweek {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto var(--tap-min);
+  grid-template-areas: "n c m" "b b b";
+  gap: var(--space-2) var(--space-3);
+}
+
+.ui-root .ds-log.ds-logweek {
+  grid-template-columns: minmax(0, 1fr) var(--tap-min);
+  grid-template-areas: "n m" "w w" "b b";
+}
+
+.ui-root .ds-log.ds-logweek.ds-logweek--tick {
+  grid-template-columns: minmax(0, 1fr) auto var(--tap-min);
+  grid-template-areas: "n c m" "b b b";
+}
+
+.ui-root .ds-log--more .ds-log-main,
+.ui-root .ds-logweek .ds-log-main { grid-area: n; }
+.ui-root .ds-log--more .ds-log-entry,
+.ui-root .ds-logweek .ds-log-entry { grid-area: c; }
+.ui-root .ds-logweek-entry { grid-area: w; min-width: 0; }
+.ui-root .ds-log-more { grid-area: m; }
+.ui-root .ds-log--more .ds-bar,
+.ui-root .ds-logweek .ds-bar { grid-area: b; margin-top: 0; }
+
+.ui-root .ds-log-entry {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ui-root .ds-log-more {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  color: var(--label);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-log-more .ds-chevron {
+  background-color: var(--label);
+  transition: background-color var(--dur) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-log-more:hover .ds-chevron { background-color: var(--coral-text); }
+}
+
+.ui-root .ds-log-more:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+.ui-root .ds-log-more:focus-visible .ds-chevron { background-color: var(--coral-text); }
+
+@media (max-width: 600px) {
+  .ui-root .ds-log.ds-log--more {
+    grid-template-columns: minmax(0, 1fr) var(--tap-min);
+    grid-template-areas: "n m" "c c" "b b";
+  }
+}
+
+/* No and Yes, or 1 to 5 (M1 .seg and .rate): 44px each. */
+.ui-root .ds-log-press {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-pill);
+}
+
+.ui-root .ds-log-press--rate {
+  border: 0;
+  gap: var(--space-2);
+}
+
+.ui-root .ds-log-press-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min) !important;
+  padding: 0 var(--space-3) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--fs-note) !important;
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-log-press--rate .ds-log-press-btn {
+  padding: 0 !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  font-family: var(--font-display);
+}
+
+.ui-root .ds-log-press-btn[aria-pressed='true'] {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--on-text);
+}
+
+.ui-root .ds-log-press-btn:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+/* The week view's day boxes and day Yes and No (M1 .wkd, .wkt). */
+.ui-root .ds-logweek-days {
+  display: grid;
+  grid-template-columns: repeat(var(--days, 7), minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.ui-root .ds-logweek-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--fs-chart);
+  color: var(--label);
+  text-align: center;
+}
+
+.ui-root .ds-logweek-box.ds-logweek--today { color: var(--text); }
+
+.ui-root .ds-logweek-box input {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  color: var(--text);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-logweek-box input:focus { border-color: var(--coral-text); }
+.ui-root .ds-logweek-box input:disabled { opacity: 0.35; }
+
+.ui-root .ds-logweek-yn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: calc(var(--tap-min) + var(--space-2)) !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-px2);
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-logweek-yn span {
+  font-size: var(--fs-chart);
+  color: var(--label);
+}
+
+.ui-root .ds-logweek-yn b {
+  min-height: calc(var(--fs-note) * var(--lh-text));
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ds-logweek-yn.ds-logweek--today span { color: var(--text); }
+
+.ui-root .ds-logweek-yn[aria-pressed='true'] {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.ui-root .ds-logweek-yn[aria-pressed='true'] span,
+.ui-root .ds-logweek-yn[aria-pressed='true'] b { color: var(--on-text); }
+
+.ui-root .ds-logweek-yn:disabled { opacity: 0.4; cursor: default; }
+
+.ui-root .ds-logweek-yn:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-logweek-days { gap: var(--space-1); }
+}
+
 /* Number entry: the field, with the unit shown inside it. */
 .ui-root .ds-num {
   box-sizing: border-box;
@@ -4886,6 +5099,108 @@
   }
 }
 
+/* The running dial (M1 dial()): finished weeks mint at or above the
+   standard and grey below, this week filling in the text colour, weeks
+   to come faint, the day ticks and today's dot outside the ring. */
+.ui-root .ds-sdial--running {
+  margin-top: 0;
+}
+
+.ui-root .ds-sdial--running .ds-sdial-ring {
+  width: var(--sprint-dial-running);
+  max-width: 100%;
+}
+
+.ui-root .ds-sdial-tips {
+  display: block;
+}
+
+.ui-root .ds-sdial-seg--good { fill: var(--good); }
+.ui-root .ds-sdial-seg--below { fill: var(--below); }
+.ui-root .ds-sdial-seg--none { fill: var(--to-come); }
+.ui-root .ds-sdial-seg--now { fill: var(--text); }
+
+.ui-root .ds-sdial-week,
+.ui-root .ds-sdial--running path[data-tip],
+.ui-root .ds-sdial-today,
+.ui-root .ds-sdial-crosstip {
+  cursor: default;
+  outline: none;
+}
+
+.ui-root .ds-sdial--running [data-tip]:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+}
+
+.ui-root .ds-sdial-crosstip {
+  fill: transparent;
+}
+
+.ui-root .ds-sdial-tick {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.ui-root .ds-sdial-tick--week {
+  stroke: var(--field-line);
+}
+
+.ui-root .ds-sdial-today {
+  fill: var(--text);
+}
+
+.ui-root .ds-sdial-wn {
+  font-family: var(--font-display);
+  font-size: var(--fs-dial-week);
+  fill: var(--text-2);
+}
+
+.ui-root .ds-sdial-wn--now { fill: var(--text); }
+.ui-root .ds-sdial-wn--next { fill: var(--label); }
+
+.ui-root .ds-sdial-cross {
+  pointer-events: none;
+}
+
+.ui-root .ds-sdial-centre--running {
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  width: var(--sprint-dial-centre-w);
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.ui-root .ds-sdial-centre--running .ds-sdial-small {
+  font-size: var(--fs-chart);
+  line-height: var(--lh-question);
+}
+
+.ui-root .ds-sdial-big--score {
+  font-weight: var(--fw-light);
+  font-size: var(--fs-dial-score);
+}
+
+.ui-root .ds-sdial-big--good {
+  color: var(--good);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-sdial--running .ds-sdial-ring {
+    width: var(--sprint-dial-running-phone);
+  }
+
+  /* Phones show less (26 Oct rule 10): the week numbers live in the pop-ups. */
+  .ui-root .ds-sdial-wn {
+    display: none;
+  }
+
+  .ui-root .ds-sdial-big--score {
+    font-size: var(--fs-dial-score-phone);
+  }
+}
+
 /* The sprint's length, start and standard. */
 .ui-root .ds-lens {
   display: grid;
@@ -5065,5 +5380,121 @@
 @media (max-width: 600px) {
   .ui-root .ds-carry-head {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- To-dos and wins in a list (M1 .td, winRow) ---------- */
+
+.ui-root .ds-todos {
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-todo {
+  display: grid;
+  grid-template-columns: var(--tap-min) minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-todo-main {
+  min-width: 0;
+}
+
+.ui-root .ds-todo-text {
+  display: block;
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-todo--done .ds-todo-text {
+  color: var(--text-2);
+  text-decoration: line-through;
+  text-decoration-color: var(--label);
+}
+
+.ui-root .ds-todo-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-todo-tag {
+  color: var(--text-2);
+}
+
+.ui-root .ds-todo-tag--win {
+  color: var(--good);
+}
+
+.ui-root .ds-todo .ds-check-box:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.ui-root .ds-todo-mark > span {
+  background: var(--good);
+  border-color: var(--good);
+}
+
+.ui-root .ds-todo-mark svg {
+  opacity: 1;
+}
+
+.ui-root .ds-todo-move {
+  min-width: var(--tap-min);
+  justify-content: center;
+  font-size: var(--fs-note);
+}
+
+/* The add panels: one field after another, a short note under a field,
+   the lead lines at the top. */
+.ui-root .ds-panel-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ui-root .ds-panel-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-panel-lead p {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-panel-lead p + p {
+  margin-top: var(--space-1);
+}
+
+.ui-root .ds-panel-lead .ds-panel-lead-text {
+  font-size: var(--fs-text);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-px12);
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-panel-actions > * {
+    flex: 1 1 auto;
   }
 }
