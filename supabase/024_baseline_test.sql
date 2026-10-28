@@ -440,14 +440,21 @@ expected (kind, key, val) as (values
 -- Changes made by later migrations to things in the baseline. A database is
 -- still a match if it has either the baseline's version or the later one.
 later_version (kind, key, val, migration) as (values
-    ('function', 'alignment_open(text,text,text)', 'e4051cae7f3cdbadd0336526d48c5902', '022')
+    ('function', 'alignment_open(text,text,text)', 'e4051cae7f3cdbadd0336526d48c5902', '022'),
+    ('function', 'alignment_open(text,text,text)', '63afb02a4bba308894e5245ee7694928', '034'),
+    ('function', 'create_alignment_session(text,text)', '498565d6ba6631cf18170c3c6b51f5ba', '034')
 ),
 -- Things later migrations add. They are listed as notes, not differences.
 -- (kind and key are LIKE patterns.)
 later_addition (kind, key, migration) as (values
     ('security rule', 'mission_progress_reviews: Users can update their own reviews', '023'),
     ('table', 'migration_log', '025'),
-    ('function', 'record_migration(%', '025')
+    ('function', 'record_migration(%', '025'),
+    ('column', 'alignment_sessions.coach_name', '034'),
+    ('column note', 'alignment_sessions.coach_name', '034'),
+    ('function', 'create_alignment_session(text,text,text)', '034'),
+    ('function', '_alignment_coach_name(%', '034'),
+    ('function', '_alignment_first_name(%', '034')
 ),
 actual (kind, key, val) as (
   select 'table'::text as kind, c.relname::text as key,
