@@ -28,6 +28,17 @@ export function shiftDay(key, n) {
 }
 
 const earliest = (...keys) => keys.filter(Boolean).sort()[0];
+
+/**
+ * The first day a new sprint may start: today, or the day after the last
+ * finished sprint's end when that is today or later (a sprint finished by
+ * its review today still holds today), so two sprints never share a day.
+ */
+export function earliestStart(sprints = [], today) {
+  const ends = sprints.filter((s) => s.status === 'finished' && s.actual_end_on).map((s) => s.actual_end_on).sort();
+  const last = ends[ends.length - 1];
+  return last && last >= today ? shiftDay(last, 1) : today;
+}
 const latest = (...keys) => keys.filter(Boolean).sort().at(-1);
 
 /** The next sprint's number: one after the highest so far, or 1. */

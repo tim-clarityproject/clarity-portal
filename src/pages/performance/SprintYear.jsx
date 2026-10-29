@@ -90,6 +90,16 @@ export default function SprintYear() {
         <ErrorMessage keepsHappening>Your year didn’t load. Check your connection and try again.</ErrorMessage>
       </div>
     );
+  } else if (!data.plan) {
+    // No plan yet: the plan comes before any sprint.
+    body = (
+      <div className="ipp-gap">
+        <EmptyState
+          question="Ready to build your Individual Performance Plan?"
+          action={{ label: 'Build my plan', onClick: () => navigate('/performance-plan/build') }}
+        />
+      </div>
+    );
   } else if (!data.sprints?.length) {
     body = (
       <div className="ipp-gap">

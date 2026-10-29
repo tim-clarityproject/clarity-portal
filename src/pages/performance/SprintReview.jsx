@@ -201,6 +201,19 @@ function ReviewView({ userId, data }) {
     }
   };
 
+  if (view.state === 'none' && !data.plan) {
+    return (
+      <Shell>
+        <div className="ipp-gap ipp-coming">
+          <p>No sprint is waiting for its review.</p>
+          <p>Build your plan first, and your first sprint starts from there.</p>
+        </div>
+        <div className="ds-actions ipp-actions">
+          <Button variant="primary" onClick={() => navigate('/performance-plan/build')}>Build my plan</Button>
+        </div>
+      </Shell>
+    );
+  }
   if (view.state === 'none') {
     return (
       <Shell>

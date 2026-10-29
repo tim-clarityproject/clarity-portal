@@ -392,10 +392,19 @@ export default function PerformanceSprint() {
             />
           </div>
         )}
-        <EmptyState
-          question="Ready to start a Performance Sprint?"
-          action={{ label: 'Start a sprint', onClick: () => navigate('/performance-sprint/start') }}
-        />
+        {view.hasPlan ? (
+          <EmptyState
+            question="Ready to start a Performance Sprint?"
+            action={{ label: 'Start a sprint', onClick: () => navigate('/performance-sprint/start') }}
+          />
+        ) : (
+          // A sprint carries out the plan, so with no plan the next step is
+          // building it (Start a sprint would only say so).
+          <EmptyState
+            question="Ready to build your Individual Performance Plan?"
+            action={{ label: 'Build my plan', onClick: () => navigate('/performance-plan/build') }}
+          />
+        )}
       </div>
     );
   } else if (view.state === 'future') {

@@ -35,6 +35,7 @@ import {
   IMPACTS,
   LABEL_MAX,
   draftFromRows,
+  earliestStart,
   emptyHabit,
   finishDay,
   openRecovery,
@@ -333,14 +334,17 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
 
   // The answers start as M6 suggests (12 weeks, next Monday, 85%), or from
   // a first sprint chosen in Build your plan whose start day has passed.
+  // Never on a day the last sprint still holds (its review finished it today).
+  const earliest = earliestStart(data.sprints || [], today);
   const [initial] = useState(() => {
     const handover = readSprintSetup(userId);
     const monday = nextMondayKey(today);
+    const answers = handover ? sprintAnswersFrom(handover, monday) : startingSprint(monday);
     return {
       planId: data.plan.id,
       number,
       proceed,
-      sprint: handover ? sprintAnswersFrom(handover, monday) : startingSprint(monday),
+      sprint: answers.start < earliest ? { ...answers, start: monday } : answers,
       label: handover?.label && !handover.template ? handover.label : '',
       carry: {},
       added: [],
@@ -361,7 +365,8 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
     ready: true,
     onRestore: (d) => {
       if (!d || d.planId !== data.plan.id || d.number !== number || !d.sprint) return;
-      setDraft({ ...initial, ...d, proceed: initial.proceed || d.proceed });
+      const sprintBack = d.sprint.start < earliest ? { ...d.sprint, start: initial.sprint.start } : d.sprint;
+      setDraft({ ...initial, ...d, sprint: sprintBack, proceed: initial.proceed || d.proceed });
     },
   });
 
@@ -434,8 +439,10 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       key: 'start',
       name: 'Start',
       question: 'When does it start?',
-      nudges: ['Pick any day.', 'You can move it before it starts.'],
-      render: () => <SprintStartChoice sprint={sprint} onChange={setSprint} />,
+      nudges: earliest > today
+        ? ['Pick any day from tomorrow.', 'Today still belongs to your last sprint.']
+        : ['Pick any day.', 'You can move it before it starts.'],
+      render: () => <SprintStartChoice sprint={sprint} onChange={setSprint} earliest={earliest} />,
     },
     {
       key: 'standard',

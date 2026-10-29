@@ -102,12 +102,15 @@ export function planView(data, opts = {}) {
     }));
     const todos = week && !week.paused
       ? todosRows
-        .filter((t) => t.strategy_id === s.id && t.planned_week != null && t.planned_week >= week.number)
+        // This week's and later ones, and open ones rolled over from an
+        // earlier week (they show this week on the sprint page too).
+        .filter((t) => t.strategy_id === s.id && t.planned_week != null
+          && (t.planned_week >= week.number || !t.done_on))
         .sort((a, b) => a.planned_week - b.planned_week)
         .map((t) => ({
           id: t.id,
           text: t.text,
-          when: t.done_on ? 'Done' : t.planned_week === week.number ? 'This week' : `Week ${t.planned_week}`,
+          when: t.done_on ? 'Done' : t.planned_week <= week.number ? 'This week' : `Week ${t.planned_week}`,
         }))
       : [];
     return {

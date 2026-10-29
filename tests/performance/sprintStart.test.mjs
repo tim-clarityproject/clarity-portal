@@ -5,6 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  earliestStart,
   emptyHabit,
   finishDay,
   habitCountWords,
@@ -140,4 +141,13 @@ test('one start record holds every id, so a resend writes the same rows', () => 
   // over a day old: dropped
   assert.equal(pendingAction(p, [sprint()], p.at + 25 * 60 * 60 * 1000), 'drop');
   assert.equal(pendingAction(p, [sprint()], p.at + 60 * 1000), 'resend');
+});
+
+test('earliest start: never a day the last finished sprint still holds', () => {
+  const finished = (end) => ({ status: 'finished', actual_end_on: end });
+  assert.equal(earliestStart([], '2026-10-28'), '2026-10-28');
+  assert.equal(earliestStart([finished('2026-10-20')], '2026-10-28'), '2026-10-28');
+  // Finished today by its review: the next one starts tomorrow at the earliest.
+  assert.equal(earliestStart([finished('2026-10-20'), finished('2026-10-28')], '2026-10-28'), '2026-10-29');
+  assert.equal(earliestStart([{ status: 'running', actual_end_on: null }], '2026-10-28'), '2026-10-28');
 });

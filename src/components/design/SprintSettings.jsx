@@ -84,16 +84,19 @@ export function SprintLengthChoice({ sprint, onChange, label = 'How long is this
  * When it starts (M6 startBody; decisions "Sprints can start on any
  * day"): Today, next Monday (suggested), or Another day from the calendar.
  */
-export function SprintStartChoice({ sprint, onChange, label = 'When does it start?' }) {
+export function SprintStartChoice({ sprint, onChange, label = 'When does it start?', earliest = null }) {
   const [open, setOpen] = useState(false);
   const anotherRef = useRef(null);
   const today = todayKey();
   const monday = nextMondayKey(today);
+  // `earliest`: the first day it may start, when that is after today (the
+  // last sprint finished today, so today is still its day).
+  const first = earliest && earliest > today ? earliest : today;
   const options = [
-    { value: today, label: `Today, ${dayLabel(today)}` },
+    ...(first === today ? [{ value: today, label: `Today, ${dayLabel(today)}` }] : []),
     { value: monday, label: dayLabel(monday), note: 'suggested' },
   ];
-  const extra = sprint.extraStart && sprint.extraStart !== today && sprint.extraStart !== monday ? sprint.extraStart : null;
+  const extra = sprint.extraStart && sprint.extraStart >= first && sprint.extraStart !== today && sprint.extraStart !== monday ? sprint.extraStart : null;
   if (extra) options.push({ value: extra, label: dayLabel(extra) });
   return (
     <div className="ds-sprintset">
@@ -109,7 +112,7 @@ export function SprintStartChoice({ sprint, onChange, label = 'When does it star
         anchorRef={anotherRef}
         title={label}
         value={sprint.start}
-        min={today}
+        min={first}
         onChange={(start) => onChange({ start, extraStart: start })}
       />
     </div>

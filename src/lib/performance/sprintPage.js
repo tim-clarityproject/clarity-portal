@@ -206,10 +206,13 @@ export function doneToast(todos) {
   return `Done. ${todos.done} of ${todos.total} this week.`;
 }
 
-/** The weeks a to-do can be added to (M1 ddSpec 'wk'): this week to the last. */
-export function weekOptions(calendar, number, lengthWeeks, today) {
+/**
+ * The weeks a to-do can be added to (M1 ddSpec 'wk'): this week (`number`)
+ * to the last, or from a later week (`from`). Only `number` is "This week".
+ */
+export function weekOptions(calendar, number, lengthWeeks, today, from = number) {
   const out = [];
-  for (let w = number; w <= lengthWeeks; w += 1) {
+  for (let w = from; w <= lengthWeeks; w += 1) {
     const wk = calendar.weeks[w - 1];
     if (!wk) continue;
     out.push({ value: w, label: `${w === number ? 'This week' : `Week ${w}`}, ${weekRange(wk, today)}` });
@@ -226,7 +229,7 @@ export function weekOptions(calendar, number, lengthWeeks, today) {
 export function moveOptions(calendar, number, lengthWeeks, todo, today) {
   const dueNow = todo.plannedWeek != null && todo.plannedWeek <= number;
   const from = dueNow ? number + 1 : number;
-  return weekOptions(calendar, from, lengthWeeks, today)
+  return weekOptions(calendar, number, lengthWeeks, today, from)
     .filter((o) => o.value !== todo.plannedWeek);
 }
 

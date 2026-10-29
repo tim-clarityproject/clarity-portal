@@ -141,6 +141,14 @@ function pageRows() {
   };
 }
 
+test('view: a to-do rolled over from an earlier week stays in its tile, as this week', () => {
+  const rows = pageRows();
+  rows.todos.push({ id: 't3', strategy_id: 's2', text: 'Draft the supervision notes', impact: 2, sprint_id: 'sp1', planned_week: 1, created_on: '2026-10-20', done_on: null });
+  const v = planView(rows, { today: '2026-10-28' });
+  assert.equal(v.strategies[1].todos.map((t) => `${t.text}: ${t.when}`).join(', '),
+    'Draft the supervision notes: This week, Book a supervision session: Done, Renew supervision contract: Week 4');
+});
+
 test('view: objectives, alignment gap, Strategy scores from M5 so far', () => {
   const v = planView(pageRows(), { today: '2026-10-28' });
   assert.equal(v.mission, 'Be a world-class high-performance coach');
