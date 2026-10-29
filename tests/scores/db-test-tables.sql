@@ -55,7 +55,8 @@ insert into public.win_strategies (win_id, strategy_id, user_id) select id, s_gr
 f := f || pg_temp.t_near('T1 M5-1 frozen from the tables', pg_temp.t_n(format('select public.freeze_week(%L, 1)', spr))::numeric, 67.916667);
 f := f || pg_temp.t_eq('T2 shown as 68', pg_temp.t_n(format('select public.score_round(score) from public.week_scores where sprint_id = %L and sprint_week = 1', spr)), '68');
 f := f || pg_temp.t_near('T3 the Strategy scores kept with it', pg_temp.t_n(format('select (e ->> ''score'')::numeric from public.week_scores ws, jsonb_array_elements(ws.strategy_scores) e where ws.sprint_id = %L and ws.sprint_week = 1 and e ->> ''id'' = %L', spr, s_grow))::numeric, 83.333333);
-f := f || pg_temp.t_eq('T4 eligible and final, with the methods version', pg_temp.t_n(format('select eligible || '' '' || final || '' '' || methods_version from public.week_scores where sprint_id = %L and sprint_week = 1', spr)), 'true true 1.1');
+-- the methods version: 1.1 from 032, 1.4 once 036 has run
+f := f || pg_temp.t_eq('T4 eligible and final, with the methods version', pg_temp.t_n(format('select eligible || '' '' || final || '' '' || (methods_version in (''1.1'', ''1.4'')) from public.week_scores where sprint_id = %L and sprint_week = 1', spr)), 'true true true');
 f := f || pg_temp.t_eq('T5 the table reader is for the checked functions only', pg_temp.t_n(format('select public.week_input(%L, 1, current_date)', spr)), 'error 42501');
 perform pg_temp.t_admin();
 f := f || pg_temp.t_eq('T5b the week from the tables is the week from the raw input', pg_temp.t_n(format(

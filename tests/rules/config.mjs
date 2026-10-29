@@ -10,6 +10,7 @@ import {
   PHASE1_FUNCTIONS, SCENARIOS as PHASE1_SCENARIOS,
 } from './phase1.mjs';
 import { GUEST_PEOPLE, GUEST_SETUP, GUEST_TABLES, GUEST_LOCKED_TABLES, GUEST_FUNCTIONS, GUEST_SCENARIOS } from './guests.mjs';
+import { ALIGNMENT_SETUP, ALIGNMENT_FUNCTIONS, ALIGNMENT_SCENARIOS } from './alignment.mjs';
 
 export { OWN, NOBODY, SIGNED_IN, ANYONE };
 
@@ -34,7 +35,7 @@ export const PEOPLE = [
 export const RELATIONSHIPS = PHASE1_RELATIONSHIPS;
 
 // SQL run once, as the admin role, after the people are made.
-export const SETUP = [...PHASE1_SETUP, ...GUEST_SETUP];
+export const SETUP = [...PHASE1_SETUP, ...GUEST_SETUP, ...ALIGNMENT_SETUP];
 
 // ---------------------------------------------------------------- access
 // The answers to "may viewer do this to owner's row?" live in access.mjs.
@@ -232,10 +233,11 @@ export const FUNCTIONS = [
     note: 'Tim only, in the SQL editor (025).' },
   ...PHASE1_FUNCTIONS,
   ...GUEST_FUNCTIONS,
+  ...ALIGNMENT_FUNCTIONS,
 ];
 
 // Checks that take several steps as different people (phase1.mjs).
-export const SCENARIOS = [...PHASE1_SCENARIOS, ...GUEST_SCENARIOS];
+export const SCENARIOS = [...PHASE1_SCENARIOS, ...GUEST_SCENARIOS, ...ALIGNMENT_SCENARIOS];
 
 // ---------------------------------------------------------------- known gaps
 // Real gaps in today's rules, found by this test and not fixed yet. Each
@@ -255,6 +257,6 @@ export const KNOWN_GAPS = [
   {
     id: 'test-function-grants',
     match: (c) => c.action === 'call' && c.allowed && !c.expected,
-    text: 'On the test project, these functions can be called by anyone with the public key (signed out included), although 018 and 020 closed them: alignment_list (lists every Health Check, with respondents\' emails), create_alignment_session, alignment_disable, _alignment_auth, _alignment_validate, wheel_of_life_touch and wheel_of_life_checkin_valid. This is most likely the test copy only: the copy script makes functions with Supabase\'s default grants, and doesn\'t take away the ones live never had. Check live in its SQL editor (read only): select has_function_privilege(\'anon\', \'public.alignment_list()\', \'execute\');',
+    text: 'On the test project, these functions can be called by anyone with the public key (signed out included), although 018 and 020 closed them: alignment_list (lists every Health Check, with respondents\' emails), create_alignment_session, alignment_disable, _alignment_auth, _alignment_validate, wheel_of_life_touch and wheel_of_life_checkin_valid. This is most likely the test copy only: the copy script makes functions with Supabase\'s default grants, and doesn\'t take away the ones live never had. Migration 036 closes the Health Check ones again (alignment_list and the rest); the wheel of life ones stay open until a later migration. Check live in its SQL editor (read only): select has_function_privilege(\'anon\', \'public.alignment_list()\', \'execute\');',
   },
 ];

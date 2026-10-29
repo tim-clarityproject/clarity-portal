@@ -443,6 +443,8 @@ later_version (kind, key, val, migration) as (values
     ('function', 'alignment_open(text,text,text)', 'e4051cae7f3cdbadd0336526d48c5902', '022'),
     ('function', 'alignment_open(text,text,text)', '63afb02a4bba308894e5245ee7694928', '034'),
     ('function', 'create_alignment_session(text,text)', '498565d6ba6631cf18170c3c6b51f5ba', '034'),
+    ('function', 'alignment_open(text,text,text)', 'b60a3a9537da4a2390972ea30271da5b', '036'),
+    ('function', 'alignment_email_check(text,text,text,text)', '73a7a3c7faa0bf93e9151378b5187ba0', '036'),
     ('column', 'decisions.user_id', 'uuid', '035'),
     ('constraint', 'decisions.decisions_tool_type_check', 'CHECK ((tool_type = ANY (ARRAY[''grow''::text, ''inversion''::text, ''tough-conversation''::text, ''strategic-alignment''::text, ''if_then_planning''::text, ''daily_plan''::text, ''plan_meeting''::text, ''stop_doing_audit''::text, ''difficult-conversation''::text])))', '035')
 ),
@@ -466,7 +468,14 @@ later_addition (kind, key, migration) as (values
     ('function', '%guest%', '035'),
     ('function', 'coach_links(%', '035'),
     ('function', '%suggestion%', '035'),
-    ('function', 'suggest_tool(%', '035')
+    ('function', 'suggest_tool(%', '035'),
+    ('column', 'alignment_sessions.coach_user_id', '036'),
+    ('column note', 'alignment_sessions.coach_user_id', '036'),
+    ('constraint', 'alignment_sessions.alignment_sessions_coach_user_id_fkey', '036'),
+    ('index', 'alignment_sessions.alignment_sessions_coach_user_idx', '036'),
+    ('function', '_alignment_coach_id(%', '036'),
+    ('function', 'alignment_recipients(%', '036'),
+    ('function', 'alignment_coach_answers(%', '036')
 ),
 actual (kind, key, val) as (
   select 'table'::text as kind, c.relname::text as key,

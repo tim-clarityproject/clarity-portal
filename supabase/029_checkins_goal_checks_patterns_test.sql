@@ -90,7 +90,7 @@ begin
     f := f || pg_temp.t_eq('1a M13-1: Hardware 67.5, whatever the app sent', pg_temp.t_n(format('select hardware_score::float8 from public.checkins where id = %L', ck)), '67.5');
     f := f || pg_temp.t_eq('1b the area scores', pg_temp.t_n(format('select (area_scores -> ''hardware'' ->> ''movement'')::float8 || '','' || (area_scores -> ''hardware'' ->> ''sleep'')::float8 from public.checkins where id = %L', ck)), '45,87.5');
     f := f || pg_temp.t_eq('1c no Software answers: no Software score', pg_temp.t_n(format('select software_score from public.checkins where id = %L', ck)), 'null');
-    f := f || pg_temp.t_eq('1d the methods version', pg_temp.t_n(format('select methods_version from public.checkins where id = %L', ck)), '1.1');
+    f := f || pg_temp.t_eq('1d the methods version (1.1 from 029, 1.4 once 036 has run)', pg_temp.t_n(format('select (methods_version in (''1.1'', ''1.4''))::text from public.checkins where id = %L', ck)), 'true');
     f := f || pg_temp.t_eq('1e an unknown answer refused', pg_temp.t_rows(format('update public.checkins set answers = answers || ''{"H1": "twelve"}'' where id = %L', ck)), 'error 22023');
     f := f || pg_temp.t_eq('1f an unknown question refused', pg_temp.t_rows(format('update public.checkins set answers = answers || ''{"H17": "ok"}'' where id = %L', ck)), 'error 22023');
     f := f || pg_temp.t_eq('1g travel is yes or no', pg_temp.t_rows(format('update public.checkins set answers = answers || ''{"H14": "maybe"}'' where id = %L', ck)), 'error 22023');
