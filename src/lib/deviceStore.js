@@ -7,8 +7,9 @@
 //   clarity-cache:<userId>:<name>   the last data a page showed
 //   clarity-draft:<userId>:<name>   unsaved typing
 //   clarity-queue:<userId>          saves and ticks waiting to be sent
+//   clarity-sending:<userId>        saves on their way, until the server answers
 
-export const DEVICE_PREFIXES = ['clarity-cache:', 'clarity-draft:', 'clarity-queue:'];
+export const DEVICE_PREFIXES = ['clarity-cache:', 'clarity-draft:', 'clarity-queue:', 'clarity-sending:'];
 
 export function deviceKey(kind, userId, name) {
   return name == null ? `clarity-${kind}:${userId}` : `clarity-${kind}:${userId}:${name}`;

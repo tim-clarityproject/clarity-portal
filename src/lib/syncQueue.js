@@ -1,7 +1,7 @@
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 import { isNetworkError, isOnline, subscribeOnline } from './connection';
-import { deviceKey, readJson, writeJson } from './deviceStore';
+import { deviceKey, readJson, removeKey, writeJson } from './deviceStore';
 
 // Saves and ticks made offline (Tim, 26 Oct): they are kept on the device
 // and sent, in the order they were made, as soon as the connection is
@@ -54,6 +54,25 @@ function retryable(error) {
   return /jwt|token is expired|invalid claim/i.test(`${error?.message || ''}`);
 }
 
+// A save sent straight away is noted on the device until the server
+// answers, so a refresh or a closed tab mid-save never loses it: whatever
+// is still noted when the app starts again is sent with the queue (every
+// save can be sent twice safely, see the top). (Break-it tester: a to-do
+// added just before a refresh was lost.)
+function sendingKey(userId) {
+  return deviceKey('sending', userId);
+}
+
+function noteSending(userId, item) {
+  writeJson(sendingKey(userId), [...(readJson(sendingKey(userId)) || []).filter((x) => x.qid !== item.qid), item]);
+}
+
+function doneSending(userId, item) {
+  const left = (readJson(sendingKey(userId)) || []).filter((x) => x.qid !== item.qid);
+  if (left.length) writeJson(sendingKey(userId), left);
+  else removeKey(sendingKey(userId));
+}
+
 function keep(userId, item) {
   if (!write(userId, [...read(userId), item])) throw new NoRoomError();
 }
@@ -96,13 +115,32 @@ async function perform(op) {
   return data;
 }
 
+// Saves sent straight away go one at a time, in the order they were
+// made, so two quick changes to the same row (a tick, untick, tick) can
+// never arrive the other way round and leave the last one undone
+// (break-it tester). One that hangs holds the next back for at most
+// WAIT_MS, so a stuck connection never stops every later save.
+const WAIT_MS = 10000;
+let sending = Promise.resolve();
+
 /**
  * Sends a save now, or keeps it on the device when there's no connection.
  * Resolves { status: 'saved', data } or { status: 'queued', qid }. Rejects
  * when the server answered with a real error, or with NoRoomError when the
  * device can't keep it (so it is never shown as kept when it isn't).
  */
-export async function saveOrQueue(userId, op) {
+export function saveOrQueue(userId, op) {
+  let timer;
+  const before = Promise.race([sending, new Promise((r) => { timer = setTimeout(r, WAIT_MS); })]);
+  const turn = before.then(() => {
+    clearTimeout(timer);
+    return sendOrKeep(userId, op);
+  });
+  sending = turn.catch(() => null);
+  return turn;
+}
+
+async function sendOrKeep(userId, op) {
   const item = { ...op, qid: newId(), at: Date.now() };
   // Anything still waiting goes first, so saves never arrive out of order
   // (refused ones are set aside and don't hold the rest up).
@@ -111,6 +149,7 @@ export async function saveOrQueue(userId, op) {
     if (isOnline()) flush(userId);
     return { status: 'queued', qid: item.qid };
   }
+  noteSending(userId, item);
   try {
     const data = await perform(item);
     return { status: 'saved', data };
@@ -120,6 +159,8 @@ export async function saveOrQueue(userId, op) {
       return { status: 'queued', qid: item.qid };
     }
     throw error;
+  } finally {
+    doneSending(userId, item);
   }
 }
 
@@ -184,7 +225,15 @@ export function flush(userId = currentUser) {
 /** Who is signed in: their waiting saves are sent on every reconnect. */
 export function startSyncQueue(userId) {
   currentUser = userId;
-  if (userId) flush(userId);
+  if (!userId) return;
+  // Saves cut off by a refresh or a closed tab go first.
+  const cut = readJson(sendingKey(userId)) || [];
+  if (cut.length) {
+    const queued = read(userId);
+    write(userId, [...cut.filter((x) => !queued.some((q) => q.qid === x.qid)), ...queued]);
+    removeKey(sendingKey(userId));
+  }
+  flush(userId);
 }
 
 /** Sign out: nothing more is sent, and nothing is written back. */
