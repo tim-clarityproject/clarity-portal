@@ -1,6 +1,7 @@
 // The example report: Quillmark, an invented software company backed by
 // private equity (Tim, 27 Oct, 15:35), exactly as in the mock-up (M7b
-// version 4). Adie checks it reads like a real leadership team.
+// version 46, with its CSF levels and the suggested line of 50%). Adie checks
+// it reads like a real leadership team.
 
 const CSF = [
   'Win enterprise customers in the US',
@@ -9,6 +10,8 @@ const CSF = [
   'A leadership team ready for twice the size',
   'Cash to reach break-even without new funding',
 ];
+// 3 Critical, 2 Very important, 1 Important, as the mock-up's EX.w.
+const LEVELS = [3, 2, 3, 2, 2];
 const PROJECTS = [
   { t: 'US enterprise sales team', c: [3, 2, 2, 1, 2], p: 2, r: 5, s: '2026-02', f: '2027-06' },
   { t: 'AI assistant launch', c: [2, 3, 3, 0, 1], p: 1, r: 4, s: '2026-09', f: '2027-03' },
@@ -23,15 +26,18 @@ const PROJECTS = [
 export const EXAMPLE = {
   org: 'Quillmark',
   date: 'Mon 12 Oct',
+  // The report's own date, so its Timing question never changes with today's.
+  asOf: '2026-10-12',
   draft: {
     objective: 'Reach £40m in recurring revenue by the end of 2027, with customers spending 15% more each year.',
-    csfs: CSF.map((text, i) => ({ id: `ex-f${i}`, text })),
+    csfs: CSF.map((text, i) => ({ id: `ex-f${i}`, text, level: LEVELS[i] })),
     projects: PROJECTS.map((p, i) => ({ id: `ex-p${i}`, text: p.t, started: p.s, due: p.f })),
     ratings: Object.fromEntries(PROJECTS.map((p, i) => [`ex-p${i}`, {
       contrib: Object.fromEntries(p.c.map((v, k) => [`ex-f${k}`, v])),
       progress: p.p,
       resource: p.r,
     }])),
+    importantLine: 50,
     completedAt: null,
   },
 };

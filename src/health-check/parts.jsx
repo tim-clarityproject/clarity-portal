@@ -45,22 +45,28 @@ export function PctBar({ pct }) {
   );
 }
 
-/** The eye, then How it works (results only), then Quick guide: one row, no dots. */
-export function IconRow({ coach, onWho, onHow, onGuide, style }) {
+/** The eye, then How it works (results only, a pop-up), then Quick guide: one row, no dots. */
+export function IconRow({ coach, onWho, how, onGuide, style }) {
   return (
     <div className="iw rv" style={style}>
       <button type="button" className="ilink who" aria-haspopup="dialog" onClick={onWho}>
         <Icon name="eye" /><span className="vh">Who can see this: </span>You and {coach}
       </button>
-      {onHow && (
-        <button type="button" className="ilink" aria-haspopup="dialog" onClick={onHow}>
-          <Icon name="info" />How it works
-        </button>
-      )}
+      {how && <HowItWorks lines={how} />}
       <button type="button" className="ilink" aria-haspopup="dialog" onClick={onGuide}>
         <Icon name="play" />Quick guide
       </button>
     </div>
+  );
+}
+
+/** How it works opens a pop-up: the word, then its meaning (Tim, 28 Oct, 14:21). */
+function HowItWorks({ lines }) {
+  const { isOpen, ...t } = useTipTarget(lines, { wide: true });
+  return (
+    <button type="button" className="ilink" aria-expanded={isOpen} {...t}>
+      <Icon name="info" />How it works
+    </button>
   );
 }
 
@@ -343,6 +349,30 @@ export function Choices({ options, value, onPick, label, start = 0, focusFirst =
         >
           <b>{word}</b><small>{meaning}</small>
         </button>
+      ))}
+    </div>
+  );
+}
+
+// ---- choices in a row: the CSF levels ----------------------------------------
+
+/** A row of choices without meanings (the CSF weight screen); three equal buttons on a phone. */
+export function Seg({ options, value, onPick, label }) {
+  const ref = useRef(null);
+  const idx = options.findIndex((o) => o.value === value);
+  const onKey = (e) => {
+    const items = [...ref.current.querySelectorAll('button')];
+    const i = items.indexOf(document.activeElement);
+    let j = null;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') j = Math.min(items.length - 1, i + 1);
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') j = Math.max(0, i - 1);
+    if (j != null) { e.preventDefault(); items[j].focus(); }
+  };
+  return (
+    <div className="seg" role="radiogroup" aria-label={label} ref={ref} onKeyDown={onKey}>
+      {options.map((o, i) => (
+        <button key={o.value} type="button" role="radio" aria-checked={o.value === value}
+          tabIndex={(idx === -1 ? i === 0 : i === idx) ? 0 : -1} onClick={() => onPick(o.value)}>{o.label}</button>
       ))}
     </div>
   );
