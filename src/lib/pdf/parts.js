@@ -516,7 +516,7 @@ export function placeChartDots(pts0, gm, { R, k, xCentre, yCentre }) {
     const [x1, x2] = p.x < xCentre ? [minX, gm.mx - R1 - 2]
       : p.x > xCentre ? [gm.mx + R1 + 2, maxX]
         : [Math.max(minX, gm.mx - step * 1.5), Math.min(maxX, gm.mx + step * 1.5)];
-    const [y1, y2] = p.y > yCentre ? [minY, gm.my - R1 - 2] : [Math.min(y0, gm.my + R1 + 2), maxY];
+    const [y1, y2] = p.y > yCentre ? [minY, Math.max(y0, gm.my - R1 - 2)] : [Math.min(y0, gm.my + R1 + 2), maxY];
     const inArea = ([x, y]) => x >= x1 && x <= x2 && y >= y1 && y <= y2;
     const ring = (u, rings) => {
       const out = [[x0, y0]];

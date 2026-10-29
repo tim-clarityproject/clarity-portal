@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTipTarget } from './parts';
 import { PROGS, RES, stateSentence } from './words';
 
@@ -20,7 +20,7 @@ const dotRadius = (size, phone) => (phone ? Math.round(RADIUS[size] * 0.85) : RA
  * Where each dot goes. Dots that would touch are moved apart, but only within
  * the dot's own area of the chart (the same side of the Fair line and of the
  * Health Check's line; Fair stays on its line), so a moved dot never shows a
- * false state. When the area is full, a dot takes the spot that overlaps least.
+ * false state. A dot that isn't moved sits at its true place. When the area is full, a dot takes the spot that overlaps least.
  * geo: X, Y, PL, PT, pw, ph, cx (the Fair line), cy (the line for important),
  * line, and radius(row).
  */
@@ -35,7 +35,9 @@ export function placeDots(rows, geo) {
     const x0 = X(row.progress);
     const y0 = Y(row.importance);
     const [x1, x2] = row.progress < 3 ? [PL + r, cx - r - 2] : row.progress > 3 ? [cx + r + 2, PL + pw - r] : [cx - step * 1.5, cx + step * 1.5];
-    const [y1, y2] = row.importance > line ? [PT + r, cy - r - 2] : [Math.min(y0, cy + r + 2), PT + ph - r];
+    // A dot just either side of the line may cross it at its true place, as
+    // the mock-up draws it; a moved one stays on its own side.
+    const [y1, y2] = row.importance > line ? [PT + r, Math.max(y0, cy - r - 2)] : [Math.min(y0, cy + r + 2), PT + ph - r];
     const inArea = ([x, y]) => x >= x1 && x <= x2 && y >= y1 && y <= y2;
     const ring = (unit, rings) => {
       const out = [[x0, y0]];
@@ -61,7 +63,7 @@ export function placeDots(rows, geo) {
   });
 }
 
-function Dot({ dot, lit }) {
+function Dot({ dot, lit, hit }) {
   const { row, x, y, r } = dot;
   const q = row.q;
   const lines = [
@@ -81,7 +83,7 @@ function Dot({ dot, lit }) {
   const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
   return (
     <g className={`dot${lit ? ' on' : ''}`} data-n={row.n} tabIndex={0} role="button" aria-label={`Project ${row.n}, ${row.text}. ${stateSentence(row)}`} {...t} onKeyDown={onKey}>
-      <circle className="hit" cx={x} cy={y} r={22} />
+      <circle className="hit" cx={x} cy={y} r={hit} />
       {q === 'co' && <circle cx={x} cy={y} r={r + 4} style={{ fill: 'none', stroke: 'var(--soft)' }} strokeWidth={1} />}
       <circle cx={x} cy={y} r={r} style={{ fill, stroke }} strokeWidth={1.5} />
       <text x={x} y={y + 4} textAnchor="middle" fontSize={r < 11 ? 11 : 12} style={{ fill: tc }}>{row.n}</text>
@@ -114,8 +116,23 @@ export default function Chart({ rows, line, phone, lit = null }) {
   const cy = Y(line);
   const dots = placeDots(rows, { X, Y, PL, PT, pw, ph, cx, cy, line, radius: (row) => dotRadius(row.size, phone) });
   const small = { fontSize: 12, style: { fill: 'var(--ph)' } };
+  // Every dot keeps a 44px tap area, even when the chart is drawn smaller than
+  // its own size (between a phone and a laptop).
+  const ref = useRef(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const svg = ref.current;
+    if (!svg || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => {
+      const w = svg.getBoundingClientRect().width;
+      if (w) setScale(Math.max(1, W / w));
+    });
+    ro.observe(svg);
+    return () => ro.disconnect();
+  }, [W]);
+  const hit = Math.ceil(22 * scale);
   return (
-    <svg className={lit ? 'hl' : undefined} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Strategic importance against progress, one numbered dot per project">
+    <svg ref={ref} className={lit ? 'hl' : undefined} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Strategic importance against progress, one numbered dot per project">
       <defs>
         <pattern id={gid} width={10} height={10} patternUnits="userSpaceOnUse" x={PL} y={PT}>
           <circle cx={5} cy={5} r={0.9} style={{ fill: 'var(--line)' }} />
@@ -135,7 +152,7 @@ export default function Chart({ rows, line, phone, lit = null }) {
       <text x={PL + pw / 2} y={PT + ph + 42} textAnchor="middle" fontSize={12.5} style={{ fill: 'var(--t2)' }}>Progress</text>
       <text x={X(2)} y={PT - 24} textAnchor="middle" fontSize={12.5} style={{ fill: 'var(--soft)' }}>Needs attention</text>
       <text x={phone ? PL + pw : X(4.5)} y={PT - 24} textAnchor={phone ? 'end' : 'middle'} fontSize={12.5} style={{ fill: 'var(--mint)' }}>Moving well</text>
-      {dots.map((d) => <Dot key={d.row.id} dot={d} lit={lit === d.row.id} />)}
+      {dots.map((d) => <Dot key={d.row.id} dot={d} lit={lit === d.row.id} hit={hit} />)}
     </svg>
   );
 }

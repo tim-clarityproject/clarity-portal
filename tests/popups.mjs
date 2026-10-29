@@ -392,6 +392,9 @@ async function healthCheck(touch) {
   const targets = [
     { kind: 'ⓘ (Health Check)', type: 'float', loc: infos.first(), other: infos.nth(1) },
     { kind: 'How it works (Health Check)', type: 'float', loc: page.getByRole('button', { name: 'How it works' }).first() },
+    // Health Check 3: the ⓘ on the "Strategic importance" column heading
+    // (a phone's rows show only the name and state, so no column headings).
+    ...(touch ? [] : [{ kind: 'ⓘ on a column heading (Health Check)', type: 'float', loc: page.getByRole('button', { name: 'What strategic importance means' }).first(), other: infos.first() }]),
     { kind: 'chart dot (Health Check)', type: 'float', loc: dots.first(), other: dots.nth(1), key: 'Enter' },
     { kind: 'chart dot (Health Check)', type: 'float', loc: dots.last(), key: ' ' },
   ];
@@ -408,6 +411,26 @@ async function healthCheck(touch) {
   await actionChecks(page, page.locator('.ilink.who').first(), 'the eye (Health Check)', where, touch);
   await actionChecks(page, page.getByRole('button', { name: 'Quick guide' }).first(), 'play, Quick guide (Health Check)', where, touch);
   await ctx.close();
+  // The example report (Health Check 3): its two ⓘ and its dots.
+  {
+    const { ctx: ectx, page: ep } = await healthCheckPage({ width, touch, step: null, complete: false });
+    await ep.getByRole('button', { name: 'See an example report' }).click();
+    await ep.locator('.chart g.dot').first().waitFor();
+    await wait(ep, 400);
+    const ewhere = `Health Check example report ${how}`;
+    const eInfos = ep.locator('.hc-main .ipb:visible');
+    const eDots = ep.locator('.chart g.dot:visible');
+    for (const t of [
+      { kind: 'ⓘ (Health Check)', type: 'float', loc: eInfos.first(), other: touch ? null : eInfos.nth(1) },
+      ...(touch ? [] : [{ kind: 'ⓘ on a column heading (Health Check)', type: 'float', loc: eInfos.nth(1), other: eInfos.first() }]),
+      { kind: 'chart dot (Health Check)', type: 'float', loc: eDots.nth(2), other: eDots.nth(3), key: 'Enter' },
+    ]) {
+      if (!(await t.loc.count())) { pass(`${ewhere}: has ${t.kind}`, false); continue; }
+      if (touch) await touchChecks(ep, t, ewhere, t.other && (await t.other.count()) ? t.other : null);
+      else { await mouseChecks(ep, t, ewhere); await keyboardChecks(ep, t, ewhere); }
+    }
+    await ectx.close();
+  }
 }
 
 // ---- the portal (the feature branch's design system) -------------------------

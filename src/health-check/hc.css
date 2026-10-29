@@ -311,8 +311,10 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .mv .nxt, .mv .mvt { margin-top: 2px; font-size: 17px; line-height: 1.4; text-wrap: pretty; }
 .mv .why { margin-top: 4px; font-size: 14px; color: var(--t2); }
 @media (max-width: 640px) { .gl { grid-template-columns: 1fr; gap: 28px; } }
-.sortr { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+.sortr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 18px; }
 .sortr .fl { margin: 0; white-space: nowrap; }
+/* At a large text size the drop-down moves under its label instead of running off a phone's edge. */
+.sortr .ddw { min-width: 0; max-width: 100%; }
 .ptab { margin-top: 12px; border-top: 1px solid var(--line2); }
 .pr { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr) 170px 100px 140px; gap: 12px; align-items: center; min-height: 56px; padding: 10px 0; border-bottom: 1px solid var(--line2); font-size: 15px; }
 .pr:hover .pt > b, .pr:focus-visible .pt > b { color: var(--accent); }
