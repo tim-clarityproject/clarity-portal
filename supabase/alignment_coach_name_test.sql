@@ -25,6 +25,14 @@ begin
   if v_email is null then
     raise exception 'FAILED: the test project has no account with a first name to use as the coach.';
   end if;
+  -- After 037 a link's coach must be a real coach, where the coaches list is
+  -- there: make this account one (undone with everything else).
+  if to_regclass('public.coaches') is not null then
+    execute 'insert into public.coaches (user_id, display_first_name)
+             select u.id, $2 from auth.users u where lower(u.email) = lower($1)
+             on conflict (user_id) do update set active = true, display_first_name = $2'
+      using v_email, v_first;
+  end if;
 
   -- 1. A link made with the coach's email carries their first name.
   r := public.create_alignment_session('034 test organisation', '034-test-one@example.invalid', upper(v_email));

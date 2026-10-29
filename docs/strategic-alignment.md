@@ -15,8 +15,10 @@ Note: preview and live share one Supabase project, so this applies to both strai
 In the SQL editor run:
 
 ```sql
-select public.create_alignment_session('Acme Ltd', 'ceo@acme.com');
+select public.create_alignment_session('Acme Ltd', 'ceo@acme.com', 'Adie');
 ```
+
+The third value is the coach the link is for: `'Tim'` or `'Adie'` (the coach's first name as shown, or their email). Only that coach reads the answers and gets the email with them, and the person filling it in is told "Only you and Adie see your answers." It must be an active coach in `public.coaches`; otherwise nothing is made and a message says why. On a database without the coaches list yet (live before go-live), give the coach's email instead of their name. Leave the third value out and the link has no coach recorded: its answers go to the owner list, as before. (Migrations 036 and 037.)
 
 You get back three things:
 
