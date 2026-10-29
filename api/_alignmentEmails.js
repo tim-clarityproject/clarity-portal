@@ -6,6 +6,9 @@
 // starts with an underscore so Vercel does not publish it as a route.
 
 import { LOGO_NEGATIVE_BASE64 } from './_alignmentLogo.js';
+import { draftFromData } from '../src/pages/alignment/alignmentFlow.js';
+import { headlineSentence, resultsModel } from '../src/health-check/words.js';
+import { parseDbTimestamp } from '../src/lib/dateFormatter.js';
 
 const LOGO_CID = 'clarity-logomark';
 
@@ -46,12 +49,37 @@ const para = (html) => `<tr><td style="font-family:Helvetica,Arial,sans-serif;fo
 const small = (html) => `<tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${COLOURS.muted};padding-bottom:20px;">${html}</td></tr>`;
 const button = (href, label) => `<tr><td style="padding-bottom:28px;"><a href="${esc(href)}" style="display:inline-block;background:${COLOURS.coral};color:#000000;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;padding:16px 32px;border-radius:999px;">${esc(label)}</a></td></tr>`;
 
+/** "2026-10-26": the day in the UK, the same clock as the email's dates. */
+function ukDateKey(date) {
+  return date.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/London' });
+}
+
+/**
+ * The results in brief, for the completion email: the same headline and
+ * questions to start with as the results page and the PDF, from the same
+ * model (resultsModel in src/health-check/words.js, from
+ * src/lib/scores/m20.js). Written about the respondent ("They rated…"),
+ * because the email goes to the coaches.
+ * @param {Object} data the saved answers (alignment_sessions.data)
+ * @param {string|Date} completedAt when it was completed: the Timing question counts from it
+ * @returns {{line: number, headline: string, questions: {label: string, question: string, reason: string}[]}}
+ */
+export function completionSummary(data, completedAt) {
+  const asOf = ukDateKey(parseDbTimestamp(completedAt));
+  const model = resultsModel(draftFromData(data), { asOf, theirs: true });
+  return {
+    line: model.line,
+    headline: headlineSentence(model.headline),
+    questions: model.questions.map(({ label, question, reason }) => ({ label, question, reason })),
+  };
+}
+
 export function ukDate(value) {
   return new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' });
 }
 
 export function ukDateTime(value) {
-  const d = new Date(value);
+  const d = parseDbTimestamp(value);
   const date = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' });
   const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/London' });
   return `${date}, ${time}`;
@@ -85,21 +113,27 @@ export function linkEmail({ origin, token, dateText }) {
   return { subject, html, text, attachments: [logoAttachment()] };
 }
 
-/** The notice to Tim and AD when a Strategic Alignment Health Check is completed. */
-export function completeEmail({ origin, token, clientLabel, respondentEmail, completedText, objective, top }) {
+/**
+ * The notice to Tim and Adie when a Strategic Alignment Health Check is
+ * completed. Its summary is completionSummary's: the headline, then the
+ * questions to start with, each with its reason.
+ */
+export function completeEmail({ origin, token, clientLabel, respondentEmail, completedText, objective, summary }) {
   const link = `${origin}/health-check/${token}`;
   const label = oneLine(clientLabel);
   const subject = `Strategic Alignment Health Check completed: ${label}`;
-  const topHtml = top.length
-    ? `<ol style="margin:0;padding-left:20px;">${top.map((p) => `<li style="padding-bottom:6px;">${esc(p.text)} <span style="color:${COLOURS.muted};">(${p.importance}% strategic importance)</span></li>`).join('')}</ol>`
-    : '<span style="color:#A3A3A0;">No projects were rated.</span>';
+  const heading = (words) => `<span style="color:${COLOURS.muted};font-size:12px;letter-spacing:2px;text-transform:uppercase;">${words}</span>`;
+  const questionsHtml = summary.questions.map((q) => (
+    `<p style="margin:0 0 14px 0;"><span style="color:${COLOURS.muted};font-size:14px;">${esc(q.label)}</span><br>${esc(q.question)}<br><span style="color:${COLOURS.muted};font-size:14px;">${esc(q.reason)}</span></p>`
+  )).join('');
   const html = shell({
     heading: 'Strategic Alignment Health Check completed',
     bodyHtml: [
       para(`<strong>${esc(label)}</strong> has completed the Strategic Alignment Health Check.`),
       small(`Respondent: ${esc(respondentEmail)}<br>Completed: ${esc(completedText)}`),
-      para(`<span style="color:${COLOURS.muted};font-size:12px;letter-spacing:2px;text-transform:uppercase;">Objective</span><br>${esc(objective)}`),
-      para(`<span style="color:${COLOURS.muted};font-size:12px;letter-spacing:2px;text-transform:uppercase;">Most in need of attention</span><br>${topHtml}`),
+      para(`${heading('Objective')}<br>${esc(objective)}`),
+      para(`${heading('At a glance')}<br>${esc(summary.headline)}<br><span style="color:${COLOURS.muted};font-size:14px;">Important means above ${summary.line}%.</span>`),
+      para(`${heading('Questions to start with')}<br>${questionsHtml}`),
       button(link, 'Open the one-pager'),
       small('Opening it needs the respondent’s email address and the access code you sent them.'),
     ].join('\n'),
@@ -113,9 +147,12 @@ export function completeEmail({ origin, token, clientLabel, respondentEmail, com
     'Objective:',
     objective,
     '',
-    'Most in need of attention:',
-    ...(top.length ? top.map((p, i) => `${i + 1}. ${p.text} (${p.importance}% strategic importance)`) : ['No projects were rated.']),
+    'At a glance:',
+    summary.headline,
+    `Important means above ${summary.line}%.`,
     '',
+    'Questions to start with:',
+    ...summary.questions.flatMap((q) => [`${q.label}. ${q.question}`, q.reason, '']),
     `One-pager: ${link}`,
     'Opening it needs the respondent’s email address and the access code you sent them.',
     '',

@@ -205,7 +205,79 @@ for (const n of [8, 20, 40]) {
   }
 }
 
-const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...MP };
+// ---- Health Check 3: CSF levels, the line, the headline and the questions ----------------
+// Each case is drawn up from the answers (levels 3 Critical, 2 Very important,
+// 1 Important; contributions 0 None to 3 High; progress 1 Embryonic to 5
+// Excellent; resource 1 Minimal to 5 Very high) and kept with its draft, so
+// the checks below can compare the PDF with the results page's own model.
+const LONG_CSF = 'Win and keep enterprise customers across the United States, Canada and the United Kingdom without discounting below our agreed floor or stretching the support team past what it can carry';
+const LONG_PROJECT = 'A complete rebuild of the customer onboarding journey, from the first sales call to the first invoice, with a named owner for every step and a weekly report the board can read in two minutes';
+function hc3({ factors, line, projects }) {
+  const csfs = factors.map(([text, level], i) => ({ id: id('f', i), text, ...(level ? { level } : {}) }));
+  const ps = projects.map(([text, , , , dates], i) => ({ id: id('p', i), text, ...(dates || {}) }));
+  const ratings = Object.fromEntries(projects.map(([, contrib, progress, resource], i) => [
+    id('p', i), { contrib: Object.fromEntries(contrib.map((c, k) => [id('f', k), c])), progress, resource },
+  ]));
+  return { objective: 'Double recurring revenue by the end of 2027 while keeping customers happy.', csfs, projects: ps, ratings, ...(line ? { importantLine: line } : {}) };
+}
+const M20_4 = [['Win enterprise customers in the US', 3], ['A product customers can’t do without', 2], ['Cash to reach break-even', 2], ['A team with the right skills', 1]];
+const levelsCase = (line) => hc3({
+  factors: M20_4,
+  line,
+  projects: [
+    ['Customer success programme', [3, 3, 1, 2], 2, 4, { started: '2026-03', due: '2027-06' }], // 76%
+    ['New office fit-out', [0, 0, 1, 1], 4, 5, { started: '2026-08', due: '2027-01' }], // 15%
+    ['Enterprise sales team', [3, 3, 2, 2], 4, 4, { started: '2026-01', due: 'open' }],
+    ['Pricing review', [2, 2, 2, 1], 3, 2, { due: '2027-03' }],
+    ['AI assistant launch', [2, 3, 1, 0], 1, 3, {}],
+    ['Leadership hiring', [1, 0, 1, 2], 5, 1, { started: '2025-11', due: '2026-09' }],
+  ],
+});
+const HC3_DRAFTS = {
+  'Health Check 3, every CSF level': levelsCase(null),
+  'Health Check 3, line 30': levelsCase(30),
+  'Health Check 3, line 80': levelsCase(80),
+  'Health Check 3, one project': hc3({ factors: [['Sales', 3]], projects: [['Website', [3], 3, 4, { started: '2026-06', due: '2026-11' }]] }),
+  'Health Check 3, no project above the line': hc3({
+    factors: M20_4,
+    line: 80,
+    projects: [['Pricing review', [2, 2, 2, 2], 4, 3], ['Office move', [1, 1, 0, 0], 2, 5], ['Brand refresh', [2, 1, 2, 1], 1, 2]],
+  }),
+  'Health Check 3, every project above the line': hc3({
+    factors: M20_4,
+    line: 30,
+    projects: [['Enterprise sales team', [3, 3, 2, 2], 4, 4], ['Pricing review', [2, 2, 2, 1], 2, 2], ['Customer success programme', [3, 3, 1, 3], 3, 3], ['AI assistant launch', [2, 3, 1, 0], 1, 5]],
+  }),
+  'Health Check 3, no dates': hc3({
+    factors: M20_4,
+    projects: [['Enterprise sales team', [3, 3, 2, 2], 2, 4], ['Pricing review', [2, 2, 2, 1], 3, 2], ['Office move', [0, 1, 0, 0], 4, 4]],
+  }),
+  'Health Check 3, the most questions': hc3({
+    factors: M20_4,
+    projects: [
+      ['Enterprise sales team', [3, 3, 3, 2], 2, 4, { started: '2026-02', due: '2026-12' }], // Timing
+      ['Customer success programme', [3, 3, 2, 2], 2, 3, { due: '2027-09' }], // Progress
+      ['New office fit-out', [0, 1, 0, 1], 4, 5], // Resource
+    ], // and CSF 4 has no High (a fourth question, left out)
+  }),
+  'Health Check 3, on track': hc3({
+    factors: M20_4,
+    projects: [['Enterprise sales team', [3, 3, 3, 3], 4, 3], ['Customer success programme', [3, 2, 3, 3], 5, 3], ['Team socials', [0, 0, 0, 1], 4, 1]],
+  }),
+  'Health Check 3, long names': hc3({
+    factors: [[LONG_CSF, 3], [`${LONG_CSF} and the same again for every new market we open in 2027`, 1], ['Cash', 2]],
+    projects: [
+      [LONG_PROJECT, [3, 3, 2], 2, 5, { started: '2026-02', due: '2026-11' }],
+      [`${LONG_PROJECT}, with a second phase for partners`, [3, 2, 2], 2, 4, { due: '2027-12' }],
+      ['Supercalifragilisticexpialidociousandevenlongerwordthatnevereverbreaksatallanywhere', [0, 1, 1], 4, 5],
+    ],
+  }),
+};
+const HC3 = Object.fromEntries(Object.entries(HC3_DRAFTS).map(([name, draft]) => [name, healthCheckPdf({
+  organisation: name.endsWith('long names') ? longOrg : 'Quillmark', completedAt: '2026-10-26T08:30:00', draft,
+})]));
+
+const DOCS = { 'Sample report': samplePdf(), ...HC, ...HC_SAME, ...HC3, ...MP };
 
 // ---- dot charts: dots stay in their own area, and how many touch ----------------------
 // A dot is in its own area when it is on the same side of both centre lines
@@ -215,9 +287,10 @@ function checkDots(layout) {
   const problems = [];
   let touching = 0;
   let dots = 0;
-  layout.flat().filter((it) => it.dots).forEach(({ dots: { pts, gm, R, xCentre, yCentre } }) => {
+  layout.flat().filter((it) => it.dots).forEach(({ dots: { pts, gm, R: R0, xCentre, yCentre } }) => {
     dots += pts.length;
     pts.forEach((p, i) => {
+      const R = p.r ?? R0; // each dot's own size (Health Check 3: dot size shows resource)
       const xOk = p.x < xCentre ? p.cx <= gm.mx - R : p.x > xCentre ? p.cx >= gm.mx + R : Math.abs(p.cx - gm.mx) <= 2 * R * 2;
       // (a dot may stay at its true place even when that is near the line)
       const y0 = gm.ys(p.y);
@@ -225,7 +298,7 @@ function checkDots(layout) {
       const inFrame = p.cx - R >= gm.Lx && p.cx + R <= gm.Lx + gm.plotW && p.cy - R >= gm.top && p.cy + R <= gm.top + gm.plotH;
       if (!xOk || !yOk) problems.push(`dot ${p.n} moved out of its own area`);
       if (!inFrame) problems.push(`dot ${p.n} crosses the chart's edge`);
-      for (let j = 0; j < i; j += 1) if (Math.hypot(p.cx - pts[j].cx, p.cy - pts[j].cy) < 2 * R - 0.01) touching += 1;
+      for (let j = 0; j < i; j += 1) if (Math.hypot(p.cx - pts[j].cx, p.cy - pts[j].cy) < R + (pts[j].r ?? R0) - 0.01) touching += 1;
     });
   });
   return { problems, touching, dots };
@@ -431,6 +504,64 @@ for (const [name, spec] of Object.entries(DOCS)) {
   if (tie.join(',') !== 'blank,mod,low') scoring.push(`blank resource ranks as ${tie.join(', ')}, not as Moderate`);
   report.push(`Health Check scoring (app and PDF agree)\n  ${scoring.length ? `PROBLEMS:\n    ${scoring.join('\n    ')}` : 'unrated reads "Not rated"; a deleted factor never counts; a blank resource ties as Moderate: all checks pass'}`);
   if (scoring.length) failed += 1;
+}
+
+// ---- Health Check 3: the PDF says what the results page says --------------------------
+// The headline, the questions and their reasons, the line, the dot sizes and
+// the CSF levels come from the page's own model (resultsModel), and each one
+// is in the PDF's text.
+{
+  const [{ resultsModel, csfLevel, csfLevelName }, { parseDbTimestamp }] = await Promise.all([
+    load('/src/health-check/words.js'), load('/src/lib/dateFormatter.js'),
+  ]);
+  const flatText = (t) => t.replace(/\s+/g, '');
+  const EXPECT = {
+    'Health Check 3, every CSF level': (m) => [
+      m.factors.map((f) => csfLevelName(csfLevel(f))).join(', ') === 'Critical, Very important, Very important, Important' || 'the CSF levels are wrong',
+      m.rows.find((r) => r.text === 'Customer success programme')?.pct === 76 || 'Customer success programme is not 76%',
+      m.rows.find((r) => r.text === 'New office fit-out')?.pct === 15 || 'New office fit-out is not 15%',
+      m.line === 50 || 'the line is not 50% when none is saved',
+    ],
+    'Health Check 3, line 30': (m) => [m.line === 30 || 'the line is not 30%'],
+    'Health Check 3, line 80': (m) => [m.line === 80 || 'the line is not 80%'],
+    'Health Check 3, one project': (m) => [m.rows.length === 1 || 'more than one project', m.questions[0]?.kind === 'timing' || 'no Timing question'],
+    'Health Check 3, no project above the line': (m) => [m.headline.big === '0' || `the headline is ${m.headline.big}, not 0`],
+    'Health Check 3, every project above the line': (m) => [m.headline.important === m.rows.length || 'not every project is important'],
+    'Health Check 3, no dates': (m) => [!m.questions.some((q) => q.kind === 'timing') || 'a Timing question without dates'],
+    'Health Check 3, the most questions': (m) => [m.questions.map((q) => q.kind).join(',') === 'timing,progress,resource' || `the questions are ${m.questions.map((q) => q.kind).join(',')}`],
+    'Health Check 3, on track': (m) => [m.questions.map((q) => q.kind).join(',') === 'on_track' || `the questions are ${m.questions.map((q) => q.kind).join(',')}`],
+    'Health Check 3, long names': (m) => [m.questions.length === 3 || 'not three questions'],
+  };
+  const lines = [];
+  for (const [name, draft] of Object.entries(HC3_DRAFTS)) {
+    if (only && !name.includes(only)) continue;
+    const spec = HC3[name];
+    const m = resultsModel(draft, { asOf: parseDbTimestamp('2026-10-26T08:30:00') });
+    const problems = (EXPECT[name]?.(m) || []).filter((x) => x !== true);
+    const sec = (title) => spec.sections.find((x) => x.title === title);
+    const glance = spec.glance[0];
+    if (glance.value !== m.headline.big) problems.push(`At a glance shows ${glance.value}, not ${m.headline.big}`);
+    const qs = sec('Questions to start with').blocks;
+    if (JSON.stringify(qs.map((q) => [q.label, q.text, q.note])) !== JSON.stringify(m.questions.map((q) => [q.label, q.question, q.reason]))) problems.push('the questions differ from the results page');
+    const dots = sec('Strategic importance against progress').blocks[0];
+    if (dots) {
+      if (dots.yCentre !== m.line || !dots.yTicks.includes(m.line)) problems.push('the chart\'s line is not the Health Check\'s line');
+      if (!dots.keyNotes.includes('Bigger dots require more resource.') || !dots.keyNotes.includes(`Important means above ${m.line}%.`)) problems.push('the key is missing a line');
+      if (dots.points.some((pt) => pt.size !== m.rows.find((r) => r.n === pt.n).size)) problems.push('a dot is the wrong size');
+    }
+    const levels = sec('Critical Success Factors').blocks[0].rows.map((r) => r[2]);
+    if (levels.join() !== m.factors.map((f) => csfLevelName(csfLevel(f))).join()) problems.push('the CSF levels differ from the results page');
+    // and every one of them is in the PDF's text
+    let text = '';
+    try { text = flatText(run('pdftotext', [join(out, `${name}, A4.pdf`), '-'])); } catch { toolsMissing = true; }
+    if (text) {
+      const words = [m.headline.big, glance.note, ...m.questions.flatMap((q) => [q.label, q.question, q.reason]), `Important means above ${m.line}%.`, ...(dots ? ['Bigger dots require more resource.'] : [])];
+      words.filter(Boolean).forEach((w) => { if (!text.includes(flatText(w))) problems.push(`the PDF's text doesn't hold "${w}"`); });
+    }
+    if (problems.length) failed += 1;
+    lines.push(`  ${name}: line ${m.line}%, headline ${m.headline.big}, questions ${m.questions.map((q) => q.label).join(', ')}${problems.length ? `\n    PROBLEMS:\n      ${problems.join('\n      ')}` : ', all checks pass'}`);
+  }
+  if (lines.length) report.push(`Health Check 3 (the PDF says what the results page says)\n${lines.join('\n')}`);
 }
 
 writeFileSync(join(out, 'break-report.txt'), `${report.join('\n')}\n`);

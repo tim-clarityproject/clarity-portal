@@ -119,16 +119,16 @@ export function stateSentence(row) {
   return row.early ? 'It’s important, but it’s too early to tell.' : 'It’s less important to the objective.';
 }
 
-/** The line counting the important projects (above the Health Check's line), for the PDF. */
-export function countLine(rows, theirs = false, line = rows[0]?.line ?? M20_IMPORTANCE_LINE) {
-  const h = m20Headline(rows, { line, theirs });
-  const a = [];
-  if (h.movingWell) a.push(`${h.movingWell} ${h.movingWell === 1 ? 'is' : 'are'} moving well`);
-  if (h.needsManaging) a.push(`${h.needsManaging} ${h.needsManaging === 1 ? 'needs' : 'need'} managing`);
-  if (h.needsAttention) a.push(`${h.needsAttention} ${h.needsAttention === 1 ? 'needs' : 'need'} attention`);
-  const whose = theirs ? 'their' : 'your';
-  if (!a.length) return `None of ${whose} important projects is under way yet.`;
-  return `Of ${whose} important projects, ${a.length === 1 ? a[0] : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`}.`;
+/**
+ * The headline as one or two sentences, for the PDF's chart and the
+ * completion email: "2 of 5 important projects are moving well. 1 needs
+ * managing and 2 need attention.", or "None of your important projects is
+ * under way yet."
+ * @param {ReturnType<typeof m20Headline>} headline
+ */
+export function headlineSentence(headline) {
+  if (!headline.important) return headline.line;
+  return [`${headline.big} ${headline.line}`, headline.rest].filter(Boolean).join(' ');
 }
 
 /** How it works, at the top of the results: the word, then its meaning (Tim, 28 Oct, 14:21). */

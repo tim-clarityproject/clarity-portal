@@ -35,7 +35,7 @@ function paraUnit(L, lines, style, parent, x0, gap, extra) {
     draw(ctx, x, y) {
       ex?.draw(ctx, x, y);
       ctx.mark(node, () => {
-        ls.forEach((line, i) => ctx.ts.draw(line, x + x0, y + i * style.lh + ctx.ts.baseline(style), style, ctx.t.text));
+        ls.forEach((line, i) => ctx.ts.draw(line, x + x0, y + i * style.lh + ctx.ts.baseline(style), style, style.grey ? ctx.t.detail : ctx.t.text));
       });
     },
     split(maxH) {
@@ -210,7 +210,11 @@ function textBlock(L, b, parent) {
   return textUnits(L, b.text, style, L.measure, parent);
 }
 
-/** A question (left) and its answer (right). The question is an H3 for screen readers. */
+/**
+ * A question (left) and its answer (right). The question is an H3 for screen
+ * readers. An optional `note` follows the answer, small and grey (the reason
+ * under a Health Check question).
+ */
 function fieldBlock(L, b, parent) {
   const { ts } = L;
   const valueW = L.measure; // answers keep to about 62 characters a line
@@ -225,9 +229,13 @@ function fieldBlock(L, b, parent) {
       )));
     },
   };
-  return paragraphs(b.text).map((p, i) => paraUnit(
+  const answer = paragraphs(b.text).map((p, i) => paraUnit(
     L, ts.wrap(p, STYLES.body, valueW), STYLES.body, parent, labelW + COL_GAP, i === 0 ? 0 : SPACE.para, i === 0 ? label : null,
   ));
+  const note = blank(b.note) ? [] : paragraphs(b.note).map((p) => paraUnit(
+    L, ts.wrap(p, STYLES.detail, valueW), { ...STYLES.detail, grey: true }, parent, labelW + COL_GAP, 2,
+  ));
+  return [...answer, ...note];
 }
 
 function listBlock(L, b, parent) {
@@ -463,18 +471,23 @@ function barsBlock(L, b, parent, maxH) {
  * dot, a line or the edge; otherwise a numbered list sits beside or under the
  * chart. Never split across pages.
  *
- * b: { points: [{ n, label, x (1..k), y (0..yMax), good }], xLabels: [k words],
- *      yMax, xCentre, yCentre, axisX, axisY, quadrants?: { topLeft, topRight,
- *      bottomLeft, bottomRight }, keyGood, keyOther, listNote, sentence, alt }
+ * b: { points: [{ n, label, x (1..k), y (0..yMax), good, size? }], xLabels: [k words],
+ *      yMax, xCentre, yCentre, yTicks?, axisX, axisY, quadrants?: { topLeft, topRight,
+ *      bottomLeft, bottomRight }, keyGood, keyOther, keyNotes?, listNote, radii?, sentence, alt }
+ * yCentre is the across line (the Health Check's own line for important), and
+ * the pale areas and the dots' own areas move with it. `radii` gives each
+ * point's `size` a radius (dot size shows resource on the Health Check);
+ * without it every dot is the standard size. `yTicks` are the values labelled
+ * on the up-and-down axis (0, a quarter, a half, three quarters and the top
+ * when not given). `keyNotes` are lines of words added to the key.
  */
 const dotKind = (pt) => (pt.state != null ? pt.state : (pt.good ? 'mi' : ''));
 
-/** One dot's mark, at x, y (page units), radius r. */
+/** One dot's mark, at x, y (page units), radius r. Every outline is the same weight (Tim, 28 Oct, 14:34). */
 function drawDotMark(doc, kind, x, y, r, t) {
   if (kind === 'mi') { doc.circle(x, y, r).fill(t.good); return; }
   if (kind === 'co') doc.circle(x, y, r + 2.5).lineWidth(0.75).stroke(t.text);
-  if (kind === 'pe' || kind === 'co') { doc.circle(x, y, r - 0.6).lineWidth(1.2).fillAndStroke(t.page, t.text); return; }
-  doc.circle(x, y, r - 0.375).lineWidth(0.75).fillAndStroke(t.page, t.detail);
+  doc.circle(x, y, r - 0.6).lineWidth(1.2).fillAndStroke(t.page, kind === 'pe' || kind === 'co' ? t.text : t.detail);
 }
 
 /**
@@ -483,25 +496,27 @@ function drawDotMark(doc, kind, x, y, r, t) {
  * only within the dot's own area (the same side of both centre lines; a dot
  * on the middle category stays near its line), so a moved dot never shows a
  * false place. When the area is full, a dot takes the spot that overlaps least.
+ * Each point may carry its own radius `r` (dot size); R is the standard one.
  * gm: { Lx, plotW, plotH, top, xs, ys, mx, my } from dotsBlock's geometry.
  */
 export function placeChartDots(pts0, gm, { R, k, xCentre, yCentre }) {
-  const gap = R * 2 + 3; // clear space between neighbours
-  const step = R * 2 + 5;
-  const minX = gm.Lx + R + 1;
-  const maxX = gm.Lx + gm.plotW - R - 1;
-  const minY = gm.top + R + 1;
-  const maxY = gm.top + gm.plotH - R - 1;
   const placed = [];
-  const clash = (x, y) => placed.reduce((m, o) => Math.min(m, Math.hypot(o.cx - x, o.cy - y)), Infinity);
-  const free = (x, y) => !placed.some((o) => Math.abs(o.cx - x) < gap && Math.abs(o.cy - y) < gap);
+  // how far apart two dots are, edge to edge, and whether a spot is clear of every placed dot by 3
+  const clash = (x, y, r) => placed.reduce((m, o) => Math.min(m, Math.hypot(o.cx - x, o.cy - y) - o.r - r), Infinity);
+  const free = (x, y, r) => !placed.some((o) => Math.abs(o.cx - x) < r + o.r + 3 && Math.abs(o.cy - y) < r + o.r + 3);
   pts0.forEach((p) => {
+    const R1 = p.r ?? R;
+    const step = R1 * 2 + 5;
+    const minX = gm.Lx + R1 + 1;
+    const maxX = gm.Lx + gm.plotW - R1 - 1;
+    const minY = gm.top + R1 + 1;
+    const maxY = gm.top + gm.plotH - R1 - 1;
     const x0 = gm.xs(p.x);
     const y0 = gm.ys(p.y);
-    const [x1, x2] = p.x < xCentre ? [minX, gm.mx - R - 2]
-      : p.x > xCentre ? [gm.mx + R + 2, maxX]
+    const [x1, x2] = p.x < xCentre ? [minX, gm.mx - R1 - 2]
+      : p.x > xCentre ? [gm.mx + R1 + 2, maxX]
         : [Math.max(minX, gm.mx - step * 1.5), Math.min(maxX, gm.mx + step * 1.5)];
-    const [y1, y2] = p.y > yCentre ? [minY, gm.my - R - 2] : [Math.min(y0, gm.my + R + 2), maxY];
+    const [y1, y2] = p.y > yCentre ? [minY, gm.my - R1 - 2] : [Math.min(y0, gm.my + R1 + 2), maxY];
     const inArea = ([x, y]) => x >= x1 && x <= x2 && y >= y1 && y <= y2;
     const ring = (u, rings) => {
       const out = [[x0, y0]];
@@ -514,14 +529,14 @@ export function placeChartDots(pts0, gm, { R, k, xCentre, yCentre }) {
       }
       return out.filter(inArea);
     };
-    let spot = ring(step, 14).find(([x, y]) => free(x, y));
+    let spot = ring(step, 14).find(([x, y]) => free(x, y, R1));
     if (!spot) {
       // The area is full: the spot furthest from every other dot.
       const fine = ring(step / 3, 40);
       spot = (fine.length ? fine : [[Math.min(x2, Math.max(x1, x0)), Math.min(y2, Math.max(y1, y0))]])
-        .reduce((best, c) => (clash(...c) > clash(...best) ? c : best));
+        .reduce((best, c) => (clash(c[0], c[1], R1) > clash(best[0], best[1], R1) ? c : best));
     }
-    placed.push({ ...p, cx: spot[0], cy: spot[1] });
+    placed.push({ ...p, r: R1, cx: spot[0], cy: spot[1] });
   });
   return placed;
 }
@@ -535,16 +550,18 @@ function dotsBlock(L, b, parent, maxH) {
   const tick = STYLES.small;
   const numStyle = { font: 'nekst', size: 8.5, lh: 10, features: ['tnum'] };
   const nameStyle = STYLES.small;
-  const R = 8; // dot radius: room for a two-figure number at 8.5pt
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * yMax);
+  const R = 8; // the standard dot radius, and the smallest: room for a two-figure number at 8.5pt
+  const yTicks = b.yTicks || [0, 0.25, 0.5, 0.75, 1].map((f) => f * yMax);
   const yLabW = Math.max(...yTicks.map((v) => ts.width(`${Math.round(v)}${unit}`, tick))) + 8;
-  const pts0 = b.points.filter((p) => p.x != null && p.y != null);
+  const pts0 = b.points.filter((p) => p.x != null && p.y != null)
+    .map((p) => ({ ...p, r: Math.max(R, b.radii?.[p.size] || R) }));
+  const Rmax = Math.max(R, ...pts0.map((p) => p.r));
   const listRows = pts0.slice().sort((a, c) => a.n - c.n);
 
   // Geometry for a plot of a given width and height, its top-left at (0, top).
   const geometry = (plotW, plotH, top) => {
     const Lx = yLabW;
-    const pad = R + 3; // the scale stops short of the frame so dots never cross it
+    const pad = Rmax + 3; // the scale stops short of the frame so dots never cross it
     const xs = (v) => Lx + ((v - 0.5) / k) * plotW;
     const ys = (v) => top + pad + (1 - v / yMax) * (plotH - pad * 2);
     return { Lx, plotW, plotH, top, xs, ys, mx: xs(b.xCentre), my: ys(b.yCentre) };
@@ -555,7 +572,7 @@ function dotsBlock(L, b, parent, maxH) {
   // Names beside the dots, or null when any one cannot be placed cleanly.
   const placeNames = (gm, pts) => {
     if (pts.length > 12) return null;
-    const boxes = pts.map((p) => [p.cx - R - 1, p.cy - R - 1, p.cx + R + 1, p.cy + R + 1]);
+    const boxes = pts.map((p) => [p.cx - p.r - 1, p.cy - p.r - 1, p.cx + p.r + 1, p.cy + p.r + 1]);
     const lines = [[gm.mx - 1, gm.top, gm.mx + 1, gm.top + gm.plotH], [gm.Lx, gm.my - 1, gm.Lx + gm.plotW, gm.my + 1]];
     const frame = [gm.Lx + 2, gm.top + 2, gm.Lx + gm.plotW - 2, gm.top + gm.plotH - 2];
     const clash = (bx, list) => list.some((c) => bx[0] < c[2] + 2 && bx[2] > c[0] - 2 && bx[1] < c[3] + 1 && bx[3] > c[1] - 1);
@@ -565,7 +582,7 @@ function dotsBlock(L, b, parent, maxH) {
       if (ls.length > 2) return null;
       const w = Math.max(...ls.map((l) => ts.width(l, nameStyle)));
       const h = ls.length * nameStyle.lh;
-      const g = R + 4;
+      const g = p.r + 4;
       const cands = [
         [p.cx + g, p.cy - h / 2], [p.cx - g - w, p.cy - h / 2],
         [p.cx - w / 2, p.cy - g - h], [p.cx - w / 2, p.cy + g],
@@ -617,13 +634,15 @@ function dotsBlock(L, b, parent, maxH) {
   // give keyGood and keyOther.
   const keyItems = [
     ...(b.key || [{ state: 'mi', text: b.keyGood }, { state: '', text: b.keyOther }]),
+    ...(b.keyNotes || []).filter((text) => !blank(text)).map((text) => ({ note: true, text })),
     ...(b.listNote ? [{ note: true, text: b.listNote }] : []),
   ].map((it) => ({ ...it, w: (it.note ? 0 : 16) + ts.width(it.text, STYLES.small) }));
   const keyLines = [];
-  keyItems.forEach((it) => {
+  keyItems.forEach((it, i) => {
     const line = keyLines[keyLines.length - 1];
     const used = line ? line.reduce((s, x) => s + x.w + 16, 0) : Infinity;
-    if (!line || used + it.w > W) keyLines.push([it]);
+    const firstNote = it.note && !keyItems[i - 1]?.note; // the lines of words start their own line, after the dots
+    if (!line || firstNote || used + it.w > W) keyLines.push([it]);
     else line.push(it);
   });
   const keyH = keyLines.length * STYLES.small.lh;
@@ -761,13 +780,14 @@ function dotsBlock(L, b, parent, maxH) {
         // the dots, each with its number. Four kinds (methods M20.1), told
         // apart by shape as well as colour: 'mi' filled green (moving well),
         // 'pe' an outline in the text colour (needs managing), 'co' the same
-        // with a second ring (needs attention), '' a fine grey ring.
+        // with a second ring (needs attention), '' a grey ring. Each dot is
+        // its own size when the chart gives `radii`.
         pts.forEach((pt) => {
           const kind = dotKind(pt);
           // the soft halo around each dot, as on the results page
-          doc.circle(X(pt.cx), Y(pt.cy), R + 4).fillOpacity(kind === 'mi' ? 0.16 : 0.07).fill(kind === 'mi' ? t.good : t.detail);
+          doc.circle(X(pt.cx), Y(pt.cy), pt.r + 4).fillOpacity(kind === 'mi' ? 0.16 : 0.07).fill(kind === 'mi' ? t.good : t.detail);
           doc.fillOpacity(1);
-          drawDotMark(doc, kind, X(pt.cx), Y(pt.cy), R, t);
+          drawDotMark(doc, kind, X(pt.cx), Y(pt.cy), pt.r, t);
           const num = String(pt.n);
           ts.draw(num, X(pt.cx - ts.width(num, numStyle) / 2), Y(pt.cy + numStyle.size * 0.36), numStyle, kind === 'mi' ? t.onGood : t.text);
         });

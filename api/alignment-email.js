@@ -12,9 +12,7 @@
 // ALIGNMENT_NOTIFY_TO, and the Supabase URL and anon key the app already has
 // (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY, or SUPABASE_URL / SUPABASE_ANON_KEY).
 
-import { rankProjects, roundPct } from '../src/lib/alignmentScore.js';
-import { cleanItems } from '../src/pages/alignment/alignmentFlow.js';
-import { linkEmail, completeEmail, ukDate, ukDateTime } from './_alignmentEmails.js';
+import { linkEmail, completeEmail, completionSummary, ukDate, ukDateTime } from './_alignmentEmails.js';
 
 const KINDS = ['link', 'complete'];
 
@@ -88,12 +86,6 @@ export default async function handler(req, res) {
     } else {
       to = String(process.env.ALIGNMENT_NOTIFY_TO || '').split(',').map((s) => s.trim()).filter(Boolean);
       const data = check.data || {};
-      const factors = cleanItems(data.csfs || []);
-      const projects = cleanItems(data.projects || []);
-      const top = rankProjects(projects, factors, (data.ratings || {}).owner || {})
-        .filter((r) => r.progress != null)
-        .slice(0, 3)
-        .map((r) => ({ text: r.project.text, importance: roundPct(r.importance) }));
       const completed = check.completed_at || data.completedAt || new Date().toISOString();
       message = completeEmail({
         origin,
@@ -102,7 +94,8 @@ export default async function handler(req, res) {
         respondentEmail: check.respondent_email,
         completedText: ukDateTime(completed),
         objective: data.objective || '',
-        top,
+        // the same headline and questions as the results page and the PDF
+        summary: completionSummary(data, completed),
       });
     }
     await sendWithResend({ to, ...message });

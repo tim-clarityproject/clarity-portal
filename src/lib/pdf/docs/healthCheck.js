@@ -1,24 +1,34 @@
-import { cleanItems, PROGRESS, RESOURCE } from '../../../pages/alignment/alignmentFlow';
-import { importanceText, roundPct, MAX_CONTRIBUTION } from '../../alignmentScore';
+import { PROGRESS, RESOURCE } from '../../../pages/alignment/alignmentFlow';
+import { importanceText } from '../../alignmentScore';
 import { PROGRESS_WORDS } from '../../../pages/alignment/chartLayout';
 import { formatDocDate, parseDbTimestamp } from '../../dateFormatter';
-import { countLine, resultRows, stateSentence, stateWords } from '../../../health-check/words';
+import {
+  csfLevel, csfLevelName, headlineSentence, importanceLines, RES, resultsModel, stateSentence, stateWords,
+} from '../../../health-check/words';
 
 // The Strategic Alignment Health Check as a document for the shared PDF template.
 
-// The four states, the next step and the wording come from the results page
-// (src/health-check/words.js, mock-up M7b version 4), so the page and the PDF
-// never disagree. The PDF keeps a key in words (PDF rules 18 and 21), with
+// The PDF follows the results page (mock-up M7b version 46): the headline in
+// the At a glance panel, then the objective, the questions to start with and
+// their reasons, the chart (dot size shows resource, and the across line is
+// the Health Check's own line for important), the CSFs with their levels, and
+// the project list. Every figure and word comes from resultsModel
+// (src/health-check/words.js, from src/lib/scores/m20.js), so the page and the
+// PDF never disagree. The PDF keeps a key in words (PDF rules 18 and 21), with
 // the four kinds of dot told apart by shape as well as colour.
 
-const STANDARD = 50; // the line between more and less important, as on the results page
 const KEY = [
   { state: 'mi', text: 'Green dot, moving well' },
   { state: 'pe', text: 'Outlined dot, needs managing' },
   { state: 'co', text: 'Double ring, needs attention' },
   { state: '', text: 'Grey ring, less important or too early to tell' },
 ];
+// Dot radii (points) for m20DotSize: small, middle and large, about the
+// mock-up's 8, 12 and 17 scaled to the PDF's chart, the smallest still
+// holding a two-figure number.
+const RADII = { small: 8, middle: 11, large: 14.5 };
 const word = (list, v) => (v == null ? '' : (list.find(([k]) => k === v)?.[1] || ''));
+const resourceWord = (v) => (RES[v] || RES[3])[0]; // a blank resource counts as Moderate, as its dot size does
 
 /** True when the answers changed after the Health Check was finished. */
 export function changedSince(updatedAt, completedAt) {
@@ -28,35 +38,30 @@ export function changedSince(updatedAt, completedAt) {
 
 /**
  * @param {Object} input
- * @param {Object} input.draft the answers: objective, csfs, projects, ratings
+ * @param {Object} input.draft the answers: objective, csfs, projects, ratings, importantLine
  * @param {string|null} [input.completedAt]
  * @param {string|null} [input.updatedAt] the last save; shown as "Updated" when after completion
  * @param {string|null} [input.organisation] the client's organisation, when known
  */
 export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, organisation = null }) {
-  const factors = cleanItems(draft.csfs || []);
-  const rows = resultRows({ ...draft, csfs: draft.csfs || [], projects: draft.projects || [], ratings: draft.ratings || {} });
+  // The Timing question counts from the Health Check's date: the completed
+  // date, or today, as on the results page.
+  const asOf = completedAt ? parseDbTimestamp(completedAt) : new Date();
+  const model = resultsModel({ ...draft, csfs: draft.csfs || [], projects: draft.projects || [], ratings: draft.ratings || {} }, { asOf });
+  const { rows, factors, line, headline, questions, gaps } = model;
   const nf = factors.length;
   const n = rows.length;
-  // a project with no contribution ratings for the current CSFs has no
-  // importance to show yet (the same test as the results page)
-  const scoredRows = rows.filter((r) => r.rated);
-  const scored = scoredRows.length > 0;
-  const average = scored ? roundPct(scoredRows.reduce((s, r) => s + r.importance, 0) / scoredRows.length) : 0;
   const org = organisation?.trim() || null;
   // the chart shows projects with a progress rating, as on the results page
   const plotted = rows.filter((r) => r.progress != null);
-  const good = plotted.filter((r) => r.q === 'mi').length;
-  const top = rows[0];
-  const facts = (r) => (r.rated
-    ? `${r.text} has ${r.pct}% strategic importance and ${PROGRESS_WORDS[r.progress - 1]} progress.`
-    : `${r.text} has ${PROGRESS_WORDS[r.progress - 1]} progress, and its strategic importance isn’t rated yet.`);
   const dotSentence = () => {
-    const first = plotted.length === 1 ? `${facts(plotted[0])} ${stateSentence(plotted[0])}` : countLine(plotted);
     const missing = n - plotted.length;
     const rest = missing ? ` ${missing} ${missing === 1 ? 'project has' : 'projects have'} no progress rating yet, so ${missing === 1 ? 'it isn’t' : 'they aren’t'} on the chart.` : '';
-    return first + rest;
+    return headlineSentence(headline) + rest;
   };
+  // "Strategic importance is how much a project helps your CSFs, out of 100%. …", from the column's ⓘ
+  const [, first, ...more] = importanceLines();
+  const importanceNote = [`Strategic importance is ${first.line.charAt(0).toLowerCase()}${first.line.slice(1)}`, ...more.map((l) => l.line)].join(' ');
 
   return {
     docName: 'Health Check',
@@ -67,36 +72,56 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
     updatedAt: changedSince(updatedAt, completedAt) ? updatedAt : null,
     date: completedAt || new Date(),
     subject: 'Strategic Alignment Health Check results',
+    // the headline first (PDF rule 12): "2 of 5" important projects moving well, then the rest
     glance: [
+      { label: 'Important projects moving well', value: headline.big, note: headline.important ? headline.rest : headline.line, big: true },
+      { label: 'Important means above', value: `${line}%`, big: true },
       { label: 'Projects', value: String(n), big: true },
       { label: 'Critical Success Factors (CSFs)', value: String(nf), big: true },
-      ...(scored ? [
-        { label: 'Average strategic importance', value: `${average}%`, big: true },
-        ...(plotted.length ? [{ label: 'Important and moving well', value: `${good} of ${plotted.length}`, big: true }] : []),
-      ] : []),
     ],
     sections: [
       { title: 'Objective', blocks: [{ type: 'text', text: draft.objective || '' }] },
-      // Headings are set in capitals, where the abbreviation would read "CSFS", so they never carry it.
-      { title: 'Critical Success Factors', blocks: [{ type: 'list', ordered: true, items: factors.map((f) => f.text) }] },
+      {
+        title: 'Questions to start with',
+        blocks: questions.map((q) => ({ type: 'field', label: q.label, text: q.question, note: q.reason })),
+      },
       {
         title: 'Strategic importance against progress',
         blocks: plotted.length ? [{
           type: 'dots',
-          points: plotted.map((r) => ({ n: r.n, label: r.text, x: r.progress, y: r.importance, state: r.q })),
+          points: plotted.map((r) => ({ n: r.n, label: r.text, x: r.progress, y: r.importance, state: r.q, size: r.size })),
+          radii: RADII,
           xLabels: PROGRESS_WORDS,
           yMax: 100,
+          yTicks: [0, line, 100],
           xCentre: 3,
-          yCentre: STANDARD,
+          yCentre: line,
           axisX: 'Progress',
           axisY: 'Strategic importance',
           key: KEY,
+          keyNotes: ['Bigger dots require more resource.', `Important means above ${line}%.`],
           listNote: 'Numbers match the project table.',
           sentence: dotSentence(),
-          alt: `Dot chart of strategic importance, from 0% to 100%, against progress, from Embryonic to Excellent, divided by lines at ${STANDARD}% and Fair. ${plotted.map((r) => `${r.n}. ${r.text}, ${importanceText(r).toLowerCase()}, ${PROGRESS_WORDS[r.progress - 1]}. ${stateSentence(r)}`).join(' ')}`,
+          alt: `Dot chart of strategic importance, from 0% to 100%, against progress, from Embryonic to Excellent, divided by lines at ${line}% and Fair. Important means above ${line}%. Bigger dots require more resource. ${plotted.map((r) => `${r.n}. ${r.text}, ${importanceText(r).toLowerCase()}, ${PROGRESS_WORDS[r.progress - 1]}. ${stateSentence(r)} Resource required is ${resourceWord(r.resource)}.`).join(' ')}`,
         }] : [],
       },
-      ...(top ? [{ title: 'Next step', blocks: [{ type: 'text', text: `Start with “${top.text}”.` }] }] : []),
+      // Headings are set in capitals, where the abbreviation would read "CSFS", so they never carry it.
+      {
+        title: 'Critical Success Factors',
+        blocks: [{
+          type: 'table',
+          columns: [
+            { label: 'No.', width: 0.45 },
+            { label: 'Critical Success Factor', width: 3.9 },
+            { label: 'How much it matters', width: 1.45 },
+          ],
+          rows: factors.map((f, i) => [
+            String(i + 1),
+            { text: f.text, detail: gaps.includes(f.id) ? 'No project strongly supports this yet.' : '' },
+            csfLevelName(csfLevel(f)),
+          ]),
+        }],
+      },
       {
         title: 'Your projects',
         blocks: [
@@ -118,11 +143,7 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
               word(RESOURCE, r.resource),
             ]),
           },
-          {
-            type: 'text',
-            tone: 'detail',
-            text: `Strategic importance adds up a project’s contribution scores and shows them as a share of the highest possible score, ${nf * MAX_CONTRIBUTION} for ${nf} CSF${nf === 1 ? '' : 's'}.`,
-          },
+          { type: 'text', tone: 'detail', text: importanceNote },
         ],
       },
     ],

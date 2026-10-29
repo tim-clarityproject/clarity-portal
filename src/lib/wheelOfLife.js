@@ -1,4 +1,4 @@
-import { getLocalDateKey } from './dateFormatter';
+import { getLocalDateKey } from './dateFormatter.js';
 
 // Wheel of Life (wheel-of-life-spec.md sections 1, 3, 3b, 4 and 6).
 // Pure logic only: no Supabase, no UI. The maths is ported from the
