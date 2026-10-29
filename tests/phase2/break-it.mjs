@@ -130,6 +130,7 @@ const bodyText = async (page) => (await page.locator('body').innerText()).replac
 const openSprint = async (page) => {
   await page.goto(`${APP}/performance-sprint`);
   await page.waitForSelector('.sprint-page', { timeout: 30000 });
+  await page.waitForFunction(() => !document.querySelector('.ds-loading--page'), null, { timeout: 30000 }).catch(() => null);
   await page.waitForTimeout(1500);
 };
 const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-guide-title').first().textContent().catch(() => '')) || '').trim();
