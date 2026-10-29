@@ -13,7 +13,13 @@ import {
   m9Objective,
 } from '../scores/index.js';
 
-/** Today in the person's own time zone (M0.2), else the device's day. */
+/**
+ * Today (M0.2): the person's own local day, in the time zone of the device
+ * they log from (getLocalDateKey), so it follows them when they travel.
+ * With `timeZone`, the day in that zone instead: only for checks and the
+ * scripts, never a page (the saved zone is kept in step with the device,
+ * api.js readSettings).
+ */
 export function localToday(timeZone, now = new Date()) {
   if (timeZone) {
     try {

@@ -76,7 +76,7 @@ function useRecovery() {
   const { user } = useContext(AuthContext);
   const userId = user?.id;
   const loaded = useRecoveryPage(userId);
-  const today = localToday(loaded.data?.personSettings?.time_zone);
+  const today = localToday();
   const view = useMemo(() => (loaded.data ? recoveryView(loaded.data, { today }) : null), [loaded.data, today]);
   return { ...loaded, view, today, userId };
 }
@@ -102,6 +102,18 @@ export default function RecoveryStart() {
   const [days, setDays] = useState(RECOVERY_SUGGESTED_DAYS);
   const [tell, setTell] = useState(true);
   const back = { label: 'Performance Sprint', onClick: () => navigate('/performance-sprint') };
+  // The days chosen and the tick survive Back, Forward and a refresh
+  // (break-it tester); starting it clears them.
+  const { clear: clearDraft } = useDraft({
+    userId: actions.userId,
+    name: 'recovery-start',
+    value: { days, tell },
+    ready: Boolean(view) && view.state !== 'open',
+    onRestore: (d) => {
+      if (Number.isInteger(d?.days)) setDays(Math.min(RECOVERY_MAX_DAYS, Math.max(RECOVERY_MIN_DAYS, d.days)));
+      if (typeof d?.tell === 'boolean') setTell(d.tell);
+    },
+  });
 
   if (!view) {
     return <Shell back={back}><Waiting loading={loading} error={error} label="Loading" /></Shell>;
@@ -151,7 +163,7 @@ export default function RecoveryStart() {
         <Button
           variant="primary"
           disabled={actions.working}
-          onClick={() => actions.start({ sprintId: view.sprintId, today, days, letCoachKnow: Boolean(coach) && tell })}
+          onClick={() => actions.start({ sprintId: view.sprintId, today, days, letCoachKnow: Boolean(coach) && tell, onStarted: clearDraft })}
         >
           Start my recovery
         </Button>
@@ -171,14 +183,9 @@ const QUALITY = [
   { value: 'very_good', label: 'Very good' },
 ];
 
-/** The hour on the person's own clock (their time zone, else the device's). */
-function localHour(timeZone) {
-  try {
-    const h = new Intl.DateTimeFormat('en-GB', { timeZone: timeZone || undefined, hour: 'numeric', hourCycle: 'h23' }).format(new Date());
-    return Number(h);
-  } catch {
-    return new Date().getHours();
-  }
+/** The hour on the device's own clock (M0.2: the person's day is the device's). */
+function localHour() {
+  return new Date().getHours();
 }
 
 export function RecoveryToday() {
@@ -263,7 +270,7 @@ export function RecoveryToday() {
   // The chosen end has come: the check-in asks how they are (audit 4.7).
   if (view.due) return <Navigate to="/recovery/check-in" replace />;
 
-  const name = view.firstName ? `${greeting(localHour(data?.personSettings?.time_zone))}, ${view.firstName}` : greeting(localHour(data?.personSettings?.time_zone));
+  const name = view.firstName ? `${greeting(localHour())}, ${view.firstName}` : greeting(localHour());
   const coach = view.coach;
   const changeWho = async (audience) => {
     const next = audience === 'coach';

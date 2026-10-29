@@ -124,6 +124,25 @@ export async function saveOrQueue(userId, op) {
 }
 
 /**
+ * Keeps a save on the device straight away, to be sent with the rest of
+ * the queue (now if online, else on the next start or reconnect). For a
+ * page being closed or refreshed with a save still waiting for its delay:
+ * there's no time left to send it, but the device can keep it.
+ */
+export function keepForLater(userId, op) {
+  if (!userId) return;
+  try {
+    keep(userId, { ...op, qid: newId(), at: Date.now() });
+  } catch {
+    // No room on the device: nothing more can be done as the page closes.
+    return;
+  }
+  // Worth a try (a page kept for Back sends it now); if the page is going,
+  // it stays kept and is sent next time.
+  if (isOnline()) flush(userId);
+}
+
+/**
  * Sends everything waiting, oldest first. A save the server refuses (not
  * a lost connection) is kept aside under failed, so it is never retried
  * for ever and never silently dropped.

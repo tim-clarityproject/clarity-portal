@@ -157,7 +157,7 @@ function Shell({ children, title = 'Start a sprint' }) {
 function SprintStartView({ userId, data }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const today = useMemo(() => localToday(data.personSettings?.time_zone), [data.personSettings]);
+  const today = localToday();
   const running = runningSprint(data.sprints);
   const number = nextSprintNumber(data.sprints);
   const allHabits = useMemo(() => (data.habits || []).map(habitFromPlanRow), [data.habits]);

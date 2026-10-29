@@ -46,7 +46,7 @@ export default function SprintYear() {
   const { user } = useContext(AuthContext);
   const userId = user?.id;
   const { data, loading, error, reload } = useYearPage(userId);
-  const today = localToday(data?.personSettings?.time_zone);
+  const today = localToday();
   // "Show my results" in Recovery: this visit only, never stored (M15).
   const [showResults, setShowResults] = useState(false);
   const view = useMemo(() => (data ? yearView(data, { today, showResults }) : null), [data, today, showResults]);

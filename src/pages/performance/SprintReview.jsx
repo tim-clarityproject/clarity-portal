@@ -144,7 +144,7 @@ function Shell({ children, title = 'End-of-sprint review' }) {
 function ReviewView({ userId, data }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const today = useMemo(() => localToday(data.personSettings?.time_zone), [data.personSettings]);
+  const today = localToday();
   const view = useMemo(() => reviewView(data, { today }), [data, today]);
   const [phase, setPhase] = useState(() => ({ kind: view.state === 'over' ? 'flow' : 'intro' }));
   const frozen = useRef(false);

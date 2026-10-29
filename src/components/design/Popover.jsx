@@ -244,11 +244,13 @@ export default function Popover({
   };
 
   return createPortal(
-    <div className={`ui-root ds-portal${shown ? ' ds-sheet--shown' : ''}`} {...themeProps(scope)} inert={!open}>
-      <div className="ds-sheet-scrim" aria-hidden="true" onClick={() => onCloseRef.current?.()} />
+    <div className={`ui-root ds-portal${shown ? ' ds-sheet--shown' : ''}`} {...themeProps(scope)}>
+      {/* While it closes, the scrim stays and takes the rest of a double tap. */}
+      <div className="ds-sheet-scrim" aria-hidden="true" onClick={() => { if (open) onCloseRef.current?.(); }} />
       <div
         ref={sheetRef}
         className={`ds-sheet ds-sheet--${variant}`}
+        inert={!open}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

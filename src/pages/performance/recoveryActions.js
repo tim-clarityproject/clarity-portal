@@ -48,9 +48,10 @@ export function useRecoveryActions({ setData } = {}) {
   };
 
   /** "Start my recovery". */
-  const start = ({ sprintId, today, days, letCoachKnow }) => {
+  const start = ({ sprintId, today, days, letCoachKnow, onStarted }) => {
     const row = { ...recoveryRow({ id: newId(), userId, sprintId, today, days, letCoachKnow }), ended_at: null, end_on: null };
     return run(row, () => startRecovery(userId, row), () => {
+      onStarted?.();
       toast.show('Your recovery week has started.');
       navigate('/recovery/today', { replace: true });
     });

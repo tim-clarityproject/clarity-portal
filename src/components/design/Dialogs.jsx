@@ -144,7 +144,6 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
     <div
       className={`ui-root ds-portal${shown ? ' ds-modal--shown' : ''}`}
       {...themeProps(scope)}
-      inert={!open}
       // A second tap on a dialog that is already closing must not pull
       // focus away from the button it has just been returned to.
       onMouseDown={(e) => { if (!open) e.preventDefault(); }}
@@ -152,7 +151,11 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
       <div
         className="ds-scrim"
         aria-hidden="true"
+        // While it closes, the scrim stays over the page and takes any
+        // further taps of a double or triple tap, so they never land on
+        // whatever was under the dialog's button (break-it tester).
         onClick={() => {
+          if (!open) return;
           if (performance.now() - openedAtRef.current < DOUBLE_CLICK_MS) return;
           onCloseRef.current?.();
         }}
@@ -164,6 +167,7 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        inert={!open}
         onKeyDown={(e) => trapTab(e, dialogRef.current)}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}

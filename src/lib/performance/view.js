@@ -32,7 +32,7 @@ const capital = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
  */
 export function planView(data, opts = {}) {
   if (!data?.plan) return null;
-  const today = opts.today || localToday(data.personSettings?.time_zone);
+  const today = opts.today || localToday();
   const objectivesRows = data.objectives || [];
   const strategiesRows = data.strategies || [];
   const links = (data.links || []).map((l) => ({ strategyId: l.strategy_id, objectiveId: l.objective_id }));

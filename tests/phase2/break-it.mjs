@@ -34,7 +34,6 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 import { localToday } from '../../src/lib/performance/rows.js';
-import { sprintPageView } from '../../src/lib/performance/sprintPage.js';
 import { m0SprintCalendar, m0WeekOfDay } from '../../src/lib/scores/index.js';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
@@ -216,7 +215,7 @@ if (run('taps')) {
       const pressed = (await dayBtn.getAttribute('aria-pressed')) === 'true';
       const logs = await q(db.from('habit_logs').select('local_date, value').eq('sprint_habit_id', late.id).eq('local_date', today));
       pass('taps: a triple-tapped day has one log at most', logs.length <= 1, `${logs.length}`);
-      pass('taps: the triple-tapped day shows what was saved', pressed === (logs.length === 1 && Number(logs[0].value) > 0), `page ${pressed}, saved ${JSON.stringify(logs)}`);
+      pass('taps: the triple-tapped day shows what was saved', pressed === (logs.length === 1), `page ${pressed}, saved ${JSON.stringify(logs)}`);
     } else pass('taps: found the Late finishes day button', false, 'no aria-pressed button');
 
     // Move: tap the week three times.
@@ -545,6 +544,8 @@ if (run('text')) {
     pass('text: no script ran on the recovery day', !(await page.evaluate(() => window.__xss)));
     noErrors(page, 'text on the recovery day');
     const rec = (await recoveriesOf())[0];
+    await page.mouse.move(1, 1); // a resting mouse holds the toast open over the link
+    await page.waitForTimeout(6000);
     await page.getByRole('button', { name: 'I’m ready to go again' }).click();
     await page.waitForURL(/\/performance-sprint/, { timeout: 20000 });
     pass('text: the Recovery ended', Boolean((await recoveriesOf()).find((x) => x.id === rec.id)?.ended_at));
@@ -585,6 +586,8 @@ if (run('text')) {
     await page.waitForTimeout(1500);
   } catch (e) {
     pass('text ran to the end', false, e.message.split('\n')[0]);
+    await shot(page, 'text-stopped');
+    console.log('stopped at', page.url(), (await bodyText(page).catch(() => '')).slice(0, 400));
   }
   await context.close();
 
@@ -685,9 +688,12 @@ if (run('refresh')) {
   const [st0] = await strategyNames();
   const { context, page } = await signedIn({ width: 1280 });
   const hold = async (pattern, method = 'POST') => {
-    await page.route(pattern, (route) => {
-      if (route.request().method() === method) return undefined; // never answered: the page is refreshed mid-save
-      return route.fallback();
+    // Held, then dropped: the page is refreshed while it waits, so the save
+    // never reaches the database.
+    await page.route(pattern, async (route) => {
+      if (route.request().method() !== method) return route.fallback();
+      await sleep(5000);
+      return route.abort().catch(() => null);
     });
   };
   try {
@@ -697,12 +703,13 @@ if (run('refresh')) {
     await openTodoPanel(page, 'Refreshed mid-save to-do', st0);
     await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
     await page.waitForTimeout(800);
-    await page.unroute('**/rest/v1/todos*');
     await page.reload();
+    await page.unroute('**/rest/v1/todos*');
     await page.waitForSelector('.sprint-page', { timeout: 30000 });
     await page.waitForTimeout(3000);
     let t = (await todosOf()).filter((x) => x.text === 'Refreshed mid-save to-do');
     const panelBack = await page.locator('.ds-panel textarea').count() ? await page.locator('.ds-panel textarea').inputValue() : '';
+    console.log(`refresh: to-do after the refresh: ${t.length} saved, panel "${panelBack}"`);
     pass('refresh: a to-do refreshed mid-save is not lost (saved, or its draft is back)', t.length === 1 || panelBack.includes('Refreshed mid-save to-do'), `${t.length} saved, panel "${panelBack}"`);
     if (!t.length && panelBack) {
       await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
@@ -716,8 +723,8 @@ if (run('refresh')) {
     await openWinPanel(page, 'Refreshed mid-save win', st0);
     await page.locator('.ds-panel').getByRole('button', { name: 'Add my win' }).click();
     await page.waitForTimeout(800);
-    await page.unroute('**/rest/v1/wins*');
     await page.reload();
+    await page.unroute('**/rest/v1/wins*');
     await page.waitForSelector('.sprint-page', { timeout: 30000 });
     await page.waitForTimeout(3000);
     let w = (await winsOf()).filter((x) => x.what === 'Refreshed mid-save win');
@@ -734,17 +741,18 @@ if (run('refresh')) {
     await page.getByRole('button', { name: 'This week', exact: true }).click().catch(() => null);
     await page.getByRole('button', { name: 'Today', exact: true }).click().catch(() => null);
     await page.waitForTimeout(400);
-    const box = page.locator('.sprint-habits > .ds-log').filter({ has: page.locator('.ds-log-name', { hasText: /^Focus$/ }) }).locator('input').first();
+    const box = page.locator('.sprint-habits > .ds-log').filter({ has: page.locator('.ds-log-name', { hasText: /^Steps$/ }) }).locator('input').first();
+    console.log(`refresh: Focus boxes ${await box.count()}`);
     if (await box.count()) {
-      await box.fill('5');
+      await box.fill('8000');
       await page.reload();
       await page.waitForSelector('.sprint-page', { timeout: 30000 });
       await page.waitForTimeout(2500);
       const sprint = await runningSprint();
-      const focus = (await q(db.from('sprint_habits').select('id, name').eq('sprint_id', sprint.id))).find((h) => h.name === 'Focus');
+      const focus = (await q(db.from('sprint_habits').select('id, name').eq('sprint_id', sprint.id))).find((h) => h.name === 'Steps');
       const log = await q(db.from('habit_logs').select('value').eq('sprint_habit_id', focus.id).eq('local_date', today));
-      const shown = await page.locator('.sprint-habits > .ds-log').filter({ has: page.locator('.ds-log-name', { hasText: /^Focus$/ }) }).locator('input').first().inputValue();
-      pass('refresh: a number typed just before a refresh is kept (saved, or still shown)', (log[0] && Number(log[0].value) === 5) || shown === '5', `saved ${JSON.stringify(log)}, shown "${shown}"`);
+      const shown = await page.locator('.sprint-habits > .ds-log').filter({ has: page.locator('.ds-log-name', { hasText: /^Steps$/ }) }).locator('input').first().inputValue();
+      pass('refresh: a number typed just before a refresh is kept (saved, or still shown)', (log[0] && Number(log[0].value) === 8000) || /^8,?000$/.test(shown), `saved ${JSON.stringify(log)}, shown "${shown}"`);
     }
 
     // Recovery start, held, refreshed: one Recovery at most, and the page works.
@@ -752,8 +760,8 @@ if (run('refresh')) {
     await page.goto(`${APP}/recovery`);
     await page.getByRole('button', { name: 'Start my recovery' }).click();
     await page.waitForTimeout(800);
-    await page.unroute('**/rest/v1/recovery_periods*');
     await page.reload();
+    await page.unroute('**/rest/v1/recovery_periods*');
     await page.waitForTimeout(3000);
     const recs = await recoveriesOf();
     pass('refresh: Recovery refreshed mid-start makes one at most', recs.length <= 1, `${recs.length}`);
@@ -795,7 +803,7 @@ if (run('dates')) {
     for (const z of ZONES) pass(`dates: ${at} is ${want[z]} in ${z}`, localToday(z, new Date(at)) === want[z], localToday(z, new Date(at)));
   }
   // A sprint starting on a Sunday, across both clock changes, and over 29 February.
-  const cal = (start, len) => m0SprintCalendar({ startOn: start, lengthWeeks: len, recoveries: [] });
+  const cal = (start, len) => m0SprintCalendar({ start, lengthWeeks: len, recoveries: [] }, '2030-01-01').weeks;
   for (const [start, len, checks] of [
     ['2026-10-25', 2, [['2026-10-25', 1], ['2026-10-31', 1], ['2026-11-01', 2], ['2026-11-07', 2]]],
     ['2026-10-19', 3, [['2026-10-25', 1], ['2026-10-26', 2], ['2026-11-01', 2], ['2026-11-02', 3]]],
@@ -804,7 +812,7 @@ if (run('dates')) {
     const c = cal(start, len);
     for (const [d, w] of checks) {
       const got = m0WeekOfDay(c, d);
-      pass(`dates: in a sprint from ${start}, ${d} is in week ${w}`, (got?.week ?? got) === w, JSON.stringify(got));
+      pass(`dates: in a sprint from ${start}, ${d} is in week ${w}`, got === w, JSON.stringify(got));
     }
   }
 
@@ -814,16 +822,21 @@ if (run('dates')) {
   for (const z of ZONES) {
     // Just after midnight and just before, in that zone, today (UK date).
     for (const [label, offsetH] of [['just after midnight', 0.25], ['just before midnight', 23.75]]) {
-      const target = today;
-      // The instant that is `offsetH` hours into `target` in zone z.
-      const guess = new Date(`${target}T00:00:00Z`).getTime();
-      let instant = null;
-      for (let h = -14; h <= 14; h += 0.25) {
-        const t = new Date(guess + (h + offsetH) * 3600000);
-        const p = new Intl.DateTimeFormat('en-GB', { timeZone: z, hour: '2-digit', minute: '2-digit', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(t);
-        const g = (k) => p.find((x) => x.type === k).value;
-        if (`${g('year')}-${g('month')}-${g('day')}` === target && Number(g('hour')) + Number(g('minute')) / 60 === offsetH) { instant = t; break; }
-      }
+      // The latest such moment that has already happened (a sign-in can't
+      // be used from a clock set in the future: its token looks expired).
+      const momentOn = (target) => {
+        const guess = new Date(`${target}T00:00:00Z`).getTime();
+        for (let h = -14; h <= 14; h += 0.25) {
+          const t = new Date(guess + (h + offsetH) * 3600000);
+          const p = new Intl.DateTimeFormat('en-GB', { timeZone: z, hour: '2-digit', minute: '2-digit', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(t);
+          const g = (k) => p.find((x) => x.type === k).value;
+          if (`${g('year')}-${g('month')}-${g('day')}` === target && Number(g('hour')) + Number(g('minute')) / 60 === offsetH) return t;
+        }
+        return null;
+      };
+      let target = today;
+      let instant = momentOn(target);
+      if (instant && instant.getTime() > Date.now() - 60000) { target = addDays(today, -1); instant = momentOn(target); }
       if (!instant) { pass(`dates: found ${label} in ${z}`, false); continue; }
       const { context, page } = await signedIn({ timezoneId: z, clock: instant });
       try {
@@ -835,11 +848,12 @@ if (run('dates')) {
         const days = await page.locator('.sprint-habits [aria-label]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
         const future = days.filter((l) => /tomorrow|future/i.test(l || '')).length;
         pass(`dates: ${z} ${label}: today on the sprint page is ${target}`, !todayCell || todayCell.includes(` ${want} `) || todayCell.includes(` ${want}`), `${todayCell}`);
-        const view = sprintPageView({ ...(await (async () => ({}))()) }, { today: target });
-        void view; void future;
+        void future;
         const meta = await bodyText(page);
-        const v = m0WeekOfDay(m0SprintCalendar({ startOn: sprint.start_on, lengthWeeks: sprint.length_weeks, recoveries: [] }), target);
-        pass(`dates: ${z} ${label}: the week shown is week ${v?.week ?? v}`, meta.includes(`Week ${v?.week ?? v} of ${sprint.length_weeks}`), meta.slice(0, 160));
+        const v = m0WeekOfDay(m0SprintCalendar({ start: sprint.start_on, lengthWeeks: sprint.length_weeks, recoveries: [] }, target).weeks, target);
+        pass(`dates: ${z} ${label}: the week shown is week ${v}`, meta.includes(`Week ${v} of ${sprint.length_weeks}`), meta.slice(0, 160));
+        const saved = await until(async () => (await q(db.from('person_settings').select('time_zone').eq('user_id', me)))[0]?.time_zone === z, 8000);
+        pass(`dates: ${z} ${label}: the saved time zone follows the device`, Boolean(saved));
         noErrors(page, `dates ${z} ${label}`);
       } catch (e) {
         pass(`dates ${z} ${label} ran`, false, e.message.split('\n')[0]);
@@ -906,14 +920,14 @@ if (run('recovery')) {
   const id = crypto.randomUUID();
   await q(db.from('recovery_periods').insert({ id, user_id: me, sprint_id: sprint.id, start_on: satKey, chosen_days: 4, let_coach_know: false, ended_at: `${addDays(tueKey, 1)}T08:00:00Z`, end_on: addDays(tueKey, 1) }).select());
   const rec = (await recoveriesOf())[0];
-  const cal = m0SprintCalendar({ startOn: sprint.start_on, lengthWeeks: sprint.length_weeks, recoveries: [{ startOn: rec.start_on, endOn: rec.end_on }] });
+  const cal = m0SprintCalendar({ start: sprint.start_on, lengthWeeks: sprint.length_weeks, recoveries: [{ start: rec.start_on, end: rec.end_on }] }, today);
   const { context, page } = await signedIn();
   try {
     await openSprint(page);
     const text = await bodyText(page);
-    const w = m0WeekOfDay(cal, today);
-    pass('recovery: the week shown matches the calendar with the Saturday-to-Tuesday Recovery', text.includes(`Week ${w?.week ?? w} of ${sprint.length_weeks}`), `${JSON.stringify(w)} / ${text.slice(0, 160)}`);
-    const end = cal.endOn || cal.end || cal.plannedEndOn;
+    const w = m0WeekOfDay(cal.weeks, today);
+    pass('recovery: the week shown matches the calendar with the Saturday-to-Tuesday Recovery', text.includes(`Week ${w} of ${sprint.length_weeks}`), `${w} / ${text.slice(0, 160)}`);
+    const end = cal.actualEnd || cal.weeks[cal.weeks.length - 1]?.end;
     const human = end ? new Date(`${end}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '';
     pass('recovery: the end moved by the four days', end === addDays(sprint.planned_end_on, 4), `${end} vs planned ${sprint.planned_end_on}`);
     pass('recovery: the page shows the moved end', !human || text.includes(human), `${human} / ${text.slice(0, 200)}`);

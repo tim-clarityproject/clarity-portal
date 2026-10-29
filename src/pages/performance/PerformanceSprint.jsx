@@ -34,6 +34,7 @@ import {
 import { useSprintPage } from '../../lib/performance/hooks';
 import {
   freezeWeek,
+  habitLogOp,
   moveTodo,
   saveHabitLog,
   saveHabitSettingFrom,
@@ -46,7 +47,7 @@ import {
 import { dayName, doneToast, localToday, moveOptions, recoveryLead, settingForWeek, sprintPageView } from '../../lib/performance';
 import { useRecoveryActions } from './recoveryActions';
 import { toStored } from '../../lib/units';
-import { newId, useQueueState } from '../../lib/syncQueue';
+import { keepForLater, newId, useQueueState } from '../../lib/syncQueue';
 import { isOnline } from '../../lib/connection';
 import { useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
@@ -96,7 +97,7 @@ export default function PerformanceSprint() {
   const userId = user?.id;
   const { data, loading, error, setData } = useSprintPage(userId);
   const recovery = useRecoveryActions({ setData });
-  const today = localToday(data?.personSettings?.time_zone);
+  const today = localToday();
   const view = useMemo(() => (data ? sprintPageView(data, { today }) : null), [data, today]);
   const queue = useQueueState();
 
@@ -110,6 +111,7 @@ export default function PerformanceSprint() {
   const [todoForm, setTodoForm] = useState(() => emptyTodo(null));
   const [winForm, setWinForm] = useState(() => emptyWin(null));
   const timers = useRef({});
+  const pending = useRef({}); // the logs still waiting for their delay: key -> { habitId, day, value }
   const frozen = useRef(new Set());
   const logRef = useRef(null);
   const todoRef = useRef(null);
@@ -198,18 +200,39 @@ export default function PerformanceSprint() {
     clearTimeout(timers.current[key]);
     const go = () => {
       delete timers.current[key];
+      delete pending.current[key];
       sent(() => saveHabitLog(userId, habit.id, day, value));
     };
     if (delay) {
       setSave('saving');
+      pending.current[key] = { habitId: habit.id, day, value };
       timers.current[key] = setTimeout(go, delay);
-    } else go();
+    } else {
+      delete pending.current[key];
+      go();
+    }
   };
 
-  // Leaving the page sends anything still waiting for its delay.
-  useEffect(() => () => {
-    Object.values(timers.current).forEach((t) => clearTimeout(t));
-  }, []);
+  // Leaving the page sends anything still waiting for its delay; closing
+  // or refreshing it keeps those on the device, sent on the next start
+  // (break-it tester: a number typed just before a refresh was lost).
+  useEffect(() => {
+    const takeWaiting = () => {
+      Object.values(timers.current).forEach((t) => clearTimeout(t));
+      timers.current = {};
+      const waiting = Object.values(pending.current);
+      pending.current = {};
+      return waiting;
+    };
+    const onHide = () => {
+      takeWaiting().forEach((w) => keepForLater(userId, habitLogOp(userId, w.habitId, w.day, w.value)));
+    };
+    window.addEventListener('pagehide', onHide);
+    return () => {
+      window.removeEventListener('pagehide', onHide);
+      takeWaiting().forEach((w) => { saveHabitLog(userId, w.habitId, w.day, w.value).catch(() => null); });
+    };
+  }, [userId]);
 
   const typeNumber = (habit, day, text) => {
     const key = `${habit.id}:${day}`;
@@ -228,6 +251,7 @@ export default function PerformanceSprint() {
       const value = (data.logs || []).find((l) => l.sprint_habit_id === habit.id && l.local_date === day)?.value ?? null;
       clearTimeout(timers.current[key]);
       delete timers.current[key];
+      delete pending.current[key];
       sent(() => saveHabitLog(userId, habit.id, day, value == null ? null : Number(value)));
     }
     setTyped((t) => {

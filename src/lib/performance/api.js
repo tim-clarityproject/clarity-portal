@@ -35,6 +35,32 @@ async function one(query) {
   return data?.[0] || null;
 }
 
+/** The device's own time zone (IANA name), or null. */
+export function deviceTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The person's settings, with their saved time zone kept in step with
+ * the device they use: a day is the local day of the device they log
+ * from (methods, "A day is the person's own local day"; rule 42), and the
+ * database's own today (person_today, which freeze_week reads) follows
+ * the saved one. Sent through the queue, only when it differs.
+ */
+async function readSettings(userId, cols) {
+  const settings = await one(supabase.from('person_settings').select(cols).eq('user_id', userId).limit(1));
+  const zone = deviceTimeZone();
+  if (zone && settings?.time_zone !== zone && zone.length <= 64) {
+    saveOrQueue(userId, { table: 'person_settings', kind: 'upsert', onConflict: 'user_id', values: { user_id: userId, time_zone: zone } }).catch(() => null);
+    return { ...(settings || {}), time_zone: zone };
+  }
+  return settings;
+}
+
 /** The person's own coach (my_coach), or null. Online only. */
 export async function loadMyCoach() {
   const { data, error } = await supabase.rpc('my_coach');
@@ -69,7 +95,7 @@ export async function loadPlanPage(userId) {
     rows(supabase.from('habits').select(HABIT_COLS)
       .eq('plan_id', plan.id).is('archived_at', null).order('sort_order')),
     rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId)),
-    one(supabase.from('person_settings').select('time_zone, units').eq('user_id', userId).limit(1)),
+    readSettings(userId, 'time_zone, units'),
     rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
       .eq('user_id', userId).order('start_on')),
     one(supabase.from('sprints').select(SPRINT_COLS)
@@ -128,7 +154,7 @@ export async function loadSprintWeekRows(userId, sprint) {
 export async function loadPlanEditor(userId) {
   const [plan, personSettings, workingPatterns, switches, coach, fixedStandard] = await Promise.all([
     loadActivePlan(userId),
-    one(supabase.from('person_settings').select('time_zone, describes_you').eq('user_id', userId).limit(1)),
+    readSettings(userId, 'time_zone, describes_you'),
     rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
     rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId)),
     loadMyCoach().catch(() => null),
@@ -374,7 +400,7 @@ export async function loadSprintStart(userId) {
     rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
     rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
       .eq('user_id', userId).order('start_on')),
-    one(supabase.from('person_settings').select('time_zone, describes_you').eq('user_id', userId).limit(1)),
+    readSettings(userId, 'time_zone, describes_you'),
     loadMyCoach().catch(() => null),
     loadFixedStandard().catch(() => null),
   ]);
@@ -476,23 +502,28 @@ export function finishSprint(userId, sprintId, actualEndOn) {
   return saveOrQueue(userId, finishSprintOp(userId, sprintId, actualEndOn));
 }
 
-/** One day's log for a sprint habit; null clears it (a log can't be empty). */
-export function saveHabitLog(userId, sprintHabitId, localDate, value) {
+/** One day's log for a sprint habit, as a save; null clears it (a log can't be empty). */
+export function habitLogOp(userId, sprintHabitId, localDate, value) {
   if (value == null) {
-    return saveOrQueue(userId, {
+    return {
       table: 'habit_logs',
       kind: 'delete',
       match: { sprint_habit_id: sprintHabitId, local_date: localDate, user_id: userId },
-    });
+    };
   }
   // No id is sent: the row is found by its habit and day, so a second
   // device or a resend never fights over which id it has.
-  return saveOrQueue(userId, {
+  return {
     table: 'habit_logs',
     kind: 'upsert',
     onConflict: 'sprint_habit_id,local_date',
     values: { user_id: userId, sprint_habit_id: sprintHabitId, local_date: localDate, value },
-  });
+  };
+}
+
+/** One day's log for a sprint habit; null clears it. */
+export function saveHabitLog(userId, sprintHabitId, localDate, value) {
+  return saveOrQueue(userId, habitLogOp(userId, sprintHabitId, localDate, value));
 }
 
 /** A to-do ticked done on a day, or not done (null). */
@@ -522,7 +553,7 @@ export async function loadSprintPage(userId) {
     rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
       .eq('user_id', userId).order('start_on')),
     rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
-    one(supabase.from('person_settings').select('time_zone, units').eq('user_id', userId).limit(1)),
+    readSettings(userId, 'time_zone, units'),
     rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, eligible, final')
       .eq('user_id', userId).order('week_end')),
     // The first name, for "Welcome back, Sam" after a Recovery (M15).
@@ -724,7 +755,7 @@ export async function loadRecoveryPage(userId) {
   const [sprint, recoveries, personSettings, profile, coach] = await Promise.all([
     one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
     rows(supabase.from('recovery_periods').select(RECOVERY_COLS).eq('user_id', userId).order('start_on')),
-    one(supabase.from('person_settings').select('time_zone').eq('user_id', userId).limit(1)),
+    readSettings(userId, 'time_zone'),
     one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)),
     loadMyCoach().catch(() => null),
   ]);

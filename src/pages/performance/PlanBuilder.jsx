@@ -162,7 +162,7 @@ function PlanTool({ userId, data, mode }) {
   const queue = useQueueState();
   const { mission: oldMission } = useContext(MissionContext) || {};
   const building = mode === 'build';
-  const today = useMemo(() => localToday(data.personSettings?.time_zone), [data.personSettings]);
+  const today = localToday();
   const role = exampleRole(data.personSettings?.describes_you);
   const ideas = STRATEGY_IDEAS[role];
   const fixedStandard = data.fixedStandard ?? null;
