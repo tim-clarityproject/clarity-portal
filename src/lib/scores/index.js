@@ -1,10 +1,10 @@
 // The scoring library: one module per section of docs/scoring-methods.md
-// (version 1.1), each named after its ID. No score is worked out anywhere
+// (version 1.4), each named after its ID. No score is worked out anywhere
 // else. Every worked example in the methods document is a test
 // (npm run test:scores); the pattern engine (M14) has its own tests and
 // simulation (npm run test:patterns, npm run sim:patterns).
 
-export const METHODS_VERSION = '1.1';
+export const METHODS_VERSION = '1.4';
 
 export * from './m0.js';
 export * from './m1.js';

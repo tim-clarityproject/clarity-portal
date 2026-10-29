@@ -1,6 +1,6 @@
 # Methods: how every score in The Clarity Portal is worked out
 
-Version 1.3 (draft for the build), written 26 Oct 2026, 18:16 onwards, by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); scientific audit the same evening; Tim's decisions of 26 and 27 Oct added (see M22).
+Version 1.4 (draft for the build), written 26 Oct 2026, 18:16 onwards, by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); scientific audit the same evening; Tim's decisions of 26, 27 and 28 Oct added (see M22).
 
 This is the single source of truth for every score, figure, flag and pattern the portal shows. The code follows it, the PDFs follow it, and the public "How it works" page is written from it. Where a mock-up shows a different figure, this document wins on the arithmetic and the decisions doc wins on everything else.
 
@@ -517,22 +517,26 @@ The same figure for each team, then for each team below it. Shown at any team si
 
 ## M20. Tools that already score today
 
-The live portal already scores two tools. Their rules are not changing in the overhaul, so this section documents them from the code as it is on 27 Oct 2026, with test cases (completed in Phase 1). The arithmetic stays in the code that does it today (`src/lib/alignmentScore.js` and `src/lib/wheelOfLife.js`); `src/lib/scores/m20.js` brings it together under this section's ID, and `tests/scores/scores.test.mjs` checks every rule below. The old strategic alignment tool's progress scale, Stop Doing hours, the Meeting planner's end time and "N of 5" are fixed in their rebuilds, and written in here then.
+The live portal already scores two tools. Their rules are not changing in the overhaul, so this section documents them from the code as it is on 27 Oct 2026, with test cases (completed in Phase 1). The arithmetic stays in the code that does it today (`src/lib/alignmentScore.js` and `src/lib/wheelOfLife.js`); `src/lib/scores/m20.js` brings it together under this section's ID, and `tests/scores/scores.test.mjs` checks every rule below, with the Health Check's version 1.4 rules in `tests/scores/m20-health-check.test.mjs`. The old strategic alignment tool's progress scale, Stop Doing hours, the Meeting planner's end time and "N of 5" are fixed in their rebuilds, and written in here then.
 
 ### M20.1 Strategic Alignment Health Check
 
-In plain words: each project is scored on how much it helps the organisation's Critical Success Factors, which gives its strategic importance. Projects are also rated for progress and the resource they need. Important projects that are behind come first in the list of what needs attention.
+In plain words: each project is scored on how much it helps the organisation's Critical Success Factors, which gives its strategic importance, counting the CSFs that matter most more. Projects are also rated for progress and the resource they need. Each Health Check sets its own line for "important". Important projects that are behind come first in the list of what needs attention. The results open with one headline figure and up to three questions, which hold up a mirror of what was rated and never judge (rule 65).
 
 **Ratings, from the person filling it in:**
+- **CSF level (Tim, 28 Oct, 14:27 and 14:40; version 1.4):** for each Critical Success Factor, how much it matters to the objective: 3 Critical, 2 Very important or 1 Important. Very important unless changed. The lowest level is "Important", never "Not important" (Claude; rule 65).
 - **Contribution:** for each project, a score of 0 to 3 against each Critical Success Factor.
 - **Progress:** 1 Embryonic stage, 2 Bad, 3 Fair, 4 Good, 5 Excellent.
 - **Resource required:** 1 Minimal, 2 Low, 3 Moderate, 4 High, 5 Very high.
 
-**Strategic importance (0 to 100%)** = the project's contribution scores added together ÷ (the number of Critical Success Factors × 3) × 100.
-- Only factors still on the list count. A score for a deleted factor is ignored, and the maximum uses the current number of factors.
+**Strategic importance (0 to 100%)** = Σ(contribution × weight) ÷ Σ(3 × weight) × 100, over the Critical Success Factors on the list (version 1.4).
+- **The weights:** Critical counts 1.4, Very important 1.2 and Important 1 (Tim, 28 Oct, 14:40: "important = 100%, v important = 120%, critical = 140%"; first set at 3, 2 and 1 at 14:27). So a Critical CSF counts 40% more than an Important one, and a Very important one 20% more. The code sums with the same weights as whole numbers in the same ratio (7, 6 and 5), so the sums are exact.
+- **Older Health Checks are unchanged:** with every CSF at Very important, every weight is the same and the formula is exactly the one before 1.4, the contribution scores added together ÷ (the number of CSFs × 3) × 100. A CSF with no level saved reads as Very important, so every older Health Check scores as before (tested to the last decimal place).
+- Only factors still on the list count. A score for a deleted factor is ignored, and the maximum uses the current factors and their weights. Removing a CSF removes its weight with it (and Undo puts both back).
 - Kept exact; shown as a whole number (halves up).
 - A project is **rated** once it has at least one contribution score for a current factor. An unrated project shows "Not rated", never 0%, on the page and the PDF alike, and is left out of averages.
 - Example (test case M20-1): "Data platform" scores 0 + 2 + 2 + 3 = 7 against 4 factors, so the maximum is 4 × 3 = 12, and 7 ÷ 12 × 100 = 58.33%, shown as **58%**.
+- Example (test case M20-4, the mock-up's invented results, version 1.4): CSF levels Critical, Very important, Very important, Important, so weights 1.4, 1.2, 1.2 and 1, and the maximum is 3 × 4.8 = 14.4. "Customer success programme" rated High, High, Low, Medium (3, 3, 1, 2): 4.2 + 3.6 + 1.2 + 2 = 11, and 11 ÷ 14.4 × 100 = 76.39%, shown as **76%** (75% unweighted). "New office fit-out" rated None, None, Low, Low: 1.2 + 1 = 2.2, and 2.2 ÷ 14.4 × 100 = 15.28%, shown as **15%** (17% unweighted). Also Pricing review 57% (58% unweighted) and Enterprise sales team 83% (unchanged).
 
 **Most in need of attention** = importance % × (5 − progress) ÷ 4 × (resource + 3) ÷ 8.
 - The progress gap (5 − progress) is 3 for Bad, 2 for Fair, 1 for Good and 0 for Excellent. **Embryonic counts as 2.5** (Tim, 27 Oct, 14:36: below Bad, above Fair; was 4), because a project that has only just started is too early to tell, not furthest behind.
@@ -543,12 +547,16 @@ In plain words: each project is scored on how much it helps the organisation's C
 - **Ranking and tie-break:** highest attention score first; on a tie, the higher importance; then the higher resource (a blank counting as Moderate).
 - Examples (test case M20-2): Data platform (58.33%, Embryonic, Very high) = 58.33 × 2.5 ÷ 4 × 8 ÷ 8 = **36.46** (was 58.33 before 27 Oct). Leadership programme (41.67%, Bad, High) = 41.67 × 3 ÷ 4 × 7 ÷ 8 = **27.34**. Two projects at 50% with Fair progress: with resource Very high, 50 × 2 ÷ 4 × 8 ÷ 8 = 25.00, which ranks above resource Low, 50 × 2 ÷ 4 × 5 ÷ 8 = 15.63.
 
+**The line for important (Tim, 28 Oct, 14:25; version 1.4):** each Health Check sets its own line, 30% to 80% in steps of 10, 50% (suggested) unless changed. A project is **important** when its strategic importance is above the line. Exactly at the line is not above it. A Health Check with no line saved reads as 50%, so every older one is unchanged. Every rule below that says "above the line" uses this line: the four states, too early to tell, the headline and the questions. When two versions of a Health Check are compared, each keeps its own line, and the comparison says so if they differ (Claude).
+
 **Where a project sits on the importance against progress chart:**
 Four states (Tim, 27 Oct, 08:33 and 14:36, after Adie's feedback; was three). How each is drawn changed with M7b version 3 (Tim, 27 Oct, 15:41 to 15:51), so the 26 Oct design rules hold: mint means good, coral is never a data colour, "needs you" is an outline and never a fill, and there is no key on screen. Each state has a fixed name in the code:
-- **Moving well** (`moving_well`): importance above 50% with Good or Excellent progress. A filled mint dot.
-- **Needs managing** (`needs_managing`): importance above 50% with Fair progress. An outline in the text colour. Peach (#FFBD9E) is no longer used.
-- **Needs attention** (`needs_attention`): importance above 50% with Bad progress. A soft coral outline with a second fine ring, never a fill.
-- **Less important, or too early to tell** (`less_important`): 50% or less at any progress, or Embryonic at any importance. A fine grey ring. Exactly 50% is not above the line.
+- **Moving well** (`moving_well`): importance above the line with Good or Excellent progress. A filled mint dot.
+- **Needs managing** (`needs_managing`): importance above the line with Fair progress. An outline in the text colour. Peach (#FFBD9E) is no longer used.
+- **Needs attention** (`needs_attention`): importance above the line with Bad progress. A soft coral outline with a second fine ring, never a fill.
+- **Less important, or too early to tell** (`less_important`): at or below the line at any progress, or Embryonic at any importance. A grey ring. Exactly at the line is not above it. An Embryonic project above the line is **too early to tell**; one at or below it is less important.
+- **Every dot's outline is 1.5px** (Tim, 28 Oct, 14:34); the grey alone shows a dot is below the line.
+- **Dot size shows resource (version 1.4):** Minimal or Low small, Moderate middle, High or Very high large. A blank resource counts as Moderate.
 - Only projects with a progress rating are drawn on the chart.
 - **On screen there is no key** (26 Oct, 11:37): each area is named where it sits (Needs attention, Needs managing and Moving well along the top, Less important at the bottom), and each dot's pop-up gives "Project 3", its name, its state and its figures. **The PDF keeps a key in words** (PDF rules 18 and 21), using the same four names.
 - **Definitions:** each Progress, Contribution and Resource level has one short line shown under its choice on the rating screen and in the PDF's notes (drafted by Claude, edited and approved by Adie Shariff; Tim, 27 Oct).
@@ -557,6 +565,24 @@ Four states (Tim, 27 Oct, 08:33 and 14:36, after Adie's feedback; was three). Ho
 **Project dates (Tim, 27 Oct, 15:43; not scored):** each project can store the month and year it started, the month and year it's due to finish or "Open-ended", and optionally an exact date for either. All are optional. They're saved with the project in the Health Check's answers (no database change), asked one project at a time in the rating steps, and shown under each project's name on the one-pager and in the PDF: "Started Mar 2025", then "Due to finish Jun 2027" or "Open-ended, with no agreed finish date". An exact date shows as "Due to finish 30 Jun 2027". A due month before the start month is refused with a calm line.
 
 **At a glance (PDF):** average strategic importance = the mean of the rated projects' exact importance, rounded; 0% when none is rated. The sentence counts the projects drawn that are moving well, and those that need attention.
+
+**The headline (Tim, 28 Oct, 14:05 and 14:17; version 1.4):** the important projects are every project above the line with a progress rating, including those too early to tell, so the parts always add up to the total.
+- Large: "[moving well] of [important]", for example "2 of 5".
+- Then "important projects are moving well." ("is" when 1 is moving well).
+- Then one line of the rest, in this order, each only when there is one: "1 needs managing, 1 needs attention and 1 is too early to tell." ("need" and "are" for more than one).
+- With none important: "0", then "None of your important projects is under way yet."
+- Example (the mock-up's invented results, line 50%): "2 of 5", "important projects are moving well.", "1 needs managing, 1 needs attention and 1 is too early to tell."
+
+**The questions to start with (Tim, 28 Oct, 14:00 to 15:26; version 1.4):** up to three, the most urgent first, in this order. Each kind is asked about at most once, and a project named once isn't named again. Each reason says what was rated, as a mirror, never that something doesn't matter (rule 65). Dates read as Mon YYYY.
+- **Timing:** a project above the line, with progress Bad or Fair, due to finish within 3 months of the Health Check's month or already past it; the highest in the attention order. An open-ended project, or one with no due month, is never asked about. "Is “[project]” worth a sprint of extra resource to finish by [Mon YYYY], or should its timeline change?" / "You rated its progress [Bad or Fair], and it’s due to finish in 2 months." The months read "this month", "next month", "in N months", or "it was due to finish in [Mon YYYY]" when the month is past. Months are counted between the due month and the Health Check's month, ignoring the day (Claude).
+- **Progress:** the highest-ranked project that needs attention. "What would get “[project]” back on track?" / "You rated its progress Bad, and it’s above your line for important."
+- **Resource:** a rated project with a progress rating, at or below the line, with resource High or Very high; the highest resource first, then the lowest importance, then the first in the list. "Is “[project]” worth the resource it takes?" / "You rated its resource High, and its strategic importance is 15%."
+- **CSF cover:** a CSF that no project rates High; the heavier CSF first, then the first in the list. "What could strongly support “[CSF]”?" / "You didn’t rate any project High for this CSF." That CSF's card says "No project strongly supports this yet."
+- **On track,** only with none of the above: "What will keep your important projects on track?" / "None of them needs action right now."
+- On the example report the reasons say "They" and "their".
+- Example (the mock-up's invented results, line 50%, Oct 2026): Timing, Enterprise sales team (finish by Dec 2026; "You rated its progress Bad, and it’s due to finish in 2 months."); Resource, New office fit-out ("You rated its resource High, and its strategic importance is 15%."); CSF cover, "A team with the right skills in the right roles". Enterprise sales team also needs attention, but it's already named, so there's no Progress question.
+
+**Where they're saved (no database change):** each CSF's level is `level` (1, 2 or 3) on its item in the answers' `csfs` list, and the line is `importantLine` (30 to 80) at the top of the answers (`alignment_sessions.data`, which allows extra keys). None saved reads as Very important and 50%.
 
 **Alignment over time (M19.3; Claude, not in the code yet):** for each version of a team's Health Check, the share of its rated projects (rated, with a progress rating) that are important and moving well.
 
@@ -616,6 +642,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 28 Oct 2026 | The Health Check's results rethink (M20.1; Tim, 28 Oct, 14:00 to 15:26): each CSF is Critical, Very important or Important, weighted 1.4, 1.2 and 1, so strategic importance = Σ(contribution × weight) ÷ Σ(3 × weight) × 100, and every CSF at Very important gives exactly the old figures (test case M20-4); each Health Check sets its own line for important, 30% to 80%, 50% unless changed, used everywhere "above 50%" was; the headline ("2 of 5" important projects moving well, with the rest adding up to the total); up to three questions to start with (Timing, Progress, Resource, CSF cover, or On track); dot size from resource. Older Health Checks score and read as before. |
 | 1.2 (repo) | 27 Oct 2026 | Claude's calls in building 1.2 (migration 033): pulse results also stay private when only 1 or 2 people stayed anonymous beside named answers, and the count shows only once closed (M18); a seat's standard is set to 85 rather than refused, and set when the seat is taken up mid-sprint (M7); the single wellbeing switch moved to each organisation the person was in, which was its reach (M19.4). |
 | 1.2 (repo) | 27 Oct 2026 | M14: the rerun for Tim's "rare but right" answer, with the planted link at 2 swings, and option (3) tried and not adopted (see "The rerun, 27 Oct 2026" below). The threshold stays at 2.6%. No other arithmetic changed. |
 | 1.3 | 27 Oct 2026 | The Health Check's four states keep their rules but get fixed names (Moving well, Needs managing, Needs attention, Less important, or too early to tell) and are drawn to the 26 Oct design rules: mint for Moving well, outlines for the rest, no peach, no coral fill, no key on screen, a key in words in the PDF (Tim, 15:41 to 15:51); project dates saved with each project (Tim, 15:43); the At a glance sentence no longer says "behind" (M20.1). No arithmetic changed. |

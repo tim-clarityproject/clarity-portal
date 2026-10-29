@@ -1,18 +1,19 @@
-// The Health Check's steps (mock-up M7b version 4): Objective, Critical
-// Success Factors, Projects, then for each project Contribution (one factor
-// per screen), When, Progress and Resource required, then the results.
+// The Health Check's steps (mock-up M7b version 46): Objective, Critical
+// Success Factors, CSF weight, Projects, then for each project Contribution
+// (one factor per screen), When, Progress and Resource required, then the
+// results.
 // Pure helpers, no React. The answers use the saved shape from
 // src/pages/alignment/alignmentFlow.js (draftFromData and dataFromDraft).
 //
 // step = { screen, pi, fi, mode }
-//   screen: objective | csf | projects | contrib | when | progress | resource | results
+//   screen: objective | csf | weight | projects | contrib | when | progress | resource | results
 //   pi: project index among the non-blank projects; fi: factor index (contrib)
 //   mode: 'full' (the first run), 'gaps' (after the results: only what's
 //   missing) or 'edit' (one project chosen on the results)
 
 import { cleanItems } from '../pages/alignment/alignmentFlow.js';
 
-export const LIST_SCREENS = ['objective', 'csf', 'projects'];
+export const LIST_SCREENS = ['objective', 'csf', 'weight', 'projects'];
 export const PROJECT_SCREENS = ['contrib', 'when', 'progress', 'resource'];
 const KNOWN = [...LIST_SCREENS, ...PROJECT_SCREENS, 'results'];
 
@@ -52,7 +53,7 @@ export function isMissing(step, draft) {
 export function isValid(step, draft) {
   switch (step.screen) {
     case 'objective': return draft.objective.trim().length > 0;
-    case 'csf': return cleanItems(draft.csfs).length > 0;
+    case 'csf': case 'weight': return cleanItems(draft.csfs).length > 0;
     case 'projects': return cleanItems(draft.projects).length > 0;
     case 'contrib': case 'progress': case 'resource': return !isMissing(step, draft) && !!cleanItems(draft.projects)[step.pi];
     default: return true;
@@ -155,6 +156,7 @@ export function stepFromJson(json, draft, complete = false) {
   if (name === 'results') return at(complete ? 'results' : 'objective');
   const projects = cleanItems(draft.projects);
   const factors = cleanItems(draft.csfs);
+  if (name === 'weight' && !factors.length) return at('csf');
   if (!PROJECT_SCREENS.includes(name)) return at(name);
   if (!projects.length) return at('projects');
   const pi = Math.min(Math.max(Number.isInteger(json.project) ? json.project : 0, 0), projects.length - 1);

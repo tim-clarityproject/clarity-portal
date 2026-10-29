@@ -1,6 +1,7 @@
 /* The outside Strategic Alignment Health Check (health-check.html), imported
    only by src/health-check/main.jsx. Its values are the approved mock-up's
-   (M7b version 4, design reference v3's own CSS): its dark and light tokens,
+   (M7b version 4, design reference v3's own CSS; version 46 for the CSF
+   weight screen and the results): its dark and light tokens,
    type sizes, spacing and radii. The mock-up's phone frame is the layout up to
    640px wide; its desktop frame is the layout above. Everything sits inside
    .hc, which is also a .ui-root. Nekst for titles, buttons and big numbers,
@@ -88,13 +89,9 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 .lead { margin: 12px 0 0; color: var(--t2); max-width: 38.4em; }
 .dur { margin: 10px 0 0; font-size: 15px; color: var(--ph); }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 20px; margin-top: 10px; font-size: 14px; color: var(--t2); }
-.subj { margin-top: 20px; padding: 14px 20px; border-radius: 16px; background: var(--surface); font-size: 18px; line-height: 1.4; color: var(--fg); }
-.subj small { display: block; font-size: 13px; color: var(--ph); margin-bottom: 2px; }
-.subf { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 @media (max-width: 640px) {
   h2.t { font-size: 22px; }
   .qh { font-size: 21px; margin-top: 20px; }
-  .subj { font-size: 17px; }
 }
 
 /* buttons */
@@ -216,6 +213,21 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .opts5 button small { display: block; font-size: 14px; color: var(--t2); margin-top: 2px; line-height: 1.4; }
 .opts5 button:hover, .opts5 button[aria-checked="true"] { border-color: var(--accent); }
 .opts5 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* the CSF weight screen: each CSF, numbered, with three choices; three equal buttons on a phone */
+.wts { margin-top: 22px; display: grid; gap: 4px; }
+.wrow { padding: 14px 0; border-top: 1px solid var(--line2); }
+.wrow:first-child { border-top: 0; padding-top: 0; }
+.wrow p { margin: 0; display: flex; gap: 12px; align-items: baseline; font-size: 16px; }
+.wrow p .n { color: var(--ph); font-size: 13px; min-width: 12px; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0 24px; }
+.seg button { all: unset; cursor: pointer; box-sizing: border-box; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; color: var(--fg); transition: border-color var(--d2) var(--ease); }
+.seg button:hover, .seg button[aria-checked="true"] { border-color: var(--accent); }
+.seg button[aria-checked="true"] { box-shadow: inset 0 0 0 1px var(--accent); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .seg { margin-left: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .seg button { justify-content: center; text-align: center; padding: 6px 8px; font-size: 14px; line-height: 1.25; }
+}
 .bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .bar i { display: block; height: 100%; border-radius: 2px; }
 .dts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
@@ -265,6 +277,8 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .obj1 p { margin: 6px 0 0; font-size: 22px; line-height: 1.35; text-wrap: balance; }
 .csfs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
 .csf { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; padding: 16px; border-radius: 14px; background: var(--surface); font-size: 15px; }
+.csf small.wl { display: block; font-size: 13px; color: var(--ph); margin-bottom: 2px; }
+.csf small.gap { display: block; margin-top: 4px; font-size: 13px; color: var(--soft); }
 .csf i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--g4); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--t2); }
 @media (max-width: 640px) {
   .obj1 p { font-size: 19px; }
@@ -276,11 +290,31 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .chart svg g.dot:focus { outline: none; }
 .chart svg g.dot .hit { fill: transparent; stroke: none; }
 .chart svg g.dot:focus-visible .hit, .chart svg g.dot:hover .hit { stroke: var(--accent); stroke-width: 2; }
+/* pointing at a question about a project lights its dot and fades the others */
+.chart svg g.dot { transition: opacity var(--d2) var(--ease); }
+.chart svg.hl g.dot { opacity: .2; }
+.chart svg.hl g.dot.on { opacity: 1; }
 .chart-empty { margin-top: 18px; font-size: 15px; color: var(--t2); }
-.nxt { margin-top: 16px; font-size: 17px; }
-.nxt + .text { margin-top: 2px; }
-.sortr { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+/* At a glance: the headline on the left, the questions to start with on the right; stacked on a phone */
+.sec.gls { margin-top: 32px; padding-top: 24px; border-top: 0; }
+.gl { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 40px; margin-top: 20px; }
+.gst b { display: block; font-weight: 300; font-size: 56px; line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.gst p { margin: 12px 0 0; font-size: 17px; }
+.gst p.sub { margin-top: 6px; font-size: 15px; color: var(--t2); }
+.mvs .fl { margin: 0 0 12px; }
+/* no number circles: each question names its project or CSF (Tim, 28 Oct, 14:41) */
+.mv { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; padding: 14px 0; border-top: 1px solid var(--line2); }
+.mv.main { border-top: 0; padding-top: 0; }
+.mv small { display: block; font-size: 13px; color: var(--ph); }
+.mv p { margin: 2px 0 0; }
+/* every question the same size; the first is first, nothing louder (Tim, 28 Oct, 14:32) */
+.mv .nxt, .mv .mvt { margin-top: 2px; font-size: 17px; line-height: 1.4; text-wrap: pretty; }
+.mv .why { margin-top: 4px; font-size: 14px; color: var(--t2); }
+@media (max-width: 640px) { .gl { grid-template-columns: 1fr; gap: 28px; } }
+.sortr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 18px; }
 .sortr .fl { margin: 0; white-space: nowrap; }
+/* At a large text size the drop-down moves under its label instead of running off a phone's edge. */
+.sortr .ddw { min-width: 0; max-width: 100%; }
 .ptab { margin-top: 12px; border-top: 1px solid var(--line2); }
 .pr { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr) 170px 100px 140px; gap: 12px; align-items: center; min-height: 56px; padding: 10px 0; border-bottom: 1px solid var(--line2); font-size: 15px; }
 .pr:hover .pt > b, .pr:focus-visible .pt > b { color: var(--accent); }
@@ -304,6 +338,8 @@ svg.ic .f { fill: currentColor; stroke: none; }
   .pr { grid-template-columns: 34px minmax(0, 1fr); gap: 6px 12px; }
   .pr .pm { display: none; }
   .pr.h { display: none; }
+  /* on a phone each row is the name and its state; the dates stay on the desktop list and in the PDF (Tim, 28 Oct, 09:45) */
+  .pst span + span { display: none; }
 }
 .kp { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
 .kc { padding: 20px; border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 14px; }
@@ -390,7 +426,7 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .pb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (max-width: 640px) { .vp.vpi { width: 100%; max-width: none; margin-left: 0; margin-right: 0; } }
 .vpi { position: relative; left: auto; top: auto; transform: none; width: auto; margin-top: 22px; border-radius: 16px; animation: none; z-index: auto; }
-.bigplay { all: unset; cursor: pointer; position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 0 24px; text-align: center; background: var(--scrim2); }
+.bigplay { all: unset; cursor: pointer; position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 0 24px; text-align: center; background: var(--bg); } /* solid, so nothing shows half through (Tim, 28 Oct, 15:27) */
 .bigplay .bpc { width: 64px; height: 64px; border-radius: 50%; background: var(--coral-fill); display: flex; align-items: center; justify-content: center; margin-bottom: 6px; transition: background-color var(--d2) var(--ease); }
 .bigplay:hover .bpc { background: var(--coral-hover); }
 .bigplay .bpc svg { width: 22px; height: 22px; fill: #000; margin-left: 3px; }

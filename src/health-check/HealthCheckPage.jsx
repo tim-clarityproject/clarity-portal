@@ -3,16 +3,17 @@ import { useParams } from 'react-router-dom';
 import { openSession, createSaveQueue, readBackup, clearBackup, SAVE_REFUSED } from '../lib/alignmentApi';
 import { loadWithReload } from '../lib/loadWithReload';
 import { requestAlignmentEmail } from '../lib/alignmentEmail';
-import { formatClockTime, formatDocDate, parseDbTimestamp } from '../lib/dateFormatter';
+import { formatClockTime, formatDocDate, getLocalDateKey, parseDbTimestamp } from '../lib/dateFormatter';
 import { projectDates } from '../lib/projectDates';
 import {
   MAX_FACTORS, MAX_PROJECTS, MAX_OBJECTIVE, MAX_ITEM,
   blankRow, cleanItems, emptyDraft, draftFromData, dataFromDraft, setProjectDates,
 } from '../pages/alignment/alignmentFlow';
 import { at, clampStep, isLast, isValid, nextStep, percent, prevStep, stepFromJson, stepToJson, hasGaps } from './flow';
-import { CON, PROG, READING, RES, howLines } from './words';
+import { CON, CSF_LEVELS, PROG, READING, RES, csfLevel, howItWorks } from './words';
+import { m20ImportantLine, m20WithCsfLevel, m20WithImportantLine } from '../lib/scores/m20.js';
 import {
-  BoldCross, Chev, Choices, CodeBoxes, Dropdown, GrowBox, IconRow, InfoButton, PctBar, Rows, SaveLine, Sheet, TipProvider, Toast, cleanCode, useIsPhone,
+  BoldCross, Chev, Choices, CodeBoxes, Dropdown, GrowBox, IconRow, InfoButton, PctBar, Rows, SaveLine, Seg, Sheet, TipProvider, Toast, cleanCode, useIsPhone,
 } from './parts';
 import Results from './Results';
 import { EXAMPLE } from './example';
@@ -20,7 +21,7 @@ import { GuideCard, GuidePanel, readWatched } from './QuickGuide';
 import { ReadingPanel } from './Reading';
 
 // The outside Strategic Alignment Health Check, built to the approved mock-up
-// (M7b version 4). Its answers, saving, backup and emails use the same code
+// (M7b version 46). Its answers, saving, backup and emails use the same code
 // and database functions as before (src/lib/alignmentApi.js and friends).
 
 const SITE = 'https://theclarityproject.co.uk';
@@ -466,12 +467,19 @@ function Page() {
       <p className="nudge rv" style={{ '--i': 1 }}>{nudge}</p>
     </>
   );
-  const subject = () => (
-    <div className="subj rv" style={{ '--i': 2 }}>
-      <small>Project {step.pi + 1} of {projects.length}</small>
-      {project?.text}
-    </div>
+  // A question about one project names it, with "Project 4 of 7" small above
+  // it and no panel repeating the name (rule 64; Tim, 28 Oct, 14:11).
+  const counter = `Project ${step.pi + 1} of ${projects.length}`;
+  const projectHead = (before, after, nudge) => (
+    <>
+      <PctBar pct={percent(step, draft)} />
+      <IconRow coach={coach} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
+      <p className="cnt2 rv" style={{ '--i': 1 }}><span>{counter}</span></p>
+      <h2 className="qh rv" style={{ '--i': 1 }}>{before}“<bdi>{project?.text}</bdi>”{after}</h2>
+      <p className="nudge rv" style={{ '--i': 1 }}>{nudge}</p>
+    </>
   );
+  const projectLabel = (before, after) => `${before}“${project?.text}”${after} ${counter}.`;
 
   let body = null;
   let wide = false;
@@ -537,7 +545,7 @@ function Page() {
           <p>It’s backed by private equity and is 2 years into a plan to double in size.</p>
           <p>Its leadership team rated 8 projects against 5 Critical Success Factors (CSFs).</p>
         </div>
-        <Results draft={EXAMPLE.draft} theirs phone={phone} sort={sort} onSort={setSort}
+        <Results draft={EXAMPLE.draft} asOf={EXAMPLE.asOf} theirs phone={phone} sort={sort} onSort={setSort}
           onExampleEdit={() => showToast('The example can’t be changed, so start your own to rate your projects.')} />
         <div className="acts"><button type="button" className="btn" onClick={() => { setPhase('welcome'); window.scrollTo(0, 0); }}>Start my Health Check</button></div>
       </>
@@ -562,6 +570,23 @@ function Page() {
           <span className="fl">Critical Success Factors (CSFs)<InfoButton label="What is a Critical Success Factor?" lines={[{ bold: 'What is a Critical Success Factor (CSF)?' }, { line: 'It’s one of the few things that must go right for you to reach your objective.' }]} /></span>
           <Rows kind="csf" rows={draft.csfs} placeholder="e.g. Win enterprise customers in the US" label="Critical Success Factor" max={MAX_FACTORS} maxItem={MAX_ITEM}
             addLabel="Add a CSF" onChange={(id, v) => changeRow('csf', id, v)} onAdd={() => addRow('csf')} onRemove={(id) => removeRow('csf', id)} />
+        </div>
+      </>
+    );
+  } else if (step.screen === 'weight') {
+    // Not every CSF matters equally: each is Critical, Very important or
+    // Important, Very important unless changed (Tim, 28 Oct, 14:27). Saved as you go.
+    body = (
+      <>
+        {head('How much does each Critical Success Factor (CSF) matter to your objective?', 'Choose Critical for the one or two that matter most.')}
+        <div className="wts rv" style={{ '--i': 2 }}>
+          {factors.map((f, i) => (
+            <div className="wrow" key={f.id}>
+              <p><span className="n" aria-hidden="true">{i + 1}</span><bdi>{f.text}</bdi></p>
+              <Seg label={f.text} value={csfLevel(f)} options={CSF_LEVELS.map((l) => ({ value: l.level, label: l.name }))}
+                onPick={(level) => edit(m20WithCsfLevel(draftRef.current, f.id, level), true)} />
+            </div>
+          ))}
         </div>
       </>
     );
@@ -607,8 +632,7 @@ function Page() {
     };
     body = (
       <>
-        {head('When did this project start, and when is it due to finish?', 'Choose a month for each.')}
-        {subject()}
+        {projectHead('When did ', ' start, and when is it due to finish?', 'Choose a month for each.')}
         <div className="dts rv" style={{ '--i': 3 }}>
           <div>
             <span className="fl" id="hc-started">Started</span>
@@ -634,28 +658,29 @@ function Page() {
   } else if (step.screen === 'progress') {
     body = (
       <>
-        {head('How far along is this project?', 'Choose the one that fits best.')}
-        {subject()}
-        <Choices key={`p${step.pi}`} options={PROG.slice(1)} start={1} value={rating.progress} label="Progress" style={{ '--i': 3 }} focusFirst={focusChoices} onPick={(v) => setRating(() => ({ progress: v }))} />
+        {projectHead('How far along is ', '?', 'Choose the one that fits best.')}
+        <Choices key={`p${step.pi}`} options={PROG.slice(1)} start={1} value={rating.progress} label={projectLabel('How far along is ', '?')} style={{ '--i': 3 }} focusFirst={focusChoices} onPick={(v) => setRating(() => ({ progress: v }))} />
       </>
     );
   } else if (step.screen === 'resource') {
     body = (
       <>
-        {head('How much resource will this project need?', 'Count time, people, money and technology.')}
-        {subject()}
-        <Choices key={`r${step.pi}`} options={RES.slice(1)} start={1} value={rating.resource} label="Resource required" style={{ '--i': 3 }} onPick={(v) => setRating(() => ({ resource: v }))} />
+        {projectHead('How much resource does ', ' need?', 'Consider time, people, money and technology.')}
+        <Choices key={`r${step.pi}`} options={RES.slice(1)} start={1} value={rating.resource} label={projectLabel('How much resource does ', ' need?')} style={{ '--i': 3 }} onPick={(v) => setRating(() => ({ resource: v }))} />
       </>
     );
   } else if (step.screen === 'results') {
     wide = true;
     const done = serverCompletedAt || draft.completedAt;
+    const todayKey = getLocalDateKey();
     body = (
       <>
         <h2 className="t rv">Strategic Alignment Health Check</h2>
         <div className="meta rv" style={{ '--i': 1 }}>{organisation && <span>{organisation}</span>}{done && <span>{shortDate(done)}</span>}</div>
-        <IconRow coach={coach} style={{ '--i': 1 }} onWho={() => setPanel('who')} onHow={() => setPanel('how')} onGuide={() => setPanel('guide')} />
-        <Results draft={draft} phone={phone} sort={sort} onSort={setSort}
+        <IconRow coach={coach} style={{ '--i': 1 }} onWho={() => setPanel('who')} how={howItWorks(m20ImportantLine(draft))} onGuide={() => setPanel('guide')} />
+        {/* The Timing question counts months from the completed date, or today. */}
+        <Results draft={draft} asOf={done ? parseDbTimestamp(done) : todayKey} phone={phone} sort={sort} onSort={setSort}
+          onLine={(line) => edit(m20WithImportantLine(draftRef.current, line), true)}
           onChange={(screen) => go(at(screen))}
           onEditProject={(id) => {
             const pi = cleanItems(draftRef.current.projects).findIndex((p) => p.id === id);
@@ -733,11 +758,6 @@ function Page() {
           <div className="wsr"><span>You and {coach}</span></div>
           <p>Your answers are shared with {coach}, who sent you this link.</p>
           <p>Nobody else can see them.</p>
-        </Sheet>
-      )}
-      {panel === 'how' && (
-        <Sheet title="How it works" onClose={() => setPanel(null)}>
-          {howLines(factors.length).slice(1).map((l) => <p key={l.line}>{l.line}</p>)}
         </Sheet>
       )}
       {panel === 'guide' && <GuidePanel onClose={() => setPanel(null)} />}

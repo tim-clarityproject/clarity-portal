@@ -1,9 +1,13 @@
-// The Health Check's words (mock-up M7b version 4), and its results worked
-// out from src/lib/alignmentScore.js. Definitions are Claude's drafts, for
-// Adie to edit.
+// The Health Check's words (mock-up M7b version 46), and its results worked
+// out from src/lib/scores/m20.js (methods M20.1, version 1.4). Definitions are
+// Claude's drafts, for Adie to edit.
 
 import { cleanItems } from '../pages/alignment/alignmentFlow.js';
-import { healthCheckState, rankProjects, roundPct } from '../lib/alignmentScore.js';
+import { roundPct } from '../lib/alignmentScore.js';
+import {
+  M20_CSF_LEVELS, M20_LINE_CHOICES, M20_IMPORTANCE_LINE, m20CsfLevel, m20CsfLevelName, m20CsfsWithoutHigh, m20DotSize, m20Headline,
+  m20ImportantLine, m20IsTooEarly, m20Questions, m20RankProjects, m20State,
+} from '../lib/scores/m20.js';
 import { projectDatesText } from '../lib/projectDates.js';
 
 export const CON = [
@@ -39,13 +43,13 @@ export const SORTS = [
 /** The drawing class for each state: mint filled, an outline, a soft coral double ring, a grey ring. */
 const Q = { moving_well: 'mi', needs_managing: 'pe', needs_attention: 'co', less_important: '' };
 
-/** The ranked rows the results, the chart and the PDF draw from. */
+/** The ranked rows the results, the chart and the PDF draw from, against the Health Check's own line. */
 export function resultRows(draft) {
   const factors = cleanItems(draft.csfs);
   const projects = cleanItems(draft.projects);
-  return rankProjects(projects, factors, draft.ratings).map((r, i) => {
-    const state = healthCheckState(r.progress, r.importance);
-    const early = r.progress === 1 && r.importance > 50;
+  const line = m20ImportantLine(draft);
+  return m20RankProjects(projects, factors, draft.ratings).map((r, i) => {
+    const state = m20State(r.progress, r.importance, line);
     return {
       n: i + 1,
       id: r.project.id,
@@ -56,12 +60,45 @@ export function resultRows(draft) {
       rated: r.rated,
       progress: r.progress,
       resource: r.resource,
+      contrib: r.contrib,
+      index: r.index,
+      line,
       state,
       q: Q[state] ?? '',
-      early,
+      early: m20IsTooEarly(r.progress, r.importance, line),
+      size: m20DotSize(r.resource),
       dates: projectDatesText(r.project),
     };
   });
+}
+
+/** The CSF levels, most first: Critical, Very important, Important. */
+export const CSF_LEVELS = M20_CSF_LEVELS;
+export const csfLevel = m20CsfLevel;
+export const csfLevelName = m20CsfLevelName;
+
+/** The choices for "Important means above", 50% suggested. */
+export const LINE_OPTIONS = M20_LINE_CHOICES.map((v) => ({ value: v, label: `${v}%${v === M20_IMPORTANCE_LINE ? ', suggested' : ''}` }));
+
+/**
+ * Everything the results page shows, worked out once: the rows, the line, the
+ * headline, the questions to start with and the CSFs no project rates High.
+ * @param {Object} draft the answers
+ * @param {{asOf?: string|Date, theirs?: boolean}} [opts] asOf: the Health
+ *   Check's date (the completed date, or today), for the Timing question
+ */
+export function resultsModel(draft, { asOf, theirs = false } = {}) {
+  const factors = cleanItems(draft.csfs);
+  const rows = resultRows(draft);
+  const line = m20ImportantLine(draft);
+  return {
+    rows,
+    factors,
+    line,
+    headline: m20Headline(rows, { line, theirs }),
+    questions: m20Questions(rows, factors, { line, asOf, theirs }),
+    gaps: m20CsfsWithoutHigh(rows, factors),
+  };
 }
 
 /** The state in a word or two, for the project list. */
@@ -82,27 +119,43 @@ export function stateSentence(row) {
   return row.early ? 'It’s important, but it’s too early to tell.' : 'It’s less important to the objective.';
 }
 
-/** The line counting the important projects. */
-export function countLine(rows, theirs = false) {
-  const c = { mi: 0, pe: 0, co: 0 };
-  rows.forEach((r) => { if (r.progress != null && c[r.q] != null) c[r.q] += 1; });
-  const a = [];
-  if (c.mi) a.push(`${c.mi} ${c.mi === 1 ? 'is' : 'are'} moving well`);
-  if (c.pe) a.push(`${c.pe} ${c.pe === 1 ? 'needs' : 'need'} managing`);
-  if (c.co) a.push(`${c.co} ${c.co === 1 ? 'needs' : 'need'} attention`);
-  const whose = theirs ? 'their' : 'your';
-  if (!a.length) return `None of ${whose} important projects is under way yet.`;
-  return `Of ${whose} important projects, ${a.length === 1 ? a[0] : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`}.`;
+/**
+ * The headline as one or two sentences, for the PDF's chart and the
+ * completion email: "2 of 5 important projects are moving well. 1 needs
+ * managing and 2 need attention.", or "None of your important projects is
+ * under way yet."
+ * @param {ReturnType<typeof m20Headline>} headline
+ */
+export function headlineSentence(headline) {
+  if (!headline.important) return headline.line;
+  return [`${headline.big} ${headline.line}`, headline.rest].filter(Boolean).join(' ');
 }
 
-/** How the figures are worked out, as pop-up lines. */
-export function howLines(nf, theirs = false) {
+/** How it works, at the top of the results: the word, then its meaning (Tim, 28 Oct, 14:21). */
+export function howItWorks(line) {
   return [
-    { bold: 'How it’s worked out' },
-    { line: `Strategic importance is how much a project contributes across all ${theirs ? 'their' : 'your'} CSFs.` },
-    { line: `It adds up the contribution scores and shows them as a share of the highest possible score, ${nf * 3} for ${nf} CSF${nf === 1 ? '' : 's'}.` },
-    { line: 'Most in need of attention ranks important projects higher when their progress is weaker and they need more resource.' },
-    { line: 'A project at the Embryonic stage ranks between Bad and Fair, because it’s too early to tell.' },
+    { bold: 'How it works' },
+    { term: 'Strategic importance', meaning: 'How much a project helps the CSFs, counting the ones that matter most more, out of 100%.' },
+    { term: 'Important', meaning: `A project above the line you set, which is now ${line}%.` },
+    { term: 'Most in need of attention', meaning: 'Important projects that are behind and require more resource come first.' },
+    { term: 'Too early to tell', meaning: 'A project at the Embryonic stage.' },
+    { term: 'Bigger dots', meaning: 'Projects that require more resource.' },
+  ];
+}
+
+/** The ⓘ beside the list's order line explains only that order (Tim, 28 Oct, 14:37). */
+export const ORDER_LINES = [
+  { bold: 'Most in need of attention' },
+  { line: 'Important projects that are behind and require more resource come first.' },
+];
+
+/** The ⓘ on the "Strategic importance" column heading (Tim, 28 Oct, 14:37 and 14:40). */
+export function importanceLines(theirs = false) {
+  return [
+    { bold: 'Strategic importance' },
+    { line: `How much a project helps ${theirs ? 'their' : 'your'} CSFs, out of 100%.` },
+    { line: 'High on every CSF scores 100%.' },
+    { line: 'A Critical CSF counts 40% more than an Important one, and a Very important one 20% more.' },
   ];
 }
 

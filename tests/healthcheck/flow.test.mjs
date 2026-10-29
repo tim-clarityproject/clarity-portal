@@ -1,7 +1,7 @@
 // The new page's steps (src/health-check/flow.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { at, nextStep, percent, stepFromJson } from '../../src/health-check/flow.js';
+import { at, isValid, nextStep, percent, prevStep, sequence, stepFromJson, stepToJson } from '../../src/health-check/flow.js';
 
 const draft = (contribFor, extra = {}) => ({
   objective: 'Grow',
@@ -57,4 +57,34 @@ test('the % complete counts each CSF and reaches 100 only on the results', () =>
   assert.ok(percent(at('contrib', { pi: 0, fi: 1 }), d) > percent(at('contrib', { pi: 0, fi: 0 }), d));
   assert.ok(percent(at('resource', { pi: 1 }), d) < 100);
   assert.equal(percent(at('results'), d), 100);
+});
+
+// Health Check 3 (mock-up version 46): the CSF weight screen comes after the CSFs.
+test('the CSF weight screen sits between the CSFs and the projects, both ways', () => {
+  const d = draft(() => ({}));
+  assert.deepEqual(sequence(d).slice(0, 5).map((s) => s.screen), ['objective', 'csf', 'weight', 'projects', 'contrib']);
+  assert.equal(nextStep(at('csf'), d, false).screen, 'weight');
+  assert.equal(nextStep(at('weight'), d, false).screen, 'projects');
+  assert.equal(prevStep(at('projects'), d).screen, 'weight');
+  assert.equal(prevStep(at('weight'), d).screen, 'csf');
+  // After the results, Change on the CSFs still passes through the weights.
+  assert.equal(nextStep(at('csf'), d, true).screen, 'weight');
+});
+
+test('the % complete counts the weight screen, as the mock-up does', () => {
+  const d = draft(() => ({}));
+  // 2 projects, 2 CSFs: 4 list screens and 5 a project (mock-up pctNow: 4 + (nf + 3) x n).
+  const total = 4 + (2 + 3) * 2;
+  assert.equal(percent(at('weight'), d), Math.round((2 / total) * 100));
+  assert.equal(percent(at('projects'), d), Math.round((3 / total) * 100));
+  assert.ok(percent(at('weight'), d) > percent(at('csf'), d));
+});
+
+test('a saved weight step opens there, or on the CSFs when there are none', () => {
+  const d = draft(() => ({}));
+  assert.deepEqual(stepFromJson({ screen: 'weight' }, d), at('weight'));
+  assert.deepEqual(stepToJson(at('weight')), { screen: 'weight' });
+  assert.equal(stepFromJson({ screen: 'weight' }, { ...d, csfs: [] }).screen, 'csf');
+  assert.equal(isValid(at('weight'), d), true);
+  assert.equal(isValid(at('weight'), { ...d, csfs: [] }), false);
 });

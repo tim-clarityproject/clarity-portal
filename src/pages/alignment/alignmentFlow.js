@@ -1,8 +1,12 @@
 // Strategic Alignment Health Check: pure helpers (no React, no network).
 // The page keeps ONE draft of the answers; screens only read and write it.
 //
-// draft  = { objective, csfs: [{id, text}], projects: [{id, text, ...dates}], ratings }
+// draft  = { objective, csfs: [{id, text, level?}], projects: [{id, text, ...dates}], ratings, importantLine }
 //          dates: started, startedOn, due, dueOn, all optional (src/lib/projectDates.js)
+//          level: a CSF's level, 3 Critical, 2 Very important, 1 Important;
+//          none saved reads as 2 (csfLevel in src/lib/alignmentScore.js)
+//          importantLine: the line for important, 30 to 80, or null when none
+//          is saved, which reads as 50 (importantLine in alignmentScore.js)
 //          rows may be blank while typing; ratings = ratings.owner of the saved
 //          data: { [projectId]: { contrib: {[csfId]: 0..3}, progress, resource } }
 // step   = { screen, pi, mode, highlight }
@@ -17,6 +21,7 @@
 //                 (kind 1 = all three screens, 0 = Contribution only)
 
 import { DATE_FIELDS, checkProjectDates, projectDates } from '../../lib/projectDates.js';
+import { LINE_CHOICES } from '../../lib/alignmentScore.js';
 
 export const OWNER = 'owner';
 export const MAX_FACTORS = 12;
@@ -49,14 +54,21 @@ function padRows(rows) {
   return out;
 }
 
+/** A CSF's saved level, kept only when it is 1, 2 or 3. */
+const keptLevel = (item) => ([1, 2, 3].includes(item.level) ? { level: item.level } : {});
+
+/** The saved line for important, kept only when it is one of the choices. */
+const keptLine = (value) => (LINE_CHOICES.includes(value) ? value : null);
+
 /**
  * Non-blank rows only, text trimmed. These are the real items. A project's
- * valid dates are kept; anything else on an item is dropped.
+ * valid dates and a CSF's valid level are kept; anything else on an item is
+ * dropped.
  */
 export function cleanItems(rows) {
   return rows
     .filter((r) => r.text.trim())
-    .map((r) => ({ id: r.id, text: r.text.trim(), ...projectDates(r) }));
+    .map((r) => ({ id: r.id, text: r.text.trim(), ...projectDates(r), ...keptLevel(r) }));
 }
 
 /**
@@ -84,6 +96,7 @@ export function emptyDraft() {
     csfs: padRows([]),
     projects: padRows([]),
     ratings: {},
+    importantLine: null,
     completedAt: null,
   };
 }
@@ -94,7 +107,7 @@ export function draftFromData(data) {
   // A damaged item (not an object) is skipped rather than stopping the page.
   const items = (list) => (Array.isArray(list)
     ? list.filter((i) => i && typeof i === 'object')
-      .map((i) => ({ id: String(i.id), text: String(i.text ?? ''), ...projectDates(i) }))
+      .map((i) => ({ id: String(i.id), text: String(i.text ?? ''), ...projectDates(i), ...keptLevel(i) }))
     : []);
   const owner = d.ratings?.[OWNER] || {};
   const ratings = {};
@@ -107,6 +120,7 @@ export function draftFromData(data) {
     csfs: padRows(items(d.csfs)),
     projects: padRows(items(d.projects)),
     ratings,
+    importantLine: keptLine(d.importantLine),
     // When the Health Check was first completed (kept in the answers: the
     // open/save functions do not return completed_at).
     completedAt: typeof d.completedAt === 'string' ? d.completedAt : null,
@@ -140,6 +154,7 @@ export function dataFromDraft(draft) {
     csfs,
     projects,
     ratings: { [OWNER]: owner },
+    ...(keptLine(draft.importantLine) != null ? { importantLine: draft.importantLine } : {}),
     ...(draft.completedAt ? { completedAt: draft.completedAt } : {}),
   };
 }
