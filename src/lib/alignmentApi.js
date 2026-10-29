@@ -19,11 +19,18 @@ export const SAVE_REFUSED = 'Your latest answers weren’t saved. Open your Heal
 /**
  * @typedef {Object} AlignmentData
  * @property {string} [objective]
- * @property {{id: string, text: string}[]} [csfs]
+ * @property {{id: string, text: string, level?: 1|2|3}[]} [csfs]
+ *   level: how much the CSF matters to the objective, 3 Critical, 2 Very
+ *   important, 1 Important; none saved reads as 2 (csfLevel and withCsfLevel
+ *   in src/lib/alignmentScore.js, methods M20.1, version 1.4).
  * @property {{id: string, text: string, started?: string, startedOn?: string, due?: string, dueOn?: string}[]} [projects]
  *   Project dates are optional (src/lib/projectDates.js).
  * @property {Object<string, Object<string, {contrib?: Object<string, number>, progress?: number, resource?: number}>>} [ratings]
  *   Keyed rater -> project id -> ratings. Rater key is "owner" for now.
+ * @property {30|40|50|60|70|80} [importantLine] The line for "important": a project is
+ *   important when its strategic importance is above it. None saved reads as 50
+ *   (importantLine and withImportantLine in src/lib/alignmentScore.js). Kept at
+ *   the top of the answers, never inside ratings, whose every key is a rater.
  */
 
 /**
