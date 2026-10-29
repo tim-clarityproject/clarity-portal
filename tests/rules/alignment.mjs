@@ -32,7 +32,7 @@ export const ALIGNMENT_FUNCTIONS = [
   fn('alignment_recipients(text)', "public.alignment_recipients('no-such-link')", NOBODY,
     'The email server only (service role): who gets which email (036).'),
   fn('_alignment_coach_id(text)', 'public._alignment_coach_id(null)', NOBODY,
-    'Inside part of making a Health Check link (036).'),
+    'Inside part of making a Health Check link (036; 037: only a real coach, and only the owner for another coach).'),
 ];
 
 const s = (name, steps, expect) => ({ name, steps: steps.map(([as, sql]) => ({ as, sql })), expect, needs: 'public.alignment_coach_answers(text)' });
