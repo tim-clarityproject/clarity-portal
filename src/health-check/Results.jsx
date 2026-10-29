@@ -5,7 +5,7 @@ import {
   LINE_OPTIONS, ORDER_LINES, PROGS, RES, SORTS, csfLevel, csfLevelName, importanceLines, resultsModel, sortRows, stateWords,
 } from './words';
 
-// The one-pager (mock-up M7b version 46): the objective, At a glance (the
+// The one-pager (mock-up M7b version 47): the objective, At a glance (the
 // headline and the questions to start with), the chart with the line for
 // important, the Critical Success Factors with their levels, and the project
 // list. Shared by the person's own results and the read-only example report.
@@ -142,7 +142,7 @@ export default function Results({ draft, asOf, theirs = false, phone, sort, onSo
         <div className="ptab">
           <div className="pr h">
             <span /><span>Project</span>
-            <span>Strategic importance<InfoButton lines={importanceLines(theirs)} label="What strategic importance means" /></span>
+            <span>Strategic importance<InfoButton lines={importanceLines()} label="What strategic importance means" /></span>
             <span>Progress</span><span>Resource required</span>
           </div>
           {listed.map((row) => (

@@ -1,10 +1,14 @@
-// Health Check 3, part 5: every changed Health Check screen measured against
-// the approved mock-up (M7b version 46), in the running app with the real
-// fonts. Same idea as feature's tests/phase2/compare.mjs.
+// Health Check 4 (was Health Check 3's compare-v46): every changed Health
+// Check screen measured against the approved mock-up (M7b version 47), in the
+// running app with the real fonts. Same idea as feature's
+// tests/phase2/compare.mjs. Version 47 adds the style facts (type sizes,
+// drop-down and box heights, the weight choices, the footer button, the
+// headline's font, toasts) and the coral hover in each mode.
 //
-//   node tests/healthcheck/compare-v46.mjs [folder]
+//   node tests/healthcheck/compare-v47.mjs [folder]
 //   APP_URL=http://localhost:5174 (default)  MOCKUP=<path to the mock-up>
-//   ONLY=<regex on the screen id>  SHOTS=0 (no screenshots)
+//   ONLY=<regex on the screen id>  SHOTS=0 (no screenshots)  WIDTHS=1280,360
+//   TEXT2X=1 (the text at twice the size: read only the sideways and tap checks)
 //
 // The app is the outside Health Check (health-check.html) on the dev server.
 // Its two database calls are answered here with the mock-up's own invented
@@ -46,9 +50,9 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 const APP = process.env.APP_URL || 'http://localhost:5174';
-const MOCK = process.env.MOCKUP || join(homedir(), 'Downloads', 'clarity-health-check-3', 'm7b-health-check-mockup-v46.html');
+const MOCK = process.env.MOCKUP || join(homedir(), 'Downloads', 'clarity-health-check-4', 'm7b-v47.html');
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
-const out = process.argv[2] || join(process.cwd(), 'tmp-compare-v46');
+const out = process.argv[2] || join(process.cwd(), 'tmp-compare-v47');
 const SHOTS = process.env.SHOTS !== '0';
 const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 mkdirSync(out, { recursive: true });
@@ -61,7 +65,7 @@ const pass = (name, ok, detail = '') => {
 };
 
 // ------------------------------------------------------------ the invented answers
-// The mock-up's own (OWN in version 46): Kestrel Group, 4 CSFs weighted
+// The mock-up's own (OWN in versions 46 and 47): Kestrel Group, 4 CSFs weighted
 // Critical, Very important, Very important, Important, and 7 projects.
 const CSF = ['Win and keep enterprise clients', 'A product customers recommend', 'A team with the right skills in the right roles', 'Cash to invest ahead of growth'];
 const PR = [
@@ -90,9 +94,8 @@ const BANNED = [
 const JUDGING = ['unimportant', 'not important', 'no value', 'of no value', 'waste', 'wasted', 'worthless', 'pointless', 'you should', 'you must', 'stop doing'];
 const LABELS = ['Timing', 'Progress', 'Resource', 'CSF cover', 'On track'];
 // Wording the brief gives word for word, kept although a rule would word it
-// differently: "behind" (writing rule 5 keeps it from clients) is in Tim's
-// own line for the order (brief, Part 2.3, and the mock-up's How it works).
-const APPROVED = ['Important projects that are behind and require more resource come first.'];
+// differently. Version 47 took "behind" out of the order line, so none is left.
+const APPROVED = [];
 
 /** Runs in the page: side 'app' measures the Health Check page, side 'mock' one mock-up frame. */
 function measure({ side, frame, BANNED, JUDGING, LABELS, APPROVED, scope, projectName }) {
@@ -308,6 +311,41 @@ function measure({ side, frame, BANNED, JUDGING, LABELS, APPROVED, scope, projec
     const a = bg.startsWith('rgba') ? Number(bg.split(',')[3]) : 1;
     layout.watchPanel = a >= 0.999 ? 'solid' : `see-through (${bg})`;
   }
+  // Style facts (version 47): type sizes, box heights, the weight choices,
+  // the footer button, the headline's font and the toast, as this side draws them.
+  const styleOf = (sel, props) => {
+    // never inside the mock-up's Quick guide scenes, which draw whole screens in miniature
+    const el = [...root.querySelectorAll(sel)].find((x) => vis(x) && !x.closest('.stg'));
+    if (!el) return undefined;
+    const cs = getComputedStyle(el);
+    const o = {};
+    for (const p of props) {
+      if (p === 'fontFamily') o[p] = cs.fontFamily.split(',')[0].replace(/["']/g, '').trim();
+      else if (p === 'height') o[p] = Math.round(el.getBoundingClientRect().height * 2) / 2;
+      else if (p === 'lines') {
+        const sp = el.querySelector('span') || el;
+        const lh = parseFloat(getComputedStyle(sp).lineHeight) || parseFloat(getComputedStyle(sp).fontSize) * 1.2;
+        o[p] = Math.round(sp.getBoundingClientRect().height / lh);
+      } else o[p] = cs[p];
+    }
+    return o;
+  };
+  const facts = {
+    title: styleOf('h2.t', ['fontSize', 'lineHeight', 'fontFamily']),
+    question: styleOf('.qh', ['fontSize', 'lineHeight']),
+    // its box, by min-height: on a phone the mock-up's row squeezes the box until its words wrap,
+    // where the app's row moves the box under its label instead and keeps it on one line
+    smallDropDown: styleOf('.dd.sm', ['minHeight', 'fontSize', 'paddingLeft', 'columnGap']),
+    weightDropDown: styleOf('.wrow .dd', ['height', 'fontSize', 'paddingLeft']),
+    listBox: styleOf('.srow textarea', ['minHeight', 'fontSize', 'paddingLeft', 'paddingTop']),
+    removeCross: styleOf('.rm .x', ['width', 'backgroundColor']),
+    weightChosen: styleOf('.seg button[aria-checked="true"]', ['borderTopWidth', 'borderTopColor', 'boxShadow', 'color']),
+    weightOther: styleOf('.seg button[aria-checked="false"]', ['borderTopWidth', 'color']),
+    headline: styleOf('.gst b', ['fontFamily', 'fontWeight', 'fontSize']),
+    footerButton: styleOf('.ft .btn', ['paddingLeft', 'paddingRight', 'letterSpacing']),
+    toast: styleOf('.toast', ['height', 'lines', 'borderTopLeftRadius', 'fontSize']),
+  };
+  for (const [k, v] of Object.entries(facts)) if (v !== undefined) layout[`s:${k}`] = v;
   const tipTargets = [...root.querySelectorAll(side === 'app' ? '.ipb, .ilink[aria-expanded], .chart g.dot' : '[data-tip]')].filter(vis).length;
   const tip = tipBox && !tipBox.hidden ? tipBox.innerText.split('\n').map((l) => l.trim()).filter(Boolean) : [];
   return { lines, coralButtons, small, coralMarks, markColours: [...markColours], dots, icons, sideways, writing, questions, layout, tipTargets, tip, r64 };
@@ -362,8 +400,11 @@ const ALLOWED = [
   { side: 'both', re: /^(saving|saved)$/, why: 'save status changes as it saves' },
   { screen: /welcome/, side: 'both', re: /.*/, why: 'the Quick guide in the mock-up is not final; the built guide is not changed (brief); the panel over it is measured instead' },
   { side: 'mock', re: /^<month> #$|^<day> # <month>$/, why: 'the date is the Health Check’s own completed date (Tue 27 Oct in the mock-up)' },
-  { screen: /line drop-down/, side: 'mock', re: /^undefined$/, why: 'the mock-up’s phone panel for this drop-down has no title (it prints "undefined"); the app names it "Important means above"' },
-  { screen: /line drop-down/, side: 'app', re: /^important means above$/, why: 'the phone panel’s title (the mock-up prints "undefined" there)' },
+  { screen: /sign-in/, side: 'mock', re: /^what's your access code\?$/, why: 'the code box is labelled "Access code" under the question heading (Tim, 29 Oct, decisions part 3: a question heading is never followed by a second question)' },
+  { screen: /sign-in/, side: 'app', re: /^access code$/, why: 'the code box’s short label (Tim, 29 Oct)' },
+  { screen: /sign-in/, side: 'mock', re: /^[a-z0-9]$/, why: 'the mock-up fills the code boxes with an invented code; the app’s are empty until typed' },
+  { screen: /sign-in/, side: 'mock', re: /^only you and tim see your answers\.$/, why: 'before the code is checked the page can’t know the coach, so a first visit says "your coach" (the name comes back with the session, and is kept for a return visit)' },
+  { screen: /sign-in/, side: 'app', re: /^only you and your coach see your answers\.$/, why: 'the same line before the session names the coach' },
 ];
 
 const MONTHS = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|June|July|August|September|October|November|December';
@@ -422,12 +463,14 @@ async function mockState(page, s, mode) {
     return r;
   };
   const d = await one('#dk .frame', 0, true);
+  if (!s.scope) d.hover = await hoverCoral(page, '#dk .frame');
   if (SHOTS) await page.locator('#dk .frame').screenshot({ path: join(out, `mock-${s.id.replace(/\W+/g, '-')}-desk-${mode}.png`) }).catch(() => {});
   await page.evaluate(() => { document.querySelector('#dk .frame').style.width = '700px'; });
   const half = await one('#dk .frame', 0);
   await page.evaluate(() => { document.querySelector('#dk .frame').style.width = ''; });
   const p = await one('#ph .frame', 1, true);
   if (SHOTS) await page.locator('#ph .frame').screenshot({ path: join(out, `mock-${s.id.replace(/\W+/g, '-')}-phone-${mode}.png`) }).catch(() => {});
+  half.hover = d.hover;
   return { 1280: d, 700: half, 390: p, 360: p };
 }
 
@@ -458,10 +501,12 @@ async function appPage(width, mode, { complete, step, watched = true }) {
     return route.fulfill({ response: r });
   });
   await ctx.route('**/api/alignment-email', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
+  // TEXT2X=1: the device's text size at twice the standard (the root at 32px), as tests/phase0e/app.mjs does on feature.
+  if (process.env.TEXT2X) await ctx.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = 'html { font-size: 32px !important; }'; document.head.appendChild(st); }); });
   if (watched) await ctx.addInitScript(() => { try { localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => pass(`no page errors (${width}px ${mode})`, false, e.message));
-  await page.goto(`${APP}/health-check/tok-compare-v46-000000000000000000000000000`);
+  await page.goto(`${APP}/health-check/tok-compare-v47-000000000000000000000000000`);
   await page.locator('#hc-email, .wlc .btn.full').first().waitFor();
   return { ctx, page, session };
 }
@@ -492,7 +537,44 @@ const lineTo = (v) => async (page) => {
 const SCREENS = [
   // The mock-up's welcome holds its Quick guide's moving scenes (not final), so only the panel and the one coral thing are compared.
   { id: 'welcome, Watch this first', mock: 'welcome', layoutKeys: ['watchPanel'], app: { watched: false }, open: async (page) => { await page.locator('.wlc').waitFor(); await page.waitForTimeout(500); } },
+  {
+    id: 'sign-in', mock: 'signin', app: {},
+    open: async (page) => {
+      const begin = page.getByRole('button', { name: 'Begin the Health Check' });
+      if (await begin.isVisible().catch(() => false)) await begin.click();
+      await page.locator('#hc-email').waitFor();
+      await page.waitForTimeout(400);
+    },
+  },
+  { id: 'CSFs', mock: 'csf', app: { step: { screen: 'csf' } }, open: (p, s) => signIn(p, s) },
+  { id: 'projects', mock: 'projects', app: { step: { screen: 'projects' } }, open: (p, s) => signIn(p, s) },
   { id: 'CSF weight', mock: 'weight', app: { step: { screen: 'weight' } }, open: (p, s) => signIn(p, s) },
+  // On a phone each CSF has one branded drop-down; its panel is titled with the CSF's name (version 47).
+  {
+    id: 'CSF weight, phone drop-down open', mock: 'weight', scope: '.bs', app: { step: { screen: 'weight' } },
+    mockAct: (page, fr, i) => page.evaluate((k) => { if (k === 1) window.__act('dd:w0', k); }, i),
+    mockUndo: (page) => page.evaluate(() => window.__act('ddx', 1)),
+    open: async (page, session) => { await signIn(page, session); const dd = page.locator('.wrow .dd').first(); if (await dd.isVisible().catch(() => false)) { await dd.click(); await page.waitForTimeout(400); } },
+  },
+  // Toasts are 44px tall and on one line (version 47): Deleted with Undo, and the example's line.
+  {
+    id: 'toast, Deleted', mock: 'projects', scope: '.toast', app: { step: { screen: 'projects' } },
+    mockAct: (page, fr, i) => page.evaluate((k) => window.__act('rm:pr:6', k), i),
+    mockUndo: (page) => page.evaluate(() => window.__act('undo', 0)),
+    open: async (page, session) => { await signIn(page, session); await page.locator('.srow .rm').last().click(); await page.locator('.toast').waitFor(); await page.waitForTimeout(300); },
+  },
+  {
+    id: 'toast, example', mock: 'example', scope: '.toast', app: {},
+    mockAct: (page, fr, i) => page.evaluate((k) => window.__act('toast:exedit', k), i),
+    open: async (page) => {
+      const begin = page.getByRole('button', { name: 'Begin the Health Check' });
+      if (await begin.isVisible().catch(() => false)) await begin.click();
+      await page.getByRole('button', { name: 'See an example report' }).click();
+      await page.locator('.pr:not(.h)').first().click();
+      await page.locator('.toast').waitFor();
+      await page.waitForTimeout(300);
+    },
+  },
   { id: 'contribution', mock: 'contrib', projectName: PR[1].t, app: { step: { screen: 'contrib', project: 1, factor: 0 } }, open: (p, s) => signIn(p, s) },
   { id: 'dates', mock: 'when', projectName: PR[3].t, app: { step: { screen: 'when', project: 3 } }, open: (p, s) => signIn(p, s) },
   { id: 'progress', mock: 'progress', projectName: PR[3].t, app: { step: { screen: 'progress', project: 3 } }, open: (p, s) => signIn(p, s) },
@@ -524,6 +606,19 @@ const SCREENS = [
     lit: true,
   },
 ];
+
+// The coral button's hover, set per mode (version 47): #FF8A7A dark, #E0533F light.
+const HOVER = { dark: 'rgb(255, 138, 122)', light: 'rgb(224, 83, 63)' };
+async function hoverCoral(page, within) {
+  const loc = page.locator(`${within} .btn:not(.quiet):not([disabled]):not([aria-disabled="true"]):visible`).first();
+  if (!(await loc.count())) return null;
+  await loc.scrollIntoViewIfNeeded({ timeout: 2000 }).catch(() => {});
+  await loc.hover({ timeout: 2000 }).catch(() => {});
+  await page.waitForTimeout(80);
+  const bg = await loc.evaluate((el) => getComputedStyle(el).backgroundColor);
+  await page.mouse.move(0, 0);
+  return bg;
+}
 
 const WIDTHS = (process.env.WIDTHS || '1280,700,390,360').split(',').map(Number);
 const MODES = ['dark', 'light'];
@@ -576,12 +671,18 @@ for (const s of wanted) {
       const m = mockSide[`${s.id}|${mode}`][width];
       // Layout against the mock-up.
       const L = (k) => JSON.stringify(r.layout[k]) === JSON.stringify(m.layout[k]);
-      for (const k of (width < 641 && s.phoneLayoutKeys) || s.layoutKeys || ['sections', 'glance', 'weight', 'weightRows', 'rowDates', 'gapColour', 'watchPanel']) {
+      const styleKeys = [...new Set([...Object.keys(r.layout), ...Object.keys(m.layout)].filter((k) => k.startsWith('s:')))];
+      for (const k of [...((width < 641 && s.phoneLayoutKeys) || s.layoutKeys || ['sections', 'glance', 'weight', 'weightRows', 'rowDates', 'gapColour', 'watchPanel']), ...styleKeys]) {
         if (r.layout[k] === undefined && m.layout[k] === undefined) continue;
         if (k === 'rowDates' && width === 700) continue; // the mock-up's desktop frame squeezed to 700px is not a layout of its own
         const ok = L(k);
         pass(`${tag}: layout ${k} as the mock-up`, ok, ok ? JSON.stringify(r.layout[k]).slice(0, 160) : `app ${JSON.stringify(r.layout[k])} | mock-up ${JSON.stringify(m.layout[k])}`.slice(0, 400));
         if (!ok) verdict.layout.push(`${k} at ${width}px ${mode}`);
+      }
+      if (width >= 641 && !s.scope) {
+        const hov = await hoverCoral(page, '.hc');
+        if (hov) pass(`${tag}: the coral button's hover is ${HOVER[mode]}`, hov === HOVER[mode], hov);
+        if (m.hover) pass(`${tag}: the mock-up's hover is the same`, m.hover === HOVER[mode], m.hover);
       }
       if (s.projectName) pass(`${tag}: rule 64 counter "${r.r64.counter}" in the placeholder grey`, r.r64.counterGrey);
       if (r.questions.length) {

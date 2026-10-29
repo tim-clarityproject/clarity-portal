@@ -1,14 +1,14 @@
-import { PROGRESS, RESOURCE } from '../../../pages/alignment/alignmentFlow';
+import { RESOURCE } from '../../../pages/alignment/alignmentFlow';
 import { importanceText } from '../../alignmentScore';
 import { PROGRESS_WORDS } from '../../../pages/alignment/chartLayout';
 import { formatDocDate, parseDbTimestamp } from '../../dateFormatter';
 import {
-  csfLevel, csfLevelName, headlineSentence, importanceLines, RES, resultsModel, stateSentence, stateWords,
+  csfLevel, csfLevelName, headlineSentence, importanceLines, PROGS, RES, resultsModel, stateSentence, stateWords,
 } from '../../../health-check/words';
 
 // The Strategic Alignment Health Check as a document for the shared PDF template.
 
-// The PDF follows the results page (mock-up M7b version 46): the headline in
+// The PDF follows the results page (mock-up M7b version 47): the headline in
 // the At a glance panel, then the objective, the questions to start with and
 // their reasons, the chart (dot size shows resource, and the across line is
 // the Health Check's own line for important), the CSFs with their levels, and
@@ -59,9 +59,9 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
     const rest = missing ? ` ${missing} ${missing === 1 ? 'project has' : 'projects have'} no progress rating yet, so ${missing === 1 ? 'it isn’t' : 'they aren’t'} on the chart.` : '';
     return headlineSentence(headline) + rest;
   };
-  // "Strategic importance is how much a project helps your CSFs, out of 100%. …", from the column's ⓘ
+  // "Strategic importance is how much a project helps the CSFs, out of 100%. …", the column ⓘ's one definition
   const [, first, ...more] = importanceLines();
-  const importanceNote = [`Strategic importance is ${first.line.charAt(0).toLowerCase()}${first.line.slice(1)}`, ...more.map((l) => l.line)].join(' ');
+  const importanceNote = [first.line.replace(/^It’s /, 'Strategic importance is '), ...more.map((l) => l.line)].join(' ');
 
   return {
     docName: 'Health Check',
@@ -139,7 +139,7 @@ export function healthCheckPdf({ draft, completedAt = null, updatedAt = null, or
               String(r.n),
               { text: r.text, detail: [stateWords(r), ...r.dates].join('\n') },
               importanceText(r),
-              word(PROGRESS, r.progress),
+              PROGS[r.progress] || '', // "Embryonic", never "Embryonic stage" (version 47)
               word(RESOURCE, r.resource),
             ]),
           },

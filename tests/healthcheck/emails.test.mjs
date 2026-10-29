@@ -1,4 +1,4 @@
-// Health Check 3, part 4: the completion email to Tim and Adie summarises the
+// Health Check 3, part 4: the completion email to the link's coach summarises the
 // results with the same headline and questions as the results page and the
 // PDF, from the same model. Renders the email body only: nothing is sent.
 // Run with npm run test:healthcheck.
@@ -50,7 +50,7 @@ test('the email\'s headline and questions are the results page\'s, about the res
   assert.deepEqual(s.questions, model.questions.map(({ label, question, reason }) => ({ label, question, reason })));
   assert.equal(s.line, 50);
   assert.deepEqual(s.questions.map((q) => q.label), ['Timing', 'Progress', 'Resource']);
-  assert.match(s.questions[0].reason, /^They rated its progress Bad, and it’s due to finish in 2 months\.$/);
+  assert.match(s.questions[0].reason, /^They rated its progress “Bad”, and it’s due to finish in 2 months\.$/);
   assert.equal(s.headline, '0 of 2 important projects are moving well. 2 need attention.');
 });
 

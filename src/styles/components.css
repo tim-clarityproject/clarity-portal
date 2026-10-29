@@ -75,7 +75,7 @@ html:has(.ui-root) {
 
 .ui-root .ui-btn-primary:hover,
 .ui-root .ui-btn-primary:focus-visible {
-  background: var(--coral-soft);
+  background: var(--coral-hover);
 }
 
 .ui-root .ui-btn-primary:disabled {
@@ -234,7 +234,7 @@ html:has(.ui-root) {
 }
 
 .ui-root .auth-btn-primary:hover {
-  background: var(--coral-soft);
+  background: var(--coral-hover);
 }
 
 .ui-root .auth-btn-primary:focus-visible {

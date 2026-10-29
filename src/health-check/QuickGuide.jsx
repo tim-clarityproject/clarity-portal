@@ -151,7 +151,7 @@ function Player({ inline, autoPlay, onWatched }) {
           <button type="button" className={`bigplay${watched ? ' done' : ''}`} onClick={toggle}>
             <span className="bpc">{BIG_PLAY}</span>
             <b>{ended ? 'Watch again' : 'Watch this first'}</b>
-            <small>It takes under 2 minutes, and you’ll get more out of the Health Check.</small>
+            <small>It takes ~1 minute, and you’ll get more out of the Health Check.</small>
           </button>
         )}
       </div>

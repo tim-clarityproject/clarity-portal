@@ -71,9 +71,10 @@ function Dot({ dot, lit, hit }) {
     { bold: row.text },
     row.rated ? { big: `${row.pct}%`, small: 'strategic importance' } : { line: 'Strategic importance isn’t rated yet.' },
     { line: stateSentence(row) },
-    ...(PROGS[row.progress] ? [{ line: `Progress is ${PROGS[row.progress]}.` }] : []),
-    // a blank resource counts as Moderate, as its dot size does (m20DotSize)
-    { line: `Resource required is ${(RES[row.resource] || RES[3])[0]}.` },
+    // the chosen answers in curly quotes (version 47)
+    ...(PROGS[row.progress] ? [{ line: `Progress is “${PROGS[row.progress]}”.` }] : []),
+    // a blank resource counts as Moderate, as its dot size does (m20DotSize), and isn't a chosen answer
+    { line: `Resource required is ${RES[row.resource] ? `“${RES[row.resource][0]}”` : RES[3][0]}.` },
   ];
   const { isOpen: _open, toggle, ...t } = useTipTarget(lines);
   const fill = q === 'mi' ? 'var(--mint)' : 'var(--bg)';

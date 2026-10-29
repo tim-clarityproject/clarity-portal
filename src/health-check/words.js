@@ -1,4 +1,4 @@
-// The Health Check's words (mock-up M7b version 46), and its results worked
+// The Health Check's words (mock-up M7b version 47), and its results worked
 // out from src/lib/scores/m20.js (methods M20.1, version 1.4). Definitions are
 // Claude's drafts, for Adie to edit.
 
@@ -18,7 +18,7 @@ export const CON = [
 ];
 // index 1 to 5
 export const PROG = [null,
-  ['Embryonic stage', 'It’s still an idea or being scoped, with no agreed plan, owner or resources yet.'],
+  ['Embryonic', 'It’s still an idea or being scoped, with no agreed plan, owner or resources yet.'],
   ['Bad', 'It’s well off track, with key milestones slipping or no clear way through.'],
   ['Fair', 'It’s moving, but slower than planned or with problems being fixed.'],
   ['Good', 'It’s on track, with milestones met and problems handled within the team.'],
@@ -131,29 +131,34 @@ export function headlineSentence(headline) {
   return [`${headline.big} ${headline.line}`, headline.rest].filter(Boolean).join(' ');
 }
 
-/** How it works, at the top of the results: the word, then its meaning (Tim, 28 Oct, 14:21). */
+/** Strategic importance has one definition, word for word, in every pop-up (version 47). */
+export const IMPORTANCE_MEANS = 'It’s how much a project helps the CSFs, out of 100%.';
+/** The order of "Most in need of attention", in full (version 47: never "behind"). */
+export const ORDER_MEANS = 'Important projects that need attention and require more resource come first.';
+
+/** How it works, at the top of the results: the word, then its meaning, each a full sentence (Tim, 28 Oct, 14:21; version 47). */
 export function howItWorks(line) {
   return [
     { bold: 'How it works' },
-    { term: 'Strategic importance', meaning: 'How much a project helps the CSFs, counting the ones that matter most more, out of 100%.' },
-    { term: 'Important', meaning: `A project above the line you set, which is now ${line}%.` },
-    { term: 'Most in need of attention', meaning: 'Important projects that are behind and require more resource come first.' },
-    { term: 'Too early to tell', meaning: 'A project at the Embryonic stage.' },
-    { term: 'Bigger dots', meaning: 'Projects that require more resource.' },
+    { term: 'Strategic importance', meaning: IMPORTANCE_MEANS },
+    { term: 'Important', meaning: `It’s a project above the line you set, which is now ${line}%.` },
+    { term: 'Most in need of attention', meaning: ORDER_MEANS },
+    { term: 'Too early to tell', meaning: 'It’s a project at the Embryonic stage.' },
+    { term: 'Bigger dots', meaning: 'They show projects that require more resource.' },
   ];
 }
 
 /** The ⓘ beside the list's order line explains only that order (Tim, 28 Oct, 14:37). */
 export const ORDER_LINES = [
   { bold: 'Most in need of attention' },
-  { line: 'Important projects that are behind and require more resource come first.' },
+  { line: ORDER_MEANS },
 ];
 
-/** The ⓘ on the "Strategic importance" column heading (Tim, 28 Oct, 14:37 and 14:40). */
-export function importanceLines(theirs = false) {
+/** The ⓘ on the "Strategic importance" column heading (Tim, 28 Oct, 14:37 and 14:40), the same on the example report. */
+export function importanceLines() {
   return [
     { bold: 'Strategic importance' },
-    { line: `How much a project helps ${theirs ? 'their' : 'your'} CSFs, out of 100%.` },
+    { line: IMPORTANCE_MEANS },
     { line: 'High on every CSF scores 100%.' },
     { line: 'A Critical CSF counts 40% more than an Important one, and a Very important one 20% more.' },
   ];
