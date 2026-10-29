@@ -397,6 +397,11 @@ async function healthCheck(touch) {
   ];
   for (const t of targets) {
     if (!(await t.loc.count())) { pass(`${where}: has ${t.kind}`, false); continue; }
+    // Before Health Check 3, How it works opened a panel (a dialog), not a pop-up.
+    if (await t.loc.evaluate((el) => el.getAttribute('aria-haspopup') === 'dialog')) {
+      await actionChecks(page, t.loc, `${t.kind.replace(' (Health Check)', '')}, a panel (Health Check)`, where, touch);
+      continue;
+    }
     if (touch) await touchChecks(page, t, where, t.other && (await t.other.count()) ? t.other : null);
     else { await mouseChecks(page, t, where); await keyboardChecks(page, t, where); await flipCheck(page, t, where); }
   }
@@ -461,6 +466,14 @@ async function portal(touch) {
     if (await titleI.count()) found.push({ kind: 'ⓘ (page title)', type: 'inline', loc: titleI.first() });
     const sectionI = page.locator('.ds-help-toggle:not(.ds-page-info-toggle):visible');
     if (await sectionI.count()) found.push({ kind: 'ⓘ (section or step)', type: 'inline', loc: sectionI.first(), other: (await sectionI.count()) > 1 ? sectionI.nth(1) : null });
+    // The gallery's sprint tool: its fourth step has a "Why we ask" ⓘ.
+    const frame = page.locator('.dr-tool-frame');
+    for (let i = 0; i < 5 && (await frame.count()) && !(await frame.locator('.ds-guide-i:visible').count()); i += 1) {
+      const nextBtn = frame.getByRole('button', { name: /^Next/ }).first();
+      if (!(await nextBtn.count())) break;
+      await nextBtn.click();
+      await wait(page, 500);
+    }
     const guideI = page.locator('.ds-guide-i:visible');
     if (await guideI.count()) found.push({ kind: 'ⓘ (section or step)', type: 'inline', loc: guideI.first() });
     const marks = page.locator('.ds-tipzone [data-tip]:visible');
@@ -476,7 +489,8 @@ async function portal(touch) {
       if (touch) await touchChecks(page, t, where, t.other);
       else { await mouseChecks(page, t, where); await keyboardChecks(page, t, where); await flipCheck(page, t, where); }
     }
-    const eye = page.locator('.ds-who:visible');
+    // Only an eye that can be tapped (WhoSees with onChange, CoachSees); the others are words.
+    const eye = page.locator('.ds-who[aria-haspopup]:visible');
     if (await eye.count()) { tried.eye = true; await actionChecks(page, eye.first(), 'the eye (WhoSees, CoachSees)', where, touch); }
   }
   await ctx.close();
@@ -487,6 +501,7 @@ await healthCheck(true);
 if (PORTAL) {
   await portal(false);
   await portal(true);
+  // (Section's ⓘ uses the same hook as these, but no page uses helpKey yet.)
   for (const kind of ['ⓘ (page title)', 'ⓘ (section or step)', 'chart mark (ChartTips)', 'eye']) pass(`the portal sample has ${kind}`, !!tried[kind]);
 }
 await browser.close();
