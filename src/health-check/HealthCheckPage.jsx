@@ -21,7 +21,7 @@ import { GuideCard, GuidePanel, readWatched } from './QuickGuide';
 import { ReadingPanel } from './Reading';
 
 // The outside Strategic Alignment Health Check, built to the approved mock-up
-// (M7b version 46). Its answers, saving, backup and emails use the same code
+// (M7b version 47). Its answers, saving, backup and emails use the same code
 // and database functions as before (src/lib/alignmentApi.js and friends).
 
 const SITE = 'https://theclarityproject.co.uk';
@@ -279,7 +279,7 @@ function Page() {
         : clampStep(stepRef.current, sd);
       stepRef.current = s2;
       setStep(s2);
-      showToast('Your answers were updated in another window.');
+      showToast('Another window changed your answers.');
     });
     if (applyBackup) queue.queueSave({ data: dataFromDraft(d), currentStep: stepToJson(s), complete: s.screen === 'results' }, { immediate: true });
     setSaveState('idle');
@@ -442,7 +442,7 @@ function Page() {
       const done = serverCompletedAt || draftRef.current.completedAt || null;
       await downloadPdf(healthCheckPdf({ draft: draftRef.current, completedAt: done, updatedAt: null, organisation }), variant);
     } catch {
-      showToast('Your PDF wasn’t made. Check your connection and try again.');
+      showToast('Your PDF wasn’t made. Try again.');
     }
     setPdf({ busy: false, open: false });
   };
@@ -546,7 +546,7 @@ function Page() {
           <p>Its leadership team rated 8 projects against 5 Critical Success Factors (CSFs).</p>
         </div>
         <Results draft={EXAMPLE.draft} asOf={EXAMPLE.asOf} theirs phone={phone} sort={sort} onSort={setSort}
-          onExampleEdit={() => showToast('The example can’t be changed, so start your own to rate your projects.')} />
+          onExampleEdit={() => showToast('The example can’t be changed.')} />
         <div className="acts"><button type="button" className="btn" onClick={() => { setPhase('welcome'); window.scrollTo(0, 0); }}>Start my Health Check</button></div>
       </>
     );
@@ -565,7 +565,7 @@ function Page() {
   } else if (step.screen === 'csf') {
     body = (
       <>
-        {head('How will you achieve your objective?', 'List the 3 to 6 medium to long-term approaches that are critical for achieving your outcome.')}
+        {head('How will you achieve your objective?', 'List the 3 to 6 medium to long-term approaches that are critical for achieving your objective.')}
         <div className="rv" style={{ '--i': 2 }}>
           <span className="fl">Critical Success Factors (CSFs)<InfoButton label="What is a Critical Success Factor?" lines={[{ bold: 'What is a Critical Success Factor (CSF)?' }, { line: 'It’s one of the few things that must go right for you to reach your objective.' }]} /></span>
           <Rows kind="csf" rows={draft.csfs} placeholder="e.g. Win enterprise customers in the US" label="Critical Success Factor" max={MAX_FACTORS} maxItem={MAX_ITEM}
@@ -576,6 +576,8 @@ function Page() {
   } else if (step.screen === 'weight') {
     // Not every CSF matters equally: each is Critical, Very important or
     // Important, Very important unless changed (Tim, 28 Oct, 14:27). Saved as you go.
+    // Three chips on a laptop; on a phone one branded drop-down each, its
+    // panel titled with the CSF's name (version 47).
     body = (
       <>
         {head('How much does each Critical Success Factor (CSF) matter to your objective?', 'Choose Critical for the one or two that matter most.')}
@@ -583,8 +585,15 @@ function Page() {
           {factors.map((f, i) => (
             <div className="wrow" key={f.id}>
               <p><span className="n" aria-hidden="true">{i + 1}</span><bdi>{f.text}</bdi></p>
-              <Seg label={f.text} value={csfLevel(f)} options={CSF_LEVELS.map((l) => ({ value: l.level, label: l.name }))}
-                onPick={(level) => edit(m20WithCsfLevel(draftRef.current, f.id, level), true)} />
+              {phone ? (
+                <div className="wdd">
+                  <Dropdown label={f.text} title={f.text} value={csfLevel(f)} options={CSF_LEVELS.map((l) => ({ value: l.level, label: l.name }))}
+                    onChange={(level) => edit(m20WithCsfLevel(draftRef.current, f.id, level), true)} />
+                </div>
+              ) : (
+                <Seg label={f.text} value={csfLevel(f)} options={CSF_LEVELS.map((l) => ({ value: l.level, label: l.name }))}
+                  onPick={(level) => edit(m20WithCsfLevel(draftRef.current, f.id, level), true)} />
+              )}
             </div>
           ))}
         </div>
@@ -596,7 +605,7 @@ function Page() {
         <PctBar pct={percent(step, draft)} />
         <IconRow coach={coach} style={{ '--i': 1 }} onWho={() => setPanel('who')} onGuide={() => setPanel('guide')} />
         <h2 className="qh rv" style={{ '--i': 1 }}>What is your team working on?</h2>
-        <p className="nudge rv" style={{ '--i': 1 }}>List every project or line of effort, now or in the pipeline.<InfoButton label="What counts as a project" lines={[{ bold: 'Projects' }, { line: 'Include anything that takes your team’s time, money or people.' }]} /></p>
+        <p className="nudge rv" style={{ '--i': 1 }}>List every project or piece of work, now or planned.<InfoButton label="What counts as a project" lines={[{ bold: 'Projects' }, { line: 'Include anything that takes your team’s time, money or people.' }]} /></p>
         <div className="rv" style={{ '--i': 2 }}>
           <span className="fl">Projects</span>
           <Rows kind="projects" rows={draft.projects} placeholder="e.g. New CRM roll-out" label="Project" max={MAX_PROJECTS} maxItem={MAX_ITEM}

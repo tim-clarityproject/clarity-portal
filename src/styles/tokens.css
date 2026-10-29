@@ -10,6 +10,8 @@
   --placeholder: #7F7F7C;
   --coral: #FF6F5C;
   --coral-soft: #FFBD9E;
+  /* the coral button's hover, per mode, never the soft coral (M7b version 47) */
+  --coral-hover: #FF8A7A;
   --mint: #5FEFBB;
   --mint-soft: #89F3CD;
   --on-coral: #000000;
@@ -95,6 +97,7 @@
   --text-2: #5F5F5C;
   --placeholder: #8F8B84;
   --coral-text: #C2412E;
+  --coral-hover: #E0533F;
   --mint-text: #0B7F58;
   --scrim: rgba(24, 20, 14, 0.3);
   color-scheme: light;

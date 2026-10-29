@@ -1,7 +1,7 @@
 /* The outside Strategic Alignment Health Check (health-check.html), imported
    only by src/health-check/main.jsx. Its values are the approved mock-up's
    (M7b version 4, design reference v3's own CSS; version 46 for the CSF
-   weight screen and the results): its dark and light tokens,
+   weight screen and the results; version 47 for the sizes, the hover and the toasts): its dark and light tokens,
    type sizes, spacing and radii. The mock-up's phone frame is the layout up to
    640px wide; its desktop frame is the layout above. Everything sits inside
    .hc, which is also a .ui-root. Nekst for titles, buttons and big numbers,
@@ -22,7 +22,8 @@
   --d3: 400ms;
   --cross: url('/brand/crosshair_white.png');
   --coral-fill: #FF6F5C;
-  --coral-hover: #FFBD9E;
+  /* the coral button's hover, per mode, never the soft coral (version 47) */
+  --coral-hover: #FF8A7A;
   --bg: #000; --surface: #111110; --card: #0B0B0B; --line: #262626; --line2: #1A1A1A; --edge: #636362; --btn: #3C3C3B;
   --fg: #fff; --on-fg: #000; --t2: #A3A3A0; --ph: #7F7F7C; --g4: #4A4A49; --accent: #FF6F5C; --soft: #FFBD9E;
   --mint: #5FEFBB; --on-mint: #000; --scrim: rgba(0, 0, 0, .62); --scrim2: rgba(0, 0, 0, .88);
@@ -32,7 +33,7 @@
 @media (prefers-color-scheme: light) {
   .hc, .ctip {
     --bg: #F9F8F5; --surface: #EFEDE8; --card: #FFFFFF; --line: #DCDAD3; --line2: #E9E7E1; --edge: #858480; --btn: #B9B7B1;
-    --fg: #000; --on-fg: #fff; --t2: #4A4A49; --ph: #636362; --g4: #B9B7B1; --accent: #C2412E; --soft: #A84E28;
+    --fg: #000; --on-fg: #fff; --t2: #4A4A49; --ph: #636362; --g4: #B9B7B1; --accent: #C2412E; --soft: #A84E28; --coral-hover: #E0533F;
     --mint: #0B7A52; --on-mint: #fff; --scrim: rgba(20, 20, 18, .28); --scrim2: rgba(249, 248, 245, .95);
     --toast-bg: #000; --toast-fg: #fff; --toast-line: #000;
     color-scheme: light;
@@ -82,8 +83,8 @@
 .pctw span { font-size: 13px; color: var(--ph); min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* type */
-h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .1em; font-size: 28px; line-height: 1.2; text-wrap: balance; overflow-wrap: normal; }
-.qh { margin: 28px 0 0; font-size: 24px; line-height: 1.3; font-weight: 400; text-wrap: balance; }
+h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .1em; font-size: 24px; line-height: 1.25; text-wrap: balance; overflow-wrap: normal; }
+.qh { margin: 28px 0 0; font-size: 22px; line-height: 1.3; font-weight: 400; text-wrap: balance; }
 .nudge { margin: 10px 0 0; color: var(--t2); font-size: 16px; max-width: 35.6em; }
 .nudge + .nudge { margin-top: 4px; }
 .lead { margin: 12px 0 0; color: var(--t2); max-width: 38.4em; }
@@ -91,7 +92,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 20px; margin-top: 10px; font-size: 14px; color: var(--t2); }
 @media (max-width: 640px) {
   h2.t { font-size: 22px; }
-  .qh { font-size: 21px; margin-top: 20px; }
+  .qh { font-size: 22px; margin-top: 20px; }
 }
 
 /* buttons */
@@ -165,7 +166,8 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .dd .chev { color: var(--t2); width: 14px; height: 14px; }
 .dd:hover, .dd[aria-expanded="true"] { border-color: var(--accent); }
 .dd:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.dd.sm { min-height: 44px; padding: 8px 16px; font-size: 15px; width: auto; gap: 14px; }
+/* full size, as every other drop-down (version 47) */
+.dd.sm { min-height: 58px; padding: 15px 20px; font-size: 17px; width: auto; gap: 20px; }
 .ddl { margin-top: 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); overflow: auto; max-height: 312px; animation: hc-fd var(--d2) var(--ease); }
 .ddw .ddl { position: absolute; left: 0; right: 0; top: 100%; z-index: 12; min-width: 260px; }
 .ddl button { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 52px; padding: 13px 20px; font-size: 16px; line-height: 1.35; color: var(--t2); border-bottom: 1px solid var(--line2); }
@@ -194,10 +196,10 @@ svg.ic .f { fill: currentColor; stroke: none; }
 /* lists of answers: one box each, the outlined add button, the 45-degree crosshair to remove */
 .srow { display: grid; grid-template-columns: 24px minmax(0, 1fr) 44px; gap: 8px; align-items: center; padding: 4px 0; }
 .srow .n { font-size: 14px; color: var(--ph); font-variant-numeric: tabular-nums; }
-.hc .srow textarea { min-height: 52px; padding: 13px 16px; }
+.hc .srow textarea { min-height: 58px; padding: 15px 20px; }
 @media (max-width: 640px) { .srow { grid-template-columns: 18px minmax(0, 1fr) 44px; gap: 6px; } }
 .rm { all: unset; cursor: pointer; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-.rm .x { width: 15px; height: 15px; background-color: var(--ph); transform: rotate(45deg); }
+.rm .x { width: 18px; height: 18px; background-color: var(--t2); transform: rotate(45deg); }
 .rm:hover .x, .rm:focus-visible .x { background-color: var(--accent); }
 .rm:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .rm[disabled] { visibility: hidden; }
@@ -213,21 +215,19 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .opts5 button small { display: block; font-size: 14px; color: var(--t2); margin-top: 2px; line-height: 1.4; }
 .opts5 button:hover, .opts5 button[aria-checked="true"] { border-color: var(--accent); }
 .opts5 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* the CSF weight screen: each CSF, numbered, with three choices; three equal buttons on a phone */
+/* the CSF weight screen: each CSF, numbered, with three choices; one drop-down each on a phone (version 47) */
 .wts { margin-top: 22px; display: grid; gap: 4px; }
 .wrow { padding: 14px 0; border-top: 1px solid var(--line2); }
 .wrow:first-child { border-top: 0; padding-top: 0; }
 .wrow p { margin: 0; display: flex; gap: 12px; align-items: baseline; font-size: 16px; }
 .wrow p .n { color: var(--ph); font-size: 13px; min-width: 12px; }
 .seg { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0 24px; }
-.seg button { all: unset; cursor: pointer; box-sizing: border-box; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; color: var(--fg); transition: border-color var(--d2) var(--ease); }
+.seg button { all: unset; cursor: pointer; box-sizing: border-box; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; color: var(--t2); transition: border-color var(--d2) var(--ease), color var(--d2) var(--ease); }
 .seg button:hover, .seg button[aria-checked="true"] { border-color: var(--accent); }
-.seg button[aria-checked="true"] { box-shadow: inset 0 0 0 1px var(--accent); }
+/* the chosen one: a 1px coral edge and the text colour, no inset shadow (version 47) */
+.seg button[aria-checked="true"] { color: var(--fg); }
+.wdd { margin-top: 10px; }
 .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (max-width: 640px) {
-  .seg { margin-left: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .seg button { justify-content: center; text-align: center; padding: 6px 8px; font-size: 14px; line-height: 1.25; }
-}
 .bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .bar i { display: block; height: 100%; border-radius: 2px; }
 .dts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
@@ -298,7 +298,7 @@ svg.ic .f { fill: currentColor; stroke: none; }
 /* At a glance: the headline on the left, the questions to start with on the right; stacked on a phone */
 .sec.gls { margin-top: 32px; padding-top: 24px; border-top: 0; }
 .gl { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 40px; margin-top: 20px; }
-.gst b { display: block; font-weight: 300; font-size: 56px; line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.gst b { display: block; font-family: var(--display); font-weight: 300; font-size: 56px; line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
 .gst p { margin: 12px 0 0; font-size: 17px; }
 .gst p.sub { margin-top: 6px; font-size: 15px; color: var(--t2); }
 .mvs .fl { margin: 0 0 12px; }
@@ -383,15 +383,16 @@ svg.ic .f { fill: currentColor; stroke: none; }
   .ft .back { font-size: 0; gap: 0; width: 44px; padding: 0; justify-content: center; flex: none; }
   .ft .back .chev { width: 14px; height: 14px; }
   .ft .r { flex: 1; justify-content: flex-end; min-width: 0; }
-  .ft .btn { flex: 1; padding: 0 14px; letter-spacing: .14em; min-width: 0; }
+  .ft .btn { flex: 1; padding: 0 24px; letter-spacing: .18em; min-width: 0; }
   .pdfm { flex: 1; display: flex; }
 }
 
-/* toast: black with white text in both modes; Undo underlined */
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 96px; z-index: 45; background: var(--toast-bg); color: var(--toast-fg); border: 1px solid var(--toast-line); border-radius: 999px; padding: 0 20px; min-height: 46px; display: flex; align-items: center; gap: 10px; font-size: 15px; width: max-content; max-width: calc(100% - 32px); animation: hc-fd var(--d2); }
-@media (max-width: 640px) { .toast { bottom: 104px; border-radius: 22px; padding: 10px 18px; } }
+/* toast: black with white text in both modes; Undo underlined; 44px tall, its words short enough for one line
+   on a 360px phone (version 47). A larger device text size lets it wrap rather than run off the screen. */
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 96px; z-index: 45; background: var(--toast-bg); color: var(--toast-fg); border: 1px solid var(--toast-line); border-radius: 999px; padding: 0 20px; min-height: 44px; display: flex; align-items: center; gap: 10px; font-size: 15px; width: max-content; max-width: calc(100% - 32px); animation: hc-fd var(--d2); }
+@media (max-width: 640px) { .toast { bottom: 104px; } }
 .toast svg { width: 16px; height: 16px; fill: none; stroke: var(--toast-tick, var(--mint)); stroke-width: 1.8; flex: none; }
-.toast .ud { all: unset; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; padding: 0 4px; color: var(--toast-fg); text-decoration: underline; text-underline-offset: 3px; }
+.toast .ud { all: unset; cursor: pointer; min-height: 44px; margin: -1px 0; display: inline-flex; align-items: center; padding: 0 4px; color: var(--toast-fg); text-decoration: underline; text-underline-offset: 3px; }
 .toast .ud:hover, .toast .ud:focus-visible { color: var(--accent); }
 @keyframes hc-fd { from { opacity: 0; } }
 @keyframes hc-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

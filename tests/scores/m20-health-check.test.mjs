@@ -210,21 +210,21 @@ test('the questions: the mock-up\'s three, the most urgent first', () => {
       kind: 'timing',
       label: 'Timing',
       question: 'Is “Enterprise sales team” worth a sprint of extra resource to finish by Dec 2026, or should its timeline change?',
-      reason: 'You rated its progress Bad, and it’s due to finish in 2 months.',
+      reason: 'You rated its progress “Bad”, and it’s due to finish in 2 months.',
       projectId: 'p1',
     },
     {
       kind: 'resource',
       label: 'Resource',
       question: 'Is “New office fit-out” worth the resource it takes?',
-      reason: 'You rated its resource High, and its strategic importance is 15%.',
+      reason: 'You rated its resource “High”, and its strategic importance is 15%.',
       projectId: 'p6',
     },
     {
       kind: 'csf',
       label: 'CSF cover',
       question: 'What could strongly support “A team with the right skills in the right roles”?',
-      reason: 'You didn’t rate any project High for this CSF.',
+      reason: 'You didn’t rate any project “High” for this CSF.',
       csfId: 'c3',
     },
   ]);
@@ -233,11 +233,11 @@ test('the questions: the mock-up\'s three, the most urgent first', () => {
 test('the questions: the example report says "They" and "their"', () => {
   const { ranked, csfs } = kestrel();
   const q = S.m20Questions(ranked, csfs, { asOf: '2026-10', theirs: true });
-  assert.equal(q[0].reason, 'They rated its progress Bad, and it’s due to finish in 2 months.');
-  assert.equal(q[1].reason, 'They rated its resource High, and its strategic importance is 15%.');
-  assert.equal(q[2].reason, 'They didn’t rate any project High for this CSF.');
+  assert.equal(q[0].reason, 'They rated its progress “Bad”, and it’s due to finish in 2 months.');
+  assert.equal(q[1].reason, 'They rated its resource “High”, and its strategic importance is 15%.');
+  assert.equal(q[2].reason, 'They didn’t rate any project “High” for this CSF.');
   const fix = build([{ id: 'a', text: 'A' }], [['x', 'Fix me', [3], 2, 3]]).ranked;
-  assert.equal(S.m20Questions(fix, [], { theirs: true })[0].reason, 'They rated its progress Bad, and it’s above their line for important.');
+  assert.equal(S.m20Questions(fix, [], { theirs: true })[0].reason, 'They rated its progress “Bad”, and it’s above their line for important.');
   const fine = build([{ id: 'a', text: 'A' }], [['x', 'X', [3], 4, 3]]).ranked;
   assert.equal(S.m20Questions(fine, [{ id: 'a', text: 'A' }], { theirs: true })[0].question, 'What will keep their important projects on track?');
 });
@@ -246,13 +246,13 @@ test('Timing: above the line, Bad or Fair, due within 3 months or past; the mont
   const csfs = [{ id: 'a', text: 'A' }];
   const timing = (due, progress = 2, extra = {}) => S.m20Questions(build(csfs, [['x', 'Late one', [3], progress, 3, due]]).ranked, [], { asOf: '2026-10', ...extra })
     .find((q) => q.kind === 'timing');
-  assert.equal(timing('2026-10').reason, 'You rated its progress Bad, and it’s due to finish this month.');
-  assert.equal(timing('2026-11').reason, 'You rated its progress Bad, and it’s due to finish next month.');
-  assert.equal(timing('2026-12').reason, 'You rated its progress Bad, and it’s due to finish in 2 months.');
-  assert.equal(timing('2027-01', 3).reason, 'You rated its progress Fair, and it’s due to finish in 3 months.');
+  assert.equal(timing('2026-10').reason, 'You rated its progress “Bad”, and it’s due to finish this month.');
+  assert.equal(timing('2026-11').reason, 'You rated its progress “Bad”, and it’s due to finish next month.');
+  assert.equal(timing('2026-12').reason, 'You rated its progress “Bad”, and it’s due to finish in 2 months.');
+  assert.equal(timing('2027-01', 3).reason, 'You rated its progress “Fair”, and it’s due to finish in 3 months.');
   assert.equal(timing('2027-01').question, 'Is “Late one” worth a sprint of extra resource to finish by Jan 2027, or should its timeline change?');
-  assert.equal(timing('2026-09').reason, 'You rated its progress Bad, and it was due to finish in Sep 2026.');
-  assert.equal(timing('2025-02').reason, 'You rated its progress Bad, and it was due to finish in Feb 2025.');
+  assert.equal(timing('2026-09').reason, 'You rated its progress “Bad”, and it was due to finish in Sep 2026.');
+  assert.equal(timing('2025-02').reason, 'You rated its progress “Bad”, and it was due to finish in Feb 2025.');
   assert.equal(timing('2027-02'), undefined, '4 months away is not soon');
   assert.equal(timing('open'), undefined, 'open-ended');
   assert.equal(timing(undefined), undefined, 'no date');
@@ -261,10 +261,10 @@ test('Timing: above the line, Bad or Fair, due within 3 months or past; the mont
   assert.equal(timing('2026-11', 2, { asOf: undefined }), undefined, 'no Health Check date');
   assert.equal(timing('2026-11', 2, { line: 100 }), undefined, 'not above the line');
   // The Health Check's date as a date, or as a Date, by its month.
-  assert.equal(timing('2026-11', 2, { asOf: '2026-10-31' }).reason, 'You rated its progress Bad, and it’s due to finish next month.');
-  assert.equal(timing('2026-11', 2, { asOf: new Date(2026, 9, 29) }).reason, 'You rated its progress Bad, and it’s due to finish next month.');
+  assert.equal(timing('2026-11', 2, { asOf: '2026-10-31' }).reason, 'You rated its progress “Bad”, and it’s due to finish next month.');
+  assert.equal(timing('2026-11', 2, { asOf: new Date(2026, 9, 29) }).reason, 'You rated its progress “Bad”, and it’s due to finish next month.');
   // Across a year end.
-  assert.equal(timing('2027-01', 2, { asOf: '2026-12' }).reason, 'You rated its progress Bad, and it’s due to finish next month.');
+  assert.equal(timing('2027-01', 2, { asOf: '2026-12' }).reason, 'You rated its progress “Bad”, and it’s due to finish next month.');
   assert.equal(S.m20DueWhen(5, 'Mar 2027'), 'it’s due to finish in 5 months');
 });
 
@@ -288,7 +288,7 @@ test('Progress: the highest-ranked that needs attention, never the one Timing na
   const q = S.m20Questions(ranked, csfs, { asOf: '2026-10' });
   assert.deepEqual(q.map((x) => [x.kind, x.projectId]), [['timing', 'due'], ['progress', 'next']]);
   assert.equal(q[1].question, 'What would get “Next behind” back on track?');
-  assert.equal(q[1].reason, 'You rated its progress Bad, and it’s above your line for important.');
+  assert.equal(q[1].reason, 'You rated its progress “Bad”, and it’s above your line for important.');
   // Without a date the same project is asked about under Progress instead.
   const noDate = S.m20Questions(ranked, csfs, {});
   assert.deepEqual(noDate.map((x) => [x.kind, x.projectId]), [['progress', 'due']]);
@@ -308,7 +308,7 @@ test('Resource: at or below the line with High or Very high; the highest resourc
   const q = S.m20Questions(ranked, csfs).find((x) => x.kind === 'resource');
   assert.equal(q.projectId, 'vh17');
   assert.equal(q.question, 'Is “Very high, 17%” worth the resource it takes?');
-  assert.equal(q.reason, 'You rated its resource Very high, and its strategic importance is 17%.');
+  assert.equal(q.reason, 'You rated its resource “Very high”, and its strategic importance is 17%.');
   // Exactly at the line counts as at or below it.
   const at = build(csfs, [['x', 'At the line', [2, 1], 4, 4]]).ranked;
   assert.equal(S.m20Questions(at, csfs).find((x) => x.kind === 'resource').projectId, 'x');
@@ -329,7 +329,7 @@ test('CSF cover: a CSF no project rates High, the heavier first, then the first 
   const q = S.m20Questions(ranked, csfs).find((x) => x.kind === 'csf');
   assert.equal(q.csfId, 'b');
   assert.equal(q.question, 'What could strongly support “Second, Very important”?');
-  assert.equal(q.reason, 'You didn’t rate any project High for this CSF.');
+  assert.equal(q.reason, 'You didn’t rate any project “High” for this CSF.');
   assert.deepEqual(S.m20CsfsWithoutHigh(ranked, csfs), ['a', 'b', 'c']);
   const heavier = csfs.map((f) => (f.id === 'a' ? { ...f, level: 3 } : f));
   assert.equal(S.m20Questions(build(heavier, [['x', 'X', [2, 2, 2, 3], 4, 3]]).ranked, heavier).find((x) => x.kind === 'csf').csfId, 'a');

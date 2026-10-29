@@ -50,7 +50,7 @@ test('the email\'s headline and questions are the results page\'s, about the res
   assert.deepEqual(s.questions, model.questions.map(({ label, question, reason }) => ({ label, question, reason })));
   assert.equal(s.line, 50);
   assert.deepEqual(s.questions.map((q) => q.label), ['Timing', 'Progress', 'Resource']);
-  assert.match(s.questions[0].reason, /^They rated its progress Bad, and it’s due to finish in 2 months\.$/);
+  assert.match(s.questions[0].reason, /^They rated its progress “Bad”, and it’s due to finish in 2 months\.$/);
   assert.equal(s.headline, '0 of 2 important projects are moving well. 2 need attention.');
 });
 

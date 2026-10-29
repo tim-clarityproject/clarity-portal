@@ -281,7 +281,7 @@ export function rankProjects(projects, factors, ownerRatings) {
 // The results lead with one headline figure and up to three questions
 // (methods M20.1, version 1.4; Tim, 28 Oct, 14:00 to 15:26). They hold up a
 // mirror: each reason says what was rated, never that something doesn't
-// matter (rule 65). `theirs` gives the example report's wording ("They",
+// matter (rule 65), with the chosen answer in curly quotes (M7b version 47). `theirs` gives the example report's wording ("They",
 // "their").
 
 /** Progress and resource in a word, by rating 1..5, as the reasons say them. */
@@ -399,7 +399,7 @@ export function questions(ranked, factors, { line = IMPORTANT_ABOVE, asOf, their
         kind: 'timing',
         label: 'Timing',
         question: `Is “${r.project.text}” worth a sprint of extra resource to finish by ${monthWords(due)}, or should its timeline change?`,
-        reason: `${they} rated its progress ${PROGRESS_NAMES[r.progress]}, and ${dueWhen(left, monthWords(due))}.`,
+        reason: `${they} rated its progress “${PROGRESS_NAMES[r.progress]}”, and ${dueWhen(left, monthWords(due))}.`,
         projectId: r.project.id,
       });
       break;
@@ -412,7 +412,7 @@ export function questions(ranked, factors, { line = IMPORTANT_ABOVE, asOf, their
       kind: 'progress',
       label: 'Progress',
       question: `What would get “${fix.project.text}” back on track?`,
-      reason: `${they} rated its progress ${PROGRESS_NAMES[fix.progress]}, and it’s above ${whose} line for important.`,
+      reason: `${they} rated its progress “${PROGRESS_NAMES[fix.progress]}”, and it’s above ${whose} line for important.`,
       projectId: fix.project.id,
     });
   }
@@ -425,7 +425,7 @@ export function questions(ranked, factors, { line = IMPORTANT_ABOVE, asOf, their
       kind: 'resource',
       label: 'Resource',
       question: `Is “${heavy.project.text}” worth the resource it takes?`,
-      reason: `${they} rated its resource ${RESOURCE_NAMES[heavy.resource]}, and its strategic importance is ${roundPct(heavy.importance)}%.`,
+      reason: `${they} rated its resource “${RESOURCE_NAMES[heavy.resource]}”, and its strategic importance is ${roundPct(heavy.importance)}%.`,
       projectId: heavy.project.id,
     });
   }
@@ -439,7 +439,7 @@ export function questions(ranked, factors, { line = IMPORTANT_ABOVE, asOf, their
       kind: 'csf',
       label: 'CSF cover',
       question: `What could strongly support “${gap.f.text}”?`,
-      reason: `${they} didn’t rate any project High for this CSF.`,
+      reason: `${they} didn’t rate any project “High” for this CSF.`,
       csfId: gap.f.id,
     });
   }

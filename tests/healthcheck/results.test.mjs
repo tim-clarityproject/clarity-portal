@@ -57,9 +57,9 @@ test('the results are in the mock-up’s order, with no separate Next step', () 
 test('At a glance: the headline and the three questions, as the mock-up shows them', () => {
   const t = text(render({ draft: kestrel() }));
   assert.match(t, /2 of 5 important projects are moving well\. 1 needs managing, 1 needs attention and 1 is too early to tell\./);
-  assert.match(t, /Questions to start with Timing Is “Enterprise sales team” worth a sprint of extra resource to finish by Dec 2026, or should its timeline change\? You rated its progress Bad, and it’s due to finish in 2 months\./);
-  assert.match(t, /Resource Is “New office fit-out” worth the resource it takes\? You rated its resource High, and its strategic importance is 15%\./);
-  assert.match(t, /CSF cover What could strongly support “A team with the right skills in the right roles”\? You didn’t rate any project High for this CSF\./);
+  assert.match(t, /Questions to start with Timing Is “Enterprise sales team” worth a sprint of extra resource to finish by Dec 2026, or should its timeline change\? You rated its progress “Bad”, and it’s due to finish in 2 months\./);
+  assert.match(t, /Resource Is “New office fit-out” worth the resource it takes\? You rated its resource “High”, and its strategic importance is 15%\./);
+  assert.match(t, /CSF cover What could strongly support “A team with the right skills in the right roles”\? You didn’t rate any project “High” for this CSF\./);
   // No number circles on the questions.
   const glance = render({ draft: kestrel() }).split('<h3>Strategic importance')[0];
   assert.doesNotMatch(glance, /class="pn/);
@@ -109,9 +109,9 @@ test('the project list: its two ⓘ, the edit line, the states, with no pop-up o
   assert.match(text(html), /The one most in need of attention comes first\. .*Choose a project to edit its answers\./);
   assert.match(html, /aria-label="How it’s worked out"/);
   assert.match(html, /Strategic importance<button type="button" class="ipb" aria-label="What strategic importance means"/);
-  assert.deepEqual(words.ORDER_LINES.map((l) => l.bold || l.line), ['Most in need of attention', 'Important projects that are behind and require more resource come first.']);
+  assert.deepEqual(words.ORDER_LINES.map((l) => l.bold || l.line), ['Most in need of attention', 'Important projects that need attention and require more resource come first.']);
   assert.deepEqual(words.importanceLines().map((l) => l.bold || l.line), [
-    'Strategic importance', 'How much a project helps your CSFs, out of 100%.', 'High on every CSF scores 100%.',
+    'Strategic importance', 'It’s how much a project helps the CSFs, out of 100%.', 'High on every CSF scores 100%.',
     'A Critical CSF counts 40% more than an Important one, and a Very important one 20% more.',
   ]);
   for (const m of html.matchAll(/<span class="pn[^"]*"([^>]*)>/g)) assert.equal(m[1], ' aria-hidden="true"');
@@ -120,7 +120,15 @@ test('the project list: its two ⓘ, the edit line, the states, with no pop-up o
 test('How it works: the word, then its meaning, with the line in use', () => {
   const lines = words.howItWorks(60);
   assert.deepEqual(lines.slice(1).map((l) => l.term), ['Strategic importance', 'Important', 'Most in need of attention', 'Too early to tell', 'Bigger dots']);
-  assert.equal(lines[2].meaning, 'A project above the line you set, which is now 60%.');
+  // Every meaning is a full sentence, and Strategic importance has its one definition (version 47).
+  assert.deepEqual(lines.slice(1).map((l) => l.meaning), [
+    'It’s how much a project helps the CSFs, out of 100%.',
+    'It’s a project above the line you set, which is now 60%.',
+    'Important projects that need attention and require more resource come first.',
+    'It’s a project at the Embryonic stage.',
+    'They show projects that require more resource.',
+  ]);
+  assert.equal(words.importanceLines()[1].line, lines[1].meaning, 'the column ⓘ and How it works use the same words, the example too');
 });
 
 test('the example report: "Important means above 50%.", no drop-down, their words', () => {
