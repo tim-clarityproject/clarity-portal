@@ -7,7 +7,8 @@
 //
 //   node tests/healthcheck/compare-v47.mjs [folder]
 //   APP_URL=http://localhost:5174 (default)  MOCKUP=<path to the mock-up>
-//   ONLY=<regex on the screen id>  SHOTS=0 (no screenshots)
+//   ONLY=<regex on the screen id>  SHOTS=0 (no screenshots)  WIDTHS=1280,360
+//   TEXT2X=1 (the text at twice the size: read only the sideways and tap checks)
 //
 // The app is the outside Health Check (health-check.html) on the dev server.
 // Its two database calls are answered here with the mock-up's own invented
@@ -500,6 +501,8 @@ async function appPage(width, mode, { complete, step, watched = true }) {
     return route.fulfill({ response: r });
   });
   await ctx.route('**/api/alignment-email', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
+  // TEXT2X=1: the device's text size at twice the standard (the root at 32px), as tests/phase0e/app.mjs does on feature.
+  if (process.env.TEXT2X) await ctx.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = 'html { font-size: 32px !important; }'; document.head.appendChild(st); }); });
   if (watched) await ctx.addInitScript(() => { try { localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => pass(`no page errors (${width}px ${mode})`, false, e.message));
