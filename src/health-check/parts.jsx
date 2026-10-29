@@ -62,7 +62,7 @@ export function IconRow({ coach, onWho, how, onGuide, style }) {
 
 /** How it works opens a pop-up: the word, then its meaning (Tim, 28 Oct, 14:21). */
 function HowItWorks({ lines }) {
-  const { isOpen, ...t } = useTipTarget(lines, { wide: true });
+  const { isOpen, toggle: _toggle, ...t } = useTipTarget(lines, { wide: true });
   return (
     <button type="button" className="ilink" aria-expanded={isOpen} {...t}>
       <Icon name="info" />How it works
@@ -74,18 +74,30 @@ function HowItWorks({ lines }) {
 // Lines: { label } a small "what kind of thing", { bold } the name,
 // { big, small } the value large, { line } one fact, { term, meaning } a term
 // then its meaning. 12px inside both edges, below the target when there's no
-// room above. Escape closes.
+// room above, and it stays with its target when the page scrolls.
+//
+// How pop-ups open (Tim, 28 Oct, 14:22 and 14:42; START-HERE section 5):
+// - with a mouse, pointing at an ⓘ, How it works or a chart dot previews its
+//   pop-up, and it closes when the pointer moves away;
+// - a click keeps it open until you click away, click it again or press Escape;
+// - on a touch screen there is no hover: everything opens on tap;
+// - keyboard focus opens it, and Escape closes it and returns focus to its icon.
+// The eye and the play icon are not pop-ups: they open their panel or video on
+// click or tap only.
 
 const TipContext = createContext(null);
 export const useTip = () => useContext(TipContext);
 
 export function TipProvider({ children }) {
-  const [tip, setTip] = useState(null); // { lines, wide, el, owner }
+  const [tip, setTip] = useState(null); // { lines, wide, el, owner, kept }
   const boxRef = useRef(null);
-  const show = useCallback((el, lines, opts = {}) => setTip({ el, lines, wide: !!opts.wide, owner: opts.owner || el }), []);
-  const hide = useCallback((owner) => setTip((t) => (owner && t && t.owner !== owner ? t : null)), []);
+  // Focus going back to an icon after Escape doesn't open its pop-up again.
+  const quiet = useRef(false);
+  const show = useCallback((el, lines, opts = {}) => setTip({ el, lines, wide: !!opts.wide, owner: opts.owner || el, kept: !!opts.kept }), []);
+  // hide(owner, true) closes only a preview, never a pop-up a click has kept open.
+  const hide = useCallback((owner, previewOnly = false) => setTip((t) => (!t || (owner && t.owner !== owner) || (previewOnly && t.kept) ? t : null)), []);
 
-  useLayoutEffect(() => {
+  const place = useCallback(() => {
     const box = boxRef.current;
     if (!tip || !box || !tip.el?.isConnected) return;
     const G = 12;
@@ -102,30 +114,44 @@ export function TipProvider({ children }) {
     box.style.left = `${x}px`;
     box.style.top = `${top}px`;
   }, [tip]);
+  useLayoutEffect(place, [place]);
 
   useEffect(() => {
     if (!tip) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setTip(null); };
-    const onScroll = () => setTip(null);
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      const { el } = tip;
+      setTip(null);
+      if (el?.isConnected && document.activeElement !== el) {
+        quiet.current = true;
+        el.focus({ preventScroll: true });
+        quiet.current = false;
+      }
+    };
     const onDown = (e) => { if (!tip.el.contains(e.target) && !boxRef.current?.contains(e.target)) setTip(null); };
+    const onResize = () => setTip(null);
     // The pop-up's target went away (the screen changed): close it.
     if (!tip.el.isConnected) setTip(null);
     document.addEventListener('keydown', onKey);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('scroll', place, { passive: true, capture: true });
+    window.addEventListener('resize', onResize);
     document.addEventListener('pointerdown', onDown);
     return () => {
       document.removeEventListener('keydown', onKey);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('scroll', place, { capture: true });
+      window.removeEventListener('resize', onResize);
       document.removeEventListener('pointerdown', onDown);
     };
-  }, [tip]);
+  }, [tip, place]);
+
+  // A wide pop-up can be read with the pointer on it: moving from the ⓘ onto
+  // it keeps the preview, and moving off both closes it.
+  const onBoxLeave = (e) => { if (e.pointerType === 'mouse' && !tip?.el?.contains(e.relatedTarget)) hide(tip?.owner, true); };
 
   return (
-    <TipContext.Provider value={{ show, hide, open: tip }}>
+    <TipContext.Provider value={{ show, hide, open: tip, boxRef, quiet }}>
       {children}
-      <div ref={boxRef} className={`ui-root ctip${tip?.wide ? ' wide' : ''}`} role="tooltip" id="hc-tip" hidden={!tip}>
+      <div ref={boxRef} className={`ui-root ctip${tip?.wide ? ' wide' : ''}`} role="tooltip" id="hc-tip" hidden={!tip} onPointerLeave={onBoxLeave}>
         {tip && <TipLines lines={tip.lines} />}
       </div>
     </TipContext.Provider>
@@ -143,33 +169,33 @@ function TipLines({ lines }) {
   });
 }
 
-/** Hover, focus and tap open a pop-up on this element. */
+/** How pop-ups open, for one target (see above): the props to spread on it, and toggle for Enter and Space. */
 export function useTipTarget(lines, opts = {}) {
   const tipApi = useTip();
   const ref = useRef(null);
   const owner = useId();
   const isOpen = tipApi.open?.owner === owner;
-  const wasOpen = useRef(false);
-  const touch = useRef(false);
-  const open = () => ref.current && tipApi.show(ref.current, lines, { ...opts, owner });
+  const kept = isOpen && tipApi.open.kept;
+  const open = (keep) => ref.current && tipApi.show(ref.current, lines, { ...opts, owner, kept: keep });
+  // A click (or a tap, or Enter) keeps it open; on one that's kept open, it closes.
+  const toggle = () => { if (kept) tipApi.hide(owner); else open(true); };
   return {
     ref,
     isOpen,
-    onMouseEnter: open,
-    // A tap fires a mouse-out straight after it; only a real pointer leaving closes it.
-    onMouseLeave: () => { if (!touch.current) tipApi.hide(owner); },
-    onFocus: open,
-    onBlur: () => tipApi.hide(owner),
-    // Focus (from the same press) opens it; the press closes it only if it was already open.
-    onPointerDown: (e) => { wasOpen.current = isOpen; touch.current = e.pointerType !== 'mouse'; },
-    onClick: (e) => { e.stopPropagation(); if (wasOpen.current) { wasOpen.current = false; tipApi.hide(); } else open(); },
+    toggle,
+    // Only a mouse previews: a touch never leaves a hover pop-up behind.
+    onPointerEnter: (e) => { if (e.pointerType === 'mouse' && !tipApi.open?.kept) open(false); },
+    onPointerLeave: (e) => { if (e.pointerType === 'mouse' && !tipApi.boxRef.current?.contains(e.relatedTarget)) tipApi.hide(owner, true); },
+    onFocus: () => { if (!tipApi.quiet.current && !isOpen) open(false); },
+    onBlur: (e) => { if (!tipApi.boxRef.current?.contains(e.relatedTarget)) tipApi.hide(owner, true); },
+    onClick: (e) => { e.stopPropagation(); toggle(); },
     'aria-describedby': isOpen ? 'hc-tip' : undefined,
   };
 }
 
 /** The ⓘ at the end of a sentence. */
 export function InfoButton({ lines, label }) {
-  const { isOpen, ...t } = useTipTarget(lines, { wide: true });
+  const { isOpen, toggle: _toggle, ...t } = useTipTarget(lines, { wide: true });
   return (
     <button type="button" className="ipb" aria-label={label} aria-expanded={isOpen} {...t}>
       <Icon name="info" />

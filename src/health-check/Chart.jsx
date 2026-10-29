@@ -73,11 +73,12 @@ function Dot({ dot, lit }) {
     // a blank resource counts as Moderate, as its dot size does (m20DotSize)
     { line: `Resource required is ${(RES[row.resource] || RES[3])[0]}.` },
   ];
-  const { isOpen: _open, ...t } = useTipTarget(lines);
+  const { isOpen: _open, toggle, ...t } = useTipTarget(lines);
   const fill = q === 'mi' ? 'var(--mint)' : 'var(--bg)';
   const stroke = q === 'mi' ? 'var(--mint)' : q === 'co' ? 'var(--soft)' : q === 'pe' ? 'var(--fg)' : 'var(--ph)';
   const tc = q === 'mi' ? 'var(--on-mint)' : q === 'co' ? 'var(--soft)' : q === 'pe' ? 'var(--fg)' : 'var(--ph)';
-  const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); t.onFocus(); } };
+  // Enter and Space act as a click: they keep the pop-up open, or close it.
+  const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
   return (
     <g className={`dot${lit ? ' on' : ''}`} data-n={row.n} tabIndex={0} role="button" aria-label={`Project ${row.n}, ${row.text}. ${stateSentence(row)}`} {...t} onKeyDown={onKey}>
       <circle className="hit" cx={x} cy={y} r={22} />
