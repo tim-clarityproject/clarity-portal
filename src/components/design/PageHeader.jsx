@@ -1,6 +1,7 @@
-import { useEffect, useId, useState } from 'react';
+import { useId } from 'react';
 import { SystemLink } from './Button';
 import InfoIcon from './InfoIcon';
+import useInfoToggle from './useInfoToggle';
 import './design.css';
 
 // Page header (design reference v3: Page header). The title in Nekst
@@ -10,22 +11,13 @@ import './design.css';
 // sits behind the small "i" beside it (Tim, 23 Oct).
 //
 // meta:           short items for the meta line, e.g. ['Version 2.1', '8 weeks · 28 Sep to 22 Nov'].
-// info:           the page's one-line explanation, shown when the "i" is tapped.
+// info:           the page's one-line explanation, behind the "i" (it opens
+//                 as every "i" does: useInfoToggle).
 // onSystemLink:   shows "How the system fits together" in the meta line.
 // as:             the heading element (h1 on a real page).
 export default function PageHeader({ title, meta = [], info, onSystemLink, as: Heading = 'h1', className = '' }) {
   const infoId = useId();
-  const [infoOpen, setInfoOpen] = useState(false);
-
-  // Escape closes the explanation, like every other panel.
-  useEffect(() => {
-    if (!infoOpen) return undefined;
-    const onKey = (e) => {
-      if (e.key === 'Escape') setInfoOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [infoOpen]);
+  const { open: helpOpen, buttonRef: helpButtonRef, panelRef: helpPanelRef, buttonProps: helpProps } = useInfoToggle();
   const items = meta.filter(Boolean);
   const hasMeta = items.length > 0 || onSystemLink;
   return (
@@ -36,17 +28,18 @@ export default function PageHeader({ title, meta = [], info, onSystemLink, as: H
           <button
             type="button"
             className="ds-help-toggle ds-page-info-toggle"
-            aria-expanded={infoOpen}
             aria-controls={infoId}
             aria-label={`About ${typeof title === 'string' ? title : 'this page'}`}
-            onClick={() => setInfoOpen((open) => !open)}
+            ref={helpButtonRef}
+            aria-expanded={helpOpen}
+            {...helpProps}
           >
             <InfoIcon />
           </button>
         )}
       </div>
       {info && (
-        <p id={infoId} className="ds-page-info" hidden={!infoOpen}>{info}</p>
+        <p id={infoId} ref={helpPanelRef} className="ds-page-info" hidden={!helpOpen}>{info}</p>
       )}
       {hasMeta && (
         <div className="ds-page-meta">

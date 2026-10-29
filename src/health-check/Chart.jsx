@@ -86,11 +86,12 @@ function Dot({ dot, r0, top, phone, PT, PL, W, others = [] }) {
     { line: stateSentence(row) },
     ...(PROGS[row.progress] ? [{ line: `Progress is ${PROGS[row.progress]}.` }] : []),
   ];
-  const { isOpen: _open, ...t } = useTipTarget(lines);
+  const { isOpen: _open, toggle, ...t } = useTipTarget(lines);
   const fill = q === 'mi' ? 'var(--mint)' : 'var(--bg)';
   const stroke = q === 'mi' ? 'var(--mint)' : q === 'co' ? 'var(--soft)' : q === 'pe' ? 'var(--fg)' : 'var(--ph)';
   const tc = q === 'mi' ? 'var(--on-mint)' : q === 'co' ? 'var(--soft)' : q === 'pe' ? 'var(--fg)' : 'var(--ph)';
-  const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); t.onFocus(); } };
+  // Enter and Space act as a click: they keep the pop-up open, or close it.
+  const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
   return (
     <g className="dot" tabIndex={0} role="button" aria-label={`Project ${row.n}, ${row.text}. ${stateSentence(row)}`} {...t} onKeyDown={onKey}>
       <circle className="hit" cx={x} cy={y} r={22} />

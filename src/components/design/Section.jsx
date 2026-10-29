@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import InfoIcon from './InfoIcon';
+import useInfoToggle from './useInfoToggle';
 import './design.css';
 
 const SEEN_PREFIX = 'ds-help-seen:';
@@ -18,14 +19,14 @@ function readSeen(key) {
 //
 // helpKey: when given, the line shows on the first visit on this device,
 //          then collapses to a small "i" beside the title that opens it
-//          again (decisions: "Help text").
+//          again (decisions: "Help text"), as every "i" does (useInfoToggle).
 // as:      the heading element (h2 on a real page).
 // aside:   something small at the right of the title, such as who can see
 //          the section (WhoSees), as M1.
 export default function Section({ title, line, helpKey, as: Heading = 'h2', id, aside, children, className = '' }) {
   const lineId = useId();
   const [collapsed] = useState(() => (helpKey ? readSeen(helpKey) : false));
-  const [helpOpen, setHelpOpen] = useState(false);
+  const { open: helpOpen, buttonRef: helpButtonRef, panelRef: helpPanelRef, buttonProps: helpProps } = useInfoToggle();
 
   useEffect(() => {
     if (!helpKey) return;
@@ -46,10 +47,11 @@ export default function Section({ title, line, helpKey, as: Heading = 'h2', id, 
           <button
             type="button"
             className="ds-help-toggle"
-            aria-expanded={helpOpen}
             aria-controls={lineId}
             aria-label={`About ${title}`}
-            onClick={() => setHelpOpen((open) => !open)}
+            ref={helpButtonRef}
+            aria-expanded={helpOpen}
+            {...helpProps}
           >
             <InfoIcon />
           </button>
@@ -57,7 +59,7 @@ export default function Section({ title, line, helpKey, as: Heading = 'h2', id, 
         {aside && <div className="ds-section-aside">{aside}</div>}
       </div>
       {line && (
-        <p id={lineId} className="ds-section-line" hidden={!showLine}>
+        <p id={lineId} ref={helpPanelRef} className="ds-section-line" hidden={!showLine}>
           {line}
         </p>
       )}

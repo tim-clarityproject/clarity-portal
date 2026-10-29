@@ -9,7 +9,7 @@ import { cleanItems } from '../pages/alignment/alignmentFlow.js';
 // person's own results and the read-only example report.
 
 function ProjectNumber({ row }) {
-  const { isOpen: _open, ...t } = useTipTarget([{ label: `Project ${row.n}` }, { bold: row.text }]);
+  const { isOpen: _open, toggle: _toggle, ...t } = useTipTarget([{ label: `Project ${row.n}` }, { bold: row.text }]);
   return <span className={`pn ${row.q}`} aria-hidden="true" {...t}>{row.n}</span>;
 }
 

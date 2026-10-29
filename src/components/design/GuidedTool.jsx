@@ -10,6 +10,7 @@ import { STEP_PREFIX } from './guideDraft';
 import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
 import Chevron from './Chevron';
+import useInfoToggle from './useInfoToggle';
 import './design.css';
 
 // The guided-step component: every tool people work through in order,
@@ -110,12 +111,11 @@ function Tip({ tip, onClosed }) {
 }
 
 function StepHead({ step, headingRef, positionId, role }) {
-  const [infoOpen, setInfoOpen] = useState(false);
+  // The "i" opens as every "i" does (useInfoToggle), and Escape closes open help first.
+  const { open: infoOpen, buttonRef: infoButtonRef, panelRef: infoPanelRef, buttonProps: infoProps } = useInfoToggle();
   const [exampleOpen, setExampleOpen] = useState(false);
   const infoId = useId();
   const exampleId = useId();
-  // Escape closes open help first.
-  useEscapeLayer(infoOpen, () => setInfoOpen(false));
   useEscapeLayer(exampleOpen, () => setExampleOpen(false));
   const example = exampleFor(step.example, role);
   const Heading = 'h2';
@@ -129,17 +129,18 @@ function StepHead({ step, headingRef, positionId, role }) {
             <button
               type="button"
               className="ds-guide-i"
-              aria-expanded={infoOpen}
               aria-controls={infoId}
               aria-label="Why we ask"
-              onClick={() => setInfoOpen((v) => !v)}
+              ref={infoButtonRef}
+              aria-expanded={infoOpen}
+              {...infoProps}
             >
               <InfoIcon />
             </button>
           )}
         </div>
       )}
-      {step.info && infoOpen && <p id={infoId} className="ds-guide-info">{step.info}</p>}
+      {step.info && infoOpen && <p id={infoId} ref={infoPanelRef} className="ds-guide-info">{step.info}</p>}
       <Heading
         ref={headingRef}
         tabIndex={-1}
