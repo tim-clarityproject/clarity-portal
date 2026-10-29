@@ -418,9 +418,10 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .stg video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
 @media (max-width: 640px) { .stg { aspect-ratio: 3/5; } }
 .capbar { min-height: 52px; display: flex; align-items: center; justify-content: center; padding: 8px 18px; text-align: center; font-size: calc(16 * var(--u)); color: var(--fg); border-top: 1px solid var(--line); }
-.vpc { display: flex; align-items: center; gap: 6px; padding: 8px 14px 12px; }
+.vpc { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 14px 12px; }
 .stg { cursor: pointer; }
-.scrub { position: relative; flex: 1; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; outline: none; }
+/* at a large text size the time moves to its own line, so the scrub keeps a 44px tap area */
+.scrub { position: relative; flex: 1; min-width: 64px; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; outline: none; }
 .scrub .trk { position: relative; flex: 1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .scrub .trk i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--fg); }
 .scrub .th { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--fg); transition: transform var(--d2) var(--ease), background-color var(--d2) var(--ease); }

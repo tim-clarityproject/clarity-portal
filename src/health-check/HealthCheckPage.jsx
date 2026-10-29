@@ -46,8 +46,10 @@ const accessKey = (token) => `alignment-access:${token}`;
 const lastSavedKey = (token) => `hc-last-saved:${token}`;
 const seenKey = (token) => `hc-seen:${token}`;
 // The coach's first name from the last time this link opened on this device,
-// so the email and code screen can name them on a return visit.
-const coachKey = (token) => `hc-coach:${token}`;
+// so the email and code screen can name them on a return visit. A new name
+// from 036 on: before it, an older link was named from 034 although its
+// answers go to the owner list, so a name kept then is never read.
+const coachKey = (token) => `hc-coach-036:${token}`;
 const store = {
   get(area, key) { try { return window[area].getItem(key); } catch { return null; } },
   set(area, key, v) { try { window[area].setItem(key, v); } catch { /* storage blocked: nothing kept */ } },
