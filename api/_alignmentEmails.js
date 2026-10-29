@@ -59,7 +59,7 @@ function ukDateKey(date) {
  * questions to start with as the results page and the PDF, from the same
  * model (resultsModel in src/health-check/words.js, from
  * src/lib/scores/m20.js). Written about the respondent ("They rated…"),
- * because the email goes to the coaches.
+ * because the email goes to the coach.
  * @param {Object} data the saved answers (alignment_sessions.data)
  * @param {string|Date} completedAt when it was completed: the Timing question counts from it
  * @returns {{line: number, headline: string, questions: {label: string, question: string, reason: string}[]}}
@@ -114,9 +114,56 @@ export function linkEmail({ origin, token, dateText }) {
 }
 
 /**
- * The notice to Tim and Adie when a Strategic Alignment Health Check is
- * completed. Its summary is completionSummary's: the headline, then the
- * questions to start with, each with its reason.
+ * Who gets which email when a Health Check is finished (Tim, 29 Oct): the
+ * answers go only to the coach who made the link. The owner list
+ * (ALIGNMENT_NOTIFY_TO) gets a short notice with no answers, unless the link
+ * is older and has no coach recorded, when the owner list gets the answers,
+ * as before. An owner who made the link is its coach, so gets the answers;
+ * the rest of the owner list gets the notice.
+ * @param {{coachEmail: string|null, owners: string[]}} who
+ * @returns {{answersTo: string[], noticeTo: string[]}}
+ */
+export function completionRecipients({ coachEmail, owners }) {
+  const coach = String(coachEmail || '').trim();
+  if (!coach) return { answersTo: [...owners], noticeTo: [] };
+  const same = (a) => a.toLowerCase() === coach.toLowerCase();
+  return { answersTo: [coach], noticeTo: owners.filter((a) => !same(a)) };
+}
+
+/** The owner list from ALIGNMENT_NOTIFY_TO: comma separated. */
+export const ownerList = (value) => String(value || '').split(',').map((a) => a.trim()).filter(Boolean);
+
+/**
+ * The notice to the owner when someone else's Health Check link is finished:
+ * only the organisation and the date. No answers, no PDF and no link.
+ */
+export function finishedEmail({ clientLabel, dateText }) {
+  const label = oneLine(clientLabel);
+  const subject = `Strategic Alignment Health Check finished: ${label}`;
+  const html = shell({
+    heading: 'Strategic Alignment Health Check finished',
+    bodyHtml: [
+      para(`<strong>${esc(label)}</strong> has finished a Strategic Alignment Health Check.`),
+      small(`Finished: ${esc(dateText)}`),
+      small('The answers went only to the coach who sent the link.'),
+    ].join('\n'),
+  });
+  const text = [
+    `${label} has finished a Strategic Alignment Health Check.`,
+    '',
+    `Finished: ${dateText}`,
+    'The answers went only to the coach who sent the link.',
+    '',
+    'The Clarity Project - theclarityproject.co.uk',
+  ].join('\n');
+  return { subject, html, text, attachments: [logoAttachment()] };
+}
+
+/**
+ * The email to the coach who made the link (or the owner, for an older link)
+ * when a Strategic Alignment Health Check is completed. Its summary is
+ * completionSummary's: the headline, then the questions to start with, each
+ * with its reason.
  */
 export function completeEmail({ origin, token, clientLabel, respondentEmail, completedText, objective, summary }) {
   const link = `${origin}/health-check/${token}`;

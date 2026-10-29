@@ -1,4 +1,4 @@
-// Health Check 3, part 4: the completion email to Tim and Adie summarises the
+// Health Check 3, part 4: the completion email to the link's coach summarises the
 // results with the same headline and questions as the results page and the
 // PDF, from the same model. Renders the email body only: nothing is sent.
 // Run with npm run test:healthcheck.

@@ -3,16 +3,24 @@
 //
 // The browser never says who the email goes to:
 //   'link'     -> always the session's own email address (from the database)
-//   'complete' -> always the addresses in ALIGNMENT_NOTIFY_TO (Vercel setting)
+//   'complete' -> the answers only to the coach who made the link (migration
+//                 036, alignment_recipients, with the server's key); the owner
+//                 list (ALIGNMENT_NOTIFY_TO) gets a notice with no answers.
+//                 An older link with no coach recorded sends the answers to
+//                 the owner list, as before (completionRecipients).
 // Every request is first checked in the database (alignment_email_check: link,
 // email and access code, with the same lockout, plus the send limits). Errors
-// are generic. The access code and the token are never logged.
+// are generic. Nothing is logged: no address, access code or token.
 //
 // Environment variables (Vercel): RESEND_API_KEY, ALIGNMENT_EMAIL_FROM,
-// ALIGNMENT_NOTIFY_TO, and the Supabase URL and anon key the app already has
+// ALIGNMENT_NOTIFY_TO, SUPABASE_SERVICE_ROLE_KEY (only to ask who made the
+// link), and the Supabase URL and anon key the app already has
 // (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY, or SUPABASE_URL / SUPABASE_ANON_KEY).
 
-import { linkEmail, completeEmail, completionSummary, ukDate, ukDateTime } from './_alignmentEmails.js';
+import {
+  linkEmail, completeEmail, completionSummary, completionRecipients, finishedEmail, ownerList, ukDate, ukDateTime,
+} from './_alignmentEmails.js';
+import { parseDbTimestamp } from '../src/lib/dateFormatter.js';
 
 const KINDS = ['link', 'complete'];
 
@@ -21,17 +29,29 @@ function reply(res, status, body) {
   res.status(status).json(body);
 }
 
-async function rpc(name, args) {
+async function rpc(name, args, { server = false } = {}) {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const key = server
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY
+    : process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error('config');
-  const r = await fetch(`${url}/rest/v1/rpc/${name}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: key, Authorization: `Bearer ${key}` },
-    body: JSON.stringify(args),
-  });
+  // A newer Supabase secret key (not a JWT) goes in apikey only.
+  const headers = { 'Content-Type': 'application/json', apikey: key };
+  if (key.startsWith('eyJ')) headers.Authorization = `Bearer ${key}`;
+  const r = await fetch(`${url}/rest/v1/rpc/${name}`, { method: 'POST', headers, body: JSON.stringify(args) });
   if (!r.ok) throw new Error('rpc');
   return r.json();
+}
+
+// The coach's address for a coach's link (036), or null for an older link.
+// A coach's link whose coach can't be found sends nothing, rather than
+// sending the answers to anyone else.
+async function coachEmailFor(check, token) {
+  if (check.has_coach !== true) return null;
+  const who = await rpc('alignment_recipients', { p_token: token }, { server: true });
+  const email = who && who.ok && typeof who.coach_email === 'string' ? who.coach_email.trim() : '';
+  if (!email) throw new Error('recipients');
+  return email;
 }
 
 async function sendWithResend({ to, subject, html, text, attachments }) {
@@ -78,16 +98,20 @@ export default async function handler(req, res) {
   const origin = `https://${String(host).split(',')[0].trim()}`;
 
   try {
-    let message;
-    let to;
     if (kind === 'link') {
-      to = [check.respondent_email];
-      message = linkEmail({ origin, token, dateText: ukDate(new Date()) });
-    } else {
-      to = String(process.env.ALIGNMENT_NOTIFY_TO || '').split(',').map((s) => s.trim()).filter(Boolean);
-      const data = check.data || {};
-      const completed = check.completed_at || data.completedAt || new Date().toISOString();
-      message = completeEmail({
+      await sendWithResend({ to: [check.respondent_email], ...linkEmail({ origin, token, dateText: ukDate(new Date()) }) });
+      return reply(res, 200, { ok: true });
+    }
+
+    const data = check.data || {};
+    const completed = check.completed_at || data.completedAt || new Date().toISOString();
+    const { answersTo, noticeTo } = completionRecipients({
+      coachEmail: await coachEmailFor(check, token),
+      owners: ownerList(process.env.ALIGNMENT_NOTIFY_TO),
+    });
+    await sendWithResend({
+      to: answersTo,
+      ...completeEmail({
         origin,
         token,
         clientLabel: check.client_label,
@@ -96,9 +120,15 @@ export default async function handler(req, res) {
         objective: data.objective || '',
         // the same headline and questions as the results page and the PDF
         summary: completionSummary(data, completed),
-      });
+      }),
+    });
+    // The owner's notice: only that it was finished. The coach already has the
+    // answers, so a notice that doesn't go is not tried again.
+    if (noticeTo.length) {
+      try {
+        await sendWithResend({ to: noticeTo, ...finishedEmail({ clientLabel: check.client_label, dateText: ukDate(parseDbTimestamp(completed)) }) });
+      } catch { /* the coach's email went; nothing more to do */ }
     }
-    await sendWithResend({ to, ...message });
     return reply(res, 200, { ok: true });
   } catch {
     // Undo the record of this send so it can be tried again.
