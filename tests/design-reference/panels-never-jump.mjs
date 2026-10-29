@@ -120,9 +120,19 @@ const browser = await chromium.launch();
   await wait(page);
   await openingRan(page, 'Pop-up fades in when it opens');
   await watch(page, '.ds-popup', '.ds-popup .ds-dialog-body');
-  await page.locator('.ds-popup').getByRole('radio', { name: 'The sprint' }).click();
+  // The pop-up is now the real Individual Performance System (M1's
+  // "How the system fits together", Phase 2 step 1), which has no choice
+  // inside (the old stand-in had a "The plan / The sprint" switch). What a
+  // person can do inside it is move between its controls and hover them,
+  // so the check does that: the pop-up must stay put, unrebuilt, with its
+  // scroll and focus held.
+  const popup = page.locator('.ds-popup');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await popup.getByRole('button', { name: 'Close' }).last().hover();
   await wait(page);
-  await verdict(page, 'Pop-up (a choice inside)', '.ds-popup', '.ds-popup .ds-dialog-body');
+  await verdict(page, 'Pop-up (moving between its controls)', '.ds-popup', '.ds-popup .ds-dialog-body');
   await page.keyboard.press('Escape');
   await wait(page);
 

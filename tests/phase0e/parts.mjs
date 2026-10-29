@@ -7,7 +7,9 @@
 // Needs the dev server on http://localhost:5173.
 //  1. Colours: in Dark and Light panes, with the device set to light and
 //     to dark, every good mark, tick, switch, bar and score is the mint of
-//     its own pane's mode, and nothing good is coral.
+//     its own pane's mode, and nothing good is coral; a bar under the
+//     standard is the below grey, and a guided tool's step bar is neutral
+//     (26 Oct rule 1).
 //  2. Pop-ups: every chart mark's pop-up stays 12px inside the screen, on
 //     a laptop (1280px, hover) and a phone (390px, tap).
 //  3. Icons with words: icon centres within 1px of the middle of the
@@ -31,6 +33,7 @@ const MINT = { dark: 'rgb(95, 239, 187)', light: 'rgb(11, 122, 82)' };
 const ON_MINT = { dark: 'rgb(0, 0, 0)', light: 'rgb(255, 255, 255)' };
 const CORAL = { dark: 'rgb(255, 111, 92)', light: 'rgb(194, 65, 46)' };
 const CORALS = ['rgb(255, 111, 92)', 'rgb(194, 65, 46)'];
+const BELOW = { dark: 'rgb(99, 99, 98)', light: 'rgb(143, 141, 136)' };
 
 const browser = await chromium.launch();
 
@@ -39,7 +42,7 @@ for (const device of ['light', 'dark']) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, colorScheme: device });
   await page.goto(`${APP}/design-reference`, { waitUntil: 'networkidle' });
   // Open one eye panel's switch list so a switch that is on can be read.
-  const found = await page.evaluate(({ MINT, ON_MINT, CORALS }) => {
+  const found = await page.evaluate(({ MINT, ON_MINT, CORALS, BELOW }) => {
     const rows = [];
     document.querySelectorAll('.dr-pane[data-theme]').forEach((pane) => {
       const mode = pane.getAttribute('data-theme');
@@ -48,7 +51,14 @@ for (const device of ['light', 'dark']) {
         ['week bars at or above the standard', '.ds-wchart-bar--good', 'backgroundColor', MINT[mode]],
         ['dial weeks at or above the standard', '.ds-dial-seg--good', 'stroke', MINT[mode]],
         ['live score at or above the standard', '.ds-stat-value--good', 'color', MINT[mode]],
-        ['progress bars', '.ds-bar > span', 'backgroundColor', MINT[mode]],
+        // 26 Oct rule 1: a bar towards a target is mint; a score bar under
+        // the standard (a Strategy tile's ds-bar--below) is the below grey;
+        // a guided tool's step bar is neutral, in the text colour.
+        ['progress bars towards a target', '.ds-bar:not(.ds-bar--below) > span', 'backgroundColor', MINT[mode]],
+        ['bars under the standard', '.ds-bar.ds-bar--below > span', 'backgroundColor', BELOW[mode]],
+        // The gallery's guided tool shows its step list; the % bar is
+        // checked too wherever one is shown. Neither is ever mint or coral.
+        ['step bars in guided tools, neutral', '.ds-guide-steps button, .ds-guide-pct-track > span', 'color', null],
         ['ticked boxes', ".ds-check-box[aria-checked='true'] > span", 'backgroundColor', MINT[mode]],
         ['ticks on ticked boxes', ".ds-check-box[aria-checked='true'] svg", 'stroke', ON_MINT[mode]],
         ['small-win ticks', '.ds-win-tick', 'backgroundColor', MINT[mode]],
@@ -57,11 +67,13 @@ for (const device of ['light', 'dark']) {
       ];
       checks.forEach(([name, sel, prop, want]) => {
         const got = read(sel, prop);
-        rows.push({ mode, name, count: got.length, wrong: got.filter((c) => c !== want), coral: got.filter((c) => CORALS.includes(c)) });
+        // want null: neutral, so anything but mint (and never coral).
+        const wrong = want ? got.filter((c) => c !== want) : got.filter((c) => c === MINT[mode]);
+        rows.push({ mode, name, count: got.length, wrong, coral: got.filter((c) => CORALS.includes(c)) });
       });
     });
     return rows;
-  }, { MINT, ON_MINT, CORALS });
+  }, { MINT, ON_MINT, CORALS, BELOW });
   // Totals per mode and part, across every pane in the gallery.
   const totals = {};
   found.forEach((r) => {

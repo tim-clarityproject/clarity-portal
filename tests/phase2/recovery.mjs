@@ -20,6 +20,10 @@
 //     counted from today; Add a few more days; Pick up my sprint.
 //  6. From a finished review ("Recovery first"), with no sprint running;
 //     then Start a sprint ends the Recovery first.
+//  Every date is FIXED (Tim, 29 Oct): the seed builds the plan around one
+//  day (--today) and every browser's clock is set to noon on that day
+//  (Playwright's clock), so nothing depends on the day the test runs.
+//  RECOVERY_TODAY=YYYY-MM-DD picks another day (to prove any weekday works).
 //  Every screen at 1280px, 700px, 390px and 360px, dark and light: no
 //  sideways scroll, at most one coral button, 44px tap areas, no coral in
 //  the dial. Ends with the usual seeded plan and running sprint, and no
@@ -55,9 +59,15 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
-const seed = (...flags) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', ...flags], { stdio: 'pipe' }).toString().trim();
-const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-const today = `${parts.find((p) => p.type === 'year').value}-${parts.find((p) => p.type === 'month').value}-${parts.find((p) => p.type === 'day').value}`;
+// The fixed day: a Wednesday unless RECOVERY_TODAY says otherwise.
+const today = process.env.RECOVERY_TODAY || '2026-10-21';
+if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new Error('RECOVERY_TODAY needs YYYY-MM-DD.');
+const weekday = (key) => (new Date(`${key}T12:00:00Z`).getUTCDay() + 6) % 7; // Monday 0
+// Noon in London on that day (11:00 or 12:00 UTC), far from midnight.
+const CLOCK = new Date(`${today}T11:30:00Z`);
+const seed = (...flags) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', ...flags, `--today=${today}`], { stdio: 'pipe' }).toString().trim();
+// The last seed puts the test client back on the real today.
+const seedForReal = (...flags) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', ...flags], { stdio: 'pipe' }).toString().trim();
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 15000) {
   const end = Date.now() + ms;
@@ -85,6 +95,9 @@ async function signedIn({ width, mode }) {
     timezoneId: 'Europe/London',
     colorScheme: mode,
   });
+  // Every page in the context sees the fixed day; time still moves on
+  // from there, so timers and save delays behave as usual.
+  await context.clock.install({ time: CLOCK });
   await context.addInitScript((m) => {
     try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ }
   }, mode);
@@ -285,9 +298,12 @@ await everyLayout('paused', async (page) => go(page, '/performance-sprint', '.ds
 await everyLayout('plan-in-recovery', async (page) => go(page, '/performance-plan', '.ds-rec-notice'));
 
 // ---------------------------------------------------------------- 4. across a week boundary, ended early
-// The seeded sprint started on a Monday 3 weeks ago; a Recovery from 10
-// days ago (the last day of week 2) for 14 days crosses two Mondays.
-seed('--reset', '--recovery=10,14');
+// The seeded sprint started on the Monday 3 weeks before this week's; a
+// Recovery from the last day of week 2 (the Sunday 8 days before this
+// Monday, so 10 days ago on a Wednesday) for 4 days past today crosses
+// one or two Mondays, whatever the weekday.
+const taken = weekday(today) + 8;
+seed('--reset', `--recovery=${taken},${taken + 4}`);
 {
   const { context, page } = await signedIn({ width: 390, mode: 'dark' });
   await go(page, '/performance-sprint', '.ds-sdial--paused');
@@ -306,7 +322,7 @@ seed('--reset', '--recovery=10,14');
   const w = plain(await text(page, '.rec-sprint-lines'));
   pass('week 2 carries on today', w.includes(`Sprint ${r.sprint.number} picks up today, at week 2 of ${r.sprint.length_weeks}.`), w);
   const planned = addDays(r.sprint.start_on, r.sprint.length_weeks * 7 - 1);
-  pass('... and the end has moved later by the 10 days taken', s.endOn === addDays(planned, 10) && w.includes(`It ends on ${dayName(s.endOn, today)}.`), `${s.endOn}`);
+  pass(`... and the end has moved later by the ${taken} days taken`, s.endOn === addDays(planned, taken) && w.includes(`It ends on ${dayName(s.endOn, today)}.`), `${s.endOn}`);
   pass('Log today is the one coral button, with Plan my day', (await text(page, '.sprint-welcome-actions')).toLowerCase().includes('plan my day'));
   await shot(page, 'welcome-390-dark');
   await context.close();
@@ -401,9 +417,10 @@ seed('--ended');
 }
 
 await browser.close();
-seed('--reset');
+seedForReal('--reset');
 const left = (await db.from('recovery_periods').select('id').eq('user_id', me).is('ended_at', null)).data || [];
 pass('ends with the seeded plan and running sprint, and no open Recovery', left.length === 0);
+console.log(`Fixed day: ${today} (${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][weekday(today)]}).`);
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures} passed, ${failures} failed.`);
 process.exit(failures ? 1 : 0);

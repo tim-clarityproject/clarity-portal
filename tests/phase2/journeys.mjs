@@ -142,16 +142,65 @@ async function signedIn({ width = 1280, mode = 'dark', coach = false } = {}) {
 }
 const shot = async (page, name) => { if (out) await page.screenshot({ path: `${out}/${name}.png`, fullPage: true }); };
 const bodyText = async (page) => (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+// No fixed waits (Tim, 29 Oct): every wait is for the real condition.
+// Calm: no finite animation or transition still running (the loading
+// crosshair's endless turn doesn't count).
+const calm = async (p) => {
+  try {
+    await p.waitForFunction(() => document.getAnimations()
+      .every((a) => a.playState !== 'running' || a.effect?.getComputedTiming().iterations === Infinity), null, { timeout: 15000 });
+  } catch {
+    const still = await p.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running')
+      .map((a) => `${a.animationName || a.transitionProperty} on ${String(a.effect?.target?.className || '').slice(0, 40)}`)).catch(() => []);
+    throw new Error(`not calm after 15s: ${still.join('; ')}`);
+  }
+};
+// Next: the step's page is a new element (GuidedTool keys it by step), and
+// it has finished coming in.
+// The guided tool ignores a Next within 400ms of a step appearing (its
+// double-tap guard, NEXT_GUARD_MS in GuidedTool), so wait until the step
+// has been on screen that long (timed from when the test first saw it).
+const pastTapGuard = (page) => page.waitForFunction(() => {
+  const el = document.querySelector('.ds-guide-page');
+  if (!el) return false;
+  if (!el.dataset.seenAt) el.dataset.seenAt = String(performance.now());
+  return performance.now() - Number(el.dataset.seenAt) >= 450;
+}, null, { timeout: 15000, polling: 50 });
 const next = async (page) => {
+  await pastTapGuard(page);
+  await page.locator('.ds-guide-page').first().evaluate((el) => { el.dataset.was = 'yes'; });
   await page.locator('.ds-guide-next').click();
-  await page.waitForTimeout(650);
+  await page.waitForFunction(() => {
+    const pages = [...document.querySelectorAll('.ds-guide-page')];
+    if (pages.length === 0 || pages.some((el) => el.dataset.was)) return false;
+    pages.forEach((el) => { if (!el.dataset.seenAt) el.dataset.seenAt = String(performance.now()); });
+    return true;
+  }, null, { timeout: 15000, polling: 50 }).catch(async () => {
+    throw new Error(`Next didn't move on from "${await heading(page)}"`);
+  });
+  await calm(page);
+};
+// A page shows its last device copy first and refreshes quietly
+// (useCachedLoad): wait until its copy has been rewritten from the server
+// since `since`, then for that data to be drawn.
+const fresh = async (p, name, since) => {
+  await p.waitForFunction(({ name, since }) => Object.keys(localStorage).some((k) => {
+    if (!k.startsWith('clarity-cache:') || !k.endsWith(`:${name}`)) return false;
+    try { return (JSON.parse(localStorage.getItem(k))?.at || 0) >= since; } catch { return false; }
+  }), { name, since }, { timeout: 30000 });
+  await p.evaluate(() => new Promise((r) => { requestAnimationFrame(() => requestAnimationFrame(r)); }));
+  await calm(p);
+};
+const visit = async (p, path, name) => {
+  const since = Date.now();
+  await p.goto(`${APP}${path}`);
+  await fresh(p, name, since);
 };
 const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-guide-title').first().textContent()) || '').trim();
 const savedShown = (page) => page.waitForFunction(() => /Saved/.test(document.querySelector('.ds-guide-bar')?.textContent || ''), null, { timeout: 15000 });
 const openSprint = async (page) => {
-  await page.goto(`${APP}/performance-sprint`);
+  await visit(page, '/performance-sprint', 'performance-sprint');
   await page.waitForSelector('.sprint-page', { timeout: 30000 });
-  await page.waitForTimeout(1200);
 };
 const activePlan = async () => (await q(db.from('performance_plans').select('id, mission, major, minor').eq('user_id', me).eq('status', 'active')))[0] || null;
 const runningSprint = async () => (await q(db.from('sprints').select('*').eq('user_id', me).eq('status', 'running')))[0] || null;
@@ -289,9 +338,10 @@ try {
 }
 
 // ------------------------------------------------------------------ 1. build
+let at = 'build mission';
 try {
   await page.waitForSelector('.ds-guide', { timeout: 30000 });
-  await page.waitForTimeout(600);
+  await calm(page);
   await page.getByLabel('My Mission').fill('Help leaders stay calm and clear under pressure');
   await savedShown(page);
   await next(page);
@@ -301,7 +351,7 @@ try {
     await card(i).locator('.ds-date').click();
     for (let m = 0; m < months; m += 1) await page.getByRole('button', { name: 'Next month' }).click();
     await page.getByRole('button', { name: label, exact: true }).click();
-    await page.waitForTimeout(200);
+    await page.getByRole('button', { name: 'Next month' }).waitFor({ state: 'hidden' });
   };
   await card(0).locator('textarea').fill(O1);
   await card(0).getByLabel('Where are you now?').fill('12');
@@ -313,19 +363,25 @@ try {
   await card(1).getByLabel('Where are you now?').fill('5');
   await card(1).getByLabel('What’s your target?').fill('8');
   await pickDate(1, '30 April 2027', 6);
-  await page.waitForTimeout(1500);
+  await until(async () => {
+    const o = await q(db.from('outcome_objectives').select('name, target_value').eq('user_id', me).is('archived_at', null));
+    return o.some((x) => x.name === O1 && Number(x.target_value) === 20) && o.some((x) => x.name === O2 && Number(x.target_value) === 8);
+  });
   await savedShown(page);
   await next(page);
 
   // One Strategy for each objective.
   await page.getByRole('button', { name: 'Add a Strategy' }).click();
-  await page.waitForTimeout(150);
   await page.getByLabel('Strategy 1').fill(S1);
   await next(page);
+  const strategyBoxes = await page.getByLabel(/Strategy \d/).count();
   await page.getByRole('button', { name: 'Add a Strategy' }).click();
-  await page.waitForTimeout(150);
+  await until(async () => (await page.getByLabel(/Strategy \d/).count()) > strategyBoxes, 10000);
   await page.getByLabel(/Strategy \d/).last().fill(S2);
-  await page.waitForTimeout(1500);
+  await until(async () => {
+    const st = await q(db.from('plan_strategies').select('name').eq('user_id', me).is('archived_at', null));
+    return st.some((x) => x.name === S1) && st.some((x) => x.name === S2);
+  });
   await savedShown(page);
   await next(page);
 
@@ -334,14 +390,15 @@ try {
   const measure = async (i, name) => {
     await habit(i).locator('.ds-dd').click();
     await page.getByRole('option', { name: new RegExp(`^${name}\\s*e\\.g\\.`) }).click();
-    await page.waitForTimeout(150);
+    await page.getByRole('option').first().waitFor({ state: 'hidden' });
   };
   const forStrategy = async (name) => {
     const dd = page.locator('.ds-guide-body > div > .ds-choice .ds-dd').first();
     if (await dd.count()) {
       await dd.click();
       await page.getByRole('option', { name }).click();
-      await page.waitForTimeout(200);
+      await page.getByRole('option').first().waitFor({ state: 'hidden' });
+      await calm(page);
     }
   };
   await forStrategy(S1);
@@ -352,7 +409,11 @@ try {
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(1).locator('textarea').fill('Weekly referral review');
   await measure(1, 'Once a week');
-  await page.waitForTimeout(1200);
+  const habitsSaved = (want) => until(async () => {
+    const h = await q(db.from('habits').select('name, measure, target').eq('user_id', me));
+    return want.every(([n, m, t]) => h.some((x) => x.name === n && (m == null || x.measure === m) && (t == null || Number(x.target) === t)));
+  });
+  await habitsSaved([['Thank-you notes sent', 'yes_no_days_target', 4], ['Weekly referral review', 'yes_no_weekly', null]]);
   await forStrategy(S2);
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(0).locator('textarea').fill('Practice runs');
@@ -361,7 +422,7 @@ try {
   await habit(1).locator('textarea').fill('Energy');
   await measure(1, 'Rating 1 to 5');
   await habit(1).getByLabel('What’s the target?').fill('4');
-  await page.waitForTimeout(1500);
+  await habitsSaved([['Thank-you notes sent', 'yes_no_days_target', 4], ['Weekly referral review', 'yes_no_weekly', null], ['Practice runs', null, 3], ['Energy', 'rating', 4]]);
   await savedShown(page);
   const habits = await q(db.from('habits').select('name, measure, target, strategy_id').eq('user_id', me));
   pass('build: four habits saved, two per Strategy', habits.length === 4 && new Set(habits.map((h) => h.strategy_id)).size === 2, JSON.stringify(habits));
@@ -381,6 +442,7 @@ try {
   pass('build: Ready lists both objectives with their figures', ready.includes('12 now, target 20, by 15 Jun 2027') && ready.includes('5/10 now, target 8/10, by 30 Apr 2027'), ready.slice(0, 300));
   pass('build: Ready says 3 weeks from today', ready.includes('3 weeks') && /Today/.test(ready));
   await shot(page, '1-ready');
+  await pastTapGuard(page);
   await page.getByRole('button', { name: 'Start Performance Sprint 1' }).click();
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
   await page.waitForSelector('.ds-sdial--running', { timeout: 30000 });
@@ -393,33 +455,40 @@ try {
   pass('build: version 1.0', v10.length === 1 && v10[0].major === 1 && v10[0].minor === 0, JSON.stringify(v10));
 
   // Edit: a new target is a minor change.
+  at = 'edit open';
   await page.goto(`${APP}/performance-plan/edit`);
   await page.waitForSelector('.ds-guide');
-  await page.waitForTimeout(600);
+  await calm(page);
   for (let i = 0; i < 3 && !/What 2 to 4 results/.test(await heading(page)); i += 1) await next(page);
+  at = 'edit target';
   await card(0).getByLabel('What’s your target?').fill('22');
-  await page.waitForTimeout(1500);
+  await until(async () => (await q(db.from('outcome_objectives').select('name, target_value').eq('user_id', me).is('archived_at', null))).some((x) => x.name === O1 && Number(x.target_value) === 22));
   await savedShown(page);
+  at = 'edit close';
+  const closedAt = Date.now();
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   await page.waitForURL(/\/performance-plan$/, { timeout: 20000 });
-  await page.waitForTimeout(800);
+  await fresh(page, 'performance-plan', closedAt);
+  await page.waitForFunction(() => document.body.innerText.includes('Your plan is now Version 1.1.'), null, { timeout: 15000 }).catch(() => null);
   pass('edit: closing says Version 1.1', (await bodyText(page)).includes('Your plan is now Version 1.1.'));
   const plan = await activePlan();
   pass('edit: the plan is 1.1', plan.major === 1 && plan.minor === 1, `${plan.major}.${plan.minor}`);
   pass('edit: the plan page shows the new target', (await bodyText(page)).includes('of 22'));
 
+  at = 'history';
   await page.goto(`${APP}/performance-plan/history`);
   await page.waitForSelector('.ds-row', { timeout: 20000 });
   const rows = await page.locator('.ds-row').allTextContents();
   pass('history: 1.1 then 1.0', rows.length === 2 && /1\.1/.test(rows[0]) && /1\.0/.test(rows[1]), rows.join(' | '));
   await page.locator('.ds-row').nth(1).click();
   await page.waitForURL(/history\/1\.0/, { timeout: 15000 });
-  await page.waitForTimeout(800);
+  await page.locator('.plan-page .ds-mission-card-text').waitFor({ timeout: 15000 });
+  await calm(page);
   const old = await bodyText(page);
   pass('version 1.0 still shows the old target and the mission', old.includes('Help leaders stay calm') && /\b20\b/.test(old) && !/of 22/.test(old), old.slice(0, 300));
   await shot(page, '1-version-1-0');
 } catch (e) {
-  pass('journey 1 ran to the end', false, e.message.split('\n')[0]);
+  pass('journey 1 ran to the end', false, `${at}: ${e.message.split('\n')[0]}`);
 }
 
 // ------------------------------------------------------------------ 2. log a week
@@ -430,13 +499,13 @@ try {
   await timeShift(6, { recordsToo: false });
   await openSprint(page);
   await page.getByRole('button', { name: 'This week', exact: true }).click();
-  await page.waitForTimeout(500);
   const days = [];
   for (let d = 6; d >= 0; d -= 1) { const k = addDays(today, -d); if (weekday(k) < 5) days.push(k); }
+  await logRow('Thank-you notes sent').getByRole('button', { name: new RegExp(dayAria(days[0])) }).waitFor({ timeout: 15000 });
+  await calm(page);
   // Thank-you notes on all but one day; practice runs; energy; the weekly review.
   for (const [i, k] of days.entries()) {
     if (i !== 1) await logRow('Thank-you notes sent').getByRole('button', { name: new RegExp(`${dayAria(k)}`) }).click();
-    await page.waitForTimeout(150);
   }
   const practice = [1, 0, 1, 0, 0];
   for (const [i, k] of days.entries()) {
@@ -453,7 +522,9 @@ try {
   await logRow('Weekly referral review').getByRole('checkbox').click().catch(async () => {
     await logRow('Weekly referral review').getByRole('button', { name: 'Weekly referral review', exact: true }).click();
   });
-  await page.waitForTimeout(3000);
+  // Every entry reaches the server (the saves go one at a time, in order).
+  await until(async () => (await sprintRows()).logs.length >= 12, 30000);
+  await page.waitForFunction(() => !/Saving|Will sync/.test(document.querySelector('.sprint-page')?.innerText || ''), null, { timeout: 30000 }).catch(() => null);
   const logs = (await sprintRows()).logs;
   pass('log a week: every entry saved once (4 notes, 2 runs, 5 energy, 1 weekly)', logs.length === 12, `${logs.length} logs`);
   const dupes = logs.length - new Set(logs.map((l) => `${l.sprint_habit_id}|${l.local_date}`)).size;
@@ -463,16 +534,16 @@ try {
   const v = await libraryView();
   firstSprint.scoreSoFar = v.soFar.value;
   pass('log a week: the week score so far matches src/lib/scores', (await centreScore()) === `${v.soFar.value}%`, `${await centreScore()} vs ${v.soFar.value}%`);
+  const reloadedAt = Date.now();
   await page.reload();
   await page.waitForSelector('.ds-sdial--running', { timeout: 30000 });
-  await page.waitForTimeout(1200);
+  await fresh(page, 'performance-sprint', reloadedAt);
   pass('log a week: the same after a reload', (await centreScore()) === `${v.soFar.value}%`, await centreScore());
   const second = await signedIn({ mode: 'light' });
   await openSprint(second.page);
   pass('log a week: the same in a second browser', (await centreScore(second.page)) === `${v.soFar.value}%`, await centreScore(second.page));
-  await second.page.goto(`${APP}/performance-sprint/year`);
-  await second.page.waitForSelector('.yr-chart, .ds-year, [data-tip]', { timeout: 30000 }).catch(() => null);
-  await second.page.waitForTimeout(1000);
+  await visit(second.page, '/performance-sprint/year', 'performance-year');
+  await second.page.waitForSelector('[data-tip]', { timeout: 30000 }).catch(() => null);
   const yearTips = await second.page.locator('[data-tip]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || ''));
   pass('View your year: this week so far matches', yearTips.some((t) => t.includes(`${v.soFar.value}%`)), yearTips.filter((t) => /%/.test(t)).slice(-2).join(' | '));
   await shot(second.page, '2-year-so-far');
@@ -487,13 +558,13 @@ try {
   const tips = await page.locator('.ds-sdial [data-tip]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || ''));
   pass('the dial: week 1’s pop-up matches', tips.some((t) => t.startsWith(`Performance score ${w1?.score}%, Week 1,`)), tips[0]);
   await page.getByText('Sprint details').click();
-  await page.waitForTimeout(400);
+  await page.waitForFunction(() => document.body.innerText.includes('Average performance score'), null, { timeout: 10000 }).catch(() => null);
+  await calm(page);
   const details = await bodyText(page);
   pass('Sprint details: the average is week 1’s score', details.includes(`Average performance score ${v2.average.value}`) && v2.average.value === `${w1?.score}%`, `${v2.average.value}`);
   const frozen = await until(async () => (await q(db.from('week_scores').select('sprint_week, score').eq('sprint_id', firstSprint.id).eq('sprint_week', 1)))[0]);
   pass('the coach’s frozen week 1 matches', frozen && Math.round(Number(frozen.score)) === w1?.score, `${frozen?.score} vs ${w1?.score}`);
-  await page.goto(`${APP}/performance-sprint/year`);
-  await page.waitForTimeout(2000);
+  await visit(page, '/performance-sprint/year', 'performance-year');
   const yTips = await page.locator('[data-tip]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || ''));
   pass('View your year: week 1’s bar matches', yTips.some((t) => t.includes(`${w1?.score}%`) && /week 1\b/i.test(t)), yTips.filter((t) => /%/.test(t)).slice(-3).join(' | '));
   await shot(page, '2-year-week1');
@@ -504,7 +575,7 @@ try {
 
 // ------------------------------------------------------------------ 3 and 4. to-dos and wins
 // Today is the last day of week 2.
-let at = '';
+at = '';
 const todoRow = (text) => page.locator('.ds-todo').filter({ hasText: text });
 const todosOf = async () => q(db.from('todos').select('id, text, planned_week, done_on, sprint_id, deleted_at').eq('user_id', me));
 const TA = 'Ask two clients for a referral';
@@ -525,7 +596,9 @@ async function addTodo(text, strategy, week = null) {
   }
   await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
   await until(async () => (await todosOf()).some((t) => t.text === text));
-  await page.waitForTimeout(600);
+  await page.locator('.ds-panel').waitFor({ state: 'hidden' });
+  await todoRow(text).first().waitFor({ timeout: 10000 });
+  await calm(page);
 }
 async function addWin(text, strategy) {
   at = `add win ${text}`;
@@ -535,7 +608,9 @@ async function addWin(text, strategy) {
   await page.locator('.ds-panel').getByRole('button', { name: strategy }).click();
   await page.locator('.ds-panel').getByRole('button', { name: 'Add my win' }).click();
   await until(async () => (await q(db.from('wins').select('id').eq('user_id', me).eq('what', text))).length);
-  await page.waitForTimeout(600);
+  await page.locator('.ds-panel').waitFor({ state: 'hidden' });
+  await todoRow(text).first().waitFor({ timeout: 10000 });
+  await calm(page);
 }
 try {
   await openSprint(page);
@@ -560,7 +635,8 @@ try {
   const moved = await until(async () => (await todosOf()).find((t) => t.text === TD && t.planned_week === 3));
   const moves = moved ? await q(db.from('todo_moves').select('from_week, to_week, moved_on').eq('todo_id', moved.id)) : [];
   pass('move: planned for week 3, with one move recorded', moves.length === 1 && moves[0].from_week === 2 && moves[0].to_week === 3, JSON.stringify(moves));
-  await page.waitForTimeout(600);
+  await page.locator('.ds-panel').waitFor({ state: 'hidden' });
+  await calm(page);
 
   // Wins, one per Strategy.
   const strategies = await q(db.from('plan_strategies').select('id, name').eq('user_id', me));
@@ -581,9 +657,8 @@ try {
   const s1Score = so.find((x) => x.id === sid(S1))?.score;
   pass('wins: the Strategy’s score counts the win', before == null || s1Score >= before, `${before} → ${s1Score}`);
   at = 'plan tiles';
-  await page.goto(`${APP}/performance-plan`);
+  await visit(page, '/performance-plan', 'performance-plan');
   await page.waitForSelector('.ds-stile', { timeout: 30000 });
-  await page.waitForTimeout(800);
   // The page shows its last copy at once and refreshes quietly (useCachedLoad).
   const tileText = async () => (await page.locator('.ds-stile').filter({ hasText: S1 }).textContent()).replace(/\s+/g, ' ');
   const tile = (await until(async () => { const t = await tileText(); return t.includes(`${Math.round(s1Score)}%`) ? t : null; }, 15000)) || await tileText();
@@ -603,10 +678,11 @@ try {
   pass('roll-over: last week’s wins aren’t listed this week', (await todoRow(W1).count()) === 0);
   const v3 = await libraryView();
   pass('week 3: the score so far matches src/lib/scores', (await centreScore()) === (v3.soFar ? `${v3.soFar.value}%` : ''), `${await centreScore()} vs ${v3.soFar?.value}`);
-  await page.goto(`${APP}/performance-plan`);
+  await visit(page, '/performance-plan', 'performance-plan');
   await page.waitForSelector('.ds-stile', { timeout: 30000 });
   await page.locator('.ds-stile').filter({ hasText: S2 }).locator('.ds-stile-btn').first().click();
-  await page.waitForTimeout(600);
+  await page.locator('#ipp-strategy-detail').waitFor({ timeout: 10000 });
+  await calm(page);
   const detail = (await page.locator('#ipp-strategy-detail').innerText()).replace(/\s+/g, ' ');
   pass('the plan’s tile detail lists the rolled-over, moved and later to-dos, as this week', detail.includes(TB) && detail.includes(TD) && detail.includes(TC), detail.slice(0, 300));
   await shot(page, '3-tile-detail');
@@ -631,18 +707,16 @@ try {
   await page.getByRole('button', { name: 'Start my recovery' }).click();
   const rec = await until(async () => (await q(db.from('recovery_periods').select('*').eq('user_id', me).is('ended_at', null)))[0]);
   pass('Recovery: one open, 3 days from today, coach told', rec && rec.start_on === today && rec.chosen_days === 3 && rec.let_coach_know === true && rec.sprint_id === s.id, JSON.stringify(rec));
-  await page.waitForTimeout(1000);
+  await page.waitForURL(/\/recovery\/today$/, { timeout: 15000 }).catch(() => null);
   await openSprint(page);
   const paused = await bodyText(page);
   pass('Recovery: the sprint is paused, scores hidden', /is paused at week 3 of 3/.test(paused) && (await page.locator('.ds-sdial-big--score').count()) === 0, paused.slice(0, 300));
   await page.getByRole('button', { name: 'Show my results' }).click();
-  await page.waitForTimeout(400);
-  pass('Recovery: Show my results shows them this visit', (await bodyText(page)).includes('%'));
+  pass('Recovery: Show my results shows them this visit', Boolean(await until(async () => (await bodyText(page)).includes('%'), 10000)));
   await openSprint(page);
   pass('Recovery: hidden again on the next visit', (await page.getByRole('button', { name: 'Show my results' }).count()) === 1);
-  for (const [path, what] of [['/performance-plan', 'the plan'], ['/performance-sprint/year', 'View your year']]) {
-    await page.goto(`${APP}${path}`);
-    await page.waitForTimeout(2000);
+  for (const [path, what, cache] of [['/performance-plan', 'the plan', 'performance-plan'], ['/performance-sprint/year', 'View your year', 'performance-year']]) {
+    await visit(page, path, cache);
     pass(`Recovery: ${what} hides scores and offers Show my results`, (await page.getByRole('button', { name: 'Show my results' }).count()) === 1);
   }
   // The recovery day: the recharge question.
@@ -680,13 +754,14 @@ try {
 at = 'review opening';
 try {
   await page.goto(`${APP}/performance-sprint/review`);
-  await page.waitForTimeout(1500);
+  await page.locator('.ds-guide, button:has-text("Review it now")').first().waitFor({ timeout: 30000 });
+  await calm(page);
   if (await page.getByRole('button', { name: 'Review it now' }).count()) {
     pass('review: a sprint still running says reviewing finishes it today', (await bodyText(page)).includes('Reviewing it now finishes it today.'));
     await page.getByRole('button', { name: 'Review it now' }).click();
   }
   await page.waitForSelector('.ds-guide', { timeout: 20000 });
-  await page.waitForTimeout(600);
+  await calm(page);
   const opening = await bodyText(page);
   pass('review: the opening names the average', /You averaged \d+%\.|Not your strongest sprint\./.test(opening), opening.slice(0, 200));
   await next(page);
@@ -697,13 +772,14 @@ try {
   const objRow = (name) => page.locator('.ds-carry-row').filter({ has: page.locator('.ds-carry-name', { hasText: new RegExp(`^${name}$`) }) });
   at = 'review objectives';
   await objRow(O1).getByRole('radio', { name: 'Change' }).click();
-  await page.waitForTimeout(300);
+  await objRow(O1).getByLabel('What’s your target?').waitFor({ timeout: 10000 });
   await objRow(O1).getByLabel('What’s your target?').fill('25');
   await next(page);
   await next(page); // habits that stuck: as they are
   at = 'review next';
   await page.getByRole('radio', { name: /Straight into Performance Sprint 2/ }).click();
   await shot(page, '6-review-next');
+  await pastTapGuard(page);
   await page.locator('.ds-guide .ds-btn--primary').last().click();
   await until(async () => page.url().endsWith('/performance-sprint/start'), 20000);
   const s1 = (await q(db.from('sprints').select('*').eq('id', firstSprint.id)))[0];
@@ -716,7 +792,7 @@ try {
   // Start a sprint: every step.
   at = 'start length';
   await page.waitForSelector('.ds-guide', { timeout: 20000 });
-  await page.waitForTimeout(600);
+  await calm(page);
   pass('start: opens on the steps for Sprint 2', (await page.locator('.ds-guide').textContent()).includes('Performance Sprint 2') && /How long is this sprint\?/.test(await heading(page)), await heading(page));
   await page.getByRole('radio', { name: '4 weeks', exact: true }).click();
   await page.getByLabel('What would you like to call it?').fill('Workshop month');
@@ -740,9 +816,10 @@ try {
   const ready = await bodyText(page);
   pass('start: Ready sums it up', ready.includes('4 weeks') && ready.includes('Workshop month') && ready.includes('80%'), ready.slice(0, 300));
   await shot(page, '6-start-ready');
+  await pastTapGuard(page);
   await page.getByRole('button', { name: 'Start Performance Sprint 2' }).click();
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
-  await page.waitForTimeout(1000);
+  await until(async () => (await runningSprint())?.number === 2, 20000);
   const list = await q(db.from('sprints').select('*').eq('user_id', me).order('number'));
   const s2 = list.find((x) => x.number === 2);
   pass('start: Sprint 1 finished, Sprint 2 running as chosen', list.length === 2 && list[0].status === 'finished' && s2?.status === 'running'
@@ -758,8 +835,7 @@ try {
   await page.goto(`${APP}/performance-plan`);
   // Its last device copy shows first, then it refreshes quietly.
   pass('the plan page shows the new target', Boolean(await until(async () => (await bodyText(page)).includes('of 25'), 15000)), (await bodyText(page)).slice(0, 400));
-  await page.goto(`${APP}/performance-sprint/year`);
-  await page.waitForTimeout(2000);
+  await visit(page, '/performance-sprint/year', 'performance-year');
   const yTips = await page.locator('[data-tip]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || ''));
   pass('View your year: Sprint 1’s weeks are kept', yTips.some((t) => /Performance Sprint 1/.test(t)), yTips.slice(-6).join(' | '));
   await shot(page, '6-year-after');
@@ -769,15 +845,19 @@ try {
 
 // ------------------------------------------------------------------ 7. the coach's view
 async function setEye(label, choice) {
-  await page.goto(`${APP}/performance-plan`);
+  await visit(page, '/performance-plan', 'performance-plan');
   await page.waitForSelector('.ds-who', { timeout: 30000 });
-  await page.waitForTimeout(800);
   const eye = page.locator('.ds-who').nth(label === 'mission' ? 0 : 1);
   if ((await eye.textContent()).includes(choice)) return;
   await eye.click();
   await page.waitForSelector('[role=dialog] [role=option]');
   await page.getByRole('option', { name: choice }).click();
-  await page.waitForTimeout(1200);
+  const part = label === 'mission' ? 'mission' : 'progress';
+  await until(async () => (await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me))).some((x) => x.part === part && x.is_on === (choice !== 'Only you')));
+  await until(async () => (await eye.textContent()).includes(choice), 10000);
+  await page.keyboard.press('Escape');
+  await page.locator('[role=dialog] [role=option]').first().waitFor({ state: 'hidden' }).catch(() => null);
+  await calm(page);
 }
 try {
   await page.goto(`${APP}/performance-plan`);
@@ -792,9 +872,10 @@ try {
   const sw1 = await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me));
   pass('eyes: both now say You and Alex', eyes1.slice(0, 2).every((t) => t.includes('You and Alex')), eyes1.join(' | '));
   pass('eyes: the switches saved on', on0 && sw1.some((x) => x.part === 'progress' && x.is_on) && (sw1.find((x) => x.part === 'mission')?.is_on ?? true), JSON.stringify(sw1));
+  const eyesReloaded = Date.now();
   await page.reload();
   await page.waitForSelector('.ds-who', { timeout: 30000 });
-  await page.waitForTimeout(800);
+  await fresh(page, 'performance-plan', eyesReloaded);
   pass('eyes: the same after a reload', (await page.locator('.ds-who').allTextContents()).slice(0, 2).every((t) => t.includes('You and Alex')));
   await page.locator('.ds-who').first().click();
   const sheet = (await page.locator('[role=dialog]').last().innerText()).replace(/\s+/g, ' ');

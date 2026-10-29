@@ -216,17 +216,30 @@ async function layoutHistory(page, tag) {
 // The milestone: Mark as done, then Undo, saved both ways.
 {
   const { context, page } = await signedIn({ width: 1280, mode: 'dark' });
+  // The page shows its device copy first and refreshes quietly; tap once
+  // the server's copy is in (a tap on the old copy can be redrawn away).
+  const freshSince = async (since) => page.waitForFunction((t) => Object.keys(localStorage).some((k) => {
+    if (!k.startsWith('clarity-cache:') || !k.endsWith(':performance-plan')) return false;
+    try { return (JSON.parse(localStorage.getItem(k))?.at || 0) >= t; } catch { return false; }
+  }), since, { timeout: 30000 });
+  let since = Date.now();
   await page.goto(`${APP}/performance-plan`);
   await page.waitForSelector('.ds-status-action-link', { timeout: 30000 });
+  await freshSince(since);
+  const saveAnswered = () => page.waitForResponse((r) => r.url().includes('/rest/v1/outcome_objectives') && r.request().method() !== 'GET', { timeout: 15000 }).catch(() => null);
+  const doneSaved = saveAnswered();
   await page.locator('.ds-status-action-link').click();
-  await page.waitForTimeout(800);
-  const done = await page.locator('.ds-status-action-state--done').count();
+  await doneSaved;
+  const done = await page.locator('.ds-status-action-state--done').waitFor({ timeout: 10000 }).then(() => 1).catch(() => 0);
   pass('Milestone: Mark as done shows Done', done === 1);
+  // Undone on the server (its save answered), then read back after a reload.
+  const undoSaved = saveAnswered();
   await page.locator('.ds-toast-undo').click();
-  await page.waitForTimeout(3000);
+  await undoSaved;
+  since = Date.now();
   await page.reload();
   await page.waitForSelector('.ds-status-action-link', { timeout: 30000 });
-  await page.waitForTimeout(1500);
+  await freshSince(since);
   const after = await page.locator('.ds-status-action-state--done').count();
   pass('Milestone: Undo is saved', after === 0);
   await context.close();

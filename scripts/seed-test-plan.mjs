@@ -21,6 +21,8 @@
 //                                             with a Recovery started N days ago
 //                                             for M days (default 3 and 7), still
 //                                             open, "Let [coach] know" ticked
+//   ... --today=YYYY-MM-DD                    builds everything around that day
+//                                             instead of today (tests/phase2/recovery.mjs)
 //
 // Signed in as the test client (~/.clarity-test-accounts.env, never
 // printed), it writes only what the app itself writes, through the same
@@ -55,9 +57,13 @@ async function put(table, rows) {
   if (error) throw new Error(`${table}: ${error.message}`);
 }
 
-// Today in London, as the app works out the person's local day.
+// Today in London, as the app works out the person's local day, unless
+// --today=YYYY-MM-DD fixes it (a test that sets the browser's clock to the
+// same day, so it never depends on the day it runs).
 const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-const today = `${parts.find((p) => p.type === 'year').value}-${parts.find((p) => p.type === 'month').value}-${parts.find((p) => p.type === 'day').value}`;
+const fixedToday = process.argv.find((a) => a.startsWith('--today='))?.split('=')[1];
+if (fixedToday && !/^\d{4}-\d{2}-\d{2}$/.test(fixedToday)) throw new Error('--today needs YYYY-MM-DD.');
+const today = fixedToday || `${parts.find((p) => p.type === 'year').value}-${parts.find((p) => p.type === 'month').value}-${parts.find((p) => p.type === 'day').value}`;
 const day = (key, n) => {
   const [y, m, d] = key.split('-').map(Number);
   const t = new Date(Date.UTC(y, m - 1, d + n));
