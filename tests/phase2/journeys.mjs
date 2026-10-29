@@ -756,8 +756,8 @@ try {
   const todos = await todosOf();
   pass('end: no to-do lost (all four still saved)', todos.length === 4 && todos.every((t) => !t.deleted_at), JSON.stringify(todos.map((t) => [t.text, t.sprint_id === firstSprint.id, t.planned_week])));
   await page.goto(`${APP}/performance-plan`);
-  await page.waitForTimeout(2000);
-  pass('the plan page shows the new target', (await bodyText(page)).includes('of 25'));
+  // Its last device copy shows first, then it refreshes quietly.
+  pass('the plan page shows the new target', Boolean(await until(async () => (await bodyText(page)).includes('of 25'), 15000)), (await bodyText(page)).slice(0, 400));
   await page.goto(`${APP}/performance-sprint/year`);
   await page.waitForTimeout(2000);
   const yTips = await page.locator('[data-tip]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || ''));
