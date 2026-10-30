@@ -398,7 +398,7 @@ async function popups(page, { side, frameSel, touch }) {
 // the screens it covers, which side, a pattern on the neutral line, and why.
 const ALLOWED = [
   { side: 'both', re: /^(saving|saved)$/, why: 'save status changes as it saves' },
-  { screen: /welcome/, side: 'both', re: /.*/, why: 'the Quick guide in the mock-up is not final; the built guide is not changed (brief); the panel over it is measured instead' },
+  { screen: /welcome/, side: 'both', re: /.*/, why: 'the mock-up draws its Quick guide as moving scenes; the app plays the real video (Health Check 5), and its player is measured against version 49 by tests/healthcheck/quick-guide.mjs layout; the panel over it is measured here' },
   { side: 'mock', re: /^<month> #$|^<day> # <month>$/, why: 'the date is the Health Check’s own completed date (Tue 27 Oct in the mock-up)' },
   { screen: /sign-in/, side: 'mock', re: /^what's your access code\?$/, why: 'the code box is labelled "Access code" under the question heading (Tim, 29 Oct, decisions part 3: a question heading is never followed by a second question)' },
   { screen: /sign-in/, side: 'app', re: /^access code$/, why: 'the code box’s short label (Tim, 29 Oct)' },
@@ -535,7 +535,7 @@ const lineTo = (v) => async (page) => {
   await page.waitForTimeout(500);
 };
 const SCREENS = [
-  // The mock-up's welcome holds its Quick guide's moving scenes (not final), so only the panel and the one coral thing are compared.
+  // The mock-up's welcome holds its Quick guide's moving scenes (the app plays the real video), so only the panel and the one coral thing are compared here.
   { id: 'welcome, Watch this first', mock: 'welcome', layoutKeys: ['watchPanel'], app: { watched: false }, open: async (page) => { await page.locator('.wlc').waitFor(); await page.waitForTimeout(500); } },
   {
     id: 'sign-in', mock: 'signin', app: {},
