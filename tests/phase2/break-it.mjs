@@ -23,18 +23,24 @@
 //   recovery Recovery from a Saturday to a Tuesday.
 //   others   one test client reading or changing another's rows (routes,
 //            ids, direct calls with the public key), and signed out.
+//   versions two windows: an older save never replaces a newer one, and the
+//            older window says so and shows the latest.
+//
+// Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built around
+// one day and every browser's clock starts on it, so nothing depends on the
+// day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 //
 // It starts from the seeded plan (scripts/seed-test-plan.mjs --reset) and
 // puts the seeded plan v3.2 with Sprint 1 running back at the end. The
 // second client (the organisation test client) is only read from, and
 // anything this script adds to it is taken away again.
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 import { localToday } from '../../src/lib/performance/rows.js';
 import { m0SprintCalendar, m0WeekOfDay } from '../../src/lib/scores/index.js';
+import { FIXED_TODAY, FIXED_CLOCK, seedFixed, seedForReal, fixedLabel } from './fixed-day.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -63,8 +69,9 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
-const seed = (...flags) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', ...flags], { stdio: 'pipe' }).toString().trim();
-const today = localToday('Europe/London');
+const seed = seedFixed;
+const today = FIXED_TODAY;
+console.log(`Fixed day: ${fixedLabel()}`);
 const addDays = (key, n) => {
   const [y, m, d] = key.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); // a pure date sum
@@ -88,7 +95,7 @@ const q = async (query) => {
 };
 const runningSprint = async () => (await q(db.from('sprints').select('*').eq('user_id', me).eq('status', 'running')))[0] || null;
 const activePlan = async () => (await q(db.from('performance_plans').select('id, mission, major, minor').eq('user_id', me).eq('status', 'active')))[0] || null;
-const todosOf = async () => q(db.from('todos').select('id, text, planned_week, done_on, sprint_id, deleted_at').eq('user_id', me));
+const todosOf = async () => q(db.from('todos').select('id, text, planned_week, done_on, sprint_id, deleted_at, updated_at').eq('user_id', me));
 const winsOf = async () => q(db.from('wins').select('id, what, deleted_at').eq('user_id', me));
 const recoveriesOf = async () => q(db.from('recovery_periods').select('*').eq('user_id', me).order('start_on'));
 
@@ -114,7 +121,7 @@ async function signedIn({ width = 1280, mode = 'dark', timezoneId = 'Europe/Lond
     return route.fallback();
   });
   const page = await context.newPage();
-  if (clock) await page.clock.install({ time: clock });
+  await page.clock.install({ time: clock || FIXED_CLOCK });
   page.errors = [];
   page.on('pageerror', (e) => page.errors.push(e.message));
   page.on('dialog', (d) => { page.errors.push(`dialog: ${d.message()}`); d.dismiss().catch(() => null); });
@@ -632,14 +639,15 @@ if (run('offline')) {
     pass('offline: adding a to-do says Will sync', willSync);
     await openWinPanel(page, 'Win while offline', st0);
     await page.locator('.ds-panel').getByRole('button', { name: 'Add my win' }).click();
-    await page.waitForTimeout(800);
+    await page.locator('.ds-panel').waitFor({ state: 'detached', timeout: 10000 }).catch(() => null);
     const rowT = page.locator('.ds-todo').filter({ hasText: 'Added while offline' });
     await rowT.getByRole('checkbox').click();
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => [...document.querySelectorAll('.ds-todo')].some((r) => r.textContent.includes('Added while offline') && r.querySelector('[role=checkbox][aria-checked=true]')), null, { timeout: 8000 }).catch(() => null);
     await context.setOffline(false);
     const saved = await page.waitForFunction(() => /Saved/.test(document.body.innerText) && !/Will sync/.test(document.body.innerText), null, { timeout: 20000 }).then(() => true).catch(() => false);
     pass('offline: back online it says Saved', saved);
-    await page.waitForTimeout(2000);
+    // Wait for the rows themselves (ticked to-do and the win), then count.
+    await until(async () => (await todosOf()).some((x) => x.text === 'Added while offline' && x.done_on) && (await winsOf()).some((x) => x.what === 'Win while offline'), 20000);
     const t = (await todosOf()).filter((x) => x.text === 'Added while offline');
     const w = (await winsOf()).filter((x) => x.what === 'Win while offline');
     pass('offline: the to-do arrived once, ticked', t.length === 1 && t[0].done_on === today, JSON.stringify(t));
@@ -653,11 +661,12 @@ if (run('offline')) {
       return route.fallback();
     });
     await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
-    await page.waitForTimeout(1500);
+    const midSync = await page.waitForFunction(() => /Will sync/.test(document.body.innerText), null, { timeout: 10000 }).then(() => true).catch(() => false);
     await page.unroute('**/rest/v1/todos*');
-    const midSync = /Will sync/.test(await bodyText(page));
     await context.setOffline(false);
-    await page.waitForTimeout(4000);
+    // Arrived, and the queue is empty (Saved, no Will sync), so a second copy would be there too.
+    await until(async () => (await todosOf()).some((x) => x.text === 'Dropped mid-save'), 20000);
+    await page.waitForFunction(() => !/Will sync/.test(document.body.innerText), null, { timeout: 20000 }).catch(() => null);
     const d = (await todosOf()).filter((x) => x.text === 'Dropped mid-save');
     pass('offline: a save cut off mid-way says Will sync', midSync);
     pass('offline: and arrives once when back', d.length === 1, `${d.length}`);
@@ -665,14 +674,17 @@ if (run('offline')) {
     // Recovery offline: start it, the recharge answer, back online.
     await context.setOffline(true);
     await page.goto(`${APP}/recovery`).catch(() => null);
-    await page.waitForTimeout(1500);
-    const offlineStart = await page.getByRole('button', { name: 'Start my recovery' }).count();
+    // The page opens from the device, or the browser says it can't load offline.
+    const offlineStart = await page.getByRole('button', { name: 'Start my recovery' }).waitFor({ timeout: 8000 }).then(() => 1).catch(() => 0);
     if (offlineStart) {
       await page.getByRole('button', { name: 'Start my recovery' }).click();
-      await page.waitForTimeout(1500);
+      await page.waitForFunction(() => /Will sync|Saved|recovery\/today/.test(document.body.innerText + location.pathname), null, { timeout: 10000 }).catch(() => null);
     }
     await context.setOffline(false);
-    await page.waitForTimeout(4000);
+    if (offlineStart) {
+      await until(async () => (await recoveriesOf()).length >= 1, 20000);
+      await page.waitForFunction(() => !/Will sync/.test(document.body.innerText), null, { timeout: 20000 }).catch(() => null);
+    }
     pass('offline: still signed in after a page opened offline', !signedOut(page), page.url());
     const recs = await recoveriesOf();
     pass('offline: a Recovery started offline arrives once (or the page says it can’t open offline)', recs.length <= 1, `${recs.length}`);
@@ -688,6 +700,12 @@ if (run('refresh')) {
   console.log(seed('--reset'));
   const [st0] = await strategyNames();
   const { context, page } = await signedIn({ width: 1280 });
+  // Resolves once a save of that kind has left the page (so the refresh
+  // lands mid-save, never before it).
+  const sent = (pattern, method = 'POST') => page.waitForRequest((r) => r.method() === method && r.url().includes(pattern), { timeout: 10000 }).catch(() => null);
+  // After a refresh: the row arrived (the queue resent it), or its draft
+  // is back in the panel; whichever happens, then the answer.
+  const settled = (count, panelText) => until(async () => (await count()) >= 1 || (await page.locator('.ds-panel textarea').count() && (await page.locator('.ds-panel textarea').inputValue()).includes(panelText)), 20000);
   const hold = async (pattern, method = 'POST') => {
     // Held, then dropped: the page is refreshed while it waits, so the save
     // never reaches the database.
@@ -702,19 +720,20 @@ if (run('refresh')) {
     // To-do: held, refreshed.
     await hold('**/rest/v1/todos*');
     await openTodoPanel(page, 'Refreshed mid-save to-do', st0);
+    const todoSent = sent('/rest/v1/todos');
     await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
-    await page.waitForTimeout(800);
+    await todoSent;
     await page.reload();
     await page.unroute('**/rest/v1/todos*');
     await page.waitForSelector('.sprint-page', { timeout: 30000 });
-    await page.waitForTimeout(3000);
+    await settled(async () => (await todosOf()).filter((x) => x.text === 'Refreshed mid-save to-do').length, 'Refreshed mid-save to-do');
     let t = (await todosOf()).filter((x) => x.text === 'Refreshed mid-save to-do');
     const panelBack = await page.locator('.ds-panel textarea').count() ? await page.locator('.ds-panel textarea').inputValue() : '';
     console.log(`refresh: to-do after the refresh: ${t.length} saved, panel "${panelBack}"`);
     pass('refresh: a to-do refreshed mid-save is not lost (saved, or its draft is back)', t.length === 1 || panelBack.includes('Refreshed mid-save to-do'), `${t.length} saved, panel "${panelBack}"`);
     if (!t.length && panelBack) {
       await page.locator('.ds-panel').getByRole('button', { name: 'Add my to-do' }).click();
-      await page.waitForTimeout(2500);
+      await until(async () => (await todosOf()).some((x) => x.text === 'Refreshed mid-save to-do'), 20000);
       t = (await todosOf()).filter((x) => x.text === 'Refreshed mid-save to-do');
     }
     pass('refresh: the to-do ends up saved once', t.length === 1, `${t.length}`);
@@ -722,18 +741,19 @@ if (run('refresh')) {
     // Win: held, refreshed.
     await hold('**/rest/v1/wins*');
     await openWinPanel(page, 'Refreshed mid-save win', st0);
+    const winSent = sent('/rest/v1/wins');
     await page.locator('.ds-panel').getByRole('button', { name: 'Add my win' }).click();
-    await page.waitForTimeout(800);
+    await winSent;
     await page.reload();
     await page.unroute('**/rest/v1/wins*');
     await page.waitForSelector('.sprint-page', { timeout: 30000 });
-    await page.waitForTimeout(3000);
+    await settled(async () => (await winsOf()).filter((x) => x.what === 'Refreshed mid-save win').length, 'Refreshed mid-save win');
     let w = (await winsOf()).filter((x) => x.what === 'Refreshed mid-save win');
     const winBack = await page.locator('.ds-panel textarea').count() ? await page.locator('.ds-panel textarea').inputValue() : '';
     pass('refresh: a win refreshed mid-save is not lost', w.length === 1 || winBack.includes('Refreshed mid-save win'), `${w.length} saved, panel "${winBack}"`);
     if (!w.length && winBack) {
       await page.locator('.ds-panel').getByRole('button', { name: 'Add my win' }).click();
-      await page.waitForTimeout(2500);
+      await until(async () => (await winsOf()).some((x) => x.what === 'Refreshed mid-save win'), 20000);
       w = (await winsOf()).filter((x) => x.what === 'Refreshed mid-save win');
     }
     pass('refresh: the win ends up saved once', w.length === 1, `${w.length}`);
@@ -786,6 +806,60 @@ if (run('refresh')) {
   await context.close();
 }
 
+// ------------------------------------------------------------------ versions
+// The save-version guard (Tim, 29 Oct), with two windows on the test
+// database: an older save from the second window never replaces the newer
+// one, and is never dropped silently: that window says so and shows the
+// latest. Saves from one window still go through one after another.
+if (run('versions')) {
+  console.log(seed('--reset'));
+  const A = await signedIn({ width: 1280 });
+  const B = await signedIn({ width: 1280 });
+  const todoRow = (page, text) => page.locator('.ds-todo').filter({ hasText: text }).first();
+  const todoNow = async (text) => (await todosOf()).find((t) => t.text === text);
+  try {
+    for (const w of [A, B]) {
+      await openSprint(w.page);
+      await w.page.getByRole('button', { name: 'Today', exact: true }).click().catch(() => null);
+      await w.page.waitForSelector('.ds-todo', { timeout: 20000 });
+    }
+    // Window B ticks the to-do; window A still shows it open.
+    const T = 'Draft the Harbour case study';
+    await todoRow(B.page, T).getByRole('checkbox').click();
+    pass('versions: window B\'s tick is saved', Boolean(await until(async () => (await todoNow(T))?.done_on === today)));
+    const ticked = await todoNow(T);
+    // Window A, from the older version, moves it to week 6.
+    await todoRow(A.page, T).getByRole('button', { name: /Move/ }).click();
+    await A.page.waitForSelector('.ds-panel');
+    await A.page.locator('.ds-panel').getByRole('radio', { name: /Week 6/ }).click();
+    const said = await A.page.locator('.ds-toast').filter({ hasText: 'This was changed in another window. Showing the latest.' })
+      .waitFor({ timeout: 15000 }).then(() => true).catch(() => false);
+    pass('versions: window A says "This was changed in another window. Showing the latest."', said, await A.page.locator('.ds-toast').textContent().catch(() => 'no toast'));
+    const after = await todoNow(T);
+    pass('versions: the older save didn\'t replace the newer one', after?.done_on === today && after.planned_week === ticked.planned_week && after.updated_at === ticked.updated_at, JSON.stringify(after));
+    const shows = await until(async () => (await todoRow(A.page, T).getByRole('checkbox').getAttribute('aria-checked')) === 'true', 15000);
+    pass('versions: window A now shows the latest (ticked)', Boolean(shows));
+    pass('versions: nothing in window A reads "Saved" for it', !(await A.page.locator('.ds-status--saved').isVisible().catch(() => false)));
+    // From the latest, window A's own change goes through (its version moved on with the reload).
+    await A.page.locator('.ds-toast').waitFor({ state: 'detached', timeout: 15000 }).catch(() => null);
+    await todoRow(A.page, T).getByRole('checkbox').click();
+    pass('versions: from the latest, window A\'s untick is saved', Boolean(await until(async () => (await todoNow(T))?.done_on === null)));
+    // Two quick changes in one window still both land, in order.
+    const L = 'Shortlist breathing sound loops';
+    await todoRow(A.page, L).getByRole('checkbox').click();
+    await todoRow(A.page, L).getByRole('checkbox').click();
+    await todoRow(A.page, L).getByRole('checkbox').click();
+    pass('versions: tick, untick, tick in one window ends ticked', Boolean(await until(async () => (await todoNow(L))?.done_on === today)));
+    pass('versions: and nothing was refused', !(await A.page.locator('.ds-toast').filter({ hasText: 'another window' }).count()));
+    noErrors(A.page, 'versions window A');
+    noErrors(B.page, 'versions window B');
+  } catch (e) {
+    pass('versions ran to the end', false, e.message.split('\n')[0]);
+  }
+  await A.context.close();
+  await B.context.close();
+}
+
 // ------------------------------------------------------------------ dates
 // The scoring calendar itself, at the edges (pure: no browser).
 const ZONES = ['Pacific/Auckland', 'America/Los_Angeles', 'Europe/London'];
@@ -823,8 +897,8 @@ if (run('dates')) {
   for (const z of ZONES) {
     // Just after midnight and just before, in that zone, today (UK date).
     for (const [label, offsetH] of [['just after midnight', 0.25], ['just before midnight', 23.75]]) {
-      // The latest such moment that has already happened (a sign-in can't
-      // be used from a clock set in the future: its token looks expired).
+      // On the fixed day, which is in the past (a sign-in can't be used
+      // from a clock set in the future: its token looks expired).
       const momentOn = (target) => {
         const guess = new Date(`${target}T00:00:00Z`).getTime();
         for (let h = -14; h <= 14; h += 0.25) {
@@ -835,10 +909,9 @@ if (run('dates')) {
         }
         return null;
       };
-      let target = today;
-      let instant = momentOn(target);
-      if (instant && instant.getTime() > Date.now() - 60000) { target = addDays(today, -1); instant = momentOn(target); }
-      if (!instant) { pass(`dates: found ${label} in ${z}`, false); continue; }
+      const target = today;
+      const instant = momentOn(target);
+      if (!instant || instant.getTime() > Date.now() - 60000) { pass(`dates: found ${label} in ${z}`, false); continue; }
       const { context, page } = await signedIn({ timezoneId: z, clock: instant });
       try {
         await openSprint(page);
@@ -914,8 +987,10 @@ if (run('recovery')) {
   // A Recovery from last Saturday (or the Saturday before) to Tuesday: 4 days.
   let sat = addDays(today, -((weekday(today) + 2) % 7));
   if (sat >= today) sat = addDays(sat, -7);
+  // Ended (the Wednesday) before today, so today is never the first day
+  // back (which shows Welcome back instead of the week), on any weekday.
   const tue = addDays(sat, 3);
-  if (tue >= today) sat = addDays(sat, -7);
+  if (addDays(tue, 1) >= today) sat = addDays(sat, -7);
   const satKey = sat;
   const tueKey = addDays(satKey, 3);
   const id = crypto.randomUUID();
@@ -1034,8 +1109,8 @@ if (run('others')) {
 
 await browser.close();
 
-// Back to the seeded plan v3.2 with Sprint 1 running.
-console.log(seed('--reset'));
+// Back to the seeded plan v3.2 with Sprint 1 running, on the real today.
+console.log(seedForReal('--reset'));
 const back = await activePlan();
 pass('tidy: the seeded plan v3.2 is back, with Sprint 1 running', back?.major === 3 && back.minor === 2 && (await runningSprint())?.number === 1, JSON.stringify(back));
 

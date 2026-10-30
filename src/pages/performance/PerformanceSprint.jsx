@@ -744,7 +744,7 @@ function SprintBody({
                   <span className="sprint-later-line">
                     {t.later.length
                       ? `${t.later.length} to-do${t.later.length === 1 ? '' : 's'} planned for later weeks`
-                      : 'Nothing planned for later weeks yet'}
+                      : 'Nothing planned for later weeks yet.'}
                   </span>
                 </span>
               )}

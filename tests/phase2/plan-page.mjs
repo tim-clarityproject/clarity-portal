@@ -18,9 +18,13 @@
 //  - "How the system fits together" opens the pop-up; Escape closes it;
 //  - the header's pill opens the My Mission panel;
 //  - version history lists versions and one opens.
+// It seeds the plan around a FIXED day and starts every browser's clock on
+// it (tests/phase2/fixed-day.mjs), and waits for the real condition (the
+// pop-up, the panel, the toast, the saved row), never a fixed time.
 import { chromium } from 'playwright';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_HOST = 'gqtqljngeenqzxneucoc.supabase.co';
@@ -57,6 +61,7 @@ async function signedIn({ width, mode }) {
     timezoneId: 'Europe/London',
     colorScheme: mode,
   });
+  await fixClock(context);
   await context.addInitScript((m) => {
     try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ }
   }, mode);
@@ -120,6 +125,11 @@ async function layoutChecks(page, tag) {
 }
 
 const shot = async (page, name) => { if (out) await page.screenshot({ path: `${out}/${name}.png`, fullPage: true }); };
+const shown = (page, sel) => page.waitForSelector(sel, { state: 'visible', timeout: 10000 }).catch(() => null);
+const gone = (page, sel) => page.waitForSelector(sel, { state: 'detached', timeout: 10000 }).catch(() => null);
+
+console.log(`Fixed day: ${fixedLabel()}`);
+console.log(seedFixed('--reset'));
 
 for (const mode of ['dark', 'light']) {
   for (const width of [1280, 700, 390, 360]) {
@@ -127,7 +137,7 @@ for (const mode of ['dark', 'light']) {
     const { context, page, phone } = await signedIn({ width, mode });
     await page.goto(`${APP}/performance-plan`);
     await page.waitForSelector('.ds-stile', { timeout: 30000 });
-    await page.waitForTimeout(400);
+    await page.waitForFunction(() => !document.querySelector('.ds-loading--page'), null, { timeout: 30000 }).catch(() => null);
     const r = await layoutChecks(page, tag);
     pass(`${tag}: page follows the mode`, r.theme === mode, `${r.theme}`);
     await shot(page, `plan-${width}-${mode}`);
@@ -136,7 +146,7 @@ for (const mode of ['dark', 'light']) {
       // The objective number's pop-up.
       const num = page.locator('.ds-stile .ds-onum--tip').first();
       await num.focus();
-      await page.waitForTimeout(150);
+      await shown(page, '.ds-tip:not([hidden])');
       const tip = await page.evaluate(() => {
         const t = document.querySelector('.ds-tip:not([hidden])');
         if (!t) return null;
@@ -148,23 +158,24 @@ for (const mode of ['dark', 'light']) {
 
       // A tile opens its detail.
       await page.locator('.ds-stile-btn').first().click();
-      await page.waitForTimeout(500);
+      await shown(page, phone ? '.ds-dialog.ds-panel' : '.ds-sdetail');
       if (phone) {
         const panel = await page.locator('.ds-dialog.ds-panel').count();
         pass(`${tag}: tile opens the panel`, panel === 1);
         await shot(page, `detail-${width}-${mode}`);
         await page.keyboard.press('Escape');
+        await gone(page, '.ds-dialog.ds-panel');
       } else {
         const detail = await page.locator('.ds-sdetail').count();
         pass(`${tag}: tile opens the detail`, detail === 1);
         await shot(page, `detail-${width}-${mode}`);
         await page.locator('.ds-sdetail .ds-icon-btn').click();
+        await gone(page, '.ds-sdetail');
       }
-      await page.waitForTimeout(500);
 
       // The system pop-up.
       await page.locator('.ds-page-meta .ds-info-link').click();
-      await page.waitForTimeout(500);
+      await shown(page, '.ds-popup');
       const sys = await page.evaluate(() => {
         const d = document.querySelector('.ds-popup');
         return d ? { text: d.textContent, overflow: d.scrollWidth - d.clientWidth } : null;
@@ -172,13 +183,20 @@ for (const mode of ['dark', 'light']) {
       pass(`${tag}: system pop-up`, Boolean(sys && sys.text.includes('Your tactics go into each sprint') && !/[↓↑←→]/.test(sys.text)), sys ? '' : 'not open');
       await page.screenshot({ path: out ? `${out}/system-${width}-${mode}.png` : undefined });
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(500);
+      await gone(page, '.ds-popup');
       pass(`${tag}: Escape closes it`, (await page.locator('.ds-popup').count()) === 0);
 
       // The header pill opens the My Mission panel.
       await page.locator(phone ? '.hdr-phone .hdr-mis' : '.hdr-desktop .hdr-mis').click();
       await page.waitForSelector('.ds-drop', { timeout: 10000 });
-      await page.waitForTimeout(500);
+      // Its rise has finished: on a phone it has reached the bottom edge,
+      // and nothing in it is still moving.
+      await page.waitForFunction((ph) => {
+        const d = document.querySelector('.ds-drop');
+        if (!d) return false;
+        const still = d.getAnimations({ subtree: true }).every((a) => a.playState !== 'running');
+        return still && (!ph || Math.abs(window.innerHeight - d.getBoundingClientRect().bottom) <= 1);
+      }, phone, { timeout: 10000, polling: 100 }).catch(() => null);
       const mp = await page.evaluate(() => {
         const d = document.querySelector('.ds-drop');
         const b = d.getBoundingClientRect();
@@ -188,7 +206,7 @@ for (const mode of ['dark', 'light']) {
       pass(`${tag}: My Mission panel`, mp.rows === 4 && mp.text.includes('Open my plan') && mp.text.includes('world-class'), JSON.stringify({ rows: mp.rows }));
       await page.screenshot({ path: out ? `${out}/mission-panel-${width}-${mode}.png` : undefined });
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(400);
+      await gone(page, '.ds-drop');
     }
 
     if (width === 1280 || width === 390) {
@@ -222,13 +240,18 @@ async function layoutHistory(page, tag) {
     if (!k.startsWith('clarity-cache:') || !k.endsWith(':performance-plan')) return false;
     try { return (JSON.parse(localStorage.getItem(k))?.at || 0) >= t; } catch { return false; }
   }), since, { timeout: 30000 });
-  let since = Date.now();
+  // Browser time (its clock is fixed), so the device copy's stamp compares.
+  const browserNow = () => page.evaluate(() => Date.now());
+  let since = await browserNow();
   await page.goto(`${APP}/performance-plan`);
   await page.waitForSelector('.ds-status-action-link', { timeout: 30000 });
   await freshSince(since);
   const saveAnswered = () => page.waitForResponse((r) => r.url().includes('/rest/v1/outcome_objectives') && r.request().method() !== 'GET', { timeout: 15000 }).catch(() => null);
   const doneSaved = saveAnswered();
   await page.locator('.ds-status-action-link').click();
+  // Reach for Undo as soon as it shows, as a person would: the toast's
+  // timer pauses while the pointer is on it, so a slow save can't let it go.
+  await page.locator('.ds-toast-undo').hover({ timeout: 10000 });
   await doneSaved;
   const done = await page.locator('.ds-status-action-state--done').waitFor({ timeout: 10000 }).then(() => 1).catch(() => 0);
   pass('Milestone: Mark as done shows Done', done === 1);
@@ -236,7 +259,7 @@ async function layoutHistory(page, tag) {
   const undoSaved = saveAnswered();
   await page.locator('.ds-toast-undo').click();
   await undoSaved;
-  since = Date.now();
+  since = await browserNow();
   await page.reload();
   await page.waitForSelector('.ds-status-action-link', { timeout: 30000 });
   await freshSince(since);
@@ -246,6 +269,7 @@ async function layoutHistory(page, tag) {
 }
 
 await browser.close();
+console.log(seedForReal('--reset'));
 console.log(results.join('\n'));
 console.log(`Blocked: ${[...blockedHosts].join(', ')}`);
 console.log(`\n${failures === 0 ? 'All passed' : `${failures} failed`} (${blocked} outside or email calls blocked)`);

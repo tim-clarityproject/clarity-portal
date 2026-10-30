@@ -20,7 +20,10 @@ import './design.css';
 // numbers go, the months thin to every quarter, and only the latest
 // sprint is named above its weeks (the others name themselves in their
 // pop-ups). A sprint too short to hold its name isn't marked above at
-// all, so there is never a line without its words.
+// all, so there is never a line without its words. The standard's label
+// moves up into a thin strip above the bars (Tim, 29 Oct), still at the
+// line's right end, so "Standard 85%" never covers a bar or the picked
+// week's outline.
 //
 // Labels are DM Sans in sentence case (CLAUDE.md rule 4), where M1 used
 // Nekst capitals.
@@ -74,7 +77,7 @@ export default function YearChart({ slots, sprints = [], standardLines = [], mon
       </div>
       <div className="ds-ychart-plot" role="group" aria-label={label || 'Performance score by week'}>
         {standardLines.map((l) => (
-          <span key={`${l.from}-${l.value}`} className="ds-ychart-std" style={{ left: left(l.from), width: span(l.from, l.to), bottom: `${l.value}%` }}>
+          <span key={`${l.from}-${l.value}`} className="ds-ychart-std" style={{ left: left(l.from), width: span(l.from, l.to), bottom: `${l.value}%`, '--std': l.value }}>
             <span className="ds-ychart-std-label">{`Standard ${l.value}%`}</span>
           </span>
         ))}

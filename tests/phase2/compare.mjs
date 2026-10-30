@@ -32,8 +32,11 @@
 // It changes the test client's data with the seed script and ends with the
 // usual seeded plan and running sprint (--reset). Writes report.txt (and
 // screenshots) to the folder. Exits 1 when a rule check fails.
+// Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
+// around one day and every browser's clock starts on it, so nothing depends
+// on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
+import { seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -53,7 +56,8 @@ for (const line of readFileSync(`${homedir()}/.clarity-test-accounts.env`, 'utf8
   if (m) env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
 }
 if (!env.TEST_SUPABASE_URL?.includes(TEST_REF)) throw new Error('Not the test project.');
-const seed = (...flags) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', ...flags], { stdio: 'pipe' }).toString().trim();
+const seed = (...flags) => seedFixed(...flags);
+console.log(`Fixed day: ${fixedLabel()}`);
 
 const results = [];
 let failures = 0;
@@ -321,6 +325,8 @@ const ALLOWED = [
   { screen: /sprint/, side: 'mock', re: /^your usual range is # to #%\.$/, why: 'data: the seeded sprint has fewer than 6 weeks, so "Your usual range appears after 6 weeks." (M8)' },
   { screen: /sprint/, side: 'mock', re: /^strategic block happened$/, why: 'no label is stored for a habit: the row uses its name' },
   { screen: /sprint/, side: 'mock', re: /^(sa|su)$/, why: 'the week view shows working days only (brief), plus any day off already logged' },
+  { screen: /sprint/, side: 'mock', re: /^nothing planned for later weeks yet$/, why: 'a full sentence ends with a full stop (writing rule 48, Tim 29 Oct)' },
+  { screen: /sprint/, side: 'app', re: /^nothing planned for later weeks yet\.$/, why: 'a full sentence ends with a full stop (writing rule 48, Tim 29 Oct)' },
   { screen: /sprint/, side: 'mock', re: /^# days$/, why: 'time left in the unit that fits (M9.2)' },
   { screen: /build|edit|start|review/, side: 'mock', re: /^(objectives|habits|length|start|standard|ready|finished|worked|next time|clear space|coaching clients|launch the lead…|confidence lead…)$/, why: 'M6’s step list is replaced by the % complete bar' },
   { screen: /start|build/, side: 'mock', re: /^pick any day\. you can move it before it starts\.$/, why: 'one sentence per line: split into two lines (writing rule 49)' },
@@ -467,6 +473,7 @@ async function appContext(width, mode) {
     viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone,
     locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode, storageState: storage,
   });
+  await fixClock(context);
   await context.addInitScript((m) => {
     // Each context starts from the state saved straight after signing in,
     // so no page's device copy from an earlier seed is ever shown.
@@ -658,7 +665,7 @@ for (const group of GROUPS) {
     }
   }
 }
-seed('--reset');
+seedForReal('--reset');
 await browser.close();
 
 // ------------------------------------------------------------ report

@@ -21,8 +21,11 @@
 //  3. Build again is refused: it opens the editor (never a second plan).
 //  4. Edit: a new target (minor, 1.1), then a new objective (major, 2.0),
 //     and the versions on /performance-plan/history.
+// Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
+// around one day and every browser's clock starts on it, so nothing depends
+// on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
+import { seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
@@ -50,7 +53,8 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
-const seed = (flag) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', flag], { stdio: 'pipe' }).toString().trim();
+const seed = (...flags) => seedFixed(...flags);
+console.log(`Fixed day: ${fixedLabel()}`);
 const count = async (table, extra = (q) => q) => {
   const { count: n } = await extra(db.from(table).select('*', { count: 'exact', head: true }).eq('user_id', me));
   return n;
@@ -70,6 +74,7 @@ async function signedIn({ width, mode }) {
     timezoneId: 'Europe/London',
     colorScheme: mode,
   });
+  await fixClock(context);
   await context.addInitScript((m) => {
     try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ }
   }, mode);
@@ -377,7 +382,7 @@ try {
 }
 
 await browser.close();
-console.log(seed('--reset'));
+console.log(seedForReal('--reset'));
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures} passed, ${failures} failed.`);
 process.exit(failures ? 1 : 0);

@@ -40,7 +40,11 @@
 //     then, in a rolled-back dry run that links the owner coach to the
 //     client, what the owner coach and the second coach can read of the
 //     plan, sprint, wins and Recovery, both ways.
+// Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
+// around one day and every browser's clock starts on it, so nothing depends
+// on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 import { chromium } from 'playwright';
+import { FIXED_TODAY, seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
@@ -73,9 +77,9 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
-const seed = (flag) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', flag], { stdio: 'pipe' }).toString().trim();
-const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-const today = `${parts.find((p) => p.type === 'year').value}-${parts.find((p) => p.type === 'month').value}-${parts.find((p) => p.type === 'day').value}`;
+const seed = (...flags) => seedFixed(...flags);
+console.log(`Fixed day: ${fixedLabel()}`);
+const today = FIXED_TODAY;
 const addDays = (key, n) => {
   const [y, m, d] = key.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); // a pure date sum
@@ -118,6 +122,7 @@ async function signedIn({ width = 1280, mode = 'dark', coach = false } = {}) {
     timezoneId: 'Europe/London',
     colorScheme: mode,
   });
+  await fixClock(context);
   await context.addInitScript((m) => {
     try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ }
   }, mode);
@@ -192,7 +197,7 @@ const fresh = async (p, name, since) => {
   await calm(p);
 };
 const visit = async (p, path, name) => {
-  const since = Date.now();
+  const since = await p.evaluate(() => Date.now()); // browser time: its clock is fixed
   await p.goto(`${APP}${path}`);
   await fresh(p, name, since);
 };
@@ -465,7 +470,7 @@ try {
   await until(async () => (await q(db.from('outcome_objectives').select('name, target_value').eq('user_id', me).is('archived_at', null))).some((x) => x.name === O1 && Number(x.target_value) === 22));
   await savedShown(page);
   at = 'edit close';
-  const closedAt = Date.now();
+  const closedAt = await page.evaluate(() => Date.now());
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   await page.waitForURL(/\/performance-plan$/, { timeout: 20000 });
   await fresh(page, 'performance-plan', closedAt);
@@ -534,7 +539,7 @@ try {
   const v = await libraryView();
   firstSprint.scoreSoFar = v.soFar.value;
   pass('log a week: the week score so far matches src/lib/scores', (await centreScore()) === `${v.soFar.value}%`, `${await centreScore()} vs ${v.soFar.value}%`);
-  const reloadedAt = Date.now();
+  const reloadedAt = await page.evaluate(() => Date.now());
   await page.reload();
   await page.waitForSelector('.ds-sdial--running', { timeout: 30000 });
   await fresh(page, 'performance-sprint', reloadedAt);
@@ -872,7 +877,7 @@ try {
   const sw1 = await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me));
   pass('eyes: both now say You and Alex', eyes1.slice(0, 2).every((t) => t.includes('You and Alex')), eyes1.join(' | '));
   pass('eyes: the switches saved on', on0 && sw1.some((x) => x.part === 'progress' && x.is_on) && (sw1.find((x) => x.part === 'mission')?.is_on ?? true), JSON.stringify(sw1));
-  const eyesReloaded = Date.now();
+  const eyesReloaded = await page.evaluate(() => Date.now());
   await page.reload();
   await page.waitForSelector('.ds-who', { timeout: 30000 });
   await fresh(page, 'performance-plan', eyesReloaded);
@@ -915,7 +920,7 @@ await browser.close();
 // it starts for everyone (a person can't remove a switch row, only change
 // it): the mission on, progress off.
 await db.from('sharing_switches').upsert([{ user_id: me, part: 'mission', is_on: true }, { user_id: me, part: 'progress', is_on: false }], { onConflict: 'user_id,part' });
-console.log(seed('--reset'));
+console.log(seedForReal('--reset'));
 const left = await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me));
 const back = await activePlan();
 pass('tidy: the seeded plan v3.2 is back, with Sprint 1 running and the default sharing', back?.major === 3 && back.minor === 2 && (await runningSprint())?.number === 1

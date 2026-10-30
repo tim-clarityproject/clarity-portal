@@ -17,8 +17,11 @@
 //     finished weeks were frozen.
 //  3. Picking a week, the pop-up 12px inside the screen, Show as a table.
 //  4. The running sprint: this week so far in the text colour, Open this week.
+// Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
+// around one day and every browser's clock starts on it, so nothing depends
+// on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
+import { FIXED_TODAY, seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
@@ -47,9 +50,9 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
-const seed = (flag) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', flag], { stdio: 'pipe' }).toString().trim();
-const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-const today = `${parts.find((p) => p.type === 'year').value}-${parts.find((p) => p.type === 'month').value}-${parts.find((p) => p.type === 'day').value}`;
+const seed = (...flags) => seedFixed(...flags);
+console.log(`Fixed day: ${fixedLabel()}`);
+const today = FIXED_TODAY;
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 15000) {
   const end = Date.now() + ms;
@@ -76,6 +79,7 @@ async function signedIn({ width, mode }) {
     timezoneId: 'Europe/London',
     colorScheme: mode,
   });
+  await fixClock(context);
   await context.addInitScript((m) => {
     try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ }
   }, mode);
@@ -186,6 +190,55 @@ for (const width of [1280, 700, 390, 360]) {
   }
 }
 
+// The phone's label strip (Tim, 29 Oct): "Standard 85%" sits in a thin
+// strip above the bars, at the line's right end, so it never covers a bar
+// or a picked week's outline (4px above its column). Measured at 390, 360
+// and 320px, at the standard text size and at twice it; the laptop and
+// tablet keep the label on the line and are measured for the record.
+for (const width of [1280, 700, 390, 360, 320]) {
+  for (const scale of [1, 2]) {
+    const { context: c, page: p } = await signedIn({ width, mode: 'dark' });
+    await openYear(p);
+    if (scale !== 1) {
+      await p.addStyleTag({ content: `html{font-size:${16 * scale}px !important}` });
+      await p.waitForFunction(() => document.fonts.status === 'loaded');
+    }
+    const m = await p.evaluate(() => {
+      const plot = document.querySelector('.ds-ychart-plot').getBoundingClientRect();
+      return [...document.querySelectorAll('.ds-ychart-std')].map((line) => {
+        const lr = line.getBoundingClientRect();
+        const lab = line.querySelector('.ds-ychart-std-label').getBoundingClientRect();
+        const hit = [...document.querySelectorAll('.ds-ychart-bar, .ds-ychart-rec')].filter((b) => {
+          const r = b.getBoundingClientRect();
+          return r.width && r.height && r.left < lab.right && r.right > lab.left && r.top < lab.bottom && r.bottom > lab.top;
+        }).length;
+        // A picked week's outline reaches 4px above its column (--space-1).
+        const outlineTop = plot.top - 4;
+        return {
+          text: line.textContent,
+          gapAbovePlot: +(plot.top - lab.bottom).toFixed(1),
+          clearOfOutline: lab.bottom <= outlineTop + 0.5,
+          rightEnd: +(lab.right - lr.right).toFixed(1),
+          inside: lab.left >= 0 && lab.right <= document.documentElement.clientWidth,
+          height: +lab.height.toFixed(1),
+          barsCovered: hit,
+        };
+      });
+    });
+    const tag = `${width}px at ${scale === 1 ? 'the standard text size' : 'twice the text size'}`;
+    console.log(`strip ${tag}: ${JSON.stringify(m)}`);
+    pass(`${tag}: the standard line has its label`, m.length >= 1 && m.every((x) => /^Standard \d+%$/.test(x.text)), JSON.stringify(m));
+    pass(`${tag}: the label stays at the line's right end`, m.every((x) => Math.abs(x.rightEnd) <= 1 && x.inside), JSON.stringify(m));
+    if (width <= 600) {
+      pass(`${tag}: the label sits in the strip above the bars, clear of a picked week's outline`, m.every((x) => x.clearOfOutline), JSON.stringify(m));
+      pass(`${tag}: the label covers no bar`, m.every((x) => x.barsCovered === 0), JSON.stringify(m));
+    }
+    pass(`${tag}: no sideways scroll`, await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+    await shot(p, `year-strip-${width}-${scale}x`);
+    await c.close();
+  }
+}
+
 const { context, page } = await signedIn({ width: 1280, mode: 'dark' });
 await openYear(page);
 
@@ -280,6 +333,7 @@ seed('--reset');
 }
 
 await browser.close();
+seedForReal('--reset');
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures} passed, ${failures} failed.`);
 process.exit(failures ? 1 : 0);

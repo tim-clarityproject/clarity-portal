@@ -21,6 +21,9 @@
 // is there (src/components/design), it also signs in as the invented test
 // client on the TEST database only and checks a sample of portal pages: the
 // sprint, the year, the plan, the design gallery and older pages with an ⓘ.
+// Each page lists the pop-up kinds it must have, and a page missing one
+// fails on its own (Tim, 29 Oct). Every page is also checked for "Next
+// coaching session", hidden until the coach portal exists.
 // Exits 1 when a check fails.
 import { chromium } from 'playwright';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -42,7 +45,19 @@ const mark = (kind, how, ok) => {
   table[kind] = table[kind] || {};
   table[kind][how] = table[kind][how] === false ? false : ok;
 };
-const wait = (page, ms = 120) => page.waitForTimeout(ms);
+// Wait for the real condition, never a fixed time: the page has drawn the
+// change (two frames) and nothing on it is still moving (pop-ups, panels
+// and toasts fade or rise; reduced motion makes most of them instant).
+const wait = (page) => page.evaluate(() => new Promise((done) => {
+  const still = () => document.getAnimations().every((a) => a.playState !== 'running');
+  let frames = 0;
+  const tick = () => {
+    frames += 1;
+    if ((frames >= 2 && still()) || frames > 120) done();
+    else requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}));
 const browser = await chromium.launch();
 
 // ---- reading a pop-up's state ------------------------------------------------
@@ -179,7 +194,7 @@ async function flipCheck(page, t, where) {
     return Math.abs(el.getBoundingClientRect().top - 14) < 3;
   });
   if (!moved) return; // the page can't scroll that far; checked on another target
-  await wait(page, 200);
+  await wait(page);
   // Focus opens it without scrolling (a click would scroll the target out
   // from under the sticky top bar first).
   await loc.evaluate((el) => el.focus({ preventScroll: true }));
@@ -223,35 +238,35 @@ async function touchChecks(page, t, where, other) {
   await loc.scrollIntoViewIfNeeded();
   const blank = await blankPoint(page, loc);
   await loc.tap();
-  await wait(page, 400);
+  await wait(page);
   let s = await stateOf(loc, t.type);
   const opens = s.open;
   pass(`${label}: a tap opens it`, opens);
   pass(`${label}: tapped open, it sits 12px inside both edges`, inside(s), JSON.stringify(s.box));
   await page.touchscreen.tap(blank.x, blank.y);
-  await wait(page, 300);
+  await wait(page);
   s = await stateOf(loc, t.type);
   const away = !s.open && (t.type === 'inline' || !(await anyOpen(page)));
   pass(`${label}: a tap elsewhere closes it, and no hover pop-up is left behind`, away);
   await loc.tap();
-  await wait(page, 300);
+  await wait(page);
   await loc.tap();
-  await wait(page, 300);
+  await wait(page);
   const again = !(await stateOf(loc, t.type)).open;
   pass(`${label}: tapping it again closes it`, again);
   let swap = true;
   if (other) {
     await loc.tap();
-    await wait(page, 250);
+    await wait(page);
     await other.scrollIntoViewIfNeeded();
     await other.tap();
-    await wait(page, 300);
+    await wait(page);
     const a = await stateOf(loc, t.type);
     const b = await stateOf(other, t.type);
     swap = b.open && (t.type === 'inline' || !a.open);
     pass(`${label}: tapping another one opens that one${t.type === 'inline' ? '' : ' instead'}`, swap);
     await other.tap();
-    await wait(page, 250);
+    await wait(page);
     if ((await stateOf(loc, t.type)).open) await loc.tap();
   }
   mark(t.kind, 'touch', opens && away && again && swap);
@@ -264,15 +279,15 @@ async function actionChecks(page, loc, kind, where, touch) {
   const dialogOpen = () => page.evaluate(() => [...document.querySelectorAll('[role=dialog]')].some((d) => d.getClientRects().length && getComputedStyle(d).visibility !== 'hidden' && !d.closest('[inert]')));
   if (!touch) {
     await loc.hover();
-    await wait(page, 300);
+    await wait(page);
     const nothing = !(await dialogOpen()) && !(await anyOpen(page));
     pass(`${label}: pointing at it opens nothing`, nothing);
     await loc.click();
-    await wait(page, 500);
+    await wait(page);
     const opens = await dialogOpen();
     pass(`${label}: a click opens its panel`, opens);
     await page.keyboard.press('Escape');
-    await wait(page, 600);
+    await wait(page);
     mark(kind, 'mouse', nothing);
     mark(kind, 'click', opens);
     // The keyboard: Enter opens it, as a click does; focus alone opens nothing.
@@ -281,19 +296,19 @@ async function actionChecks(page, loc, kind, where, touch) {
     const still = focused && !(await dialogOpen()) && !(await anyOpen(page));
     pass(`${label}: keyboard focus alone opens nothing`, still);
     await page.keyboard.press('Enter');
-    await wait(page, 500);
+    await wait(page);
     const enter = await dialogOpen();
     pass(`${label}: Enter opens its panel`, enter);
     await page.keyboard.press('Escape');
-    await wait(page, 600);
+    await wait(page);
     mark(kind, 'keyboard', still && enter);
   } else {
     await loc.tap();
-    await wait(page, 600);
+    await wait(page);
     const opens = await dialogOpen();
     pass(`${label}: a tap opens its panel`, opens);
     await page.keyboard.press('Escape');
-    await wait(page, 600);
+    await wait(page);
     mark(kind, 'touch', opens);
   }
 }
@@ -354,7 +369,7 @@ async function signInHc(page, session) {
   await page.locator('#hc-code').fill(session.code);
   await page.locator('form button[type=submit]').click();
   await page.locator('.hc-main .page h2').first().waitFor();
-  await wait(page, 400);
+  await wait(page);
 }
 
 async function healthCheck(touch) {
@@ -416,7 +431,7 @@ async function healthCheck(touch) {
     const { ctx: ectx, page: ep } = await healthCheckPage({ width, touch, step: null, complete: false });
     await ep.getByRole('button', { name: 'See an example report' }).click();
     await ep.locator('.chart g.dot').first().waitFor();
-    await wait(ep, 400);
+    await wait(ep);
     const ewhere = `Health Check example report ${how}`;
     const eInfos = ep.locator('.hc-main .ipb:visible');
     const eDots = ep.locator('.chart g.dot:visible');
@@ -464,26 +479,40 @@ async function signedIn(touch) {
   return { ctx, page };
 }
 
-// The pages and what to try on each. A page that shows none of a kind (its
-// data has none) is noted, not failed, as long as each kind is tried somewhere.
+// The pages, what shows each one is ready, and the pop-up kinds each must
+// have on a laptop and on a phone (Tim, 29 Oct). Every page is checked on
+// its own: a kind missing from a page fails on that page, never "fine
+// because another page had it". The test client is the seeded one
+// (scripts/seed-test-plan.mjs --reset: plan v3.2, Sprint 1 running).
+const TITLE = 'ⓘ (page title)';
+const SECTION = 'ⓘ (section or step)';
+const MARK = 'chart mark (ChartTips)';
+const EYE = 'eye';
 const PAGES = [
-  ['/performance-sprint', 'the sprint'],
-  ['/performance-sprint/year', 'the year'],
-  ['/performance-plan', 'the plan'],
-  ['/design-reference', 'the design gallery'],
-  ['/daily-journal', 'an older page (Daily journal)'],
-  ['/decision-tools', 'an older page (Decision tools)'],
+  { path: '/performance-sprint', name: 'the sprint', ready: '.ds-sdial--running', desktop: [TITLE, MARK], touch: [TITLE, MARK] },
+  { path: '/performance-sprint/year', name: 'the year', ready: '.ds-ychart-col', desktop: [TITLE, MARK], touch: [TITLE, MARK] },
+  // The test client has no coach, so the plan's eyes are words, not a tap.
+  { path: '/performance-plan', name: 'the plan', ready: '.ds-stile', desktop: [TITLE, MARK], touch: [TITLE, MARK] },
+  // The gallery has no page title of its own: its sections show each kind.
+  { path: '/design-reference', name: 'the design gallery', ready: '.dr-tool-frame', desktop: [SECTION, MARK, EYE], touch: [SECTION, MARK, EYE] },
+  { path: '/daily-journal', name: 'an older page (Daily journal)', ready: '.ds-page-info-toggle', desktop: [TITLE], touch: [TITLE] },
+  { path: '/decision-tools', name: 'an older page (Decision tools)', ready: '.ds-page-info-toggle', desktop: [TITLE], touch: [TITLE] },
 ];
-const tried = {};
 
 async function portal(touch) {
   const how = touch ? 'touch' : 'desktop';
   const { ctx, page } = await signedIn(touch);
-  for (const [path, name] of PAGES) {
+  for (const { path, name, ready, ...expect } of PAGES) {
     await page.goto(`${APP}${path}`);
+    // Ready: the page's own content is in, the first-visit crosshair has
+    // gone and the server's copy has arrived (the network is quiet).
+    await page.waitForSelector(ready, { state: 'visible', timeout: 30000 }).catch(() => {});
+    await page.waitForFunction(() => !document.querySelector('.ds-loading--page'), null, { timeout: 30000 }).catch(() => {});
     await page.waitForLoadState('networkidle').catch(() => {});
-    await wait(page, 1500);
+    await wait(page);
     const where = `${name} ${how}`;
+    // Tim, 29 Oct: hidden until the coach portal exists.
+    pass(`${where}: shows no "Next coaching session"`, !/next\s+coaching\s+session/i.test(await page.locator('body').innerText()));
     const found = [];
     const titleI = page.locator('.ds-page-info-toggle:visible');
     if (await titleI.count()) found.push({ kind: 'ⓘ (page title)', type: 'inline', loc: titleI.first() });
@@ -495,7 +524,7 @@ async function portal(touch) {
       const nextBtn = frame.getByRole('button', { name: /^Next/ }).first();
       if (!(await nextBtn.count())) break;
       await nextBtn.click();
-      await wait(page, 500);
+      await wait(page);
     }
     const guideI = page.locator('.ds-guide-i:visible');
     if (await guideI.count()) found.push({ kind: 'ⓘ (section or step)', type: 'inline', loc: guideI.first() });
@@ -507,14 +536,15 @@ async function portal(touch) {
       if (n > 1) found.push({ kind: 'chart mark (ChartTips)', type: 'float', loc: marks.last() });
     }
     results.push(`      ${where}: ${found.map((t) => t.kind).join(', ') || 'no pop-ups'}`);
+    // Only an eye that can be tapped (WhoSees with onChange, CoachSees); the others are words.
+    const eye = page.locator('.ds-who[aria-haspopup]:visible');
+    const has = new Set([...found.map((t) => t.kind), ...((await eye.count()) ? [EYE] : [])]);
+    for (const kind of expect[how]) pass(`${where}: has ${kind}`, has.has(kind), `found ${[...has].join(', ') || 'none'}`);
     for (const t of found) {
-      tried[t.kind] = true;
       if (touch) await touchChecks(page, t, where, t.other);
       else { await mouseChecks(page, t, where); await keyboardChecks(page, t, where); await flipCheck(page, t, where); }
     }
-    // Only an eye that can be tapped (WhoSees with onChange, CoachSees); the others are words.
-    const eye = page.locator('.ds-who[aria-haspopup]:visible');
-    if (await eye.count()) { tried.eye = true; await actionChecks(page, eye.first(), 'the eye (WhoSees, CoachSees)', where, touch); }
+    if (await eye.count()) await actionChecks(page, eye.first(), 'the eye (WhoSees, CoachSees)', where, touch);
   }
   await ctx.close();
 }
@@ -524,8 +554,6 @@ await healthCheck(true);
 if (PORTAL) {
   await portal(false);
   await portal(true);
-  // (Section's ⓘ uses the same hook as these, but no page uses helpKey yet.)
-  for (const kind of ['ⓘ (page title)', 'ⓘ (section or step)', 'chart mark (ChartTips)', 'eye']) pass(`the portal sample has ${kind}`, !!tried[kind]);
 }
 await browser.close();
 

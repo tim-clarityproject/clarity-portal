@@ -20,8 +20,12 @@
 //  5. A refresh mid-save sends the same rows again: no second sprint.
 //  6. The review of a sprint not over says so; no plan says
 //     to build one.
+// Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
+// around one day and every browser's clock starts on it, so nothing depends
+// on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
+import { addDays } from '../../src/lib/scores/dates.js';
+import { FIXED_TODAY, weekdayOf, seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
@@ -49,7 +53,8 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
-const seed = (flag) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', flag], { stdio: 'pipe' }).toString().trim();
+const seed = (...flags) => seedFixed(...flags);
+console.log(`Fixed day: ${fixedLabel()}`);
 const activePlan = async () => (await db.from('performance_plans').select('id, mission, major, minor').eq('user_id', me).eq('status', 'active')).data;
 
 const browser = await chromium.launch();
@@ -65,6 +70,7 @@ async function signedIn({ width, mode }) {
     timezoneId: 'Europe/London',
     colorScheme: mode,
   });
+  await fixClock(context);
   await context.addInitScript((m) => {
     try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ }
   }, mode);
@@ -174,10 +180,8 @@ const dropSprints = async () => {
   const { error } = await db.from('sprints').delete().eq('user_id', me);
   if (error) throw error;
 };
-const keyDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const now = new Date();
-const todayKey = keyDay(now);
-const nextMonday = (() => { const d = new Date(now); d.setDate(d.getDate() + (((8 - d.getDay()) % 7) || 7)); return keyDay(d); })();
+const todayKey = FIXED_TODAY;
+const nextMonday = addDays(todayKey, 7 - weekdayOf(todayKey)); // the next Monday, never today
 
 console.log(seed('--reset'));
 const plan = (await activePlan())[0];
@@ -194,8 +198,11 @@ try {
   await page.goto(`${APP}/performance-sprint/start`);
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
   await page.waitForFunction(() => /Performance Sprint 1 starts on/.test(document.body.textContent), null, { timeout: 15000 }).catch(() => {});
+  // The toast itself, as it shows (not a read of the page at one moment).
+  const toastSaid = await page.locator('.ds-toast').filter({ hasText: /Saved\. Performance Sprint 1 starts/ }).first()
+    .waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
   const body = await page.locator('body').textContent();
-  pass('hand-over: the toast says the sprint starts', /Saved\. Performance Sprint 1 starts/.test(body));
+  pass('hand-over: the toast says the sprint starts', toastSaid);
   pass('hand-over: the sprint page stand-in says when it starts', /Performance Sprint 1 starts on/.test(body));
   await shot(page, 'handover-sprint-page');
   const list = await sprints();
@@ -375,7 +382,7 @@ try {
 }
 
 await browser.close();
-console.log(seed('--reset'));
+console.log(seedForReal('--reset'));
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures} passed, ${failures} failed.`);
 process.exit(failures ? 1 : 0);

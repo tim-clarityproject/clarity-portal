@@ -18,11 +18,14 @@
 //  5. Finishing: an objective changed, one retired, one added, a habit
 //     that stuck added to the plan, a double tap on finish; the sprint is
 //     finished, one new version, the next stop is Start a sprint, the
-//     answers stay on the device.
+//     answers go to sprint_reviews (038), or stay on the device until it runs.
 //  6. Recovery first: finishes the sprint and opens /recovery.
 //  7. No sprint waiting, and a sprint still running.
+// Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
+// around one day and every browser's clock starts on it, so nothing depends
+// on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
+import { FIXED_TODAY, seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
@@ -51,9 +54,9 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
-const seed = (flag) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', flag], { stdio: 'pipe' }).toString().trim();
-const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-const today = `${parts.find((p) => p.type === 'year').value}-${parts.find((p) => p.type === 'month').value}-${parts.find((p) => p.type === 'day').value}`;
+const seed = (...flags) => seedFixed(...flags);
+console.log(`Fixed day: ${fixedLabel()}`);
+const today = FIXED_TODAY;
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 15000) {
   const end = Date.now() + ms;
@@ -80,6 +83,7 @@ async function signedIn({ width, mode }) {
     timezoneId: 'Europe/London',
     colorScheme: mode,
   });
+  await fixClock(context);
   await context.addInitScript((m) => {
     try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ }
   }, mode);
@@ -317,7 +321,17 @@ for (const width of [1280, 700, 390, 360]) {
   const plan = (await db.from('performance_plans').select('major, minor').eq('id', before.plan.id)).data[0];
   pass('the plan’s version moved on', plan.major === before.plan.major + 1 && plan.minor === 0, JSON.stringify(plan));
   const kept = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.includes('performance-sprint-review-answers')).map((k) => localStorage.getItem(k)).join(''));
-  pass('the two answers stay on the device', kept.includes('Referral work') && kept.includes('Late finishes'));
+  // 038 (sprint_reviews) isn't on the test database yet: the answers stay
+  // on the device, with what comes next, and no error is shown (Tim, 29 Oct).
+  const has038 = !(await db.from('sprint_reviews').select('id').limit(1)).error;
+  if (has038) {
+    const row = (await db.from('sprint_reviews').select('worked_best, next_better, next_choice').eq('sprint_id', before.sprint.id)).data[0];
+    pass('with 038: the two answers are saved to sprint_reviews', row?.worked_best?.includes('Referral work') && row?.next_better?.includes('Late finishes') && row?.next_choice === 'sprint', JSON.stringify(row));
+  } else {
+    pass('without 038: the two answers stay on the device', kept.includes('Referral work') && kept.includes('Late finishes') && kept.includes('"choice":"sprint"'), kept.slice(0, 200));
+  }
+  const errorShown = await page.locator('.ds-toast').filter({ hasText: /didn.t save|went wrong|try again/i }).count() + await page.locator('.ds-error-message, [role=alert]').filter({ hasText: /try again/i }).count();
+  pass('finishing shows no error', errorShown === 0, `${errorShown}`);
   pass('Start a sprint goes straight to the steps', /How long is this sprint\?/.test(await heading(page).catch(() => '')));
   await shot(page, 'after-finish');
 
@@ -367,7 +381,7 @@ seed('--reset');
 }
 
 await browser.close();
-seed('--reset');
+seedForReal('--reset');
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures} passed, ${failures} failed.`);
 process.exit(failures ? 1 : 0);

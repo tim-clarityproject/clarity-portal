@@ -19,12 +19,17 @@
 //  4. To-dos: tick, add, move, roll-over; a win reaches Performance Evidence.
 //  5. Offline: a log waits on the device ("Will sync") and arrives when
 //     the connection is back ("Saved").
+//  Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
+//  around one day and every browser's clock starts on it, so nothing
+//  depends on the day or time the test runs. TEST_TODAY and TEST_TIME pick
+//  another day and time (to prove any weekday and the small hours work).
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
 import { sprintPageView } from '../../src/lib/performance/sprintPage.js';
+import { addDays } from '../../src/lib/scores/dates.js';
+import { FIXED_TODAY, DAY_NAMES, weekdayOf, seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -49,9 +54,8 @@ const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ 
 if (signInError) throw signInError;
 const me = signIn.user.id;
 
-const seed = (flag) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', flag], { stdio: 'pipe' }).toString().trim();
-const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-const today = `${parts.find((p) => p.type === 'year').value}-${parts.find((p) => p.type === 'month').value}-${parts.find((p) => p.type === 'day').value}`;
+const today = FIXED_TODAY;
+console.log(`Fixed day: ${fixedLabel()}`);
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 15000) {
   const end = Date.now() + ms;
@@ -78,6 +82,7 @@ async function signedIn({ width, mode }) {
     timezoneId: 'Europe/London',
     colorScheme: mode,
   });
+  await fixClock(context);
   await context.addInitScript((m) => {
     try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ }
   }, mode);
@@ -150,7 +155,7 @@ async function layoutChecks(page, tag, mode) {
 }
 
 // ---------------------------------------------------------------- start
-seed('--reset');
+seedFixed('--reset');
 const sprint = (await db.from('sprints').select('id, start_on, length_weeks, standard').eq('user_id', me).eq('status', 'running')).data[0];
 const sh = (await db.from('sprint_habits').select('id, name').eq('sprint_id', sprint.id)).data;
 const habitId = (name) => sh.find((h) => h.name === name).id;
@@ -252,24 +257,38 @@ await shot(page, 'logged-day');
 // Week view.
 await page.getByRole('button', { name: 'This week', exact: true }).click();
 await page.waitForTimeout(400);
-const monday = sprint.start_on.slice(0, 8) + String(Number(sprint.start_on.slice(8)) + 21).padStart(2, '0');
+const monday = addDays(sprint.start_on, 21); // this week's Monday (week 4)
+// An amount on a day already past or today: Tuesday, or Monday on a Monday.
+const amountDay = weekdayOf(today) >= 1 ? addDays(monday, 1) : monday;
 const monLog = await logOf('Steps', monday);
 const wrow = (name) => page.locator('.sprint-habits > .ds-log').filter({ has: page.locator('.ds-log-name', { hasText: new RegExp(`^${name}$`) }) });
 await wrow('Steps').getByRole('textbox', { name: /Monday/ }).fill('12000');
 await wrow('Steps').getByRole('textbox', { name: /Monday/ }).blur();
 const monAfter = await until(async () => { const l = await logOf('Steps', monday); return l && Number(l.value) === 12000 ? l : null; });
 pass('week view: Monday changed in place (same id)', monAfter && monLog && monAfter.id === monLog.id, `${monLog?.id} → ${monAfter?.id}`);
-await wrow('Reading').getByRole('textbox', { name: /Tuesday/ }).fill('1.5');
-await wrow('Reading').getByRole('textbox', { name: /Tuesday/ }).blur();
-pass('week view: an amount on Tuesday', Boolean(await until(async () => Number((await logOf('Reading', `${monday.slice(0, 8)}${String(Number(monday.slice(8)) + 1).padStart(2, '0')}`))?.value) === 1.5)));
+const amountName = new RegExp(DAY_NAMES[weekdayOf(amountDay)]);
+await wrow('Reading').getByRole('textbox', { name: amountName }).fill('1.5');
+await wrow('Reading').getByRole('textbox', { name: amountName }).blur();
+pass(`week view: an amount on ${DAY_NAMES[weekdayOf(amountDay)]}`, Boolean(await until(async () => Number((await logOf('Reading', amountDay))?.value) === 1.5)));
 const screensMon = await logOf('No screens after 21:00', monday);
 await wrow('No screens after 21:00').getByRole('button', { name: /Monday/ }).click();
 pass('week view: a day Yes becomes No', Boolean(await until(async () => {
   const l = await logOf('No screens after 21:00', monday);
   return screensMon && Number(screensMon.value) === 1 ? l && Number(l.value) === 0 : l && Number(l.value) === 1;
 })));
-const later = await wrow('Steps').getByRole('textbox').last().isDisabled();
-pass('week view: later days are greyed out', later);
+// Every day after today is greyed out and every day up to today open,
+// whichever weekday the fixed day is (on a Friday or a weekend no later
+// working day is shown, and the check says so).
+{
+  const boxes = await wrow('Steps').getByRole('textbox').evaluateAll((els) => els.map((e) => ({ label: e.getAttribute('aria-label'), disabled: e.disabled })));
+  const at = (label) => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].findIndex((d) => label.includes(d));
+  const later = boxes.filter((b) => at(b.label) > weekdayOf(today));
+  const upToToday = boxes.filter((b) => at(b.label) <= weekdayOf(today));
+  const expectLater = Math.max(0, 4 - weekdayOf(today)); // working days Monday to Friday
+  pass(`week view: later days are greyed out (${later.length} later on a ${DAY_NAMES[weekdayOf(today)]})`,
+    later.length === expectLater && later.every((b) => b.disabled) && upToToday.length > 0 && upToToday.every((b) => !b.disabled),
+    JSON.stringify(boxes));
+}
 await wrow('Weekly strategic block').getByRole('checkbox').click();
 pass('week view: the weekly tick comes off', Boolean(await until(async () => !(await logOf('Weekly strategic block')))));
 await wrow('Weekly strategic block').getByRole('checkbox').click();
@@ -329,13 +348,14 @@ await page.waitForTimeout(600);
 pass('add a win: listed with its tag', (await todoRow('A past client sent two introductions').textContent()).includes('Unplanned win'));
 
 // 5. Offline and back.
-await page.waitForTimeout(6000); // let the toasts go
+await page.locator('.ds-toast').waitFor({ state: 'detached', timeout: 15000 }).catch(() => null); // let the toasts go
+// Today's Steps as they stand (on a Monday the week view's Monday is today).
+const stepsBefore = Number((await logOf('Steps'))?.value);
 await context.setOffline(true);
 await row('Steps').locator('input').fill('7777');
 await row('Steps').locator('input').blur();
-await page.waitForTimeout(1500);
-pass('offline: Will sync shows', await page.locator('.ds-status--sync').isVisible());
-pass('offline: nothing reached the database', Number((await logOf('Steps')).value) === 9500);
+pass('offline: Will sync shows', await page.locator('.ds-status--sync').waitFor({ timeout: 10000 }).then(() => true).catch(() => false));
+pass('offline: nothing reached the database', Number((await logOf('Steps'))?.value) === stepsBefore, `${stepsBefore}`);
 await context.setOffline(false);
 pass('back online: the log arrives', Boolean(await until(async () => Number((await logOf('Steps'))?.value) === 7777, 20000)));
 pass('back online: Saved shows', Boolean(await until(async () => page.locator('.ds-status--saved').isVisible(), 10000)));
@@ -357,7 +377,7 @@ await context.close();
 }
 
 await browser.close();
-seed('--reset');
+seedForReal('--reset');
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures} passed, ${failures} failed.`);
 process.exit(failures ? 1 : 0);

@@ -20,8 +20,11 @@
 //    left (M9.2) and every Strategy tile's score this week so far equal
 //    src/lib on the same rows.
 // Ends with the usual seeded plan and running sprint (--reset).
+// Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
+// around one day and every browser's clock starts on it, so nothing depends
+// on the day or time the test runs (TEST_TODAY and TEST_TIME pick another).
 import { chromium } from 'playwright';
-import { execFileSync } from 'node:child_process';
+import { FIXED_TODAY, seedFixed, seedForReal, fixClock, fixedLabel } from './fixed-day.mjs';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { createClient } from '@supabase/supabase-js';
@@ -46,9 +49,9 @@ const db = createClient(env.TEST_SUPABASE_URL, env.TEST_SUPABASE_ANON_KEY, { aut
 const { data: signIn, error: signInError } = await db.auth.signInWithPassword({ email: env.TEST_CLIENT_EMAIL, password: env.TEST_CLIENT_PASSWORD });
 if (signInError) throw signInError;
 const me = signIn.user.id;
-const seed = (...flags) => execFileSync('node', ['--import', './tests/scores/register.mjs', 'scripts/seed-test-plan.mjs', ...flags], { stdio: 'pipe' }).toString().trim();
-const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-const today = `${parts.find((p) => p.type === 'year').value}-${parts.find((p) => p.type === 'month').value}-${parts.find((p) => p.type === 'day').value}`;
+const seed = (...flags) => seedFixed(...flags);
+console.log(`Fixed day: ${fixedLabel()}`);
+const today = FIXED_TODAY;
 const until = async (fn, ms = 20000) => {
   const end = Date.now() + ms;
   while (Date.now() < end) {
@@ -101,6 +104,7 @@ pass('M5-1 shown as 68%, below the standard (grey)', m0Round(result.score) === 6
 // ---------------------------------------------------------------- the app
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'dark' });
+await fixClock(context);
 await context.route('**/*', (route) => {
   const url = route.request().url();
   if (/resend\.com|sendgrid|mailgun|postmarkapp|smtp/i.test(url)) return route.abort();
@@ -189,7 +193,7 @@ for (const s of d.strategies) {
 }
 
 await browser.close();
-console.log(seed('--reset'));
+console.log(seedForReal('--reset'));
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);

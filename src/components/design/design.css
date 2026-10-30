@@ -5775,8 +5775,20 @@
 }
 
 @media (max-width: 600px) {
+  /* A thin strip above the bars holds the standard's label (Tim, 29 Oct):
+     the label's own height plus a gap each side, so it grows with the
+     text size and clears the picked week's outline (--space-1 above). */
   .ui-root .ds-ychart-plot {
     height: var(--year-chart-h-phone);
+    margin-top: calc(var(--space-2) + var(--fs-chart) * 1.2 + var(--space-2));
+  }
+
+  /* Still at the line's right end, raised from the line to the strip:
+     the plot's height above the line, plus the gap. */
+  .ui-root .ds-ychart-std-label {
+    bottom: calc(var(--year-chart-h-phone) * (100 - var(--std, 100)) / 100 + var(--space-2));
+    padding-left: 0;
+    background: none;
   }
 
   .ui-root .ds-ychart-sprint:not(.ds-ychart-sprint--latest),
