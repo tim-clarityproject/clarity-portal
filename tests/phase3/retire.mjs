@@ -133,6 +133,7 @@ async function tidy() {
   if (created.pop.length) await db.from('mission_progress_reviews').delete().in('id', created.pop.map((r) => r.id)).eq('user_id', me);
   // Anything a failed run left behind, by its invented words.
   await db.from('journal_entries').delete().eq('user_id', me).in('title', [WEEKLY.title, WEEKLY_DRAFT.title]);
+  await db.from('mission_progress_reviews').delete().eq('user_id', me).eq('review_data->>mission_title', POP.mission);
   if (madeMission) await db.from('missions').delete().eq('id', madeMission).eq('user_id', me);
   await db.from('missions').delete().eq('user_id', me).eq('title', POP.mission);
 }
