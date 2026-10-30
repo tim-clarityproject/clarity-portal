@@ -1115,6 +1115,7 @@
 }
 .ui-root .deb-closed p + p { margin-top: var(--space-1); }
 .ui-root .deb-closed-score { margin-top: var(--space-5); }
+.ui-root .deb-open-now { margin-top: var(--space-3); }
 
 @media (max-width: 600px) {
   .ui-root .ds-stats.deb-facts { grid-template-columns: minmax(0, 1fr); }

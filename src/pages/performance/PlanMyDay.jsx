@@ -604,7 +604,7 @@ function PlanFlow({ userId, date, today, loaded }) {
             />
             {view.score && (
               <div className="day-score">
-                <Stat label="Performance score this week" value={view.score.value} good={view.score.good} />
+                <Stat label="Performance score this week so far" value={view.score.value} good={view.score.good} />
               </div>
             )}
           </div>

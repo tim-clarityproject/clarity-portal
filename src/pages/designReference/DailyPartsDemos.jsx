@@ -112,6 +112,7 @@ export function NoteSwitchDemo() {
 export function FiguresDemo() {
   const [clients, setClients] = useState('40');
   const [steps, setSteps] = useState({ mo: '11,200', tu: '8,400', we: '' });
+  const [block, setBlock] = useState(true);
   const days = [['mo', 'Mo', 'Monday 19 Oct'], ['tu', 'Tu', 'Tuesday 20 Oct'], ['we', 'We', 'Wednesday 21 Oct'], ['th', 'Th', 'Thursday 22 Oct'], ['fr', 'Fr', 'Friday 23 Oct']]
     .map(([key, box, full]) => ({ key, box, full }));
   return (
@@ -134,6 +135,15 @@ export function FiguresDemo() {
         onChange={() => null}
         dashEmpty
         total={{ label: '3 of 3', value: '100%', good: true }}
+      />
+      <LoggingWeekRow
+        name="Weekly strategic block"
+        detail="Once a week"
+        kind="tick"
+        tickWords="Happened this week"
+        value={block}
+        onChange={setBlock}
+        total={{ label: block ? 'Yes' : 'No', value: block ? '100%' : '0%', good: block }}
       />
       <TodoList label="Next week’s to-dos">
         <TodoRow plain text="Book a physio assessment" strategyName="Maintain my availability to do good work" tags={['Rolls over from week 3']} />

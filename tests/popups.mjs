@@ -20,7 +20,8 @@
 // everything outside localhost is blocked. Where the portal's design system
 // is there (src/components/design), it also signs in as the invented test
 // client on the TEST database only and checks a sample of portal pages: the
-// sprint, the year, the plan, the design gallery and older pages with an ⓘ.
+// sprint, the year, the plan, Plan my day, Review my day, the weekly
+// debrief, the design gallery and older pages with an ⓘ.
 // Each page lists the pop-up kinds it must have, and a page missing one
 // fails on its own (Tim, 29 Oct). Every page is also checked for "Next
 // coaching session", hidden until the coach portal exists.
@@ -495,6 +496,13 @@ const PAGES = [
   { path: '/performance-plan', name: 'the plan', ready: '.ds-stile', desktop: [TITLE, MARK], touch: [TITLE, MARK] },
   // The gallery has no page title of its own: its sections show each kind.
   { path: '/design-reference', name: 'the design gallery', ready: '.dr-tool-frame', desktop: [SECTION, MARK, EYE], touch: [SECTION, MARK, EYE] },
+  // Phase 3's guided tools have no "i", chart mark or tappable eye (the
+  // test client has no coach): each is still opened on its own, checked for
+  // "Next coaching session", and any pop-up found on it is still checked.
+  // The debrief shows its first step or, outside a window, when the next opens.
+  { path: '/my-day/plan', name: 'Plan my day', ready: '.ds-guide-question', desktop: [], touch: [] },
+  { path: '/my-day/review', name: 'Review my day', ready: '.ds-guide-question', desktop: [], touch: [] },
+  { path: '/performance-sprint/debrief', name: 'the weekly debrief', ready: '.ds-guide-question, .deb-closed', desktop: [], touch: [] },
   { path: '/daily-journal', name: 'an older page (Daily journal)', ready: '.ds-page-info-toggle', desktop: [TITLE], touch: [TITLE] },
   { path: '/decision-tools', name: 'an older page (Decision tools)', ready: '.ds-page-info-toggle', desktop: [TITLE], touch: [TITLE] },
 ];

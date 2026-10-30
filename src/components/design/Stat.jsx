@@ -36,7 +36,7 @@ export function Stat({ label, value, unit, note, good = false, bar, panel = fals
         {value}
         {unit && <span className={`ds-unit${unit.startsWith('/') ? ' ds-unit--tight' : ''}`}>{unit}</span>}
       </strong>
-      {(Array.isArray(note) ? note.filter(Boolean) : [note].filter(Boolean)).map((line) => <span key={typeof line === 'string' ? line : undefined} className="ds-stat-note">{line}</span>)}
+      {(Array.isArray(note) ? note.filter(Boolean) : [note].filter(Boolean)).map((line, i) => <span key={typeof line === 'string' ? line : `note-${i}`} className="ds-stat-note">{line}</span>)}
       {bar != null && <Bar value={bar} />}
     </div>
   );

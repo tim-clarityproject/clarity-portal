@@ -119,6 +119,11 @@ test('the view: closed before and after its window; open from the last 3 days', 
   assert.equal(early.scoreLabel, 'Week 1 performance score so far');
   assert.deepEqual(early.days.filter((x) => x.later).map((x) => x.key), ['2026-10-10', '2026-10-11']);
   assert.equal(debriefView({ sprints: [], recoveries: [] }, { today: '2026-10-09' }).state, 'none');
+  // An old week's page while another week's debrief is open says so.
+  const old = debriefView(m51(), { today: '2026-10-16' });
+  assert.equal(old.state, 'closed');
+  assert.deepEqual(old.openNow, { sprintId: 'sp', week: 2 });
+  assert.equal(closed.openNow, null, 'nothing else open the day after');
 });
 
 test('M5-1: the debrief scores the week as the sprint does, 68%, below the standard', () => {

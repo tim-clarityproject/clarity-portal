@@ -205,6 +205,8 @@ export function LoggingRow({
 //               true is mint (at or above the standard), false grey (below),
 //               never coral; left out, the text colour.
 // dashEmpty:    a day with nothing logged has a dashed edge (the debrief).
+// tickWords:    words beside a once-a-week tick (M1 debrief: "Happened
+//               this week"); the box itself is named by the habit.
 export function LoggingWeekRow({
   name,
   detail,
@@ -221,10 +223,12 @@ export function LoggingWeekRow({
   moreLabel,
   total,
   dashEmpty = false,
+  tickWords,
 }) {
   let entry;
   if (kind === 'tick') {
     entry = <TickBox checked={Boolean(value)} onChange={onChange} label={name} />;
+    if (tickWords) entry = <>{entry}<span className="ds-logweek-tickwords" aria-hidden="true">{tickWords}</span></>;
   } else if (kind === 'yesno') {
     entry = (
       <div className="ds-logweek-days" style={{ '--days': days.length }} role="group" aria-label={name}>
@@ -249,8 +253,12 @@ export function LoggingWeekRow({
       </div>
     );
   } else {
+    // Every box is as wide as the longest figure in the row needs (12,500
+    // steps is never cut off), at least 44px; a row that no longer fits
+    // wraps onto a second line instead of squashing or scrolling.
+    const chars = Math.max(1, ...days.map((d) => String(texts[d.key] ?? '').length));
     entry = (
-      <div className="ds-logweek-days" style={{ '--days': days.length }}>
+      <div className="ds-logweek-days ds-logweek-days--boxes" style={{ '--days': days.length, '--chars': chars }}>
         {days.map((d) => (
           <label key={d.key} className={`ds-logweek-box${d.today ? ' ds-logweek--today' : ''}${dashEmpty && !(texts[d.key] ?? '') ? ' ds-logweek-box--empty' : ''}`}>
             <span aria-hidden="true">{d.box}</span>

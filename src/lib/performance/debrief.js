@@ -84,6 +84,15 @@ export function nextDebriefOpens(sprints, recoveries, today) {
 }
 
 /**
+ * Another week whose debrief is open today, for a page showing a week
+ * that isn't open (an old week's link): { sprintId, week } or null.
+ */
+function openElsewhere(d, today, week) {
+  const open = pickDebriefWeek(d.sprints || [d.sprint], d.recoveries || [], today);
+  return open && !(open.sprintId === d.sprint.id && open.week === week) ? open : null;
+}
+
+/**
  * M11's input: finished sprint weeks across sprints, oldest first, each
  * with whether its debrief is done and whether its window is still open.
  * `thisOne` ({ sprintId, week }) counts as done (M1 "including this one"),
@@ -209,7 +218,7 @@ export function debriefView(d, { today }) {
   const base = { today, sprintId: sprint.id, week: number, standard: sprint.standard, sprintName: `Performance Sprint ${sprint.number}`, lengthWeeks: sprint.length_weeks, finished };
   // Before its last 3 days, or closed with no debrief done: nothing to fill in.
   if (!wk || !window || window.state === 'before') {
-    return { ...base, state: 'before', opensOn: window ? dayName(window.opensOn, today) : null, next: nextDebriefOpens(d.sprints || [], d.recoveries || [], today) };
+    return { ...base, state: 'before', opensOn: window ? dayName(window.opensOn, today) : null, next: nextDebriefOpens(d.sprints || [], d.recoveries || [], today), openNow: openElsewhere(d, today, number) };
   }
   if (window.state === 'after' && !finished) {
     const r = sprintWeekResult(d, calendar, number, null);
@@ -220,6 +229,7 @@ export function debriefView(d, { today }) {
       closedOn: dayName(window.closesOn, today),
       score: raw == null ? null : { value: m0Round(raw), good: m0AtStandard(raw, sprint.standard) },
       next: nextDebriefOpens(d.sprints || [], d.recoveries || [], today),
+      openNow: openElsewhere(d, today, number),
     };
   }
 

@@ -172,6 +172,7 @@ function Shell({ children }) {
 
 // No week to debrief today: when the next one opens, or a closed week's score.
 function NotOpen({ view }) {
+  const navigate = useNavigate();
   const nextLine = view.next ? `Your next debrief opens on ${dayName(view.next.opensOn, view.today)}, in the last 3 days of week ${view.next.week}.` : null;
   let lines;
   if (view.state === 'none') {
@@ -179,13 +180,22 @@ function NotOpen({ view }) {
   } else if (view.state === 'before') {
     lines = [`The debrief for week ${view.week} opens on ${view.opensOn}.`];
   } else {
-    lines = [`The debrief for week ${view.week} closed on ${view.closedOn}.`, ...(nextLine ? [nextLine] : [])];
+    lines = [`The debrief for week ${view.week} closed on ${view.closedOn}.`];
   }
+  // Another week's debrief open today says so (an old week's link), else when the next opens.
+  const openLine = view.openNow ? `The debrief for week ${view.openNow.week} is open now.` : null;
+  if (openLine && view.state !== 'none') lines.push(openLine);
+  else if (nextLine && view.state === 'closed') lines.push(nextLine);
   return (
     <Shell>
       <div className="deb-closed">
         {lines.map((l) => <p key={l}>{l}</p>)}
       </div>
+      {openLine && (
+        <div className="ds-actions deb-open-now">
+          <Button variant="primary" onClick={() => navigate('/performance-sprint/debrief')}>Start my debrief</Button>
+        </div>
+      )}
       {view.state === 'closed' && (
         <div className="deb-closed-score">
           <Stat
@@ -568,7 +578,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
   const habitRow = (h) => {
     const common = { name: h.name, detail: h.measureLine, days: view.days, total: h.total, dashEmpty: true };
     if (h.measure === 'yes_no_weekly') {
-      return <LoggingWeekRow key={h.id} {...common} kind="tick" value={Object.values(h.values).some((v) => v > 0)} onChange={(v) => tickWeekly(h, v)} />;
+      return <LoggingWeekRow key={h.id} {...common} kind="tick" tickWords="Happened this week" value={Object.values(h.values).some((v) => v > 0)} onChange={(v) => tickWeekly(h, v)} />;
     }
     if (h.measure === 'yes_no_days_limit' || h.measure === 'yes_no_days_target') {
       return <LoggingWeekRow key={h.id} {...common} kind="yesno" values={h.values} onChange={(d, v) => putLog(h.id, d, v)} />;
@@ -695,7 +705,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
                       <div className="deb-day">
                         {x.wentWell && <p><span>What went well?</span>{x.wentWell}</p>}
                         {x.differently && <p><span>What would you do differently next time?</span>{x.differently}</p>}
-                        {x.moved.length > 0 && <p><span>Strategies that moved</span>{x.moved.map((m) => <span key={m} className="deb-day-line">{m}</span>)}</p>}
+                        {x.moved.length > 0 && <p><span>{x.moved.length === 1 ? 'Strategy that moved' : 'Strategies that moved'}</span>{x.moved.map((m) => <span key={m} className="deb-day-line">{m}</span>)}</p>}
                       </div>
                     ),
                   }))}

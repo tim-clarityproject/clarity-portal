@@ -816,6 +816,23 @@
   gap: var(--space-2);
 }
 
+/* Number boxes: each column fits the row's longest figure (its digits in
+   the field's own font, plus a small inner margin), never under 44px; the
+   days wrap onto another line when seven no longer fit. */
+.ui-root .ds-logweek-days.ds-logweek-days--boxes {
+  grid-template-columns: repeat(auto-fit, minmax(max(var(--tap-min), calc(var(--chars, 1) * 1ch + 2 * var(--space-1) + 2 * var(--line-w))), 1fr));
+  font-family: var(--font-body);
+  font-size: var(--fs-input);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The words beside a once-a-week tick (M1 debrief .yn). */
+.ui-root .ds-logweek-tickwords {
+  margin-left: var(--space-2);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
 .ui-root .ds-logweek-box {
   display: flex;
   flex-direction: column;
@@ -833,7 +850,7 @@
   box-sizing: border-box;
   width: 100%;
   min-height: var(--tap-min) !important;
-  padding: 0 !important;
+  padding: 0 var(--space-1) !important;
   border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-input);
   background: var(--card);
@@ -3324,6 +3341,10 @@
   cursor: pointer;
   display: inline-flex;
   align-items: flex-start;
+  justify-content: flex-end;
+  /* A short word (Add) still gets the full 44px tap area; the word stays
+     at the right-hand edge. */
+  min-width: var(--tap-min);
   min-height: var(--tap-min) !important;
   padding: 0 !important;
   font-family: var(--font-body);

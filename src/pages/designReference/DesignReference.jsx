@@ -1626,6 +1626,8 @@ function Gallery() {
             <p>A rise towards the target is mint; anything else is grey, never coral or red.</p>
             <p><New /><b>The debrief’s week row</b>: every day of the finished week is open, a day with nothing logged has a dashed edge, and the week’s total and score sit on the right.</p>
             <p>The habit’s score is mint at or above the standard and grey below it, never coral (Tim, 30 Oct).</p>
+            <p><New />Each day box is as wide as the row’s longest figure needs (12,500 steps is never cut off), at least 44px; when seven no longer fit, the days wrap onto another line.</p>
+            <p><New />A once-a-week habit is a tick with “Happened this week” beside it (M1).</p>
             <p>The figures come from src/lib/scores, never from the part itself.</p>
             <p><New /><b>A to-do shown, not ticked here</b> (the debrief’s Next week): the box is only a mark, mint when done, with nothing to press.</p>
           </>
