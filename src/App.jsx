@@ -63,7 +63,6 @@ import EditPersonalDetails from './pages/EditPersonalDetails';
 import OnboardingMission from './pages/OnboardingMission';
 import PersonalOperatingPlan from './pages/PersonalOperatingPlan';
 import PersonalOperatingPlanEdit from './pages/PersonalOperatingPlanEdit';
-import PersonalOperatingPlanReview from './pages/PersonalOperatingPlanReview';
 import PersonalOperatingPlanHistory from './pages/PersonalOperatingPlanHistory';
 import PersonalOperatingPlanHistoryVersion from './pages/PersonalOperatingPlanHistoryVersion';
 import PerformancePlan from './pages/performance/PerformancePlan';
@@ -121,6 +120,21 @@ const lazyPage = (Page) => (
 // The private link carries a secret token in the path: never write it into
 // the local diagnostics log.
 const redactHealthCheckToken = (pathname) => pathname.replace(/^(\/health-check\/).*/, '$1[token]');
+
+// Retired in Phase 3, step 4: the Weekly momentum check-in and the POP
+// review. Starting a new weekly check-in (/my-journal with reviewType
+// weekly-momentum and no saved entry) opens the Weekly performance
+// debrief instead; a saved one (entryId) still opens, so old check-ins
+// stay viewable and their drafts can be finished. After-action reviews
+// are untouched. The debrief page itself explains when no debrief is
+// open or no sprint is running, and links to the sprint.
+function MyJournalRoute() {
+  const location = useLocation();
+  if (location.state?.reviewType === 'weekly-momentum' && !location.state?.entryId) {
+    return <Navigate to="/performance-sprint/debrief" replace />;
+  }
+  return <MyJournal />;
+}
 
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
@@ -316,7 +330,10 @@ function AppContent() {
           <Route path="/onboarding-mission" element={<OnboardingMission />} />
           <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
           <Route path="/personal-operating-plan-edit" element={<PersonalOperatingPlanEdit />} />
-          <Route path="/personal-operating-plan-review" element={<PersonalOperatingPlanReview />} />
+          {/* Retired in Phase 3, step 4: the end-of-sprint review replaces the
+              POP review. Saved POP reviews stay readable at
+              /mission-progress-review. The page file is kept. */}
+          <Route path="/personal-operating-plan-review" element={<Navigate to="/performance-sprint/review" replace />} />
           <Route path="/personal-operating-plan-history" element={<PersonalOperatingPlanHistory />} />
           <Route path="/personal-operating-plan-history/:version" element={<PersonalOperatingPlanHistoryVersion />} />
           <Route path="/personal-operating-plan-archived" element={<PersonalOperatingPlanArchived />} />
@@ -349,7 +366,7 @@ function AppContent() {
           <Route path="/project-matrix" element={<ProjectMatrix />} />
           <Route path="/project-progress" element={<ProjectProgress />} />
           <Route path="/project-scatter" element={<ProjectScatter />} />
-          <Route path="/my-journal" element={<MyJournal />} />
+          <Route path="/my-journal" element={<MyJournalRoute />} />
           <Route path="/daily-journal" element={<DailyJournal />} />
           <Route path="/daily-journals" element={<DailyJournals />} />
           <Route path="/daily-journals/:date" element={<DailyJournalRead />} />

@@ -237,7 +237,7 @@ export default function HistoryList({
                         {row.reviewed ? 'View review' : 'Review'}
                       </button>
                     )}
-                    {row.isDraft ? (
+                    {row.isDraft && row.canEdit !== false ? (
                       <button
                         type="button"
                         className="hlist-continue-btn"
@@ -254,7 +254,7 @@ export default function HistoryList({
                       >
                         <PencilIcon />
                       </button>
-                    ) : null /* row.canEdit false: a type that is never edited (Wheel of Life check-ins) */}
+                    ) : null /* row.canEdit false: a type that is never edited (Wheel of Life check-ins, retired POP reviews) */}
                     <button
                       type="button"
                       className="hlist-icon-btn hlist-icon-btn--del"

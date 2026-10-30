@@ -119,6 +119,12 @@ export default function MissionProgressReviewDetail() {
           <PageHeader title={`POP review, ${formatShortDate(review.created_at)}`} info={pageText.missionProgressReviewDetail} />
         </div>
 
+        {/* The POP review is retired (Phase 3, step 4): saved ones are
+            read only, so there is no Edit review. */}
+        {review.status === 'draft' && (
+          <p className="ui-subtitle" style={{ marginBottom: 'var(--space-4)' }}>This review was saved as a draft and not finished.</p>
+        )}
+
         {version && (
           <div className="pop-links-row">
             <Button type="button" variant="text" onClick={() => navigate(`/personal-operating-plan-history/${version.major}.${version.minor}`, { state: { missionId: review.mission_id } })}>
@@ -147,12 +153,6 @@ export default function MissionProgressReviewDetail() {
             ))}
           </div>
         ))}
-
-        <div className="plan-actions">
-          <Button type="button" variant="outline" onClick={() => navigate('/personal-operating-plan-review', { state: { missionId: review.mission_id, reviewId: review.id } })}>
-            Edit review
-          </Button>
-        </div>
 
         <div className="plan-discard-row" style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button type="button" variant="outline" onClick={() => setDeleteOpen(true)}>

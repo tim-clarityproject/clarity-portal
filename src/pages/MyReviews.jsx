@@ -113,6 +113,9 @@ export default function MyReviews() {
           date: r.created_at,
           version: version ? formatVersion(version.major, version.minor) : null,
           isDraft: r.status === 'draft',
+          // The POP review is retired (Phase 3, step 4): saved ones,
+          // drafts included, are read only, so no pencil or Continue.
+          canEdit: false,
           raw: r,
         });
       });
@@ -221,16 +224,10 @@ export default function MyReviews() {
       // Opens the review for editing, the same as a finished row.
       navigate('/my-journal', { state: { entryId: row.id, reviewType: row.raw.review_type } });
     } else if (row.source === 'plan') {
-      if (!row.isDraft) {
-        navigate('/mission-progress-review', { state: { reviewId: row.id } });
-        return;
-      }
-      // Deliberately missionId WITHOUT reviewId: that is the branch
-      // that calls loadDraftReview(), shows the "Continuing your draft"
-      // banner and lets its own Discard delete the draft. Passing
-      // reviewId instead takes the finished-review branch, which does
-      // neither.
-      navigate('/personal-operating-plan-review', { state: { missionId: row.raw.mission_id } });
+      // The POP review is retired (Phase 3, step 4): its route now opens
+      // the end-of-sprint review, so a saved one, draft or finished,
+      // opens read only.
+      navigate('/mission-progress-review', { state: { reviewId: row.id } });
     } else {
       navigate('/daily-journal', { state: { date: row.raw.journal_date } });
     }
