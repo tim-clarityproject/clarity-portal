@@ -6472,10 +6472,41 @@
   color: var(--good);
 }
 
-/* The debrief's week row: a total and % column, dashed empty days. */
+/* The debrief's week row: a total and % column, dashed empty days. The
+   name keeps at least half the row; at large text sizes the total wraps
+   between words instead of crushing the name. */
 .ui-root .ds-log.ds-logweek.ds-logweek--total {
-  grid-template-columns: minmax(0, 1fr) auto var(--tap-min);
+  grid-template-columns: minmax(50%, 1fr) minmax(0, auto) var(--tap-min);
   grid-template-areas: "n t m" "w w w" "b b b";
+}
+
+/* With no ">" button the total reaches the row's right edge (M1 .dm). */
+.ui-root .ds-log.ds-logweek.ds-logweek--total.ds-logweek--plain {
+  grid-template-columns: minmax(50%, 1fr) minmax(0, auto);
+  grid-template-areas: "n t" "w w" "b b";
+}
+
+/* A once-a-week tick with a total: the tick and its words on their own
+   line under the name, as the day boxes are (M1 .p .dm .yn). */
+.ui-root .ds-log.ds-logweek.ds-logweek--total.ds-logweek--tick {
+  grid-template-columns: minmax(50%, 1fr) minmax(0, auto) var(--tap-min);
+  grid-template-areas: "n t m" "c c c" "b b b";
+}
+
+.ui-root .ds-log.ds-logweek.ds-logweek--total.ds-logweek--tick.ds-logweek--plain {
+  grid-template-columns: minmax(50%, 1fr) minmax(0, auto);
+  grid-template-areas: "n t" "c c" "b b";
+}
+
+/* On its own line the tick box lines up with the name above it; its 44px
+   tap area reaches into the gutter. */
+.ui-root .ds-log.ds-logweek.ds-logweek--total.ds-logweek--tick .ds-log-entry > .ds-check-box {
+  margin-left: calc((var(--tap-min) - var(--checkbox-box)) / -2);
+}
+
+.ui-root .ds-logweek-yn.ds-logweek-yn--empty {
+  border-style: dashed;
+  border-color: var(--quiet-line);
 }
 
 .ui-root .ds-logweek-total {

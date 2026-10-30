@@ -39,6 +39,7 @@ import {
   WAY_SUGGESTIONS,
   answersFromRow,
   answersToRow,
+  dayName,
   dayPlanView,
   dayStrategyOps,
   dayTodoOps,
@@ -637,7 +638,7 @@ function PlanFlow({ userId, date, today, loaded }) {
   return (
     <div className="ui-root plan-builder-wait">
       <GuidedTool
-        name="Plan my day"
+        name={date === today ? 'Plan my day' : `Plan my day, ${dayName(date, today)}`}
         steps={steps}
         progress="percent"
         skipLabel="Skip"

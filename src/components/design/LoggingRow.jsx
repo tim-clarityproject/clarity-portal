@@ -204,7 +204,8 @@ export function LoggingRow({
 //               the words come from src/lib, never worked out here). good:
 //               true is mint (at or above the standard), false grey (below),
 //               never coral; left out, the text colour.
-// dashEmpty:    a day with nothing logged has a dashed edge (the debrief).
+// dashEmpty:    a day with nothing logged (a box or a yes/no) has a
+//               dashed edge (the debrief).
 // tickWords:    words beside a once-a-week tick (M1 debrief: "Happened
 //               this week"); the box itself is named by the habit.
 export function LoggingWeekRow({
@@ -239,7 +240,7 @@ export function LoggingWeekRow({
             <button
               key={d.key}
               type="button"
-              className={`ds-logweek-yn${d.today ? ' ds-logweek--today' : ''}`}
+              className={`ds-logweek-yn${d.today ? ' ds-logweek--today' : ''}${dashEmpty && v == null && !d.later ? ' ds-logweek-yn--empty' : ''}`}
               aria-pressed={v === 1}
               disabled={d.later}
               aria-label={`${name}, ${d.full}: ${d.later ? 'still to come' : v === 1 ? 'yes' : v === 0 ? 'no' : 'not logged'}`}
@@ -283,7 +284,7 @@ export function LoggingWeekRow({
     );
   }
   return (
-    <div className={`ds-log ds-logweek${kind === 'tick' ? ' ds-logweek--tick' : ''}${total ? ' ds-logweek--total' : ''}`}>
+    <div className={`ds-log ds-logweek${kind === 'tick' ? ' ds-logweek--tick' : ''}${total ? ' ds-logweek--total' : ''}${onMore ? '' : ' ds-logweek--plain'}`}>
       <div className="ds-log-main">
         <div className="ds-log-name">{name}</div>
         {detail && <div className="ds-log-detail">{detail}</div>}
