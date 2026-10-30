@@ -260,6 +260,18 @@ export default function GuidedTool({
     setIndex(target);
   };
 
+  // The last button runs onFinish once, however often it is tapped. When
+  // onFinish answers false (its save was refused and it said so), the
+  // button works again, so a second tap can try once more.
+  const finish = () => {
+    if (finished.current) return;
+    finished.current = true;
+    Promise.resolve(onFinish?.()).then(
+      (ok) => { if (ok === false) finished.current = false; },
+      () => { finished.current = false; },
+    );
+  };
+
   const next = () => {
     if (Date.now() - lastMove.current < NEXT_GUARD_MS) return;
     if (skipped.has(step.key)) {
@@ -268,9 +280,7 @@ export default function GuidedTool({
       setSkipped(rest);
     }
     if (last) {
-      if (finished.current) return;
-      finished.current = true;
-      onFinish?.();
+      finish();
       return;
     }
     go(i + 1);
@@ -281,9 +291,7 @@ export default function GuidedTool({
     setSkipped((s) => new Set(s).add(step.key));
     onSkip?.(step.key);
     if (last) {
-      if (finished.current) return;
-      finished.current = true;
-      onFinish?.();
+      finish();
       return;
     }
     go(i + 1);

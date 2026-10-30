@@ -6407,13 +6407,14 @@
 
 .ui-root .ds-pick-words {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* a long word wraps instead of widening the row */
   gap: var(--space-px2);
   min-width: 0;
 }
 
 .ui-root .ds-pick-name {
   color: var(--text);
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .ui-root .ds-pick-mark {

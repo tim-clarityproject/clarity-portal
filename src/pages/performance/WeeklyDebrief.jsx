@@ -129,7 +129,9 @@ export default function WeeklyDebrief() {
   const { user } = useContext(AuthContext);
   const userId = user?.id;
   const params = useParams();
-  const today = localToday();
+  // The day the page opened on, kept while it stays open: a tool carried
+  // past midnight stays on its day (and step) when the page redraws.
+  const [today] = useState(() => localToday());
   const pinned = params.sprintId && /^\d+$/.test(params.week || '') ? { sprintId: params.sprintId, week: Number(params.week) } : null;
   const loaded = useCachedLoad({
     userId,
@@ -800,7 +802,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
     for (const l of w.logs) await sent(() => saveHabitLog(userId, l.habitId, l.day, l.value));
     for (const op of w.figs) await sent(() => saveOrQueue(userId, op));
     const ok = await sendAnswers({ status: 'finished', finished_at: new Date().toISOString() });
-    if (!ok) return;
+    if (!ok) return false; // the tool lets Finish be tapped again
     setData((d) => ({ ...d, debrief: { ...(d.debrief || {}), status: 'finished' }, allDebriefs: [...(d.allDebriefs || []).filter((x) => !(x.sprint_id === sprintId && x.sprint_week === week)), { sprint_id: sprintId, sprint_week: week, status: 'finished' }] }));
     // Finalise the week's score (M0.4) through the database's own
     // freeze_week, once everything this page saved has arrived; offline,

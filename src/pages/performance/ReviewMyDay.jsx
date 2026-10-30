@@ -127,7 +127,9 @@ export default function ReviewMyDay() {
   const { user } = useContext(AuthContext);
   const userId = user?.id;
   const params = useParams();
-  const today = localToday();
+  // The day the page opened on, kept while it stays open: a tool carried
+  // past midnight stays on its day (and step) when the page redraws.
+  const [today] = useState(() => localToday());
   // Read once: the hour the review was opened decides which day it is for.
   const [early] = useState(() => new Date().getHours() < REVIEW_EARLY_HOURS);
   if (isDay(params.date)) return <ReviewLoad userId={userId} date={params.date} today={today} pinned />;
@@ -708,7 +710,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
 
   const finish = async () => {
     const ok = await sendAnswers({ status: 'finished', finished_at: new Date().toISOString() });
-    if (!ok) return;
+    if (!ok) return false; // the tool lets Finish be tapped again
     setData((d) => ({ ...d, dayReview: { ...(d.dayReview || {}), status: 'finished' } }));
     clearAnswersDraft();
     clearDraft(userId, draftName(date));

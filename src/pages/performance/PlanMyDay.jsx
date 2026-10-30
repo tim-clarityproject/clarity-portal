@@ -90,7 +90,9 @@ export default function PlanMyDay() {
   const { user } = useContext(AuthContext);
   const userId = user?.id;
   const params = useParams();
-  const today = localToday();
+  // The day the page opened on, kept while it stays open: a tool carried
+  // past midnight stays on its day (and step) when the page redraws.
+  const [today] = useState(() => localToday());
   const date = isDay(params.date) ? params.date : today;
   const loaded = useCachedLoad({ userId, name: cacheName(date), load: () => loadDayPlan(userId, date), deps: [date] });
   useLatestWhenSuperseded(loaded.reload);
@@ -328,16 +330,28 @@ function PlanFlow({ userId, date, today, loaded }) {
     return `todo:${id}`;
   };
 
+  // A thing from last night's list takes a moment to become a to-do; taps
+  // on the list until it is made and shown as chosen are ignored, so a
+  // double or triple tap can't choose, unchoose and remove the new to-do
+  // while it is still being made.
+  const converting = useRef(false);
   const choosePicks = async (values) => {
+    if (converting.current) return;
     const added = values.find((v) => !view.picks.includes(v));
     const removed = view.picks.find((v) => !values.includes(v));
     let keys = values.filter((v) => !v.startsWith('night:'));
     if (added?.startsWith('night:')) {
       if (!view.nightStrategyId) return;
       const option = view.options.find((o) => o.value === added);
-      const key = await todoFromNight(option);
-      if (!key) return;
-      keys = [...keys, key];
+      converting.current = true;
+      try {
+        const key = await todoFromNight(option);
+        // The pick shows at once; its save carries on behind.
+        if (key) applyPicks([...keys, key].slice(0, MAX_DAY_TODOS), keys.includes(view.top) ? view.top : keys[0] || key);
+      } finally {
+        converting.current = false;
+      }
+      return;
     }
     if (keys.length > MAX_DAY_TODOS) return;
     const top = keys.includes(view.top) ? view.top : keys[0] || null;
@@ -618,7 +632,7 @@ function PlanFlow({ userId, date, today, loaded }) {
 
   const finish = async () => {
     const ok = await sendAnswers({ status: 'finished', finished_at: new Date().toISOString() });
-    if (!ok) return;
+    if (!ok) return false; // the tool lets Finish be tapped again
     setData((d) => ({ ...d, dayPlan: { ...(d.dayPlan || {}), status: 'finished' } }));
     clearAnswersDraft();
     clearDraft(userId, draftName(date));
