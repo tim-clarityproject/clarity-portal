@@ -83,6 +83,9 @@ if (existing?.length || empty) {
   // Recovery and wins aren't under the plan, so they go first.
   await db.from('recovery_periods').delete().eq('user_id', me);
   await db.from('wins').delete().eq('user_id', me);
+  // Plan my day and Review my day rows (Phase 3) hang off the day, not the plan.
+  await db.from('day_plans').delete().eq('user_id', me);
+  await db.from('day_reviews').delete().eq('user_id', me);
   await db.from('todos').delete().eq('user_id', me);
   await db.from('sprints').delete().eq('user_id', me);
   const { error } = await db.from('performance_plans').delete().eq('user_id', me);

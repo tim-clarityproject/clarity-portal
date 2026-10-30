@@ -953,3 +953,57 @@
 .ui-root .rec-nosprint {
   margin-bottom: var(--space-5);
 }
+
+/* ---------- Plan my day (M5) ---------- */
+.ui-root .day-narrow { max-width: var(--row-max-w); }
+.ui-root .day-gap { margin-top: var(--space-5); }
+.ui-root .day-stack { display: grid; gap: var(--space-4); }
+
+.ui-root .day-sgh {
+  margin: var(--space-4) 0 var(--space-px10);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .day-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-3);
+  margin-top: var(--space-px12);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .day-confirm p { margin: 0; }
+
+.ui-root .day-note { margin-top: var(--space-px22); }
+.ui-root .day-add { margin-top: var(--space-px18); }
+
+.ui-root .day-quiet p,
+.ui-root .day-quiet-line {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .day-quiet-line { margin-top: var(--space-3); }
+.ui-root .day-quiet-btn { margin-top: var(--space-3); }
+
+/* "Highest priority": a tag in the text colour, never coral (coral is
+   never a label colour; Tim, 26 Oct). */
+.ui-root .day-tag {
+  display: inline-block;
+  margin-left: var(--space-2);
+  white-space: nowrap;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .day-score { margin-top: var(--space-5); }
+
+@media (max-width: 600px) {
+  .ui-root .day-add { width: 100%; }
+}

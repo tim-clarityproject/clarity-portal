@@ -144,7 +144,7 @@ export async function loadSprintWeekRows(userId, sprint) {
     ids.length ? rows(supabase.from('sprint_habit_settings').select('*').in('sprint_habit_id', ids)) : [],
     ids.length ? rows(supabase.from('habit_logs').select('id, sprint_habit_id, local_date, value, to_confirm, updated_at')
       .in('sprint_habit_id', ids).gte('local_date', sprint.start_on)) : [],
-    rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, move_on, deleted_at, updated_at')
+    rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, source_id, move_on, deleted_at, updated_at')
       .eq('user_id', userId).eq('sprint_id', sprint.id).is('deleted_at', null)),
     rows(supabase.from('todo_moves').select('todo_id, moved_on, from_sprint_id, from_week, to_sprint_id, to_week, created_at').eq('user_id', userId)),
     rows(supabase.from('wins').select('id, what, local_date, impact, deleted_at, updated_at')
@@ -671,7 +671,10 @@ export function saveTodo(userId, t) {
       sprint_id: t.sprintId,
       planned_week: t.week,
       created_on: t.createdOn,
-      source: 'manual',
+      // Where it came from (Plan my day, last night's review); a to-do
+      // added on the sprint page is 'manual'.
+      source: t.source || 'manual',
+      source_id: t.sourceId || null,
     },
   });
 }
@@ -830,4 +833,85 @@ export function saveSleep(userId, localDate, { hours, quality }) {
 /** Today's day plan's sleep, if any. */
 export async function loadSleep(userId, localDate) {
   return one(supabase.from('day_plans').select('sleep_hours, sleep_quality').eq('user_id', userId).eq('local_date', localDate).limit(1));
+}
+
+// ---------------------------------------------------------------- Plan my day
+
+const DAY_PLAN_COLS = 'id, local_date, sleep_hours, sleep_quality, sleep_to_confirm, grateful_for, way_of_being, biggest_risk, risk_response, status, finished_at, updated_at';
+
+function dayBefore(key, n) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d - n)).toISOString().slice(0, 10); // a pure date sum, never "today"
+}
+
+/**
+ * Everything Plan my day shows for one day (M5), as rows: the sprint page's
+ * rows (this week's to-dos, habits and score), that day's plan with its
+ * to-dos and Strategies, the ways of being used before it, the latest
+ * finished Review my day of the 3 days before it (its list for tomorrow,
+ * its note, and the Strategies of its day), and, with no sprint running,
+ * the plan's Strategies and to-dos that have no sprint.
+ */
+export async function loadDayPlan(userId, date) {
+  const page = await loadSprintPage(userId);
+  const [dayPlan, earlier, lastReview, role, coach] = await Promise.all([
+    one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
+    rows(supabase.from('day_plans').select('local_date, way_of_being').eq('user_id', userId)
+      .lt('local_date', date).not('way_of_being', 'is', null).order('local_date', { ascending: false }).limit(30)),
+    one(supabase.from('day_reviews').select('id, local_date, tomorrow, on_my_mind').eq('user_id', userId).eq('status', 'finished')
+      .lt('local_date', date).gte('local_date', dayBefore(date, 3)).order('local_date', { ascending: false }).limit(1)),
+    one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)),
+    loadMyCoach().catch(() => null),
+  ]);
+  const [dayTodos, dayStrategies, reviewStrategies, reviewDayStrategies] = await Promise.all([
+    dayPlan ? rows(supabase.from('day_plan_todos').select('todo_id, is_top').eq('day_plan_id', dayPlan.id)) : [],
+    dayPlan ? rows(supabase.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', dayPlan.id)) : [],
+    lastReview ? rows(supabase.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', lastReview.id)) : [],
+    lastReview ? rows(supabase.from('day_plans').select('id, day_plan_strategies(strategy_id)').eq('user_id', userId).eq('local_date', lastReview.local_date).limit(1)) : [],
+  ]);
+  let planStrategies = [];
+  let looseTodos = [];
+  if (!page.sprint && page.plan) {
+    [planStrategies, looseTodos] = await Promise.all([
+      rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', page.plan.id).is('archived_at', null).order('sort_order')),
+      rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, source_id, move_on, deleted_at, updated_at')
+        .eq('user_id', userId).is('sprint_id', null).is('deleted_at', null)),
+    ]);
+  }
+  return {
+    ...page,
+    date,
+    dayPlan,
+    dayTodos,
+    dayStrategies,
+    earlierWays: earlier,
+    lastReview: lastReview
+      ? { ...lastReview, strategies: reviewStrategies, dayStrategies: reviewDayStrategies[0]?.day_plan_strategies || [] }
+      : null,
+    planStrategies,
+    looseTodos,
+    describesYou: role?.describes_you || null,
+    coach,
+  };
+}
+
+/** A day's plan row made once, with its id from the device, so its to-dos can follow it straight away. */
+export function createDayPlan(userId, id, date) {
+  return saveOrQueue(userId, {
+    table: 'day_plans',
+    kind: 'upsert',
+    onConflict: 'user_id,local_date',
+    ignoreDuplicates: true,
+    values: { id, user_id: userId, local_date: date },
+  });
+}
+
+/** The day plan's own answers (found by the person and day, so a resend writes the same row). */
+export function dayPlanAnswersOp(userId, date, values) {
+  return { table: 'day_plans', kind: 'upsert', onConflict: 'user_id,local_date', values: { user_id: userId, local_date: date, ...values } };
+}
+
+/** The day plan row as it is now (when a first save found one already there). */
+export async function loadDayPlanRow(userId, date) {
+  return one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1));
 }
