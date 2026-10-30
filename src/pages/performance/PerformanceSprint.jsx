@@ -467,8 +467,10 @@ export default function PerformanceSprint() {
             <p>Its review is waiting for you.</p>
           </div>
         </div>
+        {view.debrief && <p className="sprint-debrief-line">Your weekly debrief is ready.</p>}
         <div className="ds-actions ipp-actions">
           <Button variant="primary" onClick={() => navigate('/performance-sprint/review')}>Review this sprint</Button>
+          {view.debrief && <Button onClick={() => navigate('/performance-sprint/debrief')}>Start my debrief</Button>}
           <Button onClick={() => navigate('/performance-sprint/start')}>Start a new sprint</Button>
         </div>
       </>
@@ -776,7 +778,9 @@ function SprintBody({
         </Section>
       </div>
 
+      {view.debrief && <p className="sprint-debrief-line">Your weekly debrief is ready.</p>}
       <div className="ds-actions ipp-actions">
+        {view.debrief && <Button onClick={() => navigate('/performance-sprint/debrief')}>Start my debrief</Button>}
         <Button onClick={() => navigate('/performance-sprint/year')}>View your year</Button>
         <Button onClick={() => navigate('/performance-plan')}>Open my plan</Button>
       </div>

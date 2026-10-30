@@ -16,6 +16,7 @@
 import { supabase } from '../supabase';
 import { newId, noteVersions, saveOrQueue } from '../syncQueue';
 import { nextVersion, planChangeKind } from './versions';
+import { pickDebriefWeek } from './debrief';
 
 const PLAN_COLS = 'id, mission, status, major, minor, created_at, updated_at';
 const OBJECTIVE_COLS = 'id, plan_id, name, kind, unit, direction, start_value, start_set_on, target_value, by_when, due_on, reached_on, source, sort_order, archived_at, created_at, updated_at';
@@ -969,4 +970,88 @@ export function dayReviewAnswersOp(userId, date, values) {
 /** The review row as it is now (when a first save found one already there). */
 export async function loadDayReviewRow(userId, date) {
   return one(supabase.from('day_reviews').select(DAY_REVIEW_COLS).eq('user_id', userId).eq('local_date', date).limit(1));
+}
+
+// ---------------------------------------------------------------- the weekly debrief
+
+const DEBRIEF_COLS = 'id, user_id, sprint_id, sprint_week, stress, unusual, went_well, got_in_way, adjust, shared_with_coach, status, finished_at, updated_at';
+
+/**
+ * Everything the Weekly performance debrief shows for one sprint week
+ * (M1), as rows: every sprint and Recovery (for the weeks, the window and
+ * the streak, M0.4 and M11), the week's sprint with its habits, settings,
+ * logs, to-dos and wins as the sprint page loads them, its plan's live
+ * objectives with every figure (M9), its Strategies and links (M5's
+ * weighting), every debrief, the frozen week scores (M8), that week's
+ * debrief row, the Review my day entries from the sprint's start and the
+ * Strategies they say moved, the first name and the coach.
+ *
+ * No sprint and week given: the week whose debrief window is open today
+ * (debrief.js pickDebriefWeek); `sprint` is null when none is.
+ */
+export async function loadDebrief(userId, { sprintId = null, week = null, today }) {
+  const [plan, sprints, recoveries, workingPatterns, personSettings, weekScores, allDebriefs, profile, coach] = await Promise.all([
+    loadActivePlan(userId),
+    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    rows(supabase.from('recovery_periods').select(RECOVERY_COLS).eq('user_id', userId).order('start_on')),
+    rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
+    readSettings(userId, 'time_zone, units'),
+    rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, eligible, final').eq('user_id', userId).order('week_end')),
+    rows(supabase.from('weekly_debriefs').select('sprint_id, sprint_week, unusual, status').eq('user_id', userId)),
+    one(supabase.from('profiles').select('first_name').eq('id', userId).limit(1)).catch(() => null),
+    // The coach is for the share switch and the who-sees words: a debrief still shows without it.
+    loadMyCoach().catch(() => null),
+  ]);
+  const base = { plan, sprints, recoveries, workingPatterns, personSettings, weekScores, allDebriefs, firstName: profile?.first_name || '', coach };
+  const which = sprintId && week ? { sprintId, week: Number(week) } : pickDebriefWeek(sprints, recoveries, today);
+  const sprint = which ? sprints.find((s) => s.id === which.sprintId) || null : null;
+  if (!sprint) return { ...base, sprint: null, week: null };
+  const [objectives, figures, strategies, links, debrief, weekRows, dayReviews] = await Promise.all([
+    rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).eq('plan_id', sprint.plan_id).is('archived_at', null).order('sort_order')),
+    rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, sprint_id, sprint_week, created_at').eq('user_id', userId).order('recorded_on')),
+    rows(supabase.from('plan_strategies').select(STRATEGY_COLS).eq('plan_id', sprint.plan_id).is('archived_at', null).order('sort_order')),
+    rows(supabase.from('strategy_objectives').select('strategy_id, objective_id').eq('user_id', userId)),
+    one(supabase.from('weekly_debriefs').select(DEBRIEF_COLS).eq('sprint_id', sprint.id).eq('sprint_week', which.week).limit(1)),
+    loadSprintWeekRows(userId, sprint),
+    rows(supabase.from('day_reviews').select('id, local_date, went_well, differently, status').eq('user_id', userId).gte('local_date', sprint.start_on)),
+  ]);
+  const ids = dayReviews.map((r) => r.id);
+  const reviewStrategies = ids.length
+    ? await rows(supabase.from('day_review_strategies').select('day_review_id, strategy_id, level').in('day_review_id', ids))
+    : [];
+  return { ...base, sprint, week: which.week, objectives, figures, strategies, links, debrief, dayReviews, reviewStrategies, ...weekRows };
+}
+
+/** A week's debrief row made once, with its id from the device, so its to-dos can name it straight away. */
+export function createDebrief(userId, id, sprintId, week) {
+  return saveOrQueue(userId, {
+    table: 'weekly_debriefs',
+    kind: 'upsert',
+    onConflict: 'sprint_id,sprint_week',
+    ignoreDuplicates: true,
+    values: { id, user_id: userId, sprint_id: sprintId, sprint_week: week },
+  });
+}
+
+/** The debrief's own answers (found by its sprint and week, so a resend writes the same row). */
+export function debriefAnswersOp(userId, sprintId, week, values) {
+  return { table: 'weekly_debriefs', kind: 'upsert', onConflict: 'sprint_id,sprint_week', values: { user_id: userId, sprint_id: sprintId, sprint_week: week, ...values } };
+}
+
+/** The debrief row as it is now (when a first save found one already there). */
+export async function loadDebriefRow(userId, sprintId, week) {
+  return one(supabase.from('weekly_debriefs').select(DEBRIEF_COLS).eq('user_id', userId).eq('sprint_id', sprintId).eq('sprint_week', week).limit(1));
+}
+
+/**
+ * The debrief's figure for one objective (M9): one row per objective and
+ * debrief, changed in place by its id; null takes it away (nothing moved).
+ */
+export function objectiveFigureOp(userId, { id, objectiveId, value, recordedOn, sprintId, sprintWeek }) {
+  if (value == null) return { table: 'objective_figures', kind: 'delete', match: { id, user_id: userId } };
+  return {
+    table: 'objective_figures',
+    kind: 'upsert',
+    values: { id, user_id: userId, objective_id: objectiveId, value, recorded_on: recordedOn, sprint_id: sprintId, sprint_week: sprintWeek },
+  };
 }

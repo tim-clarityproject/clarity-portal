@@ -137,6 +137,32 @@ export function m0WeekIsFinal(week, today, debriefDone) {
   return Boolean(debriefDone) || today > addDays(week.end, 3);
 }
 
+/** The debrief can be started this many days before a week ends (its last 3 days). */
+export const DEBRIEF_OPENS_DAYS_BEFORE = 2;
+/** M0.4: the debrief window closes 3 days after the week ends. */
+export const DEBRIEF_CLOSES_DAYS_AFTER = 3;
+
+/**
+ * M0.4: a sprint week's debrief window. It opens on the week's last 3 days
+ * (decisions, 23 Oct: "suggested on the last 3 days of each sprint week")
+ * and closes 3 days after the week ends, when the score is final (M0.4).
+ * The brief's "opens when the sprint week ends" and the decisions differ;
+ * both are honoured: it can be started from the last 3 days, and is open
+ * after the end until the window closes (audit 2.4).
+ * A week whose days aren't all known yet (a Recovery is running inside
+ * it) has no window.
+ * @param {{ days: string[], end: string }} week
+ * @param {string} today
+ * @returns {{ opensOn: string, closesOn: string, state: 'before'|'open'|'after', open: boolean }|null}
+ */
+export function m0DebriefWindow(week, today) {
+  if (!week || (week.days || []).length !== 7) return null;
+  const opensOn = addDays(week.end, -DEBRIEF_OPENS_DAYS_BEFORE);
+  const closesOn = addDays(week.end, DEBRIEF_CLOSES_DAYS_AFTER);
+  const state = today < opensOn ? 'before' : today > closesOn ? 'after' : 'open';
+  return { opensOn, closesOn, state, open: state === 'open' };
+}
+
 // ---------------------------------------------------------------- M0.5
 /** A week is "mostly in Recovery" when Recovery covers 4 or more days inside it (Claude). */
 export const MOSTLY_RECOVERY_DAYS = 4;

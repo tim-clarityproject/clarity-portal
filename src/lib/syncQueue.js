@@ -112,6 +112,7 @@ const ROW_KEYS = {
   recovery_recharge_answers: ['recovery_id', 'local_date'],
   day_plans: ['user_id', 'local_date'],
   day_reviews: ['user_id', 'local_date'],
+  weekly_debriefs: ['sprint_id', 'sprint_week'],
   person_settings: ['user_id'],
   sprint_reviews: ['sprint_id'],
 };

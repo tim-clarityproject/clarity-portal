@@ -26,6 +26,7 @@ export function Bar({ value = 0, className = '' }) {
 //       the standard; mint, never coral, Tim 26 Oct): a thin mint edge
 //       that fades in once and stays. With reduced motion it is simply
 //       there. Implies panel.
+// note: one line, or a list of lines, each its own sentence.
 export function Stat({ label, value, unit, note, good = false, bar, panel = false, celebrate = false, className = '' }) {
   const box = celebrate ? ' ds-stat--panel ds-stat--celebrate' : panel ? ' ds-stat--panel' : '';
   return (
@@ -35,7 +36,7 @@ export function Stat({ label, value, unit, note, good = false, bar, panel = fals
         {value}
         {unit && <span className={`ds-unit${unit.startsWith('/') ? ' ds-unit--tight' : ''}`}>{unit}</span>}
       </strong>
-      {note && <span className="ds-stat-note">{note}</span>}
+      {(Array.isArray(note) ? note.filter(Boolean) : [note].filter(Boolean)).map((line) => <span key={typeof line === 'string' ? line : undefined} className="ds-stat-note">{line}</span>)}
       {bar != null && <Bar value={bar} />}
     </div>
   );

@@ -14,6 +14,7 @@
 import { daysBetween, weekday } from '../scores/dates.js';
 import {
   m0AtStandard,
+  m0DebriefWindow,
   m0Round,
   m0SprintCalendar,
   m0WeekIsEligible,
@@ -323,7 +324,13 @@ export function sprintPageView(d, { today }) {
   const time = m9TimeLeft(today, lastDay);
   const endsIn = left <= 0 ? { label: 'Sprint ends', value: 'Today' } : { label: 'Sprint ends in', value: `${time.count} ${time.unit}${time.count === 1 ? '' : 's'}` };
 
-  const common = { ...base, dates, weeks, toFreeze, usualLine, average, endsIn };
+  // The weekly debrief whose window is open today (M0.4: from the week's
+  // last 3 days until 3 days after it ends), for "Start my debrief"; gone
+  // once it is done (decisions, "Debrief reminder").
+  const openWeek = calendar.weeks.find((wk) => m0DebriefWindow(wk, today)?.open);
+  const debrief = openWeek && debriefs.get(openWeek.number)?.status !== 'finished' ? { week: openWeek.number } : null;
+
+  const common = { ...base, dates, weeks, toFreeze, usualLine, average, endsIn, debrief };
   if (!current) {
     return { ...common, state: 'over', endedOn: dayName(lastDay, today) };
   }

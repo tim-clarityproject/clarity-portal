@@ -62,6 +62,33 @@ test('M0.4: a Thursday sprint has Thursday to Wednesday weeks; finished and fina
   assert.equal(S.m0WeekOfDay(r.weeks, '2026-10-08'), 2);
 });
 
+test('M0.4: the debrief window, from the last 3 days of the week to 3 days after it ends', () => {
+  // A Monday sprint: week 3 is Mon 12 to Sun 18 Oct.
+  const r = S.m0SprintCalendar({ start: '2026-09-28', lengthWeeks: 8 }, '2026-10-21');
+  const w3 = r.weeks[2];
+  const at = (day) => S.m0DebriefWindow(w3, day);
+  assert.equal(at('2026-10-15').state, 'before', 'Thursday: not yet');
+  for (const day of ['2026-10-16', '2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20', '2026-10-21']) {
+    assert.equal(at(day).open, true, `open on ${day}`);
+  }
+  assert.equal(at('2026-10-21').closesOn, '2026-10-21', 'its last day is the Wednesday');
+  assert.equal(at('2026-10-22').state, 'after', 'closed the day after');
+  assert.equal(at('2026-10-16').opensOn, '2026-10-16');
+  // The window closing is when M0.4 makes the score final.
+  assert.equal(S.m0WeekIsFinal(w3, at('2026-10-21').closesOn, false), false);
+  assert.equal(S.m0WeekIsFinal(w3, '2026-10-22', false), true);
+  // A Thursday sprint's week ends on a Wednesday: Mon to Wed, then to Sat.
+  const t = S.m0SprintCalendar({ start: '2026-10-01', lengthWeeks: 4 }, '2026-10-20').weeks[1];
+  assert.deepEqual([S.m0DebriefWindow(t, '2026-10-12').opensOn, S.m0DebriefWindow(t, '2026-10-12').closesOn], ['2026-10-12', '2026-10-17']);
+  // A week cut short by a running Recovery has no window yet.
+  const open = S.m0SprintCalendar({ start: '2026-09-28', lengthWeeks: 8, recoveries: [{ start: '2026-10-14', end: null }] }, '2026-10-21');
+  assert.equal(S.m0DebriefWindow(open.weeks[2], '2026-10-21'), null);
+  // A Recovery inside a week moves its end, and its window with it.
+  const moved = S.m0SprintCalendar({ start: '2026-09-28', lengthWeeks: 8, recoveries: [{ start: '2026-10-14', end: '2026-10-17' }] }, '2026-10-25');
+  assert.equal(moved.weeks[2].end, '2026-10-21');
+  assert.equal(S.m0DebriefWindow(moved.weeks[2], '2026-10-24').closesOn, '2026-10-24');
+});
+
 test('M0.5: eligible weeks', () => {
   const ok = { finished: true, loggedDays: 4, workingDays: 5 };
   assert.equal(S.m0WeekIsEligible(ok), true);

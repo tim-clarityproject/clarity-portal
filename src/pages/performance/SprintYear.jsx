@@ -35,8 +35,8 @@ import './performance.css';
 // legend (every week has a pop-up, Recovery says so in words), labels in
 // DM Sans sentence case (M1 Nekst capitals), "Show as a table" (graphs
 // rule), the phone shows the chart full width with no sideways scroll
-// (M1 scrolls a 640px chart), no dots between words, and "Open the week
-// summary" waits for the debrief summary (Phase 3).
+// (M1 scrolls a 640px chart), and no dots between words. "Open the week
+// summary" opens that week's debrief (Phase 3).
 //
 // Finished weeks not yet frozen are frozen here when online (freeze_week,
 // best effort), then the year loads again with them.
@@ -146,6 +146,7 @@ export default function SprintYear() {
               {sel.nothing && <p className="year-sel-line">{sel.nothing}</p>}
             </div>
             {sel.open && <Button onClick={() => navigate('/performance-sprint')}>Open this week</Button>}
+            {sel.summary && <Button onClick={() => navigate(`/performance-sprint/debrief/${sel.summary.sprintId}/${sel.summary.week}`)}>Open the week summary</Button>}
           </div>
         )}
 

@@ -199,9 +199,11 @@ export function LoggingRow({
 // days:         [{ key, box: 'Mo', full: 'Monday 26 Oct', today, later }]
 //               (the weekly debrief passes every day of a finished week,
 //               none later, so all seven are open).
-// total:        { label: 'Total', value: '38,400 steps, 55%' }: the week's
-//               total and score in a right-hand column (the debrief; the
-//               words come from src/lib, never worked out here).
+// total:        { label: 'Total', value: '38,400 steps, 55%', good }: the
+//               week's total and score in a right-hand column (the debrief;
+//               the words come from src/lib, never worked out here). good:
+//               true is mint (at or above the standard), false grey (below),
+//               never coral; left out, the text colour.
 // dashEmpty:    a day with nothing logged has a dashed edge (the debrief).
 export function LoggingWeekRow({
   name,
@@ -284,7 +286,7 @@ export function LoggingWeekRow({
       {total && (
         <div className="ds-logweek-total">
           <span>{total.label}</span>
-          <strong>{total.value}</strong>
+          <strong className={total.good === true ? 'ds-logweek-total--good' : total.good === false ? 'ds-logweek-total--below' : undefined}>{total.value}</strong>
         </div>
       )}
       {progress != null && <Bar value={progress} />}

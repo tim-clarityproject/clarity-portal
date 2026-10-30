@@ -16,18 +16,20 @@ import './design.css';
 //
 // tags:   ['rolled over from week 3'], read after the Strategy's name
 // onMove: shows Move (read out as "Move: [the to-do]")
+// plain:  shown, not ticked here (the debrief's Next week, M1): the box
+//         is only a mark, mint when done, and nothing to press.
 const TICK = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
 
 export function TodoList({ children, label, className = '' }) {
   return <div className={`ds-todos ${className}`.trim()} role="list" aria-label={label}>{children}</div>;
 }
 
-export default function TodoRow({ text, strategyName, tags = [], done = false, onToggle, disabled = false, onMove, win = false, winTag }) {
+export default function TodoRow({ text, strategyName, tags = [], done = false, onToggle, disabled = false, onMove, win = false, winTag, plain = false }) {
   const textId = useId();
   return (
     <div className={`ds-todo${done && !win ? ' ds-todo--done' : ''}${win ? ' ds-todo--win' : ''}`} role="listitem">
-      {win ? (
-        <span className="ds-check-box ds-todo-mark" aria-hidden="true"><span>{TICK}</span></span>
+      {win || plain ? (
+        <span className={`ds-check-box ds-todo-mark${plain && !done ? ' ds-todo-mark--open' : ''}`} aria-hidden="true"><span>{TICK}</span></span>
       ) : (
         <button
           type="button"

@@ -74,6 +74,7 @@ import SprintStart from './pages/performance/SprintStart';
 import SprintReview from './pages/performance/SprintReview';
 import RecoveryStart, { RecoveryCheckIn, RecoveryToday } from './pages/performance/Recovery';
 import SprintYear from './pages/performance/SprintYear';
+import WeeklyDebrief from './pages/performance/WeeklyDebrief';
 import PerformanceSprint from './pages/performance/PerformanceSprint';
 import PlanMyDay from './pages/performance/PlanMyDay';
 import ReviewMyDay from './pages/performance/ReviewMyDay';
@@ -331,6 +332,8 @@ function AppContent() {
           <Route path="/recovery/today" element={<RecoveryToday />} />
           <Route path="/recovery/check-in" element={<RecoveryCheckIn />} />
           <Route path="/performance-sprint/year" element={<SprintYear />} />
+          <Route path="/performance-sprint/debrief" element={<WeeklyDebrief />} />
+          <Route path="/performance-sprint/debrief/:sprintId/:week" element={<WeeklyDebrief />} />
           <Route path="/my-day/plan" element={<PlanMyDay />} />
           <Route path="/my-day/plan/:date" element={<PlanMyDay />} />
           <Route path="/my-day/review" element={<ReviewMyDay />} />

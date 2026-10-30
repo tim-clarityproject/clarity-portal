@@ -253,5 +253,7 @@ export function selectedWeek(view, week) {
     lines: [where, ...(slot.debriefed ? ['Debriefed'] : [])],
     score: slot.score,
     nothing: slot.score == null ? slot.tip.value : null,
+    // "Open the week summary" (M1): that week's debrief.
+    summary: { sprintId: slot.sprintId, week: slot.sprintWeek },
   };
 }

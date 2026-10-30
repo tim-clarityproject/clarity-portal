@@ -1044,3 +1044,93 @@
 .ui-root .rev-wins > p { margin-bottom: var(--space-px14); }
 .ui-root .rev-wins .rev-list { margin-bottom: var(--space-4); }
 .ui-root .rev-gap { margin-top: var(--space-px28); }
+
+/* ---------- The Weekly performance debrief (M1) ---------- */
+.ui-root .deb-subrow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--fs-note);
+  color: var(--label);
+}
+.ui-root .deb-subrow--end { justify-content: flex-end; margin-top: var(--space-3); }
+
+/* M1 .grpl: each Strategy's name above its habits. */
+.ui-root .deb-group { margin-top: var(--space-px26); }
+.ui-root .deb-group-name {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .deb-wins {
+  margin-top: var(--space-6);
+  padding-top: var(--space-px26);
+  border-top: var(--line-w) solid var(--line);
+}
+
+/* "Your days" (M1 .fold): the week's Review my day entries. */
+.ui-root .deb-days { margin-bottom: var(--space-px22); }
+.ui-root .deb-day p {
+  margin: 0 0 var(--space-px10);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+.ui-root .deb-day p > span:first-child,
+.ui-root .deb-day-line {
+  display: block;
+}
+.ui-root .deb-day p > span:first-child {
+  font-size: var(--fs-note);
+  color: var(--label);
+}
+
+.ui-root .deb-carry { margin-top: var(--space-px18); }
+.ui-root .deb-carry p {
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+.ui-root .deb-carry p + p { margin-top: var(--space-1); }
+
+/* M1 .summ: the two facts side by side, stacked on a phone. */
+.ui-root .ds-stats.deb-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-px12);
+  margin-top: var(--space-4);
+}
+.ui-root .deb-share { margin-top: var(--space-px22); }
+
+.ui-root .deb-closed p {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+.ui-root .deb-closed p + p { margin-top: var(--space-1); }
+.ui-root .deb-closed-score { margin-top: var(--space-5); }
+
+@media (max-width: 600px) {
+  .ui-root .ds-stats.deb-facts { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The narrowest phones: the seven days reach a little into the page's
+   side margin, so each day box is at least 44px wide. */
+@media (max-width: 380px) {
+  .ui-root .deb-habits .ds-logweek-entry { margin-inline: calc(-1 * var(--space-1)); }
+}
+
+/* The sprint page's quiet line when the weekly debrief is ready (M1 acts). */
+.ui-root .sprint-debrief-line {
+  margin: var(--space-5) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+.ui-root .sprint-debrief-line + .ipp-actions { margin-top: var(--space-3); }

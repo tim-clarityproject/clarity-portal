@@ -543,6 +543,8 @@
   color: var(--text-2);
 }
 
+.ui-root .ds-stat-note + .ds-stat-note { margin-top: var(--space-1); }
+
 /* The thin bar, under a stat or a logging row. */
 .ui-root .ds-bar {
   display: block;
@@ -895,6 +897,12 @@
 
 @media (max-width: 600px) {
   .ui-root .ds-logweek-days { gap: var(--space-1); }
+}
+
+/* Seven days on the narrowest phones: the gaps shrink so every day keeps
+   its 44px tap area (the weekly debrief shows all seven). */
+@media (max-width: 380px) {
+  .ui-root .ds-logweek-days { gap: var(--space-px2); }
 }
 
 /* Number entry: the field, with the unit shown inside it. */
@@ -5548,6 +5556,14 @@
   border-color: var(--good);
 }
 
+/* A to-do shown, not ticked here (the debrief's Next week, M1). */
+.ui-root .ds-todo-mark.ds-todo-mark--open > span {
+  background: none;
+  border-color: var(--field-line);
+}
+
+.ui-root .ds-todo-mark.ds-todo-mark--open svg { opacity: 0; }
+
 .ui-root .ds-todo-mark svg {
   opacity: 1;
 }
@@ -6456,6 +6472,9 @@
   font-size: var(--fs-option);
   color: var(--text);
 }
+
+.ui-root .ds-logweek-total strong.ds-logweek-total--good { color: var(--good); }
+.ui-root .ds-logweek-total strong.ds-logweek-total--below { color: var(--text-2); }
 
 .ui-root .ds-logweek-box.ds-logweek-box--empty input {
   border-style: dashed;

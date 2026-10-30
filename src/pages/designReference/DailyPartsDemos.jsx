@@ -15,6 +15,8 @@ import {
   StatGroup,
   Stepper,
   SwitchRow,
+  TodoList,
+  TodoRow,
   useToast,
 } from '../../components/design';
 
@@ -105,7 +107,8 @@ export function NoteSwitchDemo() {
   );
 }
 
-/** An objective's figure, and the debrief's week row with its total. */
+/** An objective's figure, the debrief's week rows with their totals (mint at
+ * or above the standard, grey below), and next week's to-dos, shown not ticked. */
 export function FiguresDemo() {
   const [clients, setClients] = useState('40');
   const [steps, setSteps] = useState({ mo: '11,200', tu: '8,400', we: '' });
@@ -121,8 +124,21 @@ export function FiguresDemo() {
         texts={steps}
         onChange={(d, t) => setSteps((s) => ({ ...s, [d]: t }))}
         dashEmpty
-        total={{ label: '19,600 steps', value: '39%' }}
+        total={{ label: '19,600 of 50,000 steps', value: '39%', good: false }}
       />
+      <LoggingWeekRow
+        name="Training sessions"
+        detail="3 sessions a week"
+        days={days}
+        texts={{ mo: '1', tu: '', we: '1', th: '1', fr: '' }}
+        onChange={() => null}
+        dashEmpty
+        total={{ label: '3 of 3', value: '100%', good: true }}
+      />
+      <TodoList label="Next week’s to-dos">
+        <TodoRow plain text="Book a physio assessment" strategyName="Maintain my availability to do good work" tags={['Rolls over from week 3']} />
+        <TodoRow plain text="Update my LinkedIn profile" strategyName="Grow through referrals" />
+      </TodoList>
     </div>
   );
 }
