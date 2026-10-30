@@ -142,10 +142,31 @@ function opKey(op) {
 export function noteVersions(table, rows) {
   for (const row of rows || []) {
     const k = rowKey(table, row);
-    if (k && row.updated_at) versions.set(k, row.updated_at);
+    if (k && row.updated_at) noteVersion(k, row.updated_at);
   }
   return rows;
 }
+
+// The book only ever moves forward. A load that read a row just before
+// this window's own save landed answers after it, with the older version
+// (quick ticks, 30 Oct): taking that would base the next change on the
+// older version, and it would be refused as if another window had made
+// the newer one. Another window's change is always later, so it is still
+// taken.
+function noteVersion(k, at) {
+  const had = versions.get(k);
+  if (had && Date.parse(had) > Date.parse(at)) return;
+  versions.set(k, at);
+}
+
+// The versions this window's own saves made, per row: a row found at one
+// of these has moved on only because of this window, never another one.
+const own = new Map();
+function noteOwn(k, at) {
+  if (!own.has(k)) own.set(k, new Set());
+  own.get(k).add(at);
+}
+const isOwn = (k, at) => Boolean(k && at && own.get(k)?.has(at));
 
 /** Thrown inside the queue when a save's row has moved on since it was read. */
 export class SupersededError extends Error {
@@ -192,7 +213,8 @@ function rebase(userId, op, data) {
   }
   const at = data?.[0]?.updated_at;
   if (!at) return;
-  versions.set(k, at);
+  noteOwn(k, at);
+  noteVersion(k, at);
   if (!userId) return;
   const move = (items) => items.map((x) => (x.basedOn && x.qid !== op.qid && opKey(x) === k ? { ...x, basedOn: at } : x));
   const queued = read(userId);
@@ -212,7 +234,7 @@ function withVersion(op) {
 // "Only if the row is still at the version it was based on": an update
 // matched by its row and its updated_at. Nothing matched: the row has
 // moved on (superseded), unless it already holds what was being saved.
-async function performBased(op) {
+async function performBased(op, retried = false) {
   const cols = ROW_KEYS[op.table] || ['id'];
   const fields = { ...(op.values || {}), ...(op.match || {}) };
   const match = op.kind === 'update' ? { ...(op.match || {}) } : Object.fromEntries(cols.map((c) => [c, fields[c]]));
@@ -231,6 +253,10 @@ async function performBased(op) {
     throw new SupersededError(op.table, null); // taken away in another window since
   }
   if (Object.entries(op.values || {}).every(([k, v]) => same(v, row[k]))) return [row];
+  // Moved on only by this window's own earlier save (its answer reached
+  // the book after this change was based): this change is the newer one,
+  // so it goes on top of it. Never refused as another window's.
+  if (!retried && isOwn(opKey(op), row.updated_at)) return performBased({ ...op, basedOn: row.updated_at }, true);
   throw new SupersededError(op.table, row);
 }
 
@@ -266,6 +292,39 @@ async function perform(op) {
 // WAIT_MS, so a stuck connection never stops every later save.
 const WAIT_MS = 10000;
 let sending = Promise.resolve();
+// How many saves this window has made: a page's quiet refresh that sees
+// this move while it loads knows its answer may be older than the screen.
+let changes = 0;
+
+/** A count that moves on with every save made (for useCachedLoad). */
+export function changesMade() {
+  return changes;
+}
+
+/**
+ * Resolves once every save made so far has had its answer (or waits on
+ * the device), and the queue's send under way is done. A quiet refresh
+ * reads after this, so it reads what this window has already saved.
+ */
+export async function whenSent() {
+  for (let i = 0; i < 20; i += 1) {
+    const tail = sending;
+    const flushing = flushPromise;
+    await Promise.all([tail, flushing].map((p) => (p ? p.catch(() => null) : null)));
+    if (tail === sending && flushing === flushPromise) return;
+  }
+}
+
+/** Saves still waiting on the device to be sent (not the refused ones). */
+export function waitingToSend(userId = currentUser) {
+  return read(userId).some((x) => !x.failed);
+}
+
+/** Tell a listener whenever the queue changes. */
+export function subscribeQueue(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
 
 /**
  * Sends a save now, or keeps it on the device when there's no connection.
@@ -274,6 +333,7 @@ let sending = Promise.resolve();
  * device can't keep it (so it is never shown as kept when it isn't).
  */
 export function saveOrQueue(userId, op) {
+  changes += 1;
   let timer;
   const before = Promise.race([sending, new Promise((r) => { timer = setTimeout(r, WAIT_MS); })]);
   const turn = before.then(() => {
@@ -323,6 +383,7 @@ async function sendOrKeep(userId, op) {
  */
 export function keepForLater(userId, op) {
   if (!userId) return;
+  changes += 1;
   try {
     keep(userId, { ...withVersion(op), qid: newId(), at: Date.now() });
   } catch {

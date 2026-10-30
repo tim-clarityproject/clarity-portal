@@ -142,3 +142,36 @@ test('a row taken away clears its version, so adding it again is a plain save', 
   assert.equal(r.status, 'saved');
   assert.equal(heard.length, 0);
 });
+
+// Quick ticks (30 Oct): a page's load that read a row just before this
+// window's own save landed answers after it, with the older version.
+test('a late load never moves the book back to an older version', async () => {
+  const todo = fake.put('todos', { id: 't9', user_id: ME, done_on: null });
+  q.noteVersions('todos', [todo]);
+  const older = { ...todo }; // what the slow load read
+  const r1 = await q.saveOrQueue(ME, { table: 'todos', kind: 'update', match: { id: 't9', user_id: ME }, values: { done_on: '2026-10-21' } });
+  assert.equal(r1.status, 'saved');
+  q.noteVersions('todos', [older]); // the load answers late
+  const r2 = await q.saveOrQueue(ME, { table: 'todos', kind: 'update', match: { id: 't9', user_id: ME }, values: { done_on: null } });
+  assert.equal(r2.status, 'saved', 'never refused because of its own earlier save');
+  assert.equal(row('todos', 't9').done_on, null);
+  assert.equal(heard.length, 0);
+});
+
+test('a change based before this window\'s own save landed goes on top of it, never refused', async () => {
+  const todo = fake.put('todos', { id: 't10', user_id: ME, done_on: null, text: 'Draft' });
+  q.noteVersions('todos', [todo]);
+  const r1 = await q.saveOrQueue(ME, { table: 'todos', kind: 'update', match: { id: 't10', user_id: ME }, values: { done_on: '2026-10-21' } });
+  assert.equal(r1.status, 'saved');
+  // A change still carrying the version before that save (kept on the device before it landed).
+  const r2 = await q.saveOrQueue(ME, { table: 'todos', kind: 'update', match: { id: 't10', user_id: ME }, values: { text: 'Draft the case study' }, basedOn: todo.updated_at });
+  assert.equal(r2.status, 'saved');
+  assert.equal(row('todos', 't10').text, 'Draft the case study');
+  assert.equal(row('todos', 't10').done_on, '2026-10-21', 'its own earlier save is kept');
+  assert.equal(heard.length, 0);
+  // Another window's change is still refused.
+  fake.changeElsewhere('todos', { id: 't10' }, { done_on: null });
+  const r3 = await q.saveOrQueue(ME, { table: 'todos', kind: 'update', match: { id: 't10', user_id: ME }, values: { text: 'Draft it' }, basedOn: todo.updated_at });
+  assert.equal(r3.status, 'superseded');
+  assert.equal(heard.length, 1);
+});
