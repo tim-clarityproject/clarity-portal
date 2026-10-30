@@ -837,7 +837,7 @@ export async function loadSleep(userId, localDate) {
 
 // ---------------------------------------------------------------- Plan my day
 
-const DAY_PLAN_COLS = 'id, local_date, sleep_hours, sleep_quality, sleep_to_confirm, grateful_for, way_of_being, biggest_risk, risk_response, status, finished_at, updated_at';
+const DAY_PLAN_COLS = 'id, user_id, local_date, sleep_hours, sleep_quality, sleep_to_confirm, grateful_for, way_of_being, biggest_risk, risk_response, status, finished_at, updated_at';
 
 function dayBefore(key, n) {
   const [y, m, d] = key.split('-').map(Number);
@@ -914,4 +914,59 @@ export function dayPlanAnswersOp(userId, date, values) {
 /** The day plan row as it is now (when a first save found one already there). */
 export async function loadDayPlanRow(userId, date) {
   return one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1));
+}
+
+// ---------------------------------------------------------------- Review my day
+
+const DAY_REVIEW_COLS = 'id, user_id, local_date, way_of_being_rating, where_it_showed, went_well, differently, tomorrow, on_my_mind, status, finished_at, updated_at';
+
+/**
+ * Everything Review my day shows for one day (M5), as rows: Plan my day's
+ * rows for that day (the sprint page's rows, that day's plan with its
+ * to-dos and Strategies, the plan's Strategies and to-dos with no sprint),
+ * that day's review and the Strategies it says moved.
+ */
+export async function loadDayReview(userId, date) {
+  const [plan, dayReview] = await Promise.all([
+    loadDayPlan(userId, date),
+    one(supabase.from('day_reviews').select(DAY_REVIEW_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
+  ]);
+  const reviewStrategies = dayReview
+    ? await rows(supabase.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', dayReview.id))
+    : [];
+  return { ...plan, dayReview, reviewStrategies };
+}
+
+/**
+ * Whether the day before has a plan and a finished review: a review
+ * started just after midnight is for the day before when it was planned
+ * and not yet reviewed (dayReview.js reviewDayFor).
+ */
+export async function loadReviewWhich(userId, yesterday) {
+  const [planned, reviewed] = await Promise.all([
+    one(supabase.from('day_plans').select('id').eq('user_id', userId).eq('local_date', yesterday).limit(1)),
+    one(supabase.from('day_reviews').select('id').eq('user_id', userId).eq('local_date', yesterday).eq('status', 'finished').limit(1)),
+  ]);
+  return { yesterday, planned: Boolean(planned), reviewed: Boolean(reviewed) };
+}
+
+/** A day's review row made once, with its id from the device, so its Strategies can follow it straight away. */
+export function createDayReview(userId, id, date) {
+  return saveOrQueue(userId, {
+    table: 'day_reviews',
+    kind: 'upsert',
+    onConflict: 'user_id,local_date',
+    ignoreDuplicates: true,
+    values: { id, user_id: userId, local_date: date },
+  });
+}
+
+/** The review's own answers (found by the person and day, so a resend writes the same row). */
+export function dayReviewAnswersOp(userId, date, values) {
+  return { table: 'day_reviews', kind: 'upsert', onConflict: 'user_id,local_date', values: { user_id: userId, local_date: date, ...values } };
+}
+
+/** The review row as it is now (when a first save found one already there). */
+export async function loadDayReviewRow(userId, date) {
+  return one(supabase.from('day_reviews').select(DAY_REVIEW_COLS).eq('user_id', userId).eq('local_date', date).limit(1));
 }

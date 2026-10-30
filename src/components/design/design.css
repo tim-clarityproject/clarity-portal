@@ -1255,6 +1255,14 @@
   overflow-wrap: break-word;
 }
 
+/* Beside a long question on a phone, the question wraps and the eye's
+   words stay whole ("Only you" never splits); a long coach's name can
+   still wrap within its share. */
+.ui-root .ds-label-row > .ds-who {
+  flex: 0 0 auto;
+  max-width: 50%;
+}
+
 /* ---------- The branded drop-down (Tim, 22 Oct; M6) ---------- */
 
 /* The box: room to breathe, long choices wrap onto a second line. */
@@ -6035,6 +6043,7 @@
 /* A 1 to 10 scale (M5 sc10): ten across, five by two on a phone. */
 .ui-root .ds-scale {
   min-width: 0;
+  max-width: var(--scale-max-w);
   letter-spacing: normal;
 }
 

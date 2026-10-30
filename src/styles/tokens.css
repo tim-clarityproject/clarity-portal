@@ -289,6 +289,7 @@
   --row-min-h: 54px;         /* full-width answer rows */
   --row-pad-x: 18px;
   --row-max-w: 440px;
+  --scale-max-w: 560px;      /* the 1 to 10 scale (M5 sc10) */
   --pop-max-h: 360px;        /* a drop-down list on desktop scrolls past this */
   --pop-gap: 8px;            /* between a box and its list */
   --sheet-radius: 24px;      /* the phone panel's top corners */

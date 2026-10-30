@@ -1007,3 +1007,40 @@
 @media (max-width: 600px) {
   .ui-root .day-add { width: 100%; }
 }
+
+/* ---------- Review my day (M5) ---------- */
+.ui-root .rev-list { margin-top: var(--space-px2); }
+.ui-root .rev-more { margin-top: var(--space-5); }
+.ui-root .rev-more p,
+.ui-root .rev-wins > p {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+.ui-root .rev-more + .rev-list { margin-top: var(--space-px18); }
+
+/* M5 .wkl: the weekly habits' one sentence, in a soft panel. */
+.ui-root .rev-week {
+  margin-top: var(--space-px22);
+  padding: var(--space-4) var(--space-px18);
+  border-radius: var(--radius-card);
+  background: var(--raised);
+}
+.ui-root .rev-week p {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+.ui-root .rev-week p + p { margin-top: var(--space-1); }
+
+/* M5 .wincta: the unplanned wins under a line. */
+.ui-root .rev-wins {
+  margin-top: var(--space-px28);
+  padding-top: var(--space-5);
+  border-top: var(--line-w) solid var(--line);
+}
+.ui-root .rev-wins > p { margin-bottom: var(--space-px14); }
+.ui-root .rev-wins .rev-list { margin-bottom: var(--space-4); }
+.ui-root .rev-gap { margin-top: var(--space-px28); }

@@ -76,6 +76,7 @@ import RecoveryStart, { RecoveryCheckIn, RecoveryToday } from './pages/performan
 import SprintYear from './pages/performance/SprintYear';
 import PerformanceSprint from './pages/performance/PerformanceSprint';
 import PlanMyDay from './pages/performance/PlanMyDay';
+import ReviewMyDay from './pages/performance/ReviewMyDay';
 import PersonalOperatingPlanArchived from './pages/PersonalOperatingPlanArchived';
 import PersonalOperatingPlanArchivedOne from './pages/PersonalOperatingPlanArchivedOne';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
@@ -332,6 +333,8 @@ function AppContent() {
           <Route path="/performance-sprint/year" element={<SprintYear />} />
           <Route path="/my-day/plan" element={<PlanMyDay />} />
           <Route path="/my-day/plan/:date" element={<PlanMyDay />} />
+          <Route path="/my-day/review" element={<ReviewMyDay />} />
+          <Route path="/my-day/review/:date" element={<ReviewMyDay />} />
           <Route path="/personal-operating-plan-archived/:missionId" element={<PersonalOperatingPlanArchivedOne />} />
           <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
           <Route path="/my-account" element={<MyAccount />} />
