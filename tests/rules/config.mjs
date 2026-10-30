@@ -231,13 +231,49 @@ export const FUNCTIONS = [
     note: 'Runs only as a trigger (020).' },
   { sig: 'record_migration(integer,text)', ifExists: true, call: "select public.record_migration(0, 'rules-test')", access: NOBODY,
     note: 'Tim only, in the SQL editor (025).' },
+  // 038 (Tim, 30 Oct): a coach's read of a shared weekly debrief, without
+  // stress. Anyone signed in may call it; it returns rows only to the
+  // person's current coach, for a week they shared (scenarios below).
+  { sig: 'coach_shared_debrief(uuid,uuid,integer)', ifExists: true, access: SIGNED_IN,
+    call: 'select count(*) from public.coach_shared_debrief(gen_random_uuid(), gen_random_uuid(), 1)',
+    note: 'Rows only for the person\'s current coach, for a shared week, and never stress (038).' },
   ...PHASE1_FUNCTIONS,
   ...GUEST_FUNCTIONS,
   ...ALIGNMENT_FUNCTIONS,
 ];
 
+// ---------------------------------------------------------------- the weekly stress answer (038)
+// Tim, 30 Oct: the debrief's stress answer is read by the person alone,
+// whatever they share. Sam (the client) shares their debrief row (the
+// table checks' own row for them) with stress "very_much"; Alex coaches
+// Sam. The coach parts are skipped where 038 hasn't run (there, the old
+// rule still lets the coach read the whole shared row).
+const DEBRIEF_038 = 'public.coach_shared_debrief(uuid,uuid,integer)';
+const SHARE_DEBRIEF = (shared) => `with x as (update public.weekly_debriefs set shared_with_coach = ${shared}, stress = 'very_much', went_well = 'Rules test went well'
+    where id = (select id from public.weekly_debriefs where user_id = {client} order by created_at, id limit 1) returning sprint_id, sprint_week)
+  select set_config('rules.deb', sprint_id || ',' || sprint_week, true) from x`;
+const SHARED_DEBRIEF = (what) => `select ${what} from public.coach_shared_debrief({client}, split_part(current_setting('rules.deb'), ',', 1)::uuid, split_part(current_setting('rules.deb'), ',', 2)::integer) x`;
+const STRESS_SCENARIOS = [
+  { name: 'A shared debrief: the coach reads the written answers through coach_shared_debrief', needs: DEBRIEF_038,
+    steps: [{ as: 'client', sql: SHARE_DEBRIEF(true) }, { as: 'owner_coach', sql: SHARED_DEBRIEF('string_agg(went_well, \',\')') }], expect: 'Rules test went well' },
+  { name: '... never the stress answer', needs: DEBRIEF_038,
+    steps: [{ as: 'client', sql: SHARE_DEBRIEF(true) }, { as: 'owner_coach', sql: SHARED_DEBRIEF('(row_to_json(x)::text like \'%very_much%\' or row_to_json(x)::text like \'%stress%\')::text') }], expect: 'false' },
+  { name: '... and none of the table, stress included', needs: DEBRIEF_038,
+    steps: [{ as: 'client', sql: SHARE_DEBRIEF(true) }, { as: 'owner_coach', sql: 'select count(*)::text from public.weekly_debriefs where user_id = {client}' }], expect: '0' },
+  { name: '... and can\'t change it', needs: DEBRIEF_038,
+    steps: [{ as: 'client', sql: SHARE_DEBRIEF(true) }, { as: 'owner_coach', sql: "with x as (update public.weekly_debriefs set stress = 'not_at_all' where user_id = {client} returning 1) select count(*)::text from x" }], expect: '0' },
+  { name: 'Not shared: the coach gets nothing', needs: DEBRIEF_038,
+    steps: [{ as: 'client', sql: SHARE_DEBRIEF(false) }, { as: 'owner_coach', sql: SHARED_DEBRIEF('count(*)::text') }], expect: '0' },
+  { name: 'Shared: another coach gets nothing', needs: DEBRIEF_038,
+    steps: [{ as: 'client', sql: SHARE_DEBRIEF(true) }, { as: 'second_coach', sql: `${SHARED_DEBRIEF('count(*)')} union all select count(*) from public.weekly_debriefs where user_id = {client} order by 1 desc limit 1` }], expect: '0' },
+  { name: 'Shared: signed out gets no checked read', needs: DEBRIEF_038,
+    steps: [{ as: 'client', sql: SHARE_DEBRIEF(true) }, { as: 'signed_out', sql: SHARED_DEBRIEF('count(*)::text') }], expect: 'error 42501' },
+  { name: 'Shared: the person still reads and changes their own stress',
+    steps: [{ as: 'client', sql: SHARE_DEBRIEF(true) }, { as: 'client', sql: "with x as (update public.weekly_debriefs set stress = 'a_little' where user_id = {client} and stress = 'very_much' returning stress) select string_agg(stress, ',') from x" }], expect: 'a_little' },
+];
+
 // Checks that take several steps as different people (phase1.mjs).
-export const SCENARIOS = [...PHASE1_SCENARIOS, ...GUEST_SCENARIOS, ...ALIGNMENT_SCENARIOS];
+export const SCENARIOS = [...PHASE1_SCENARIOS, ...GUEST_SCENARIOS, ...ALIGNMENT_SCENARIOS, ...STRESS_SCENARIOS];
 
 // ---------------------------------------------------------------- known gaps
 // Real gaps in today's rules, found by this test and not fixed yet. Each

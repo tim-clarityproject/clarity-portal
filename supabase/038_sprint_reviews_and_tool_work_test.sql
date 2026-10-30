@@ -13,7 +13,13 @@
 --     3. tool_work_strategies: exactly one item, the sprint and week
 --        together, once per item and Strategy, own rows only, nobody can
 --        link someone else's decision, entry, Strategy or sprint, and the
---        link goes with its item, and keeps going without its sprint.
+--        link goes with its item, and keeps going without its sprint;
+--     4. the weekly stress answer (Tim, 30 Oct): with a coach linked and
+--        the debrief shared, the coach reads the shared parts through
+--        coach_shared_debrief but never stress, and nothing from the table
+--        itself; the person still reads and changes their own stress; a
+--        coach not linked, a link that has ended, a week not shared and
+--        someone signed out get nothing.
 --   Everything it makes is undone at the end.
 --
 --   It ends with the notice 038 CHECKS PASSED, or stops with FAILED and a
@@ -81,6 +87,8 @@ declare
   je_a uuid; je_b uuid;
   rev_a uuid;
   before_at timestamptz;
+  coach_u uuid; coach2_u uuid; coach_c uuid; coach2_c uuid;
+  spr_a2 uuid;
   link_a uuid;
 begin
   -- 1. The tables, locked down, and the log.
@@ -176,6 +184,46 @@ begin
     f := f || pg_temp.t_eq('3x a decision taken away takes its links', (select count(*)::text from public.tool_work_strategies where decision_id = dec_a or id = link_a), '0');
     delete from public.journal_entries where id = je_a;
     f := f || pg_temp.t_eq('3y a journal entry taken away takes its links', (select count(*)::text from public.tool_work_strategies where journal_entry_id = je_a), '0');
+
+    -- 4. The weekly stress answer stays the person's own (Tim, 30 Oct).
+    f := f || pg_temp.t_eq('4a weekly_debriefs has one read rule, own rows only', (select count(*)::text || ' ' || bool_or(qual like '%may_see%')::text from pg_policies where schemaname = 'public' and tablename = 'weekly_debriefs' and cmd = 'SELECT'), '1 false');
+    f := f || pg_temp.t_eq('4b the coach''s read has no stress column', (select ('stress' = any (proargnames) or 'unusual' = any (proargnames))::text from pg_proc where oid = 'public.coach_shared_debrief(uuid,uuid,integer)'::regprocedure), 'false');
+    f := f || pg_temp.t_eq('4c ... and someone signed out can''t call it', (select has_function_privilege('anon', 'public.coach_shared_debrief(uuid,uuid,integer)', 'execute')::text), 'false');
+    coach_u := pg_temp.t_user('coach'); coach2_u := pg_temp.t_user('coachtwo');
+    insert into public.coaches (user_id, role, display_first_name) values (coach_u, 'coach', 'Invented') returning id into coach_c;
+    insert into public.coaches (user_id, role, display_first_name) values (coach2_u, 'coach', 'Other') returning id into coach2_c;
+    insert into public.coach_clients (client_id, coach_id) values (a, coach_c);
+    insert into public.sprints (user_id, plan_id, number, start_on, status) values (a, plan_a, 2, date '2026-10-05', 'finished') returning id into spr_a2;
+    perform pg_temp.t_as(a);
+    f := f || pg_temp.t_eq('4d my debrief, shared, with my stress', pg_temp.t_rows(format('insert into public.weekly_debriefs (user_id, sprint_id, sprint_week, stress, went_well, got_in_way, adjust, shared_with_coach) values (%L, %L, 1, ''very_much'', ''Morning blocks held'', ''Late calls'', ''Fewer evening calls'', true)', a, spr_a2)), '1');
+    f := f || pg_temp.t_eq('4e I read my own stress', pg_temp.t_n(format('select stress from public.weekly_debriefs where sprint_id = %L and sprint_week = 1', spr_a2)), 'very_much');
+    f := f || pg_temp.t_eq('4f I change my own stress', pg_temp.t_rows(format('update public.weekly_debriefs set stress = ''a_little'' where sprint_id = %L and sprint_week = 1', spr_a2)), '1');
+    f := f || pg_temp.t_eq('4g ... and read it back', pg_temp.t_n(format('select stress from public.weekly_debriefs where sprint_id = %L and sprint_week = 1', spr_a2)), 'a_little');
+    f := f || pg_temp.t_eq('4h the app''s save (upsert on sprint and week) still writes my stress', pg_temp.t_rows(format('insert into public.weekly_debriefs (user_id, sprint_id, sprint_week, stress) values (%L, %L, 1, ''moderately'') on conflict (sprint_id, sprint_week) do update set stress = excluded.stress', a, spr_a2)), '1');
+    perform pg_temp.t_as(coach_u);
+    f := f || pg_temp.t_eq('4i my coach reads none of the table, shared or not', pg_temp.t_n(format('select count(*)::text from public.weekly_debriefs where user_id = %L', a)), '0');
+    f := f || pg_temp.t_eq('4j my coach reads the shared answers through the checked read', pg_temp.t_n(format('select went_well || '' / '' || got_in_way || '' / '' || adjust || '' / '' || status from public.coach_shared_debrief(%L, %L, 1)', a, spr_a2)), 'Morning blocks held / Late calls / Fewer evening calls / draft');
+    f := f || pg_temp.t_eq('4k ... and never the stress answer', pg_temp.t_n(format('select (row_to_json(x)::text like ''%%moderately%%'' or row_to_json(x)::text like ''%%stress%%'')::text from public.coach_shared_debrief(%L, %L, 1) x', a, spr_a2)), 'false');
+    f := f || pg_temp.t_eq('4l my coach can''t change my debrief', pg_temp.t_rows(format('update public.weekly_debriefs set stress = ''not_at_all'' where user_id = %L', a)), '0');
+    f := f || pg_temp.t_eq('4m nor ask for a week with no debrief', pg_temp.t_n(format('select count(*)::text from public.coach_shared_debrief(%L, %L, 2)', a, spr_a2)), '0');
+    perform pg_temp.t_as(coach2_u);
+    f := f || pg_temp.t_eq('4n a coach not linked to me gets nothing', pg_temp.t_n(format('select (select count(*) from public.coach_shared_debrief(%1$L, %2$L, 1)) + (select count(*) from public.weekly_debriefs where user_id = %1$L)', a, spr_a2)), '0');
+    perform pg_temp.t_as(b);
+    f := f || pg_temp.t_eq('4o another client gets nothing', pg_temp.t_n(format('select (select count(*) from public.coach_shared_debrief(%1$L, %2$L, 1)) + (select count(*) from public.weekly_debriefs where user_id = %1$L)', a, spr_a2)), '0');
+    perform pg_temp.t_as(a);
+    f := f || pg_temp.t_eq('4p I call it for myself: nothing (I read my own row instead)', pg_temp.t_n(format('select count(*)::text from public.coach_shared_debrief(%L, %L, 1)', a, spr_a2)), '0');
+    update public.weekly_debriefs set shared_with_coach = false where sprint_id = spr_a2;
+    perform pg_temp.t_as(coach_u);
+    f := f || pg_temp.t_eq('4q not shared: my coach gets nothing', pg_temp.t_n(format('select count(*)::text from public.coach_shared_debrief(%L, %L, 1)', a, spr_a2)), '0');
+    perform pg_temp.t_as(a);
+    update public.weekly_debriefs set shared_with_coach = true where sprint_id = spr_a2;
+    perform pg_temp.t_admin();
+    update public.coach_clients set ended_at = now() where client_id = a and coach_id = coach_c;
+    perform pg_temp.t_as(coach_u);
+    f := f || pg_temp.t_eq('4r a coach whose link has ended gets nothing', pg_temp.t_n(format('select count(*)::text from public.coach_shared_debrief(%L, %L, 1)', a, spr_a2)), '0');
+    perform pg_temp.t_anon();
+    f := f || pg_temp.t_eq('4s signed out: no checked read', pg_temp.t_n(format('select count(*)::text from public.coach_shared_debrief(%L, %L, 1)', a, spr_a2)), 'error 42501');
+    f := f || pg_temp.t_eq('4t ... and no table', pg_temp.t_n('select count(*)::text from public.weekly_debriefs'), 'error 42501');
 
     raise exception using errcode = 'TT001', message = 'undo the test';
   exception when sqlstate 'TT001' then null;

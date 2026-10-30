@@ -166,7 +166,14 @@ begin
     f := f || pg_temp.t_eq('7a never logs, to-dos, wins, day plans or day reviews', pg_temp.t_n(format($q$select (select count(*) from public.habit_logs where user_id = %1$L) + (select count(*) from public.todos where user_id = %1$L)
       + (select count(*) from public.wins where user_id = %1$L) + (select count(*) from public.day_plans where user_id = %1$L) + (select count(*) from public.day_reviews where user_id = %1$L)
       + (select count(*) from public.sprint_habits where user_id = %1$L) + (select count(*) from public.todo_moves where user_id = %1$L) + (select count(*) from public.emotional_control_checks where user_id = %1$L)$q$, client_a)), '0');
-    f := f || pg_temp.t_eq('7b only the debrief week that was shared', pg_temp.t_n(format('select string_agg(sprint_week::text, '','') from public.weekly_debriefs where user_id = %L', client_a)), '2');
+    -- After 038 (Tim, 30 Oct) the coach reads a shared week only through
+    -- coach_shared_debrief, which leaves stress out; the table is own rows.
+    if to_regprocedure('public.coach_shared_debrief(uuid,uuid,integer)') is null then
+      f := f || pg_temp.t_eq('7b only the debrief week that was shared', pg_temp.t_n(format('select string_agg(sprint_week::text, '','') from public.weekly_debriefs where user_id = %L', client_a)), '2');
+    else
+      f := f || pg_temp.t_eq('7b only the debrief week that was shared (038)', pg_temp.t_n(format('select string_agg(w::text, '','') from generate_series(1, 2) w where exists (select 1 from public.coach_shared_debrief(%L, %L, w))', client_a, sprint_a)), '2');
+      f := f || pg_temp.t_eq('7b2 ... and none of the table (038)', pg_temp.t_n(format('select count(*) from public.weekly_debriefs where user_id = %L', client_a)), '0');
+    end if;
     f := f || pg_temp.t_eq('7c not the sprint or its scores (progress off)', pg_temp.t_n(format('select (select count(*) from public.sprints where user_id = %1$L) + (select count(*) from public.week_scores where user_id = %1$L)', client_a)), '0');
     f := f || pg_temp.t_eq('7d that Recovery started (Let your coach know is ticked by default)', pg_temp.t_n(format('select count(*) from public.recovery_periods where user_id = %L', client_a)), '1');
     f := f || pg_temp.t_eq('7e only the recharge answer that was shared', pg_temp.t_n(format('select string_agg(answer, '','') from public.recovery_recharge_answers where user_id = %L', client_a)), 'Time with family');

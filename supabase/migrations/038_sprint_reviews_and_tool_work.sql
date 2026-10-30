@@ -13,19 +13,46 @@
 --                            review's row) tagged to a Strategy of the plan,
 --                            with the sprint and week it was done in, so the
 --                            Strategy can show "Work this sprint".
---   Both are additive: nothing that exists is changed, and the old code
---   never reads them.
+--     the weekly stress answer kept private (Tim, 30 Oct): weekly_debriefs
+--                            becomes own rows only, so its stress answer is
+--                            read by the person alone, whatever they share.
+--                            Their coach reads a shared debrief through
+--                            coach_shared_debrief(person, sprint, week),
+--                            which leaves stress out.
+--   The two tables are additive and the old code never reads them. The
+--   debrief change keeps every column and row; only who may read it
+--   changes. The app reads and writes only its own debriefs, so it works
+--   the same before and after.
+--
+-- WHY A CHECKED READ, NOT A TABLE OF ITS OWN FOR STRESS
+--   Before 038, weekly_debriefs' "Read: own, or shared" rule let the
+--   person's coach read the whole row once shared_with_coach was on,
+--   stress included. A rule can only hide whole rows, never one column, so
+--   the coach's part of the rule goes, and the coach gets a checked read
+--   that names the shared columns and never stress. This keeps stress
+--   where it is: no data moves, the app's reads, writes, drafts and
+--   offline saves stay as they are, and no coach screen reads debriefs
+--   yet. Moving stress to its own table would have meant moving data and
+--   changing the app with a fallback, for the same result.
 --
 -- WHO CAN SEE WHAT
---   Own rows only: each person reads, adds, changes and removes their own.
---   No coach part yet (not decided). Every row a link points at (the
+--   sprint_reviews and tool_work_strategies: own rows only: each person
+--   reads, adds, changes and removes their own. No coach part yet (not
+--   decided).
+--   weekly_debriefs: own rows only from now on. The person's current coach
+--   (an active coach linked to them now) reads a debrief only while it is
+--   shared, through coach_shared_debrief, and gets the three written
+--   answers (what went well, what got in the way, what to adjust), its
+--   status and when it was finished: never stress, and never "this week
+--   was unusual". Week scores and objective figures stay with the
+--   Progress switch, as before. Every row a link points at (the
 --   sprint, the Strategy, the decision, the journal entry) must belong to
 --   the same person (p1_same_owner), so nobody can link someone else's
 --   work. A guest's decision (no person) can never be linked.
 --
 -- SAFE TO RUN TWICE
 --   Yes: tables, indexes, triggers and rules are made only when missing or
---   are dropped and made again.
+--   are dropped and made again; the function is replaced.
 --
 -- HOW TO RUN
 --   After 026 to 028 (it uses p1_same_owner, p1_touch, sprints and
@@ -140,6 +167,41 @@ begin
   end loop;
 end
 $rules$;
+
+-- ---------------------------------------------------------------- the weekly stress answer
+-- (Tim, 30 Oct.) weekly_debriefs: the person's own rows only. 028's rule
+-- "Read: own, or shared" gave the coach the whole row when shared, stress
+-- included; it is replaced by name, so a second run finds it gone and
+-- makes "Own rows: read" again. Adding, changing and removing stay 028's
+-- own-rows rules.
+drop policy if exists "Read: own, or shared" on public.weekly_debriefs;
+drop policy if exists "Own rows: read" on public.weekly_debriefs;
+create policy "Own rows: read" on public.weekly_debriefs for select to authenticated
+  using (user_id = (select auth.uid()));
+
+-- What the person's coach reads of a shared debrief: the written answers
+-- and where it is up to, never stress or "unusual". Nothing (no row) for
+-- anyone but their current coach, for a week not shared, or for a week
+-- with no debrief; someone signed out can't call it.
+create or replace function public.coach_shared_debrief(p_user uuid, p_sprint uuid, p_week integer)
+returns table (debrief_id uuid, sprint_id uuid, sprint_week integer, went_well text, got_in_way text, adjust text,
+               status text, finished_at timestamptz, updated_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select d.id, d.sprint_id, d.sprint_week, d.went_well, d.got_in_way, d.adjust, d.status, d.finished_at, d.updated_at
+  from public.weekly_debriefs d
+  where d.user_id = p_user and d.sprint_id = p_sprint and d.sprint_week = p_week
+    and d.shared_with_coach
+    and (select auth.uid()) is not null and d.user_id <> (select auth.uid())
+    and public.is_coach_of(d.user_id);
+$$;
+revoke all on function public.coach_shared_debrief(uuid, uuid, integer) from public, anon;
+grant execute on function public.coach_shared_debrief(uuid, uuid, integer) to authenticated;
+comment on function public.coach_shared_debrief(uuid, uuid, integer) is
+  'A shared weekly debrief, for the person''s current coach only: the written answers, never stress (Phase 3, Tim 30 Oct).';
 
 -- Records itself where the migration log (025) is there; on a database
 -- without it yet, this does nothing rather than stop the migration.
