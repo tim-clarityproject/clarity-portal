@@ -91,6 +91,7 @@ import {
 import { GallerySection, New } from './galleryKit';
 import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView } from './galleryUtils';
 import SprintTool from './SprintTool';
+import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } from './DailyPartsDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, withMeasure, yearView } from '../../lib/performance';
@@ -108,6 +109,7 @@ const TOC = [
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c8', 'Dial and charts'], ['c9', 'Lists'], ['c10', 'Logging rows'],
   ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
+  ['c45', 'Scales and levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'],
   ['c32', 'Outcome Objectives'], ['c33', 'Alignment check'], ['c34', 'Strategy tiles'], ['c35', 'My Mission panel'],
   ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
@@ -1586,6 +1588,53 @@ function Gallery() {
             <p>The whole tile opens the Strategy’s detail; the circled numbers sit above it so each opens its own pop-up.</p>
             <p>The detail lists the habits with their measure, the to-dos this sprint and the work tagged to it, then “Edit this Strategy”.</p>
             <p>On a laptop it opens under the tiles with the rotated crosshair to close it; on a phone it opens in the full-screen panel.</p>
+          </>
+        )} />
+
+        <GallerySection id="c45" title="Scales and levels" demo={ScaleLevelDemo} rules={(
+          <>
+            <p><New /><b>A 1 to 10 scale</b> (M5 Review my day): ten equal boxes in one row, five by two on a phone, with what each end means in words underneath.</p>
+            <p>The chosen number fills in the text colour, never coral; tapping it again clears it.</p>
+            <p><New /><b>Rows that open Low, Medium and High inside</b> (M5 “Which Strategies moved today?”): choosing a row outlines it and opens the follow-up in the same row, starting at Medium.</p>
+            <p>The follow-up names the thing it asks about (writing rule 64): “How much did “Grow through referrals” move?”.</p>
+            <p>Only the chosen row grows, so nothing else on the screen moves.</p>
+          </>
+        )} />
+
+        <GallerySection id="c46" title="Rows to pick and add" demo={RowsDemo} rules={(
+          <>
+            <p><New /><b>Pick up to three</b> (M5 “What will you do today?”): every row has its name, a second line with the Strategy and its tags, and a circle that fills with a tick once chosen.</p>
+            <p>Once the most are chosen, the others grey out until one is unchosen (Tim, 23 Oct).</p>
+            <p>Tags are separate grey words, never joined by dots.</p>
+            <p><New /><b>Lists are rows</b> (CLAUDE.md rule 30): one box per thing, “Add another” to add a row and the 45 degree crosshair to remove one, up to a set number.</p>
+            <p><New /><b>Rows that open in place</b> (M1 “Your days”): the name, one line of what it holds, and the chevron that turns to point up while open.</p>
+          </>
+        )} />
+
+        <GallerySection id="c47" title="Notes and switches" demo={NoteSwitchDemo} rules={(
+          <>
+            <p><New /><b>A note is never a task</b> (writing rule 53): a soft panel with a small line saying what it is, the note itself, then what to do with it. No tick box and no tag.</p>
+            <p><New /><b>A switch with its words</b> (M1 “Share with Tim”): the label, one grey line saying what switching it on does, and the shared switch, mint when on.</p>
+            <p>It names the person’s own coach, never Tim, and is only shown when there is a coach.</p>
+            <p><New /><b>The stepper in half steps</b> (M5 sleep): “7.5”, with the unit as a full word beside it; it starts from 7 hours on the first press.</p>
+          </>
+        )} />
+
+        <GallerySection id="c48" title="Figures in a week" demo={FiguresDemo} rules={(
+          <>
+            <p><New /><b>An objective’s figure in the debrief</b> (M1): the name, the number box with its unit, the figure before (“Last week 31”) and the change at a glance.</p>
+            <p>A rise towards the target is mint; anything else is grey, never coral or red.</p>
+            <p><New /><b>The debrief’s week row</b>: every day of the finished week is open, a day with nothing logged has a dashed edge, and the week’s total and score sit on the right.</p>
+            <p>The figures come from src/lib/scores, never from the part itself.</p>
+          </>
+        )} />
+
+        <GallerySection id="c49" title="Summaries and celebrating" demo={SummaryDemo} rules={(
+          <>
+            <p><New /><b>The daily tools’ summary</b> (M5): a skipped answer says “Skipped” with Add; a row can hold several lines, a grey line under it, or a mint line for a win.</p>
+            <p><New /><b>The celebration glow</b> (M1 debrief): a thin mint edge that fades in once and stays, at or above the standard only; with reduced motion it is simply there.</p>
+            <p>Mint means good, never coral (Tim, 26 Oct).</p>
+            <p><New /><b>Add a to-do from Plan my day</b>: the usual panel without “Which week?”, saying it goes into today and this week’s sprint.</p>
           </>
         )} />
 

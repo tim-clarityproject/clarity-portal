@@ -402,25 +402,45 @@ export default function GuidedTool({
 
 // The editable summary at the end: every answer on one page, each with a
 // way to change it (M6). Skipped answers show "Not yet", to fill in later.
-export function GuidedSummary({ rows, onChange }) {
+//
+// For the daily tools (M5 srow), a row can also have:
+//   value: an array, one line each (the day's to-dos, numbered);
+//   sub:   a grey line under the value ("If it happens: …");
+//   good:  a mint line under the value ("Plus 1 unplanned win.");
+//   step:  null for a row that can't be changed here.
+// emptyWord: "Skipped" (M5) instead of "Not yet"; the action then reads
+// "Add" for an empty row (M5: "Skipped" with an Add link).
+export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEmpty = false }) {
   return (
     <div className="ds-guide-summary">
-      {rows.map((row) => (
-        <div key={row.label} className="ds-guide-summary-row">
-          <span className="ds-guide-summary-label">{row.label}</span>
-          <span className={`ds-guide-summary-value${row.value ? '' : ' ds-guide-summary-value--empty'}`}>
-            {row.value || 'Not yet'}
-          </span>
-          <button
-            type="button"
-            className="ds-guide-summary-change"
-            aria-label={`Change ${row.label}`}
-            onClick={() => onChange(row.step)}
-          >
-            Change
-          </button>
-        </div>
-      ))}
+      {rows.map((row) => {
+        const lines = Array.isArray(row.value) ? row.value.filter(Boolean) : null;
+        const has = lines ? lines.length > 0 : Boolean(row.value);
+        const action = has || !addWhenEmpty ? 'Change' : 'Add';
+        return (
+          <div key={row.label} className="ds-guide-summary-row">
+            <span className="ds-guide-summary-label">{row.label}</span>
+            <span className={`ds-guide-summary-value${has ? '' : ' ds-guide-summary-value--empty'}`}>
+              {!has && emptyWord}
+              {has && (lines
+                ? lines.map((line, j) => <span key={j} className="ds-guide-summary-line">{line}</span>)
+                : row.value)}
+              {has && row.sub && <span className="ds-guide-summary-sub">{row.sub}</span>}
+              {has && row.good && <span className="ds-guide-summary-good">{row.good}</span>}
+            </span>
+            {row.step != null ? (
+              <button
+                type="button"
+                className="ds-guide-summary-change"
+                aria-label={`${action} ${row.label}`}
+                onClick={() => onChange(row.step)}
+              >
+                {action}
+              </button>
+            ) : <span />}
+          </div>
+        );
+      })}
     </div>
   );
 }

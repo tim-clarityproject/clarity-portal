@@ -21,9 +21,15 @@ export function Bar({ value = 0, className = '' }) {
 //       "6 weeks"; never "h" or "wks"). A unit starting with "/" sits
 //       right against the number ("8/10").
 // bar:  optional 0 to 1 for the thin bar underneath (mint: progress).
-export function Stat({ label, value, unit, note, good = false, bar, className = '' }) {
+// panel: the stat sits in a soft panel (a summary's facts, M1 .fact).
+// celebrate: the mint celebration glow (M1 debrief summary at or above
+//       the standard; mint, never coral, Tim 26 Oct): a thin mint edge
+//       that fades in once and stays. With reduced motion it is simply
+//       there. Implies panel.
+export function Stat({ label, value, unit, note, good = false, bar, panel = false, celebrate = false, className = '' }) {
+  const box = celebrate ? ' ds-stat--panel ds-stat--celebrate' : panel ? ' ds-stat--panel' : '';
   return (
-    <div className={`ds-stat ${className}`.trim()}>
+    <div className={`ds-stat${box} ${className}`.trim()}>
       <span className="ds-stat-label">{label}</span>
       <strong className={`ds-stat-value${good ? ' ds-stat-value--good' : ''}`}>
         {value}

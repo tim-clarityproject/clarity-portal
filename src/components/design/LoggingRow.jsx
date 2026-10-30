@@ -38,38 +38,55 @@ export function NumberField({ value, onChange, unit, label, decimals = false, ma
 
 // Stepper: minus, the count, then the crosshair plus (decisions:
 // "counters keep the crosshair plus and a minus").
-export function Stepper({ value, onChange, min = 0, max = Infinity, label }) {
+// step:      how much each press changes it (0.5 for half hours, M5 sleep).
+// format:    how the value shows ("7.5"); empty shows a dash.
+// startFrom: where the first press starts when nothing is set yet (M5:
+//            sleep starts from 7 hours).
+// lessLabel, moreLabel: what each button says to a screen reader
+//            ("Half an hour less"); "One fewer" and "One more" otherwise.
+// unit:      a full word after the stepper, small and grey ("hours").
+export function Stepper({ value, onChange, min = 0, max = Infinity, label, step: by = 1, format = (v) => `${v}`, startFrom, lessLabel, moreLabel, unit }) {
   const outputId = useId();
+  const empty = value == null;
   // At a limit the button stays focusable but does nothing (aria-disabled
   // rather than disabled), so keyboard focus is never dropped and a held
   // key never runs on into the other button.
-  const step = (by) => {
-    const next = Math.min(max, Math.max(min, value + by));
+  const step = (dir) => {
+    const from = empty ? (startFrom ?? min) : value;
+    // Half steps are kept exact (7.5, never 7.499999).
+    const next = Math.round(Math.min(max, Math.max(min, from + dir * by)) * 1000) / 1000;
     if (next !== value) onChange(next);
   };
-  return (
+  const stepper = (
     <span className="ds-stepper" role="group" aria-label={label}>
       <button
         type="button"
         className="ds-stepper-btn"
-        aria-label={`One fewer: ${label}`}
+        aria-label={lessLabel || `One fewer: ${label}`}
         aria-describedby={outputId}
-        aria-disabled={value <= min}
+        aria-disabled={!empty && value <= min}
         onClick={() => step(-1)}
       >
         −
       </button>
-      <output id={outputId} className="ds-stepper-value" aria-live="polite">{value}</output>
+      <output id={outputId} className={`ds-stepper-value${by % 1 ? ' ds-stepper-value--wide' : ''}`} aria-live="polite">{empty ? '–' : format(value)}</output>
       <button
         type="button"
         className="ds-stepper-btn"
-        aria-label={`One more: ${label}`}
+        aria-label={moreLabel || `One more: ${label}`}
         aria-describedby={outputId}
-        aria-disabled={value >= max}
+        aria-disabled={!empty && value >= max}
         onClick={() => step(1)}
       >
         <Crosshair />
       </button>
+    </span>
+  );
+  if (!unit) return stepper;
+  return (
+    <span className="ds-stepper-with-unit">
+      {stepper}
+      <span className="ds-stepper-unit">{unit}</span>
     </span>
   );
 }
@@ -180,6 +197,12 @@ export function LoggingRow({
 //               Yes, then No, then back to not logged.
 // kind 'tick':  `value` true or false; onChange(value).
 // days:         [{ key, box: 'Mo', full: 'Monday 26 Oct', today, later }]
+//               (the weekly debrief passes every day of a finished week,
+//               none later, so all seven are open).
+// total:        { label: 'Total', value: '38,400 steps, 55%' }: the week's
+//               total and score in a right-hand column (the debrief; the
+//               words come from src/lib, never worked out here).
+// dashEmpty:    a day with nothing logged has a dashed edge (the debrief).
 export function LoggingWeekRow({
   name,
   detail,
@@ -194,6 +217,8 @@ export function LoggingWeekRow({
   progress,
   onMore,
   moreLabel,
+  total,
+  dashEmpty = false,
 }) {
   let entry;
   if (kind === 'tick') {
@@ -225,7 +250,7 @@ export function LoggingWeekRow({
     entry = (
       <div className="ds-logweek-days" style={{ '--days': days.length }}>
         {days.map((d) => (
-          <label key={d.key} className={`ds-logweek-box${d.today ? ' ds-logweek--today' : ''}`}>
+          <label key={d.key} className={`ds-logweek-box${d.today ? ' ds-logweek--today' : ''}${dashEmpty && !(texts[d.key] ?? '') ? ' ds-logweek-box--empty' : ''}`}>
             <span aria-hidden="true">{d.box}</span>
             <input
               type="text"
@@ -248,7 +273,7 @@ export function LoggingWeekRow({
     );
   }
   return (
-    <div className={`ds-log ds-logweek${kind === 'tick' ? ' ds-logweek--tick' : ''}`}>
+    <div className={`ds-log ds-logweek${kind === 'tick' ? ' ds-logweek--tick' : ''}${total ? ' ds-logweek--total' : ''}`}>
       <div className="ds-log-main">
         <div className="ds-log-name">{name}</div>
         {detail && <div className="ds-log-detail">{detail}</div>}
@@ -256,6 +281,12 @@ export function LoggingWeekRow({
       {kind === 'tick' && <div className="ds-log-entry">{entry}</div>}
       {onMore && <MoreButton label={moreLabel || `${name}: week, target and impact`} onClick={onMore} />}
       {kind !== 'tick' && <div className="ds-logweek-entry">{entry}</div>}
+      {total && (
+        <div className="ds-logweek-total">
+          <span>{total.label}</span>
+          <strong>{total.value}</strong>
+        </div>
+      )}
       {progress != null && <Bar value={progress} />}
     </div>
   );

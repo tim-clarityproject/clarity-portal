@@ -27,10 +27,14 @@ function Footer({ onCancel, onAdd, ready, label }) {
   );
 }
 
-export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, weeks, onAdd }) {
+// todayNote: Plan my day's mode (M5 todoPanel): no "Which week?" (it goes
+// into today and this week), and this line instead ("It’s added to today
+// and to this week’s sprint.").
+export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, weeks, onAdd, todayNote }) {
   const box = useRef(null);
   const set = (patch) => onFormChange({ ...form, ...patch });
-  const ready = Boolean(form.text.trim() && form.strategyId && form.week);
+  const today = Boolean(todayNote);
+  const ready = Boolean(form.text.trim() && form.strategyId && (today || form.week));
   return (
     <SlidePanel
       open={open}
@@ -43,10 +47,14 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
         <TextBox ref={box} label="What needs doing?" who="me" value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Book a physio assessment" maxLength={TEXT_LIMIT} />
         <Choice label="Which Strategy does it serve?" options={strategies} value={form.strategyId} onChange={(strategyId) => set({ strategyId })} form="rows" />
         <Choice label="How much will it move this Strategy?" options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
-        <div>
-          <Dropdown label="Which week?" options={weeks} value={form.week} onChange={(week) => set({ week })} />
-          <p className="ds-panel-note">Moving it before that week starts doesn’t count against you.</p>
-        </div>
+        {today ? (
+          <p className="ds-panel-note">{todayNote}</p>
+        ) : (
+          <div>
+            <Dropdown label="Which week?" options={weeks} value={form.week} onChange={(week) => set({ week })} />
+            <p className="ds-panel-note">Moving it before that week starts doesn’t count against you.</p>
+          </div>
+        )}
       </div>
     </SlidePanel>
   );

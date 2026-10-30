@@ -6029,3 +6029,465 @@
     transition: none;
   }
 }
+
+/* ---------- Phase 3: the daily tools' shared parts ---------- */
+
+/* A 1 to 10 scale (M5 sc10): ten across, five by two on a phone. */
+.ui-root .ds-scale {
+  min-width: 0;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-scale-row {
+  display: grid;
+  grid-template-columns: repeat(var(--scale-n, 10), minmax(0, 1fr));
+  gap: var(--space-px6);
+}
+
+.ui-root .ds-scale-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--tap-min) + var(--space-1)) !important;
+  padding: 0 !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  font-family: var(--font-body);
+  font-size: var(--fs-option) !important;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-scale-btn:hover {
+    color: var(--text);
+    border-color: var(--text);
+  }
+}
+
+.ui-root .ds-scale-btn[aria-checked='true'] {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--on-text);
+}
+
+.ui-root .ds-scale-btn:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-scale-ends {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-scale-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-scale-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+/* Rows that open Low, Medium and High inside (M5 mvr). */
+.ui-root .ds-levels {
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--row-max-w);
+}
+
+.ui-root .ds-level-row {
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-field);
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-level-row:hover { border-color: var(--quiet-line); }
+}
+
+.ui-root .ds-level-row--on,
+.ui-root .ds-level-row--on:hover {
+  border-color: var(--text);
+  background: var(--raised);
+}
+
+.ui-root .ds-level-name {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--row-min-h) !important;
+  padding: var(--space-px12) var(--row-pad-x) !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-option) !important;
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  overflow-wrap: break-word;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-level-row--on .ds-level-name { color: var(--text); }
+
+.ui-root .ds-level-name:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--radius-field);
+}
+
+.ui-root .ds-level-ask {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0 var(--space-px10) var(--space-px12) var(--row-pad-x);
+}
+
+.ui-root .ds-level-q {
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  overflow-wrap: break-word;
+}
+
+/* Lists are rows: one box each, the 45 degree crosshair to remove one. */
+.ui-root .ds-rowlist-rows {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ui-root .ds-rowlist-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1);
+  align-items: start;
+}
+
+.ui-root .ds-rowlist-row > :first-child:last-child { grid-column: 1 / -1; }
+
+.ui-root .ds-rowlist-remove { margin-top: var(--space-px6); }
+
+.ui-root .ds-rowlist-add { margin-top: var(--space-3); }
+
+/* A switch with its words. */
+.ui-root .ds-switchrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-px18) 0;
+  border-top: var(--line-w) solid var(--line-soft);
+  border-bottom: var(--line-w) solid var(--line-soft);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-switchrow-words { min-width: 0; }
+
+.ui-root .ds-switchrow-label {
+  display: block;
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ds-switchrow-note {
+  display: block;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+/* One objective's figure in the debrief. */
+.ui-root .ds-objfig {
+  padding: var(--space-px18) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-objfig-name {
+  font-size: var(--fs-option);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-objfig-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-px12);
+  margin-top: var(--space-px10);
+}
+
+.ui-root .ds-objfig-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-px12);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-objfig-change { color: var(--text-2); }
+.ui-root .ds-objfig-change--good { color: var(--good); }
+
+/* Rows that open in place ("Your days"). */
+.ui-root .ds-expand {
+  border-top: var(--line-w) solid var(--line-soft);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-expand-item { border-bottom: var(--line-w) solid var(--line-soft); }
+
+.ui-root .ds-expand-head {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  gap: var(--space-px12);
+  align-items: center;
+  min-height: var(--option-min-h) !important;
+  padding: var(--space-1) 0 !important;
+  font-family: var(--font-body);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-expand-head:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-expand-title {
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ui-root .ds-expand-summary {
+  min-width: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-root .ds-expand-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur) var(--ease);
+}
+
+.ui-root .ds-expand-body > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ui-root .ds-expand-item--open .ds-expand-body { grid-template-rows: 1fr; }
+
+.ui-root .ds-expand-inner {
+  padding: 0 0 var(--space-3);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-expand-head { grid-template-columns: minmax(0, 1fr) auto; }
+  .ui-root .ds-expand-summary { grid-column: 1; grid-row: 2; white-space: normal; }
+  .ui-root .ds-expand-head .ds-collapse-mark { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+/* A note, never a task. */
+.ui-root .ds-note {
+  padding: var(--space-3) var(--space-px18);
+  border-radius: var(--radius-field);
+  background: var(--raised);
+  letter-spacing: normal;
+}
+
+.ui-root .ds-note p { margin: 0; }
+
+.ui-root .ds-note-label {
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .ds-note-text {
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.ui-root .ds-note .ds-note-after { margin-top: var(--space-px6); }
+
+/* The stepper with its unit word (M5 hrs1), and room for "7.5". */
+.ui-root .ds-stepper-with-unit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px14);
+}
+
+.ui-root .ds-stepper-unit {
+  font-size: var(--fs-option);
+  color: var(--text-2);
+}
+
+.ui-root .ds-stepper-value--wide { min-width: calc(2 * var(--space-5)); }
+
+/* The Do list's rows (M5 pk): a second line and a circle that fills. */
+.ui-root .ds-answer--pick {
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ui-root .ds-pick-words {
+  display: grid;
+  gap: var(--space-px2);
+  min-width: 0;
+}
+
+.ui-root .ds-pick-name {
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-pick-mark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-4);
+  height: var(--space-4);
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: var(--line-w-strong) solid var(--field-line);
+}
+
+.ui-root .ds-pick-mark svg {
+  width: var(--tick-size);
+  height: var(--tick-size);
+  fill: none;
+  stroke: var(--on-text);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark svg { opacity: 1; }
+
+/* Full: the rest grey out until one is unchosen (Tim, 23 Oct). */
+.ui-root .ds-answer.ds-answer--full,
+.ui-root .ds-answer.ds-answer--full:hover {
+  cursor: default;
+  opacity: var(--disabled-opacity);
+  border-color: var(--line);
+  color: var(--text-2);
+}
+
+/* The summary's extra lines (M5 srow). */
+.ui-root .ds-guide-summary-line,
+.ui-root .ds-guide-summary-sub,
+.ui-root .ds-guide-summary-good { display: block; }
+
+.ui-root .ds-guide-summary-line + .ds-guide-summary-line { margin-top: var(--space-1); }
+
+.ui-root .ds-guide-summary-sub {
+  margin-top: var(--space-1);
+  color: var(--text-2);
+}
+
+.ui-root .ds-guide-summary-good {
+  margin-top: var(--space-1);
+  color: var(--good);
+}
+
+/* The debrief's week row: a total and % column, dashed empty days. */
+.ui-root .ds-log.ds-logweek.ds-logweek--total {
+  grid-template-columns: minmax(0, 1fr) auto var(--tap-min);
+  grid-template-areas: "n t m" "w w w" "b b b";
+}
+
+.ui-root .ds-logweek-total {
+  grid-area: t;
+  text-align: right;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-logweek-total strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-option);
+  color: var(--text);
+}
+
+.ui-root .ds-logweek-box.ds-logweek-box--empty input {
+  border-style: dashed;
+  border-color: var(--quiet-line);
+}
+
+/* A stat in a soft panel (a summary's facts), and the celebration. */
+.ui-root .ds-stat.ds-stat--panel {
+  padding: var(--space-px20);
+  border-radius: var(--radius-card);
+  background: var(--raised);
+}
+
+.ui-root .ds-stat.ds-stat--celebrate {
+  outline: var(--line-w) solid var(--good);
+  outline-offset: calc(-1 * var(--line-w));
+  animation: ds-celebrate-in var(--dur-slow) var(--ease) both;
+}
+
+@keyframes ds-celebrate-in {
+  from { outline-color: transparent; }
+  to { outline-color: var(--good); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-stat.ds-stat--celebrate { animation: none; }
+}
+
+/* The summary stacks by its own width too (a narrow panel or the gallery). */
+.ui-root .ds-guide-summary {
+  container-type: inline-size;
+  container-name: summary;
+}
+
+@container summary (max-width: 520px) {
+  .ui-root .ds-guide-summary-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ui-root .ds-guide-summary-value {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
