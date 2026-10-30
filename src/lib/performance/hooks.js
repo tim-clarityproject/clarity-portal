@@ -1,5 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useToast } from '../../components/design/toastContext';
+import { friendlyError, SUPERSEDED_MESSAGE } from '../friendlyError';
 import { readCache, useCachedLoad, writeCache } from '../pageCache';
+import { useSuperseded, VERSIONED_TABLES } from '../syncQueue';
+import { moveSprintReviewAnswers } from './sprintReviewAnswers';
 import { loadActivePlan, loadPlanPage, loadPlanVersions, loadRecoveryPage, loadSprintPage, loadYearPage } from './api';
 import { withRecovery } from './recovery';
 import { planView } from './view';
@@ -7,11 +11,29 @@ import { planView } from './view';
 // The plan's React hooks: each page shows its last data at once from the
 // device, then refreshes quietly (Smoothness, Phase 0e).
 
+/**
+ * A save refused because another window changed the row first: never
+ * dropped silently (never lose someone's work without saying so). The
+ * page says so in a full sentence and shows the newest version.
+ */
+export function useLatestWhenSuperseded(reload) {
+  const toast = useToast();
+  useSuperseded(VERSIONED_TABLES, (error) => {
+    toast.error(friendlyError(error, SUPERSEDED_MESSAGE));
+    reload?.();
+  });
+}
+
+function useLoadWithLatest(options) {
+  const loaded = useCachedLoad(options);
+  useLatestWhenSuperseded(loaded.reload);
+  return loaded;
+}
 /** The plan page and the My Mission panel share one copy. */
 export const PLAN_CACHE = 'performance-plan';
 
 export function usePlanPage(userId, { showResults = false } = {}) {
-  const loaded = useCachedLoad({ userId, name: PLAN_CACHE, load: () => loadPlanPage(userId) });
+  const loaded = useLoadWithLatest({ userId, name: PLAN_CACHE, load: () => loadPlanPage(userId) });
   const view = useMemo(() => (loaded.data ? planView(loaded.data, { showResults }) : null), [loaded.data, showResults]);
   return { ...loaded, view };
 }
@@ -29,19 +51,21 @@ export function usePlanVersions(userId) {
 export const SPRINT_CACHE = 'performance-sprint';
 
 export function useSprintPage(userId) {
-  return useCachedLoad({ userId, name: SPRINT_CACHE, load: () => loadSprintPage(userId) });
+  // A review's answers kept on the device before 038 ran go across once it has.
+  useEffect(() => { moveSprintReviewAnswers(userId); }, [userId]);
+  return useLoadWithLatest({ userId, name: SPRINT_CACHE, load: () => loadSprintPage(userId) });
 }
 
 /** View your year's rows. */
 export function useYearPage(userId) {
-  return useCachedLoad({ userId, name: 'performance-year', load: () => loadYearPage(userId) });
+  return useLoadWithLatest({ userId, name: 'performance-year', load: () => loadYearPage(userId) });
 }
 
 /** The Recovery pages' rows (M15). */
 export const RECOVERY_CACHE = 'performance-recovery';
 
 export function useRecoveryPage(userId) {
-  return useCachedLoad({ userId, name: RECOVERY_CACHE, load: () => loadRecoveryPage(userId) });
+  return useLoadWithLatest({ userId, name: RECOVERY_CACHE, load: () => loadRecoveryPage(userId) });
 }
 
 /**

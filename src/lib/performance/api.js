@@ -14,25 +14,35 @@
 // says so when it can't.
 
 import { supabase } from '../supabase';
-import { newId, saveOrQueue } from '../syncQueue';
+import { newId, noteVersions, saveOrQueue } from '../syncQueue';
 import { nextVersion, planChangeKind } from './versions';
 
 const PLAN_COLS = 'id, mission, status, major, minor, created_at, updated_at';
-const OBJECTIVE_COLS = 'id, plan_id, name, kind, unit, direction, start_value, start_set_on, target_value, by_when, due_on, reached_on, source, sort_order, archived_at, created_at';
+const OBJECTIVE_COLS = 'id, plan_id, name, kind, unit, direction, start_value, start_set_on, target_value, by_when, due_on, reached_on, source, sort_order, archived_at, created_at, updated_at';
 const STRATEGY_COLS = 'id, plan_id, name, description, sort_order, archived_at';
 const HABIT_COLS = 'id, plan_id, strategy_id, name, measure, unit, target, target_per, limit_value, limit_per, direction, top_number, impact, sort_order, archived_at';
-const SPRINT_COLS = 'id, plan_id, number, label, start_on, length_weeks, standard, status, planned_end_on, actual_end_on, finished_at';
+const SPRINT_COLS = 'id, plan_id, number, label, start_on, length_weeks, standard, status, planned_end_on, actual_end_on, finished_at, updated_at';
+const RECOVERY_COLS = 'id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know, updated_at';
+
+// Every row read with its updated_at tells the offline queue which version
+// this window shows, so a later change to it is based on that version and
+// never replaces a newer one from another window (syncQueue.js, Tim 29 Oct).
+function noted(query, data) {
+  const table = query?.url?.pathname?.split('/').pop();
+  if (table && data?.some?.((r) => r?.updated_at)) noteVersions(table, data);
+  return data;
+}
 
 async function rows(query) {
   const { data, error } = await query;
   if (error) throw error;
-  return data || [];
+  return noted(query, data || []);
 }
 
 async function one(query) {
   const { data, error } = await query;
   if (error) throw error;
-  return data?.[0] || null;
+  return noted(query, data || [])[0] || null;
 }
 
 /** The device's own time zone (IANA name), or null. */
@@ -96,7 +106,7 @@ export async function loadPlanPage(userId) {
       .eq('plan_id', plan.id).is('archived_at', null).order('sort_order')),
     rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId)),
     readSettings(userId, 'time_zone, units'),
-    rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
+    rows(supabase.from('recovery_periods').select(RECOVERY_COLS)
       .eq('user_id', userId).order('start_on')),
     one(supabase.from('sprints').select(SPRINT_COLS)
       .eq('user_id', userId).eq('status', 'running').limit(1)),
@@ -132,12 +142,12 @@ export async function loadSprintWeekRows(userId, sprint) {
   // can run past its planned end, so no end is set.
   const [settings, logs, todos, todoMoves, wins, winLinks] = await Promise.all([
     ids.length ? rows(supabase.from('sprint_habit_settings').select('*').in('sprint_habit_id', ids)) : [],
-    ids.length ? rows(supabase.from('habit_logs').select('id, sprint_habit_id, local_date, value, to_confirm')
+    ids.length ? rows(supabase.from('habit_logs').select('id, sprint_habit_id, local_date, value, to_confirm, updated_at')
       .in('sprint_habit_id', ids).gte('local_date', sprint.start_on)) : [],
-    rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, move_on, deleted_at')
+    rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, move_on, deleted_at, updated_at')
       .eq('user_id', userId).eq('sprint_id', sprint.id).is('deleted_at', null)),
     rows(supabase.from('todo_moves').select('todo_id, moved_on, from_sprint_id, from_week, to_sprint_id, to_week, created_at').eq('user_id', userId)),
-    rows(supabase.from('wins').select('id, what, local_date, impact, deleted_at')
+    rows(supabase.from('wins').select('id, what, local_date, impact, deleted_at, updated_at')
       .eq('user_id', userId).gte('local_date', sprint.start_on).is('deleted_at', null)),
     rows(supabase.from('win_strategies').select('win_id, strategy_id').eq('user_id', userId)),
   ]);
@@ -398,7 +408,7 @@ export async function loadSprintStart(userId) {
   const [plan, sprints, recoveries, personSettings, coach, fixedStandard] = await Promise.all([
     loadActivePlan(userId),
     rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
-    rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
+    rows(supabase.from('recovery_periods').select(RECOVERY_COLS)
       .eq('user_id', userId).order('start_on')),
     readSettings(userId, 'time_zone, describes_you'),
     loadMyCoach().catch(() => null),
@@ -550,7 +560,7 @@ export async function loadSprintPage(userId) {
   const [plan, sprint, recoveries, workingPatterns, personSettings, weekScores, profile] = await Promise.all([
     loadActivePlan(userId),
     one(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).eq('status', 'running').limit(1)),
-    rows(supabase.from('recovery_periods').select('id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know')
+    rows(supabase.from('recovery_periods').select(RECOVERY_COLS)
       .eq('user_id', userId).order('start_on')),
     rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
     readSettings(userId, 'time_zone, units'),
@@ -742,7 +752,6 @@ export function saveHabitSettingFrom(userId, setting, fromWeek, changes) {
 
 // ---------------------------------------------------------------- Recovery
 
-const RECOVERY_COLS = 'id, sprint_id, start_on, chosen_days, extended_days, ended_at, end_on, let_coach_know';
 
 /**
  * Everything the Recovery pages show, as rows (M15): the running sprint
@@ -761,7 +770,7 @@ export async function loadRecoveryPage(userId) {
   ]);
   const open = recoveries.find((r) => !r.ended_at);
   const answers = open
-    ? await rows(supabase.from('recovery_recharge_answers').select('id, recovery_id, local_date, answer, shared')
+    ? await rows(supabase.from('recovery_recharge_answers').select('id, recovery_id, local_date, answer, shared, updated_at')
       .eq('recovery_id', open.id).order('local_date'))
     : [];
   return { sprint, recoveries, personSettings, firstName: profile?.first_name || '', coach, answers };

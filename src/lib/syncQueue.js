@@ -1,4 +1,4 @@
-import { useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 import { isNetworkError, isOnline, subscribeOnline } from './connection';
 import { deviceKey, readJson, removeKey, writeJson } from './deviceStore';
@@ -15,8 +15,21 @@ import { deviceKey, readJson, removeKey, writeJson } from './deviceStore';
 // twice can never make two rows. ignoreDuplicates is for rows that are
 // never changed once written (plan history): a second send of the same
 // row does nothing, and the table needs no right to change rows.
+//
+// Each change carries the version it was based on (Tim, 29 Oct): the
+// updated_at of the row as this window last read or saved it (the version
+// book below, filled by the pages' loads through noteVersions). A change
+// is sent as "only if the row is still at that version", so an older save
+// from a second window, or one resent after a refresh, never replaces a
+// newer one. When the row has moved on, the save is refused as superseded:
+// never silently (the page shows "This was changed in another window.
+// Showing the latest." and reloads; useSuperseded), unless the row already
+// holds exactly what was being saved, which counts as saved. A save that
+// lands moves the version on for the later saves to the same row that
+// wait on the device, so a run of offline changes still goes through.
 
 const listeners = new Set();
+const supersededListeners = new Set();
 let flushPromise = null;
 let currentUser = null;
 // Bumped by stopSyncQueue (Sign out), so a send already under way never
@@ -91,7 +104,138 @@ export function newId() {
   });
 }
 
+// ---- the version book ---------------------------------------------------------
+// Which row a save is for: its id, or the natural key a table's rows are
+// found by (one log per habit and day, one answer per Recovery and day).
+const ROW_KEYS = {
+  habit_logs: ['sprint_habit_id', 'local_date'],
+  recovery_recharge_answers: ['recovery_id', 'local_date'],
+  day_plans: ['user_id', 'local_date'],
+  day_reviews: ['user_id', 'local_date'],
+  person_settings: ['user_id'],
+  sprint_reviews: ['sprint_id'],
+};
+// Only the tables whose updated_at the database keeps itself (the p1_touch
+// trigger, server time). Older tables (decisions, journal_entries) write
+// their own, so they are never guarded and save exactly as before.
+export const VERSIONED_TABLES = ['outcome_objectives', 'performance_plans', 'plan_strategies', 'habits', 'sprints', 'todos', 'wins', 'habit_logs', 'recovery_periods', 'recovery_recharge_answers', 'day_plans', 'day_reviews', 'weekly_debriefs', 'person_settings', 'sprint_reviews'];
+const versioned = new Set(VERSIONED_TABLES);
+const versions = new Map();
+// Queued saves refused as superseded: never read as "Saved" (useQueuedSave).
+const supersededQids = new Set();
+
+function rowKey(table, fields) {
+  if (!versioned.has(table)) return null;
+  const cols = ROW_KEYS[table] || ['id'];
+  if (!fields || cols.some((c) => fields[c] == null)) return null;
+  return `${table}|${cols.map((c) => fields[c]).join('|')}`;
+}
+
+function opKey(op) {
+  return rowKey(op.table, { ...(op.values || {}), ...(op.match || {}) });
+}
+
+/**
+ * A page's load tells the book which version of each row it now shows
+ * (rows read with updated_at). Later changes to those rows are based on it.
+ */
+export function noteVersions(table, rows) {
+  for (const row of rows || []) {
+    const k = rowKey(table, row);
+    if (k && row.updated_at) versions.set(k, row.updated_at);
+  }
+  return rows;
+}
+
+/** Thrown inside the queue when a save's row has moved on since it was read. */
+export class SupersededError extends Error {
+  constructor(table, row) {
+    super('This was changed in another window.');
+    this.name = 'SupersededError';
+    this.code = 'SUPERSEDED';
+    this.table = table;
+    this.row = row;
+  }
+}
+
+/** Tell a page (useSuperseded) when one of its saves was refused as superseded. */
+export function onSuperseded(fn) {
+  supersededListeners.add(fn);
+  return () => supersededListeners.delete(fn);
+}
+
+function announceSuperseded(error) {
+  supersededListeners.forEach((fn) => fn(error));
+}
+
+// The same value as the server holds (numbers and times compare by
+// value: 1.5 and "1.5", "…Z" and "…+00:00").
+function same(a, b) {
+  if (a === b || (a == null && b == null)) return true;
+  if (a == null || b == null) return false;
+  if (typeof a === 'object' || typeof b === 'object') return JSON.stringify(a) === JSON.stringify(b);
+  if (`${a}` === `${b}`) return true;
+  if (Number.isFinite(Number(a)) && Number.isFinite(Number(b)) && `${a}`.trim() !== '' && `${b}`.trim() !== '') return Number(a) === Number(b);
+  const ta = Date.parse(a);
+  const tb = Date.parse(b);
+  return !Number.isNaN(ta) && !Number.isNaN(tb) && /\d{4}-\d{2}-\d{2}T/.test(`${a}`) && ta === tb;
+}
+
+// A save landed: the book and every later save to the same row that waits
+// on the device (or was cut off mid-send) move on to the new version.
+function rebase(userId, op, data) {
+  const k = opKey(op);
+  if (!k) return;
+  if (op.kind === 'delete') {
+    versions.delete(k);
+    return;
+  }
+  const at = data?.[0]?.updated_at;
+  if (!at) return;
+  versions.set(k, at);
+  if (!userId) return;
+  const move = (items) => items.map((x) => (x.basedOn && x.qid !== op.qid && opKey(x) === k ? { ...x, basedOn: at } : x));
+  const queued = read(userId);
+  if (queued.some((x) => x.basedOn && x.qid !== op.qid && opKey(x) === k)) write(userId, move(queued));
+  const cut = readJson(sendingKey(userId)) || [];
+  if (cut.some((x) => x.basedOn && x.qid !== op.qid && opKey(x) === k)) writeJson(sendingKey(userId), move(cut));
+}
+
+// The version a new change is based on, when the book knows the row.
+function withVersion(op) {
+  if (op.basedOn || op.kind === 'delete' || op.ignoreDuplicates) return op;
+  const k = opKey(op);
+  const at = k && versions.get(k);
+  return at ? { ...op, basedOn: at } : op;
+}
+
+// "Only if the row is still at the version it was based on": an update
+// matched by its row and its updated_at. Nothing matched: the row has
+// moved on (superseded), unless it already holds what was being saved.
+async function performBased(op) {
+  const cols = ROW_KEYS[op.table] || ['id'];
+  const fields = { ...(op.values || {}), ...(op.match || {}) };
+  const match = op.kind === 'update' ? { ...(op.match || {}) } : Object.fromEntries(cols.map((c) => [c, fields[c]]));
+  let query = supabase.from(op.table).update(op.values);
+  Object.entries(match).forEach(([k, v]) => { query = query.eq(k, v); });
+  const { data, error } = await query.eq('updated_at', op.basedOn).select();
+  if (error) throw error;
+  if (data?.length) return data;
+  let now = supabase.from(op.table).select('*');
+  Object.entries(match).forEach(([k, v]) => { now = now.eq(k, v); });
+  const { data: rows, error: readError } = await now.limit(1);
+  if (readError) throw readError;
+  const row = rows?.[0];
+  if (!row) {
+    if (op.kind === 'update') throw Object.assign(new Error('Nothing was found to update.'), { code: 'NOT_FOUND' });
+    throw new SupersededError(op.table, null); // taken away in another window since
+  }
+  if (Object.entries(op.values || {}).every(([k, v]) => same(v, row[k]))) return [row];
+  throw new SupersededError(op.table, row);
+}
+
 async function perform(op) {
+  if (op.basedOn && (op.kind === 'update' || op.kind === 'upsert')) return performBased(op);
   let query = supabase.from(op.table);
   if (op.kind === 'upsert') {
     const options = {};
@@ -141,7 +285,9 @@ export function saveOrQueue(userId, op) {
 }
 
 async function sendOrKeep(userId, op) {
-  const item = { ...op, qid: newId(), at: Date.now() };
+  // Based on the version this window shows now (after any earlier save to
+  // the same row in this window has landed: saves go one at a time).
+  const item = { ...withVersion(op), qid: newId(), at: Date.now() };
   // Anything still waiting goes first, so saves never arrive out of order
   // (refused ones are set aside and don't hold the rest up).
   if (!isOnline() || read(userId).some((x) => !x.failed)) {
@@ -152,8 +298,13 @@ async function sendOrKeep(userId, op) {
   noteSending(userId, item);
   try {
     const data = await perform(item);
+    rebase(userId, item, data);
     return { status: 'saved', data };
   } catch (error) {
+    if (error instanceof SupersededError) {
+      announceSuperseded(error);
+      return { status: 'superseded', row: error.row };
+    }
     if (retryable(error)) {
       keep(userId, item);
       return { status: 'queued', qid: item.qid };
@@ -173,7 +324,7 @@ async function sendOrKeep(userId, op) {
 export function keepForLater(userId, op) {
   if (!userId) return;
   try {
-    keep(userId, { ...op, qid: newId(), at: Date.now() });
+    keep(userId, { ...withVersion(op), qid: newId(), at: Date.now() });
   } catch {
     // No room on the device: nothing more can be done as the page closes.
     return;
@@ -207,11 +358,22 @@ export function flush(userId = currentUser) {
         break;
       }
       try {
-        await perform(item);
+        const data = await perform(item);
         if (mine !== epoch) break;
         write(userId, read(userId).filter((x) => x.qid !== item.qid));
+        rebase(userId, item, data);
       } catch (error) {
-        if (retryable(error) || mine !== epoch) break;
+        if (mine !== epoch) break;
+        // Superseded: a newer version is on the server. Not kept (it would
+        // replace the newer one), never silent: the page says so and
+        // shows the latest.
+        if (error instanceof SupersededError) {
+          supersededQids.add(item.qid);
+          write(userId, read(userId).filter((x) => x.qid !== item.qid));
+          announceSuperseded(error);
+          continue;
+        }
+        if (retryable(error)) break;
         write(userId, read(userId).map((x) => (x.qid === item.qid ? { ...x, failed: true } : x)));
       }
     }
@@ -293,6 +455,20 @@ function subscribe(fn) {
   return () => listeners.delete(fn);
 }
 
+/**
+ * For a page: call onLatest(error) when one of its saves (to one of
+ * `tables`) was refused because the row had moved on in another window.
+ * The page shows the friendly message and reloads the newest version.
+ */
+export function useSuperseded(tables, onLatest) {
+  const ref = useRef(onLatest);
+  useEffect(() => { ref.current = onLatest; });
+  const list = tables.join(',');
+  useEffect(() => onSuperseded((error) => {
+    if (list.split(',').includes(error.table)) ref.current?.(error);
+  }), [list]);
+}
+
 /** For a component: { waiting, failed } for the signed-in person. */
 export function useQueueState() {
   return useSyncExternalStore(subscribe, getSnapshot, () => snapshot);
@@ -315,6 +491,7 @@ export function useQueuedSave() {
     const item = read(currentUser).find((x) => x.qid === qid);
     if (item?.failed) refused.current.add(qid);
     if (refused.current.has(qid)) state = 'failed';
+    else if (supersededQids.has(qid)) state = 'idle'; // the page shows the latest instead
     else state = item ? 'offline' : 'saved';
   }
   return [state, (id) => setQid(id)];

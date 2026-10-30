@@ -311,6 +311,22 @@ export const PHASE1_TABLES = [
     change: 'went_well = t.went_well',
     note: 'Not shared this week: the coach doesn\'t see it.',
   }),
+  // 038 (Phase 3, Tim 29 Oct): skipped where 038 hasn't run yet.
+  userRow({
+    table: 'sprint_reviews', links: ['sprints'], ifExists: true,
+    make: ({ owner, id: k, rowOf }) => `insert into public.sprint_reviews (id, user_id, sprint_id, worked_best) values (${k}, ${owner}, ${rowOf('sprints')}, 'Rules test')`,
+    // One review per sprint: each check adds its own sprint first.
+    makeForCheck: ({ owner, id: k, n, rowOf }) => `with s as (insert into public.sprints (user_id, plan_id, number, start_on, status) values (${owner}, ${rowOf('performance_plans')}, 300 + ${n}, current_date, 'finished') returning id)
+      insert into public.sprint_reviews (id, user_id, sprint_id, worked_best) select ${k}, ${owner}, s.id, 'Rules test' from s`,
+    change: 'worked_best = t.worked_best',
+  }),
+  userRow({
+    table: 'tool_work_strategies', links: ['plan_strategies', 'sprints'], ifExists: true,
+    // The tool's work (a decision) is made with it, as its owner.
+    make: ({ owner, id: k, rowOf }) => `with d as (insert into public.decisions (user_id, tool_type, title) values (${owner}, 'grow', 'Rules test') returning id)
+      insert into public.tool_work_strategies (id, user_id, decision_id, strategy_id, sprint_id, sprint_week, linked_on) select ${k}, ${owner}, d.id, ${rowOf('plan_strategies')}, ${rowOf('sprints')}, 1, current_date from d`,
+    change: 'linked_on = t.linked_on',
+  }),
   userRow({
     table: 'week_scores',
     make: ({ owner, id: k, n, rowOf }) => `insert into public.week_scores (id, user_id, sprint_id, sprint_week, week_start, week_end, score, methods_version) values (${k}, ${owner}, ${rowOf('sprints')}, ${n}, current_date, current_date, 50, '1.1')`,
@@ -470,6 +486,7 @@ export const PHASE1_FUNCTIONS = [
       'org_wellbeing_switch_check()', 'org_wellbeing_switch_log()', 'sprints_seat_standard()', 'organisation_members_seat_standard()',
       'organisation_members_wellbeing_off()', 'teams_keep_organisation()']
     .map((s) => fn(s, `public.${s}`, NOBODY, 'Runs only as a trigger.')),
+  { ...fn('tool_work_sprint_gone()', 'public.tool_work_sprint_gone()', NOBODY, 'Runs only as a trigger (038).'), ifExists: true },
   fn('sponsor_may_act_on(uuid)', `public.sponsor_may_act_on(${R})`, NOBODY, 'Inside part of the sponsor functions.'),
   fn('feedback_open_request(text,boolean)', "public.feedback_open_request('x', false)", NOBODY, 'Inside part of the feedback functions.'),
   fn('week_input(uuid,integer,date,boolean)', `public.week_input(${R}, 1, current_date)`, NOBODY, 'Reads the tables: for the checked functions only.'),

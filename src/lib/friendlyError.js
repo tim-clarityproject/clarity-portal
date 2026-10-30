@@ -4,9 +4,14 @@
 // "JWT expired") never reaches people; it goes to the console instead.
 // A few answers the server gives on purpose are put into plain words;
 // everything else gets the page's own message.
+// A save refused because the row had moved on in another window (the
+// save-version guard in syncQueue.js): the page reloads the newest version.
+export const SUPERSEDED_MESSAGE = 'This was changed in another window. Showing the latest.';
+
 export function friendlyError(error, fallback) {
-  if (error) console.error(error);
   const code = error?.code || '';
+  if (code === 'SUPERSEDED') return SUPERSEDED_MESSAGE;
+  if (error) console.error(error);
   const text = `${error?.message || ''}`;
   if (code === 'weak_password' || /password should (be|contain)/i.test(text)) {
     return 'That password is too easy to guess. Choose a longer one and try again.';

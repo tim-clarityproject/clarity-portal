@@ -27,6 +27,7 @@ import { clearDraft, useDraft } from '../../lib/drafts';
 import { isNetworkError, isOnline } from '../../lib/connection';
 import { newId } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
+import { moveSprintReviewAnswers, saveSprintReviewAnswers } from '../../lib/performance/sprintReviewAnswers';
 import {
   archivePlanRow,
   finishSprint,
@@ -75,12 +76,12 @@ import './performance.css';
 // best effort). Everything is sent through the offline queue, with ids
 // made on the device, so finishing twice writes the same rows.
 //
-// The two written answers have no table yet (audit, section 4: a
-// sprint_reviews table is needed): they are kept on this device only.
+// The two written answers (and what comes next) are saved to
+// sprint_reviews (migration 038). Until Tim runs it they are kept on this
+// device, and moved across once the table is there.
 
 const CACHE = 'performance-sprint-review';
 const DRAFT = 'performance-sprint-review';
-const ANSWERS = 'performance-sprint-review-answers';
 const stepDraftKey = (userId) => `performance-sprint-review-${userId}`;
 const ANSWER_MAX = 4000; // as the weekly debrief's answers
 const FINISH_ERROR = 'Your review didn’t save. Check your connection and try again.';
@@ -101,6 +102,8 @@ export default function SprintReview() {
   useEffect(() => {
     if (!userId) return undefined;
     let live = true;
+    // Answers kept on the device before 038 ran go across once it has.
+    moveSprintReviewAnswers(userId);
     loadSprintReview(userId).then((data) => {
       if (!live) return;
       writeCache(userId, CACHE, data);
@@ -184,9 +187,9 @@ function ReviewView({ userId, data }) {
       const r = await finishSprint(userId, view.sprintId, view.finishOn);
       // An organisation seat's summary of the sprint: online only, best effort.
       if (r?.status !== 'queued') makeSprintSummary(view.sprintId).catch(() => {});
-      // The two answers stay on this device until a table holds them.
-      const kept = readCache(userId, ANSWERS)?.v || {};
-      writeCache(userId, ANSWERS, { ...kept, [view.sprintId]: { worked: draft.worked, next: draft.next, at: today } });
+      // The two answers go to sprint_reviews once Tim has run 038; until
+      // then they stay on this device, with no error (sprintReviewAnswers.js).
+      await saveSprintReviewAnswers(userId, view.sprintId, { worked: draft.worked, next: draft.next, choice: draft.choice, at: today });
       clearDraft(userId, DRAFT);
       clearGuideDraft(stepDraftKey(userId));
       if (draft.choice === 'recovery') {

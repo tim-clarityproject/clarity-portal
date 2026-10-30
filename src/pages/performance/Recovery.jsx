@@ -227,6 +227,11 @@ export function RecoveryToday() {
     setSave('saving');
     try {
       const r = await saveRechargeAnswer(userId, recoveryId, day, value, isShared);
+      // Superseded: another window changed it first; the page shows the latest.
+      if (r?.status === 'superseded') {
+        setSave('idle');
+        return;
+      }
       setSave(r?.status === 'queued' ? 'offline' : 'saved');
       const t = (value || '').trim();
       setData((d) => (d ? {

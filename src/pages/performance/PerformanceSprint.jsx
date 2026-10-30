@@ -174,6 +174,12 @@ export default function PerformanceSprint() {
     setSave('saving');
     try {
       const r = await fn();
+      // Superseded: another window changed it first; the page says so and
+      // shows the latest (useLatestWhenSuperseded), so nothing reads "Saved".
+      if (r?.status === 'superseded') {
+        setSave('idle');
+        return false;
+      }
       setSave(r?.status === 'queued' ? 'offline' : 'saved');
       return true;
     } catch (e) {
