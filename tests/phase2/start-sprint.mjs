@@ -335,8 +335,13 @@ try {
   for (let i = 0; i < 6 && !/Performance Sprint 3/.test(await heading(page)); i += 1) await next(page);
   await page.getByRole('button', { name: 'Start Performance Sprint 3' }).click();
   await page.waitForFunction(() => /Starting Performance Sprint 3/.test(document.body.textContent), null, { timeout: 15000 });
-  await page.waitForTimeout(1500);
-  const midway = await sprints();
+  // Wait for Sprint 3's own row to land (saves go one at a time), up to 15
+  // seconds; the held habit settings never do.
+  let midway = await sprints();
+  for (let t = 0; t < 50 && !midway.some((s) => s.number === 3); t += 1) {
+    await page.waitForTimeout(300);
+    midway = await sprints();
+  }
   pass('mid-save: Sprint 3 is made before the refresh', midway.some((s) => s.number === 3), JSON.stringify(midway.map((s) => s.number)));
   pass('mid-save: the start is kept on the device', await page.evaluate((uid) => Boolean(localStorage.getItem(`clarity-draft:${uid}:sprint-start-pending`)), me));
   // The held save dies with the page; the reloaded page's saves go through.

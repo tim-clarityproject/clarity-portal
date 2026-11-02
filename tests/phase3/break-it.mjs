@@ -359,9 +359,14 @@ if (run('taps')) {
     const opt = page.getByRole('checkbox', { name: S0 }).or(page.locator('.ds-answer', { hasText: S0 })).first();
     await opt.click({ clickCount: 3 });
     await settled(page);
-    await page.waitForTimeout(800);
-    const shownStrategies = await page.locator('[aria-pressed=true], [aria-checked=true]').filter({ hasText: S0 }).count();
-    const savedStrategies = planRow ? await q(db.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', planRow.id)) : [];
+    // Wait for the database to agree with the screen, up to 15 seconds.
+    let shownStrategies = 0;
+    let savedStrategies = [];
+    await until(async () => {
+      shownStrategies = await page.locator('[aria-pressed=true], [aria-checked=true]').filter({ hasText: S0 }).count();
+      savedStrategies = planRow ? await q(db.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', planRow.id)) : [];
+      return savedStrategies.length === shownStrategies;
+    });
     pass('taps: a Strategy triple tapped is saved as shown', savedStrategies.length === shownStrategies, `${savedStrategies.length} saved, ${shownStrategies} shown`);
     await nextUntil(page, PLAN_Q.risk);
     await next(page);
@@ -378,9 +383,14 @@ if (run('taps')) {
     const box = page.getByRole('checkbox', { name: PANEL, exact: true }).first();
     await box.click({ clickCount: 3 });
     await settled(page);
-    await page.waitForTimeout(1000);
-    const shownDone = (await box.getAttribute('aria-checked')) === 'true';
-    const doneRow = (await liveTodos(PANEL))[0];
+    // Wait for the database to agree with the screen, up to 15 seconds.
+    let shownDone = false;
+    let doneRow;
+    await until(async () => {
+      shownDone = (await box.getAttribute('aria-checked')) === 'true';
+      doneRow = (await liveTodos(PANEL))[0];
+      return Boolean(doneRow?.done_on) === shownDone;
+    });
     pass('taps: a to-do triple ticked is saved as shown', Boolean(doneRow?.done_on) === shownDone && (!shownDone || doneRow.done_on === today), `shown ${shownDone}, saved ${doneRow?.done_on}`);
     await page.getByRole('button', { name: 'Show this week’s list' }).click();
     const train = page.getByRole('checkbox', { name: 'Training sessions', exact: true }).first();
@@ -389,8 +399,15 @@ if (run('taps')) {
       await train.click({ clickCount: 3 });
       await settled(page);
       await page.waitForTimeout(1000);
-      const ticked = (await train.getAttribute('aria-checked')) === 'true';
-      const after = Number(await logOf('Training sessions')) || 0;
+      // Wait for the database to agree with the screen (the page's save
+      // delay can start after settled() looked), up to 15 seconds.
+      let ticked = false;
+      let after = before;
+      await until(async () => {
+        ticked = (await train.getAttribute('aria-checked')) === 'true';
+        after = Number(await logOf('Training sessions')) || 0;
+        return after - before === (ticked ? 1 : 0);
+      });
       pass('taps: a count habit triple ticked logs one more at most', after - before === (ticked ? 1 : 0), `before ${before}, after ${after}, ticked ${ticked}`);
     } else pass('taps: Training sessions is on this week\'s list', false);
     await nextUntil(page, REVIEW_Q.numbers);
@@ -429,9 +446,14 @@ if (run('taps')) {
     if (await block.count()) {
       await block.click({ clickCount: 3 });
       await settled(page);
-      await page.waitForTimeout(1000);
-      const on = (await block.getAttribute('aria-checked')) === 'true';
-      const days = (await rowsNow()).logs.filter((l) => l.sprint_habit_id === hid('Weekly strategic block') && l.local_date >= dayKey(-9) && l.local_date <= dayKey(-3) && Number(l.value) > 0);
+      // Wait for the database to agree with the screen, up to 15 seconds.
+      let on = false;
+      let days = [];
+      await until(async () => {
+        on = (await block.getAttribute('aria-checked')) === 'true';
+        days = (await rowsNow()).logs.filter((l) => l.sprint_habit_id === hid('Weekly strategic block') && l.local_date >= dayKey(-9) && l.local_date <= dayKey(-3) && Number(l.value) > 0);
+        return on ? days.length === 1 : days.length === 0;
+      });
       pass('taps: the once-a-week tick triple tapped is saved as shown, once', on ? days.length === 1 : days.length === 0, `shown ${on}, ${days.length} days logged`);
     } else pass('taps: the once-a-week tick is on the debrief', false);
     const DWIN = `${TAG}: debrief win`;
@@ -471,7 +493,13 @@ if (run('taps')) {
     await page.waitForTimeout(2000);
     const d = await debriefs();
     pass('taps: Finish my debrief triple tapped: one debrief, finished', d.length === 1 && d[0].status === 'finished', JSON.stringify(d.map((x) => x.status)));
-    const ws = await q(db.from('week_scores').select('sprint_week, final').eq('sprint_id', sprint.id).eq('sprint_week', DEBRIEF_WEEK));
+    // The week is frozen once the debrief's saves have all been sent: wait
+    // for it, up to 15 seconds.
+    let ws = [];
+    await until(async () => {
+      ws = await q(db.from('week_scores').select('sprint_week, final').eq('sprint_id', sprint.id).eq('sprint_week', DEBRIEF_WEEK));
+      return ws.length === 1;
+    });
     pass('taps: one week score for week 3', ws.length === 1, `${ws.length}`);
     pass('taps: the debrief says so once', (await toasts(page)).filter((t) => /^Week 3 debriefed/.test(t)).length === 1, JSON.stringify(await toasts(page)));
     await shot(page, 'taps-end');
@@ -881,9 +909,15 @@ if (run('refresh')) {
     await page.reload();
     await page.unroute('**/rest/v1/todos*');
     await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
-    await page.waitForTimeout(2500);
-    const shownTick = (await page.getByRole('checkbox', { name: DRAFT, exact: true }).first().getAttribute('aria-checked').catch(() => null)) === 'true';
-    const savedTick = (await myTodos(DRAFT))[0]?.done_on === today;
+    // The save kept on the device is sent again on the new start: wait for
+    // the screen and the database to agree, up to 15 seconds.
+    let shownTick = false;
+    let savedTick = false;
+    await until(async () => {
+      shownTick = (await page.getByRole('checkbox', { name: DRAFT, exact: true }).first().getAttribute('aria-checked').catch(() => null)) === 'true';
+      savedTick = (await myTodos(DRAFT))[0]?.done_on === today;
+      return shownTick === savedTick;
+    });
     pass('refresh: a tick refreshed mid-save shows what is saved', shownTick === savedTick, `shown ${shownTick}, saved ${savedTick}`);
     await clean(page, 'refresh, Review my day');
 
