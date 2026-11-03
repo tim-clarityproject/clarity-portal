@@ -97,6 +97,8 @@ export function BreathOrb({ style = 'rings', pattern = 'rest', startedAt, night 
     let last = performance.now();
     let raf = 0;
     const frame = (now) => {
+      // Gone (the screen changed between a frame and the clean-up): stop.
+      if (!art.isConnected || !inRef.current || !outRef.current) return;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const S = breathAt(phasesRef.current, (now - begin) / 1000);

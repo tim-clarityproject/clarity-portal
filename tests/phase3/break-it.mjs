@@ -431,12 +431,14 @@ if (run('taps')) {
     pass('taps: Add another triple tapped stops at three rows', rowsShown <= 3, `${rowsShown}`);
     await body(page).getByRole('textbox', { name: 'Important thing 1 for tomorrow' }).fill(`${TAG}: first thing`);
     await next(page);
+    await next(page); // the summary, then Close the day (Phase 4, M19)
     const finishReview = (await page.locator('.ds-guide-next').textContent()).trim();
     await tripleFinish(page);
     await page.waitForTimeout(1500);
     const reviews = (await dayReviews()).filter((r) => r.local_date === today);
     pass(`taps: ${finishReview} triple tapped: one review, finished`, reviews.length === 1 && reviews[0].status === 'finished' && reviews[0].tomorrow.length === 1, JSON.stringify(reviews.map((r) => [r.status, r.tomorrow])));
-    pass('taps: the review says it is saved once', (await toasts(page)).filter((t) => t.startsWith('Your review is saved')).length === 1, JSON.stringify(await toasts(page)));
+    // Phase 4 (M19): the review ends with Work's done for today, once, not a toast.
+    pass('taps: the review ends with Work’s done once', (await page.locator('.ds-end-title').count()) === 1, String(await page.locator('.ds-end-title').count()));
     await clean(page, 'taps, Review my day');
 
     // ---- The debrief (week 3, the last day of its window)

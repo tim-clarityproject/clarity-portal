@@ -53,6 +53,7 @@ import {
   todayItems,
   weeklyFoldLine,
   backToday,
+  finishedNights,
 } from '../lib/performance';
 import { DayRow, WeekRow } from './performance/LogRows';
 import { RecoveryDay } from './performance/Recovery';
@@ -183,7 +184,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     dayPlanned,
     reviewed,
     yesterday: day.yesterday,
-    windDown: { dismissed: notTonight },
+    // Not tonight, or used tonight (Sleep wind down's own record of the night).
+    windDown: { dismissed: [...notTonight, ...finishedNights(userId)] },
     recovery,
     nextSprint: (day.lastSprintNumber || 0) + 1,
   });

@@ -13,6 +13,7 @@ import { weekday } from '../scores/dates.js';
 import { m12IsOdd, SLEEP_QUALITY } from '../scores/index.js';
 import { settingForWeek, toMeasure } from './rows';
 import { sprintPageView } from './sprintPage';
+import { carriedOver, carriedSource, thingKey } from './windDown';
 
 export const MAX_DAY_TODOS = 3;       // day_plan_limits: up to three things to do
 export const MAX_DAY_STRATEGIES = 2;  // one recommended, two at most
@@ -55,16 +56,6 @@ export function recentWays(rows = [], date) {
     if (out.length === 2) break;
   }
   return out;
-}
-
-/**
- * The tag on last night's things. CHOICE (UNDEFINED, audit 2.9): the
- * latest finished review of the 3 days before; "last night" only when it
- * was the day before, otherwise the day's name.
- */
-export function lastListTag(reviewDate, date) {
-  if (reviewDate === addDayKey(date, -1)) return 'On last night’s list';
-  return `On your list from ${DAY_FULL[weekday(reviewDate)]}`;
 }
 
 export function lastNoteLabel(reviewDate, date) {
@@ -173,31 +164,22 @@ export function sleepToConfirm(hours, toConfirm) {
 /**
  * The page's whole view for one day.
  * @param {object} d rows from loadDayPlan
- * @param {{ date: string, local: object }} opts the day, and what the device keeps
- *   ({ habits, order, top }, the habits chosen for it)
+ * @param {{ date: string, local: object, windDown: string[] }} opts the day,
+ *   what the device keeps ({ habits, order, top }, the habits chosen for
+ *   it), and last night's wind-down thoughts (windDown.js)
  */
-export function dayPlanView(d, { date, local = {} }) {
+export function dayPlanView(d, { date, local = {}, windDown = [] }) {
   const sprint = sprintPageView(d, { today: date });
   const running = sprint?.state === 'running';
   const strategies = running || d.sprint ? (d.strategies || []) : (d.planStrategies || []);
   const strategyName = new Map(strategies.map((s) => [s.id, s.name]));
   const review = d.lastReview;
-  const reviewTag = review ? lastListTag(review.local_date, date) : null;
   const fromReview = (t) => review && t.source === 'review_my_day' && t.source_id === review.id;
+  // A to-do made this morning from a wind-down thought (CHOICE: source
+  // other_tool, as the todos table has no sleep wind down source yet).
+  const fromWindDown = (t) => t.source === 'other_tool' && t.created_on === date;
   const todoRows = new Map([...(d.todos || []), ...(d.looseTodos || [])].filter((t) => !t.deleted_at).map((t) => [t.id, t]));
   const chosenTodos = new Set((d.dayTodos || []).map((t) => t.todo_id));
-
-  // Last night's things not yet made into a to-do (they join the sprint
-  // only when chosen; decisions 23 Oct, 12:58).
-  const made = new Set([...todoRows.values()].filter(fromReview).map((t) => t.text.trim().toLowerCase()));
-  const night = review
-    ? (review.tomorrow || []).map((t) => (t || '').trim()).filter(Boolean)
-      .map((text, i) => ({ key: `night:${i}`, text }))
-      .filter((n) => !made.has(n.text.toLowerCase()))
-    : [];
-
-  const options = [];
-  for (const n of night) options.push({ value: n.key, label: n.text, tags: [reviewTag], kind: 'night', text: n.text });
 
   // This week's open to-dos (as the sprint lists them), and today's own.
   const open = [];
@@ -213,18 +195,41 @@ export function dayPlanView(d, { date, local = {} }) {
       open.push({ id: t.id, text: t.text, strategyName: strategyName.get(t.strategy_id) || '', rolledFrom: null });
     }
   }
+
+  // Carried over (M19): Review my day's things for tomorrow first, then
+  // last night's wind-down thoughts, a line in both once. A thing not yet
+  // chosen is only on this list; once chosen it is a to-do on this week of
+  // the sprint (decisions 23 Oct, 12:58) and stays here, chosen. A thing
+  // made into a to-do and then done or moved on another day is left out.
+  const carried = carriedOver({ review: review ? review.tomorrow || [] : [], windDown });
+  const madeFrom = [...todoRows.values()].filter((t) => fromReview(t) || fromWindDown(t));
+  const openIds = new Set(open.map((t) => t.id));
+  const used = new Set();
+  const options = [];
+  carried.forEach((c, i) => {
+    const source = carriedSource(c, review?.local_date, date);
+    const made = madeFrom.find((t) => !used.has(t.id) && thingKey(t.text) === thingKey(c.text) && ((c.review && fromReview(t)) || (c.windDown && fromWindDown(t))));
+    if (made) {
+      used.add(made.id);
+      if (!openIds.has(made.id)) return;
+      const t = open.find((o) => o.id === made.id);
+      // M19: a carried-over row shows only where it came from; the
+      // Strategy stays on the option for Review my day.
+      options.push({ value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags: [source], kind: 'todo', id: t.id, group: 'carried', onlyTags: true });
+      return;
+    }
+    options.push({ value: `night:${i}`, label: c.text, tags: [source], kind: 'night', text: c.text, review: c.review, windDown: c.windDown, group: 'carried' });
+  });
+
   const tagFor = (t) => {
     const row = todoRows.get(t.id);
-    if (row && fromReview(row)) return reviewTag;
     if (row?.source === 'plan_my_day' && row.created_on === date) return 'New to-do today';
     return t.rolledFrom ? `Rolled over from week ${t.rolledFrom}` : 'To-do this week';
   };
-  const asOption = (t) => ({ value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags: [tagFor(t)], kind: 'todo', id: t.id });
-  const fresh = open.filter((t) => !t.rolledFrom);
-  const rolled = open.filter((t) => t.rolledFrom);
-  // Last night's to-dos first (M5), then this week's, the habits, then rolled over.
-  options.push(...fresh.filter((t) => fromReview(todoRows.get(t.id) || {})).map(asOption));
-  options.push(...fresh.filter((t) => !fromReview(todoRows.get(t.id) || {})).map(asOption));
+  const asOption = (t) => ({ value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags: [tagFor(t)], kind: 'todo', id: t.id, group: 'week' });
+  const rest = open.filter((t) => !used.has(t.id));
+  // Then this week's (M5): the to-dos, the habits, then rolled over.
+  options.push(...rest.filter((t) => !t.rolledFrom).map(asOption));
 
   // Weekly habits not yet met this week (daily ones are logged on the
   // numbers screen, decisions 23 Oct, 13:06). CHOICE (UNDEFINED, "weekly
@@ -239,10 +244,10 @@ export function dayPlanView(d, { date, local = {} }) {
       const m = toMeasure(setting);
       const chosen = (local.habits || []).includes(sh.id);
       if (!weeklyMeasure(m) || (weeklyMet(m, row.values) && !chosen)) continue;
-      options.push({ value: `habit:${sh.id}`, label: sh.name, detail: strategyName.get(sh.strategy_id) || '', tags: [`Habit, ${lowerFirst(row.weekLine)}`], kind: 'habit', id: sh.id });
+      options.push({ value: `habit:${sh.id}`, label: sh.name, detail: strategyName.get(sh.strategy_id) || '', tags: [`Habit, ${lowerFirst(row.weekLine)}`], kind: 'habit', id: sh.id, group: 'week' });
     }
   }
-  options.push(...rolled.map(asOption));
+  options.push(...rest.filter((t) => t.rolledFrom).map(asOption));
 
   const live = new Set(options.map((o) => o.value));
   const { picks, top } = dayPicks(d.dayTodos || [], local, live);

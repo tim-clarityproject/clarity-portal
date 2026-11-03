@@ -15,7 +15,9 @@ import './design.css';
 // itemLabel: (n) => what each box is called for screen readers
 //            ("Important thing 2 for tomorrow").
 // maxLength: each row's limit.
-export default function RowList({ label, who, coachName, rows = [], onChange, max = 3, itemLabel = (n) => `Item ${n}`, maxLength, placeholder, addLabel = 'Add another' }) {
+// numbered: a small grey number before each box (M19's wind-down thoughts).
+// max may be Infinity: Sleep wind down's thoughts have no limit (M19).
+export default function RowList({ label, who, coachName, rows = [], onChange, max = 3, itemLabel = (n) => `Item ${n}`, maxLength, placeholder, addLabel = 'Add another', numbered = false }) {
   const labelId = useId();
   const shown = rows.length ? rows : [''];
   const boxes = useRef([]);
@@ -39,13 +41,14 @@ export default function RowList({ label, who, coachName, rows = [], onChange, ma
   };
 
   return (
-    <div className="ds-rowlist" role="group" aria-labelledby={label ? labelId : undefined}>
+    <div className={`ds-rowlist${numbered ? ' ds-rowlist--numbered' : ''}`} role="group" aria-labelledby={label ? labelId : undefined}>
       <FieldLabel label={label} id={labelId} who={who} coachName={coachName} />
       <div className="ds-rowlist-rows">
         {shown.map((text, i) => (
           // The rows have no ids of their own; their order is their identity.
           // eslint-disable-next-line react/no-array-index-key
           <div key={i} className="ds-rowlist-row">
+            {numbered && <span className="ds-rowlist-n" aria-hidden="true">{i + 1}</span>}
             <TextBox
               ref={(el) => { boxes.current[i] = el; }}
               ariaLabel={itemLabel(i + 1)}

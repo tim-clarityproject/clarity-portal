@@ -6,10 +6,13 @@ import {
   AddButton,
   AddWinPanel,
   Button,
+  EndScreen,
   ErrorMessage,
   GuidedSummary,
   GuidedTool,
   LevelChoice,
+  List,
+  ListRow,
   Loading,
   LoggingRow,
   PageHeader,
@@ -86,10 +89,12 @@ import './performance.css';
 //               each, with the morning's reminder
 //   Tomorrow    up to three things, as rows (lists are rows), then anything
 //               else on your mind; tomorrow's Plan my day lists them
-//   Your day    the summary, with the score this week so far; Finish my review
-// One closing moment can follow the summary later ("Work's done for
-// today" comes in a follow-up): it is one more bare entry in `steps`
-// before finishing, or a screen shown by `finish`.
+//   Your day    the summary, with the score this week so far
+//   Close       "Ready to close the day?" (M19, approved 29 Oct): what
+//               moves to tomorrow (today's open to-dos, still on this
+//               week's list) and what tomorrow starts with; Close my day
+//   Work's done the closing moment (M19): "Work’s done for today", the
+//               two lines that are true, and Back to Home
 //
 // Everything saves as it goes, as Plan my day does: the answers into the
 // day's day_reviews row a moment after typing pauses, each tick, log and
@@ -500,6 +505,9 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
   // lists this week's list instead of today's three.
   const planned = view.today.length > 0;
   const weekShown = !planned || showWeek;
+  // Today's to-dos still open: they stay on this week's list, so tomorrow's
+  // Plan my day offers them again (M19 "Moving to tomorrow").
+  const moving = view.today.filter((t) => t.kind === 'todo' && !t.done);
 
   const steps = [
     {
@@ -674,6 +682,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'summary',
       name: 'Your day',
+      required: true, // nothing to skip: Next goes on to closing the day
       question: view.firstName ? `Here’s your day, ${view.firstName}.` : 'Here’s your day.',
       nudges: ['Check it over.', 'Change anything you need to.'],
       render: (tool) => {
@@ -703,24 +712,49 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
         );
       },
     },
-    // The closing moment ("Work's done for today", in a follow-up) goes here.
+    {
+      key: 'close',
+      name: 'Close',
+      question: 'Ready to close the day?',
+      nudges: ['Check what moves to tomorrow.'],
+      nudgeInfo: { label: 'About closing the day', text: 'Anything still open moves to tomorrow, so you can stop thinking about it.' },
+      render: () => {
+        const first = tomorrowToRow(answers.tomorrow)[0];
+        return (
+          <div className="day-narrow">
+            <section className="ds-close-list" aria-labelledby="rev-moving">
+              <h3 id="rev-moving" className="ds-pick-group-title">Moving to tomorrow</h3>
+              {moving.length ? (
+                <List label="Moving to tomorrow">
+                  {moving.map((t) => <ListRow key={t.key} title={t.text} type="To-do" />)}
+                </List>
+              ) : <p className="day-quiet-line">Nothing is left open today.</p>}
+            </section>
+            {first && (
+              <section className="ds-close-list" aria-labelledby="rev-first">
+                <h3 id="rev-first" className="ds-pick-group-title">Tomorrow starts with</h3>
+                <List label="Tomorrow starts with"><ListRow title={first} /></List>
+              </section>
+            )}
+          </div>
+        );
+      },
+    },
   ];
 
   const backTo = location.state?.from || '/performance-sprint';
 
+  // Close my day: saved as finished, then Work's done for today (M19).
+  const [closed, setClosed] = useState(null);
   const finish = async () => {
     const ok = await sendAnswers({ status: 'finished', finished_at: new Date().toISOString() });
-    if (!ok) return false; // the tool lets Finish be tapped again
+    if (!ok) return false; // the tool lets Close my day be tapped again
     setData((d) => ({ ...d, dayReview: { ...(d.dayReview || {}), status: 'finished' } }));
     clearAnswersDraft();
     clearDraft(userId, draftName(date));
     clearGuideDraft(stepKey(userId, date));
-    // CHOICE: My Reviews doesn't list the new reviews until Phase 4, so the
-    // toast without a list for tomorrow says only that it's saved.
-    toast.show(tomorrowToRow(answersRef.current.tomorrow).length
-      ? 'Your review is saved, and tomorrow’s Plan my day has your list ready.'
-      : 'Your review is saved.');
-    navigate(backTo, { replace: true });
+    setClosed({ open: moving.length > 0, first: tomorrowToRow(answersRef.current.tomorrow)[0] || null });
+    return true;
   };
 
   const close = () => {
@@ -729,14 +763,44 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     navigate(backTo, { replace: true });
   };
 
+  const toolName = date === today ? 'Review my day' : `Review my day, ${dayName(date, today)}`;
+  if (closed) {
+    return (
+      <div className="ui-root plan-builder-wait">
+        <GuidedTool
+          name={toolName}
+          steps={[{
+            key: 'done',
+            name: 'Work’s done',
+            plain: true,
+            render: (tool) => (
+              <EndScreen
+                kind="done"
+                title="Work’s done for today"
+                headingRef={tool.headingRef}
+                lines={[
+                  closed.open ? 'Your open to-dos are on tomorrow’s list.' : null,
+                  closed.first ? `Tomorrow starts with “${closed.first}”.` : null,
+                  !closed.open && !closed.first ? 'Your review is saved.' : null,
+                ]}
+                action={<Button variant="primary" onClick={() => navigate('/welcome', { replace: true })}>Back to Home</Button>}
+              />
+            ),
+          }]}
+          onClose={() => navigate(backTo, { replace: true })}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="ui-root plan-builder-wait">
       <GuidedTool
-        name={date === today ? 'Review my day' : `Review my day, ${dayName(date, today)}`}
+        name={toolName}
         steps={steps}
         progress="percent"
         skipLabel="Skip"
-        finishLabel="Finish my review"
+        finishLabel="Close my day"
         saveState={save}
         draftKey={stepKey(userId, date)}
         initialStep={view.finished || (pinned && date < today) ? 'summary' : undefined}

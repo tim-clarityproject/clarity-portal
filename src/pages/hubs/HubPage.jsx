@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
 import { AddButton, Button, HubAnchor, HubGroup, HubGrid, HubRecent, HubTeams, HubTile, PageHeader, PinPanel, useToast } from '../../components/design';
-import { HUBS, PIN_GROUPS, TOOLS, toolCount, MAX_PINS } from '../../lib/navigation';
+import { HUBS, PIN_GROUPS, TOOLS, isNewTool, toolCount, MAX_PINS } from '../../lib/navigation';
 import { usePins } from '../../lib/menuPins';
 import { getLocalDateKey } from '../../lib/dateFormatter';
 import { useCachedLoad } from '../../lib/pageCache';
@@ -66,7 +66,7 @@ export default function HubPage({ hub: hubKey }) {
 
   const tile = (key) => {
     const t = TOOLS[key];
-    return <HubTile key={key} name={t.name} line={t.line} time={t.time} href={t.to} onClick={open(t.to, t.state)} />;
+    return <HubTile key={key} name={t.name} line={t.line} time={t.time} live={isNewTool(key, today) ? 'New' : undefined} href={t.to} onClick={open(t.to, t.state)} />;
   };
 
   const onPin = async (key, on) => {

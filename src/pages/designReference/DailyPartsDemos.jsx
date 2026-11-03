@@ -31,7 +31,7 @@ const STRATEGIES = [
 ];
 
 const DO_LIST = [
-  { value: 'n1', label: 'Call Evan before 09:00 about the referral', tags: ['On last night’s list'] },
+  { value: 'n1', label: 'Call Evan before 09:00 about the referral', tags: ['From Review my day'] },
   { value: 't1', label: 'Send the Harbour proposal by 12:00', detail: 'Grow through referrals', tags: ['To-do this week'] },
   { value: 'h1', label: 'Training sessions', detail: 'Maintain my availability to do good work', tags: ['Habit, 1 of 4 this week'] },
   { value: 'h2', label: 'Weekly strategic block', detail: 'Build The Clarity Portal', tags: ['Habit, not yet this week'] },

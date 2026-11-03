@@ -45,7 +45,9 @@ import {
   dayTodoOps,
   hoursWords,
   ifItHappens,
+  lastNightThoughts,
   localToday,
+  thingKey,
   sleepToConfirm,
   sleepWords,
 } from '../../lib/performance';
@@ -60,9 +62,11 @@ import './performance.css';
 //              Recovery's Sleep tile)
 //   Gratitude  "What’s one thing you’re grateful for today?"
 //   Be         "How do you want to be today?" own words, recent ones, three suggestions
-//   Do         "What will you do today?" up to three from last night's
-//              list, this week's to-dos and weekly habits; last night's
-//              note; Add a to-do
+//   Do         "What will you do today?" up to three, from one Carried
+//              over list (M19: Review my day's things for tomorrow, then
+//              last night's sleep wind down thoughts, each with where it
+//              came from), then This week's to-dos and weekly habits; last
+//              night's note; Add a to-do
 //   Priority   "Which one is your highest priority?" on its own screen
 //   Strategy   "Which Strategies does today serve most?" one recommended, two at most
 //   Risk       "What’s the biggest risk to today?" two boxes
@@ -142,7 +146,9 @@ function PlanFlow({ userId, date, today, loaded }) {
     return next;
   }), [userId, date]);
 
-  const view = useMemo(() => dayPlanView(data, { date, local }), [data, date, local]);
+  // Last night's sleep wind down thoughts (on the device until 039; windDown.js).
+  const [windThoughts] = useState(() => lastNightThoughts(userId, date));
+  const view = useMemo(() => dayPlanView(data, { date, local, windDown: windThoughts }), [data, date, local, windThoughts]);
   const [answers, setAnswers] = useState(() => answersFromRow(data.dayPlan));
   const [confirmed, setConfirmed] = useState(() => (data.dayPlan && !data.dayPlan.sleep_to_confirm ? Number(data.dayPlan.sleep_hours) : null));
   const [save, setSave] = useState('idle');
@@ -312,17 +318,22 @@ function PlanFlow({ userId, date, today, loaded }) {
     });
   };
 
-  // A thing from last night's list becomes a to-do only when chosen
-  // (decisions 23 Oct, 12:58), on this week of the sprint.
+  // A thing carried over becomes a to-do only when chosen (decisions 23
+  // Oct, 12:58), on this week of the sprint. From Review my day it keeps
+  // that review as its source; a wind-down thought alone is marked as from
+  // another tool (CHOICE: the todos table has no sleep wind down source yet).
   const todoFromNight = async (option) => {
     const id = newId();
+    const review = option.review && view.review;
+    const source = review ? 'review_my_day' : 'other_tool';
+    const sourceId = review ? view.review.id : null;
     const row = {
       id, strategy_id: view.nightStrategyId, text: option.text, impact: 2, sprint_id: view.sprintId, planned_week: view.week,
-      created_on: date, done_on: null, source: 'review_my_day', source_id: view.review.id, move_on: null, deleted_at: null,
+      created_on: date, done_on: null, source, source_id: sourceId, move_on: null, deleted_at: null,
     };
     const listKey = view.running ? 'todos' : 'looseTodos';
     setData((d) => ({ ...d, [listKey]: [...(d[listKey] || []), row] }));
-    const ok = await sent(() => saveTodo(userId, { id, strategyId: row.strategy_id, text: row.text, impact: 2, sprintId: row.sprint_id, week: row.planned_week, createdOn: date, source: 'review_my_day', sourceId: row.source_id }));
+    const ok = await sent(() => saveTodo(userId, { id, strategyId: row.strategy_id, text: row.text, impact: 2, sprintId: row.sprint_id, week: row.planned_week, createdOn: date, source, sourceId }));
     if (!ok) {
       setData((d) => ({ ...d, [listKey]: (d[listKey] || []).filter((t) => t.id !== id) }));
       return null;
@@ -361,7 +372,9 @@ function PlanFlow({ userId, date, today, loaded }) {
     if (removed?.startsWith('todo:')) {
       const id = removed.slice(5);
       const row = [...(data.todos || []), ...(data.looseTodos || [])].find((t) => t.id === id);
-      if (row && row.source === 'review_my_day' && row.source_id === view.review?.id && row.created_on === date) {
+      const carried = (row?.source === 'review_my_day' && row.source_id === view.review?.id)
+        || (row?.source === 'other_tool' && windThoughts.some((t) => thingKey(t) === thingKey(row.text)));
+      if (row && carried && row.created_on === date) {
         const listKey = view.running ? 'todos' : 'looseTodos';
         setData((d) => ({ ...d, [listKey]: (d[listKey] || []).filter((t) => t.id !== id) }));
         sent(() => setTodoDeleted(userId, id, new Date().toISOString()));
@@ -506,7 +519,7 @@ function PlanFlow({ userId, date, today, loaded }) {
       key: 'do',
       name: 'Do',
       question: 'What will you do today?',
-      nudges: ['Choose up to three from this week’s habits and to-dos.'],
+      nudges: ['Choose up to 3.'],
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
           {view.options.length ? (
@@ -518,6 +531,8 @@ function PlanFlow({ userId, date, today, loaded }) {
               values={view.picks}
               onChange={choosePicks}
               max={MAX_DAY_TODOS}
+              groups={[{ key: 'carried', title: 'Carried over' }, { key: 'week', title: 'This week' }]}
+              count={(n) => `You’ve chosen ${n} of ${MAX_DAY_TODOS}.`}
             />
           ) : (
             <>

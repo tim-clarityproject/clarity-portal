@@ -95,6 +95,7 @@ import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } fr
 import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo, SavedItemsDemo } from './NavigationDemos';
 import { CarryOnDemo, DayFocusDemo, HelpListDemo, MiniDialDemo, PlanStepsDemo, SuggestionDemo } from './TodayDemos';
 import { BreathOrbDemo } from './OrbDemos';
+import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, withMeasure, yearView } from '../../lib/performance';
@@ -1861,6 +1862,30 @@ function Gallery() {
             <p>The phase word and the seconds left sit beside the orb, never on it, with “through your nose” on the way in and “through your mouth” on the way out.</p>
             <p>With reduced motion nothing grows, shrinks or turns. The orb stays at half a breath and fades with the breath.</p>
             <p>Sleep wind down uses the quieter colours and no words.</p>
+          </>
+        )} />
+
+        <GallerySection id="c62" title="Sleep wind down: the night screens" demo={NightDemo} rules={(
+          <>
+            <p><New /><b>Night colours</b> (M19, 29 Oct): each mode’s own colours, one step quieter, named night tokens. Light stays light and dark stays dark.</p>
+            <p>Thoughts are rows, one each, numbered, with the 45 degree crosshair to remove one and Add a thought. Each is 300 characters at most, with no limit on how many.</p>
+            <p>The breathing shows the orb alone, in the person’s style, 4 seconds in and 6 out, with no words on or beside it.</p>
+            <p>Sleep well is centred: the title, two lines and an outlined Back to Home. No list and nothing to act on.</p>
+          </>
+        )} />
+
+        <GallerySection id="c63" title="The centred end screen" demo={WorkDoneDemo} rules={(
+          <>
+            <p><New /><b>One clear last line</b> (M19): the title in Nekst capitals, one sentence per line under it, then one button, all centred.</p>
+            <p>Work’s done for today ends Review my day with the coral Back to Home. Sleep well uses the outlined button, so nothing bright shows at bedtime.</p>
+          </>
+        )} />
+
+        <GallerySection id="c64" title="Carried over" demo={CarriedOverDemo} rules={(
+          <>
+            <p><New /><b>One list the next morning</b> (M19): Review my day’s things for tomorrow first, then last night’s sleep wind down thoughts, then This week.</p>
+            <p>Each row says where it came from. A line in both is one row, when it matches once case and punctuation are ignored.</p>
+            <p>Up to 3 can be chosen. Once 3 are chosen the rest grey out, and the line under the list says how many.</p>
           </>
         )} />
 

@@ -34,7 +34,7 @@ const PINS = [
 
 const PIN_GROUPS = [
   { title: 'Plan', tools: [{ key: 'pmd', name: 'Plan my day' }, { key: 'grow', name: 'Get unstuck' }, { key: 'inv', name: 'Pre-mortem' }, { key: 'time', name: 'Time audit' }] },
-  { title: 'Reset', tools: [{ key: 'breathe', name: 'Breathe' }, { key: 'pp', name: 'Pressure plan' }, { key: 'journal', name: 'Journal' }] },
+  { title: 'Reset', tools: [{ key: 'breathe', name: 'Breathe' }, { key: 'wind', name: 'Sleep wind down' }, { key: 'pp', name: 'Pressure plan' }, { key: 'journal', name: 'Journal' }] },
   { title: 'Interpersonal', tools: [{ key: 'meet', name: 'Meeting planner' }, { key: 'fb', name: 'Give difficult feedback' }] },
 ];
 

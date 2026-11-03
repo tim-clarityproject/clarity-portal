@@ -14,7 +14,8 @@ import pageText from '../content/pageText';
 // Performance Evidence, Prepare for a difficult conversation, Prepare for
 // a pitch, Map my stakeholders, Map my team, Understand their sweet spot,
 // Decide who decides, Strategy on a page and Pre-mortem for an initiative.
-// Sleep wind down joins Reset in step 6. Points of leverage is removed
+// Sleep wind down joined Reset in step 6 (M19), second, marked New for its
+// first two weeks (`newUntil`). Points of leverage is removed
 // (Tim, 2 Nov): no tile anywhere, and its address goes to Strategic.
 //
 // Tiles are in the order M3 shows. Later, most used first, from private
@@ -71,6 +72,16 @@ export const TOOLS = {
     time: '1, 3 or 5 minutes',
     to: '/breathe',
     routes: ['/breathe', '/breathing-sessions-summary'],
+  },
+  wind: {
+    name: 'Sleep wind down',
+    line: 'Clear your head before bed, so you sleep well and perform tomorrow.',
+    time: '~6 minutes',
+    to: '/sleep-wind-down',
+    routes: ['/sleep-wind-down'],
+    // M19: New for its first two weeks. CHOICE: two weeks from go-live
+    // (27 Nov), so until Fri 11 Dec 2026.
+    newUntil: '2026-12-11',
   },
   pp: {
     name: 'Pressure plan',
@@ -175,7 +186,7 @@ export const HUBS = {
     up: 'personal',
     line: 'Get back to your best when the pressure is on.',
     info: pageText.hubReset,
-    groups: [{ tools: ['breathe', 'pp', 'journal'] }],
+    groups: [{ tools: ['breathe', 'wind', 'pp', 'journal'] }],
   },
   review: {
     title: 'Review',
@@ -204,6 +215,12 @@ export const HUBS = {
     groups: [],
   },
 };
+
+/** "New" on a tool's tile while it is new (M19: in the text colour, never coral or mint). */
+export function isNewTool(key, today) {
+  const until = TOOLS[key]?.newUntil;
+  return Boolean(until && today && today <= until);
+}
 
 /** The number of tools a hub holds, for Personal's big tiles ("6 tools"). */
 export function toolCount(hubKey) {
@@ -267,7 +284,7 @@ export function areaOf(pathname) {
  */
 export const PIN_GROUPS = [
   { title: 'Plan', tools: ['pmd', 'grow', 'inv', 'time'] },
-  { title: 'Reset', tools: ['breathe', 'pp', 'journal'] },
+  { title: 'Reset', tools: ['breathe', 'wind', 'pp', 'journal'] },
   { title: 'Review', tools: ['rmd', 'debrief', 'aar', 'lbr'] },
   { title: 'Interpersonal', tools: ['meet', 'fb'] },
   { title: 'Strategic', tools: ['hc'] },

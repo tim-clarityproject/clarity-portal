@@ -208,6 +208,18 @@ async function finishWith(label) {
   }, 15000);
   if (!gone) throw new Error(`${label} did not go back`);
 }
+// Review my day's ending since Phase 4 (M19): Close my day, Work's done for
+// today, then Back to Home.
+async function closeDay() {
+  const done = await until(async () => {
+    if ((await page.locator('.ds-end-title').count()) > 0) return true;
+    await page.getByRole('button', { name: 'Close my day' }).click({ timeout: 2000 }).catch(() => null);
+    return (await page.locator('.ds-end-title').count()) > 0;
+  }, 15000);
+  if (!done) throw new Error('Close my day did not close the day');
+  await page.getByRole('button', { name: 'Back to Home' }).click();
+  await until(async () => new URL(page.url()).pathname === '/welcome', 10000);
+}
 const checkbox = (name) => page.getByRole('checkbox', { name, exact: true }).first();
 async function tick(name) {
   if ((await checkbox(name).getAttribute('aria-checked')) !== 'true') await checkbox(name).click();
@@ -226,7 +238,7 @@ async function sprintScoreMatches(day, tag) {
 
 // ---------------------------------------------------------------- Plan my day
 // picks: the names to choose on "What will you do today?"; lastNight: the
-// names that must be first, tagged "On last night's list".
+// names that must be first, carried over "From Review my day" (Phase 4, M19).
 async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   const tag = `${day} plan`;
   await at(day, '07:30');
@@ -242,7 +254,7 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   pass(`${tag}: Do`, (await heading()) === 'What will you do today?', await heading());
   const shown = await page.locator('.ds-answer--pick').allInnerTexts();
   lastNight.forEach((name, n) => {
-    pass(`${tag}: last night's "${name}" is on the list, in order, tagged`, (shown[n] || '').includes(name) && shown[n].includes('On last night’s list'), shown.slice(0, 4).join(' | '));
+    pass(`${tag}: last night's "${name}" is on the list, in order, tagged`, (shown[n] || '').includes(name) && shown[n].includes('From Review my day'), shown.slice(0, 4).join(' | '));
   });
   for (const name of picks) {
     const pick = page.locator('.ds-answer--pick', { hasText: name }).first();
@@ -338,7 +350,9 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   const summary = await page.locator('.ds-guide-summary').innerText();
   pass(`${tag}: the summary counts the ticks`, summary.includes(`${ticks.length} of ${ticks.length} done`), summary.slice(0, 200));
   await shot(`${day}-review-summary`);
-  await finishWith('Finish my review');
+  // Phase 4 (M19): Next, then Close my day, then Work's done's Back to Home.
+  await next();
+  await closeDay();
   const row = await until(async () => {
     const r = (await db.from('day_reviews').select('*').eq('user_id', me).eq('local_date', day)).data?.[0];
     return r?.status === 'finished' ? r : null;

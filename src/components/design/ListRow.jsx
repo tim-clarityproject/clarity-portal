@@ -11,7 +11,22 @@ export function List({ children, label, className = '' }) {
   );
 }
 
+// Without onClick a row is only words (M19's Close the day: "two labelled
+// lists, so nothing looks tappable that isn't").
 export function ListRow({ title, type, date, onClick, ...rest }) {
+  if (!onClick) {
+    return (
+      <li>
+        <div className="ds-row ds-row--still" {...rest}>
+          <span className="ds-row-main">
+            <span className="ds-row-title">{title}</span>
+            {type && <span className="ds-row-type">{type}</span>}
+          </span>
+          {date && <span className="ds-row-date">{date}</span>}
+        </div>
+      </li>
+    );
+  }
   return (
     <li>
       <button type="button" className="ds-row" onClick={onClick} {...rest}>

@@ -16,3 +16,4 @@ export * from './dayPlan';
 export * from './dayReview';
 export * from './debrief';
 export * from './home';
+export * from './windDown';

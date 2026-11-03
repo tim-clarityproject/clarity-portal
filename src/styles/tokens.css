@@ -410,6 +410,23 @@
   --help-row-min-h: 62px;
   --suggest-line-max: 46ch;
 
+  /* Sleep wind down and Work's done for today (M19, Phase 4 step 6) */
+  --fs-end-night: calc(30 * var(--u-big));       /* Sleep well (M19 .gn h2) */
+  --fs-end-night-phone: calc(24 * var(--u-big));
+  --ls-end-night: 0.14em;
+  --fs-end-done: calc(28 * var(--u-big));        /* Work's done for today (M19 .wd h2) */
+  --fs-end-done-phone: calc(22 * var(--u-big));
+  --ls-end-done: 0.12em;
+  --end-night-max: 420px;
+  --end-done-max: 460px;
+  --end-night-top: 60px;     /* M19 .gn margin-top (40px on a phone) */
+  --end-night-top-phone: 40px;
+  --end-done-top: 70px;      /* M19 .wd margin-top (46px on a phone) */
+  --end-done-top-phone: 46px;
+  --night-orb-gap: 34px;     /* between the orb and End early (M19 .orbw) */
+  --rowlist-n-w: 22px;       /* the thought's number column (M19 .trow) */
+  --rowlist-n-top: 17px;     /* the number level with the box's first line (M19 .trow .n) */
+
   /* Saved items (My Plans, My Reviews, the hubs' recent rows; Phase 4 step 4) */
   --space-px30: 30px;        /* above a hub's recent list (M3 .recent) */
   --saved-row-min-h: 60px;   /* a recent saved item's row (M3 .rows button) */
@@ -466,6 +483,13 @@
   --orb-in: #FF6F5C;         /* the breathing orb: in-breath */
   --orb-out: #5FEFBB;        /* the breathing orb: out-breath */
   --orb-tint: rgba(255, 111, 92, 0.07); /* the faint fill inside Home's breathing orb */
+  /* Night colours (M19, named night tokens): each mode's own colours, one
+     step quieter, so a night screen dims through low contrast, never
+     forced dark. Taken on by the ds-night class. */
+  --night-bg: var(--bg);
+  --night-text: var(--text-2);
+  --night-text-2: var(--placeholder);
+  --night-line: var(--line-soft);
   --google-bg: #131314;      /* Continue with Google: Google's own dark version */
   --google-line: #8E918F;
   --google-text: #E3E3E3;
@@ -534,6 +558,10 @@
   --orb-in: #E2533F;         /* deeper coral and green in light */
   --orb-out: #12A672;
   --orb-tint: rgba(226, 83, 63, 0.07);
+  --night-bg: var(--raised);  /* the night screen's background in light, one step quieter (M19 surface) */
+  --night-text: var(--text-2);
+  --night-text-2: var(--placeholder);
+  --night-line: var(--line);
   --google-bg: #FFFFFF;      /* Google's own light version */
   --google-line: #747775;
   --google-text: #1F1F1F;

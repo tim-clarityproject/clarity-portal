@@ -270,7 +270,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
 
   // 4. Do
   pass(`${tag}: Do`, (await heading(page)) === 'What will you do today?');
-  pass(`${tag}: last night's thing is first, tagged`, ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes(NIGHT) && ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes('On last night’s list'));
+  pass(`${tag}: last night's thing is first, carried over from Review my day`, ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes(NIGHT) && ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes('From Review my day'));
   pass(`${tag}: last night's note is a note, not a task`, (await page.locator('.ds-note').textContent()).includes(NOTE) && (await page.locator('.ds-note button, .ds-note [role=checkbox]').count()) === 0);
   await checkScreen(page, `${tag} do`);
   const pick = (name) => page.locator('.ds-answer--pick', { hasText: name }).first();

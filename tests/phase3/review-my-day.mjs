@@ -11,7 +11,7 @@
 // highest priority) and two Strategies of the day; the habit chosen for
 // the day is put on the device, where Plan my day keeps it.
 //
-// A full play-through from the first screen to Finish my review at
+// A full play-through from the first screen to Close my day (Work's done, Phase 4) at
 // 1280px, 700px, 390px and 360px, in dark and light. On every screen: one
 // coral button, 44px tap areas, no sideways scroll, the writing rules and
 // the eye. At 1280px dark, the saved rows are checked too: the ticks
@@ -273,7 +273,7 @@ async function tickAndWait(page, name) {
   await until(async () => (await checkbox(page, name).getAttribute('aria-checked')) === 'true', 5000);
 }
 
-// The whole tool, first screen to Finish my review.
+// The whole tool, first screen to Close my day.
 async function playThrough(page, tag, { deep = false } = {}) {
   await open(page, '/my-day/review');
   // 1. Do
@@ -383,15 +383,23 @@ async function playThrough(page, tag, { deep = false } = {}) {
     const good = await page.locator('.day-score .ds-stat-value').evaluate((el) => el.classList.contains('ds-stat-value--good'));
     pass(`${tag}: the score is mint only at or above the standard`, good === v.soFar.good);
   }
-  // Finish my review: tapped until it goes.
-  const gone = await until(async () => {
-    if (/performance-sprint/.test(page.url())) return true;
-    await page.getByRole('button', { name: 'Finish my review' }).click({ timeout: 2000 }).catch(() => null);
-    return /performance-sprint/.test(page.url()) || page.waitForURL(/performance-sprint/, { timeout: 1500 }).then(() => true, () => false);
+  // Phase 4 (M19): Next goes on to Close the day, and Close my day ends
+  // with Work's done for today (it was Finish my review and a toast).
+  const closing = await until(async () => {
+    if ((await heading(page)) === 'Ready to close the day?') return true;
+    await page.locator('.ds-guide-next').click({ timeout: 2000 }).catch(() => null);
+    return (await heading(page)) === 'Ready to close the day?';
   }, 15000);
-  if (!gone) throw new Error('Finish my review did not go back');
-  const said = await until(async () => (await page.getByText('Your review is saved, and tomorrow’s Plan my day has your list ready.').count()) > 0, 8000);
-  pass(`${tag}: Finish my review says so and goes back`, Boolean(said));
+  pass(`${tag}: Next goes on to Close the day (M19)`, Boolean(closing));
+  const done = await until(async () => {
+    if ((await page.locator('.ds-end-title').count()) > 0) return true;
+    await page.getByRole('button', { name: 'Close my day' }).click({ timeout: 2000 }).catch(() => null);
+    return (await page.locator('.ds-end-title').count()) > 0;
+  }, 15000);
+  if (!done) throw new Error('Close my day did not close the day');
+  pass(`${tag}: Close my day ends with Work’s done for today`, ((await page.locator('.ds-end-title').textContent()) || '').trim() === 'Work’s done for today');
+  await page.getByRole('button', { name: 'Back to Home' }).click();
+  pass(`${tag}: Back to Home goes Home`, Boolean(await until(async () => new URL(page.url()).pathname === '/welcome', 10000)));
   const row = await until(async () => {
     const r = (await db.from('day_reviews').select('*').eq('user_id', me).eq('local_date', today)).data?.[0];
     return r?.status === 'finished' ? r : null;
@@ -430,6 +438,8 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       pass('the win appears in Performance Evidence', ev.length === 1 && ev[0].kind === 'win' && ev[0].text === WIN && ev[0].local_date === today && !ev[0].deleted_at, JSON.stringify(ev));
 
       // The sprint page: the ticks and logs are there, and its score is src/lib/scores'.
+      // (Since Phase 4 the review ends on Work's done, then Home.)
+      await page.goto(`${APP}/performance-sprint`);
       await page.waitForSelector('.ds-sdial-big--score', { timeout: 30000 });
       const v = sprintPageView(await rowsNow(), { today });
       const centre = await until(async () => {
@@ -463,7 +473,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       const picks = await next1.page.locator('.ds-answer--pick').allInnerTexts();
       for (let i = 0; i < 3; i += 1) {
         const at = picks.findIndex((p) => p.includes(THINGS[i]));
-        pass(`the next day: "${THINGS[i]}" is on last night's list`, at === i && picks[i].includes('On last night’s list'), picks.slice(0, 4).join(' | '));
+        pass(`the next day: "${THINGS[i]}" is carried over from Review my day`, at === i && picks[i].includes('From Review my day'), picks.slice(0, 4).join(' | '));
       }
       pass('the next day: last night\'s note is a note', (await next1.page.locator('.ds-note').innerText()).includes(NOTE));
       await shot(next1.page, 'next-day-plan');

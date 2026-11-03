@@ -51,7 +51,15 @@ import './design.css';
 //   nudges: [],           one or two short lines under it
 //   example,              text, or { ceo, coach, leader } by role
 //   tip: { key, text },   a one-off tip
+//   nudgeInfo: { label, text } an "i" at the end of the last nudge,
+//              opening its one line in place (M19's Close the day),
 //   required, nextLabel, skippable (for the last step), bare,
+//   plain:     only the top bar (name, Saving and Saved, close) and the
+//              step's own content: no % bar, question or footer (M19's
+//              breathing, Sleep well and Work's done screens). Its
+//              content puts tool.headingRef on its heading, for focus.
+//   className: added to the tool while on this step ('ds-night', M19's
+//              night colours),
 //   render: (tool) => content; tool has go(i), index, skipped, steps
 // }]
 // layout:   'fullscreen' (real pages) or 'framed' (fills its box; gallery).
@@ -113,6 +121,8 @@ function Tip({ tip, onClosed }) {
 function StepHead({ step, headingRef, positionId, role }) {
   // The "i" opens as every "i" does (useInfoToggle), and Escape closes open help first.
   const { open: infoOpen, buttonRef: infoButtonRef, panelRef: infoPanelRef, buttonProps: infoProps } = useInfoToggle();
+  const { open: nudgeOpen, buttonRef: nudgeButtonRef, panelRef: nudgePanelRef, buttonProps: nudgeProps } = useInfoToggle();
+  const nudgeInfoId = useId();
   const [exampleOpen, setExampleOpen] = useState(false);
   const infoId = useId();
   const exampleId = useId();
@@ -149,7 +159,25 @@ function StepHead({ step, headingRef, positionId, role }) {
       >
         {step.title || step.question}
       </Heading>
-      {step.nudges?.map((line) => <p key={line} className="ds-guide-nudge ds-guide-rv ds-guide-rv--2">{line}</p>)}
+      {step.nudges?.map((line, n) => (
+        <p key={line} className="ds-guide-nudge ds-guide-rv ds-guide-rv--2">
+          {line}
+          {step.nudgeInfo && n === step.nudges.length - 1 && (
+            <button
+              type="button"
+              className="ds-guide-i ds-guide-i--end"
+              aria-controls={nudgeInfoId}
+              aria-label={step.nudgeInfo.label}
+              ref={nudgeButtonRef}
+              aria-expanded={nudgeOpen}
+              {...nudgeProps}
+            >
+              <InfoIcon />
+            </button>
+          )}
+        </p>
+      ))}
+      {step.nudgeInfo && nudgeOpen && <p id={nudgeInfoId} ref={nudgePanelRef} className="ds-guide-info">{step.nudgeInfo.text}</p>}
       {example && (
         <>
           <button
@@ -310,7 +338,7 @@ export default function GuidedTool({
   const showSkip = !(step.required || (step.title && !last) || (last && !step.skippable));
   const previous = steps[i - 1];
   const showBack = i > 0 && !previous?.bare;
-  const tool = { go: (to) => go(to, 'jump'), index: i, skipped, steps };
+  const tool = { go: (to) => go(to, 'jump'), index: i, skipped, steps, headingRef };
 
   const progressBar = progress === 'percent' ? (
     <div
@@ -350,7 +378,7 @@ export default function GuidedTool({
   const tree = (
     <div
       ref={rootRef}
-      className={`ds-guide ds-guide--${layout}${step.bare ? ' ds-guide--bare' : ''}`}
+      className={`ds-guide ds-guide--${layout}${step.bare ? ' ds-guide--bare' : ''}${step.plain ? ' ds-guide--plain' : ''}${step.className ? ` ${step.className}` : ''}`}
       role={fullscreen ? 'dialog' : 'region'}
       aria-modal={fullscreen ? 'true' : undefined}
       aria-label={name}
@@ -361,15 +389,15 @@ export default function GuidedTool({
         {!step.bare && (
           <div className="ds-guide-bar">
             <b className="ds-guide-name">{name}</b>
-            <SaveStatus state={saveState} />
+            {!step.plain && <SaveStatus state={saveState} />}
             <IconButton label="Close" className="ds-guide-close" onClick={() => onCloseRef.current?.()} />
           </div>
         )}
         <div ref={scrollRef} className="ds-guide-scroll">
           <div key={step.key} className={`ds-guide-page${motion}`}>
-            {!step.bare && progressBar}
-            <span id={positionId} className="ds-sr">{positionText}</span>
-            {step.bare ? (
+            {!step.bare && !step.plain && progressBar}
+            {!step.plain && <span id={positionId} className="ds-sr">{positionText}</span>}
+            {step.bare || step.plain ? (
               step.render(tool)
             ) : (
               <>
@@ -379,7 +407,7 @@ export default function GuidedTool({
             )}
           </div>
         </div>
-        {!step.bare && (
+        {!step.bare && !step.plain && (
           <div className="ds-guide-foot">
             {showBack ? (
               <button type="button" className="ds-guide-back" aria-label="Back" onClick={() => go(i - 1)}>

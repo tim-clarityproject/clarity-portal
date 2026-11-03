@@ -71,6 +71,7 @@ export { default as PerformanceSystem, PerformanceSystemBody } from './Performan
 export { default as EmptyState } from './EmptyState';
 export { default as FloatingOrb } from './FloatingOrb';
 export { BreathOrb, BreathWords, OrbStyleChoice } from './BreathOrb';
+export { EndScreen, NightScope, InfoWords } from './EndScreen';
 export { useOrbStyle } from './useOrbStyle';
 export { default as ChatButton } from './ChatButton';
 export { BrandMark, GoogleButton } from './Brand';

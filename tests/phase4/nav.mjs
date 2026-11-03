@@ -181,7 +181,7 @@ const AREAS = [
 const HUB_TILES = {
   '/personal': [['Plan', '/personal/plan'], ['Reset', '/personal/reset'], ['Review', '/personal/review']],
   '/personal/plan': [['Individual Performance Plan', '/performance-plan'], ['Performance Sprint', '/performance-sprint'], ['Plan my day', '/my-day/plan'], ['Get unstuck', '/get-unstuck'], ['Pre-mortem', '/pre-mortem'], ['Time audit', '/time-audit']],
-  '/personal/reset': [['Breathe', '/breathe'], ['Pressure plan', '/pressure-plan'], ['Journal', '/daily-journal']],
+  '/personal/reset': [['Breathe', '/breathe'], ['Sleep wind down', '/sleep-wind-down'], ['Pressure plan', '/pressure-plan'], ['Journal', '/daily-journal']],
   '/personal/review': [['Review my day', '/my-day/review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/life-balance-review']],
   '/interpersonal': [['Meeting planner', '/plan-meeting'], ['Give difficult feedback', '/give-difficult-feedback']],
   '/strategic': [['Strategic Alignment Health Check', '/goal-setting']],

@@ -2324,13 +2324,14 @@
   --o-out: var(--orb-out);
 }
 
-/* Sleep wind down (M19): the mode's own colours, one step quieter. */
+/* Sleep wind down (M19): the mode's own colours, one step quieter (the
+   night tokens), coral and mint both stepping down to the quiet grey. */
 .ui-root .ds-borb--night {
-  --o-in: var(--text-2);
-  --o-out: var(--text-2);
-  --o-ring: var(--placeholder);
+  --o-in: var(--night-text);
+  --o-out: var(--night-text);
+  --o-ring: var(--night-text-2);
   --o-tint: transparent;
-  --o-cross: var(--text-2);
+  --o-cross: var(--night-text);
 }
 
 .ui-root .ds-borb--tool {
@@ -7894,4 +7895,201 @@
   .ui-root .ds-hub-team-name {
     transition: none;
   }
+}
+
+/* ---------- Sleep wind down and Work's done for today (M19, Phase 4 step 6) ---------- */
+
+/* Night colours (M19 .frame.night): the mode's own colours, one step
+   quieter, so the screen dims through low contrast in both modes. */
+.ui-root .ds-night {
+  --bg: var(--night-bg);
+  --text: var(--night-text);
+  --text-2: var(--night-text-2);
+  --placeholder: var(--night-text-2);
+  --label: var(--night-text-2);
+  --line: var(--night-line);
+  --line-soft: var(--night-line);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.ui-root .ds-night .ds-guide-bar {
+  border-bottom-color: transparent;
+}
+
+/* A plain step (GuidedTool): the top bar, then the step's own content,
+   filling the space so it can sit in the middle. */
+.ui-root .ds-guide--plain .ds-guide-page {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The breathing screen (M19 .orbw): the orb in the middle, End early under it. */
+.ui-root .ds-night-breathe {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--night-orb-gap);
+  padding: var(--space-px20) 0;
+}
+
+/* The centred end screen (M19 .gn and .wd). */
+.ui-root .ds-end {
+  text-align: center;
+  margin: var(--end-done-top) auto 0;
+  max-width: var(--end-done-max);
+}
+
+.ui-root .ds-end--night {
+  margin-top: var(--end-night-top);
+  max-width: var(--end-night-max);
+}
+
+/* !important on size and margins: the old mobile.css sizes every h2 and
+   h3 with !important on phones (as the other design headings counter it). */
+.ui-root .ds-end-title {
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  text-transform: uppercase;
+  font-size: var(--fs-end-done) !important;
+  letter-spacing: var(--ls-end-done);
+  line-height: var(--lh-title);
+  text-wrap: balance;
+  color: var(--text);
+  outline: none;
+}
+
+.ui-root .ds-end--night .ds-end-title {
+  font-size: var(--fs-end-night) !important;
+  letter-spacing: var(--ls-end-night);
+}
+
+.ui-root .ds-end-line {
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-end-line + .ds-end-line {
+  margin-top: var(--space-1);
+}
+
+.ui-root .ds-end-action {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-5);
+}
+
+@container guide (max-width: 600px) {
+  .ui-root .ds-end { margin-top: var(--end-done-top-phone); }
+  .ui-root .ds-end--night { margin-top: var(--end-night-top-phone); }
+  .ui-root .ds-end-title { font-size: var(--fs-end-done-phone) !important; }
+  .ui-root .ds-end--night .ds-end-title { font-size: var(--fs-end-night-phone) !important; }
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-end:not(.ds-guide .ds-end) { margin-top: var(--end-done-top-phone); }
+  .ui-root .ds-end--night:not(.ds-guide .ds-end) { margin-top: var(--end-night-top-phone); }
+  .ui-root .ds-end-title:not(.ds-guide .ds-end-title) { font-size: var(--fs-end-done-phone) !important; }
+  .ui-root .ds-end--night .ds-end-title:not(.ds-guide .ds-end-title) { font-size: var(--fs-end-night-phone) !important; }
+}
+
+/* Sleep well's lines are 16px (M19 .gn p); Work's done's take the body size (.wd p). */
+.ui-root .ds-end--night .ds-end-line {
+  font-size: var(--fs-body);
+}
+
+/* An "i" at the end of a sentence (rule 25): 6px after the last word,
+   lined up with the middle of the text, its 44px tap area not pushing the line. */
+.ui-root .ds-guide-i.ds-guide-i--end {
+  display: inline-flex;
+  vertical-align: middle;
+  margin: calc((var(--tap-min) - var(--info-size)) / -2) calc((var(--tap-min) - var(--info-size)) / -2) calc((var(--tap-min) - var(--info-size)) / -2) calc(var(--info-gap) - (var(--tap-min) - var(--info-size)) / 2);
+}
+
+/* The "i" with words ("Why write it down"), and its words opened in place. */
+.ui-root .ds-info-words-panel {
+  max-width: var(--nudge-max);
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-info-words-panel[hidden] { display: none; }
+
+.ui-root .ds-info-words-panel b,
+.ui-root .ds-info-words-panel span {
+  display: block;
+  font-weight: var(--fw-regular);
+}
+
+.ui-root .ds-info-words-panel b { color: var(--text); }
+
+.ui-root .ds-wind-who {
+  margin-top: var(--space-px10);
+}
+
+/* Numbered rows (M19 .trow: the number, the box, the remove crosshair). */
+.ui-root .ds-rowlist--numbered .ds-rowlist-row {
+  grid-template-columns: var(--rowlist-n-w) minmax(0, 1fr) var(--tap-min);
+  gap: var(--space-px10);
+}
+
+.ui-root .ds-rowlist--numbered .ds-rowlist-row > :nth-child(2):last-child { grid-column: 2; }
+
+.ui-root .ds-rowlist-n {
+  padding-top: var(--rowlist-n-top);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--placeholder);
+  text-align: right;
+}
+
+/* The Do list's groups (M19 .grp): "Carried over", then "This week". */
+.ui-root .ds-pick-group + .ds-pick-group {
+  margin-top: var(--space-px20);
+}
+
+.ui-root .ds-pick-group-title {
+  margin: 0 0 var(--space-2) !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-meta) !important;
+  line-height: var(--lh-text);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--label);
+}
+
+/* Where each came from, in the label grey (M19 .pkrow small). */
+.ui-root .ds-pick-groups .ds-todo-tag {
+  color: var(--label);
+}
+
+.ui-root .ds-pick-count {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+/* A row that is only words (ListRow without onClick). */
+.ui-root .ds-row.ds-row--still {
+  cursor: default;
+}
+
+.ui-root .ds-row.ds-row--still:hover .ds-row-title {
+  color: var(--text);
+}
+
+/* Close the day's two labelled lists (M19 .cl). */
+.ui-root .ds-close-list + .ds-close-list {
+  margin-top: var(--space-px22);
 }

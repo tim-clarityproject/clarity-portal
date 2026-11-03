@@ -13,7 +13,6 @@ import {
   dayStrategyOps,
   dayTodoOps,
   ifItHappens,
-  lastListTag,
   nightTodoStrategy,
   recentWays,
   sleepToConfirm,
@@ -73,8 +72,10 @@ const DATE = '2026-10-21';
 test('the Do list: last night first, this week’s to-dos, weekly habits not yet met, then rolled over', () => {
   const v = dayPlanView(rows({ lastReview: { id: 'r1', local_date: '2026-10-20', tomorrow: ['Call Evan before 09:00', ''], on_my_mind: 'Idea: a workshop.', strategies: [], dayStrategies: [] } }), { date: DATE });
   assert.deepEqual(v.options.map((o) => o.value), ['night:0', 'todo:t1', 'habit:train', 'habit:block', 'todo:t2']);
-  assert.deepEqual(v.options[0].tags, ['On last night’s list']);
+  assert.deepEqual(v.options[0].tags, ['From Review my day']);
+  assert.equal(v.options[0].group, 'carried');
   assert.deepEqual(v.options[1].tags, ['To-do this week']);
+  assert.equal(v.options[1].group, 'week');
   assert.deepEqual(v.options[2].tags, ['Habit, 1 of 4 this week']);
   assert.deepEqual(v.options[3].tags, ['Habit, not yet this week']);
   assert.deepEqual(v.options[4].tags, ['Rolled over from week 2']);
@@ -89,14 +90,38 @@ test('a thing from last night already made a to-do shows once, as that to-do', (
   d.todos.push(made);
   const v = dayPlanView(d, { date: DATE });
   assert.equal(v.options[0].value, 'todo:t9');
-  assert.deepEqual(v.options[0].tags, ['On last night’s list']);
+  assert.deepEqual(v.options[0].tags, ['From Review my day']);
+  assert.equal(v.options[0].group, 'carried');
   assert.ok(!v.options.some((o) => o.kind === 'night'));
 });
 
 test('last night after a gap keeps the day’s name; nothing older than 3 days is loaded', () => {
-  assert.equal(lastListTag('2026-10-20', DATE), 'On last night’s list');
-  assert.equal(lastListTag('2026-10-16', '2026-10-19'), 'On your list from Friday');
+  const d = rows({ lastReview: { id: 'r1', local_date: '2026-10-16', tomorrow: ['Call Evan'], strategies: [], dayStrategies: [] } });
+  assert.deepEqual(dayPlanView(d, { date: '2026-10-19' }).options[0].tags, ['From Review my day on Friday']);
   assert.equal(addDayKey('2026-10-31', 1), '2026-11-01');
+});
+
+test('Carried over (M19): the review’s things first, then last night’s thoughts, a line in both once with both sources', () => {
+  const d = rows({ lastReview: { id: 'r1', local_date: '2026-10-20', tomorrow: ['Call Evan before 09:00', 'Finish the Harbour case study'], strategies: [], dayStrategies: [] } });
+  const v = dayPlanView(d, { date: DATE, windDown: ['  finish the harbour case study!  ', 'Book a day off', ''] });
+  const carried = v.options.filter((o) => o.group === 'carried');
+  assert.deepEqual(carried.map((o) => o.label), ['Call Evan before 09:00', 'Finish the Harbour case study', 'Book a day off']);
+  assert.deepEqual(carried.map((o) => o.tags[0]), [
+    'From Review my day',
+    'From Review my day and last night’s sleep wind down',
+    'From last night’s sleep wind down',
+  ]);
+  assert.equal(v.options[3].group, 'week');
+});
+
+test('a wind-down thought chosen this morning shows once, as its to-do, still carried over', () => {
+  const made = { id: 'w1', strategy_id: 'grow', text: 'Book a day off', impact: 2, sprint_id: 'sp', planned_week: 3, created_on: DATE, done_on: null, source: 'other_tool', source_id: null, deleted_at: null };
+  const d = rows();
+  d.todos.push(made);
+  const v = dayPlanView(d, { date: DATE, windDown: ['Book a day off'] });
+  assert.equal(v.options[0].value, 'todo:w1');
+  assert.deepEqual(v.options[0].tags, ['From last night’s sleep wind down']);
+  assert.equal(v.options.filter((o) => o.label === 'Book a day off').length, 1);
 });
 
 test('a to-do from last night goes on that day’s first Strategy of the day, then the first that moved, then the plan’s first', () => {
