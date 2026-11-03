@@ -13,6 +13,15 @@ import { usePins } from '../lib/menuPins';
 // Log today opens Home's own Log today (Phase 4 step 2).
 export const LOG_TODAY = '/welcome#log-today';
 
+// A second or third quick tap goes to the page the first tap already
+// opened: it replaces that page instead of adding another, so Back leaves
+// at once. The address is read at the tap, as the page may not have
+// caught up yet.
+const alreadyOn = (to) => {
+  const { pathname, search, hash } = window.location;
+  return to === pathname || to === `${pathname}${search}${hash}` || to === `${pathname}${hash}`;
+};
+
 function useSiteMenu(onClosed) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,7 +33,7 @@ function useSiteMenu(onClosed) {
   const pins = useMemo(() => pinKeys.map((k) => ({ key: k, ...TOOLS[k] })), [pinKeys]);
   const go = useCallback((to, state) => {
     onClosed();
-    navigate(to, state ? { state } : undefined);
+    navigate(to, { replace: alreadyOn(to), ...(state ? { state } : {}) });
   }, [navigate, onClosed]);
   return {
     areas,
@@ -105,7 +114,8 @@ export function SitePhoneNav() {
 
   const onGo = (which) => {
     close();
-    navigate(which === 'home' ? '/welcome' : '/performance-sprint');
+    const to = which === 'home' ? '/welcome' : '/performance-sprint';
+    navigate(to, { replace: alreadyOn(to) });
   };
 
   return (
