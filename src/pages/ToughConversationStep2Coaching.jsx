@@ -31,7 +31,7 @@ function cleanPhrase(text, phrasesToRemove, lowercaseFirst = false) {
 
 function suggestNameFrom(observation) {
   const trimmed = (observation || '').trim();
-  if (!trimmed) return 'New tough conversation';
+  if (!trimmed) return 'New difficult feedback';
   return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
 }
 
@@ -152,11 +152,11 @@ export default function ToughConversationStep2Coaching() {
         clearProgress();
         clearDraft();
         toast.show(`Draft saved as ${name}.`);
-        navigate('/decision-history');
+        navigate('/my-plans');
       } else {
         clearProgress();
         clearDraft();
-        navigate('/tough-conversation-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
+        navigate('/give-difficult-feedback/summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
       }
     } catch (error) {
       console.error('[ToughConversationStep2Coaching] save failed:', error);
@@ -169,7 +169,7 @@ export default function ToughConversationStep2Coaching() {
 
   const handleBack = () => {
     clearDraft();
-    navigate('/tough-conversation-step-1', {
+    navigate('/give-difficult-feedback', {
       state: { decisionId, observation, impact, need, selectedQuestions, customQuestion, problemTitle: currentTitle },
     });
   };
@@ -189,7 +189,7 @@ export default function ToughConversationStep2Coaching() {
       }
     }
     clearDraft();
-    navigate('/decision-history', { state: { toast: 'Discarded.' } });
+    navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
   const actionButtons = (
@@ -213,7 +213,7 @@ export default function ToughConversationStep2Coaching() {
         </div>
 
         <div className="plan-header">
-          <PageHeader title="Have a tough conversation" info={pageText.toughConversationStep2Coaching} />
+          <PageHeader title="Give difficult feedback" info={pageText.toughConversationStep2Coaching} />
         </div>
 
         <div className="tc-script">

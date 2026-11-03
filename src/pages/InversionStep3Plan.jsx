@@ -131,10 +131,10 @@ export default function InversionStep3Plan() {
         setDecisionId(savedId);
         clearProgress();
         toast.show(`Draft saved as ${name}.`);
-        navigate('/decision-history');
+        navigate('/my-plans');
       } else {
         clearProgress();
-        navigate('/inversion-thinking-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
+        navigate('/pre-mortem/summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
       }
     } catch (error) {
       console.error('[InversionStep3Plan] save failed:', error);
@@ -160,7 +160,7 @@ export default function InversionStep3Plan() {
         console.error('[InversionStep3Plan] draft delete on discard failed:', error);
       }
     }
-    navigate('/decision-history', { state: { toast: 'Discarded.' } });
+    navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
   const goToStep = (path) => {
@@ -184,7 +184,7 @@ export default function InversionStep3Plan() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-back-row">
-          <BackLink onClick={() => goToStep('/inversion-step-2')} />
+          <BackLink onClick={() => goToStep('/pre-mortem/risks')} />
         </div>
 
         <div className="plan-header">
@@ -201,14 +201,14 @@ export default function InversionStep3Plan() {
 
         <div className="inv-recap">
           <p>{goal}</p>
-          <Button variant="text" onClick={() => goToStep('/inversion-step-1')}>
+          <Button variant="text" onClick={() => goToStep('/pre-mortem')}>
             Change
           </Button>
         </div>
 
         <div className="plan-section-top" style={{ marginBottom: 'var(--space-2)' }}>
           <span className="ui-section-heading">Risks</span>
-          <Button variant="text" onClick={() => goToStep('/inversion-step-2')}>
+          <Button variant="text" onClick={() => goToStep('/pre-mortem/risks')}>
             Change risks
           </Button>
         </div>

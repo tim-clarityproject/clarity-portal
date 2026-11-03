@@ -61,7 +61,7 @@ export default function GoalSetting() {
             <PageHeader title="Strategic alignment" meta={[location.state?.problemTitle]} />
             <h2 className="ds-question">{path === 'team' ? "What is your team's big objective?" : 'What are you hoping to achieve?'}</h2>
           </div>
-          <Button variant="outline" onClick={() => navigate('/decision-history')} style={{ flexShrink: 0 }}>My Decisions</Button>
+          <Button variant="outline" onClick={() => navigate('/my-plans?area=strategic')} style={{ flexShrink: 0 }}>My Plans</Button>
         </div>
         <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--line)', borderRadius: '2px', overflow: 'hidden', marginBottom: '24px' }}>
           <div style={{ height: '100%', width: path === 'team' ? '20%' : '25%', backgroundColor: 'var(--text)', transition: 'width 0.3s ease' }} />

@@ -19,9 +19,9 @@ const RQ = [
 const TY = {
   daily_plan: { h: 'Review my day', sub: 'Reflect on what worked today.', panel: 'Your intentions for the day', summaryRoute: '/daily-plan-summary' },
   plan_meeting: { h: 'Review this meeting', sub: 'Reflect on what worked in this meeting.', panel: 'Your meeting plan', summaryRoute: '/meeting-summary' },
-  if_then_planning: { h: 'Review this plan', sub: 'Reflect on what worked and what to change.', panel: 'Your plan', summaryRoute: '/if-then-planning-summary' },
-  inversion: { h: 'Review this plan', sub: 'Reflect on what worked and what to change.', panel: 'Your plan', summaryRoute: '/inversion-thinking-summary' },
-  'tough-conversation': { h: 'Review this plan', sub: 'Reflect on what worked and what to change.', panel: 'Your plan', summaryRoute: '/tough-conversation-summary' },
+  if_then_planning: { h: 'Review this plan', sub: 'Reflect on what worked and what to change.', panel: 'Your plan', summaryRoute: '/pressure-plan/summary' },
+  inversion: { h: 'Review this plan', sub: 'Reflect on what worked and what to change.', panel: 'Your plan', summaryRoute: '/pre-mortem/summary' },
+  'tough-conversation': { h: 'Review this plan', sub: 'Reflect on what worked and what to change.', panel: 'Your plan', summaryRoute: '/give-difficult-feedback/summary' },
 };
 
 const DAILY_QUESTIONS = [
@@ -291,7 +291,7 @@ export default function ReviewPlan() {
             {!plan && planKind === 'daily_plan' ? (
               <div className="rp-no-plan">
                 <span>There is no daily plan for this day. You can still review it.</span>
-                <Button type="button" variant="text" onClick={() => navigate('/plan-my-day')}>
+                <Button type="button" variant="text" onClick={() => navigate('/my-day/plan')}>
                   Plan my day
                 </Button>
               </div>

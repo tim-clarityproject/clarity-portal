@@ -126,7 +126,7 @@ export default function MeetingSummary() {
 
       <div className="plan-page">
         <div className="plan-back-row no-print">
-          <BackLink onClick={() => navigate('/my-plans')} label="Back to my plans" />
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" />
         </div>
 
         <div className="plan-summary-head">

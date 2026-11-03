@@ -111,7 +111,7 @@ function GrowStep1GoalForm({ isReload }) {
     if (goal.trim()) {
       updateFormData('goal', goal);
       const finalDecisionId = newDecisionId || decisionId;
-      navigate('/grow-step-2', {
+      navigate('/get-unstuck/reality', {
         state: {
           problemTitle,
           goal,
@@ -137,7 +137,7 @@ function GrowStep1GoalForm({ isReload }) {
             <PageHeader title="Get unstuck" meta={['Uses the GROW model.']} />
             <h2 className="ds-question">Define your goal clearly</h2>
           </div>
-          <Button variant="outline" onClick={() => navigate('/decision-history')} style={{ flexShrink: 0 }}>My Decisions</Button>
+          <Button variant="outline" onClick={() => navigate('/my-plans')} style={{ flexShrink: 0 }}>My Plans</Button>
         </div>
 
         <div style={{ marginBottom: '32px' }}>

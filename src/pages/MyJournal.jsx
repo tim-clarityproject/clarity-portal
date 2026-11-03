@@ -59,7 +59,7 @@ export default function MyJournal() {
   });
 
   const questions = reviewType === 'weekly-momentum' ? WEEKLY_QUESTIONS : AFTER_ACTION_QUESTIONS;
-  const pageTitle = reviewType === 'weekly-momentum' ? 'Weekly Momentum Check-in' : 'After-Action Review';
+  const pageTitle = reviewType === 'weekly-momentum' ? 'Weekly check-in' : 'After-Action Review';
   const dateLabel = reviewType === 'weekly-momentum' ? 'Week ending' : 'When was it?';
 
   useEffect(() => {

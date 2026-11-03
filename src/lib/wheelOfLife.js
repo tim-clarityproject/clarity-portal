@@ -384,7 +384,7 @@ export function presetRange(presetKey, checkins) {
 }
 
 /**
- * The range for /wheel-of-life/results?to=YYYY-MM-DD (from My Reviews):
+ * The range for /life-balance-review/results?to=YYYY-MM-DD (from My Reviews):
  * To is that date, From is 6 months before it, no preset pill.
  * @param {string} toKey
  * @returns {{ preset: string, from: string, to: string }}

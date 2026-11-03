@@ -12,7 +12,7 @@ import pageText from '../content/pageText';
 
 const TAG = {
   'after-action': 'After-Action Review',
-  'weekly-momentum': 'Weekly Momentum Check-in',
+  'weekly-momentum': 'Weekly check-in',
   progress: 'Progress Review',
 };
 

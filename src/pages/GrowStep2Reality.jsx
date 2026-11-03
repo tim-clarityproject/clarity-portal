@@ -52,7 +52,7 @@ function GrowStep2RealityForm({ isReload }) {
 
     if (constraintsValue.trim() || opportunitiesValue.trim()) {
       const finalDecisionId = newDecisionId || location.state?.decisionId;
-      navigate('/grow-step-3', {
+      navigate('/get-unstuck/options', {
         state: {
           problemTitle: location.state?.problemTitle,
           goal: location.state?.goal,
@@ -82,7 +82,7 @@ function GrowStep2RealityForm({ isReload }) {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
+          <Button variant="outline" onClick={() => navigate('/my-plans')}>My Plans</Button>
         </div>
         <PageHeader title="Get unstuck" />
         <h2 className="ds-question">What's the current situation?</h2>
@@ -129,7 +129,7 @@ function GrowStep2RealityForm({ isReload }) {
             toolType="grow"
             onNext={handleNext}
             canNext={!error && ((getFieldValue('constraints') || '').trim() || (getFieldValue('opportunities') || '').trim())}
-            onBack={() => navigate('/grow-step-1', { state: { decisionId: location.state?.decisionId, problemTitle: location.state?.problemTitle } })}
+            onBack={() => navigate('/get-unstuck', { state: { decisionId: location.state?.decisionId, problemTitle: location.state?.problemTitle } })}
           />
         )}
       </div>

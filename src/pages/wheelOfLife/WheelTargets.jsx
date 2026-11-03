@@ -16,7 +16,7 @@ import '../../styles/wheelOfLife.css';
 
 const SAVE_FAILED = 'Your targets haven’t saved yet. Check your connection and try again.';
 
-// /wheel-of-life/targets - "Your targets" from the approved mock-up
+// /life-balance-review/targets - "Your targets" from the approved mock-up
 // (wheel-of-life.html R.targets). One optional target per area on the
 // wheel; Save targets saves every change in one go and returns to where
 // the person came from. Back with unsaved changes asks first.

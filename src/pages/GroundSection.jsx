@@ -6,7 +6,7 @@ import pageText from '../content/pageText';
 const CARDS = [
   { title: 'Breathe', description: 'Slow your breathing to settle your body.', route: '/breathe' },
   { title: 'Daily Journal', description: 'Write down what is on your mind.', route: '/daily-journal' },
-  { title: 'Scenario Planning', description: 'Get clear on what you will do in different scenarios.', route: '/if-then-planning' },
+  { title: 'Scenario Planning', description: 'Get clear on what you will do in different scenarios.', route: '/pressure-plan' },
 ];
 
 function ClockIcon() {

@@ -56,7 +56,7 @@ test('My Plans: every type, named in words, with its tool, area and date', () =>
   assert.equal(by('decision:d2').area, 'interpersonal');
   assert.equal(by('decision:d2').reviewed, true);
   assert.equal(by('decision:d3').isDraft, true);
-  assert.equal(by('decision:d4').to.path, '/inversion-thinking-summary');
+  assert.equal(by('decision:d4').to.path, '/pre-mortem/summary');
   assert.equal(by('decision:d6').version, 'Version 2');
   assert.equal(by('decision:d6').area, 'strategic');
   assert.equal(by('decision:d8').typeLabel, 'Give difficult feedback');

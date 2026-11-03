@@ -17,8 +17,8 @@ const AREA_COLUMNS = 'area_key, kind, label, active, sort_order, target, target_
 const CHECKIN_COLUMNS = 'id, checkin_at, checkin_date, scores, areas, focus_area_key, focus_note';
 
 const MSG = {
-  signedOut: 'Please sign in again to use your Wheel of Life.',
-  load: "We couldn't load your Wheel of Life. Check your connection and try again.",
+  signedOut: 'Please sign in again to use your Life balance review.',
+  load: "We couldn't load your Life balance review. Check your connection and try again.",
   change: "That change hasn't saved. Check your connection and try again.",
   checkin: "Your check-in hasn't saved yet. Check your connection and try again.",
   delete: "That check-in hasn't been deleted. Check your connection and try again.",
@@ -27,7 +27,7 @@ const MSG = {
 };
 
 function fail(code, message, cause) {
-  if (cause) console.error(`Wheel of Life (${code}):`, cause);
+  if (cause) console.error(`Life balance review (${code}):`, cause);
   return { data: null, error: { code, message } };
 }
 

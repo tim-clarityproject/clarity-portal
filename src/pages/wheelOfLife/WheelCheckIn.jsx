@@ -23,7 +23,7 @@ import '../../styles/wheelOfLife.css';
 const SCORES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const SAVE_FAILED = 'Your check-in hasn’t saved yet. Check your connection and try again.';
 
-// /wheel-of-life/check-in - one rating screen per area on the wheel, then
+// /life-balance-review/check-in - one rating screen per area on the wheel, then
 // Choose one area (the approved mock-up's R.rate and R.reflect). Nothing
 // reaches the database until Finish check-in; until then every tap and
 // keystroke is kept in this browser (wheelOfLifeApi in-progress helpers),
@@ -97,7 +97,7 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
 
   const goBack = () => {
     if (i === 0) {
-      navigate('/wheel-of-life');
+      navigate('/life-balance-review');
       return;
     }
     update({ screenIndex: i - 1 });
@@ -110,7 +110,7 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
   const discard = () => {
     setDiscardOpen(false);
     clearInProgress(userId);
-    navigate('/wheel-of-life');
+    navigate('/life-balance-review');
   };
 
   const finish = async () => {
@@ -132,7 +132,7 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
     }
     clearInProgress(userId);
     // savedId: the one-pager tags this check-in "New" in its list.
-    navigate('/wheel-of-life/results', { state: { toast: 'Check-in saved. Here is your wheel.', savedId: res.data.id } });
+    navigate('/life-balance-review/results', { state: { toast: 'Check-in saved. Here is your wheel.', savedId: res.data.id } });
   };
 
   let body;
@@ -149,7 +149,7 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
             {areas.map((a, k) => <i key={a.key} className={k < i ? 'f' : (k === i ? 'n' : '')} />)}
           </div>
           <div className="wol-rate-title wol-rv">
-            <PageHeader title={name} info={pageText.wheelOfLifeCheckIn} meta={[`Area ${i + 1} of ${N}`, 'Wheel of Life']} />
+            <PageHeader title={name} info={pageText.wheelOfLifeCheckIn} meta={[`Area ${i + 1} of ${N}`, 'Life balance review']} />
           </div>
           <p className="wol-qq wol-rv" style={{ '--i': 1 }}>{questionFor(area)}</p>
           <div className="wol-scale wol-rv" style={{ '--i': 2 }} role="radiogroup" aria-label={name}>
@@ -204,7 +204,7 @@ function CheckIn({ userId, areas, checkins, chartStyle }) {
           {areas.map((a) => <i key={a.key} className="f" />)}
         </div>
         <div className="wol-rate-title wol-rv">
-          <PageHeader title="Choose one area" info={pageText.wheelOfLifeCheckIn} meta={['Last step', 'Wheel of Life']} />
+          <PageHeader title="Choose one area" info={pageText.wheelOfLifeCheckIn} meta={['Last step', 'Life balance review']} />
         </div>
         <p className="wol-qq wol-rv" style={{ '--i': 1 }}>If one area moved up by a single point, which would make the biggest difference to everything else?</p>
         <div className="wol-chips wol-rv" style={{ '--i': 2 }}>

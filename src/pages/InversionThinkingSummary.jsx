@@ -79,7 +79,7 @@ export default function InversionThinkingSummary() {
 
       <div className="plan-page">
         <div className="plan-back-row">
-          <BackLink onClick={() => navigate('/decision-history')} label="Back to my decisions" />
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" />
         </div>
 
         <div className="plan-summary-head">
@@ -139,7 +139,7 @@ export default function InversionThinkingSummary() {
         <div className="plan-actions">
           <Button
             variant="primary"
-            onClick={() => navigate('/inversion-step-1', { state: { decisionId: thinking.id, goal: data.goal, risks, riskAnswers: data.riskAnswers, legacyPlan: hasRiskAnswers ? '' : data.plan, problemTitle: thinking.title } })}
+            onClick={() => navigate('/pre-mortem', { state: { decisionId: thinking.id, goal: data.goal, risks, riskAnswers: data.riskAnswers, legacyPlan: hasRiskAnswers ? '' : data.plan, problemTitle: thinking.title } })}
           >
             Edit
           </Button>

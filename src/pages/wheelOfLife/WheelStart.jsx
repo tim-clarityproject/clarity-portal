@@ -12,7 +12,7 @@ import { PenIcon, TargetIcon } from './icons';
 import WheelLoadState from './WheelLoadState';
 import '../../styles/wheelOfLife.css';
 
-// /wheel-of-life - the Start screen of the approved mock-up
+// /life-balance-review - the Start screen of the approved mock-up
 // (wheel-of-life.html R.start), with real data. Opening it seeds the ten
 // standard areas on a first visit (loadAreas).
 export default function WheelStart() {
@@ -30,14 +30,14 @@ export default function WheelStart() {
   const count = data.checkins.length;
   const newest = newestCheckin(data.checkins);
   const inProgress = readInProgress(user?.id);
-  const here = '/wheel-of-life';
+  const here = '/life-balance-review';
 
   return (
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page wol-page wol-enter">
         <div className="wol-head">
-          <PageHeader title="Wheel of Life" info={pageText.wheelOfLife} />
+          <PageHeader title="Life balance review" info={pageText.wheelOfLife} />
         </div>
 
         <div className="wol-facts wol-rv" style={{ '--i': 3 }}>
@@ -63,22 +63,22 @@ export default function WheelStart() {
         </div>
 
         <div className="wol-qrow wol-rv" style={{ '--i': 5 }}>
-          <Button variant="text" className="wol-qlink" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}>
+          <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>
             <PenIcon />Change your areas
           </Button>
           {count > 0 ? (
-            <Button variant="text" className="wol-qlink" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}>
+            <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}>
               <TargetIcon />Set targets
             </Button>
           ) : null}
         </div>
 
         <div className="wol-acts wol-rv" style={{ '--i': 6 }}>
-          <Button variant="primary" onClick={() => navigate('/wheel-of-life/check-in')}>
+          <Button variant="primary" onClick={() => navigate('/life-balance-review/check-in')}>
             {inProgress ? 'Continue check-in' : 'Start check-in'}
           </Button>
           {count > 0 ? (
-            <Button variant="outline" onClick={() => navigate('/wheel-of-life/results')}>See your wheel</Button>
+            <Button variant="outline" onClick={() => navigate('/life-balance-review/results')}>See your wheel</Button>
           ) : null}
         </div>
       </div>

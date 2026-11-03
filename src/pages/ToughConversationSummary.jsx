@@ -87,11 +87,11 @@ export default function ToughConversationSummary() {
 
       <div className="plan-page">
         <div className="plan-back-row">
-          <BackLink onClick={() => navigate('/decision-history')} label="Back to my decisions" />
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" />
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={conversation.title || 'Tough conversation'} info={pageText.toughConversationSummary} meta={[`Created ${formatUkDate(conversation.created_at)}`]} />
+          <PageHeader title={conversation.title || 'Give difficult feedback'} info={pageText.toughConversationSummary} meta={[`Created ${formatUkDate(conversation.created_at)}`]} />
         </div>
 
         <div className="tc-script">
@@ -130,7 +130,7 @@ export default function ToughConversationSummary() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate('/tough-conversation-step-1', { state: { decisionId: conversation.id, ...data, problemTitle: conversation.title } })}
+            onClick={() => navigate('/give-difficult-feedback', { state: { decisionId: conversation.id, ...data, problemTitle: conversation.title } })}
           >
             Edit
           </Button>

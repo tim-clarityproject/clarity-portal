@@ -213,7 +213,7 @@ export default function ProjectScatter() {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
+          <Button variant="outline" onClick={() => navigate('/my-plans?area=strategic')}>My Plans</Button>
         </div>
         <PageHeader title="Strategic alignment" meta={['Where my team should focus']} />
         <h2 className="ds-question">Are you allocating your resources appropriately?</h2>

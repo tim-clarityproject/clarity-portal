@@ -85,9 +85,9 @@ const MINUTE_MS = 60000;
 
 // The help list (M2 HELP): situations in plain words, each naming its tool.
 const HELP = [
-  { situation: 'I’m under pressure', tool: 'Pressure plan', to: '/if-then-planning' },
-  { situation: 'I’ve got a hard conversation coming up', tool: 'Give difficult feedback', to: '/tough-conversation-step-1' },
-  { situation: 'I’m stuck on a decision', tool: 'Get unstuck', to: '/grow-step-1' },
+  { situation: 'I’m under pressure', tool: 'Pressure plan', to: '/pressure-plan' },
+  { situation: 'I’ve got a hard conversation coming up', tool: 'Give difficult feedback', to: '/give-difficult-feedback' },
+  { situation: 'I’m stuck on a decision', tool: 'Get unstuck', to: '/get-unstuck' },
   { situation: 'I want a meeting to go well', tool: 'Meeting planner', to: '/plan-meeting' },
   { situation: 'I need a moment to reset', tool: 'Breathe', to: '/breathe' },
 ];

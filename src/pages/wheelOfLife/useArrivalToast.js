@@ -19,7 +19,7 @@ export default function useArrivalToast(showToast) {
 
 // Where Back / Save on Your areas and Your targets return to: the screen
 // the person came from, if it was a Wheel of Life screen.
-export function returnPath(state, fallback = '/wheel-of-life') {
+export function returnPath(state, fallback = '/life-balance-review') {
   const from = state?.from;
-  return typeof from === 'string' && from.startsWith('/wheel-of-life') ? from : fallback;
+  return typeof from === 'string' && from.startsWith('/life-balance-review') ? from : fallback;
 }

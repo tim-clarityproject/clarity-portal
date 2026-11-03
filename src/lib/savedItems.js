@@ -48,22 +48,22 @@ const DECISION_AREA = {
 const SUMMARY_WITH_ROW = {
   daily_plan: '/daily-plan-summary',
   plan_meeting: '/meeting-summary',
-  if_then_planning: '/if-then-planning-summary',
-  stop_doing_audit: '/stop-doing-audit-summary',
+  if_then_planning: '/pressure-plan/summary',
+  stop_doing_audit: '/time-audit/summary',
   grow: '/decision-summary',
-  'tough-conversation': '/tough-conversation-summary',
+  'tough-conversation': '/give-difficult-feedback/summary',
 };
 const SUMMARY_BY_ID = {
-  inversion: '/inversion-thinking-summary',
+  inversion: '/pre-mortem/summary',
 };
 const EDIT_ROUTE = {
   daily_plan: '/plan-my-day',
   plan_meeting: '/plan-meeting',
-  if_then_planning: '/if-then-planning',
-  stop_doing_audit: '/stop-doing-audit',
-  grow: '/grow-step-1',
-  inversion: '/inversion-step-1',
-  'tough-conversation': '/tough-conversation-step-1',
+  if_then_planning: '/pressure-plan',
+  stop_doing_audit: '/time-audit',
+  grow: '/get-unstuck',
+  inversion: '/pre-mortem',
+  'tough-conversation': '/give-difficult-feedback',
   'strategic-alignment': '/goal-setting',
 };
 
@@ -253,7 +253,7 @@ export function planRows(data, today = getLocalDateKey()) {
 // ----------------------------------------------------------- My Reviews
 
 const JOURNAL_ENTRY = {
-  'weekly-momentum': { tool: 'Weekly momentum check-in', fallback: 'Weekly check-in' },
+  'weekly-momentum': { tool: 'Weekly check-in', fallback: 'Weekly check-in' },
   'after-action': { tool: 'After-action review', fallback: 'After-action review' },
   progress: { tool: 'Progress review', fallback: 'Progress review' },
 };
@@ -380,7 +380,7 @@ export function reviewRows(data, today = getLocalDateKey()) {
       typeLabel: 'Life balance review',
       at: c.checkinAt,
       canDelete: true,
-      to: { path: `/wheel-of-life/results?to=${c.date}` },
+      to: { path: `/life-balance-review/results?to=${c.date}` },
     }));
   });
 

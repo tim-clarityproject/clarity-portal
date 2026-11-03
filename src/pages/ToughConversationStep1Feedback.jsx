@@ -30,7 +30,7 @@ function cleanPhrase(text, phrasesToRemove, lowercaseFirst = false) {
 
 function suggestNameFrom(observation) {
   const trimmed = (observation || '').trim();
-  if (!trimmed) return 'New tough conversation';
+  if (!trimmed) return 'New difficult feedback';
   return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
 }
 
@@ -116,7 +116,7 @@ export default function ToughConversationStep1Feedback() {
       clearProgress();
       clearDraft();
       toast.show(`Draft saved as ${name}.`);
-      navigate('/decision-history');
+      navigate('/my-plans');
     } catch (error) {
       console.error('[ToughConversationStep1Feedback] draft save failed:', error);
       setNameDialog(null);
@@ -141,12 +141,12 @@ export default function ToughConversationStep1Feedback() {
       }
     }
     clearDraft();
-    navigate('/decision-history', { state: { toast: 'Discarded.' } });
+    navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
   const goContinue = () => {
     clearDraft();
-    navigate('/tough-conversation-step-2', {
+    navigate('/give-difficult-feedback/questions', {
       state: { decisionId, observation, impact, need, selectedQuestions, customQuestion, problemTitle: currentTitle },
     });
   };
@@ -168,7 +168,7 @@ export default function ToughConversationStep1Feedback() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeader title="Have a tough conversation" info={pageText.toughConversationStep1Feedback} />
+          <PageHeader title="Give difficult feedback" info={pageText.toughConversationStep1Feedback} />
         </div>
 
         <div className={`plan-dq${observation.trim() ? ' on' : ''}`}>

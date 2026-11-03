@@ -137,11 +137,11 @@ async function formFor(tool) {
 const PLAN_TOOLS = [
   ['daily_plan', null, 'Plan my day', '/daily-plan-summary'],
   ['plan_meeting', `${STAMP}: Harbour introduction call`, 'Meeting planner', '/meeting-summary'],
-  ['if_then_planning', `${STAMP}: Board presentation`, 'Pressure plan', '/if-then-planning-summary'],
-  ['stop_doing_audit', `${STAMP}: Monday mornings`, 'Time audit', '/stop-doing-audit-summary'],
+  ['if_then_planning', `${STAMP}: Board presentation`, 'Pressure plan', '/pressure-plan/summary'],
+  ['stop_doing_audit', `${STAMP}: Monday mornings`, 'Time audit', '/time-audit/summary'],
   ['grow', `${STAMP}: Referral pipeline`, 'Get unstuck', '/decision-summary'],
-  ['inversion', `${STAMP}: Harbour proposal`, 'Pre-mortem', '/inversion-thinking-summary'],
-  ['tough-conversation', `${STAMP}: Late reports`, 'Give difficult feedback', '/tough-conversation-summary'],
+  ['inversion', `${STAMP}: Harbour proposal`, 'Pre-mortem', '/pre-mortem/summary'],
+  ['tough-conversation', `${STAMP}: Late reports`, 'Give difficult feedback', '/give-difficult-feedback/summary'],
 ];
 const TEAM = `${STAMP}: Leadership team`;
 
@@ -187,7 +187,7 @@ async function seed() {
     entry('after-action', `${STAMP}: Harbour discovery call`, '2026-10-15', { q1: 'It ran over by ten minutes.' }),
     entry('progress', `${STAMP}: Quarter progress`, '2026-07-10', { q1: 'Two of three goals moved.' }),
   ], 'entries');
-  expectReviews.push({ title: 'Weekly check-in', tool: 'Weekly momentum check-in', date: 'Fri 9 Oct', path: '/review-summary', area: 'personal' });
+  expectReviews.push({ title: 'Weekly check-in', tool: 'Weekly check-in', date: 'Fri 9 Oct', path: '/review-summary', area: 'personal' });
   expectReviews.push({ title: `${STAMP}: Harbour discovery call`, tool: 'After-action review', date: 'Thu 15 Oct', path: '/review-summary', area: 'personal' });
   expectReviews.push({ title: `${STAMP}: Quarter progress`, tool: 'Progress review', date: 'Fri 10 Jul', path: '/review-summary', area: 'personal' });
 
@@ -208,7 +208,7 @@ async function seed() {
     user_id: me, checkin_date: '2026-08-06', checkin_at: '2026-08-06T10:00:00Z', scores: { health: 6, career: 7 },
     areas: [{ key: 'health', label: 'Health / Fitness' }, { key: 'career', label: 'Career / Work' }], notes: {}, focus_area_key: 'health',
   }, 'checkins');
-  expectReviews.push({ title: 'Focus on health', tool: 'Life balance review', date: 'Thu 6 Aug', path: '/wheel-of-life/results', area: 'personal' });
+  expectReviews.push({ title: 'Focus on health', tool: 'Life balance review', date: 'Thu 6 Aug', path: '/life-balance-review/results', area: 'personal' });
 
   const planDay = await freeDay('day_plans', 'local_date', '2026-08-04');
   await insert('day_plans', { user_id: me, local_date: planDay, status: 'finished', finished_at: `${planDay}T08:00:00Z`, way_of_being: 'Calm and clear' }, 'dayPlans');
@@ -402,7 +402,7 @@ async function checkHubs(page, tag) {
   await page.goto(`${APP}/personal/plan`);
   await until(async () => (await page.locator('.ds-hub-recent .ds-row').count()) > 0, 20000);
   await page.locator('.ds-hub-recent .ds-row').first().click();
-  pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(my-day\/plan\/|daily-plan-summary|decision-summary|inversion-thinking-summary|stop-doing-audit-summary)/)), path(page));
+  pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(my-day\/plan\/|daily-plan-summary|decision-summary|pre-mortem\/summary|time-audit\/summary|pressure-plan\/summary|give-difficult-feedback\/summary)/)), path(page));
 
   // Strategic: the Health Check's teams.
   await page.goto(`${APP}/strategic`);

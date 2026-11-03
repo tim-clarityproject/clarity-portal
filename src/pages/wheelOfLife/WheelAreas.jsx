@@ -25,7 +25,7 @@ function split(all) {
   return { all: sorted, active: sorted.filter((a) => a.active), removed: sorted.filter((a) => !a.active) };
 }
 
-// /wheel-of-life/areas - "Your areas" from the approved mock-up
+// /life-balance-review/areas - "Your areas" from the approved mock-up
 // (wheel-of-life.html R.areas). Every add, remove, restore and reset saves
 // straight away; if a save fails the change is undone on screen and an
 // in-page message says so. Save areas and Back return to where the person

@@ -173,7 +173,7 @@ export default function StopDoingAudit() {
       setDecisionId(savedId);
       clearProgress();
       clearDraft();
-      navigate('/stop-doing-audit-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
+      navigate('/time-audit/summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
     } catch (error) {
       console.error('[StopDoingAudit] save failed:', error);
       setSaveError('That didn’t save. Check your connection and try again.');
@@ -265,7 +265,7 @@ export default function StopDoingAudit() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeader title="Time Allocation Audit" info={pageText.stopDoingAudit} />
+          <PageHeader title="Time audit" info={pageText.stopDoingAudit} />
         </div>
 
         <div className="plan-label-row">

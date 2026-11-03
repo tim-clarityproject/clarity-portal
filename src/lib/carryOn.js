@@ -63,9 +63,9 @@ export function carryOnItems(userId, { today, yesterday, exclude = [] }) {
 
   // Older tools whose new drafts open from their own address.
   add('journal', 'Journal', '/daily-journal', { draft: `journal:${today}` });
-  add('time-audit', 'Time audit', '/stop-doing-audit', { draft: 'stop-doing-audit:new' });
-  add('feedback', 'Give difficult feedback', '/tough-conversation-step-1', { draft: 'tough-conversation-1:new' });
-  add('pre-mortem', 'Pre-mortem', '/inversion-step-1', { draft: 'inversion-1:new' });
+  add('time-audit', 'Time audit', '/time-audit', { draft: 'stop-doing-audit:new' });
+  add('feedback', 'Give difficult feedback', '/give-difficult-feedback', { draft: 'tough-conversation-1:new' });
+  add('pre-mortem', 'Pre-mortem', '/pre-mortem', { draft: 'inversion-1:new' });
 
   return found
     .filter((x) => !exclude.includes(x.to))

@@ -180,10 +180,10 @@ const AREAS = [
 ];
 const HUB_TILES = {
   '/personal': [['Plan', '/personal/plan'], ['Reset', '/personal/reset'], ['Review', '/personal/review']],
-  '/personal/plan': [['Individual Performance Plan', '/performance-plan'], ['Performance Sprint', '/performance-sprint'], ['Plan my day', '/my-day/plan'], ['Get unstuck', '/grow-step-1'], ['Pre-mortem', '/inversion-step-1'], ['Time audit', '/stop-doing-audit']],
-  '/personal/reset': [['Breathe', '/breathe'], ['Pressure plan', '/if-then-planning'], ['Journal', '/daily-journal']],
-  '/personal/review': [['Review my day', '/my-day/review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/wheel-of-life']],
-  '/interpersonal': [['Meeting planner', '/plan-meeting'], ['Give difficult feedback', '/tough-conversation-step-1']],
+  '/personal/plan': [['Individual Performance Plan', '/performance-plan'], ['Performance Sprint', '/performance-sprint'], ['Plan my day', '/my-day/plan'], ['Get unstuck', '/get-unstuck'], ['Pre-mortem', '/pre-mortem'], ['Time audit', '/time-audit']],
+  '/personal/reset': [['Breathe', '/breathe'], ['Pressure plan', '/pressure-plan'], ['Journal', '/daily-journal']],
+  '/personal/review': [['Review my day', '/my-day/review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/life-balance-review']],
+  '/interpersonal': [['Meeting planner', '/plan-meeting'], ['Give difficult feedback', '/give-difficult-feedback']],
   '/strategic': [['Strategic Alignment Health Check', '/goal-setting']],
 };
 const HUB_TITLES = { '/personal': 'Personal', '/personal/plan': 'Plan', '/personal/reset': 'Reset', '/personal/review': 'Review', '/interpersonal': 'Interpersonal', '/strategic': 'Strategic' };

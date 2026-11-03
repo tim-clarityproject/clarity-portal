@@ -242,7 +242,7 @@ function GrowStep4WillDoForm({ isReload }) {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
+          <Button variant="outline" onClick={() => navigate('/my-plans')}>My Plans</Button>
         </div>
         <PageHeader title="Get unstuck" />
         <h2 className="ds-question">What will I do?</h2>
@@ -398,7 +398,7 @@ function GrowStep4WillDoForm({ isReload }) {
             toolType="grow"
             onNext={handleSaveClick}
             canNext={!error && willDoValue.trim() && !isSaving && !isLoading}
-            onBack={() => navigate('/grow-step-3b-prioritize', { state: { decisionId: location.state?.decisionId } })}
+            onBack={() => navigate('/get-unstuck/prioritise', { state: { decisionId: location.state?.decisionId } })}
             nextLabel={isSaving ? 'Saving' : 'Finish'}
           />
         )}

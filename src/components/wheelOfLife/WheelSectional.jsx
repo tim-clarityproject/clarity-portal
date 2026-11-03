@@ -28,7 +28,7 @@ import { tipProps } from '../design/ChartTips';
  */
 export default function WheelSectional({
   areas, series, targets = null, labelValues = null, highlightKey = null,
-  size = 'mini', labels = false, aria = 'Wheel of Life', when, startWhen,
+  size = 'mini', labels = false, aria = 'Life balance wheel', when, startWhen,
 }) {
   const o = sizeFor(size, false);
   const M = remap(areas, series, targets, labels ? labelValues : null);

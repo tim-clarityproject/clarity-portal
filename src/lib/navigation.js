@@ -6,8 +6,8 @@ import pageText from '../content/pageText';
 // line on how it helps and how long it takes.
 //
 // Only tools that exist get a tile (brief, step 1). A tool not rebuilt yet
-// opens its current page under its new name (CLAUDE.md rule 26: routes
-// keep their old names until step 5). Not built yet, so no tile: the
+// opens its current page under its new name and its new address (step 5;
+// the old addresses redirect, RENAMED below). Not built yet, so no tile: the
 // Dashboard (Phase 5), Find my sweet spot, Deliberate vs default, Travel
 // and jet lag plan, Delegation audit, Emotional wash, Identity beyond the
 // role, Hardware and Software check-in, Stay deliberate under pressure,
@@ -48,22 +48,22 @@ export const TOOLS = {
     name: 'Get unstuck',
     line: 'Turn a goal or a decision into next steps you’ll take.',
     time: '~15 minutes',
-    to: '/grow-step-1',
-    routes: ['/grow-step-'],
+    to: '/get-unstuck',
+    routes: ['/get-unstuck'],
   },
   inv: {
     name: 'Pre-mortem',
     line: 'Test a plan by imagining it went wrong.',
     time: '~10 minutes',
-    to: '/inversion-step-1',
-    routes: ['/inversion-'],
+    to: '/pre-mortem',
+    routes: ['/pre-mortem'],
   },
   time: {
     name: 'Time audit',
     line: 'See where your time goes and free some up.',
     time: '~10 minutes',
-    to: '/stop-doing-audit',
-    routes: ['/stop-doing-audit'],
+    to: '/time-audit',
+    routes: ['/time-audit'],
   },
   breathe: {
     name: 'Breathe',
@@ -76,8 +76,8 @@ export const TOOLS = {
     name: 'Pressure plan',
     line: 'Get ready for a high-pressure moment.',
     time: '~8 minutes',
-    to: '/if-then-planning',
-    routes: ['/if-then-planning'],
+    to: '/pressure-plan',
+    routes: ['/pressure-plan'],
   },
   journal: {
     name: 'Journal',
@@ -112,8 +112,8 @@ export const TOOLS = {
     name: 'Life balance review',
     line: 'Check the rest of your life is backing your performance.',
     time: '~6 minutes',
-    to: '/wheel-of-life',
-    routes: ['/wheel-of-life'],
+    to: '/life-balance-review',
+    routes: ['/life-balance-review'],
   },
   meet: {
     name: 'Meeting planner',
@@ -126,8 +126,8 @@ export const TOOLS = {
     name: 'Give difficult feedback',
     line: 'Give hard feedback clearly and fairly.',
     time: '~8 minutes',
-    to: '/tough-conversation-step-1',
-    routes: ['/tough-conversation-'],
+    to: '/give-difficult-feedback',
+    routes: ['/give-difficult-feedback'],
   },
   hc: {
     name: 'Strategic Alignment Health Check',
@@ -276,10 +276,60 @@ export const PIN_GROUPS = [
 export const MAX_PINS = 3;
 const PINNABLE = new Set(PIN_GROUPS.flatMap((g) => g.tools));
 
+/**
+ * The tool a stored pin means. Pins are saved as tool keys, but a pin
+ * holding an address (an old one, such as /grow-step-1, or a new one) is
+ * read as the tool it opens, so it still opens after the renames.
+ */
+function pinKey(pin) {
+  if (typeof pin !== 'string') return null;
+  if (PINNABLE.has(pin)) return pin;
+  if (!pin.startsWith('/')) return null;
+  const path = renamedPath(pin.split(/[?#]/)[0].replace(/\/+$/, ''));
+  return [...PINNABLE].find((k) => TOOLS[k].to === path || TOOLS[k].routes.some((r) => matches(path, r))) || null;
+}
+
 /** Pins as saved, cleaned: known tools only, no repeats, at most 3. */
 export function cleanPins(list) {
   if (!Array.isArray(list)) return [];
-  return [...new Set(list.filter((k) => typeof k === 'string' && PINNABLE.has(k)))].slice(0, MAX_PINS);
+  return [...new Set(list.map(pinKey).filter(Boolean))].slice(0, MAX_PINS);
+}
+
+/**
+ * Tools renamed in Phase 4 (brief, step 5): each old address and its new
+ * one, in words matching the name people see. Every old address
+ * redirects with its query, hash and state (App.jsx MovedTo), so saved
+ * items, old emails, bookmarks and Home Screen apps open the same thing.
+ * File names, database values and saved tool types keep their old names.
+ * /plan-my-day and /review-plan redirect only in part (App.jsx).
+ */
+export const RENAMED = {
+  '/grow-step-1': '/get-unstuck',
+  '/grow-step-2': '/get-unstuck/reality',
+  '/grow-step-3': '/get-unstuck/options',
+  '/grow-step-3b-prioritize': '/get-unstuck/prioritise',
+  '/grow-step-4': '/get-unstuck/will-do',
+  '/inversion-step-1': '/pre-mortem',
+  '/inversion-step-2': '/pre-mortem/risks',
+  '/inversion-step-3': '/pre-mortem/plan',
+  '/inversion-thinking-summary': '/pre-mortem/summary',
+  '/if-then-planning': '/pressure-plan',
+  '/if-then-planning-summary': '/pressure-plan/summary',
+  '/stop-doing-audit': '/time-audit',
+  '/stop-doing-audit-summary': '/time-audit/summary',
+  '/tough-conversation-step-1': '/give-difficult-feedback',
+  '/tough-conversation-step-2': '/give-difficult-feedback/questions',
+  '/tough-conversation-summary': '/give-difficult-feedback/summary',
+  '/wheel-of-life': '/life-balance-review',
+  '/wheel-of-life/areas': '/life-balance-review/areas',
+  '/wheel-of-life/check-in': '/life-balance-review/check-in',
+  '/wheel-of-life/results': '/life-balance-review/results',
+  '/wheel-of-life/targets': '/life-balance-review/targets',
+};
+
+/** An address after the renames (itself when it wasn't renamed). */
+export function renamedPath(path) {
+  return RENAMED[path] || MOVED[path] || path;
 }
 
 /**
@@ -298,4 +348,5 @@ export const MOVED = {
   // My decisions joined the one My Plans list (step 4). Its discard toast
   // comes with it in the state.
   '/decision-history': '/my-plans',
+  ...RENAMED,
 };

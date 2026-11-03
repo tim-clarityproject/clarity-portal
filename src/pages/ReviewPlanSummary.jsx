@@ -15,9 +15,9 @@ const RQ = [
 const SUMMARY_ROUTE = {
   daily_plan: '/daily-plan-summary',
   plan_meeting: '/meeting-summary',
-  if_then_planning: '/if-then-planning-summary',
-  inversion: '/inversion-thinking-summary',
-  'tough-conversation': '/tough-conversation-summary',
+  if_then_planning: '/pressure-plan/summary',
+  inversion: '/pre-mortem/summary',
+  'tough-conversation': '/give-difficult-feedback/summary',
 };
 
 const PLAN_LABEL = {
@@ -118,7 +118,7 @@ export default function ReviewPlanSummary() {
 
       <div className="plan-page">
         <div className="plan-back-row">
-          <BackLink onClick={() => navigate('/my-plans')} label="Back to my plans" />
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" />
         </div>
 
         <div className="plan-summary-head">

@@ -102,11 +102,11 @@ export default function IfThenPlanningSummary() {
 
       <div className="plan-page">
         <div className="plan-back-row">
-          <BackLink onClick={() => navigate('/my-plans')} label="Back to my plans" />
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" />
         </div>
 
         <div className="plan-summary-head">
-          <PageHeader title={planning.title || 'If-Then plan'} info={pageText.ifThenPlanningSummary} />
+          <PageHeader title={planning.title || 'Pressure plan'} info={pageText.ifThenPlanningSummary} />
         </div>
 
         <div className="plan-sum">
@@ -149,7 +149,7 @@ export default function IfThenPlanningSummary() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate('/if-then-planning', { state: { decisionId: planning.id } })}
+            onClick={() => navigate('/pressure-plan', { state: { decisionId: planning.id } })}
           >
             Edit
           </Button>

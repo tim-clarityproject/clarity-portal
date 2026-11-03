@@ -136,7 +136,7 @@ export default function StopDoingAuditSummary() {
         </div>
 
         <div className="plan-actions">
-          <Button type="button" variant="outline" onClick={() => navigate('/stop-doing-audit', { state: { decisionId: audit.id } })}>
+          <Button type="button" variant="outline" onClick={() => navigate('/time-audit', { state: { decisionId: audit.id } })}>
             Edit audit
           </Button>
           <Button type="button" variant="outline" onClick={() => setDeleteOpen(true)}>

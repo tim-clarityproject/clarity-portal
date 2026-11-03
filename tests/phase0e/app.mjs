@@ -194,10 +194,10 @@ async function within(ms, fn) {
 }
 
 // ---- 4 and 5: sideways scrolling, at the standard and the largest text size ----------
-const PAGES = ['/welcome', '/my-plans', '/my-reviews', '/daily-journals', '/decision-history', '/personal-operating-plan',
-  '/daily-journal', '/plan-meeting', '/if-then-planning', '/my-journal', '/review-plan', '/plan-my-day',
-  '/stop-doing-audit', '/grow-step-1', '/inversion-step-1', '/tough-conversation-step-1', '/edit-profile',
-  '/my-account', '/about', '/wheel-of-life/results', '/wheel-of-life/areas',
+const PAGES = ['/welcome', '/my-plans', '/my-reviews', '/daily-journals', '/personal-operating-plan',
+  '/daily-journal', '/plan-meeting', '/pressure-plan', '/my-journal', '/my-day/review', '/my-day/plan',
+  '/time-audit', '/get-unstuck', '/pre-mortem', '/give-difficult-feedback', '/edit-profile',
+  '/my-account', '/about', '/life-balance-review/results', '/life-balance-review/areas',
   // The hub pages (Phase 4).
   '/personal', '/personal/plan', '/personal/reset', '/personal/review', '/interpersonal', '/strategic'];
 for (const [label, scale] of [['standard text size', 1], ['largest text size (twice the standard)', 2]]) {

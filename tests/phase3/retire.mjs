@@ -239,7 +239,7 @@ async function checkRedirects(page, tag) {
   await pushRoute(page, '/my-journal', { reviewType: 'weekly-momentum' });
   pass(`${tag}: a new weekly check-in opens the debrief`, await landsOn(page, '/performance-sprint/debrief'), path(page));
   await until(async () => (await page.locator('.ds-guide, .plan-page').count()) > 0);
-  pass(`${tag}: the debrief shows, not the old check-in`, !has(await textOf(page), 'Weekly Momentum Check-in'));
+  pass(`${tag}: the debrief shows, not the old check-in`, !has(await textOf(page), 'Weekly check-in'));
   await shot(page, `${tag}-weekly-redirect`);
 
   await page.goto(`${APP}/welcome`);
@@ -266,7 +266,7 @@ async function checkOldItems(page, tag) {
   // Weekly, finished: listed, opens its summary with its answers.
   const w = row(page, WEEKLY.title);
   pass(`${tag}: the old weekly check-in is listed`, (await w.count()) === 1);
-  pass(`${tag}: its type label`, (await w.locator('.hlist-row-tags b').textContent()).trim() === 'Weekly momentum check-in');
+  pass(`${tag}: its type label`, (await w.locator('.hlist-row-tags b').textContent()).trim() === 'Weekly check-in');
   pass(`${tag}: the finished weekly check-in has a pencil`, (await w.locator('.hlist-icon-btn:not(.hlist-icon-btn--del)').count()) === 1);
   await w.locator('.hlist-row-main').click();
   pass(`${tag}: it opens its summary`, await landsOn(page, '/review-summary'), path(page));
@@ -281,7 +281,7 @@ async function checkOldItems(page, tag) {
     const vals = await page.locator('textarea').evaluateAll((els) => els.map((e) => e.value));
     return vals.includes(WEEKLY.q1) ? vals : null;
   });
-  pass(`${tag}: the old check-in shows its answers to edit`, Boolean(edited) && has(await textOf(page), 'Weekly Momentum Check-in'));
+  pass(`${tag}: the old check-in shows its answers to edit`, Boolean(edited) && has(await textOf(page), 'Weekly check-in'));
 
   // Weekly, draft: Continue opens it with its draft answer.
   await openMyReviews(page);

@@ -119,7 +119,7 @@ export default function DailyPlanSummary() {
         <div className="plan-page">
           <p className="ui-subtitle">Plan not found.</p>
           <div className="plan-actions">
-            <Button type="button" variant="primary" onClick={() => navigate('/plan-my-day')}>
+            <Button type="button" variant="primary" onClick={() => navigate('/my-day/plan')}>
               Plan my day
             </Button>
           </div>
@@ -137,7 +137,7 @@ export default function DailyPlanSummary() {
 
       <div className="plan-page">
         <div className="plan-back-row">
-          <BackLink onClick={() => navigate('/my-plans')} label="Back to my plans" />
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" />
         </div>
 
         <div className="plan-summary-head">

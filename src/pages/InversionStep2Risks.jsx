@@ -124,7 +124,7 @@ export default function InversionStep2Risks() {
       clearProgress();
       forgetDrafts();
       toast.show(`Draft saved as ${name}.`);
-      navigate('/decision-history');
+      navigate('/my-plans');
     } catch (error) {
       console.error('[InversionStep2Risks] draft save failed:', error);
       setNameDialog(null);
@@ -135,7 +135,7 @@ export default function InversionStep2Risks() {
   };
 
   const handleBack = () => {
-    navigate('/inversion-step-1', { state: { decisionId, goal, risks, legacyPlan, problemTitle: currentTitle } });
+    navigate('/pre-mortem', { state: { decisionId, goal, risks, legacyPlan, problemTitle: currentTitle } });
   };
 
   // Deletes the saved row only if it is still a draft - a completed
@@ -153,12 +153,12 @@ export default function InversionStep2Risks() {
         console.error('[InversionStep2Risks] draft delete on discard failed:', error);
       }
     }
-    navigate('/decision-history', { state: { toast: 'Discarded.' } });
+    navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
   const goContinue = () => {
     const filled = risks.filter((r) => r.trim());
-    navigate('/inversion-step-3', {
+    navigate('/pre-mortem/plan', {
       state: { decisionId, goal, risks: filled, legacyPlan, problemTitle: currentTitle },
     });
   };

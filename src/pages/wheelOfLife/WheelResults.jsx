@@ -30,11 +30,11 @@ const fd = formatCheckinDate;
 const MINUS = '−';
 const PRESET_OPTIONS = RANGE_PRESETS.map((p) => ({ value: p.key, label: p.label }));
 
-// /wheel-of-life/results - the one-pager of the approved mock-up
+// /life-balance-review/results - the one-pager of the approved mock-up
 // (wheel-of-life.html R.onepager, legend, delta, spark), with real data
 // and the logic in src/lib/wheelOfLife.js (spec section 6). Everything is
 // worked out from the areas on the wheel NOW; the date range picks which
-// check-ins are compared. /wheel-of-life/results?to=YYYY-MM-DD (from
+// check-ins are compared. /life-balance-review/results?to=YYYY-MM-DD (from
 // My Reviews) opens the six months up to that date.
 export default function WheelResults() {
   const location = useLocation();
@@ -101,9 +101,9 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
   const today = getLocalDateKey();
   const acts = (
     <div className="wol-acts">
-      <Button variant="primary" onClick={() => navigate('/wheel-of-life/check-in')}>New check-in</Button>
-      <Button variant="text" className="wol-qlink" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
-      <Button variant="text" className="wol-qlink" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}><PenIcon />Change your areas</Button>
+      <Button variant="primary" onClick={() => navigate('/life-balance-review/check-in')}>New check-in</Button>
+      <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
+      <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}><PenIcon />Change your areas</Button>
     </div>
   );
 
@@ -134,11 +134,11 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
       <div className="ui-root">
         <DesignHeader />
         <div className="plan-page wol-page wol-enter">
-          <div className="wol-head"><PageHeader title="Wheel of Life" info={pageText.wheelOfLifeResults} /></div>
+          <div className="wol-head"><PageHeader title="Life balance review" info={pageText.wheelOfLifeResults} /></div>
           <div className="wol-rv" style={{ '--i': 3 }}>
             <EmptyState
               question="No check-ins yet. Start your first check-in to see your wheel."
-              action={{ label: 'Start check-in', onClick: () => navigate('/wheel-of-life/check-in') }}
+              action={{ label: 'Start check-in', onClick: () => navigate('/life-balance-review/check-in') }}
             />
           </div>
         </div>
@@ -165,7 +165,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
   const header = (
     <>
       <div className="wol-head">
-        <PageHeader title="Wheel of Life" info={pageText.wheelOfLifeResults} meta={[`Latest check-in ${fd(newest.date)}`]} />
+        <PageHeader title="Life balance review" info={pageText.wheelOfLifeResults} meta={[`Latest check-in ${fd(newest.date)}`]} />
       </div>
       <div className="wol-range wol-rv" style={{ '--i': 3 }}>
         <div className="wol-rtop">
@@ -300,7 +300,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
               size={size}
               labels
               ticks
-              aria={`Wheel of Life, ${fd(last.date)}`}
+              aria={`Life balance wheel, ${fd(last.date)}`}
               when={fd(last.date)}
               startWhen={one ? undefined : fd(first.date)}
             />
@@ -317,7 +317,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
               <b>Set your targets</b>
               <p>Not every area needs to be a 10. Choose the score you’d be happy with in each area, and your wheel will show how close you are.</p>
             </div>
-            <Button variant="outline" onClick={() => navigate('/wheel-of-life/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
+            <Button variant="outline" onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
           </div>
         ) : null}
 
@@ -357,7 +357,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
         {gone.length ? (
           <p className="wol-gone">
             {`Not on your wheel: ${gone.join(', ')}. Past scores are kept. `}
-            <Button variant="text" className="wol-qlink wol-qlink--in" onClick={() => navigate('/wheel-of-life/areas', { state: { from: here } })}>Change your areas</Button>
+            <Button variant="text" className="wol-qlink wol-qlink--in" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>Change your areas</Button>
           </p>
         ) : null}
 

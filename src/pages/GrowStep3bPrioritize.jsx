@@ -256,7 +256,7 @@ function GrowStep3bPrioritizeForm({ isReload }) {
 
   const handleNext = (newDecisionId) => {
     const finalDecisionId = newDecisionId || location.state?.decisionId;
-    navigate('/grow-step-4', {
+    navigate('/get-unstuck/will-do', {
       state: {
         problemTitle: location.state?.problemTitle,
         goal: location.state?.goal,
@@ -278,7 +278,7 @@ function GrowStep3bPrioritizeForm({ isReload }) {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '64px 32px' }} className="page-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-          <Button variant="outline" onClick={() => navigate('/decision-history')}>My Decisions</Button>
+          <Button variant="outline" onClick={() => navigate('/my-plans')}>My Plans</Button>
         </div>
         <PageHeader
           title="Get unstuck"
@@ -696,7 +696,7 @@ function GrowStep3bPrioritizeForm({ isReload }) {
           toolType="grow"
           onNext={handleNext}
           canNext={canSubmit}
-          onBack={() => navigate('/grow-step-3', { state: { ...location.state, options: [...availableOptions, ...prioritizedOptions], timerSeconds: location.state?.timerSeconds, decisionId: location.state?.decisionId } })}
+          onBack={() => navigate('/get-unstuck/options', { state: { ...location.state, options: [...availableOptions, ...prioritizedOptions], timerSeconds: location.state?.timerSeconds, decisionId: location.state?.decisionId } })}
         />
       </div>
     </div>

@@ -143,7 +143,7 @@ export default function InversionStep1Goal() {
       clearProgress();
       forgetDrafts();
       toast.show(`Draft saved as ${name}.`);
-      navigate('/decision-history');
+      navigate('/my-plans');
     } catch (error) {
       console.error('[InversionStep1Goal] draft save failed:', error);
       setNameDialog(null);
@@ -168,7 +168,7 @@ export default function InversionStep1Goal() {
         console.error('[InversionStep1Goal] draft delete on discard failed:', error);
       }
     }
-    navigate('/decision-history', { state: { toast: 'Discarded.' } });
+    navigate('/my-plans', { state: { toast: 'Discarded.' } });
   };
 
   const canContinue = goal.trim().length > 0;
@@ -179,7 +179,7 @@ export default function InversionStep1Goal() {
       <Button
         variant="primary"
         disabled={!canContinue || isSaving}
-        onClick={() => navigate('/inversion-step-2', { state: buildState() })}
+        onClick={() => navigate('/pre-mortem/risks', { state: buildState() })}
       >
         Continue
       </Button>

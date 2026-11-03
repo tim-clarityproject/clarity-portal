@@ -138,6 +138,28 @@ function MovedTo({ to }) {
   return <Navigate to={{ pathname: to, search: location.search, hash: location.hash }} state={location.state} replace />;
 }
 
+// Two old addresses that meant two things (Phase 4, step 5). /plan-my-day
+// started the old Plan my day, and still finishes an old saved day plan
+// (state.decisionId); with no saved plan it opens the new Plan my day.
+// /review-plan was the old Review my day and still reviews a saved plan
+// (a meeting plan, a Pressure plan, a Pre-mortem, feedback or an old day
+// plan, in state.plan); with no plan it opens the new Review my day.
+function PlanMyDayRoute() {
+  const location = useLocation();
+  if (!location.state?.decisionId) {
+    return <Navigate to={{ pathname: '/my-day/plan', search: location.search, hash: location.hash }} replace />;
+  }
+  return <PlanMyDayStep1 />;
+}
+
+function ReviewPlanRoute() {
+  const location = useLocation();
+  if (!location.state?.plan) {
+    return <Navigate to={{ pathname: '/my-day/review', search: location.search, hash: location.hash }} replace />;
+  }
+  return <ReviewPlan />;
+}
+
 function AppContent() {
   const { isLoading, user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -256,10 +278,10 @@ function AppContent() {
     '/forgot-password/check-email',
     '/auth/reset-password',
     '/breathe',
-    // Wheel of Life screens with a pinned footer bar (as /breathe).
-    '/wheel-of-life/areas',
-    '/wheel-of-life/check-in',
-    '/wheel-of-life/targets'
+    // Life balance review screens with a pinned footer bar (as /breathe).
+    '/life-balance-review/areas',
+    '/life-balance-review/check-in',
+    '/life-balance-review/targets'
   ].includes(location.pathname)
     || location.pathname.startsWith('/legal/')
     || location.pathname.startsWith('/health-check/')
@@ -386,37 +408,37 @@ function AppContent() {
           <Route path="/daily-journals/:date" element={<DailyJournalRead />} />
           <Route path="/my-reviews" element={<MyReviews />} />
           <Route path="/review-summary" element={<ReviewSummary />} />
-          <Route path="/review-plan" element={<ReviewPlan />} />
+          <Route path="/review-plan" element={<ReviewPlanRoute />} />
           <Route path="/review-plan-summary" element={<ReviewPlanSummary />} />
           <Route path="/decision-summary" element={<DecisionSummary />} />
-          <Route path="/wheel-of-life" element={lazyPage(WheelStart)} />
-          <Route path="/wheel-of-life/areas" element={lazyPage(WheelAreas)} />
-          <Route path="/wheel-of-life/check-in" element={lazyPage(WheelCheckIn)} />
-          <Route path="/wheel-of-life/results" element={lazyPage(WheelResults)} />
-          <Route path="/wheel-of-life/targets" element={lazyPage(WheelTargets)} />
-          <Route path="/plan-my-day" element={<PlanMyDayStep1 />} />
+          <Route path="/life-balance-review" element={lazyPage(WheelStart)} />
+          <Route path="/life-balance-review/areas" element={lazyPage(WheelAreas)} />
+          <Route path="/life-balance-review/check-in" element={lazyPage(WheelCheckIn)} />
+          <Route path="/life-balance-review/results" element={lazyPage(WheelResults)} />
+          <Route path="/life-balance-review/targets" element={lazyPage(WheelTargets)} />
+          <Route path="/plan-my-day" element={<PlanMyDayRoute />} />
           <Route path="/daily-plan-summary" element={<DailyPlanSummary />} />
           <Route path="/plan-meeting" element={<PlanMeeting />} />
           <Route path="/meeting-summary" element={<MeetingSummary />} />
-          <Route path="/if-then-planning" element={<IfThenPlanning />} />
-          <Route path="/if-then-planning-summary" element={<IfThenPlanningSummary />} />
+          <Route path="/pressure-plan" element={<IfThenPlanning />} />
+          <Route path="/pressure-plan/summary" element={<IfThenPlanningSummary />} />
           <Route path="/breathe" element={<BreathingPage />} />
           <Route path="/breathing-sessions-summary" element={<BreathingSessionsSummary />} />
-          <Route path="/stop-doing-audit" element={<StopDoingAudit />} />
-          <Route path="/stop-doing-audit-summary" element={<StopDoingAuditSummary />} />
+          <Route path="/time-audit" element={<StopDoingAudit />} />
+          <Route path="/time-audit/summary" element={<StopDoingAuditSummary />} />
           <Route path="/my-plans" element={<MyPlans />} />
-          <Route path="/grow-step-1" element={<GrowStep1Goal />} />
-          <Route path="/grow-step-2" element={<GrowStep2Reality />} />
-          <Route path="/grow-step-3" element={<GrowStep3Options />} />
-          <Route path="/grow-step-3b-prioritize" element={<GrowStep3bPrioritize />} />
-          <Route path="/grow-step-4" element={<GrowStep4WillDo />} />
-          <Route path="/inversion-step-1" element={<InversionStep1Goal />} />
-          <Route path="/inversion-step-2" element={<InversionStep2Risks />} />
-          <Route path="/inversion-step-3" element={<InversionStep3Plan />} />
-          <Route path="/inversion-thinking-summary" element={<InversionThinkingSummary />} />
-          <Route path="/tough-conversation-step-1" element={<ToughConversationStep1Feedback />} />
-          <Route path="/tough-conversation-step-2" element={<ToughConversationStep2Coaching />} />
-          <Route path="/tough-conversation-summary" element={<ToughConversationSummary />} />
+          <Route path="/get-unstuck" element={<GrowStep1Goal />} />
+          <Route path="/get-unstuck/reality" element={<GrowStep2Reality />} />
+          <Route path="/get-unstuck/options" element={<GrowStep3Options />} />
+          <Route path="/get-unstuck/prioritise" element={<GrowStep3bPrioritize />} />
+          <Route path="/get-unstuck/will-do" element={<GrowStep4WillDo />} />
+          <Route path="/pre-mortem" element={<InversionStep1Goal />} />
+          <Route path="/pre-mortem/risks" element={<InversionStep2Risks />} />
+          <Route path="/pre-mortem/plan" element={<InversionStep3Plan />} />
+          <Route path="/pre-mortem/summary" element={<InversionThinkingSummary />} />
+          <Route path="/give-difficult-feedback" element={<ToughConversationStep1Feedback />} />
+          <Route path="/give-difficult-feedback/questions" element={<ToughConversationStep2Coaching />} />
+          <Route path="/give-difficult-feedback/summary" element={<ToughConversationSummary />} />
           <Route path="/edit-profile" element={<EditPersonalDetails />} />
           {/* TEMP - dev-only test route for Build Prompt 5, remove when prompts 6-10 wire the real pages */}
         </Route>

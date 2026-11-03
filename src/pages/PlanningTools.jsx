@@ -13,10 +13,10 @@ const PLAN_ROWS = [
 // the mock-up's Decide group (it predates the tool) - added here since
 // it is a live tool today; see build summary point 4.
 const DECIDE_ROWS = [
-  { title: "I'm feeling anxious about an uncertain situation", description: 'Prepare for uncertain situations with contingency plans.', route: '/if-then-planning' },
-  { title: "I've got too many things to do", description: 'Reclaim hours by stopping or delegating time-sink activities.', route: '/stop-doing-audit' },
-  { title: 'I need to give tough feedback', description: 'Create a script for giving feedback.', route: '/tough-conversation-step-1' },
-  { title: "I want to make sure something doesn't go wrong", description: 'Look at the risks before you start, then plan to prevent them.', route: '/inversion-step-1' },
+  { title: "I'm feeling anxious about an uncertain situation", description: 'Prepare for uncertain situations with contingency plans.', route: '/pressure-plan' },
+  { title: "I've got too many things to do", description: 'Reclaim hours by stopping or delegating time-sink activities.', route: '/time-audit' },
+  { title: 'I need to give tough feedback', description: 'Create a script for giving feedback.', route: '/give-difficult-feedback' },
+  { title: "I want to make sure something doesn't go wrong", description: 'Look at the risks before you start, then plan to prevent them.', route: '/pre-mortem' },
 ];
 
 const COMING_SOON_ROWS = [

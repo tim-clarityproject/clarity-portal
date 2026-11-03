@@ -30,7 +30,7 @@ function BinIcon() {
 // Planning (Draft)" with no way to change it - see build summary).
 function suggestNameFrom(situation) {
   const trimmed = (situation || '').trim();
-  if (!trimmed) return 'New If-Then plan';
+  if (!trimmed) return 'New Pressure plan';
   return trimmed.length > MAX_NAME_LENGTH ? trimmed.slice(0, MAX_NAME_LENGTH) : trimmed;
 }
 
@@ -165,7 +165,7 @@ export default function IfThenPlanning() {
         navigate('/my-plans');
       } else {
         clearProgress();
-        navigate('/if-then-planning-summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
+        navigate('/pressure-plan/summary', { state: { decisionId: savedId, toast: `Saved as ${name}.` } });
       }
     } catch (error) {
       console.error('[IfThenPlanning] save failed:', error);
@@ -209,7 +209,7 @@ export default function IfThenPlanning() {
 
       <div className="plan-page plan-page--form">
         <div className="plan-header">
-          <PageHeader title="If-Then plan" info={pageText.ifThenPlanning} />
+          <PageHeader title="Pressure plan" info={pageText.ifThenPlanning} />
         </div>
 
         <div className="plan-field">

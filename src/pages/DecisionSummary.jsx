@@ -12,10 +12,10 @@ import { Loading, PageHeader, Button, ChartTips, tipProps } from '../components/
 // old bookmark/link that still points here gets sent on rather than
 // trying to re-render (and risk drifting from) that page's content.
 const REDIRECT_ROUTE = {
-  inversion: '/inversion-thinking-summary',
-  'tough-conversation': '/tough-conversation-summary',
-  if_then_planning: '/if-then-planning-summary',
-  stop_doing_audit: '/stop-doing-audit-summary',
+  inversion: '/pre-mortem/summary',
+  'tough-conversation': '/give-difficult-feedback/summary',
+  if_then_planning: '/pressure-plan/summary',
+  stop_doing_audit: '/time-audit/summary',
   daily_plan: '/daily-plan-summary',
   plan_meeting: '/meeting-summary',
 };
@@ -26,7 +26,7 @@ const TYPE_LABEL = {
 };
 
 const EDIT_ROUTE = {
-  grow: '/grow-step-1',
+  grow: '/get-unstuck',
   'strategic-alignment': '/goal-setting',
 };
 
@@ -100,7 +100,7 @@ export default function DecisionSummary() {
 
       <div className="plan-page">
         <div className="plan-back-row">
-          <BackLink onClick={() => navigate('/decision-history')} label="Back to my decisions" />
+          <BackLink onClick={() => navigate('/my-plans')} label="Back to My Plans" />
         </div>
 
         <div className="plan-summary-head">

@@ -161,7 +161,7 @@ export default function SaveDiscardButtons({ formData, pageType = 'decision', to
 
     setIsSaving(false);
     // Navigate to decision history
-    navigate('/decision-history');
+    navigate('/my-plans');
   };
 
   const handleNext = async () => {

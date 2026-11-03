@@ -824,7 +824,7 @@
   .ui-root .wol-tgr .wol-clr { grid-area: c; justify-self: end; }
 }
 
-/* ---- the one-pager (/wheel-of-life/results) -------------------------- */
+/* ---- the one-pager (/life-balance-review/results) -------------------------- */
 .ui-root .wol-range {
   display: flex;
   flex-direction: column;

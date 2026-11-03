@@ -34,7 +34,7 @@ function lineStyle(cls) {
  */
 export default function WheelRadar({
   areas, series, targets = null, labelValues = null, highlightKey = null,
-  size = 'mini', labels = false, ticks = false, aria = 'Wheel of Life', when, startWhen,
+  size = 'mini', labels = false, ticks = false, aria = 'Life balance wheel', when, startWhen,
 }) {
   const o = sizeFor(size, true);
   const M = remap(areas, series, targets, labels ? labelValues : null);

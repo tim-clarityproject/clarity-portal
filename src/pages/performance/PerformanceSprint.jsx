@@ -461,7 +461,7 @@ function SprintBody({
       </div>
       <div className="ds-actions ipp-actions sprint-welcome-actions">
         <Button variant="primary" onClick={() => onJump(logRef)}>Log today</Button>
-        <Button onClick={() => navigate('/plan-my-day')}>Plan my day</Button>
+        <Button onClick={() => navigate('/my-day/plan')}>Plan my day</Button>
       </div>
     </>
   ) : null;
