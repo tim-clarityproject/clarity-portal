@@ -1,6 +1,7 @@
 import { Children, isValidElement } from 'react';
 
-// Never break a word at its hyphen (Tim, 3 Nov 2026: "high-" at the end of
+// Never break a word at its hyphen, and never leave a number alone on a
+// line (Tim, 3 Nov 2026: "high-" at the end of
 // one line and "performance" on the next). Neither DM Sans nor Nekst has
 // the non-breaking hyphen (U+2011), so a browser would draw it from
 // another font; instead each word with a hyphen inside it ("high-performance",
@@ -13,11 +14,14 @@ import { Children, isValidElement } from 'react';
 //                                         (elements are left as they are,
 //                                         their own strings included)
 
-const HYPHENATED = /([^\s-]+(?:-[^\s-]+)+)/;
+// A word with a hyphen inside it, or a word and the number after it
+// ("Sprint 1", "week 4"), so a number is never alone on a line (UI tester,
+// 3 Nov: "PERFORMANCE SPRINT" then "1" on its own).
+const KEPT = /((?:[^\s-]+(?:-[^\s-]+)+|[^\s\d][^\s]*) \d+(?=[\s.,;:!?]|$)|[^\s-]+(?:-[^\s-]+)+)/;
 
 function keepString(text, keyBase = '') {
-  if (!text || !text.includes('-')) return text;
-  const parts = text.split(HYPHENATED);
+  if (!text || !/-|\s\d/.test(text)) return text;
+  const parts = text.split(KEPT);
   if (parts.length === 1) return text;
   return parts.map((part, i) => (i % 2
     ? <span key={`${keyBase}k${i}`} className="ds-keep">{part}</span>

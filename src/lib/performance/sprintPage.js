@@ -12,6 +12,7 @@
 // in progress.md as UNDEFINED.
 
 import { daysBetween, weekday } from '../scores/dates.js';
+import { m1RatingScore } from '../scores/m1.js';
 import {
   m0AtStandard,
   m0DebriefWindow,
@@ -120,6 +121,9 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
     }
     case 'rating': {
       const aim = m.direction === 'lower' ? `aim for ${n(m.target)} or lower` : `aim for ${n(m.target)}`;
+      // Today's line: the bar is today's rating towards the aim, empty until
+      // rated today (UI tester, 3 Nov: a full bar beside no rating yet).
+      lineBar = todayValue == null ? 0 : m1RatingScore(todayValue, m.target, m.direction) / 100;
       line = `Rated 1 to 5 today, ${aim}`;
       weekLine = upTo.length
         ? `Average ${n(Math.round((total / upTo.length) * 10) / 10)} this week, ${aim}`
