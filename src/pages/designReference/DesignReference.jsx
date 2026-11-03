@@ -94,6 +94,7 @@ import SprintTool from './SprintTool';
 import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } from './DailyPartsDemos';
 import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo } from './NavigationDemos';
 import { CarryOnDemo, DayFocusDemo, HelpListDemo, MiniDialDemo, PlanStepsDemo, SuggestionDemo } from './TodayDemos';
+import { BreathOrbDemo } from './OrbDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, withMeasure, yearView } from '../../lib/performance';
@@ -1745,12 +1746,12 @@ function Gallery() {
         <GallerySection id="c17" title="Breathe button" demo={OrbDemo} rules={(
           <>
             <p><New /><b>Breathe only, with its name</b> (Tim, 23 Oct).</p>
-            <p>A slim pill, bottom right, desktop only: the small breathing orb and the word “Breathe”.</p>
-            <p>One click opens Breathe.</p>
+            <p>A 60px pill, bottom right, desktop only: the small breathing orb in the person’s chosen style and the word “Breathe” (breathe-orb.html, 29 Oct).</p>
+            <p>The edge and the crosshair turn coral on hover or keyboard focus. One click opens Breathe.</p>
             <p><b>Chat to [coach’s first name] sits in the desktop header</b>, top right, as a quiet labelled button, e.g. “Chat to Tim”.</p>
-            <p>Always the client’s own coach, never “Dr.”.</p>
+            <p>Always the client’s own coach from their coach link, never “Dr.”. Someone without a coach, or whose coach has no way stored that the portal can open, sees nothing.</p>
+            <p>One way opens at once; two show a small list. Offline, it says calmly that a chat needs a connection.</p>
             <p>Phone has no floating button.</p>
-            <p>Coral on the in-breath, mint on the out-breath; deeper coral and green in light.</p>
           </>
         )} />
 
@@ -1840,6 +1841,16 @@ function Gallery() {
           <>
             <p><New /><b>“I need help with something”</b> (M2) slides in from the side with situations in plain words, each naming its tool.</p>
             <p>It ends with “Something else?” and Chat to the coach’s first name. Someone without a coach doesn’t get that line.</p>
+          </>
+        )} />
+
+        <GallerySection id="c60" title="The Breathe orb" demo={BreathOrbDemo} rules={(
+          <>
+            <p><New /><b>Two styles, the person’s choice</b> (Tim, 29 Oct): Rings, the approved orb with finer lines, or Level, a round gauge that fills from the bottom. Rings is the starting choice.</p>
+            <p>Every line is a fixed 1 to 1.25 pixels at any size. Rings turns coral on the in-breath and mint on the out-breath. Level is one mint line over a soft mint tint, still during a hold.</p>
+            <p>The phase word and the seconds left sit beside the orb, never on it, with “through your nose” on the way in and “through your mouth” on the way out.</p>
+            <p>With reduced motion nothing grows, shrinks or turns. The orb stays at half a breath and fades with the breath.</p>
+            <p>Sleep wind down uses the quieter colours and no words.</p>
           </>
         )} />
 

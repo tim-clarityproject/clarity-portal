@@ -344,14 +344,28 @@
   /* Bold crosshair (only four places) and the Breathe button */
   --bold-cross-menu: 26px;
   --mission-pill-h: 50px;    /* the My Mission pill in the desktop header (M2) */
+  --mission-pill-max: 520px; /* its widest (breathe-orb.html .d .mis), so two lines stay readable */
   --bold-cross-bar: 36px;
-  --breathe-h: 52px;
-  --breathe-orb: 34px;
+  --breathe-h: 60px;         /* the floating Breathe button (breathe-orb.html, 29 Oct: 60px pill, 44px orb) */
+  --breathe-orb: 44px;
+  --breathe-pad-l: 7px;      /* breathe-orb.html .fab: 0 22px 0 7px, so the orb sits evenly inside the pill */
   /* The ONE exception to the 14px crosshair minimum (Claude's call on the
      0b report, 23 Oct): the crosshair inside the Breathe orb stays 8px, as
      design-reference-v3, because it is decorative, aria-hidden and part of
      the approved orb. Nowhere else may a crosshair go below 14px. */
   --breathe-cross: 8px;
+  /* Breathe's words beside the orb (breathe-orb.html .bw2): the phase
+     word 22px and the seconds left 56px Nekst Light */
+  --fs-bwords-word: calc(22 * var(--u-big));
+  --fs-bwords-count: calc(56 * var(--u-big));
+  /* The orb's sizes (breathe-orb.html): Breathe 300px (164px on a phone),
+     Sleep wind down 220px (190px on a phone) */
+  --orb-tool: 300px;
+  --orb-tool-phone: 164px;
+  --orb-night: 220px;
+  --orb-night-phone: 190px;
+  --bwords-w: 176px;         /* the words beside the orb (breathe-orb.html .bw2), so nothing moves as they change */
+  --bwords-w-phone: 128px;
   /* The app icons (Home Screen icon, favicon): white on black in both modes */
   --icon-tile: #000000;
   --icon-cross: #FFFFFF;

@@ -17,15 +17,65 @@ import PlanMissionPanel from './PlanMissionPanel';
 // Phone: M2's full-width My Mission pill. The menu is the phone bar's
 // centre button (SitePhoneNav), so the phone header has no menu button.
 //
-// The pill opens what the mission bar opened before: the plan on desktop,
-// the full mission with Edit mission on phone. With no mission it reads
-// "Add your mission when you're ready" and opens the mission step in My
-// Account.
+// The pill (Phase 4, step 3, the decisions on the Mission pill): nothing
+// is ever cut off with "…". The mission shows on up to two lines; when it
+// needs more, or on the narrowest phones (under 360px), the pill shows
+// "My Mission" alone. Either way, tapping it opens the full text: the My
+// Mission panel (M1 mpanel) for someone with an Individual Performance
+// Plan, the old mission's fold on phone and its plan page on desktop for
+// someone without one. With no mission it reads "Add your mission when
+// you're ready" in grey and opens the mission step of the new plan
+// (/performance-plan/build?step=mission), never the old Personal
+// Operating Plan page.
 //
-// Someone with an Individual Performance Plan (Phase 2) sees the plan's
-// mission instead, and the pill opens the My Mission panel (M1 mpanel) on
-// desktop and phone. Everyone else keeps the pill as it was.
+// The notch: the top bar sits inside the phone's safe area (decisions
+// part 4, 30 Oct): the top inset is added here, and the sides' insets by
+// src/pwa-standalone.css on every touch screen. As a Home Screen app the
+// whole page already starts below the top inset, so it isn't added twice.
 const NO_MISSION = 'Add your mission when you’re ready';
+export const MISSION_STEP = '/performance-plan/build?step=mission';
+
+// Whether the mission fits on two lines in the pill, measured as it is
+// laid out. When the window changes it is shown again and measured again
+// before the screen is drawn, so nothing flickers.
+function useFitsTwoLines(ref) {
+  const [check, setCheck] = useState({ fits: true, n: 0 });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !check.fits) return;
+    const cs = getComputedStyle(el);
+    const line = Number.parseFloat(cs.lineHeight) || 0;
+    const words = el.scrollHeight - (Number.parseFloat(cs.paddingTop) || 0) - (Number.parseFloat(cs.paddingBottom) || 0);
+    const ok = el.scrollWidth <= el.clientWidth + 1 && (!line || words <= line * 2 + 1);
+    if (!ok) setCheck((c) => ({ ...c, fits: false }));
+  }, [ref, check]);
+  useEffect(() => {
+    let live = true;
+    const again = () => { if (live) setCheck((c) => ({ fits: true, n: c.n + 1 })); };
+    window.addEventListener('resize', again);
+    document.fonts?.ready?.then(again);
+    return () => {
+      live = false;
+      window.removeEventListener('resize', again);
+    };
+  }, []);
+  return check.fits;
+}
+
+// The pill's label and words. `none`: no mission yet.
+function PillWords({ text, none }) {
+  const ref = useRef(null);
+  const fits = useFitsTwoLines(ref);
+  return (
+    <>
+      <span className="hdr-mis-label">My Mission</span>
+      <span ref={ref} className={`hdr-mis-text${fits ? '' : ' hdr-mis-text--long'}`} aria-hidden={!fits && !none ? 'true' : undefined}>
+        {text}
+      </span>
+      {!fits && !none && <span className="ds-sr">, open to read it in full</span>}
+    </>
+  );
+}
 
 export default function DesignHeader({ className = '' }) {
   const navigate = useNavigate();
@@ -91,12 +141,17 @@ export default function DesignHeader({ className = '' }) {
     }
   }, [expandedPanel]);
 
-  // My Account's mission section, with Edit mission open.
-  const openMissionStep = () => {
+  // Edit mission on the old mission's fold: My Account's mission section.
+  const openEditMission = () => {
     setExpandedPanel(false);
     navigate('/my-account', {
       state: { ...location.state, scrollTo: 'mission-section', openEditMission: true },
     });
+  };
+  // No mission yet: the mission step of the new plan.
+  const openMissionStep = () => {
+    setExpandedPanel(false);
+    navigate(MISSION_STEP);
   };
 
   const showPill = showInHeader;
@@ -108,11 +163,19 @@ export default function DesignHeader({ className = '' }) {
         .ui-root .hdr {
           position: relative;
           background: var(--bg);
+          padding-top: env(safe-area-inset-top, 0px);
+        }
+        /* A Home Screen app: the page already starts below the top inset
+           (src/pwa-standalone.css). */
+        @media (display-mode: standalone) and (pointer: coarse) {
+          .ui-root .hdr {
+            padding-top: 0;
+          }
         }
 
         /* M2's My Mission pill: the solid surface pill, no outline, a small
            "My Mission" label in Nekst capitals (no crosshair), then the
-           mission, cut short with "…" when it doesn't fit. */
+           mission on up to two lines, never cut short with "…". */
         .ui-root .hdr-mis {
           all: unset;
           cursor: pointer;
@@ -146,16 +209,35 @@ export default function DesignHeader({ className = '' }) {
           white-space: nowrap;
         }
         .ui-root .hdr-mis-text {
+          flex: 1 1 auto;
           min-width: 0;
+          padding: var(--space-px6) 0;
           font-size: var(--fs-note) !important;
           line-height: var(--lh-text);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          white-space: normal;
+          overflow-wrap: normal;
           text-align: right;
+          text-wrap: balance;
+        }
+        /* Too long for two lines: "My Mission" alone. */
+        .ui-root .hdr-mis-text--long {
+          display: none;
         }
         .ui-root .hdr-mis--none .hdr-mis-text {
           color: var(--placeholder);
+        }
+        /* The narrowest phones: "My Mission" alone, or with no mission
+           the grey words alone. */
+        @media (max-width: 359px) {
+          .ui-root .hdr-mis:not(.hdr-mis--none) .hdr-mis-text {
+            display: none;
+          }
+          .ui-root .hdr-mis--none .hdr-mis-label {
+            display: none;
+          }
+          .ui-root .hdr-mis--none .hdr-mis-text {
+            text-align: left;
+          }
         }
 
         @media (max-width: 768px) {
@@ -237,7 +319,7 @@ export default function DesignHeader({ className = '' }) {
             justify-self: center;
             gap: var(--space-px28);
             min-height: var(--mission-pill-h) !important;
-            max-width: 100%;
+            max-width: min(100%, var(--mission-pill-max));
           }
           .ui-root .hdr-desktop .hdr-mis-text {
             font-size: var(--fs-secondary) !important;
@@ -285,11 +367,10 @@ export default function DesignHeader({ className = '' }) {
               <button
                 type="button"
                 className={`hdr-mis${hasMission ? '' : ' hdr-mis--none'}`}
-                onClick={openPlanPanel}
-                aria-haspopup="dialog"
+                onClick={hasMission ? openPlanPanel : openMissionStep}
+                aria-haspopup={hasMission ? 'dialog' : undefined}
               >
-                <span className="hdr-mis-label">My Mission</span>
-                <span className="hdr-mis-text">{hasMission ? mission : NO_MISSION}</span>
+                <PillWords key={hasMission ? mission : ''} text={hasMission ? mission : NO_MISSION} none={!hasMission} />
               </button>
             ) : hasMission ? (
               <div className={`hdr-mis-card${expandedPanel ? ' open' : ''}`}>
@@ -299,14 +380,13 @@ export default function DesignHeader({ className = '' }) {
                   onClick={() => setExpandedPanel(!expandedPanel)}
                   aria-expanded={expandedPanel}
                 >
-                  <span className="hdr-mis-label">My Mission</span>
-                  <span className="hdr-mis-text">{mission}</span>
+                  <PillWords key={mission} text={mission} />
                 </button>
                 <div className={`hdr-mis-panel${expandedPanel ? ' open' : ''}`}>
                   <div className="hdr-mis-panel-inner" inert={!expandedPanel}>
                     <div className="hdr-mis-full">
                       <p>{mission}</p>
-                      <button type="button" className="ds-link" onClick={openMissionStep}>
+                      <button type="button" className="ds-link" onClick={openEditMission}>
                         Edit mission
                       </button>
                     </div>
@@ -315,8 +395,7 @@ export default function DesignHeader({ className = '' }) {
               </div>
             ) : (
               <button type="button" className="hdr-mis hdr-mis--none" onClick={openMissionStep}>
-                <span className="hdr-mis-label">My Mission</span>
-                <span className="hdr-mis-text">{NO_MISSION}</span>
+                <PillWords text={NO_MISSION} none />
               </button>
             )}
           </div>
@@ -340,16 +419,15 @@ export default function DesignHeader({ className = '' }) {
             <button
               type="button"
               className={`hdr-mis${hasMission ? '' : ' hdr-mis--none'}`}
-              onClick={activePlan ? openPlanPanel : hasMission ? () => navigate('/personal-operating-plan') : openMissionStep}
-              aria-haspopup={activePlan ? 'dialog' : undefined}
+              onClick={!hasMission ? openMissionStep : activePlan ? openPlanPanel : () => navigate('/personal-operating-plan')}
+              aria-haspopup={activePlan && hasMission ? 'dialog' : undefined}
             >
-              <span className="hdr-mis-label">My Mission</span>
-              <span className="hdr-mis-text">{hasMission ? mission : NO_MISSION}</span>
+              <PillWords key={hasMission ? mission : ''} text={hasMission ? mission : NO_MISSION} none={!hasMission} />
             </button>
           ) : <span />}
 
           <span className="hdr-chat">
-            <ChatButton onClick={startChat} />
+            {startChat && <ChatButton onClick={startChat} />}
           </span>
         </div>
       </div>

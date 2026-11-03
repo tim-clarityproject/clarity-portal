@@ -72,12 +72,22 @@ async function readSettings(userId, cols) {
   return settings;
 }
 
-/** The person's own coach (my_coach), or null. Online only. */
+/**
+ * The person's own coach (my_coach), or null. Online only. contactWays
+ * are the coach's allowed ways to be reached ('email', 'whatsapp',
+ * 'imessage'; coaches.contact_ways), with the mobile they use.
+ */
 export async function loadMyCoach() {
   const { data, error } = await supabase.rpc('my_coach');
   if (error) throw error;
   const c = Array.isArray(data) ? data[0] : data;
-  return c ? { id: c.coach_id, firstName: c.first_name, awayUntil: c.away_until } : null;
+  return c ? {
+    id: c.coach_id,
+    firstName: c.first_name,
+    awayUntil: c.away_until,
+    mobile: c.mobile || null,
+    contactWays: Array.isArray(c.contact_ways) ? c.contact_ways : [],
+  } : null;
 }
 
 /** The active plan's row only: enough for the header's My Mission pill. */

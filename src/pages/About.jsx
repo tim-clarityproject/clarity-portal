@@ -141,7 +141,7 @@ export default function About() {
             <span className="ds-sr"> (opens in a new tab)</span>
           </a>
           <div className="about-actions">
-            {coachName && (
+            {coachName && startChat && (
               <Button variant="primary" onClick={startChat}>{`Chat to ${coachName}`}</Button>
             )}
           </div>

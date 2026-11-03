@@ -446,13 +446,13 @@ export default function App() {
     <AuthProvider>
       <MissionProvider>
         <FormProvider>
-          <CoachChatProvider>
-            <ToastProvider>
+          <ToastProvider>
+            <CoachChatProvider>
               <BrowserRouter>
                 <AppContent />
               </BrowserRouter>
-            </ToastProvider>
-          </CoachChatProvider>
+            </CoachChatProvider>
+          </ToastProvider>
         </FormProvider>
       </MissionProvider>
     </AuthProvider>

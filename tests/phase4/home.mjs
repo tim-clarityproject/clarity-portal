@@ -120,7 +120,7 @@ async function newContext({ width = 1280, mode = 'dark', height, zone = LONDON, 
     if (/supabase\.co/.test(url) && !url.includes(TEST_HOST)) return route.abort();
     if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
     if (coach !== undefined && /\/rest\/v1\/rpc\/my_coach/.test(url)) {
-      const body = coach ? [{ coach_id: '00000000-0000-4000-8000-000000000001', first_name: coach, away_until: null }] : [];
+      const body = coach ? [{ coach_id: '00000000-0000-4000-8000-000000000001', first_name: coach, mobile: '+447700900123', contact_ways: ['whatsapp'], away_until: null }] : [];
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     }
     return route.fallback();

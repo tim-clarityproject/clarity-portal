@@ -448,11 +448,11 @@ export default function MyAccount() {
             </Button>
           </div>
           {/* Chat to the coach: in the header on desktop, here on phone. */}
-          {coachName && (
+          {coachName && startChat && (
             <div className="account-row account-row--phone-only">
               <div className="account-row-text">
                 <div className="account-row-title">{`Chat to ${coachName}`}</div>
-                <div className="account-row-desc">A message on WhatsApp or iMessage</div>
+                <div className="account-row-desc">A message to your coach</div>
               </div>
               <Button variant="outline" onClick={startChat}>
                 Start a chat

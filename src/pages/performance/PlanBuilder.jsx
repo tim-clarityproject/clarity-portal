@@ -117,6 +117,7 @@ function focusSoon(id) {
 export default function PlanBuilder({ editing = false }) {
   const { user } = useContext(AuthContext);
   const userId = user?.id;
+  const { search } = useLocation();
   const [state, setState] = useState({ data: null, error: null });
 
   // The plan as it stands now, fresh from the server: the editor writes
@@ -149,9 +150,10 @@ export default function PlanBuilder({ editing = false }) {
   }
   // A plan with a version is edited; one without is still being built
   // (never a second active plan).
+  // The address's question (?step=mission, the header's pill) goes along.
   const mode = state.data.plan && state.data.latestVersion ? 'edit' : 'build';
-  if (mode === 'edit' && !editing) return <Navigate to="/performance-plan/edit" replace />;
-  if (mode === 'build' && editing) return <Navigate to="/performance-plan/build" replace />;
+  if (mode === 'edit' && !editing) return <Navigate to={`/performance-plan/edit${search}`} replace />;
+  if (mode === 'build' && editing) return <Navigate to={`/performance-plan/build${search}`} replace />;
   return <PlanTool key={`${userId}-${mode}`} userId={userId} data={state.data} mode={mode} />;
 }
 
@@ -747,8 +749,10 @@ function PlanTool({ userId, data, mode }) {
     ),
   });
 
-  // "Edit this Strategy" opens that Strategy's own step.
+  // "Edit this Strategy" opens that Strategy's own step; the header's pill
+  // with no mission opens the mission step (?step=mission).
   const [initialStep] = useState(() => {
+    if (params.get('step') === 'mission') return 'mission';
     if (!askedStrategy) return undefined;
     const s = initial.strategies.find((x) => x.id === askedStrategy);
     const objectiveId = s?.objectiveIds.find((id) => initial.objectives.some((o) => o.id === id && (o.name || '').trim()));

@@ -1,10 +1,10 @@
 import { createContext, useContext } from 'react';
 
-// The client's own coach: { firstName, mobile } (e.g. "Tim", "Adie"), for
-// the who-sees label and "Chat to [first name]". The app provides it from
-// the coach settings (src/content/coach.js until Phase 1 gives each client
-// their own); it is never typed into a component, and it is null for
-// someone without a coach. A plain first name is accepted too.
+// The client's own coach: { firstName, mobile, contactWays } (e.g. "Tim",
+// "Adie"), for the who-sees label and "Chat to [first name]". The app
+// provides it from the person's own coach link (my_coach, read by
+// CoachChatProvider); it is never typed into a component, and it is null
+// for someone without a coach. A plain first name is accepted too.
 export const CoachContext = createContext(null);
 
 export function useCoach() {

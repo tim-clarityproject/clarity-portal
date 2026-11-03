@@ -427,7 +427,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
         items={HELP.map((h) => ({ ...h, onClick: () => { setHelpOpen(false); go(h.to); } }))}
-        coach={coach}
+        coach={startChat ? coach : null}
         onChat={() => { setHelpOpen(false); startChat?.(); }}
       />
 

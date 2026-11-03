@@ -70,6 +70,8 @@ export { default as KeepChangeRow, InPlan } from './KeepChangeRow';
 export { default as PerformanceSystem, PerformanceSystemBody } from './PerformanceSystem';
 export { default as EmptyState } from './EmptyState';
 export { default as FloatingOrb } from './FloatingOrb';
+export { BreathOrb, BreathWords, OrbStyleChoice } from './BreathOrb';
+export { useOrbStyle } from './useOrbStyle';
 export { default as ChatButton } from './ChatButton';
 export { BrandMark, GoogleButton } from './Brand';
 export { default as ColourModeChoice } from './ColourModeChoice';

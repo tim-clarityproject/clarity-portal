@@ -1,8 +1,20 @@
+/* The notch (decisions part 4, 30 Oct; Phase 4, step 3). As a Home
+   Screen app the page sits inside the phone's safe area on every side.
+   On every touch screen, in the browser too, the sides do: in landscape
+   the notch or the Dynamic Island is on one side, and with
+   viewport-fit=cover the page would otherwise run under it. The top bar
+   adds the top inset itself in the browser (DesignHeader); fixed bars,
+   panels and the phone bar add their own. */
+@media (pointer: coarse) {
+  #root {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+}
+
 @media (display-mode: standalone) and (pointer: coarse) {
   #root {
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
   }
 }

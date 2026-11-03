@@ -2254,7 +2254,9 @@
   }
 }
 
-/* The Breathe pill (design reference v3): the orb and the word. */
+/* The Breathe pill (breathe-orb.html, 29 Oct): a 60px pill with the
+   small orb (the person's choice, BreathOrb) and the word in Nekst
+   capitals. The edge and the crosshair turn coral on hover or focus. */
 .ui-root .ds-breathe {
   all: unset;
   cursor: pointer;
@@ -2264,22 +2266,24 @@
   gap: var(--space-px10);
   height: var(--breathe-h);
   min-height: var(--breathe-h) !important;
-  padding: 0 var(--space-px20) 0 var(--space-px6) !important;
+  padding: 0 var(--space-px22) 0 var(--breathe-pad-l) !important;
   border: var(--line-w) solid var(--line);
   border-radius: var(--radius-pill);
   background: var(--bg);
-  font-family: var(--font-body);
-  font-size: var(--fs-secondary) !important;
-  line-height: var(--lh-text);
-  letter-spacing: normal;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-btn) !important;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-btn);
   color: var(--text);
   transition: border-color var(--dur) var(--ease);
 }
 
-@media (hover: hover) {
-  .ui-root .ds-breathe:hover {
-    border-color: var(--outline);
-  }
+.ui-root .ds-breathe:hover,
+.ui-root .ds-breathe:focus-visible {
+  border-color: var(--coral);
+  --o-cross: var(--coral);
 }
 
 .ui-root .ds-breathe:focus-visible {
@@ -2287,40 +2291,166 @@
   outline-offset: var(--space-px3);
 }
 
-.ui-root .ds-breathe .ds-orb-art {
+.ui-root .ds-breathe .ds-borb {
   width: var(--breathe-orb);
   height: var(--breathe-orb);
 }
 
 /* The one exception to the 14px crosshair minimum: 8px inside the
-   Breathe orb (decorative, aria-hidden, part of the approved orb in
-   design-reference-v3). Nowhere else goes below 14px. */
-.ui-root .ds-breathe .ds-orb-art .ds-cross {
+   Breathe button's orb (decorative, aria-hidden, part of the approved
+   orb). Nowhere else goes below 14px. */
+.ui-root .ds-breathe .ds-borb-cross {
   width: var(--breathe-cross);
   height: var(--breathe-cross);
-  margin: calc(var(--breathe-cross) / -2) 0 0 calc(var(--breathe-cross) / -2);
 }
 
-.ui-root .ds-orb-art {
+/* ---------- The Breathe orb (BreathOrb: Rings or Level) ---------- */
+
+.ui-root .ds-borb {
+  --o-in: var(--orb-in);
+  --o-out: var(--good);
+  --o-ring: var(--quiet-line);
+  --o-tint: var(--mint-tint);
+  --o-cross: var(--text);
   position: relative;
   display: block;
+  flex: none;
   width: var(--orb-size);
   height: var(--orb-size);
+  letter-spacing: normal;
 }
 
-.ui-root .ds-orb-art svg {
+.ui-root .ds-borb--rings {
+  --o-out: var(--orb-out);
+}
+
+/* Sleep wind down (M19): the mode's own colours, one step quieter. */
+.ui-root .ds-borb--night {
+  --o-in: var(--text-2);
+  --o-out: var(--text-2);
+  --o-ring: var(--placeholder);
+  --o-tint: transparent;
+  --o-cross: var(--text-2);
+}
+
+.ui-root .ds-borb--tool {
+  width: var(--orb-tool);
+  height: var(--orb-tool);
+}
+
+.ui-root .ds-borb--night {
+  width: var(--orb-night);
+  height: var(--orb-night);
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-borb--tool {
+    width: var(--orb-tool-phone);
+    height: var(--orb-tool-phone);
+  }
+  .ui-root .ds-borb--night {
+    width: var(--orb-night-phone);
+    height: var(--orb-night-phone);
+  }
+}
+
+.ui-root .ds-borb-art,
+.ui-root .ds-borb-art svg {
   display: block;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
-.ui-root .ds-orb-art .ds-cross {
+.ui-root .ds-borb-cross {
   position: absolute;
   left: 50%;
   top: 50%;
-  margin: calc(var(--cross-sm) / -2) 0 0 calc(var(--cross-sm) / -2);
-  background-color: var(--text);
-  transition: none;
+  width: 21%;
+  height: 21%;
+  background-color: var(--o-cross);
+  -webkit-mask: url(/brand/crosshair_white.png) center / contain no-repeat;
+  mask: url(/brand/crosshair_white.png) center / contain no-repeat;
+  transform: translate(-50%, -50%);
+  transition: background-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-borb-probe {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.ui-root .ds-borb-probe--in { color: var(--o-in); }
+.ui-root .ds-borb-probe--out { color: var(--o-out); }
+
+/* The phase word with how to breathe under it, and the seconds left,
+   beside the orb, never on it (breathe-orb.html .bw2). */
+.ui-root .ds-bstage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-bstage {
+    gap: var(--space-px18);
+  }
+}
+
+.ui-root .ds-bwords {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-px6);
+  width: var(--bwords-w);
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-bwords {
+    width: var(--bwords-w-phone);
+  }
+}
+
+.ui-root .ds-bwords-phase {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-root .ds-bwords-word {
+  font-size: var(--fs-bwords-word);
+  line-height: var(--lh-question);
+  white-space: nowrap;
+}
+
+.ui-root .ds-bwords-how {
+  min-height: calc(var(--fs-secondary) * var(--lh-text));
+  margin-top: var(--space-px2);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-bwords-count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.ui-root .ds-bwords-count strong {
+  min-width: 0.7em;
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-bwords-count);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-root .ds-bwords-count span {
+  font-size: var(--fs-note);
+  color: var(--placeholder);
 }
 
 /* ---------- Small win and calm error (v3 Messages) ---------- */
@@ -3821,7 +3951,8 @@
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  min-height: var(--chip-h) !important;
+  /* 44px, as breathe-orb.html's header (29 Oct; M2 drew 40px) */
+  min-height: var(--tap-min) !important;
   padding: 0 var(--space-px18) !important;
   border: var(--line-w) solid var(--outline);
   border-radius: var(--radius-pill);
@@ -3837,7 +3968,7 @@
 @media (hover: hover) {
   .ui-root .ds-chat:hover {
     color: var(--text);
-    border-color: var(--quiet-line);
+    border-color: var(--coral);
   }
 }
 
