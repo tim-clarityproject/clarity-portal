@@ -29,6 +29,7 @@ import {
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
+import { readDayChoices, refreshDayChoices } from '../../lib/performance/dayPlanHabits';
 import { friendlyError } from '../../lib/friendlyError';
 import { keepForLater, newId, saveOrQueue, useQueueState } from '../../lib/syncQueue';
 import { toStored } from '../../lib/units';
@@ -118,7 +119,6 @@ const cacheName = (date) => `day-review:${date}`;
 const draftName = (date) => `day-review:${date}`;
 const stepKey = (userId, date) => `day-review-${userId}-${date}`;
 const localKey = (userId, date) => deviceKey('day-review-local', userId, date);
-const planLocalKey = (userId, date) => deviceKey('day-plan-local', userId, date);
 const emptyWin = (day) => ({ text: '', strategyIds: [], impact: 2, day });
 const toText = (v) => (v == null ? '' : String(v));
 const parseTyped = (text) => {
@@ -198,7 +198,14 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
 
   // The habits chosen for the day in the morning (Plan my day keeps them
   // on the device: no table holds them yet).
-  const [planLocal] = useState(() => readJson(planLocalKey(userId, date)) || {});
+  // The habits chosen in the morning (dayPlanHabits.js), another device's
+  // too once migration 039 has run.
+  const [planLocal, setPlanLocal] = useState(() => readDayChoices(userId, date));
+  useEffect(() => {
+    let live = true;
+    refreshDayChoices(userId, date).then((changed) => { if (live && changed) setPlanLocal(readDayChoices(userId, date)); });
+    return () => { live = false; };
+  }, [userId, date]);
   // What the device keeps for this review: the habits ticked, the things
   // ticked on this week's list, and the wins added here.
   const [local, setLocalState] = useState(() => readJson(localKey(userId, date)) || {});

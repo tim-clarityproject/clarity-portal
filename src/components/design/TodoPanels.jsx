@@ -4,7 +4,7 @@ import { Choice, Dropdown } from './Choice';
 import MultiChoice from './MultiChoice';
 import TextBox from './TextBox';
 import { SlidePanel } from './Dialogs';
-import { IMPACT_OPTIONS } from './impact';
+import { IMPACT_OPTIONS, helpQuestion, moveQuestion } from './impact';
 import './design.css';
 
 // The add panels (M1 sheetPanel 'todo' and 'win'; reused in Phase 3 by
@@ -17,6 +17,8 @@ import './design.css';
 // strategies: [{ value, label }]; weeks: [{ value, label }]; days: [{ value, label }]
 
 const TEXT_LIMIT = 300; // todos.text and wins.what hold up to 300 characters
+
+const nameOf = (strategies, id) => (strategies || []).find((s) => s.value === id)?.label || null;
 
 function Footer({ onCancel, onAdd, ready, label }) {
   return (
@@ -46,7 +48,7 @@ export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, we
       <div className="ds-panel-form">
         <TextBox ref={box} label="What needs doing?" who="me" value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Book a physio assessment" maxLength={TEXT_LIMIT} />
         <Choice label="Which Strategy does it serve?" options={strategies} value={form.strategyId} onChange={(strategyId) => set({ strategyId })} form="rows" />
-        <Choice label="How much will it move this Strategy?" options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
+        <Choice label={moveQuestion(nameOf(strategies, form.strategyId))} options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
         {today ? (
           <p className="ds-panel-note">{todayNote}</p>
         ) : (
@@ -79,7 +81,7 @@ export function AddWinPanel({ open, onClose, form, onFormChange, strategies, day
         </div>
         <TextBox ref={box} label="What did you do?" who="me" value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Ran a workshop that led to two referrals" maxLength={TEXT_LIMIT} />
         <MultiChoice label="Which Strategies did it help?" hint="Pick all that apply." options={strategies} values={form.strategyIds} onChange={(strategyIds) => set({ strategyIds })} />
-        <Choice label="How much did it help?" options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
+        <Choice label={helpQuestion(form.strategyIds.map((id) => nameOf(strategies, id)).filter(Boolean))} options={IMPACT_OPTIONS} value={form.impact} onChange={(impact) => set({ impact })} />
         <Choice label="Which day?" options={days} value={form.day} onChange={(day) => set({ day })} />
       </div>
     </SlidePanel>

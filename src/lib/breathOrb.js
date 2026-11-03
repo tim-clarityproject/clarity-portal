@@ -73,9 +73,9 @@ export function breathAt(phases, seconds) {
 }
 
 // ---------------------------------------------------------------- the choice
-// Kept on this device for now. Step 7 of Phase 4 decides where it lives
-// in the account (profiles.breathing_settings can hold it with no new
-// column), so another device sees it too.
+// This device's copy, shown at once. The account keeps the choice in
+// person_settings.page_preferences.orb_style (Phase 4 step 7), so another
+// device sees it too: useOrbStyle reads and saves it.
 export const ORB_STYLES = ['rings', 'level'];
 export const DEFAULT_ORB_STYLE = 'rings';
 const KEY = 'clarity-orb-style';

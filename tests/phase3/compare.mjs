@@ -257,13 +257,18 @@ function measure({ side, frame, CORAL, MINT, BANNED, guided, scope }) {
 
   // Rule 64: a question about one thing names it ("How much did “Grow
   // through referrals” move?", never "this Strategy" or "it").
-  // The add panels' questions are about the thing being written in that
-  // same panel, which has no name until it is typed (M1 and M5 as approved;
-  // naming the chosen Strategy would change the label as you choose, and
-  // panels never jump, experience rule 45).
+  // The add panels' questions about the thing being written in that same
+  // panel ("it": it has no name until it is typed) are left out, but the
+  // "how much" question names the Strategy chosen above it (Tim, decisions
+  // part 4; Phase 4 step 7): "How much will it move “Grow through
+  // referrals”?", "How much did it help “Grow through referrals”?" (plain
+  // only while none is chosen).
   // "Where did it show today?" follows the rating question on the same
   // screen, which names the way of being (M5 as approved; audit R2).
-  const aboutTheNewThing = /^(Which Strategies did it help\?|How much did it help\?|Which Strategy does it serve\?|How much will it move this Strategy\?|Which week should it move to\?|Which day\?|Which week\?|Where did it show today\?)$/;
+  const aboutTheNewThing = /^(Which Strategies did it help\?|How much did it help\?|How much did it help “[^”]+”( and “[^”]+”|, “[^”]+”)*\?|Which Strategy does it serve\?|Which week should it move to\?|Which day\?|Which week\?|Where did it show today\?)$/;
+  for (const l of lines) {
+    if (/^How much (will it move|did it help) (this|these) Strateg/i.test(l)) writing.push(`rule 64, name the Strategy: ${l}`);
+  }
   for (const l of lines) {
     if (!/\?$/.test(l) || aboutTheNewThing.test(l)) continue;
     if (/\b(this|that) (project|item|person|strategy|habit|objective|to-do|thing|win)\b/i.test(l) || /\b(did|does|is|was) it\b/i.test(l)) writing.push(`rule 64, name the one thing: ${l}`);

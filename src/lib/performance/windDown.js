@@ -2,25 +2,21 @@
 // the thoughts written down at night, and the next morning's one
 // "Carried over" list in Plan my day.
 //
-// The one place the thoughts are read and written. No table holds them
-// yet: they are kept on this device, per night (the person's own local
-// date, with a wind-down before 04:00 counting for the night before, as
-// Review my day does). Step 7 of Phase 4 adds the table in migration 039;
-// it swaps only the store below (readNight, writeNight), so the page and
-// Plan my day stay as they are. Until then a save answers { status:
-// 'device' }, which the page shows as Saved, as the queue's own answers
-// are shown.
+// The thoughts are kept per night (the person's own local date, with a
+// wind-down before 04:00 counting for the night before, as Review my day
+// does), read and written in one place: windDownStore.js (the device
+// first, and the wind_down_nights table once migration 039 has run).
 //
-// The rest is pure (no database, no React, no device clock: the day and
+// This file is pure (no database, no React, no device clock: the day and
 // hour are passed in), tested in tests/performance/windDown.test.mjs.
 
 import { weekday } from '../scores/dates.js';
-import { deviceKey, readJson, writeJson } from '../deviceStore';
 
-export const WIND_DOWN_THOUGHT_MAX = 300;     // each thought, as the "for tomorrow" items (Step 7 sets the same in 039)
+export const WIND_DOWN_THOUGHT_MAX = 300;     // each thought, as the "for tomorrow" items (wind_down_nights holds the same, 039)
+export const WIND_DOWN_THOUGHTS_KEPT = 100;   // no limit on how many (M19), only the table's ceiling no one reaches
 export const WIND_DOWN_EARLY_HOURS = 4;       // before 04:00 it is still the night before (Review my day's rule)
 export const WIND_DOWN_BREATHE_SECONDS = 300; // 5 minutes at 4 in and 6 out (Tim, 29 Oct, 08:32): 30 breaths
-const NIGHTS_KEPT = 14;                       // the device keeps two weeks of nights, no more
+export const WIND_DOWN_NIGHTS_KEPT = 14;      // the device keeps two weeks of nights, no more
 
 // The sound under the breathing (M19's "Change the sound"). The sounds need
 // real audio files, which don't exist yet (brief, step 6), so there are
@@ -51,7 +47,8 @@ export function cleanThoughts(rows = []) {
   return (Array.isArray(rows) ? rows : [])
     .map((t) => (typeof t === 'string' ? t.trim() : ''))
     .filter(Boolean)
-    .map((t) => t.slice(0, WIND_DOWN_THOUGHT_MAX));
+    .map((t) => t.slice(0, WIND_DOWN_THOUGHT_MAX))
+    .slice(0, WIND_DOWN_THOUGHTS_KEPT);
 }
 
 /**
@@ -114,60 +111,4 @@ export function carriedSource({ review, windDown }, reviewDate, date) {
   if (fromReview && windDown) return `From ${fromReview} and last night’s sleep wind down`;
   if (fromReview) return `From ${fromReview}`;
   return 'From last night’s sleep wind down';
-}
-
-// ---------------------------------------------------------------- the store
-// Step 7 swaps these two for the table (and the offline queue), keeping
-// the device copy as the offline cache.
-
-const storeKey = (userId) => deviceKey('cache', userId, 'wind-down-nights');
-
-function readAll(userId) {
-  if (!userId) return {};
-  const v = readJson(storeKey(userId));
-  return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
-}
-
-function readNight(userId, night) {
-  const n = readAll(userId)[night];
-  return { thoughts: cleanThoughts(n?.thoughts), finishedAt: n?.finishedAt || null, sound: n?.sound || WIND_DOWN_SOUND_DEFAULT };
-}
-
-function writeNight(userId, night, patch) {
-  const all = readAll(userId);
-  all[night] = { ...(all[night] || {}), ...patch, updatedAt: new Date().toISOString() };
-  // Only the latest two weeks of nights stay on the device.
-  const keep = Object.keys(all).sort().slice(-NIGHTS_KEPT);
-  const next = Object.fromEntries(keep.map((k) => [k, all[k]]));
-  return writeJson(storeKey(userId), next);
-}
-
-/** One night's wind-down: its thoughts, when it was finished, and the sound chosen ('off'). */
-export function readWindDown(userId, night) {
-  return readNight(userId, night);
-}
-
-/** Last night's thoughts, for the morning's Plan my day. */
-export function lastNightThoughts(userId, date) {
-  return readNight(userId, nightBefore(date)).thoughts;
-}
-
-/**
- * Save a night's thoughts (cleaned). Answers as the offline queue does, so
- * the page shows Saving, then Saved: { status: 'device' } for now.
- */
-export async function saveWindDownThoughts(userId, night, rows) {
-  const ok = writeNight(userId, night, { thoughts: cleanThoughts(rows) });
-  if (!ok) throw new Error('The device has no room to keep this.');
-  return { status: 'device' };
-}
-
-/** The wind-down was used tonight: Home stops offering it until the next evening. */
-export function finishWindDown(userId, night) {
-  writeNight(userId, night, { finishedAt: new Date().toISOString() });
-}
-
-/** The nights finished on this device (for Home's card). */
-export function finishedNights(userId) {
-  return Object.entries(readAll(userId)).filter(([, n]) => n?.finishedAt).map(([k]) => k);
 }

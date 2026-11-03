@@ -75,6 +75,9 @@ export function nightTodoStrategy(lastReview, strategies = []) {
   return first(lastReview?.dayStrategies || []) || first(lastReview?.strategies || []) || strategies[0]?.id || null;
 }
 
+/** The sources of a to-do made from a wind-down thought (039 adds the first). */
+export const WIND_DOWN_SOURCES = ['sleep_wind_down', 'other_tool'];
+
 /** Whether a weekly habit can be chosen for the day (CHOICE, audit 2.1). */
 function weeklyMeasure(m) {
   return ((m.measure === 'count' || m.measure === 'amount') && m.targetPer === 'week') || m.measure === 'yes_no_weekly';
@@ -89,8 +92,8 @@ function weeklyMet(m, values) {
 /**
  * Which of the day's choices are picked, in their order, and which is the
  * highest priority. Picks: the day's to-dos (day_plan_todos) and the habits
- * kept on the device (no table holds a habit chosen for a day yet); the
- * device remembers their order and a habit at the top.
+ * chosen for the day, with their order and a habit at the top
+ * (dayPlanHabits.js: the device, and day_plan_habits once 039 has run).
  */
 export function dayPicks(dayTodos = [], local = {}, liveKeys = null) {
   const fromDb = dayTodos.map((t) => `todo:${t.todo_id}`);
@@ -175,9 +178,9 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
   const strategyName = new Map(strategies.map((s) => [s.id, s.name]));
   const review = d.lastReview;
   const fromReview = (t) => review && t.source === 'review_my_day' && t.source_id === review.id;
-  // A to-do made this morning from a wind-down thought (CHOICE: source
-  // other_tool, as the todos table has no sleep wind down source yet).
-  const fromWindDown = (t) => t.source === 'other_tool' && t.created_on === date;
+  // A to-do made this morning from a wind-down thought: source
+  // sleep_wind_down once 039 has run, other_tool before (CHOICE, step 6).
+  const fromWindDown = (t) => WIND_DOWN_SOURCES.includes(t.source) && t.created_on === date;
   const todoRows = new Map([...(d.todos || []), ...(d.looseTodos || [])].filter((t) => !t.deleted_at).map((t) => [t.id, t]));
   const chosenTodos = new Set((d.dayTodos || []).map((t) => t.todo_id));
 

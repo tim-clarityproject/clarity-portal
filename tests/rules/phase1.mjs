@@ -1,4 +1,4 @@
-// The rules test's Phase 1 part (migrations 026 to 032): the invented people,
+// The rules test's Phase 1 part (migrations 026 to 032, with 038's and 039's tables): the invented people,
 // how they are linked, every new personal table, every new function, and
 // the scenarios that take several steps. config.mjs brings it together.
 //
@@ -326,6 +326,18 @@ export const PHASE1_TABLES = [
     make: ({ owner, id: k, rowOf }) => `with d as (insert into public.decisions (user_id, tool_type, title) values (${owner}, 'grow', 'Rules test') returning id)
       insert into public.tool_work_strategies (id, user_id, decision_id, strategy_id, sprint_id, sprint_week, linked_on) select ${k}, ${owner}, d.id, ${rowOf('plan_strategies')}, ${rowOf('sprints')}, 1, current_date from d`,
     change: 'linked_on = t.linked_on',
+  }),
+  // 039 (Phase 4 step 7): skipped where 039 hasn't run yet. Own rows only;
+  // nothing is shared with a coach.
+  userRow({
+    table: 'day_plan_habits', links: ['sprint_habits'], ifExists: true,
+    make: ({ owner, id: k, n, rowOf }) => `insert into public.day_plan_habits (id, user_id, local_date, habit_ids) values (${k}, ${owner}, ${D(n)}, array[${rowOf('sprint_habits')}]::uuid[])`,
+    change: 'top_pick = t.top_pick',
+  }),
+  userRow({
+    table: 'wind_down_nights', ifExists: true,
+    make: ({ owner, id: k, n }) => `insert into public.wind_down_nights (id, user_id, night, thoughts) values (${k}, ${owner}, ${D(n)}, array['Rules test'])`,
+    change: 'thoughts = t.thoughts',
   }),
   userRow({
     table: 'week_scores',

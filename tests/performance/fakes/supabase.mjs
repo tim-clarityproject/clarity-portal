@@ -34,13 +34,14 @@ function query(table) {
   const filters = [];
   let action = { kind: 'select' };
   const rowsOf = () => (db.tables[table] = db.tables[table] || []);
-  const matches = (r) => filters.every(([k, v]) => `${r[k]}` === `${v}`);
+  const matches = (r) => filters.every(([k, v, op]) => (op === 'gte' ? `${r[k]}` >= `${v}` : `${r[k]}` === `${v}`));
   const builder = {
     select() { if (action.kind === 'none') action = { kind: 'select' }; return builder; },
     update(values) { action = { kind: 'update', values }; return builder; },
     delete() { action = { kind: 'delete' }; return builder; },
     upsert(values, options = {}) { action = { kind: 'upsert', values, options }; return builder; },
     eq(k, v) { filters.push([k, v]); return builder; },
+    gte(k, v) { filters.push([k, v, 'gte']); return builder; },
     limit() { return builder; },
     order() { return builder; },
     then(resolve, reject) {

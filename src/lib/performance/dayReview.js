@@ -18,7 +18,7 @@ import { sprintPageView } from './sprintPage';
 export const REVIEW_TEXT_MAX = 4000;   // went_well, differently, on_my_mind
 export const WHERE_MAX = 1000;         // where_it_showed
 export const MAX_TOMORROW = 3;         // day_reviews.tomorrow holds up to three
-export const TOMORROW_ITEM_MAX = 300;  // CHOICE (audit R7): the to-do limit, as the database has none per item
+export const TOMORROW_ITEM_MAX = 300;  // the to-do limit (audit R7); day_reviews holds the same once 039 has run
 export const REVIEW_EARLY_HOURS = 4;   // a review started before 04:00 can be for the day before
 
 export const DIFFERENTLY_EXAMPLE = 'Leave ten minutes between calls, so I start each one ready.';

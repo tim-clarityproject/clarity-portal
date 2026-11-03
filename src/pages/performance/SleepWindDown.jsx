@@ -15,15 +15,8 @@ import {
 } from '../../components/design';
 import { useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
-import {
-  WIND_DOWN_BREATHE_SECONDS,
-  WIND_DOWN_THOUGHT_MAX,
-  finishWindDown,
-  localToday,
-  readWindDown,
-  saveWindDownThoughts,
-  windDownNight,
-} from '../../lib/performance';
+import { WIND_DOWN_BREATHE_SECONDS, WIND_DOWN_THOUGHT_MAX, localToday, windDownNight } from '../../lib/performance';
+import { finishWindDown, readWindDown, refreshWindDown, saveWindDownThoughts } from '../../lib/performance/windDownStore';
 import './performance.css';
 
 // Sleep wind down (mock-up M19, approved by Tim on 29 Oct; read in full
@@ -44,9 +37,10 @@ import './performance.css';
 //
 // The thoughts save as they are typed (Saving, then Saved), kept as a
 // draft too, for the night they belong to: a wind-down before 04:00 is
-// the night before. They are on this device until migration 039 gives
-// them a table (windDown.js is the one place that reads and writes them),
-// and tomorrow's Plan my day lists them under Carried over.
+// the night before. They are kept on this device and, once migration 039
+// has run, in wind_down_nights (windDownStore.js is the one place that
+// reads and writes them), and tomorrow's Plan my day lists them under
+// Carried over.
 
 const SAVE_AFTER_MS = 600;
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
@@ -69,6 +63,18 @@ export default function SleepWindDown() {
   const timer = useRef(null);
   const latest = useRef(thoughts);
   useEffect(() => { latest.current = thoughts; }, [thoughts]);
+
+  // Thoughts written for tonight on another device, once 039 has run:
+  // shown when nothing has been typed here yet.
+  useEffect(() => {
+    let live = true;
+    refreshWindDown(userId, { night }).then((changed) => {
+      if (!live || !changed || typed.current) return;
+      const kept = readWindDown(userId, night).thoughts;
+      if (kept.length) setThoughts(kept);
+    });
+    return () => { live = false; };
+  }, [userId, night]);
 
   // Typing survives a refresh ("Draft restored").
   const { clear: clearThoughtsDraft } = useDraft({

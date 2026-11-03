@@ -170,6 +170,8 @@ export const TABLES = [
     change: 'name = t.name',
   }),
   ...PHASE1_TABLES,
+  // 039's day_plan_habits and wind_down_nights are in PHASE1_TABLES, next
+  // to 038's tables (they need Phase 1's people and sprint habits).
   ...GUEST_TABLES,
 ];
 
@@ -237,6 +239,11 @@ export const FUNCTIONS = [
   { sig: 'coach_shared_debrief(uuid,uuid,integer)', ifExists: true, access: SIGNED_IN,
     call: 'select count(*) from public.coach_shared_debrief(gen_random_uuid(), gen_random_uuid(), 1)',
     note: 'Rows only for the person\'s current coach, for a shared week, and never stress (038).' },
+  // 039 (Phase 4 step 7)
+  { sig: 'day_plan_habits_own()', ifExists: true, call: 'select public.day_plan_habits_own()', access: NOBODY,
+    note: 'Runs only as a trigger (039).' },
+  { sig: 'text_items_within(text[],integer)', ifExists: true, call: "select public.text_items_within(array['x'], 300)", access: SIGNED_IN,
+    note: 'Pure: the 300-character check the tables use (039).' },
   ...PHASE1_FUNCTIONS,
   ...GUEST_FUNCTIONS,
   ...ALIGNMENT_FUNCTIONS,

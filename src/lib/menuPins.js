@@ -14,6 +14,11 @@ import { cleanPins, MAX_PINS } from './navigation';
 // The menu reads the device's copy first and refreshes it quietly when it
 // opens, at most every half a minute, so moving between pages never asks
 // the database for anything.
+//
+// The same object holds the person's other page settings, saved the same
+// way (setPreference): the Breathe orb's style (orb_style, Phase 4 step 7;
+// useOrbStyle). Every change sends the whole object, so each is made on
+// top of the account's latest copy, never over it.
 
 const CACHE = 'menu-pins';
 const REFRESH_MS = 30000;
@@ -80,26 +85,47 @@ function send(userId, prefs) {
   });
 }
 
+// One change to the settings, made on the device at once and sent. A
+// device that hasn't read the account's copy this visit reads it first
+// (when it can), so a change never sends an empty object over the rest.
+async function change(userId, apply) {
+  if (!lastRead.has(userId)) await refreshPins(userId, { force: true });
+  const next = apply(current(userId).prefs);
+  keep(userId, { pins: cleanPins(next.menu_pins), prefs: next });
+  let result = await send(userId, next);
+  if (result.status === 'superseded') {
+    // Changed in another window or on another device since this one read
+    // it: take theirs, then make this one change on top of it.
+    const merged = apply(await readServer(userId));
+    keep(userId, { pins: cleanPins(merged.menu_pins), prefs: merged });
+    result = await send(userId, merged);
+  }
+  return result.status === 'queued' ? 'queued' : 'saved';
+}
+
 /**
  * Pins or unpins one tool. Resolves 'saved', 'queued' (kept on the device
  * until the connection is back) or 'full' (3 pinned already).
  */
 export async function setPinned(userId, key, on) {
-  const { pins, prefs } = current(userId);
+  const { pins } = current(userId);
   if (on && !pins.includes(key) && pins.length >= MAX_PINS) return 'full';
   const apply = (list) => cleanPins(on ? [...list.filter((k) => k !== key), key] : list.filter((k) => k !== key));
-  const next = { ...prefs, menu_pins: apply(pins) };
-  keep(userId, { pins: next.menu_pins, prefs: next });
-  let result = await send(userId, next);
-  if (result.status === 'superseded') {
-    // Changed in another window or on another device since this one read
-    // it: take theirs, then make this one change on top of it.
-    const fresh = await readServer(userId);
-    const merged = { ...fresh, menu_pins: apply(cleanPins(fresh.menu_pins)) };
-    keep(userId, { pins: merged.menu_pins, prefs: merged });
-    result = await send(userId, merged);
-  }
-  return result.status === 'queued' ? 'queued' : 'saved';
+  return change(userId, (prefs) => ({ ...prefs, menu_pins: apply(cleanPins(prefs.menu_pins)) }));
+}
+
+/**
+ * Saves one page setting to the account (beside the pins). Resolves
+ * 'saved' or 'queued'; rejects when the server refuses it (the device
+ * keeps it either way).
+ */
+export function setPreference(userId, name, value) {
+  return change(userId, (prefs) => ({ ...prefs, [name]: value }));
+}
+
+/** The account's page settings as this device last read them ({} until read). */
+export function usePreferences(userId) {
+  return useSyncExternalStore(subscribe, () => current(userId), () => current(userId)).prefs;
 }
 
 /** The person's pins, kept in step across every menu and panel on screen. */

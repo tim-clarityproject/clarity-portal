@@ -53,8 +53,9 @@ import {
   todayItems,
   weeklyFoldLine,
   backToday,
-  finishedNights,
 } from '../lib/performance';
+import { readDayChoices, refreshDayChoices } from '../lib/performance/dayPlanHabits';
+import { finishedNights, refreshWindDown } from '../lib/performance/windDownStore';
 import { DayRow, WeekRow } from './performance/LogRows';
 import { RecoveryDay } from './performance/Recovery';
 import { useSprintActions } from './performance/sprintActions';
@@ -161,6 +162,17 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const [notNow, addNotNow] = useDeviceList(userId, 'quiet-not-now');
   const logRef = useRef(null);
 
+  // Choices made and wind-downs finished on another device, once migration
+  // 039 has run (nothing until then): read quietly, shown when they differ.
+  const [fresh, setFresh] = useState(0);
+  useEffect(() => {
+    let live = true;
+    const bump = (changed) => { if (live && changed) setFresh((n) => n + 1); };
+    refreshDayChoices(userId, today).then(bump);
+    refreshWindDown(userId, { since: addDayKey(today, -1) }).then(bump);
+    return () => { live = false; };
+  }, [userId, today]);
+
   const recovery = openRecovery(d.recoveries || []);
   const coach = day.coach?.firstName || null;
   const steps = planSteps({
@@ -200,8 +212,11 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const named = (words) => (firstName ? `${words}, ${firstName}` : words);
   const title = welcomeBack ? named('Welcome back') : comingBack ? named('Good to see you') : named(homeGreeting(hour));
 
-  // Today's to-dos: the day's picks from Plan my day, highest priority first.
-  const local = useMemo(() => (userId ? readJson(deviceKey('day-plan-local', userId, today)) || {} : {}), [userId, today]);
+  // Today's to-dos: the day's picks from Plan my day, highest priority first
+  // (the habits and order as kept on the device; dayPlanHabits.js).
+  // Read again when another device's choices arrive (fresh).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const local = useMemo(() => readDayChoices(userId, today), [userId, today, fresh]);
   const { picks, top } = dayPicks(day.dayTodos || [], local);
   const items = running && dayPlanned ? todayItems({ picks, top, sprintView: view, todos: d.todos || [], strategies: d.strategies || [] }) : [];
   const { daily, weekly } = splitHabits(d, view);

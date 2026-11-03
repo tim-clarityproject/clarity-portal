@@ -16,6 +16,7 @@ import {
   TodoList,
   AddTodoPanel,
   AddWinPanel,
+  helpQuestion,
   MoveTodoPanel,
   nextMondayKey,
   SprintLengthChoice,
@@ -1171,7 +1172,7 @@ function PanelsDemo() {
             values={win.strategies}
             onChange={(strategies) => setWin((w) => ({ ...w, strategies }))}
           />
-          <Choice label="How much did it help?" options={IMPACT_OPTIONS} value={win.impact} onChange={(impact) => setWin((w) => ({ ...w, impact }))} />
+          <Choice label={helpQuestion(win.strategies.map((v) => STRATEGY_OPTIONS.find((o) => o.value === v)?.label).filter(Boolean))} options={IMPACT_OPTIONS} value={win.impact} onChange={(impact) => setWin((w) => ({ ...w, impact }))} />
           <Choice label="Which day?" options={DAY_OPTIONS} value={win.day} onChange={(day) => setWin((w) => ({ ...w, day }))} />
         </div>
       </SlidePanel>

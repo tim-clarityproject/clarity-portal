@@ -23,11 +23,12 @@ import {
 } from '../../components/design';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
-import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { friendlyError } from '../../lib/friendlyError';
 import { keepForLater, newId, saveOrQueue, useQueueState } from '../../lib/syncQueue';
 import { createDayPlan, dayPlanAnswersOp, loadDayPlan, loadDayPlanRow, saveTodo, setTodoDeleted } from '../../lib/performance/api';
 import { useLatestWhenSuperseded } from '../../lib/performance/hooks';
+import { readDayChoices, refreshDayChoices, saveDayChoices } from '../../lib/performance/dayPlanHabits';
+import { lastNightThoughts, refreshWindDown, windDownTodoSource } from '../../lib/performance/windDownStore';
 import {
   DAY_TEXT_MAX,
   GRATITUDE_EXAMPLE,
@@ -45,8 +46,9 @@ import {
   dayTodoOps,
   hoursWords,
   ifItHappens,
-  lastNightThoughts,
   localToday,
+  nightBefore,
+  WIND_DOWN_SOURCES,
   thingKey,
   sleepToConfirm,
   sleepWords,
@@ -80,7 +82,8 @@ import './performance.css';
 // Typing is kept as a draft on the device and the step is remembered, so
 // a refresh carries on where it was. The to-dos chosen are the sprint's
 // own (day_plan_todos), so the sprint page and its score see them; a
-// habit chosen for the day has no table yet and is kept on the device.
+// habit chosen for the day is kept on the device and, once migration 039
+// has run, in day_plan_habits (dayPlanHabits.js).
 
 const SAVE_AFTER_MS = 800;
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
@@ -88,7 +91,6 @@ const isDay = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const cacheName = (date) => `day-plan:${date}`;
 const draftName = (date) => `day-plan:${date}`;
 const stepKey = (userId, date) => `day-plan-${userId}-${date}`;
-const localKey = (userId, date) => deviceKey('day-plan-local', userId, date);
 
 export default function PlanMyDay() {
   const { user } = useContext(AuthContext);
@@ -137,17 +139,36 @@ function PlanFlow({ userId, date, today, loaded }) {
   const queue = useQueueState();
   const { data, setData } = loaded;
 
-  // What the device keeps for the day: the habits chosen, the order of the
-  // choices and a habit at the top (no table holds a habit chosen for a day).
-  const [local, setLocalState] = useState(() => readJson(localKey(userId, date)) || {});
-  const setLocal = useCallback((fn) => setLocalState((l) => {
-    const next = typeof fn === 'function' ? fn(l) : fn;
-    writeJson(localKey(userId, date), next);
-    return next;
-  }), [userId, date]);
+  // The habits chosen, the order of the choices and the one at the top:
+  // on the device at once, and in day_plan_habits once 039 has run
+  // (dayPlanHabits.js), so another device sees them.
+  const [local, setLocalState] = useState(() => readDayChoices(userId, date));
+  const localRef = useRef(local);
+  const setLocal = useCallback((fn) => {
+    const next = typeof fn === 'function' ? fn(localRef.current) : fn;
+    localRef.current = next;
+    setLocalState(next);
+    saveDayChoices(userId, date, next).catch(() => null); // kept on the device; sent again next time
+  }, [userId, date]);
 
-  // Last night's sleep wind down thoughts (on the device until 039; windDown.js).
-  const [windThoughts] = useState(() => lastNightThoughts(userId, date));
+  // Last night's sleep wind down thoughts (windDownStore.js).
+  const [windThoughts, setWindThoughts] = useState(() => lastNightThoughts(userId, date));
+
+  // Another device's choices and last night's thoughts, once 039 has run
+  // (nothing until then): read quietly, shown when they differ.
+  useEffect(() => {
+    let live = true;
+    refreshDayChoices(userId, date).then((changed) => {
+      if (!live || !changed) return;
+      const fresh = readDayChoices(userId, date);
+      localRef.current = fresh;
+      setLocalState(fresh);
+    });
+    refreshWindDown(userId, { night: nightBefore(date) }).then((changed) => {
+      if (live && changed) setWindThoughts(lastNightThoughts(userId, date));
+    });
+    return () => { live = false; };
+  }, [userId, date]);
   const view = useMemo(() => dayPlanView(data, { date, local, windDown: windThoughts }), [data, date, local, windThoughts]);
   const [answers, setAnswers] = useState(() => answersFromRow(data.dayPlan));
   const [confirmed, setConfirmed] = useState(() => (data.dayPlan && !data.dayPlan.sleep_to_confirm ? Number(data.dayPlan.sleep_hours) : null));
@@ -320,12 +341,12 @@ function PlanFlow({ userId, date, today, loaded }) {
 
   // A thing carried over becomes a to-do only when chosen (decisions 23
   // Oct, 12:58), on this week of the sprint. From Review my day it keeps
-  // that review as its source; a wind-down thought alone is marked as from
-  // another tool (CHOICE: the todos table has no sleep wind down source yet).
+  // that review as its source; a wind-down thought alone is from the sleep
+  // wind down once 039 has added that source, from another tool before.
   const todoFromNight = async (option) => {
     const id = newId();
     const review = option.review && view.review;
-    const source = review ? 'review_my_day' : 'other_tool';
+    const source = review ? 'review_my_day' : await windDownTodoSource();
     const sourceId = review ? view.review.id : null;
     const row = {
       id, strategy_id: view.nightStrategyId, text: option.text, impact: 2, sprint_id: view.sprintId, planned_week: view.week,
@@ -373,7 +394,7 @@ function PlanFlow({ userId, date, today, loaded }) {
       const id = removed.slice(5);
       const row = [...(data.todos || []), ...(data.looseTodos || [])].find((t) => t.id === id);
       const carried = (row?.source === 'review_my_day' && row.source_id === view.review?.id)
-        || (row?.source === 'other_tool' && windThoughts.some((t) => thingKey(t) === thingKey(row.text)));
+        || (WIND_DOWN_SOURCES.includes(row?.source) && windThoughts.some((t) => thingKey(t) === thingKey(row.text)));
       if (row && carried && row.created_on === date) {
         const listKey = view.running ? 'todos' : 'looseTodos';
         setData((d) => ({ ...d, [listKey]: (d[listKey] || []).filter((t) => t.id !== id) }));

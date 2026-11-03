@@ -202,14 +202,25 @@ if (run('taps')) {
     // Tick a to-do three times: it ends ticked, on the page and saved.
     const row = page.locator('.ds-todo').filter({ hasText: 'Triple tap to-do' });
     await row.getByRole('checkbox').click({ clickCount: 3 });
-    await page.waitForTimeout(3000);
-    const shown = await row.getByRole('checkbox').isChecked();
-    const saved = (await todosOf()).find((t) => t.text === 'Triple tap to-do');
+    // Polls for the real condition (no fixed wait): nothing left to send on
+    // the device, and the tick on the page matches the database twice in a
+    // row, so a save still landing can't pass it early.
+    let shown;
+    let saved;
+    let agreed = 0;
+    await until(async () => {
+      const sending = await page.evaluate(() => Object.keys(localStorage).some((k) => (k.startsWith('clarity-sending:') || k.startsWith('clarity-queue:')) && localStorage.getItem(k) !== '[]'));
+      shown = await row.getByRole('checkbox').isChecked();
+      saved = (await todosOf()).find((t) => t.text === 'Triple tap to-do');
+      agreed = !sending && shown === Boolean(saved?.done_on) ? agreed + 1 : 0;
+      return agreed >= 2;
+    }, 20000);
     pass('taps: a triple-tapped tick shows what was saved', shown === Boolean(saved?.done_on), `page ${shown}, saved ${saved?.done_on}`);
     await page.reload();
     await page.waitForSelector('.sprint-page');
-    await page.waitForTimeout(1500);
-    const shownAfter = await page.locator('.ds-todo').filter({ hasText: 'Triple tap to-do' }).getByRole('checkbox').isChecked();
+    const tickAfter = page.locator('.ds-todo').filter({ hasText: 'Triple tap to-do' }).getByRole('checkbox');
+    await until(async () => (await tickAfter.count()) && (await tickAfter.isChecked()) === Boolean(saved?.done_on), 15000);
+    const shownAfter = await tickAfter.isChecked();
     pass('taps: the same after a reload', shownAfter === Boolean(saved?.done_on), `page ${shownAfter}, saved ${saved?.done_on}`);
 
     // A yes or no day tapped three times: one log row at most, matching the page.
