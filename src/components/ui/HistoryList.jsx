@@ -3,44 +3,47 @@ import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import pageText from '../../content/pageText';
 import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, keepsHappeningLine, useCoach } from '../design';
 
-// LIST ROW GUIDELINES (guidelines to apply by default; a mock-up wins
-// where it shows a detail). On phone every row of every list is built
-// the same way:
-//   1. Title - left-aligned, wraps only between words.
-//   2. Type label, then the status tag (Draft / Reviewed), then the
-//      version chip (e.g. Version 1.2), all on one left-aligned line
-//      that wraps cleanly. The version lives here, not on the date line.
-//   3. Date and time (24 hour), then any count (e.g. 196 words), always
-//      left-aligned directly under line 2.
-//   4. One right-aligned action row beneath, with a small even gap
-//      above it. The text action (Continue, Review, View review) is the
-//      same size and weight as the type label; the icons are the same
-//      size and spacing in every row.
+// LIST ROW GUIDELINES (CLAUDE.md "List row guidelines"; a mock-up or a
+// newer decision wins where it shows a detail). Every row of every list:
+//   1. The name in words, left, wrapping only between words, and the date
+//      on the right of it (writing rule 60, Tim 23 Oct, 19:51, newer than
+//      the guidelines' date line; M3's recent rows). Never a date as the
+//      name: the caller names its rows.
+//   2. The tool, then the status tag (Draft / Reviewed), then the version
+//      chip (e.g. Version 1.2), on one left-aligned line that wraps
+//      cleanly.
+//   3. Any count (e.g. 196 words), left-aligned under line 2.
+//   4. On a phone, one right-aligned action row beneath, with a small even
+//      gap above it; on a laptop the actions sit at the right of the row.
+//      The text action (Continue, Review, View review) is the same size
+//      and weight as the tool; the icons are the same size and spacing in
+//      every row. A row with nothing to do has no action row.
 //   Every element starts at the same left edge: no indents, no centring.
-//   Desktop keeps its single-line row. Filters are the shared
-//   FilterPills row: one line, swipes sideways, never wraps, no
-//   dropdown.
+//   Filters sit behind the one Filter button, with one line saying what is
+//   applied and Clear (guideline 6).
 //
-// Shared history list - used (later, by prompts 6-10) by My Plans, My
-// Reviews and My Journals. Driven only by props: no data fetching, no
-// Supabase calls, no navigation of its own. The caller supplies rows,
-// decides what "open"/"edit"/"delete" mean, and renders its own
-// dialogs/toasts around this component.
+// Shared history list: My Plans, My Reviews and My Journals. Driven only
+// by props: no data fetching, no Supabase calls, no navigation of its
+// own. The caller supplies rows, decides what "open"/"edit"/"delete"
+// mean, and renders its own dialogs/toasts around this component.
 //
-// Row -> filter matching convention (not specified by the brief's row
-// shape, which has no explicit filter/type id field): by default a
-// filter's `id` is matched against each row's own `typeLabel`, and the
-// id 'all' always matches every row. A filter may instead carry its own
-// `match(row)` predicate (prompt 7, My Plans: a grouped filter like
-// "Decisions" has no single typeLabel of its own) - this keeps every
-// pre-existing filter (plain {id,label}, matched by typeLabel) working
-// unchanged, it only opts in when a filter supplies `match`.
+// A row: { id, title, typeLabel, date, dateLabel?, sortAt?, isDraft,
+// reviewed, version, meta, canEdit, canDelete, canReview }. `dateLabel`
+// is the date as shown ("Today", "Mon 19 Oct"); without one the saved
+// timestamp is shown as "14 Oct, 19:26". `sortAt` (milliseconds) orders
+// the rows and their month headings; without one `date` does.
 //
-// `subFilters` (prompt 7, My Plans): an optional map of parent filter id
-// -> a second array of {id,label[,match]} filter defs, shown as a
-// second row of pills (the same swipeable row at every width) once that
-// parent filter is active - e.g. choosing "Decisions" reveals a second
-// level for If-Then/Time audit/GROW/Tough feedback.
+// Row -> filter matching: by default a filter's `id` is matched against
+// each row's own `typeLabel`, and the id 'all' always matches every row.
+// A filter may instead carry its own `match(row)` predicate (My Plans and
+// My Reviews filter by area).
+//
+// `subFilters`: an optional map of parent filter id -> a second array of
+// {id,label[,match]} filter defs, a second drop-down once that parent is
+// chosen (My Plans: "Which tool?" under Personal, "Which team?" under
+// Strategic; `subLabels` names it). `initialFilter` and
+// `initialSubFilter` open the list already filtered (a hub's "Open My
+// Plans" link, an old address).
 const DEFAULT_VISIBLE = 50;
 
 function PencilIcon() {
@@ -60,9 +63,15 @@ function BinIcon() {
   );
 }
 
-function formatMonthHeading(value) {
-  const date = parseDbTimestamp(value);
-  if (Number.isNaN(date.getTime())) return '';
+function rowTime(row) {
+  if (typeof row.sortAt === 'number') return row.sortAt;
+  const t = parseDbTimestamp(row.date).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function formatMonthHeading(time) {
+  const date = new Date(time);
+  if (!time || Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 }
 
@@ -87,6 +96,10 @@ export default function HistoryList({
   rows = [],
   filters = [],
   subFilters = {},
+  subLabels = {},
+  filterLabel = 'Which type?',
+  initialFilter = 'all',
+  initialSubFilter = 'all',
   newButton,
   emptyText = 'Nothing here yet.',
   error,
@@ -96,8 +109,10 @@ export default function HistoryList({
   onReview,
 }) {
   const allFilters = filters.length ? [{ id: 'all', label: 'All' }, ...filters] : [];
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [activeSubFilter, setActiveSubFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState(() => (allFilters.some((f) => f.id === initialFilter) ? initialFilter : 'all'));
+  const [activeSubFilter, setActiveSubFilter] = useState(() => (
+    (subFilters[initialFilter] || []).some((f) => f.id === initialSubFilter) ? initialSubFilter : 'all'
+  ));
   const [sortOrder, setSortOrder] = useState('new'); // 'new' | 'old'
   const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE);
 
@@ -131,11 +146,7 @@ export default function HistoryList({
   const filtered = rows.filter((r) => (
     rowMatchesFilter(r, activeFilterDef) && (!activeSubFilterDef || rowMatchesFilter(r, activeSubFilterDef))
   ));
-  const sorted = [...filtered].sort((a, b) => {
-    const da = parseDbTimestamp(a.date).getTime();
-    const db = parseDbTimestamp(b.date).getTime();
-    return sortOrder === 'new' ? db - da : da - db;
-  });
+  const sorted = [...filtered].sort((a, b) => (sortOrder === 'new' ? rowTime(b) - rowTime(a) : rowTime(a) - rowTime(b)));
   const visible = sorted.slice(0, visibleCount);
   const hasMore = sorted.length > visible.length;
 
@@ -168,14 +179,14 @@ export default function HistoryList({
           onClear={() => { setActiveFilter('all'); setActiveSubFilter('all'); }}
         >
           <Dropdown
-            label="Which type?"
+            label={filterLabel}
             options={allFilters.map((f) => ({ value: f.id, label: f.label, hint: countText(countForFilter(rows, f)) }))}
             value={activeFilter}
             onChange={(id) => { setActiveFilter(id); setActiveSubFilter('all'); }}
           />
           {allSubFilters && (
             <Dropdown
-              label={`Which kind of ${activeFilterDef.label.toLowerCase()}?`}
+              label={subLabels[activeFilter] || `Which kind of ${activeFilterDef.label.toLowerCase()}?`}
               options={allSubFilters.map((f) => ({
                 value: f.id,
                 label: f.label,
@@ -204,31 +215,34 @@ export default function HistoryList({
       ) : (
         <>
           {visible.map((row) => {
-            const mm = formatMonthHeading(row.date);
+            const mm = formatMonthHeading(rowTime(row));
             const showMonth = mm !== lastMonth;
             lastMonth = mm;
+            const canReview = Boolean(onReview && row.canReview);
+            const canContinue = Boolean(onEdit && row.isDraft && row.canEdit !== false);
+            const canPencil = Boolean(onEdit && !row.isDraft && row.canEdit !== false);
+            const canBin = Boolean(onDelete && row.canDelete !== false);
             return (
               <Fragment key={row.id}>
                 {showMonth && <div className="hlist-month">{mm}</div>}
                 <div className="hlist-row">
                   <button type="button" className="hlist-row-main" onClick={() => onOpen?.(row)}>
                     <span className="hlist-row-title">{row.title}</span>
+                    <span className="hlist-row-date">{row.dateLabel ?? formatDayMonthTime(row.date)}</span>
                     <span className="hlist-row-sub">
                       <span className="hlist-row-tags">
                         <b>{row.typeLabel}</b>
                         {row.isDraft && <span className="hlist-draft-tag">Draft</span>}
                         {row.reviewed && <span className="hlist-reviewed-tag">Reviewed</span>}
-                        {row.version && <span className="hlist-version hlist-version--phone">{row.version}</span>}
+                        {row.version && <span className="hlist-version">{row.version}</span>}
                       </span>
-                      <span className="hlist-row-meta">
-                        <span>{formatDayMonthTime(row.date)}</span>
-                        {row.version && <span className="hlist-version--desktop">{row.version}</span>}
-                        {row.meta && <span>{row.meta}</span>}
-                      </span>
+                      {row.meta && <span className="hlist-row-meta"><span>{row.meta}</span></span>}
                     </span>
                   </button>
-                  <div className="hlist-row-controls">
-                    {onReview && row.canReview !== false && (
+                  {/* Always there on a laptop, empty or not, so every row's
+                      date lines up; a phone shows no empty action row. */}
+                  <div className={`hlist-row-controls${canReview || canContinue || canPencil || canBin ? '' : ' hlist-row-controls--empty'}`}>
+                    {canReview && (
                       <button
                         type="button"
                         className="hlist-review-btn"
@@ -237,32 +251,35 @@ export default function HistoryList({
                         {row.reviewed ? 'View review' : 'Review'}
                       </button>
                     )}
-                    {row.isDraft && row.canEdit !== false ? (
+                    {canContinue && (
                       <button
                         type="button"
                         className="hlist-continue-btn"
-                        onClick={(e) => { e.stopPropagation(); onEdit?.(row); }}
+                        onClick={(e) => { e.stopPropagation(); onEdit(row); }}
                       >
                         Continue
                       </button>
-                    ) : row.canEdit !== false ? (
+                    )}
+                    {canPencil && (
                       <button
                         type="button"
                         className="hlist-icon-btn"
                         aria-label={`Edit ${row.title}`}
-                        onClick={(e) => { e.stopPropagation(); onEdit?.(row); }}
+                        onClick={(e) => { e.stopPropagation(); onEdit(row); }}
                       >
                         <PencilIcon />
                       </button>
-                    ) : null /* row.canEdit false: a type that is never edited (Wheel of Life check-ins, retired POP reviews) */}
-                    <button
-                      type="button"
-                      className="hlist-icon-btn hlist-icon-btn--del"
-                      aria-label={`Delete ${row.title}`}
-                      onClick={(e) => { e.stopPropagation(); onDelete?.(row); }}
-                    >
-                      <BinIcon />
-                    </button>
+                    )}
+                    {canBin && (
+                      <button
+                        type="button"
+                        className="hlist-icon-btn hlist-icon-btn--del"
+                        aria-label={`Delete ${row.title}`}
+                        onClick={(e) => { e.stopPropagation(); onDelete(row); }}
+                      >
+                        <BinIcon />
+                      </button>
+                    )}
                   </div>
                 </div>
               </Fragment>
@@ -411,6 +428,7 @@ const HLIST_CSS = `
     transform: scaleY(1);
   }
   .hlist-row:hover .hlist-row-title,
+  .hlist-row:hover .hlist-row-date,
   .hlist-row:hover .hlist-row-tags,
   .hlist-row:hover .hlist-row-meta,
   .hlist-row:focus-within .hlist-row-title,
@@ -430,15 +448,15 @@ const HLIST_CSS = `
   flex: 1;
   min-width: 0;
   padding: 18px 8px 18px 24px !important;
-  /* A flex column, not display:block: Safari lays a <button>'s block
-     children out in a shrink-to-fit box and centres it, so short lines
-     (type label, date, word count) drifted to the middle while a long
-     title looked left-aligned. Flex with align-items:flex-start keeps
-     every line on the left edge. */
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
+  /* A grid, not display:block: Safari lays a <button>'s block children
+     out in a shrink-to-fit box and centres it. The name and the date
+     share the first line (writing rule 60); the tool line and any count
+     sit under the name, every line on the same left edge. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
+  align-items: baseline;
+  align-content: center;
   text-align: left;
   min-height: var(--tap-min);
 }
@@ -463,6 +481,34 @@ const HLIST_CSS = `
   word-break: normal;
   hyphens: none;
   transition: transform var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.hlist-row-date {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: var(--fs-meta);
+  line-height: 1.3;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: transform var(--dur) var(--ease);
+}
+
+.ui-root .hlist-row-main .hlist-row-sub {
+  grid-column: 1;
+}
+
+.hlist-version {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: calc(10 * var(--u, 1px));
+  color: var(--text-2);
+  line-height: 1.4;
 }
 
 .hlist-draft-tag {
@@ -496,35 +542,24 @@ const HLIST_CSS = `
 .hlist-row-controls {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-1);
   flex-shrink: 0;
+  min-width: var(--hlist-actions-w);
 }
 
 /* Phone row anatomy (<= 768px), the same for every row of every list:
-     line 1  title, wraps between words only
-     line 2  type label, status tag (Draft / Reviewed), version chip
-     line 3  date and time, then any count
-     actions one right-aligned row beneath, small even gap above
+     line 1  name, wraps between words only, and the date on the right
+     line 2  tool, status tag (Draft / Reviewed), version chip
+     line 3  any count
+     actions one right-aligned row beneath, small even gap above (none
+             when the row has nothing to do)
    Everything starts at the same left edge: nothing is indented or
    centred. Selectors carry .ui-root so they always out-rank the base
    rules declared further down this sheet (the earlier version of this
    block lost that fight - the stack stayed centre-aligned - and
-   mobile.css's 14px button font beat the action text). Desktop keeps
-   its single line: see the base rules. */
-.hlist-version--phone {
-  display: none;
-}
-
-.hlist-version--phone,
-.hlist-version--desktop {
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: calc(10 * var(--u, 1px));
-  color: var(--text-2);
-}
-
+   mobile.css's 14px button font beat the action text). On a laptop the
+   actions sit at the right of the row: see the base rules. */
 @media (max-width: 768px) {
   .ui-root .hlist-row {
     flex-wrap: wrap;
@@ -532,9 +567,14 @@ const HLIST_CSS = `
   }
   .ui-root .hlist-row-main {
     flex: 1 1 100%;
-    align-items: flex-start;
     text-align: left;
     padding: var(--space-3) var(--space-2) var(--space-1) var(--space-3) !important;
+  }
+  .ui-root .hlist-row-controls--empty {
+    display: none;
+  }
+  .ui-root .hlist-row-main:has(+ .hlist-row-controls--empty) {
+    padding-bottom: var(--space-3) !important;
   }
   .ui-root .hlist-row-sub {
     display: flex;
@@ -558,17 +598,8 @@ const HLIST_CSS = `
        line sits at the same distance below the title in every row. */
     min-height: calc(var(--space-3) + var(--space-1));
   }
-  .ui-root .hlist-row-tags .hlist-version--phone {
-    display: inline-block;
-    padding: 1px 8px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-pill);
-    line-height: 1.4;
-  }
-  .ui-root .hlist-row-meta .hlist-version--desktop {
-    display: none;
-  }
   .ui-root .hlist-row-controls {
+    min-width: 0;
     flex: 1 1 100%;
     justify-content: flex-end;
     gap: var(--space-1);

@@ -410,6 +410,12 @@
   --help-row-min-h: 62px;
   --suggest-line-max: 46ch;
 
+  /* Saved items (My Plans, My Reviews, the hubs' recent rows; Phase 4 step 4) */
+  --space-px30: 30px;        /* above a hub's recent list (M3 .recent) */
+  --saved-row-min-h: 60px;   /* a recent saved item's row (M3 .rows button) */
+  --team-row-min-h: 58px;    /* a Health Check team's row (M3 .teams button) */
+  --hlist-actions-w: 196px;  /* a list row's actions on a laptop (View review, pencil, bin), so the dates line up */
+
   /* Motion (--ease, --dur 250ms and --dur-slow 400ms above) */
   --dur-spin: 1.1s;
   --dur-spin-sm: 0.9s;

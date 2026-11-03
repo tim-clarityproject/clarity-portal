@@ -7811,3 +7811,87 @@
     transition: none;
   }
 }
+
+/* ---------- Hub pages: recent saved items and the Health Check's teams (M3 .recent, .teams; Phase 4 step 4) ---------- */
+
+.ui-root .ds-hub-recent {
+  margin-top: var(--space-6);
+  padding-top: var(--space-px30);
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-hub-recent-list {
+  margin-top: var(--space-px12);
+}
+
+.ui-root .ds-hub-recent-list .ds-row {
+  min-height: var(--saved-row-min-h) !important;
+}
+
+.ui-root .ds-hub-recent-link {
+  margin-top: var(--space-px6);
+}
+
+.ui-root .ds-hub-teams {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-hub-teams > li {
+  margin: 0;
+  padding: 0;
+}
+
+.ui-root .ds-hub-team {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+  min-height: var(--team-row-min-h);
+  padding: var(--space-2) 0;
+  border-bottom: var(--line-w) solid var(--line);
+  color: var(--text-2);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-hub-team-text {
+  min-width: 0;
+}
+
+.ui-root .ds-hub-team-name {
+  display: block;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: break-word;
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .ds-hub-team-line {
+  display: block;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-hub-team:hover .ds-hub-team-name {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-hub-team:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-hub-team-name {
+    transition: none;
+  }
+}

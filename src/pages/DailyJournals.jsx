@@ -1,7 +1,8 @@
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { getLocalDateKey, formatPlainDayLabel } from '../lib/dateFormatter';
+import { getLocalDateKey, formatSavedDate } from '../lib/dateFormatter';
+import { sortTime } from '../lib/savedItems';
 import { loadAllJournals, deleteJournal, wordCount } from '../lib/dailyJournal';
 import { useCachedLoad } from '../lib/pageCache';
 import DesignHeader from '../components/DesignHeader';
@@ -44,9 +45,13 @@ export default function DailyJournals() {
 
   const rows = journals.map((j) => ({
     id: j.id,
-    title: formatPlainDayLabel(j.journal_date),
-    typeLabel: 'Daily Journal',
+    // Named in words, never a date or the entry's first words (writing
+    // rule 60): the day is on the right.
+    title: 'Journal entry',
+    typeLabel: 'Journal',
     date: j.created_at,
+    dateLabel: formatSavedDate(j.journal_date, todayKey),
+    sortAt: sortTime(j.journal_date),
     isDraft: j.status === 'draft',
     meta: `${wordCount(j.body)} word${wordCount(j.body) === 1 ? '' : 's'}`,
     journalDate: j.journal_date,

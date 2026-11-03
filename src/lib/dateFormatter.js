@@ -216,3 +216,18 @@ export const formatUpdatedAt = (value) => {
   if (!date) return '';
   return `Updated ${formatDocDate(date)}, ${formatClockTime(date)}`;
 };
+
+// The date on the right of a saved item's row (writing rule 60; M3's recent
+// rows): "Today", "Yesterday", then "Mon 19 Oct", with the year only when it
+// isn't this year ("Fri 2 Oct 2025"). Takes a saved timestamp, a Date or a
+// plain "YYYY-MM-DD" day, and today's local day key (getLocalDateKey).
+export const formatSavedDate = (value, todayKey = getLocalDateKey()) => {
+  const date = toDocDate(value);
+  if (!date) return '';
+  const key = getLocalDateKey(date);
+  if (key === todayKey) return 'Today';
+  const [y, m, d] = todayKey.split('-').map(Number);
+  if (key === getLocalDateKey(new Date(y, m - 1, d - 1, 12))) return 'Yesterday';
+  const short = `${DOC_DAYS[date.getDay()]} ${date.getDate()} ${DOC_MONTHS[date.getMonth()]}`;
+  return date.getFullYear() === y ? short : `${short} ${date.getFullYear()}`;
+};

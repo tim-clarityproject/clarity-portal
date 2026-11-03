@@ -6,6 +6,8 @@ import {
   HubAnchor,
   HubGroup,
   HubGrid,
+  HubRecent,
+  HubTeams,
   HubTile,
   PhoneBar,
   PinPanel,
@@ -121,6 +123,35 @@ export function PinPanelDemo() {
     <>
       <Button variant="text" onClick={() => setOpen(true)}>Pin tools to my menu</Button>
       <PinPanel open={open} onClose={() => setOpen(false)} groups={PIN_GROUPS} pinned={pinned} onToggle={toggle} />
+    </>
+  );
+}
+
+export function SavedItemsDemo() {
+  const say = useSay();
+  const open = (name) => () => say(`Opens ${name}.`);
+  return (
+    <>
+      <HubAnchor>
+        <HubTile name="Strategic Alignment Health Check" line="See whether your team’s work matches its strategy." time="~15 minutes" href="#hc" onClick={(e) => { e.preventDefault(); say('Opens the Health Check.'); }} />
+        <HubTeams
+          teams={[
+            { key: 'lead', team: 'Leadership team', line: '3 versions, latest Mon 12 Oct', onClick: open('the Leadership team’s versions in My Plans') },
+            { key: 'product', team: 'Product team', line: '1 version, Wed 2 Sep', onClick: open('the Product team’s version in My Plans') },
+          ]}
+        />
+        <AddButton onClick={() => say('Starts a new Health Check.')}>Start a new Health Check</AddButton>
+      </HubAnchor>
+      <HubRecent
+        title="My Plans"
+        items={[
+          { key: 'a', title: 'Today’s plan', type: 'Plan my day', date: 'Today', onClick: open('today’s plan') },
+          { key: 'b', title: 'Referral pipeline', type: 'Get unstuck', date: 'Mon 19 Oct', onClick: open('Referral pipeline') },
+          { key: 'c', title: 'Harbour proposal', type: 'Pre-mortem', date: 'Wed 14 Oct', onClick: open('Harbour proposal') },
+        ]}
+        linkLabel="Open My Plans"
+        onOpenAll={() => say('Opens My Plans, filtered to Personal.')}
+      />
     </>
   );
 }

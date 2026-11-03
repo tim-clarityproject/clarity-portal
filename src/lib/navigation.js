@@ -142,7 +142,10 @@ export const TOOLS = {
  * The hub pages. Their ⓘ words are in src/content/pageText.js (rule 7).
  * Each ⓘ starts with one full sentence saying what the
  * area is (Tim, 2 Nov). The "most used move up" lines in M3 are left out
- * until the tiles really do move.
+ * until the tiles really do move. `recent`: the last three saved items at
+ * the foot of Plan, Review and Interpersonal (M3), from My Plans or My
+ * Reviews in that area, with a link to the whole list filtered to it.
+ * Reset has none, so journal entries never show on a shared screen.
  */
 export const HUBS = {
   personal: {
@@ -163,6 +166,7 @@ export const HUBS = {
       { tools: ['ipp', 'sprint', 'pmd'] },
       { title: 'Decide', tools: ['grow', 'inv', 'time'] },
     ],
+    recent: { list: 'plans', area: 'personal', title: 'My Plans', to: '/my-plans?area=personal' },
   },
   reset: {
     title: 'Reset',
@@ -181,6 +185,7 @@ export const HUBS = {
     line: 'Turn what happened into better performance.',
     info: pageText.hubReview,
     groups: [{ tools: ['rmd', 'debrief', 'aar', 'lbr'] }],
+    recent: { list: 'reviews', area: 'personal', title: 'My Reviews', to: '/my-reviews?area=personal' },
   },
   interpersonal: {
     title: 'Interpersonal',
@@ -188,6 +193,7 @@ export const HUBS = {
     area: 'interpersonal',
     info: pageText.hubInterpersonal,
     groups: [{ title: 'Meetings and conversations', tools: ['meet', 'fb'] }],
+    recent: { list: 'plans', area: 'interpersonal', title: 'My Plans', to: '/my-plans?area=interpersonal' },
   },
   strategic: {
     title: 'Strategic',
@@ -289,4 +295,7 @@ export const MOVED = {
   '/review-section': '/personal/review',
   '/account-section': '/my-account',
   '/points-of-leverage': '/strategic',
+  // My decisions joined the one My Plans list (step 4). Its discard toast
+  // comes with it in the state.
+  '/decision-history': '/my-plans',
 };

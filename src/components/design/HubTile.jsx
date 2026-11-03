@@ -1,4 +1,7 @@
 import { Checkbox } from './Controls';
+import { Button } from './Button';
+import Chevron from './Chevron';
+import { List, ListRow } from './ListRow';
 import { SlidePanel } from './Dialogs';
 import './design.css';
 
@@ -53,6 +56,57 @@ export function HubGroup({ title, children }) {
  */
 export function HubAnchor({ children }) {
   return <div className="ds-hub-anchor">{children}</div>;
+}
+
+/**
+ * A hub's recent saved items (M3 .recent; writing rule 60): a heading, the
+ * last few items, each a row with its name in words, the tool under it and
+ * the date on the right, then a text link to the whole list ("Open My
+ * Plans"). Nothing shows when there is nothing saved.
+ *
+ * items: [{ key, title, type, date, onClick }]
+ */
+export function HubRecent({ title, items = [], linkLabel, onOpenAll }) {
+  if (!items.length) return null;
+  return (
+    <section className="ds-hub-recent" aria-label={title}>
+      <h2 className="ds-hub-group-title">{title}</h2>
+      <List label={title} className="ds-hub-recent-list">
+        {items.map((x) => <ListRow key={x.key} title={x.title} type={x.type} date={x.date} onClick={x.onClick} />)}
+      </List>
+      {linkLabel && (
+        <div className="ds-hub-recent-link">
+          <Button variant="text" onClick={onOpenAll}>{linkLabel}</Button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * The Health Check's saved teams, inside its anchor card (M3 .teams): the
+ * team's name and "3 versions, latest Mon 12 Oct", with the chevron. Each
+ * opens that team's versions.
+ *
+ * teams: [{ key, team, line, onClick }]
+ */
+export function HubTeams({ teams = [] }) {
+  if (!teams.length) return null;
+  return (
+    <ul className="ds-hub-teams" aria-label="Your teams">
+      {teams.map((t) => (
+        <li key={t.key}>
+          <button type="button" className="ds-hub-team" onClick={t.onClick}>
+            <span className="ds-hub-team-text">
+              <span className="ds-hub-team-name">{t.team}</span>
+              <span className="ds-hub-team-line">{t.line}</span>
+            </span>
+            <Chevron direction="right" size="sm" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /**

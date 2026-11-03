@@ -30,7 +30,6 @@ import MyReviews from './pages/MyReviews';
 import ReviewSummary from './pages/ReviewSummary';
 import ReviewPlan from './pages/ReviewPlan';
 import ReviewPlanSummary from './pages/ReviewPlanSummary';
-import DecisionHistory from './pages/DecisionHistory';
 import DecisionSummary from './pages/DecisionSummary';
 import PlanMyDayStep1 from './pages/PlanMyDayStep1';
 import DailyPlanSummary from './pages/DailyPlanSummary';
@@ -70,6 +69,7 @@ import PlanVersion from './pages/performance/PlanVersion';
 import PlanBuilder from './pages/performance/PlanBuilder';
 import SprintStart from './pages/performance/SprintStart';
 import SprintReview from './pages/performance/SprintReview';
+import SprintReviewRead from './pages/performance/SprintReviewRead';
 import RecoveryStart, { RecoveryCheckIn, RecoveryToday } from './pages/performance/Recovery';
 import SprintYear from './pages/performance/SprintYear';
 import WeeklyDebrief from './pages/performance/WeeklyDebrief';
@@ -358,6 +358,7 @@ function AppContent() {
           <Route path="/performance-sprint" element={<PerformanceSprint />} />
           <Route path="/performance-sprint/start" element={<SprintStart />} />
           <Route path="/performance-sprint/review" element={<SprintReview />} />
+          <Route path="/performance-sprint/review/:sprintId" element={<SprintReviewRead />} />
           <Route path="/recovery" element={<RecoveryStart />} />
           <Route path="/recovery/today" element={<RecoveryToday />} />
           <Route path="/recovery/check-in" element={<RecoveryCheckIn />} />
@@ -387,7 +388,6 @@ function AppContent() {
           <Route path="/review-summary" element={<ReviewSummary />} />
           <Route path="/review-plan" element={<ReviewPlan />} />
           <Route path="/review-plan-summary" element={<ReviewPlanSummary />} />
-          <Route path="/decision-history" element={<DecisionHistory />} />
           <Route path="/decision-summary" element={<DecisionSummary />} />
           <Route path="/wheel-of-life" element={lazyPage(WheelStart)} />
           <Route path="/wheel-of-life/areas" element={lazyPage(WheelAreas)} />

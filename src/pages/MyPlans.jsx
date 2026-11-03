@@ -1,147 +1,59 @@
-import { useState, useContext, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useContext, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
-import { parseDbTimestamp, getLocalDateKey, formatReviewDate } from '../lib/dateFormatter';
-import { loadPlanReviews, findPlanReview, isPlanReviewDraft } from '../lib/planReview';
+import { getLocalDateKey } from '../lib/dateFormatter';
 import { useCachedLoad } from '../lib/pageCache';
+import { listFilters, planRows } from '../lib/savedItems';
+import { loadSavedPlans, SAVED_PLANS_CACHE } from '../lib/savedItemsApi';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import { Loading, PageHeader, useToast } from '../components/design';
 
-// Plan types with a "Review this plan" page (prompt 8). GROW and Stop
-// doing audit have no review target yet - see build summary point 4.
-const REVIEWABLE_TYPES = new Set(['daily_plan', 'plan_meeting', 'if_then_planning', 'tough-conversation']);
-
-// "Combined history" tool types (mock: plan-section.html, S.plans) -
-// a curated subset of `decisions` rows, not every decision tool_type
-// (Inversion and Strategic alignment stay My decisions-only, by design
-// of the approved mock's own DEC list).
-const COMBINED_TOOL_TYPES = ['daily_plan', 'plan_meeting', 'if_then_planning', 'stop_doing_audit', 'grow', 'tough-conversation'];
-
-const TYPE_LABEL = {
-  daily_plan: 'Daily plan',
-  plan_meeting: 'Meeting plan',
-  if_then_planning: 'If-Then plan',
-  stop_doing_audit: 'Time audit',
-  grow: 'Get unstuck',
-  'tough-conversation': 'Tough feedback',
-};
-
-const DECISION_LABELS = ['If-Then plan', 'Time audit', 'Get unstuck', 'Tough feedback'];
-
-const FILTERS = [
-  { id: 'Daily plan', label: 'Daily plans' },
-  { id: 'Meeting plan', label: 'Meetings' },
-  { id: 'dec', label: 'Decisions', match: (r) => DECISION_LABELS.includes(r.typeLabel) },
-];
-
-const SUB_FILTERS = {
-  dec: [
-    { id: 'If-Then plan', label: 'If-Then plan' },
-    { id: 'Time audit', label: 'Time audit' },
-    { id: 'Get unstuck', label: 'Get unstuck' },
-    { id: 'Tough feedback', label: 'Tough feedback' },
-  ],
-};
-
-const SUMMARY_ROUTE = {
-  daily_plan: '/daily-plan-summary',
-  plan_meeting: '/meeting-summary',
-  if_then_planning: '/if-then-planning-summary',
-  stop_doing_audit: '/stop-doing-audit-summary',
-  grow: '/decision-summary',
-  'tough-conversation': '/tough-conversation-summary',
-};
-
-const EDIT_ROUTE = {
-  daily_plan: '/plan-my-day',
-  plan_meeting: '/plan-meeting',
-  if_then_planning: '/if-then-planning',
-  stop_doing_audit: '/stop-doing-audit',
-  grow: '/grow-step-1',
-  'tough-conversation': '/tough-conversation-step-1',
-};
-
-function rowTitle(d) {
-  if (d.tool_type === 'daily_plan') {
-    return formatReviewDate(getLocalDateKey(parseDbTimestamp(d.created_at)));
-  }
-  return d.title || 'Untitled';
-}
+// My Plans (Phase 4 step 4; decisions part 1 "My Plans and My Reviews"):
+// one list of every saved plan across the three areas, old and new, named
+// in words (writing rule 60, src/lib/savedItems.js), with the area behind
+// the one Filter button. The old My decisions list (/decision-history)
+// joined it. ?area=personal|interpersonal|strategic opens it filtered,
+// with &tool= or &team= for the second choice (the hubs' links).
+//
+// Old tools keep their own delete (no Undo there before either) and edit.
+// The plan, the sprint, the day plans and the old Personal Operating Plan
+// open their own pages, where they are changed; they have no bin here.
 
 export default function MyPlans() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useContext(AuthContext);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
   // Instant page (Tim, 26 Oct): the plans shown last time appear at once
   // from the device, then refresh quietly in the background.
-  const loaded = useCachedLoad({
-    userId: user?.id,
-    name: 'my-plans',
-    load: async () => {
-      const { data, error: fetchError } = await supabase
-        .from('decisions')
-        .select('*')
-        .eq('user_id', user.id)
-        .in('tool_type', COMBINED_TOOL_TYPES)
-        .order('created_at', { ascending: false });
-      if (fetchError) throw fetchError;
-      // Reviews live in journal_entries (prompt 8) under a review_type
-      // the live database may not allow yet (see migration
-      // 013_add_plan_review_type.sql) - fails gracefully, rows just
-      // show no review state until it has been run.
-      let reviews = [];
-      try {
-        reviews = await loadPlanReviews(user.id);
-      } catch (reviewErr) {
-        console.error('[MyPlans] review lookup failed (migration 013 may not be run yet):', reviewErr);
-      }
-      return { plans: data || [], reviews };
-    },
-  });
-  const plans = useMemo(() => loaded.data?.plans || [], [loaded.data]);
-  const reviews = useMemo(() => loaded.data?.reviews || [], [loaded.data]);
+  const loaded = useCachedLoad({ userId: user?.id, name: SAVED_PLANS_CACHE, load: () => loadSavedPlans(user.id) });
+  const today = getLocalDateKey();
+  const rows = useMemo(() => planRows(loaded.data, today), [loaded.data, today]);
+  const { filters, subFilters, subLabels } = useMemo(() => listFilters(rows), [rows]);
+  const query = new URLSearchParams(location.search);
   const isLoading = loaded.loading;
-  const error = loaded.error
+  const error = loaded.error && !loaded.data
     ? { message: 'Your plans didn’t load. Check your connection and try again.', onRetry: loaded.reload }
     : null;
 
-  const rows = useMemo(() => plans.map((d) => {
-    const isDraft = Boolean(d.draft || d.status === 'draft');
-    const reviewable = REVIEWABLE_TYPES.has(d.tool_type) && !isDraft;
-    let review = null;
-    if (reviewable) {
-      const dateKey = getLocalDateKey(parseDbTimestamp(d.created_at));
-      review = findPlanReview(reviews, { planKind: d.tool_type, planId: d.id, dateKey });
+  // A Discard on an old tool's step lands here (it used to land on My
+  // decisions) with a one-shot toast: shown once, then the state cleared.
+  useEffect(() => {
+    if (location.state?.toast) {
+      toast.show(location.state.toast);
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
     }
-    return {
-      id: d.id,
-      title: rowTitle(d),
-      typeLabel: TYPE_LABEL[d.tool_type] || d.tool_type,
-      date: d.created_at,
-      isDraft,
-      canReview: reviewable,
-      reviewed: Boolean(review && !isPlanReviewDraft(review)),
-      reviewEntryId: review?.id || null,
-      raw: d,
-    };
-  }), [plans, reviews]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const openRow = (row) => {
-    const route = SUMMARY_ROUTE[row.raw.tool_type] || '/decision-summary';
-    navigate(route, { state: { decisionId: row.id, ...row.raw } });
-  };
-
-  const editRow = (row) => {
-    const route = EDIT_ROUTE[row.raw.tool_type] || '/plan-section';
-    navigate(route, { state: { decisionId: row.id, ...row.raw.form_data, problemTitle: row.raw.title } });
-  };
+  const go = (to) => to && navigate(to.path, to.state ? { state: to.state } : undefined);
 
   const reviewRow = (row) => {
     if (row.reviewed) {
@@ -153,12 +65,12 @@ export default function MyPlans() {
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    const { id } = deleteTarget;
+    const { dbId } = deleteTarget;
     setDeleteTarget(null);
     try {
-      const { error: deleteError } = await supabase.from('decisions').delete().eq('id', id);
+      const { error: deleteError } = await supabase.from('decisions').delete().eq('id', dbId);
       if (deleteError) throw deleteError;
-      loaded.setData((prev) => ({ ...prev, plans: (prev?.plans || []).filter((p) => p.id !== id) }));
+      loaded.setData((prev) => ({ ...prev, decisions: (prev?.decisions || []).filter((d) => d.id !== dbId) }));
       clearProgress();
       toast.show('Deleted');
     } catch (err) {
@@ -182,13 +94,17 @@ export default function MyPlans() {
             title="My Plans"
             pageKey="myPlans"
             rows={rows}
-            filters={FILTERS}
-            subFilters={SUB_FILTERS}
-            newButton={{ label: 'New plan', onClick: () => navigate('/planning-tools') }}
+            filters={filters}
+            subFilters={subFilters}
+            subLabels={subLabels}
+            filterLabel="Which area?"
+            initialFilter={query.get('area') || 'all'}
+            initialSubFilter={query.get('team') || query.get('tool') || 'all'}
+            newButton={{ label: 'New plan', onClick: () => navigate('/personal/plan') }}
             emptyText="No plans yet."
             error={error}
-            onOpen={openRow}
-            onEdit={editRow}
+            onOpen={(row) => go(row.to)}
+            onEdit={(row) => go(row.edit || row.to)}
             onReview={reviewRow}
             onDelete={(row) => setDeleteTarget(row)}
           />

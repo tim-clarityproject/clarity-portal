@@ -92,7 +92,7 @@ import { GallerySection, New } from './galleryKit';
 import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView } from './galleryUtils';
 import SprintTool from './SprintTool';
 import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } from './DailyPartsDemos';
-import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo } from './NavigationDemos';
+import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo, SavedItemsDemo } from './NavigationDemos';
 import { CarryOnDemo, DayFocusDemo, HelpListDemo, MiniDialDemo, PlanStepsDemo, SuggestionDemo } from './TodayDemos';
 import { BreathOrbDemo } from './OrbDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
@@ -1803,6 +1803,16 @@ function Gallery() {
             <p>“Pin tools to my menu” at the foot of each hub opens one list of every tool, grouped, with the shared tick boxes, which fill mint.</p>
             <p>It says “Pick up to 3.” and, once 3 are pinned, “You’ve pinned 3. Unpin one to pin another.” with the rest greyed out.</p>
             <p>Each tick saves at once, through the offline queue, and every device shows the same pins.</p>
+          </>
+        )} />
+
+        <GallerySection id="c61" title="Saved items" demo={SavedItemsDemo} rules={(
+          <>
+            <p><New /><b>Named in words, never by a date</b> (writing rule 60, Tim 23 Oct): the name on the left, the tool under it, the date on the right.</p>
+            <p>Day plans read Today’s plan, Yesterday’s plan, then Day plan, and reviews the same. A debrief reads Sprint 4, week 3. A journal is Journal entry, never its first words.</p>
+            <p>Plan, Review and Interpersonal end with their last three saved items and a link to the whole list, filtered to that area. Reset has none, so journal entries never show on a shared screen.</p>
+            <p>The Health Check’s card lists each team with its versions. A team opens its versions in My Plans.</p>
+            <p>My Plans and My Reviews use the same row, with the area behind the one Filter button.</p>
           </>
         )} />
 

@@ -20,7 +20,7 @@ export { Stat, StatGroup, Bar } from './Stat';
 export { List, ListRow } from './ListRow';
 export { LoggingRow, LoggingWeekRow, NumberField, Stepper } from './LoggingRow';
 export { Tile, HubCard, TileGrid, ToggleTile } from './Tile';
-export { HubTile, HubGrid, HubGroup, HubAnchor, PinPanel } from './HubTile';
+export { HubTile, HubGrid, HubGroup, HubAnchor, HubRecent, HubTeams, PinPanel } from './HubTile';
 export { DesktopMenu, PhoneBar, TileMenu, MenuPins, MenuActions } from './Navigation';
 export { SegmentedControl, Chip, ChipRow, Checkbox, ImpactTag, PillChoice } from './Controls';
 export { Choice, Dropdown } from './Choice';
