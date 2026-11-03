@@ -18,9 +18,16 @@
 //      - thoughts typed save to wind_down_nights, the device keeping a copy;
 //      - the orb: the account's choice wins over the device's copy, and a
 //        choice is saved beside the menu's pins, never over them.
-// Nothing is written to the test database: part A writes only to the
-// device, part B only to the stand-in. The clock is fixed (Wed 21 Oct
-// 2026, 22:30 London).
+// C. With 039 (and 038) really there (Tim ran them on the test project,
+//    3 Nov): what the older app kept on the device (a day's habit, last
+//    night's thoughts, an end-of-sprint review's answers) moves across to
+//    the real tables once, on opening Home and the sprint page; the device
+//    marks them sent (the review's answers are taken off it); opening again
+//    sends nothing new. Every row it makes is deleted afterwards.
+// Part A runs only while the 039 tables are missing, part C only once they
+// are there. Part A writes only to the device, part B only to the
+// stand-in, part C only rows it deletes again. The clock is fixed (Wed 21
+// Oct 2026, 22:30 London).
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -176,9 +183,12 @@ async function typeThought(page, text) {
 }
 const errorShown = (page) => page.locator('.ds-toast--error, [role=alert]').filter({ hasText: /didn’t save|went wrong/i }).count();
 
+const tablesThere = (await Promise.all(TABLES_039.map(async (t) => (await db.from(t).select('id').limit(1)).error?.code || 'there'))).every((c) => c === 'there');
+console.log(tablesThere ? '039 is on the test database: parts B and C.' : '039 is not on the test database yet: parts A and B.');
+
 try {
   // ---------------------------------------------------------------- A. without 039
-  {
+  if (!tablesThere) {
     const writes = [];
     const reads = [];
     const { context, page } = await signedIn({
@@ -270,6 +280,76 @@ try {
     pass('B: the orb choice is saved to the account', prefs?.orb_style === 'rings', JSON.stringify(rest.tables.person_settings));
     pass('B: ... and the pins stay', JSON.stringify(prefs?.menu_pins) === JSON.stringify(['breathe']), JSON.stringify(prefs));
     await context.close();
+  }
+
+  // ---------------------------------------------------------------- C. with 039 really there
+  if (tablesThere) {
+    const sprint = (await db.from('sprints').select('id').eq('user_id', me).eq('status', 'running').limit(1)).data?.[0];
+    const habit = sprint && (await db.from('sprint_habits').select('id').eq('sprint_id', sprint.id).limit(1)).data?.[0];
+    pass('C: the seeded client has a running sprint with a habit', Boolean(habit));
+    const had = {
+      day: (await db.from('day_plan_habits').select('id').eq('user_id', me).eq('local_date', NIGHT)).data || [],
+      night: (await db.from('wind_down_nights').select('id').eq('user_id', me).eq('night', YESTERDAY)).data || [],
+      review: (await db.from('sprint_reviews').select('id').eq('user_id', me).eq('sprint_id', sprint.id)).data || [],
+    };
+    pass('C: nothing for these days is in the tables before', !had.day.length && !had.night.length && !had.review.length, JSON.stringify(had));
+    const posts = [];
+    const { context, page } = await signedIn({
+      onRequest: (req) => {
+        const m = /\/rest\/v1\/([a-z_]+)/.exec(req.url());
+        if (m && req.method() === 'POST' && [...TABLES_039, 'sprint_reviews'].includes(m[1])) posts.push(m[1]);
+      },
+    });
+    try {
+      const reviewKey = `clarity-cache:${me}:performance-sprint-review-answers`;
+      await page.evaluate(({ nk, pk, rk, h, sid }) => {
+        localStorage.setItem(pk, JSON.stringify({ habits: [h], order: [`habit:${h}`], top: `habit:${h}` }));
+        localStorage.setItem(nk, JSON.stringify({ '2026-10-20': { thoughts: ['Device thought'], finishedAt: '2026-10-20T21:40:00.000Z', sound: 'off' } }));
+        localStorage.setItem(rk, JSON.stringify({ v: { [sid]: { worked: 'Morning plans', next: 'Earlier nights', choice: 'sprint', at: null, finishedAt: '2026-10-20T19:00:00.000Z' } }, at: Date.now() }));
+      }, { nk: nightsKey, pk: planKey(NIGHT), rk: reviewKey, h: habit.id, sid: sprint.id });
+      await page.goto(`${APP}/welcome`);
+      await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
+      const day = await until(async () => (await db.from('day_plan_habits').select('*').eq('user_id', me).eq('local_date', NIGHT)).data?.[0], 15000);
+      pass('C: the day\'s habit waiting on the device is in day_plan_habits', day?.habit_ids?.[0] === habit.id && day.top_pick === `habit:${habit.id}`, JSON.stringify(day));
+      const night = await until(async () => (await db.from('wind_down_nights').select('*').eq('user_id', me).eq('night', YESTERDAY)).data?.[0], 15000);
+      pass('C: last night\'s thoughts are in wind_down_nights, finished time and all', night?.thoughts?.[0] === 'Device thought' && Boolean(night.finished_at), JSON.stringify(night));
+      const marked = await until(async () => (await device(page, planKey(NIGHT)))?.sent === true && (await device(page, nightsKey))?.[YESTERDAY]?.sent === true, 10000);
+      pass('C: ... and the device keeps them, marked as sent', Boolean(marked));
+
+      await page.goto(`${APP}/performance-sprint`);
+      await page.waitForSelector('.ds-sdial--running', { timeout: 30000 });
+      const review = await until(async () => (await db.from('sprint_reviews').select('*').eq('user_id', me).eq('sprint_id', sprint.id)).data?.[0], 15000);
+      pass('C: the review\'s answers waiting on the device are in sprint_reviews (038)', review?.worked_best === 'Morning plans' && review.next_better === 'Earlier nights' && review.next_choice === 'sprint', JSON.stringify(review));
+      const off = await until(async () => !((await device(page, reviewKey))?.v || {})[sprint.id], 10000);
+      pass('C: ... and taken off the device', Boolean(off));
+
+      const sent = posts.length;
+      await page.goto(`${APP}/welcome`);
+      await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
+      await page.goto(`${APP}/performance-sprint`);
+      await page.waitForSelector('.ds-sdial--running', { timeout: 30000 });
+      await sleep(1500);
+      pass('C: moved once: opening Home and the sprint again sends nothing new', posts.length === sent, `${sent} then ${posts.length}`);
+      const counts = await Promise.all([
+        db.from('day_plan_habits').select('id').eq('user_id', me).eq('local_date', NIGHT),
+        db.from('wind_down_nights').select('id').eq('user_id', me).eq('night', YESTERDAY),
+        db.from('sprint_reviews').select('id').eq('user_id', me).eq('sprint_id', sprint.id),
+      ]);
+      pass('C: one row each, never two', counts.every((c) => c.data?.length === 1), counts.map((c) => c.data?.length).join(', '));
+      pass('C: no error shown', (await errorShown(page)) === 0);
+    } finally {
+      await context.close();
+      // Leave the test database as it was.
+      await db.from('day_plan_habits').delete().eq('user_id', me).eq('local_date', NIGHT);
+      await db.from('wind_down_nights').delete().eq('user_id', me).eq('night', YESTERDAY);
+      await db.from('sprint_reviews').delete().eq('user_id', me).eq('sprint_id', sprint.id);
+      const left = await Promise.all([
+        db.from('day_plan_habits').select('id').eq('user_id', me).eq('local_date', NIGHT),
+        db.from('wind_down_nights').select('id').eq('user_id', me).eq('night', YESTERDAY),
+        db.from('sprint_reviews').select('id').eq('user_id', me).eq('sprint_id', sprint.id),
+      ]);
+      pass('C: tidy: the rows it made are deleted', left.every((c) => (c.data || []).length === 0));
+    }
   }
 } catch (e) {
   pass('the run finished', false, e.message.split('\n')[0]);
