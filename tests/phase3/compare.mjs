@@ -788,6 +788,7 @@ for (const group of GROUPS) {
     seedFixed(...group.seed);
     await loadSprint();
   }
+  if (!sprint) await loadSprint(); // a group run alone (ONLY) after one that seeds
   if (group.before) await group.before();
   await loadAppData();
   for (const mode of MODES) {

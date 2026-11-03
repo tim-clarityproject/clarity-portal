@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { BreathOrb } from './BreathOrb';
 import { useOrbStyle } from './useOrbStyle';
 import './design.css';
@@ -15,11 +16,33 @@ import './design.css';
 // placement 'fixed': bottom right of the screen (real pages).
 // placement 'inline': in the flow (the design gallery).
 // style: the gallery shows both; real pages use the person's choice.
-export default function FloatingOrb({ onBreathe, placement = 'fixed', style }) {
+// pageKey: the page it sits on. A click in the first moment after it
+// appears, after the page changes or after a click on anything else is
+// ignored, as the guided tool ignores one after a move: it is the second
+// half of a double tap on a button that was in the same corner (Start
+// Performance Sprint 2 closes the guided tool over it, then Breathe).
+const ARRIVE_GUARD_MS = 400;
+export default function FloatingOrb({ onBreathe, placement = 'fixed', style, pageKey }) {
   const [chosen] = useOrbStyle();
+  const arrivedAt = useRef(0);
+  const buttonRef = useRef(null);
+  useEffect(() => {
+    arrivedAt.current = Date.now();
+  }, [pageKey]);
+  useEffect(() => {
+    const elsewhere = (e) => {
+      if (!buttonRef.current?.contains(e.target)) arrivedAt.current = Date.now();
+    };
+    document.addEventListener('click', elsewhere, true);
+    return () => document.removeEventListener('click', elsewhere, true);
+  }, []);
+  const breathe = (e) => {
+    if (Date.now() - arrivedAt.current < ARRIVE_GUARD_MS) return;
+    onBreathe?.(e);
+  };
   return (
     <div className={`ds-orb${placement === 'fixed' ? ' ds-orb--fixed' : ''}`}>
-      <button type="button" className="ds-breathe" onClick={onBreathe}>
+      <button ref={buttonRef} type="button" className="ds-breathe" onClick={breathe}>
         <BreathOrb style={style || chosen} pattern="rest" />
         Breathe
       </button>

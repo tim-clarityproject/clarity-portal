@@ -158,8 +158,23 @@ export function noteVersions(table, rows) {
 // taken.
 function noteVersion(k, at) {
   const had = versions.get(k);
+  if (had && quietReads > 0) return;
   if (had && Date.parse(had) > Date.parse(at)) return;
   versions.set(k, at);
+}
+
+// A read made only to keep the device's copies ready (warmDevice.js) is
+// not something this window shows: it may note a row the window hasn't
+// seen yet, but never moves on the version of one it shows, or a change
+// made from the older page would go over another window's newer one.
+let quietReads = 0;
+export async function readQuietly(fn) {
+  quietReads += 1;
+  try {
+    return await fn();
+  } finally {
+    quietReads -= 1;
+  }
 }
 
 // The versions this window's own saves made, per row: a row found at one

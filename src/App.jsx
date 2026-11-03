@@ -457,7 +457,7 @@ function AppContent() {
           coach is in the header on desktop and in My Account on phone. */}
       {!hideButtons && user && (
         <div className="ui-root ds-portal no-print">
-          <FloatingOrb onBreathe={() => navigate('/breathe')} />
+          <FloatingOrb pageKey={location.pathname} onBreathe={() => navigate('/breathe')} />
         </div>
       )}
       {/* The calm offline message, and "Saved" once saves made offline

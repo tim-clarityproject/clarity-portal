@@ -1,6 +1,6 @@
 import { readCache, writeCache } from './pageCache';
 import { isOnline, subscribeOnline } from './connection';
-import { changesMade, waitingToSend, whenSent } from './syncQueue';
+import { changesMade, readQuietly, waitingToSend, whenSent } from './syncQueue';
 import { loadSavedPlans, loadSavedReviews, SAVED_PLANS_CACHE, SAVED_REVIEWS_CACHE } from './savedItemsApi';
 import { loadActivePlan, loadDayPlan, loadDayReview, loadDebrief, loadHomeDay, loadPlanPage, loadSprintPage } from './performance/api';
 import { PLAN_CACHE, SPRINT_CACHE } from './performance/hooks';
@@ -20,6 +20,9 @@ import { REVIEW_EARLY_HOURS } from './performance/dayReview';
 // (a page just opened has its own fresh copy), and never while saves wait
 // to be sent or when one is made during the read, so an older answer is
 // never put over someone's own change (the same rule as useCachedLoad).
+// Its reads never move on the version a window's open page is based on
+// (readQuietly in syncQueue.js), so another window's newer change is still
+// guarded against.
 // Offline it waits for the connection and then runs once.
 
 const START_AFTER_MS = 4000;
@@ -59,7 +62,7 @@ async function warm(userId) {
       await whenSent();
       if (waitingToSend(userId)) return; // the device has changes the server doesn't yet
       const saves = changesMade();
-      const fresh = await load();
+      const fresh = await readQuietly(load);
       if (warmed !== userId || changesMade() !== saves || waitingToSend(userId)) return;
       // A page that wrote its own copy while this read was under way wins.
       const now = readCache(userId, name);
