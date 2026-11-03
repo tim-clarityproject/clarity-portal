@@ -275,7 +275,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.hash, location.key, logShown, view]);
 
-  const go = (to) => navigate(to);
+  // Home's links come back to Home when the tool ends (Set my day, Close my day).
+  const go = (to) => navigate(to, { state: { from: '/welcome' } });
   const cardAction = card?.action ? { label: card.action.label, onClick: () => (card.action.jump ? jumpToLog() : go(card.action.to)) } : null;
   const cardLink = card?.notTonight
     ? { label: 'Not tonight', onClick: () => { addNotTonight(card.notTonight); toast.show('You can wind down tomorrow evening.'); } }
