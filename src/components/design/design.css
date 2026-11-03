@@ -7066,6 +7066,32 @@
   overflow-wrap: break-word;
 }
 
+/* A phone at a large text size (the menu narrower than 20 standard
+   letters' room): one tile per row, as tall as its words, so a name never
+   breaks inside a word; and Log today and Breathe stay at the foot of the
+   menu while the tiles scroll above them, so the coral button is always in
+   reach. At the standard size the menu is as M3 draws it. */
+.ui-root .ds-tmenu {
+  container: tmenu / inline-size;
+}
+
+@container tmenu (max-width: 20rem) {
+  .ui-root .ds-tmenu-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ui-root .ds-tmenu-tile {
+    min-height: 0;
+  }
+
+  .ui-root .ds-tmenu .ds-menu-actions {
+    position: sticky;
+    bottom: 0;
+    padding-bottom: var(--space-2);
+    background: var(--bg);
+  }
+}
+
 /* The gallery draws both menus in place. */
 .ui-root .ds-dmenu-demo,
 .ui-root .ds-tmenu-demo {
