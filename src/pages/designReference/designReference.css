@@ -765,3 +765,11 @@
   font-size: var(--fs-meta);
   color: var(--text-2);
 }
+
+/* The phone bar and its menu, drawn in a phone-sized box. */
+.ui-root .dr-phone-nav {
+  max-width: 390px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

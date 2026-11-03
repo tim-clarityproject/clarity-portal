@@ -350,9 +350,7 @@ export default function MyAccount() {
           margin-top: 48px;
         }
 
-        /* About row: phone only. Desktop reaches About via the menu
-           drawer, so this row would be a duplicate there - hidden at
-           769px+ and shown only at 768px and below. */
+        /* Phone-only rows (Chat to the coach: in the desktop header). */
         .account-row--phone-only {
           display: none;
         }
@@ -439,7 +437,8 @@ export default function MyAccount() {
 
           {/* Portal */}
           <div className="account-section-label">Portal</div>
-          <div className="account-row account-row--phone-only">
+          {/* About: on every width now the menu lists areas only (M3). */}
+          <div className="account-row">
             <div className="account-row-text">
               <div className="account-row-title">About</div>
               <div className="account-row-desc">Learn about The Clarity Project</div>

@@ -1,4 +1,4 @@
-import { useContext, useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useCallback, useContext, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
@@ -6,17 +6,16 @@ import { AuthContext } from '../context/AuthContext';
 import { BoldCrosshair, ChatButton } from './design';
 import { useStartChat } from './coach/startChat';
 import { useActivePlan } from '../lib/performance/hooks';
-import DesignDrawer from './DesignDrawer';
+import { SiteDesktopMenu } from './SiteMenu';
 import PlanMissionPanel from './PlanMissionPanel';
 
 // The header (approved Home mock-up M2, version 3; decisions "Header").
 //
-// Desktop: the bold crosshair on the left is the menu button (it opens the
-// drawer and turns 45 degrees while it is open), M2's My Mission pill in
-// the middle, and Chat to [coach's first name] on the right. No logo.
-// Phone: M2's full-width My Mission pill. The phone tab bar stays as it is
-// until Phase 4, and everything in the drawer is reachable from it, so the
-// phone header has no menu button.
+// Desktop: the bold crosshair on the left is the menu button (it opens
+// M3's menu and turns 45 degrees while it is open), M2's My Mission pill
+// in the middle, and Chat to [coach's first name] on the right. No logo.
+// Phone: M2's full-width My Mission pill. The menu is the phone bar's
+// centre button (SitePhoneNav), so the phone header has no menu button.
 //
 // The pill opens what the mission bar opened before: the plan on desktop,
 // the full mission with Edit mission on phone. With no mission it reads
@@ -44,6 +43,7 @@ export default function DesignHeader({ className = '' }) {
   };
   const [expandedPanel, setExpandedPanel] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerWrapperRef = useRef(null);
   const menuRef = useRef(null);
@@ -331,7 +331,7 @@ export default function DesignHeader({ className = '' }) {
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Menu"
             aria-expanded={menuOpen}
-            aria-controls="design-drawer"
+            aria-controls="site-menu"
           >
             <BoldCrosshair />
           </button>
@@ -374,12 +374,12 @@ export default function DesignHeader({ className = '' }) {
         <PlanMissionPanel open={planPanelOpen} onClose={() => setPlanPanelOpen(false)} />
       )}
 
-      {/* The drawer, opened by the menu button above */}
-      <DesignDrawer
-        isOpen={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        headerHeight={headerHeight}
-        burgerRef={menuRef}
+      {/* The menu (M3), opened by the bold crosshair above */}
+      <SiteDesktopMenu
+        open={menuOpen}
+        onClose={closeMenu}
+        top={headerHeight}
+        buttonRef={menuRef}
       />
     </div>
   );

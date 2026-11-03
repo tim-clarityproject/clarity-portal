@@ -92,6 +92,7 @@ import { GallerySection, New } from './galleryKit';
 import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView } from './galleryUtils';
 import SprintTool from './SprintTool';
 import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } from './DailyPartsDemos';
+import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo } from './NavigationDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, withMeasure, yearView } from '../../lib/performance';
@@ -1761,6 +1762,45 @@ function Gallery() {
             <p>The menus get it in Phase 0c.</p>
             <p>White in dark mode and black in light mode.</p>
             <p>The app icons stay white on black, filling about 69% of the square.</p>
+          </>
+        )} />
+
+        <GallerySection id="c50" title="The desktop menu" demo={DesktopMenuDemo} rules={(
+          <>
+            <p><New /><b>The menu never lists tools</b> (M3, 23 Oct): it lists the areas, and each opens its hub page.</p>
+            <p>The bold crosshair in the header opens it from the left, under the header, and turns 45 degrees while it is open.</p>
+            <p>Pinned tools come first, up to 3. Then Home, Personal, Interpersonal, Strategic and My Account, each with one grey line.</p>
+            <p>Log today, the one coral button, and Breathe sit at the bottom.</p>
+            <p>The area you are in is marked for screen readers. Escape closes it and focus goes back to the crosshair.</p>
+          </>
+        )} />
+
+        <GallerySection id="c51" title="The phone bar and menu" demo={PhoneNavDemo} rules={(
+          <>
+            <p><New /><b>Three icons only</b> (M3): Home on the left, the bold crosshair in the middle, This week as four rising lines on the right.</p>
+            <p>Each has a 44px tap area and a name for screen readers: Home, Menu and This week.</p>
+            <p>The crosshair opens the menu from the bottom, above the bar, and turns 45 degrees to close it.</p>
+            <p>The menu holds the pinned tools, the four area tiles in two columns, then Log today and Breathe, all within the thumb’s reach.</p>
+            <p>The bar sits inside the phone’s safe area, so nothing goes under the home bar or the rounded corners.</p>
+          </>
+        )} />
+
+        <GallerySection id="c52" title="Hub tiles" demo={HubTilesDemo} rules={(
+          <>
+            <p><New /><b>Type-only tiles</b> (M3): the tool’s name, one line on how it helps and how long it takes. No icons.</p>
+            <p>A quiet live line can sit on the right, such as “Draft saved”, or “Done today” in mint with its dot.</p>
+            <p>Personal’s area tiles name the area in Nekst capitals and say how many tools it holds.</p>
+            <p>An anchor card, like Strategic’s Health Check, holds its tile and what belongs to it, with the shared add button.</p>
+            <p>Two columns on a laptop, one on a phone. Only tools that exist get a tile.</p>
+          </>
+        )} />
+
+        <GallerySection id="c53" title="Pinning tools" demo={PinPanelDemo} rules={(
+          <>
+            <p><New /><b>Up to 3 tools at the top of the menu</b> (experience rule 9).</p>
+            <p>“Pin tools to my menu” at the foot of each hub opens one list of every tool, grouped, with the shared tick boxes, which fill mint.</p>
+            <p>It says “Pick up to 3.” and, once 3 are pinned, “You’ve pinned 3. Unpin one to pin another.” with the rest greyed out.</p>
+            <p>Each tick saves at once, through the offline queue, and every device shows the same pins.</p>
           </>
         )} />
 

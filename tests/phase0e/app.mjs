@@ -197,7 +197,9 @@ async function within(ms, fn) {
 const PAGES = ['/welcome', '/my-plans', '/my-reviews', '/daily-journals', '/decision-history', '/personal-operating-plan',
   '/daily-journal', '/plan-meeting', '/if-then-planning', '/my-journal', '/review-plan', '/plan-my-day',
   '/stop-doing-audit', '/grow-step-1', '/inversion-step-1', '/tough-conversation-step-1', '/edit-profile',
-  '/my-account', '/about', '/wheel-of-life/results', '/wheel-of-life/areas'];
+  '/my-account', '/about', '/wheel-of-life/results', '/wheel-of-life/areas',
+  // The hub pages (Phase 4).
+  '/personal', '/personal/plan', '/personal/reset', '/personal/review', '/interpersonal', '/strategic'];
 for (const [label, scale] of [['standard text size', 1], ['largest text size (twice the standard)', 2]]) {
   const { context, page } = await signedIn();
   const wide = [];

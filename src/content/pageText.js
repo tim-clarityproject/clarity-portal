@@ -35,6 +35,32 @@ export const pageText = {
   groundSection: 'Steady yourself before you act.',
   reviewSection: 'Look back, learn and sharpen how you work.',
   planningTools: 'Everything you can use to plan, in one place.',
+  // The hub pages (M3): one sentence per line, the first saying what the
+  // area is (Tim, 2 Nov).
+  hubPersonal: [
+    'Personal is where you work on your own performance.',
+    'Plan sets your direction.',
+    'Reset gets you back to your best under pressure.',
+    'Review turns what happened into learning.',
+  ],
+  hubPlan: [
+    'Plan is where you set your direction and decide well.',
+    'Your plan and your sprint always stay at the top.',
+  ],
+  hubReset: [
+    'Reset is where you steady yourself under pressure.',
+    'Its tools help you get back to your best when the pressure is on.',
+  ],
+  hubReview: [
+    'Review is where you turn what happened into better performance.',
+  ],
+  hubInterpersonal: [
+    'Interpersonal is where you lead and influence the people around you.',
+  ],
+  hubStrategic: [
+    'Strategic is where you set direction for your team or organisation.',
+    'The Health Check always stays at the top.',
+  ],
 };
 
 export default pageText;

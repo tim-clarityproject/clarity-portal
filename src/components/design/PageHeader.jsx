@@ -12,7 +12,8 @@ import './design.css';
 //
 // meta:           short items for the meta line, e.g. ['Version 2.1', '8 weeks · 28 Sep to 22 Nov'].
 // info:           the page's one-line explanation, behind the "i" (it opens
-//                 as every "i" does: useInfoToggle).
+//                 as every "i" does: useInfoToggle). A list of sentences
+//                 shows one sentence per line (the hub pages).
 // onSystemLink:   shows "How the system fits together" in the meta line.
 // as:             the heading element (h1 on a real page).
 export default function PageHeader({ title, meta = [], info, onSystemLink, as: Heading = 'h1', className = '' }) {
@@ -39,7 +40,9 @@ export default function PageHeader({ title, meta = [], info, onSystemLink, as: H
         )}
       </div>
       {info && (
-        <p id={infoId} ref={helpPanelRef} className="ds-page-info" hidden={!helpOpen}>{info}</p>
+        <p id={infoId} ref={helpPanelRef} className="ds-page-info" hidden={!helpOpen}>
+          {Array.isArray(info) ? info.map((line) => <span key={line} className="ds-page-info-line">{line}</span>) : info}
+        </p>
       )}
       {hasMeta && (
         <div className="ds-page-meta">

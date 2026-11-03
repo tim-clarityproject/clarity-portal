@@ -385,6 +385,10 @@
   color: var(--text-2);
 }
 
+.ui-root .ds-page-info-line {
+  display: block;
+}
+
 .ui-root .ds-page-meta {
   display: flex;
   flex-wrap: wrap;
@@ -6570,5 +6574,665 @@
   .ui-root .ds-guide-summary-value {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+}
+
+/* ---------- Navigation (mock-up M3; Phase 4 step 1) ----------
+   The desktop menu under the header, the phone bar and the phone's tile
+   menu, the hub pages' tiles and the pin panel. Every edge that meets
+   the screen's edge stays inside the safe area (the notch rule, 30 Oct). */
+
+/* The pinned tools, at the top of either menu. */
+.ui-root .ds-menu-pins ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ui-root .ds-menu-pins-head {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--placeholder);
+}
+
+.ui-root .ds-menu-pins a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+  min-height: var(--tap-min);
+  color: var(--text);
+  text-decoration: none;
+  font-size: var(--fs-body);
+  line-height: var(--lh-tile);
+  overflow-wrap: anywhere;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-menu-pins a .ds-chevron {
+  color: var(--placeholder);
+}
+
+.ui-root .ds-menu-pins a:focus-visible,
+.ui-root .ds-dmenu-area:focus-visible,
+.ui-root .ds-tmenu-tile:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-px6);
+}
+
+/* Log today (the one coral button) and Breathe. */
+.ui-root .ds-menu-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.ui-root .ds-menu-actions .ds-btn {
+  width: 100%;
+  min-width: 0;
+  padding-left: var(--space-px12) !important;
+  padding-right: var(--space-px12) !important;
+}
+
+/* The desktop menu: a panel from the left under the header, over a scrim. */
+.ui-root .ds-dmenu-scrim {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--menu-top, 0px);
+  bottom: 0;
+  background: var(--scrim);
+  z-index: 5001;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root .ds-dmenu {
+  position: fixed;
+  left: 0;
+  top: var(--menu-top, 0px);
+  bottom: 0;
+  z-index: 5002;
+  box-sizing: border-box;
+  width: min(var(--menu-w), 100vw);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4) calc(var(--space-5) + var(--space-1)) max(var(--space-5), env(safe-area-inset-bottom));
+  padding-left: max(calc(var(--space-5) + var(--space-1)), env(safe-area-inset-left));
+  background: var(--bg);
+  border-right: var(--line-w) solid var(--line);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root .ds-dmenu-wrap--open .ds-dmenu-scrim,
+.ui-root .ds-dmenu-wrap--open .ds-dmenu {
+  opacity: 1;
+}
+
+.ui-root .ds-dmenu .ds-menu-pins {
+  margin-bottom: var(--space-px18);
+}
+
+.ui-root .ds-dmenu .ds-menu-pins a {
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-dmenu-areas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ui-root .ds-dmenu-areas li,
+.ui-root .ds-tmenu-tiles li {
+  opacity: 0;
+  transform: translateY(var(--space-px14));
+  transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
+  transition-delay: calc(var(--i, 0) * var(--dur-fast) / 3);
+}
+
+.ui-root .ds-dmenu-wrap--open .ds-dmenu-areas li,
+.ui-root .ds-tmenu-wrap--open .ds-tmenu-tiles li {
+  opacity: 1;
+  transform: none;
+}
+
+.ui-root .ds-dmenu-area {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-3);
+  padding: var(--space-px18) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.ui-root .ds-dmenu-name {
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-menu-area);
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-menu-area);
+  text-transform: uppercase;
+  overflow-wrap: break-word;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-dmenu-area > .ds-chevron {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+}
+
+.ui-root .ds-dmenu-line {
+  grid-column: 1;
+  margin-top: var(--space-2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--placeholder);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-dmenu-area:hover .ds-dmenu-name,
+  .ui-root .ds-menu-pins a:hover {
+    color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-dmenu .ds-menu-actions {
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+
+/* The phone bar: Home, the bold crosshair, This week. Phone only. */
+.ui-root .ds-phone-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-phone-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-bar);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: calc(var(--phone-bar-h) + max(var(--space-px12), env(safe-area-inset-bottom)));
+    padding: 0 max(var(--space-px18), env(safe-area-inset-right)) max(var(--space-px12), env(safe-area-inset-bottom)) max(var(--space-px18), env(safe-area-inset-left));
+    background: var(--bg);
+    border-top: var(--line-w) solid var(--line);
+  }
+}
+
+.ui-root .ds-bar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--bar-btn-w);
+  min-height: var(--bar-btn-h);
+  border-radius: var(--radius-input);
+  color: var(--placeholder);
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-bar-btn[aria-current='page'] {
+  color: var(--text);
+}
+
+.ui-root .ds-bar-icon {
+  display: block;
+  width: var(--bar-icon);
+  height: var(--bar-icon);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ui-root .ds-bar-icon path {
+  vector-effect: non-scaling-stroke;
+}
+
+.ui-root .ds-bar-menu {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: var(--bar-btn-w);
+  height: var(--bar-btn-w);
+  min-height: var(--bar-btn-w) !important;
+  padding: 0 !important;
+  margin-top: calc(-1 * var(--space-px6));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-bar-menu .ds-bold-cross {
+  width: var(--bold-cross-bar);
+  height: var(--bold-cross-bar);
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+.ui-root .ds-bar-menu[aria-expanded='true'] .ds-bold-cross {
+  transform: rotate(45deg);
+}
+
+.ui-root .ds-bar-btn:focus-visible,
+.ui-root .ds-bar-menu:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px3);
+}
+
+/* The phone menu: everything in the bottom half, above the bar. */
+.ui-root .ds-tmenu-scrim {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: var(--tabbar-height, 0px);
+  z-index: var(--z-menu);
+  background: var(--scrim-menu);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.ui-root .ds-tmenu {
+  position: fixed;
+  left: max(var(--space-px12), env(safe-area-inset-left));
+  right: max(var(--space-px12), env(safe-area-inset-right));
+  bottom: calc(var(--tabbar-height, 0px) + var(--space-px12));
+  z-index: var(--z-menu);
+  max-height: calc(100dvh - var(--tabbar-height, 0px) - var(--space-px12) - max(var(--space-px12), env(safe-area-inset-top)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  transform: translateY(var(--space-px14));
+  transition: opacity var(--dur) var(--ease), transform var(--dur-slow) var(--ease);
+}
+
+.ui-root .ds-tmenu-wrap--open .ds-tmenu-scrim,
+.ui-root .ds-tmenu-wrap--open .ds-tmenu {
+  opacity: 1;
+  transform: none;
+}
+
+.ui-root .ds-tmenu .ds-menu-pins {
+  margin-bottom: var(--space-2);
+  padding: var(--space-px12) var(--space-px18) var(--space-px6);
+  border-radius: var(--radius-menu-tile);
+  background: var(--raised);
+}
+
+.ui-root .ds-tmenu .ds-menu-pins li + li a {
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-tmenu-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.ui-root .ds-tmenu-tiles li {
+  display: flex;
+}
+
+.ui-root .ds-tmenu-tile {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: var(--menu-tile-min-h);
+  padding: var(--space-px18);
+  border-radius: var(--radius-menu-tile);
+  background: var(--raised);
+  color: var(--text);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-tmenu-tile b {
+  display: block;
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-menu-tile);
+  line-height: var(--lh-title);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-tmenu-tile small {
+  display: block;
+  margin-top: var(--space-px6);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-tile);
+  color: var(--placeholder);
+  overflow-wrap: break-word;
+}
+
+/* The gallery draws both menus in place. */
+.ui-root .ds-dmenu-demo,
+.ui-root .ds-tmenu-demo {
+  position: relative;
+}
+
+.ui-root .ds-dmenu-wrap--inline .ds-dmenu-scrim,
+.ui-root .ds-tmenu-wrap--inline .ds-tmenu-scrim {
+  display: none;
+}
+
+.ui-root .ds-dmenu-wrap--inline .ds-dmenu {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  width: 100%;
+  min-height: 0;
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-card);
+  z-index: auto;
+}
+
+.ui-root .ds-tmenu-wrap--inline .ds-tmenu {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  max-height: none;
+  z-index: auto;
+}
+
+.ui-root .ds-phone-bar.ds-phone-bar--inline {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: var(--phone-bar-h);
+  padding: 0 var(--space-px18);
+  border-top: var(--line-w) solid var(--line);
+  z-index: auto;
+}
+
+/* ---------- Hub pages (M3) ---------- */
+
+.ui-root .ds-hub-page {
+  box-sizing: border-box;
+  max-width: calc(var(--hub-max) + 2 * var(--space-5));
+  margin: 0 auto;
+  padding: calc(var(--space-6) - var(--space-1)) var(--space-5) var(--space-7);
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-hub-page {
+    padding: var(--space-2) max(var(--page-x-phone), env(safe-area-inset-right)) var(--space-6) max(var(--page-x-phone), env(safe-area-inset-left));
+  }
+}
+
+.ui-root .ds-hub-back {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .ui-root .ds-hub-back {
+    display: block;
+    margin-bottom: var(--space-px10);
+  }
+}
+
+.ui-root .ds-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-px12);
+  margin-top: var(--space-4);
+}
+
+.ui-root .ds-hub-tile {
+  box-sizing: border-box;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-px22);
+  min-height: var(--hub-tile-min-h);
+  padding: var(--space-px22);
+  border-radius: var(--radius-hub-tile);
+  background: var(--raised);
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: normal;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur) var(--ease);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-hub-tile:hover {
+    background: var(--line-soft);
+  }
+}
+
+.ui-root .ds-hub-tile:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-hub-tile-head {
+  display: block;
+  min-width: 0;
+}
+
+.ui-root .ds-hub-tile-name {
+  display: block;
+  font-size: var(--fs-hub-tile);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tile);
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-hub-tile-line {
+  display: block;
+  max-width: var(--hub-line-max);
+  margin-top: var(--space-px6);
+  font-size: var(--fs-note);
+  line-height: var(--lh-box);
+  color: var(--text-2);
+}
+
+.ui-root .ds-hub-tile-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px6) var(--space-px10);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-tile);
+  color: var(--placeholder);
+}
+
+.ui-root .ds-hub-tile-live {
+  color: var(--text);
+  text-align: right;
+}
+
+.ui-root .ds-hub-tile-live--good {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px6);
+  color: var(--good);
+}
+
+.ui-root .ds-hub-tile-live--good i {
+  width: var(--live-dot);
+  height: var(--live-dot);
+  border-radius: var(--radius-pill);
+  background: var(--good);
+}
+
+.ui-root .ds-hub-tile--big {
+  min-height: var(--hub-tile-big-min-h);
+}
+
+.ui-root .ds-hub-tile--big .ds-hub-tile-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-hub-area);
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-menu-area);
+  text-transform: uppercase;
+}
+
+.ui-root .ds-hub-group--named {
+  margin-top: calc(var(--space-6) - var(--space-1));
+}
+
+/* !important: src/styles/mobile.css sizes every h2 and h3 on phones. */
+.ui-root .ds-hub-group-title {
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-hub-group) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-hub-group);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .ds-hub-group--named .ds-hub-grid {
+  margin-top: var(--space-3);
+}
+
+.ui-root .ds-hub-anchor {
+  margin-top: var(--space-4);
+  padding: var(--space-px22);
+  border-radius: var(--radius-hub-tile);
+  background: var(--raised);
+}
+
+.ui-root .ds-hub-anchor .ds-hub-tile {
+  min-height: 0;
+  padding: 0;
+  background: none;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-hub-anchor .ds-hub-tile:hover {
+    background: none;
+  }
+  .ui-root .ds-hub-anchor .ds-hub-tile:hover .ds-hub-tile-name {
+    color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-hub-anchor .ds-add {
+  margin-top: var(--space-px18);
+}
+
+.ui-root .ds-hub-pin-link {
+  margin-top: calc(var(--space-5) + var(--space-1));
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-hub-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+  .ui-root .ds-hub-tile {
+    min-height: 0;
+    gap: var(--space-px14);
+    padding: var(--space-px18) var(--space-px20);
+  }
+  .ui-root .ds-hub-tile-name {
+    font-size: var(--fs-hub-tile-phone);
+  }
+  .ui-root .ds-hub-tile--big {
+    min-height: 0;
+  }
+  .ui-root .ds-hub-tile--big .ds-hub-tile-name {
+    font-size: var(--fs-hub-area-phone);
+  }
+  .ui-root .ds-hub-anchor {
+    padding: var(--space-px18) var(--space-px20);
+  }
+}
+
+/* The pin panel. */
+.ui-root .ds-pin-question {
+  margin: var(--space-px6) 0 0;
+  font-size: var(--fs-minus);
+  line-height: var(--lh-question);
+  color: var(--text);
+}
+
+.ui-root .ds-pin-note {
+  margin: var(--space-px6) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-pin-group {
+  margin-top: var(--space-px22);
+}
+
+.ui-root .ds-pin-group-title {
+  margin: 0 0 var(--space-1) !important;
+  font-family: var(--font-body);
+  font-size: var(--fs-meta) !important;
+  font-weight: var(--fw-regular);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--placeholder);
+}
+
+.ui-root .ds-pin-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ui-root .ds-pin-row {
+  display: flex;
+  align-items: center;
+  min-height: var(--option-min-h);
+  border-bottom: var(--line-w) solid var(--line-soft);
+  margin-left: calc(-1 * var(--space-px12));
+}
+
+.ui-root .ds-pin-row .ds-check {
+  gap: var(--space-px6);
+}
+
+.ui-root .ds-pin-row .ds-check-label {
+  font-size: var(--fs-body);
+}
+
+.ui-root .ds-check--disabled .ds-check-box {
+  cursor: default;
+  opacity: var(--disabled-opacity);
+}
+
+.ui-root .ds-check--disabled .ds-check-label {
+  cursor: default;
+  color: var(--placeholder);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-dmenu-areas li,
+  .ui-root .ds-tmenu-tiles li,
+  .ui-root .ds-tmenu {
+    transform: none;
   }
 }

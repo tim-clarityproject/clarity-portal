@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { diag } from '../utils/diag';
-import DesignTabBar from './DesignTabBar';
+import { SitePhoneNav } from './SiteMenu';
 
 /**
  * Master auth guard - wraps ALL protected routes via React Router layout pattern.
@@ -68,7 +68,7 @@ export default function ProtectedLayout() {
   return (
     <>
       <Outlet />
-      <DesignTabBar />
+      <SitePhoneNav />
     </>
   );
 }

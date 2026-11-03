@@ -30,7 +30,6 @@ import MyReviews from './pages/MyReviews';
 import ReviewSummary from './pages/ReviewSummary';
 import ReviewPlan from './pages/ReviewPlan';
 import ReviewPlanSummary from './pages/ReviewPlanSummary';
-import DecisionTools from './pages/DecisionTools';
 import DecisionHistory from './pages/DecisionHistory';
 import DecisionSummary from './pages/DecisionSummary';
 import PlanMyDayStep1 from './pages/PlanMyDayStep1';
@@ -80,12 +79,6 @@ import ReviewMyDay from './pages/performance/ReviewMyDay';
 import PersonalOperatingPlanArchived from './pages/PersonalOperatingPlanArchived';
 import PersonalOperatingPlanArchivedOne from './pages/PersonalOperatingPlanArchivedOne';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
-import PlanSection from './pages/PlanSection';
-import PlanningTools from './pages/PlanningTools';
-import GroundSection from './pages/GroundSection';
-import DecideSection from './pages/DecideSection';
-import ReviewSection from './pages/ReviewSection';
-import AccountSection from './pages/AccountSection';
 import AuthLogIn from './pages/auth/LogIn';
 import AuthSignUpStep1 from './pages/auth/SignUpStep1';
 import AuthSignUpStep2 from './pages/auth/SignUpStep2';
@@ -98,6 +91,8 @@ import ForgotPasswordCheckEmail from './pages/auth/ForgotPasswordCheckEmail';
 import ResetPassword from './pages/auth/ResetPassword';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
+import HubPage from './pages/hubs/HubPage';
+import { MOVED } from './lib/navigation';
 import { loadWithReload } from './lib/loadWithReload';
 
 // Strategic Alignment Health Check: a standalone page for people with no
@@ -134,6 +129,13 @@ function MyJournalRoute() {
     return <Navigate to="/performance-sprint/debrief" replace />;
   }
   return <MyJournal />;
+}
+
+// An old address moved to a new one (Phase 4): the query, the hash and
+// any state go with it, so nothing that relied on them is lost.
+function MovedTo({ to }) {
+  const location = useLocation();
+  return <Navigate to={{ pathname: to, search: location.search, hash: location.hash }} state={location.state} replace />;
 }
 
 function AppContent() {
@@ -327,6 +329,17 @@ function AppContent() {
         <Route element={<ProtectedLayout />}>
           <Route path="/about" element={<About />} />
           <Route path="/welcome" element={<Welcome />} />
+          {/* The hub pages (M3, Phase 4 step 1), and the old section pages
+              moved onto them. */}
+          <Route path="/personal" element={<HubPage hub="personal" />} />
+          <Route path="/personal/plan" element={<HubPage hub="plan" />} />
+          <Route path="/personal/reset" element={<HubPage hub="reset" />} />
+          <Route path="/personal/review" element={<HubPage hub="review" />} />
+          <Route path="/interpersonal" element={<HubPage hub="interpersonal" />} />
+          <Route path="/strategic" element={<HubPage hub="strategic" />} />
+          {Object.entries(MOVED).map(([from, to]) => (
+            <Route key={from} path={from} element={<MovedTo to={to} />} />
+          ))}
           <Route path="/onboarding-mission" element={<OnboardingMission />} />
           <Route path="/personal-operating-plan" element={<PersonalOperatingPlan />} />
           <Route path="/personal-operating-plan-edit" element={<PersonalOperatingPlanEdit />} />
@@ -374,20 +387,13 @@ function AppContent() {
           <Route path="/review-summary" element={<ReviewSummary />} />
           <Route path="/review-plan" element={<ReviewPlan />} />
           <Route path="/review-plan-summary" element={<ReviewPlanSummary />} />
-          <Route path="/decision-tools" element={<DecisionTools />} />
           <Route path="/decision-history" element={<DecisionHistory />} />
           <Route path="/decision-summary" element={<DecisionSummary />} />
-          <Route path="/plan-section" element={<PlanSection />} />
-          <Route path="/planning-tools" element={<PlanningTools />} />
-          <Route path="/ground-section" element={<GroundSection />} />
-          <Route path="/decide-section" element={<DecideSection />} />
-          <Route path="/review-section" element={<ReviewSection />} />
           <Route path="/wheel-of-life" element={lazyPage(WheelStart)} />
           <Route path="/wheel-of-life/areas" element={lazyPage(WheelAreas)} />
           <Route path="/wheel-of-life/check-in" element={lazyPage(WheelCheckIn)} />
           <Route path="/wheel-of-life/results" element={lazyPage(WheelResults)} />
           <Route path="/wheel-of-life/targets" element={lazyPage(WheelTargets)} />
-          <Route path="/account-section" element={<AccountSection />} />
           <Route path="/plan-my-day" element={<PlanMyDayStep1 />} />
           <Route path="/daily-plan-summary" element={<DailyPlanSummary />} />
           <Route path="/plan-meeting" element={<PlanMeeting />} />

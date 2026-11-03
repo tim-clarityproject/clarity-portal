@@ -385,6 +385,19 @@ export default function PerformanceSprint() {
     ref.current?.querySelector('h2')?.focus({ preventScroll: true });
   };
 
+  // The menu's Log today (#log-today) lands on Log today, once it shows.
+  const logShown = view?.state === 'running';
+  useEffect(() => {
+    if (location.hash !== '#log-today' || !logShown || !logRef.current) return undefined;
+    const frame = requestAnimationFrame(() => {
+      jump(logRef);
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: location.state });
+    });
+    return () => cancelAnimationFrame(frame);
+    // jump only reads the ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.hash, logShown]);
+
   const welcome = Boolean(view?.welcomeBack) && (view.state === 'running' || view.state === 'none');
   const meta = welcome
     ? []
@@ -678,7 +691,7 @@ function SprintBody({
       </div>
       )}
 
-      <div ref={logRef} className="sprint-anchor">
+      <div ref={logRef} id="log-today" className="sprint-anchor">
         <Section
           title={day ? 'Log today' : 'Log this week'}
           className="ipp-section sprint-section sprint-log"

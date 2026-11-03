@@ -19,8 +19,8 @@
 //    (from My Reviews, their summary, Edit review and Continue) and a
 //    finished and a draft POP review (read only: no pencil, no Continue,
 //    no Edit review), at 1280px dark and 360px light.
-// 3. Home's cards, the desktop menu's Review links and the phone's Review
-//    section all lead somewhere sensible.
+// 3. Home's cards, and the menus' way to the Review hub's tools (Phase 4,
+//    M3), all lead somewhere sensible.
 //
 // The invented items (and an invented mission, when the client has none)
 // are removed at the end, and the seed is put back on the real today.
@@ -352,40 +352,44 @@ async function checkHome(page, tag) {
   }
 }
 
+// The menus (rebuilt in Phase 4, M3): the menu lists areas, and the
+// Review hub's tiles lead to the new tools. The old Weekly momentum and
+// POP review links are gone; their old routes are checked above.
+const REVIEW_TILES = [
+  ['Weekly performance debrief', '/performance-sprint/debrief'],
+  ['After-action review', '/my-journal'],
+  ['Review my day', '/my-day/review'],
+];
+
 async function checkDrawer(page, tag) {
-  const cases = [
-    ['Weekly Momentum Check-in', '/performance-sprint/debrief'],
-    ['Personal Operating Plan Review', '/performance-sprint/review'],
-    ['After-Action Review', '/my-journal'],
-    ['My Reviews', '/my-reviews'],
-  ];
-  for (const [label, want] of cases) {
+  for (const [title, want] of REVIEW_TILES) {
     await page.goto(`${APP}/welcome`);
     await page.waitForSelector('.home-tiles', { timeout: 30000 });
-    await page.getByRole('button', { name: 'Menu' }).click();
-    const drawer = page.locator('.design-drawer');
-    const link = drawer.getByRole('link', { name: label, exact: true });
-    if (!(await link.isVisible())) await drawer.getByRole('button', { name: 'Review', exact: true }).click();
-    await link.waitFor({ state: 'visible', timeout: 5000 });
-    await link.click();
-    pass(`${tag}: the menu's ${label} opens ${want}`, await landsOn(page, want), path(page));
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await page.locator('#site-menu .ds-dmenu-name', { hasText: /^personal$/i }).click();
+    await landsOn(page, '/personal');
+    await page.locator('.ds-hub-tile', { hasText: 'Review' }).first().click();
+    await landsOn(page, '/personal/review');
+    await page.locator('.ds-hub-tile', { hasText: title }).click();
+    pass(`${tag}: the menu's Personal, Review, ${title} opens ${want}`, await landsOn(page, want), path(page));
   }
 }
 
 async function checkReviewSection(page, tag) {
-  const cases = [
-    ['Weekly momentum check-in', '/performance-sprint/debrief'],
-    ['Review my personal operating plan', '/performance-sprint/review'],
-    ['Review a situation', '/my-journal'],
-  ];
-  for (const [title, want] of cases) {
+  for (const [title, want] of REVIEW_TILES) {
     await page.goto(`${APP}/welcome`);
     await page.waitForSelector('.home-tiles', { timeout: 30000 });
-    await page.locator('.design-tabbar a', { hasText: 'Review' }).click();
-    await landsOn(page, '/review-section');
-    await page.locator('.dt-card', { hasText: title }).click();
-    pass(`${tag}: the Review tab's "${title}" opens ${want}`, await landsOn(page, want), path(page));
+    await page.locator('.ds-bar-menu').click();
+    await page.locator('#site-tile-menu .ds-tmenu-tile b', { hasText: /^Personal$/ }).click();
+    await landsOn(page, '/personal');
+    await page.locator('.ds-hub-tile', { hasText: 'Review' }).first().click();
+    await landsOn(page, '/personal/review');
+    await page.locator('.ds-hub-tile', { hasText: title }).click();
+    pass(`${tag}: the phone menu's Personal, Review, ${title} opens ${want}`, await landsOn(page, want), path(page));
   }
+  // The old Review section's address lands on the Review hub.
+  await page.goto(`${APP}/review-section`);
+  pass(`${tag}: /review-section opens the Review hub`, await landsOn(page, '/personal/review'), path(page));
 }
 
 for (const [width, mode] of [[1280, 'dark'], [360, 'light']]) {

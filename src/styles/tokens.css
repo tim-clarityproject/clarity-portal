@@ -357,6 +357,32 @@
   --icon-cross: #FFFFFF;
   --icon-preview: 64px;
 
+  /* Navigation (M3, Phase 4): the desktop menu, the phone bar and its
+     tile menu, the hub pages' tiles */
+  --menu-w: 380px;
+  --fs-menu-area: calc(24 * var(--u-big));
+  --ls-menu-area: 0.08em;
+  --phone-bar-h: 74px;       /* the phone bar, above the safe area */
+  --bar-btn-w: 56px;
+  --bar-btn-h: 48px;
+  --bar-icon: 26px;
+  --radius-menu-tile: 20px;
+  --menu-tile-min-h: 136px;
+  --fs-menu-tile: calc(18 * var(--u));
+  --radius-hub-tile: 18px;
+  --hub-tile-min-h: 148px;
+  --hub-tile-big-min-h: 176px;
+  --fs-hub-tile: calc(19 * var(--u));
+  --fs-hub-tile-phone: calc(18 * var(--u));
+  --fs-hub-area: calc(20 * var(--u-big));
+  --fs-hub-area-phone: calc(19 * var(--u-big));
+  --fs-hub-group: calc(14 * var(--u));
+  --ls-hub-group: 0.14em;
+  --hub-line-max: 42ch;
+  --live-dot: 6px;
+  --hub-max: 720px;
+  --scrim-menu: rgba(0, 0, 0, 0.88); /* behind the phone menu: almost the page colour */
+
   /* Motion (--ease, --dur 250ms and --dur-slow 400ms above) */
   --dur-spin: 1.1s;
   --dur-spin-sm: 0.9s;
@@ -367,6 +393,8 @@
 
   /* Layers */
   --z-orb: 2400;
+  --z-menu: 5004;             /* the phone menu and its scrim, over the header */
+  --z-bar: 5006;              /* the phone bar, over its menu */
   --z-notice: 5100;           /* the offline message, under pop-ups and panels */
   --z-dialog: 5200;
   --z-pop: 5250;             /* drop-down lists and the calendar, above panels */
@@ -466,6 +494,7 @@
   --paused-done: #B9B7B1;
   --day-off: #C9C7C1;
   --scrim: rgba(20, 20, 18, 0.28); /* dims less in light, so it never looks muddy */
+  --scrim-menu: rgba(249, 248, 245, 0.95);
   --toast-bg: #000000;       /* toasts are black with white text in both modes */
   --toast-text: #FFFFFF;
   --toast-line: #000000;

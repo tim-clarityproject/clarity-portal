@@ -38,23 +38,26 @@ export function ChipRow({ children, label, className = '' }) {
 
 // Checkbox: an 18px box in a 44px target, filled mint when done (Tim,
 // 26 Oct): a black tick in dark, a white tick on deep green in light. The words beside it are its label and can be tapped too.
-export function Checkbox({ checked, onChange, children, after }) {
+// `disabled` greys it out and it can't be ticked (the pin panel once 3
+// are pinned).
+export function Checkbox({ checked, onChange, children, after, disabled = false }) {
   const labelId = useId();
   return (
-    <div className="ds-check">
+    <div className={`ds-check${disabled ? ' ds-check--disabled' : ''}`}>
       <button
         type="button"
         role="checkbox"
         className="ds-check-box"
         aria-checked={checked}
         aria-labelledby={labelId}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
       >
         <span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
         </span>
       </button>
-      <span id={labelId} className="ds-check-label" onClick={() => onChange(!checked)}>
+      <span id={labelId} className="ds-check-label" onClick={() => { if (!disabled) onChange(!checked); }}>
         {children}
       </span>
       {after}
