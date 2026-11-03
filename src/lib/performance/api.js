@@ -951,6 +951,56 @@ export async function loadReviewWhich(userId, yesterday) {
   return { yesterday, planned: Boolean(planned), reviewed: Boolean(reviewed) };
 }
 
+// ---------------------------------------------------------------- Home
+
+/**
+ * What Home shows for one day beside the sprint page's own rows (Home and
+ * the sprint share those, so a log or a tick on one shows on the other at
+ * once, offline too): today's Plan my day (its row, to-dos and
+ * Strategies), whether today and the day before are reviewed, the latest
+ * day before today with anything logged, planned or reviewed (for a gap),
+ * the plan's steps so far (for someone new), the highest sprint number
+ * (the next one's name in Recovery) and the coach.
+ */
+export async function loadHomeDay(userId, date) {
+  const yesterday = dayBefore(date, 1);
+  const latest = (table) => one(supabase.from(table).select('local_date').eq('user_id', userId)
+    .lt('local_date', date).order('local_date', { ascending: false }).limit(1));
+  const [dayPlan, dayReview, yesterdayPlan, yesterdayReview, lastLog, lastPlan, lastReview, plan, lastSprint, coach] = await Promise.all([
+    one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
+    one(supabase.from('day_reviews').select('id, local_date, status, updated_at').eq('user_id', userId).eq('local_date', date).limit(1)),
+    one(supabase.from('day_plans').select('id').eq('user_id', userId).eq('local_date', yesterday).limit(1)),
+    one(supabase.from('day_reviews').select('id').eq('user_id', userId).eq('local_date', yesterday).eq('status', 'finished').limit(1)),
+    latest('habit_logs'),
+    latest('day_plans'),
+    latest('day_reviews'),
+    loadActivePlan(userId),
+    one(supabase.from('sprints').select('number').eq('user_id', userId).order('number', { ascending: false }).limit(1)),
+    // The coach is only for the help list's last line: Home still shows without it.
+    loadMyCoach().catch(() => null),
+  ]);
+  const [dayTodos, dayStrategies, objectives, strategies] = await Promise.all([
+    dayPlan ? rows(supabase.from('day_plan_todos').select('todo_id, is_top').eq('day_plan_id', dayPlan.id)) : [],
+    dayPlan ? rows(supabase.from('day_plan_strategies').select('strategy_id').eq('day_plan_id', dayPlan.id)) : [],
+    plan ? rows(supabase.from('outcome_objectives').select('id').eq('plan_id', plan.id).is('archived_at', null)) : [],
+    plan ? rows(supabase.from('plan_strategies').select('id, name').eq('plan_id', plan.id).is('archived_at', null).order('sort_order')) : [],
+  ]);
+  return {
+    date,
+    dayPlan,
+    dayTodos,
+    dayStrategies,
+    dayReview,
+    yesterday: { planned: Boolean(yesterdayPlan), reviewed: Boolean(yesterdayReview) },
+    lastActive: [lastLog?.local_date, lastPlan?.local_date, lastReview?.local_date].filter(Boolean),
+    plan: plan ? { id: plan.id, mission: plan.mission || null } : null,
+    objectives: objectives.length,
+    strategies,
+    lastSprintNumber: lastSprint?.number || 0,
+    coach,
+  };
+}
+
 /** A day's review row made once, with its id from the device, so its Strategies can follow it straight away. */
 export function createDayReview(userId, id, date) {
   return saveOrQueue(userId, {

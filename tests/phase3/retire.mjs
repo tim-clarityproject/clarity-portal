@@ -6,8 +6,8 @@
 //   node --import ./tests/scores/register.mjs tests/phase3/retire.mjs [folder for screenshots]
 //
 // The seed is built around one fixed day and every browser's clock starts
-// on it (tests/phase2/fixed-day.mjs). Home's weekly card shows only from
-// Friday to Sunday, so the Home and menu checks run on the Friday of the
+// on it (tests/phase2/fixed-day.mjs). Home suggests the debrief on debrief
+// days from 12:00, so the Home and menu checks run on the Friday of the
 // fixed day's week (same seed, clock moved on).
 //
 // 1. The old routes land on the new tools: /personal-operating-plan-review
@@ -235,7 +235,7 @@ async function checkRedirects(page, tag) {
   pass(`${tag}: Back leaves the redirect behind`, path(page) !== '/personal-operating-plan-review', path(page));
 
   await page.goto(`${APP}/welcome`);
-  await page.waitForSelector('.home-tiles', { timeout: 30000 });
+  await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
   await pushRoute(page, '/my-journal', { reviewType: 'weekly-momentum' });
   pass(`${tag}: a new weekly check-in opens the debrief`, await landsOn(page, '/performance-sprint/debrief'), path(page));
   await until(async () => (await page.locator('.ds-guide, .plan-page').count()) > 0);
@@ -243,7 +243,7 @@ async function checkRedirects(page, tag) {
   await shot(page, `${tag}-weekly-redirect`);
 
   await page.goto(`${APP}/welcome`);
-  await page.waitForSelector('.home-tiles', { timeout: 30000 });
+  await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
   await pushRoute(page, '/my-journal', { reviewType: 'after-action' });
   await until(async () => has(await textOf(page), 'After-Action Review'));
   pass(`${tag}: an after-action review still opens`, path(page) === '/my-journal' && has(await textOf(page), 'After-Action Review'), path(page));
@@ -328,27 +328,29 @@ async function checkOldItems(page, tag) {
 }
 
 // ---------------------------------------------------------------- 4. Home and the menus
+// Home as Today (Phase 4 step 2, M2): Plan my day and Review my day open
+// the new tools, and on a Friday afternoon the debrief is the suggestion.
 const SENSIBLE = {
-  'Plan my day': ['/plan-my-day'],
-  'Review my day': ['/review-plan'],
-  'Refine my personal operating plan': ['/personal-operating-plan', '/onboarding-mission'],
+  'Plan my day': ['/my-day/plan'],
+  'Review my day': ['/my-day/review'],
 };
 
 async function checkHome(page, tag) {
   for (const [title, want] of Object.entries(SENSIBLE)) {
     await page.goto(`${APP}/welcome`);
-    await page.waitForSelector('.home-tiles', { timeout: 30000 });
-    await page.locator('.home-tiles a, .home-tiles button', { hasText: title }).first().click();
+    await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
+    await page.locator('.home-page').getByRole('button', { name: title, exact: true }).first().click();
     const ok = await until(async () => want.includes(path(page)));
     pass(`${tag}: Home's "${title}" opens ${want[0]}`, Boolean(ok), path(page));
   }
   await page.goto(`${APP}/welcome`);
-  await page.waitForSelector('.home-tiles', { timeout: 30000 });
-  const card = page.locator('.home-weekly-card');
-  pass(`${tag}: Home shows the weekly card on a Friday`, (await card.count()) === 1);
+  await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
+  const card = page.locator('.ds-suggest', { hasText: 'How did this week go?' });
+  await until(async () => (await card.count()) === 1, 10000);
+  pass(`${tag}: Home suggests the debrief on a Friday afternoon`, (await card.count()) === 1);
   if (await card.count()) {
-    await card.click();
-    pass(`${tag}: Home's weekly card opens the debrief`, await landsOn(page, '/performance-sprint/debrief'), path(page));
+    await card.locator('.ds-btn--primary').click();
+    pass(`${tag}: Home's debrief card opens the debrief`, await landsOn(page, '/performance-sprint/debrief'), path(page));
   }
 }
 
@@ -364,7 +366,7 @@ const REVIEW_TILES = [
 async function checkDrawer(page, tag) {
   for (const [title, want] of REVIEW_TILES) {
     await page.goto(`${APP}/welcome`);
-    await page.waitForSelector('.home-tiles', { timeout: 30000 });
+    await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
     await page.locator('#site-menu .ds-dmenu-name', { hasText: /^personal$/i }).click();
     await landsOn(page, '/personal');
@@ -378,7 +380,7 @@ async function checkDrawer(page, tag) {
 async function checkReviewSection(page, tag) {
   for (const [title, want] of REVIEW_TILES) {
     await page.goto(`${APP}/welcome`);
-    await page.waitForSelector('.home-tiles', { timeout: 30000 });
+    await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
     await page.locator('.ds-bar-menu').click();
     await page.locator('#site-tile-menu .ds-tmenu-tile b', { hasText: /^Personal$/ }).click();
     await landsOn(page, '/personal');

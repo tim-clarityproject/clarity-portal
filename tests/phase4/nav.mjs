@@ -226,7 +226,7 @@ if (part(1) || part(2) || part(3)) {
         pass(`desktop menu: ${name} opens ${want}`, await landsOn(page, want), path(page));
         pass(`desktop menu: closes after choosing ${name}`, await until(async () => (await page.locator('#site-menu').count()) === 0, 3000));
       }
-      for (const [label, want] of [['Log today', '/performance-sprint'], ['Breathe', '/breathe']]) {
+      for (const [label, want] of [['Log today', '/welcome'], ['Breathe', '/breathe']]) {
         await goHub(page, '/personal');
         await openDesktopMenu(page);
         await page.locator('#site-menu').getByRole('button', { name: label, exact: true }).click();
@@ -478,7 +478,7 @@ if (part(5)) {
         await goHub(page, '/personal');
         await openPhoneMenu(page);
         await page.locator('#site-tile-menu').getByRole('button', { name: 'Log today', exact: true }).click();
-        pass(`${tag}: Log today opens the sprint`, await landsOn(page, '/performance-sprint'), path(page));
+        pass(`${tag}: Log today opens Home's Log today`, await landsOn(page, '/welcome'), path(page));
         await goHub(page, '/personal');
         await openPhoneMenu(page);
         pass(`${tag}: the pinned tools show at the top of the phone menu`, await until(async () => (await page.locator('#site-tile-menu .ds-menu-pins a').count()) === 3, 10000));

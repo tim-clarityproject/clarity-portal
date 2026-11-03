@@ -383,6 +383,19 @@
   --hub-max: 720px;
   --scrim-menu: rgba(0, 0, 0, 0.88); /* behind the phone menu: almost the page colour */
 
+  /* Home as Today (M2, Phase 4 step 2) */
+  --radius-suggest: 20px;    /* the Suggested for now card (M2 .hs) */
+  --radius-dayfocus: 14px;   /* How you want to be today, Today's Strategy (M2 .hbe) */
+  --mdial-size: 52px;        /* the mini dial (M2 .hd2 svg) */
+  --mdial-min-h: 56px;
+  --fs-week-figure: calc(26 * var(--u-big)); /* the week line's score, Nekst Light (M2 .hwk b) */
+  --fs-log-head: calc(13 * var(--u));        /* LOG TODAY beside Saving and Saved, Nekst (M2 .hlh h4) */
+  --fs-fold-head: calc(14 * var(--u));       /* THIS WEEK on the weekly habits' fold (M2 .fold .h) */
+  --planstep-mark: 22px;
+  --planstep-tick: 12px;
+  --help-row-min-h: 62px;
+  --suggest-line-max: 46ch;
+
   /* Motion (--ease, --dur 250ms and --dur-slow 400ms above) */
   --dur-spin: 1.1s;
   --dur-spin-sm: 0.9s;

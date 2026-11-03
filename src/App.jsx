@@ -11,7 +11,7 @@ import { ConnectionNotice, Crosshair, FloatingOrb, ToastProvider } from './compo
 import { startUpdateChecks } from './lib/appUpdate';
 import { CoachChatProvider } from './components/coach/CoachChat';
 import ProtectedLayout from './components/ProtectedLayout';
-import Welcome from './pages/Welcome';
+import Home from './pages/Home';
 import About from './pages/About';
 import MyAccount from './pages/MyAccount';
 import GoalSetting from './pages/GoalSetting';
@@ -328,7 +328,7 @@ function AppContent() {
         {/* PROTECTED ROUTES - ALL routes here require valid session */}
         <Route element={<ProtectedLayout />}>
           <Route path="/about" element={<About />} />
-          <Route path="/welcome" element={<Welcome />} />
+          <Route path="/welcome" element={<Home />} />
           {/* The hub pages (M3, Phase 4 step 1), and the old section pages
               moved onto them. */}
           <Route path="/personal" element={<HubPage hub="personal" />} />

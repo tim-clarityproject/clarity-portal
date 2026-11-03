@@ -15,3 +15,4 @@ export * from './recovery';
 export * from './dayPlan';
 export * from './dayReview';
 export * from './debrief';
+export * from './home';

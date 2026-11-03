@@ -93,6 +93,7 @@ import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView 
 import SprintTool from './SprintTool';
 import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } from './DailyPartsDemos';
 import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo } from './NavigationDemos';
+import { CarryOnDemo, DayFocusDemo, HelpListDemo, MiniDialDemo, PlanStepsDemo, SuggestionDemo } from './TodayDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
 import { useSprintDemo } from './useSprintDemo';
 import { dayCountWords, dayName, selectedWeek, shiftDay, startingSprint, withMeasure, yearView } from '../../lib/performance';
@@ -112,7 +113,7 @@ const TOC = [
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
   ['c45', 'Scales and levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'],
   ['c32', 'Outcome Objectives'], ['c33', 'Alignment check'], ['c34', 'Strategy tiles'], ['c35', 'My Mission panel'],
-  ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
+  ['c54', 'Home'], ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
 
 // The colour table (design-reference-v3.html): name, what it's for, dark,
@@ -1801,6 +1802,51 @@ function Gallery() {
             <p>“Pin tools to my menu” at the foot of each hub opens one list of every tool, grouped, with the shared tick boxes, which fill mint.</p>
             <p>It says “Pick up to 3.” and, once 3 are pinned, “You’ve pinned 3. Unpin one to pin another.” with the rest greyed out.</p>
             <p>Each tick saves at once, through the offline queue, and every device shows the same pins.</p>
+          </>
+        )} />
+
+        <GallerySection id="c54" title="Home: the suggestion" demo={SuggestionDemo} rules={(
+          <>
+            <p><New /><b>One suggestion for now</b> (M2, 23 Oct): a question, how long it takes, and the one coral button.</p>
+            <p>It changes through the day: Plan my day until 12:00, how today is going in the afternoon, Review my day from 17:00, the debrief on debrief days, and Sleep wind down from 21:00 until 03:00.</p>
+            <p>The wind-down card says Sleep wind down above its question and has Not tonight as a text link.</p>
+            <p>At most two quiet lines sit under it, each with one text link. A line that can be dismissed has the 45 degree crosshair, read as Not now.</p>
+          </>
+        )} />
+
+        <GallerySection id="c55" title="Home: the mini dial and the week line" demo={MiniDialDemo} rules={(
+          <>
+            <p><New /><b>The sprint in small</b> (M2): one thin segment per week, mint at or above the standard and grey below, this week filling in the text colour. No key.</p>
+            <p>The date and the week sit beside it, and the whole thing opens the sprint.</p>
+            <p>The week line shows the performance score so far, in mint at or above the standard, with the usual range as a full sentence. It opens the sprint too.</p>
+          </>
+        )} />
+
+        <GallerySection id="c56" title="Home: today’s focus" demo={DayFocusDemo} rules={(
+          <>
+            <p><New /><b>How you want to be today, and today’s Strategy</b> (M2), from Plan my day.</p>
+            <p>Side by side on a laptop, stacked on a phone. Each shows only once it has been chosen.</p>
+          </>
+        )} />
+
+        <GallerySection id="c57" title="Home: the plan’s steps" demo={PlanStepsDemo} rules={(
+          <>
+            <p><New /><b>Four steps for someone new</b> (M2): My Mission, Outcome Objectives, Strategies and Performance Sprint 1.</p>
+            <p>A done step fills mint with its tick. The next one is in the text colour. The rest say Not yet.</p>
+          </>
+        )} />
+
+        <GallerySection id="c58" title="Home: help behind one button" demo={HelpListDemo} rules={(
+          <>
+            <p><New /><b>“I need help with something”</b> (M2) slides in from the side with situations in plain words, each naming its tool.</p>
+            <p>It ends with “Something else?” and Chat to the coach’s first name. Someone without a coach doesn’t get that line.</p>
+          </>
+        )} />
+
+        <GallerySection id="c59" title="Home: carry on where you left off" demo={CarryOnDemo} rules={(
+          <>
+            <p><New /><b>One row per half-finished tool</b>, named in words, with when it was last typed in.</p>
+            <p>The whole row opens the tool where it was left. The tool the card already suggests isn’t repeated.</p>
           </>
         )} />
 

@@ -501,7 +501,7 @@ try {
 
   // ---------------------------------------------------------- 8: the redirects
   await page.goto(`${APP}/welcome`);
-  await page.waitForSelector('.home-tiles', { timeout: 30000 });
+  await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
   await page.evaluate(() => {
     window.history.pushState({ usr: { reviewType: 'weekly-momentum' }, key: `t${Date.now()}`, idx: (window.history.state?.idx ?? 0) + 1 }, '', '/my-journal');
     window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));

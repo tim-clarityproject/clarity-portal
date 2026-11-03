@@ -10,9 +10,8 @@ import { usePins } from '../lib/menuPins';
 // today and Breathe. The parts themselves are in src/components/design
 // (Navigation.jsx).
 //
-// Log today opens the Performance Sprint's Log today until Home has its
-// own in step 2.
-export const LOG_TODAY = '/performance-sprint#log-today';
+// Log today opens Home's own Log today (Phase 4 step 2).
+export const LOG_TODAY = '/welcome#log-today';
 
 function useSiteMenu(onClosed) {
   const navigate = useNavigate();

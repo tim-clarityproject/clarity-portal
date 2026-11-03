@@ -190,8 +190,36 @@ function localHour() {
 
 export function RecoveryToday() {
   const navigate = useNavigate();
+  const recovery = useRecovery();
+  const { view, loading, error } = recovery;
+  if (!view) {
+    return <Shell><Waiting loading={loading} error={error} label="Loading" /></Shell>;
+  }
+  const open = view.state === 'open' ? view.recovery : null;
+  if (!open) return <Navigate to={view.state === 'none' ? '/recovery' : '/performance-sprint'} replace />;
+  // The chosen end has come: the check-in asks how they are (audit 4.7).
+  if (view.due) return <Navigate to="/recovery/check-in" replace />;
+  const name = view.firstName ? `${greeting(localHour())}, ${view.firstName}` : greeting(localHour());
+  return (
+    <Shell back={{ label: 'Performance Sprint', onClick: () => navigate('/performance-sprint') }}>
+      <PageHeader title={name} />
+      <RecoveryDay recovery={recovery} />
+    </Shell>
+  );
+}
+
+/**
+ * The recovery day's basics (M15 "Home in recovery"): the banner, "What
+ * would help you recharge today?", Sleep and Breathe, Add a few more days
+ * and I'm ready to go again. All optional. On /recovery/today and on
+ * Home while a Recovery is open (Phase 4 step 2). `recovery` is
+ * { view: recoveryView(), setData, today, userId } from useRecoveryPage,
+ * with an open Recovery whose end hasn't come.
+ */
+export function RecoveryDay({ recovery }) {
+  const navigate = useNavigate();
   const toast = useToast();
-  const { view, data, loading, error, setData, today, userId } = useRecovery();
+  const { view, setData, today, userId } = recovery;
   const actions = useRecoveryActions({ setData });
   const open = view?.state === 'open' ? view.recovery : null;
   const [text, setText] = useState(null);
@@ -200,7 +228,6 @@ export function RecoveryToday() {
   const [sleepOpen, setSleepOpen] = useState(false);
   const timer = useRef(null);
   const latest = useRef({});
-
   const saved = view?.answer || null;
   const shownText = text ?? saved?.answer ?? '';
   const shownShared = shared ?? saved?.shared ?? false;
@@ -268,14 +295,7 @@ export function RecoveryToday() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!view) {
-    return <Shell><Waiting loading={loading} error={error} label="Loading" /></Shell>;
-  }
-  if (!open) return <Navigate to={view.state === 'none' ? '/recovery' : '/performance-sprint'} replace />;
-  // The chosen end has come: the check-in asks how they are (audit 4.7).
-  if (view.due) return <Navigate to="/recovery/check-in" replace />;
-
-  const name = view.firstName ? `${greeting(localHour())}, ${view.firstName}` : greeting(localHour());
+  if (!open) return null;
   const coach = view.coach;
   const changeWho = async (audience) => {
     const next = audience === 'coach';
@@ -288,8 +308,7 @@ export function RecoveryToday() {
     }
   };
   return (
-    <Shell back={{ label: 'Performance Sprint', onClick: () => navigate('/performance-sprint') }}>
-      <PageHeader title={name} />
+    <>
       <RecoveryBanner className="rec-banner" until={`You’re in recovery until ${view.untilText}.`} left={daysLeftWords(view.daysLeft)} />
 
       <section className="rec-q" aria-labelledby="rec-q">
@@ -325,7 +344,7 @@ export function RecoveryToday() {
       />
 
       <SleepPanel open={sleepOpen} onClose={() => setSleepOpen(false)} userId={userId} today={today} />
-    </Shell>
+    </>
   );
 }
 

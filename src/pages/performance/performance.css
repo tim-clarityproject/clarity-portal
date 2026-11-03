@@ -1135,3 +1135,123 @@
   color: var(--text-2);
 }
 .ui-root .sprint-debrief-line + .ipp-actions { margin-top: var(--space-3); }
+
+/* Home as Today (M2, Phase 4 step 2): only the page's spacing; the
+   parts carry their own styles (design.css, "Home as Today"). */
+
+.ui-root .home-page {
+  max-width: calc(var(--hub-max) + 2 * var(--page-x-desktop));
+}
+
+.ui-root .home-welcome {
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .home-section .ds-section-body {
+  margin-top: var(--space-px14);
+}
+
+.ui-root .home-line {
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .home-line + .home-line {
+  margin-top: var(--space-px2);
+}
+
+.ui-root .home-todos {
+  margin-top: var(--space-px18);
+}
+
+.ui-root .home-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-5);
+  margin-top: var(--space-px10);
+}
+
+.ui-root .home-add {
+  margin-top: var(--space-2);
+}
+
+.ui-root .home-log {
+  margin-top: var(--space-px28);
+}
+
+.ui-root .home-log-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-px12);
+}
+
+/* !important: src/styles/mobile.css sizes every h3 on phones. */
+.ui-root .home-log-title {
+  margin: 0 !important;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-log-head) !important;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.ui-root .home-log-title:focus {
+  outline: none;
+}
+
+.ui-root .home-fold {
+  margin-top: var(--space-px6);
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .home-fold-head {
+  display: block;
+}
+
+.ui-root .home-fold-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-fold-head);
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.ui-root .home-fold-line {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .home-week {
+  margin-top: var(--space-px28);
+}
+
+.ui-root .home-help {
+  margin-top: var(--space-5);
+}
+
+.ui-root .home-recovery {
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 600px) {
+  .ui-root .home-help .ds-btn,
+  .ui-root .home-add {
+    width: 100%;
+    justify-content: center;
+  }
+}

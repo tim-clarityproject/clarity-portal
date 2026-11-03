@@ -14,8 +14,6 @@ import {
   ErrorMessage,
   IMPACT_OPTIONS,
   Loading,
-  LoggingRow,
-  LoggingWeekRow,
   MoveTodoPanel,
   PageHeader,
   PerformanceSystem,
@@ -34,23 +32,18 @@ import {
 import { useSprintPage } from '../../lib/performance/hooks';
 import {
   freezeWeek,
-  habitLogOp,
   moveTodo,
-  saveHabitLog,
   saveHabitSettingFrom,
-  saveTodo,
-  saveTodoDone,
   saveWin,
-  setTodoDeleted,
   setWinDeleted,
 } from '../../lib/performance/api';
-import { dayName, doneToast, localToday, moveOptions, recoveryLead, settingForWeek, sprintPageView } from '../../lib/performance';
+import { dayName, localToday, moveOptions, recoveryLead, settingForWeek, sprintPageView } from '../../lib/performance';
 import { useRecoveryActions } from './recoveryActions';
-import { toStored } from '../../lib/units';
-import { keepForLater, newId, useQueueState } from '../../lib/syncQueue';
+import { useSprintActions } from './sprintActions';
+import { DayRow, WeekRow } from './LogRows';
+import { newId, useQueueState } from '../../lib/syncQueue';
 import { isOnline } from '../../lib/connection';
 import { useDraft } from '../../lib/drafts';
-import { friendlyError } from '../../lib/friendlyError';
 import pageText from '../../content/pageText';
 import { prefersReducedMotion } from '../../components/design/timing';
 import './performance.css';
@@ -64,7 +57,8 @@ import './performance.css';
 // Logging works offline: every change goes through the offline queue
 // (saveOrQueue), shows "Will sync" while it waits, then "Saved". A log
 // for a day is found by its habit and day, so changing it updates the
-// same row and never swaps its id (risk R2).
+// same row and never swaps its id (risk R2). Logging and to-dos are
+// shared with Home (sprintActions.js, LogRows.jsx): one way to save.
 //
 // Finished weeks are frozen for the coach (freeze_week) when online
 // (risk R3); nothing else writes week_scores yet.
@@ -76,18 +70,9 @@ import './performance.css';
 // back the top of the page says "Welcome back" (M15 "Welcome back. Let's
 // start with this week."). "Take a recovery week" sits beside the dial.
 
-const SAVE_DELAY_MS = 700; // typing in a number box saves this long after the last key, or on leaving the box
 const IMPACT_WORD = { 1: 'Low', 2: 'Medium', 3: 'High' };
 const emptyTodo = (week) => ({ text: '', strategyId: null, impact: 2, week });
 const emptyWin = (day) => ({ text: '', strategyIds: [], impact: 2, day });
-
-const toText = (v) => (v == null ? '' : String(v));
-const parseTyped = (text) => {
-  const t = (text || '').replace(',', '.');
-  if (t === '' || t === '.') return null;
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
-};
 
 export default function PerformanceSprint() {
   const navigate = useNavigate();
@@ -103,15 +88,13 @@ export default function PerformanceSprint() {
 
   const [mode, setMode] = useState('day');
   const [system, setSystem] = useState(false);
-  const [save, setSave] = useState('idle');
-  const [typed, setTyped] = useState({});
+  const actions = useSprintActions({ userId, data, setData, view, today });
+  const { save, sent, changeRows, typed, putLog, typeNumber, leaveNumber, tickWeekly, toggleTodo } = actions;
   const [habitId, setHabitId] = useState(null);
   const [moving, setMoving] = useState(null);
   const [panel, setPanel] = useState(null); // 'todo' | 'win'
   const [todoForm, setTodoForm] = useState(() => emptyTodo(null));
   const [winForm, setWinForm] = useState(() => emptyWin(null));
-  const timers = useRef({});
-  const pending = useRef({}); // the logs still waiting for their delay: key -> { habitId, day, value }
   const frozen = useRef(new Set());
   const logRef = useRef(null);
   const todoRef = useRef(null);
@@ -125,12 +108,6 @@ export default function PerformanceSprint() {
     // Once, on arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // "Will sync" turns to "Saved" once the queue has sent everything.
-  useEffect(() => {
-    if (save === 'offline' && queue.waiting === 0 && queue.failed === 0) setSave('saved');
-    if (save === 'offline' && queue.failed > 0) setSave('failed');
-  }, [save, queue.waiting, queue.failed]);
 
   // Finished weeks into week_scores for the coach (R3): online, once
   // everything waiting has been sent, so the frozen score has every log.
@@ -168,157 +145,16 @@ export default function PerformanceSprint() {
     onRestore: (d) => { if (d?.text) { setWinForm(d); setPanel('win'); } },
   });
 
-  // ------------------------------------------------------------ saving
-
-  const sent = async (fn) => {
-    setSave('saving');
-    try {
-      const r = await fn();
-      // Superseded: another window changed it first; the page says so and
-      // shows the latest (useLatestWhenSuperseded), so nothing reads "Saved".
-      if (r?.status === 'superseded') {
-        setSave('idle');
-        return false;
-      }
-      setSave(r?.status === 'queued' ? 'offline' : 'saved');
-      return true;
-    } catch (e) {
-      setSave('idle');
-      toast.error(friendlyError(e, 'That didn’t save. Check your connection and try again.'));
-      return false;
-    }
-  };
-
-  const changeRows = (fn) => setData((d) => ({ ...d, ...fn(d) }));
-
-  /** One day's log, on the page at once and saved (or queued). */
-  const putLog = (habit, day, value, { delay = 0 } = {}) => {
-    changeRows((d) => {
-      const others = (d.logs || []).filter((l) => !(l.sprint_habit_id === habit.id && l.local_date === day));
-      const before = (d.logs || []).find((l) => l.sprint_habit_id === habit.id && l.local_date === day);
-      return {
-        logs: value == null
-          ? others
-          : [...others, { id: before?.id || `device-${habit.id}-${day}`, sprint_habit_id: habit.id, local_date: day, value, to_confirm: false }],
-      };
-    });
-    const key = `${habit.id}:${day}`;
-    clearTimeout(timers.current[key]);
-    const go = () => {
-      delete timers.current[key];
-      delete pending.current[key];
-      sent(() => saveHabitLog(userId, habit.id, day, value));
-    };
-    if (delay) {
-      setSave('saving');
-      pending.current[key] = { habitId: habit.id, day, value };
-      timers.current[key] = setTimeout(go, delay);
-    } else {
-      delete pending.current[key];
-      go();
-    }
-  };
-
-  // Leaving the page sends anything still waiting for its delay; closing
-  // or refreshing it keeps those on the device, sent on the next start
-  // (break-it tester: a number typed just before a refresh was lost).
-  useEffect(() => {
-    const takeWaiting = () => {
-      Object.values(timers.current).forEach((t) => clearTimeout(t));
-      timers.current = {};
-      const waiting = Object.values(pending.current);
-      pending.current = {};
-      return waiting;
-    };
-    const onHide = () => {
-      takeWaiting().forEach((w) => keepForLater(userId, habitLogOp(userId, w.habitId, w.day, w.value)));
-    };
-    window.addEventListener('pagehide', onHide);
-    return () => {
-      window.removeEventListener('pagehide', onHide);
-      takeWaiting().forEach((w) => { saveHabitLog(userId, w.habitId, w.day, w.value).catch(() => null); });
-    };
-  }, [userId]);
-
-  const typeNumber = (habit, day, text) => {
-    const key = `${habit.id}:${day}`;
-    if (habit.measure === 'rating' && text !== '' && !/^[1-5]$/.test(text)) return;
-    const shown = parseTyped(text);
-    if ((habit.measure === 'count' || habit.measure === 'count_limit') && shown != null && (!Number.isInteger(shown) || shown > habit.top)) return;
-    setTyped((t) => ({ ...t, [key]: text }));
-    const stored = habit.measure === 'amount' ? toStored(shown, habit.storedUnit, data?.personSettings?.units) : shown;
-    putLog(habit, day, stored, { delay: SAVE_DELAY_MS });
-  };
-
-  const leaveNumber = (habit, day) => {
-    const key = `${habit.id}:${day}`;
-    if (timers.current[key]) {
-      // Send now rather than wait.
-      const value = (data.logs || []).find((l) => l.sprint_habit_id === habit.id && l.local_date === day)?.value ?? null;
-      clearTimeout(timers.current[key]);
-      delete timers.current[key];
-      delete pending.current[key];
-      sent(() => saveHabitLog(userId, habit.id, day, value == null ? null : Number(value)));
-    }
-    setTyped((t) => {
-      const next = { ...t };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const tickWeekly = (habit, done) => {
-    if (done) {
-      putLog(habit, today, 1);
-      return;
-    }
-    Object.entries(habit.values).filter(([, v]) => v > 0).forEach(([day]) => putLog(habit, day, null));
-  };
-
   // ------------------------------------------------------------ to-dos and wins
 
-  const toggleTodo = async (todo, done) => {
-    const doneOn = done ? today : null;
-    changeRows((d) => ({ todos: d.todos.map((t) => (t.id === todo.id ? { ...t, done_on: doneOn } : t)) }));
-    const ok = await sent(() => saveTodoDone(userId, todo.id, doneOn));
-    if (!ok) {
-      changeRows((d) => ({ todos: d.todos.map((t) => (t.id === todo.id ? { ...t, done_on: done ? null : today } : t)) }));
-      return;
-    }
-    if (done) {
-      // The count after this tick, from the same rows (M1 "Done. 3 of 4 this week.").
-      const after = sprintPageView({ ...data, todos: data.todos.map((t) => (t.id === todo.id ? { ...t, done_on: doneOn } : t)) }, { today });
-      toast.saved({
-        message: doneToast(after.todos),
-        onUndo: () => {
-          changeRows((d) => ({ todos: d.todos.map((t) => (t.id === todo.id ? { ...t, done_on: null } : t)) }));
-          sent(() => saveTodoDone(userId, todo.id, null));
-        },
-      });
-    }
-  };
-
   const addTodo = async (form) => {
-    const id = newId();
-    const row = { id, strategy_id: form.strategyId, text: form.text.trim(), impact: form.impact, sprint_id: view.sprintId, planned_week: form.week, created_on: today, done_on: null, source: 'manual', move_on: null, deleted_at: null };
-    changeRows((d) => ({ todos: [...(d.todos || []), row] }));
     setPanel(null);
     setTodoForm(emptyTodo(view.current));
     clearTodoDraft();
-    const ok = await sent(() => saveTodo(userId, { id, strategyId: row.strategy_id, text: row.text, impact: row.impact, sprintId: view.sprintId, week: row.planned_week, createdOn: today }));
-    if (!ok) {
-      changeRows((d) => ({ todos: d.todos.filter((t) => t.id !== id) }));
+    if (!(await actions.addTodo(form))) {
       setTodoForm(form);
       setPanel('todo');
-      return;
     }
-    toast.saved({
-      message: form.week === view.current ? 'Added to this week.' : `Added to week ${form.week}.`,
-      onUndo: () => {
-        changeRows((d) => ({ todos: d.todos.filter((t) => t.id !== id) }));
-        sent(() => setTodoDeleted(userId, id, new Date().toISOString()));
-      },
-    });
   };
 
   const addWin = async (form) => {
@@ -798,78 +634,6 @@ function SprintBody({
         <Button onClick={() => navigate('/performance-plan')}>Open my plan</Button>
       </div>
     </>
-  );
-}
-
-function entryKind(measure) {
-  if (measure === 'count' || measure === 'count_limit') return 'stepper';
-  if (measure === 'yes_no_days_limit' || measure === 'yes_no_days_target') return 'yesno';
-  if (measure === 'rating') return 'rating';
-  if (measure === 'yes_no_weekly') return 'tick';
-  return 'number';
-}
-
-/** Log today: one habit, today (M1 hrow, day view). */
-function DayRow({ habit: h, view, typed, onLog, onType, onLeave, onTick, onMore }) {
-  const kind = entryKind(h.measure);
-  const day = view.today;
-  const common = {
-    name: h.name,
-    detail: h.line,
-    progress: h.bar,
-    onMore,
-    moreLabel: `${h.name}: week, target and impact`,
-  };
-  if (kind === 'number') {
-    return (
-      <LoggingRow
-        {...common}
-        kind="number"
-        value={typed[`${h.id}:${day}`] ?? toText(h.todayShown)}
-        onChange={(text) => onType(h, day, text)}
-        unit={h.unit}
-        decimals={h.decimals}
-        entryLabel={`${h.name} today`}
-        inputProps={{ onBlur: () => onLeave(h, day), placeholder: '0' }}
-      />
-    );
-  }
-  if (kind === 'stepper') {
-    return <LoggingRow {...common} kind="stepper" value={h.today ?? 0} min={0} max={h.top} entryLabel={`${h.name} today`} onChange={(v) => onLog(h, day, v)} />;
-  }
-  if (kind === 'tick') {
-    return <LoggingRow {...common} kind="tick" value={Boolean(Object.values(h.values).some((v) => v > 0))} entryLabel={h.name} onChange={(v) => onTick(h, v)} />;
-  }
-  return <LoggingRow {...common} kind={kind} value={h.today} entryLabel={`${h.name} today`} onChange={(v) => onLog(h, day, v)} />;
-}
-
-/** Log this week: one habit, every day shown so far (M1 hrow, week view). */
-function WeekRow({ habit: h, view, typed, onLog, onType, onLeave, onTick, onMore, bare = false }) {
-  const kind = entryKind(h.measure);
-  const common = {
-    name: bare ? 'This week' : h.name,
-    detail: h.weekLine,
-    progress: bare ? undefined : h.bar,
-    onMore: bare ? undefined : onMore,
-    moreLabel: `${h.name}: week, target and impact`,
-    days: view.shownDays,
-  };
-  if (kind === 'tick') {
-    return <LoggingWeekRow {...common} kind="tick" value={Object.values(h.values).some((v) => v > 0)} onChange={(v) => onTick(h, v)} />;
-  }
-  if (kind === 'yesno') {
-    return <LoggingWeekRow {...common} kind="yesno" values={h.values} onChange={(d, v) => onLog(h, d, v)} />;
-  }
-  const texts = Object.fromEntries(view.shownDays.map((d) => [d.key, typed[`${h.id}:${d.key}`] ?? toText(h.shown[d.key])]));
-  return (
-    <LoggingWeekRow
-      {...common}
-      kind="boxes"
-      decimals={h.decimals}
-      texts={texts}
-      onChange={(d, text) => onType(h, d, text)}
-      onBlur={(d) => onLeave(h, d)}
-    />
   );
 }
 
