@@ -70,7 +70,14 @@ export function planSnapshot({ mission, objectives = [], strategies = [], links 
 
 const ids = (list) => new Set((list || []).map((x) => x.id));
 const sameSet = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
-const stable = (x) => JSON.stringify(x);
+// The same text for the same plan, whatever order its keys are in: a
+// snapshot read back from the database (jsonb) has its keys in the
+// database's order, not the app's, so comparing it as written made every
+// unchanged plan look changed and kept an empty minor version on every
+// close (functionality tester, 3 Nov).
+const stable = (x) => JSON.stringify(x, (key, value) => (value && typeof value === 'object' && !Array.isArray(value)
+  ? Object.fromEntries(Object.keys(value).sort().map((k) => [k, value[k]]))
+  : value));
 
 /**
  * Which kind of change turns one snapshot into the other.

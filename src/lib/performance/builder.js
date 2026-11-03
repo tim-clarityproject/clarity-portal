@@ -322,18 +322,21 @@ export function sprintStandard(sprint, fixed = null) {
  * habit needs its Strategy saved.
  */
 export function savableRows(draft, today) {
-  const objectives = draft.objectives.filter(objectiveComplete).map((o, i) => objectiveRow(o, i, today));
+  // Each row keeps its place in the draft as its order, so a part left
+  // unfinished for a moment never renumbers (and re-sends) the others.
+  const objectives = draft.objectives.map((o, i) => [o, i]).filter(([o]) => objectiveComplete(o)).map(([o, i]) => objectiveRow(o, i, today));
   const objectiveIds = new Set(objectives.map((o) => o.id));
   const strategies = draft.strategies
-    .filter((s) => (s.name || '').trim() && s.name.trim().length <= NAME_MAX)
-    .map((s, i) => ({ id: s.id, name: s.name.trim(), description: s.description ?? null, sortOrder: i }));
+    .map((s, i) => [s, i])
+    .filter(([s]) => (s.name || '').trim() && s.name.trim().length <= NAME_MAX)
+    .map(([s, i]) => ({ id: s.id, name: s.name.trim(), description: s.description ?? null, sortOrder: i }));
   const strategyIds = new Set(strategies.map((s) => s.id));
   const links = [];
   for (const s of draft.strategies) {
     if (!strategyIds.has(s.id)) continue;
     for (const oid of s.objectiveIds) if (objectiveIds.has(oid)) links.push({ strategyId: s.id, objectiveId: oid });
   }
-  const habits = draft.habits.filter((h) => habitComplete(h) && strategyIds.has(h.strategyId)).map((h, i) => habitRow(h, i));
+  const habits = draft.habits.map((h, i) => [h, i]).filter(([h]) => habitComplete(h) && strategyIds.has(h.strategyId)).map(([h, i]) => habitRow(h, i));
   return {
     plan: { id: draft.planId, mission: (draft.mission || '').trim().slice(0, MISSION_MAX) },
     objectives,
@@ -367,8 +370,9 @@ export function keepUnfinished(want, saved, draft) {
   // Complete habits of a Strategy kept above (savableRows left them out).
   const wantHabitIds = new Set(want.habits.map((h) => h.id));
   const extraHabits = (draft.habits || [])
-    .filter((h) => !wantHabitIds.has(h.id) && strategyIds.has(h.strategyId) && habitComplete(h))
-    .map((h, i) => habitRow(h, want.habits.length + i));
+    .map((h, i) => [h, i])
+    .filter(([h]) => !wantHabitIds.has(h.id) && strategyIds.has(h.strategyId) && habitComplete(h))
+    .map(([h, i]) => habitRow(h, i));
   const habits = carry([...want.habits, ...extraHabits], saved.habits, draft.habits).filter((h) => strategyIds.has(h.strategyId));
   const linkKeyOf = (l) => `${l.strategyId}>${l.objectiveId}`;
   const links = [...want.links];

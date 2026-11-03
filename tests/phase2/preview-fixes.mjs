@@ -392,9 +392,20 @@ if (part('part')) {
     await nameBox.fill('');
     await page.waitForTimeout(1500);
     pass(`part ${w}: clearing an objective's name to retype it archives and deletes nothing`, !writes.some((x) => x.method === 'DELETE' || /archived_at/.test(x.body)), writes.map((x) => `${x.method} ${x.table}`).join(', '));
+    pass(`part ${w}: clearing one objective's name re-sends no other objective`, writes.filter((x) => x.table === 'outcome_objectives').length === 0, writes.map((x) => `${x.method} ${x.table}`).join(', '));
     pass(`part ${w}: an unfinished objective says what's needed`, (await page.locator('.ds-panel .plan-part-hint').count()) === 1);
     await page.keyboard.press('Escape');
     await still(page);
+    // Opened and closed with no change: no version, nothing said.
+    await go(page, '/performance-plan', '.ds-mission-card');
+    writes.length = 0;
+    await page.getByRole('button', { name: 'Edit my mission' }).click();
+    await page.waitForSelector('.ds-panel .plan-part');
+    await still(page);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(1500);
+    pass(`part ${w}: closed with no change, nothing is sent and no version kept`, writes.length === 0, writes.map((x) => `${x.method} ${x.table}`).join(', '));
+    pass(`part ${w}: closed with no change, no "Saved"`, !/Saved/.test(await page.locator('.ds-toast-region').innerText().catch(() => '')));
     pass(`part ${w}: "Edit my plan" (the full flow) is still there`, (await page.getByRole('button', { name: 'Edit my plan' }).count()) === 1);
     if (shots) await page.screenshot({ path: `${shots}/part-${w}.png`, fullPage: true });
     await ctx.close();

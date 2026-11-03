@@ -46,8 +46,10 @@ import usePlanSaves from './usePlanSaves';
 //
 // part:   { kind: 'mission'|'objective'|'strategy'|'habit', id } or null
 // data:   loadPlanEditor's rows, fresh (the page loads them)
-// onDone: (version or null) once its changes are saved and its version
-//         kept; the page then closes it (part null)
+// onDone: (version or null, how) once its changes are saved and its
+//         version kept; the page then closes it (part null). how:
+//         'saved', 'unchanged' (closed with no change: nothing to say) or
+//         'unfinished' (a box left empty: kept on the device for next time)
 
 export const PART_TITLE = {
   mission: 'Edit my mission',
@@ -107,11 +109,20 @@ function PartEditor({ userId, part, open, data, onDone, onGone }) {
     if (leaving.current) return;
     leaving.current = true;
     try {
-      if (draft !== initial) await sync();
+      // Nothing changed: it just closes, with no version and no "Saved".
+      if (draft === initial) {
+        onDone?.(null, 'unchanged');
+        return;
+      }
+      await sync();
       const v = await keepVersion(false);
       // An unfinished change stays on the device and comes back next time.
-      if (complete()) clear();
-      onDone?.(v);
+      if (!complete()) {
+        onDone?.(v, 'unfinished');
+        return;
+      }
+      clear();
+      onDone?.(v, 'saved');
     } catch (e) {
       leaving.current = false;
       toast.error(friendlyError(e, 'That didn’t save. Check your connection and try again.'));
@@ -249,7 +260,9 @@ function PartEditor({ userId, part, open, data, onDone, onGone }) {
   );
 }
 
-/** "Saved", or "Saved. Your plan is now Version 3.3." after a version. */
-export function partSavedMessage(v) {
+/** What the page says once a part has closed, or null for nothing. */
+export function partSavedMessage(v, how = 'saved') {
+  if (how === 'unchanged') return v ? `Saved. Your plan is now ${versionLabel(v)}.` : null;
+  if (how === 'unfinished') return 'Your change is kept on this device until each box is filled in.';
   return v ? `Saved. Your plan is now ${versionLabel(v)}.` : 'Saved';
 }

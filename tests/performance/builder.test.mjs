@@ -229,3 +229,18 @@ test('a part still being typed is never removed (Tim, 3 Nov): only one taken out
   const kept = keepUnfinished(savableRows(renaming, TODAY), saved, renaming);
   assert.deepEqual([kept.habits.map((h) => h.id), kept.links], [['h1'], [{ strategyId: 's1', objectiveId: 'o1' }]]);
 });
+
+test('an unchanged plan read back from the database is not a change, whatever its key order (3 Nov)', () => {
+  const d = blankDraft();
+  d.mission = 'Lead well';
+  d.objectives = [{ ...emptyObjective('o1'), name: 'Clients', start: '1', target: '2', date: '2027-01-01', saved: true }];
+  d.strategies = [{ id: 's1', name: 'Referrals', description: null, objectiveIds: ['o1'] }];
+  d.habits = [{ ...emptyHabit('h1', 's1'), name: 'Messages', target: '5' }];
+  const snap = rowsSnapshot(savableRows(d, TODAY));
+  // jsonb gives keys back shortest first, then alphabetically.
+  const jsonbOrder = (x) => (Array.isArray(x) ? x.map(jsonbOrder) : x && typeof x === 'object'
+    ? Object.fromEntries(Object.keys(x).sort((a, b) => a.length - b.length || (a < b ? -1 : 1)).map((k) => [k, jsonbOrder(x[k])]))
+    : x);
+  assert.equal(planChangeKind(jsonbOrder(snap), snap), null);
+  assert.equal(planChangeKind(jsonbOrder(snap), { ...snap, habits: [{ ...snap.habits[0], name: 'Notes' }] }), 'minor');
+});

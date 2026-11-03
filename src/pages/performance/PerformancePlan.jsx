@@ -104,9 +104,11 @@ export default function PerformancePlan() {
       toast.error(friendlyError(e, 'Your plan didn’t open. Check your connection and try again.'));
     }
   };
-  const partDone = (v) => {
+  const partDone = (v, how) => {
     setPart(null);
-    toast.show(partSavedMessage(v));
+    const message = partSavedMessage(v, how);
+    if (!message) return;
+    toast.show(message);
     readEditor()?.catch(() => {});
     reload();
     notifyPlanChanged();
