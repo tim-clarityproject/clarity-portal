@@ -42,17 +42,26 @@ import {
 const SYNC_AFTER_MS = 700;
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 
-export default function usePlanSaves({ userId, data, draft, initial, today }) {
+// start:   optional, what an editor on this page left a moment ago
+//          ({ saved, version }), newer than `data` when `data` is the
+//          device's older copy (offline): the next editor starts from it,
+//          so a version never goes backwards (break-it tester, 3 Nov)
+export default function usePlanSaves({ userId, data, draft, initial, today, start = null }) {
   const toast = useToast();
   const queue = useQueueState();
-  const savedRef = useRef(savableRows(draftFromRows(data, { planId: initial.planId }), today));
-  const planExistsRef = useRef(Boolean(data.plan));
-  const versionRef = useRef({
+  const savedRef = useRef(start?.saved || savableRows(draftFromRows(data, { planId: initial.planId }), today));
+  const planExistsRef = useRef(Boolean(data.plan || start));
+  const versionRef = useRef(start?.version || {
     major: data.plan?.major ?? 1,
     minor: data.plan?.minor ?? 0,
     snapshot: data.latestVersion?.snapshot ?? null,
   });
-  const inVersion = useMemo(() => snapshotIds(data.latestVersion?.snapshot), [data.latestVersion]);
+  const inVersion = useMemo(
+    () => snapshotIds(start?.version?.snapshot || data.latestVersion?.snapshot),
+    // Read once: what the editor started from.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.latestVersion],
+  );
   const draftRef = useRef(draft);
   const [saveState, setSaveState] = useState('idle');
   const running = useRef(null);
@@ -137,5 +146,8 @@ export default function usePlanSaves({ userId, data, draft, initial, today }) {
     return v;
   }, [userId]);
 
-  return { draftRef, savedRef, planExistsRef, send, sync, keepVersion, shownState, SAVE_ERROR };
+  // Where this editor has got to, for the next one to start from (start).
+  const position = useCallback(() => ({ saved: savedRef.current, version: versionRef.current, draft: draftRef.current }), []);
+
+  return { draftRef, savedRef, planExistsRef, send, sync, keepVersion, shownState, position, SAVE_ERROR };
 }

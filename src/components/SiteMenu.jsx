@@ -18,7 +18,7 @@ export const LOG_TODAY = '/welcome#log-today';
 // opened: it replaces that page instead of adding another, so Back leaves
 // at once. The address is read at the tap, as the page may not have
 // caught up yet.
-const alreadyOn = (to) => {
+export const alreadyOn = (to) => {
   const { pathname, search, hash } = window.location;
   return to === pathname || to === `${pathname}${search}${hash}` || to === `${pathname}${hash}`;
 };

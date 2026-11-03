@@ -80,11 +80,20 @@ export default function PerformancePlan() {
   // as Edit my plan).
   const [part, setPart] = useState(null);
   const [editorData, setEditorData] = useState(null);
+  // Where the last panel got to (its saves and version). The next panel
+  // starts from it until the database has caught up, so offline a second
+  // change never starts from the older copy (break-it tester, 3 Nov).
+  const [carry, setCarry] = useState(null);
+  const carryRef = useRef(null);
+  carryRef.current = carry;
   const editorLoad = useRef(null);
   const readEditor = useCallback(() => {
     if (!userId) return null;
     editorLoad.current = loadPlanEditor(userId).then((d) => {
       writeCache(userId, EDITOR_CACHE, d);
+      const c = carryRef.current;
+      const caughtUp = c && d.plan && (d.plan.major > c.version.major || (d.plan.major === c.version.major && d.plan.minor >= c.version.minor));
+      if (caughtUp) setCarry(null);
       return d;
     }).catch((e) => {
       const cached = isNetworkError(e) ? readCache(userId, EDITOR_CACHE) : null;
@@ -104,8 +113,9 @@ export default function PerformancePlan() {
       toast.error(friendlyError(e, 'Your plan didn’t open. Check your connection and try again.'));
     }
   };
-  const partDone = (v, how) => {
+  const partDone = (v, how, position) => {
     setPart(null);
+    if (how !== 'unchanged' && position) setCarry(position);
     const message = partSavedMessage(v, how);
     if (!message) return;
     toast.show(message);
@@ -311,7 +321,7 @@ export default function PerformancePlan() {
         )}
       </SlidePanel>
 
-      <PlanPartPanel userId={userId} part={part} data={editorData} onDone={partDone} />
+      <PlanPartPanel userId={userId} part={part} data={editorData} start={carry} onDone={partDone} />
 
       <PerformanceSystem open={system} onClose={() => setSystem(false)} />
     </div>

@@ -5,6 +5,14 @@ import Chevron from './Chevron';
 import { Bar } from './Stat';
 import './design.css';
 
+// "12,000" (or "1,250.5") typed or pasted into a box that takes decimals:
+// a comma before exactly three digits groups thousands, so it is dropped;
+// "1,5" stays a decimal comma (break-it tester, 3 Nov: pasted 12,000 steps
+// logged 12).
+export function dropGrouping(text) {
+  return /^\d{1,3}(,\d{3})+(\.\d*)?$/.test(text) ? text.replace(/,/g, '') : text;
+}
+
 // Number entry: opens the number keypad on phone, with the unit shown
 // inside the field. `value` is the text as typed; the page decides how
 // to store it.
@@ -27,6 +35,7 @@ export function NumberField({ value, onChange, unit, label, decimals = false, ma
         onChange={(e) => {
           let next = e.target.value.trim();
           if (!decimals) next = next.replace(/[,\s]/g, '');
+          else next = dropGrouping(next.replace(/\s/g, ''));
           const allowed = decimals ? /^[0-9]*[.,]?[0-9]*$/ : /^[0-9]*$/;
           if (allowed.test(next) && next.replace(/[.,]/, '').length <= maxDigits) onChange(next);
         }}
@@ -273,7 +282,7 @@ export function LoggingWeekRow({
               value={texts[d.key] ?? ''}
               disabled={d.later}
               onChange={(e) => {
-                const next = e.target.value.trim();
+                const next = decimals ? dropGrouping(e.target.value.trim()) : e.target.value.trim().replace(/,/g, '');
                 const allowed = decimals ? /^[0-9]*[.,]?[0-9]*$/ : /^[0-9]*$/;
                 if (allowed.test(next) && next.replace(/[.,]/, '').length <= 7) onChange(d.key, next);
               }}

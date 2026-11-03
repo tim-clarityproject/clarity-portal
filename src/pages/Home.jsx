@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { alreadyOn } from '../components/SiteMenu';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import DesignHeader from '../components/DesignHeader';
@@ -276,7 +277,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   }, [location.hash, location.key, logShown, view]);
 
   // Home's links come back to Home when the tool ends (Set my day, Close my day).
-  const go = (to) => navigate(to, { state: { from: '/welcome' } });
+  // A second quick tap goes to the page the first already opened (break-it tester, 3 Nov).
+  const go = (to) => navigate(to, { replace: alreadyOn(to), state: { from: '/welcome' } });
   const cardAction = card?.action ? { label: card.action.label, onClick: () => (card.action.jump ? jumpToLog() : go(card.action.to)) } : null;
   const cardLink = card?.notTonight
     ? { label: 'Not tonight', onClick: () => { addNotTonight(card.notTonight); toast.show('You can wind down tomorrow evening.'); } }

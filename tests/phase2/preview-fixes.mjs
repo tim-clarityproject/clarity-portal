@@ -270,6 +270,30 @@ if (part('bars')) {
   }
 }
 
+if (part('bars')) {
+  const b = await launch('chromium');
+  const { ctx, page } = await open(b, { width: 1280 });
+  await go(page, '/performance-sprint', '.ds-log');
+  const row = page.locator('.ds-log').filter({ has: page.locator('.ds-num-input') }).first();
+  if (await row.count()) {
+    writes.length = 0;
+    const box = row.locator('.ds-num-input');
+    await box.fill('');
+    await box.evaluate((el) => {
+      const dt = new DataTransfer(); dt.setData('text/plain', '12,000');
+      el.focus();
+      el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+    });
+    await box.fill('12,000');
+    const typed = await box.inputValue();
+    await box.blur();
+    await page.waitForTimeout(1500);
+    const sent = writes.filter((x) => x.table === 'habit_logs').map((x) => x.body).join(' ');
+    pass('bars: "12,000" typed or pasted into a daily amount is 12,000, never 12', /12000/.test(typed) && /"value":12000\b/.test(sent), `box "${typed}", sent ${sent.slice(0, 120)}`);
+  } else note('bars: no daily amount row to paste into');
+  await ctx.close();
+}
+
 // ------------------------------------------------------------------ 3. days
 if (part('days')) {
   const b = await launch('chromium');
@@ -406,6 +430,60 @@ if (part('part')) {
     await page.waitForTimeout(1500);
     pass(`part ${w}: closed with no change, nothing is sent and no version kept`, writes.length === 0, writes.map((x) => `${x.method} ${x.table}`).join(', '));
     pass(`part ${w}: closed with no change, no "Saved"`, !/Saved/.test(await page.locator('.ds-toast-region').innerText().catch(() => '')));
+    // Clearing the mission to rewrite it never saves an empty mission.
+    writes.length = 0;
+    await page.getByRole('button', { name: 'Edit my mission' }).click();
+    await page.waitForSelector('.ds-panel .plan-part');
+    await page.locator('.ds-panel .plan-part textarea, .ds-panel .plan-part input').first().fill('');
+    await page.waitForTimeout(1500);
+    pass(`part ${w}: clearing the mission sends no empty mission`, !writes.some((x) => x.table === 'performance_plans' && /"mission":(null|"")/.test(x.body)), writes.map((x) => `${x.method} ${x.table} ${x.body.slice(0, 60)}`).join(' | '));
+    pass(`part ${w}: an empty mission says what's needed`, (await page.locator('.ds-panel .plan-part-hint').innerText().catch(() => '')).includes('Write your mission'));
+    await page.keyboard.press('Escape');
+    await still(page);
+
+    // Back with a panel open (in the app: the sprint, then Open my plan):
+    // the change is sent and its version kept.
+    await go(page, '/performance-sprint', '.ds-sdial');
+    await page.getByRole('button', { name: 'Open my plan' }).last().click();
+    await page.waitForSelector('.ds-mission-card');
+    await still(page);
+    writes.length = 0;
+    await page.getByRole('button', { name: 'Edit this objective' }).first().click();
+    await page.waitForSelector('.ds-panel .plan-part');
+    await page.locator('.ds-panel .plan-part input, .ds-panel .plan-part textarea').first().press('End');
+    await page.locator('.ds-panel .plan-part input, .ds-panel .plan-part textarea').first().type(' B');
+    await page.waitForTimeout(1200);
+    await page.goBack();
+    await page.waitForTimeout(2500);
+    pass(`part ${w}: Back with a panel open still keeps the version`, writes.some((x) => x.table === 'plan_versions'), writes.map((x) => x.table).join(', '));
+
+    // Offline: two changes, then back online: versions go up, never back.
+    await go(page, '/performance-plan', '.ds-mission-card');
+    writes.length = 0;
+    await ctx.setOffline(true);
+    const toasts = [];
+    for (const [label, words] of [['Edit my mission', ' O1'], ['Edit this objective', ' O2']]) {
+      await page.getByRole('button', { name: label }).first().click();
+      await page.waitForSelector('.ds-panel .plan-part');
+      const box = page.locator('.ds-panel .plan-part textarea, .ds-panel .plan-part input').first();
+      await box.press('End');
+      await box.type(words);
+      await page.waitForTimeout(1200);
+      await page.locator('.ds-panel:has(.plan-part)').getByRole('button', { name: 'Done' }).click();
+      await page.waitForTimeout(1500);
+      toasts.push(await page.locator('.ds-toast-region').innerText().catch(() => ''));
+      await page.waitForTimeout(800);
+    }
+    pass(`part ${w}: offline, Done says "Will sync", never "Saved"`, toasts.every((t) => /Will sync/.test(t) && !/Saved/.test(t)), toasts.join(' | '));
+    const m1 = /Version (\d+)\.(\d+)/.exec(toasts[0] || '');
+    const m2 = /Version (\d+)\.(\d+)/.exec(toasts[1] || '');
+    pass(`part ${w}: offline, the second change's version comes after the first`, m1 && m2 && (Number(m2[1]) * 1000 + Number(m2[2])) > (Number(m1[1]) * 1000 + Number(m1[2])), `${m1?.[0]} then ${m2?.[0]}`);
+    await ctx.setOffline(false);
+    await page.waitForTimeout(6000);
+    const versions = writes.filter((x) => x.table === 'plan_versions').map((x) => { const b = JSON.parse(x.body); const r = Array.isArray(b) ? b[0] : b; return `${r.major}.${r.minor}`; });
+    const plans = writes.filter((x) => x.table === 'performance_plans' && /"minor"/.test(x.body)).map((x) => { const r = JSON.parse(x.body); return `${r.major}.${r.minor}`; });
+    pass(`part ${w}: back online, each version is sent once, in order, and the plan ends on the last`, versions.length === 2 && versions[0] !== versions[1] && plans[plans.length - 1] === versions[1], `versions ${versions.join(', ')}; plan ${plans.join(', ')}`);
+    await go(page, '/performance-plan', '.ds-mission-card');
     pass(`part ${w}: "Edit my plan" (the full flow) is still there`, (await page.getByRole('button', { name: 'Edit my plan' }).count()) === 1);
     if (shots) await page.screenshot({ path: `${shots}/part-${w}.png`, fullPage: true });
     await ctx.close();
@@ -516,6 +594,15 @@ if (part('dial')) {
     pass(`dial ${engineName} ${w}: one button named "Open ${r.line}"`, r.name === `Open ${r.line}` && r.buttons === 0, r.name);
     pass(`dial ${engineName} ${w}: a 44px tap area`, r.h >= 44, `${r.h}px`);
     if (shots) await page.locator('.ds-mdial').screenshot({ path: `${shots}/dial-${engineName}-${w}.png` });
+    if (w < 769 && engineName === 'chromium') {
+      await page.locator('.ds-mdial').dblclick();
+      await page.waitForURL(/performance-sprint/, { timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(800);
+      await page.goBack();
+      await page.waitForTimeout(1200);
+      pass(`dial ${w}: a double tap leaves one page in Back`, /\/welcome/.test(page.url()), page.url());
+      await go(page, '/welcome', '.ds-mdial');
+    }
     if (w >= 769) {
       const before = await boxes(page);
       await page.locator('.ds-mdial').hover();

@@ -12,6 +12,7 @@ import {
 } from '../../components/design';
 import { PANEL_MS } from '../../components/design/timing';
 import { useDraft } from '../../lib/drafts';
+import { waitingToSend } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 import { saveSharing } from '../../lib/performance/api';
 import {
@@ -48,8 +49,10 @@ import usePlanSaves from './usePlanSaves';
 // data:   loadPlanEditor's rows, fresh (the page loads them)
 // onDone: (version or null, how) once its changes are saved and its
 //         version kept; the page then closes it (part null). how:
-//         'saved', 'unchanged' (closed with no change: nothing to say) or
-//         'unfinished' (a box left empty: kept on the device for next time)
+//         'saved', 'queued' (offline: waiting on the device), 'unchanged'
+//         (closed with no change: nothing to say) or
+//         'unfinished' (a box left empty: kept on the device for next time);
+//         and where it got to, for the next panel to start from
 
 export const PART_TITLE = {
   mission: 'Edit my mission',
@@ -61,7 +64,7 @@ export const PART_TITLE = {
 const draftName = (part) => `performance-plan-part:${part.kind}:${part.id || 'plan'}`;
 
 // The panel stays on screen with its part while it slides away.
-export default function PlanPartPanel({ userId, part, data, onDone }) {
+export default function PlanPartPanel({ userId, part, data, start, onDone }) {
   const [shown, setShown] = useState(part);
   useEffect(() => {
     if (part) setShown(part);
@@ -75,21 +78,23 @@ export default function PlanPartPanel({ userId, part, data, onDone }) {
       part={shown}
       open={Boolean(part)}
       data={data}
+      start={start}
       onDone={onDone}
       onGone={gone}
     />
   );
 }
 
-function PartEditor({ userId, part, open, data, onDone, onGone }) {
+function PartEditor({ userId, part, open, data, start, onDone, onGone }) {
   const toast = useToast();
   const today = localToday();
   const role = exampleRole(data.personSettings?.describes_you);
   const coachName = data.coach?.firstName || null;
-  const [initial] = useState(() => draftFromRows(data, { planId: data.plan.id }));
+  // From what the last panel saved when the page's copy is older (offline).
+  const [initial] = useState(() => start?.draft || draftFromRows(data, { planId: data.plan.id }));
   const [draft, setDraft] = useState(initial);
   const set = (fn) => setDraft((d) => ({ ...d, ...fn(d) }));
-  const { sync, keepVersion, shownState } = usePlanSaves({ userId, data, draft, initial, today });
+  const { sync, keepVersion, shownState, position, draftRef } = usePlanSaves({ userId, data, draft, initial, today, start });
 
   // Typing is kept on the device ("Draft restored"), for this same plan.
   const { clear } = useDraft({
@@ -105,6 +110,7 @@ function PartEditor({ userId, part, open, data, onDone, onGone }) {
 
   // Leaving: send what is left, keep the version, then say so.
   const leaving = useRef(false);
+  const versioned = useRef(false);
   const leave = async () => {
     if (leaving.current) return;
     leaving.current = true;
@@ -116,24 +122,41 @@ function PartEditor({ userId, part, open, data, onDone, onGone }) {
       }
       await sync();
       const v = await keepVersion(false);
+      versioned.current = true;
       // An unfinished change stays on the device and comes back next time.
       if (!complete()) {
-        onDone?.(v, 'unfinished');
+        onDone?.(v, 'unfinished', position());
         return;
       }
       clear();
-      onDone?.(v, 'saved');
+      // Offline, the saves wait on the device: "Will sync", never "Saved".
+      onDone?.(v, waitingToSend(userId) ? 'queued' : 'saved', position());
     } catch (e) {
       leaving.current = false;
       toast.error(friendlyError(e, 'That didn’t save. Check your connection and try again.'));
     }
   };
-  // Hidden or closed mid-way: what is typed is sent at once.
+  // Hidden mid-way: what is typed is sent at once. Left without Done (the
+  // browser's Back, another page, the tab closed or reloaded): what is
+  // typed is sent and the version kept all the same (break-it tester,
+  // 3 Nov), through the offline queue, so it survives the page going.
+  const leaveQuietly = useRef(null);
+  leaveQuietly.current = () => {
+    if (leaving.current || versioned.current || draftRef.current === initial) return;
+    versioned.current = true;
+    sync().then(() => keepVersion(false)).catch(() => {});
+  };
   useEffect(() => {
     const onHide = () => { if (document.visibilityState === 'hidden') sync().catch(() => {}); };
+    const onPageHide = () => leaveQuietly.current?.();
     document.addEventListener('visibilitychange', onHide);
-    return () => document.removeEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onPageHide);
+    };
   }, [sync]);
+  useEffect(() => () => leaveQuietly.current?.(), []);
   // Once it has slid away, it leaves the page.
   useEffect(() => {
     if (open) return undefined;
@@ -147,6 +170,7 @@ function PartEditor({ userId, part, open, data, onDone, onGone }) {
 
   // Whether what is typed is complete enough to save (as Edit my plan).
   function complete() {
+    if (part.kind === 'mission') return Boolean((draft.mission || '').trim());
     if (objective) return objectiveComplete(objective);
     if (strategy) return Boolean((strategy.name || '').trim());
     if (habit) return habitComplete(habit);
@@ -183,6 +207,7 @@ function PartEditor({ userId, part, open, data, onDone, onGone }) {
         />
       </>
     );
+    unfinished = 'Write your mission to save it.';
   } else if (objective) {
     body = (
       <>
@@ -264,5 +289,6 @@ function PartEditor({ userId, part, open, data, onDone, onGone }) {
 export function partSavedMessage(v, how = 'saved') {
   if (how === 'unchanged') return v ? `Saved. Your plan is now ${versionLabel(v)}.` : null;
   if (how === 'unfinished') return 'Your change is kept on this device until each box is filled in.';
+  if (how === 'queued') return v ? `Will sync. Your plan will be ${versionLabel(v)}.` : 'Will sync';
   return v ? `Saved. Your plan is now ${versionLabel(v)}.` : 'Saved';
 }

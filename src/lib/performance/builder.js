@@ -387,7 +387,11 @@ export function keepUnfinished(want, saved, draft) {
       }
     }
   }
-  return { ...want, objectives, strategies, links, habits };
+  // A mission cleared to rewrite it keeps the saved one until it has words.
+  const plan = !(want.plan?.mission || '').trim() && (saved.plan?.mission || '').trim()
+    ? { ...want.plan, mission: saved.plan.mission }
+    : want.plan;
+  return { ...want, plan, objectives, strategies, links, habits };
 }
 
 /** The plan as a version keeps it, from savable rows. */
