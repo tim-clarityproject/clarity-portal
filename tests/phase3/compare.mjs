@@ -409,6 +409,15 @@ const ALLOWED = [
   { screen: /debrief/, side: 'both', re: /^# review my day entr(y|ies) this week$/, why: 'invented data: one Review my day entry in the seeded week 3, seven in the mock-up' },
   { screen: /finished/, side: 'mock', re: /^finish to lock in your score\.$/, why: 'a finished debrief opens on its summary, still changeable (step 3): “Your week is debriefed.”' },
   { screen: /finished/, side: 'app', re: /^(your week is debriefed\.|you can still change your answers\.)$/, why: 'a finished debrief opens on its summary, still changeable (step 3)' },
+  // Phase 4 (M19, 29 Oct, newer than M5): Review my day closes with Close my
+  // day, and Plan my day's Do step opens with Carried over (step 6); rule 64
+  // names the Strategy in the add panels (step 7).
+  { screen: /review my day/, side: 'mock', re: /^finish my review$/, why: 'M19 (Phase 4 step 6): the review closes with “Ready to close the day?” and Close my day' },
+  { screen: /review my day/, side: 'app', re: /^(close my day|ready to close the day\?|moving to <day>|check what moves to <day>\.|nothing is left open <day>\.|to-do)$/, why: 'M19 (Phase 4 step 6): the review closes with “Ready to close the day?” and Close my day' },
+  { screen: /plan my day/, side: 'mock', re: /^choose up to three from this week's habits and to-dos\.$/, why: 'M19 (Phase 4 step 6): Do opens with Carried over, then This week, “Choose up to 3.” and “You’ve chosen n of 3.”' },
+  { screen: /plan my day/, side: 'app', re: /^(carried over|this week|from review my day|choose up to #|you've chosen # of #)$/, why: 'M19 (Phase 4 step 6): Do opens with Carried over, then This week, “Choose up to 3.” and “You’ve chosen n of 3.”' },
+  { side: 'mock', re: /^how much will it move this strategy\?$/, why: 'rule 64 (Phase 4 step 7): the add panel names the Strategy chosen (“How much will it move “Grow through referrals”?”), plain while none is chosen' },
+  { side: 'app', re: /^how much will it move ("<name>"|its strategy)\?$/, why: 'rule 64 (Phase 4 step 7): the add panel names the Strategy chosen (“How much will it move “Grow through referrals”?”), plain while none is chosen' },
   { side: 'mock', re: /^performance score this week( ?#%)?$/, why: 'M5 (scoring methods): the live score is labelled "so far" wherever it shows' },
   { side: 'app', re: /^performance score this week so far( ?#%)?$/, why: 'M5 (scoring methods): the live score is labelled "so far" wherever it shows' },
 ];
@@ -827,6 +836,9 @@ for (const group of GROUPS) {
           const entry = { screen: s.id, width, mocked: Boolean(s.flow || s.mock), steps: [] };
           appSteps.forEach((a, i) => {
             if (!mockSteps.length) { entry.steps.push({ app: a.headings[0] || s.id, mock: null }); return; }
+            // Review my day's "Ready to close the day?" is M19's (Phase 4 step 6), not
+            // M5's: its wording is compared in tests/phase4/compare.mjs.
+            if (a.headings.some((h) => /^Ready to close the day\?$/.test(h))) { entry.steps.push({ app: 'Ready to close the day? (M19, compared in tests/phase4/compare.mjs)', mock: null }); return; }
             // A flow's step pairs with the mock-up step that asks the same
             // question; failing that, the one in the same place (each tool
             // has M5's or M1's eight steps), then the likest.

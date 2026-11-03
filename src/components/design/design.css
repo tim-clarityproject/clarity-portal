@@ -3017,6 +3017,10 @@
   top: var(--vv-top, 0px);
   height: var(--vv-height, 100dvh);
   z-index: var(--z-dialog);
+  /* A phone turned on its side: the bar, the steps and the foot stay clear
+     of the notch and the Dynamic Island (the notch rule). */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .ui-root .ds-guide--framed {

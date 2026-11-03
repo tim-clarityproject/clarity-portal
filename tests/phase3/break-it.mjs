@@ -277,6 +277,18 @@ async function finishWith(page, label) {
   }, 15000);
   if (!gone) throw new Error(`${label} did not go back`);
 }
+// Review my day ends on Work's done for today (Phase 4 step 6): from its
+// summary, Next to "Ready to close the day?", then Close my day pressed
+// until Work's done shows.
+async function closeDay(page) {
+  await nextUntil(page, 'Ready to close the day?');
+  const done = await until(async () => {
+    if ((await page.locator('.ds-end-title').count()) > 0) return true;
+    await page.getByRole('button', { name: 'Close my day' }).click({ timeout: 2000 }).catch(() => null);
+    return page.locator('.ds-end-title').waitFor({ timeout: 1500 }).then(() => true, () => false);
+  }, 15000);
+  if (!done) throw new Error('Close my day did not close the day');
+}
 // The last button triple tapped (again if a tap lands in the first moment
 // after a move, which the tool ignores on purpose) until the tool is left.
 async function tripleFinish(page) {
@@ -784,7 +796,7 @@ if (run('offline')) {
     await nextUntil(page, REVIEW_Q.tomorrow);
     await next(page);
     await context.setOffline(true);
-    await finishWith(page, (await page.locator('.ds-guide-next').textContent()).trim());
+    await closeDay(page);
     await context.setOffline(false);
     await until(async () => (await dayReviews()).some((x) => x.local_date === today && x.status === 'finished'), 25000);
     const r = (await dayReviews()).filter((x) => x.local_date === today);
@@ -926,6 +938,7 @@ if (run('refresh')) {
     // Finish refused once by the server: it says so plainly, and a second tap finishes.
     await nextUntil(page, REVIEW_Q.tomorrow);
     await next(page);
+    await nextUntil(page, 'Ready to close the day?');
     let refused = 0;
     await page.route('**/rest/v1/day_reviews*', async (route) => {
       if (route.request().method() !== 'PATCH' || refused) return route.fallback();
@@ -933,14 +946,14 @@ if (run('refresh')) {
       return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: '23514', message: 'refused for the test', details: null, hint: null }) });
     });
     await page.waitForTimeout(900);
-    await page.locator('.ds-guide-next').click();
+    await page.getByRole('button', { name: 'Close my day' }).click();
     const said = await until(async () => (await notSaved(page)).length > 0, 10000);
     pass('refresh: a refused Finish says plainly that it didn\'t save', Boolean(said), JSON.stringify(await toasts(page)));
     await page.unroute('**/rest/v1/day_reviews*');
-    pass('refresh: ... and stays on the summary', new URL(page.url()).pathname !== '/performance-sprint');
+    pass('refresh: ... and stays on Ready to close the day?', (await page.locator('.ds-end-title').count()) === 0 && (await heading(page)) === 'Ready to close the day?');
     await page.waitForTimeout(900);
-    await page.locator('.ds-guide-next').click();
-    const left = await page.waitForURL((u) => u.pathname === '/performance-sprint', { timeout: 10000 }).then(() => true).catch(() => false);
+    await page.getByRole('button', { name: 'Close my day' }).click();
+    const left = await page.locator('.ds-end-title').waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
     pass('refresh: ... and a second tap finishes it', left && Boolean(await until(async () => (await dayReviews()).find((x) => x.local_date === today)?.status === 'finished', 10000)));
     await page.evaluate(() => { window.__toasts = []; });
     page.errors.length = 0;
@@ -1205,7 +1218,7 @@ if (run('dayoff')) {
     const shown = (await page.locator('.ds-stat', { hasText: 'Performance score' }).locator('.ds-stat-value').textContent().catch(() => '')).trim();
     pass('dayoff: the review\'s score is src/lib/scores\' with the day off', v.soFar ? shown === `${v.soFar.value}%` : shown === '', `${shown} vs ${v.soFar?.value}`);
     pass('dayoff: the plan showed a score too', planScore === '' || /^\d+%$/.test(planScore), planScore);
-    await finishWith(page, (await page.locator('.ds-guide-next').textContent()).trim());
+    await closeDay(page);
     pass('dayoff: Review my day on a day off is saved', (await dayReviews())[0]?.status === 'finished');
     await page.goto(`${APP}/performance-sprint`);
     await page.waitForSelector('.ds-sdial-big--score', { timeout: 30000 });

@@ -226,6 +226,9 @@ async function tick(name) {
   return until(async () => (await checkbox(name).getAttribute('aria-checked')) === 'true', 5000);
 }
 async function sprintScoreMatches(day, tag) {
+  // Review my day now ends on Work's done, then Home (Phase 4 step 6), so
+  // the sprint page is opened here when the journey isn't already on it.
+  if (new URL(page.url()).pathname !== '/performance-sprint') await page.goto(`${APP}/performance-sprint`);
   await page.waitForSelector('.ds-sdial-big--score', { timeout: 30000 });
   const v = sprintPageView(await rowsNow(), { today: day });
   const shown = await until(async () => {
