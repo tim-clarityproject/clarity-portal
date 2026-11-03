@@ -48,6 +48,35 @@
   color: var(--label);
 }
 
+/* Changing one part of the plan (PlanPartPanel; Tim, 3 Nov): the editor,
+   then, in the panel's footer, Saving or Saved on the left and Done on the
+   right, as the add panels. */
+.ui-root .plan-part {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ui-root .plan-part-serves {
+  margin-top: var(--space-2);
+}
+
+.ui-root .plan-part-hint {
+  margin: 0;
+}
+
+.ui-root .plan-part-foot {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ui-root .ds-mission-card .ds-part-edit {
+  margin-top: var(--space-2);
+}
+
 /* Version history */
 
 .ui-root .ipp-version-meta {

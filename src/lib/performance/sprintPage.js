@@ -81,17 +81,27 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
   const todayValue = values[today] ?? null;
   const daily = (m.measure === 'count' || m.measure === 'amount') ? m.targetPer === 'day' : m.limitPer === 'day';
   const u = unit ? ` ${unit}` : '';
+  // The bar under each line shows the same value as its figure, from zero
+  // to the target in the figure (Tim, 3 Nov: "0 of 10,000 steps today"
+  // with a bar over half full). Where the line has no target to fill
+  // towards (limits and ratings), the bar is the habit's score (M1).
+  const fill = (got, target) => (target > 0 ? Math.max(0, Math.min(1, got / target)) : 0);
+  const scoreBar = score == null ? 0 : score / 100;
   let line;
   let weekLine;
+  let lineBar = scoreBar;
+  let weekBar = scoreBar;
   switch (m.measure) {
     case 'amount':
-      weekLine = `${n(show(total))} of ${n(show(m.target * (daily ? workingDays.length : 1)))}${u} this week`;
-      line = daily ? `${n(show(todayValue || 0))} of ${n(show(m.target))}${u} today` : weekLine;
+    case 'count': {
+      const weekTarget = m.target * (daily ? workingDays.length : 1);
+      const sh = m.measure === 'amount' ? show : (v) => v;
+      weekLine = `${n(sh(total))} of ${n(sh(weekTarget))}${m.measure === 'amount' ? u : ''} this week`;
+      weekBar = fill(total, weekTarget);
+      line = daily ? `${n(sh(todayValue || 0))} of ${n(sh(m.target))}${m.measure === 'amount' ? u : ''} today` : weekLine;
+      lineBar = daily ? fill(todayValue || 0, m.target) : weekBar;
       break;
-    case 'count':
-      weekLine = `${n(total)} of ${n(m.target * (daily ? workingDays.length : 1))} this week`;
-      line = daily ? `${n(todayValue || 0)} of ${n(m.target)} today` : weekLine;
-      break;
+    }
     case 'count_limit':
       weekLine = daily ? `${n(total)} this week, no more than ${n(m.limit)} a day` : `${n(total)} this week, no more than ${n(m.limit)}`;
       line = daily ? `${n(todayValue || 0)} today, no more than ${n(m.limit)}` : weekLine;
@@ -104,6 +114,8 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
       const target = m.target != null ? m.target : workingDays.length;
       weekLine = `${yesDays} of ${n(target)} days this week`;
       line = weekLine;
+      weekBar = fill(yesDays, target);
+      lineBar = weekBar;
       break;
     }
     case 'rating': {
@@ -117,6 +129,8 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
     case 'yes_no_weekly':
       line = yesDays ? 'Done this week' : 'Once this week';
       weekLine = yesDays ? 'Done this week' : 'Not yet this week';
+      weekBar = yesDays ? 1 : 0;
+      lineBar = weekBar;
       break;
     default:
       line = '';
@@ -146,7 +160,11 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
     line,
     weekLine,
     measureLine: habitMeasureLine({ ...m, unit, target: m.measure === 'amount' ? show(m.target) : m.target }),
-    bar: score == null ? 0 : score / 100,
+    // The habit's score so far (Home's "met" counts), and the bars that
+    // sit under `line` (Log today) and `weekLine` (Log this week).
+    bar: scoreBar,
+    lineBar,
+    weekBar,
     notLogged: Boolean(notLogged),
   };
 }

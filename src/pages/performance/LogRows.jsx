@@ -20,7 +20,8 @@ export function DayRow({ habit: h, view, typed, onLog, onType, onLeave, onTick, 
   const common = {
     name: h.name,
     detail: h.line,
-    progress: h.bar,
+    // The bar shows the same value as the line above it.
+    progress: h.lineBar ?? h.bar,
     onMore,
     moreLabel: `${h.name}: week, target and impact`,
   };
@@ -53,7 +54,7 @@ export function WeekRow({ habit: h, view, typed, onLog, onType, onLeave, onTick,
   const common = {
     name: bare ? 'This week' : h.name,
     detail: h.weekLine,
-    progress: bare ? undefined : h.bar,
+    progress: bare ? undefined : (h.weekBar ?? h.bar),
     onMore: bare ? undefined : onMore,
     moreLabel: `${h.name}: week, target and impact`,
     days: view.shownDays,

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
@@ -23,9 +23,14 @@ import {
   useIsPhone,
   useToast,
   LoadError,
+  keepWords,
 } from '../../components/design';
 import { usePlanPage } from '../../lib/performance/hooks';
-import { saveMilestoneReached, saveSharing } from '../../lib/performance/api';
+import { loadPlanEditor, saveMilestoneReached, saveSharing } from '../../lib/performance/api';
+import { readCache, writeCache } from '../../lib/pageCache';
+import { isNetworkError } from '../../lib/connection';
+import { notifyPlanChanged } from '../../lib/performance/planChanged';
+import PlanPartPanel, { partSavedMessage } from './PlanPartPanel';
 import { recoveryLead, versionLabel } from '../../lib/performance';
 import { friendlyError } from '../../lib/friendlyError';
 import pageText from '../../content/pageText';
@@ -43,6 +48,7 @@ import './performance.css';
 // is "Only you". In Recovery the scores are hidden (M15).
 
 const SCORE_LABEL = 'Performance score this week so far';
+const EDITOR_CACHE = 'performance-plan-editor';
 
 export default function PerformancePlan() {
   const navigate = useNavigate();
@@ -53,7 +59,7 @@ export default function PerformancePlan() {
   const userId = user?.id;
   // "Show my results" in Recovery: this visit only, never stored (M15).
   const [showResults, setShowResults] = useState(false);
-  const { view, loading, error, setData } = usePlanPage(userId, { showResults });
+  const { view, loading, error, setData, reload } = usePlanPage(userId, { showResults });
   const [openId, setOpenId] = useState(null);
   const [system, setSystem] = useState(false);
 
@@ -67,6 +73,44 @@ export default function PerformancePlan() {
   }, []);
 
   const open = view?.strategies.find((s) => s.id === openId) || null;
+
+  // Change one part on its own (Tim, 3 Nov; PlanPartPanel). The editor's
+  // rows are read when the page opens and again after each change, so a
+  // panel always starts from the plan as saved (offline: the device's copy,
+  // as Edit my plan).
+  const [part, setPart] = useState(null);
+  const [editorData, setEditorData] = useState(null);
+  const editorLoad = useRef(null);
+  const readEditor = useCallback(() => {
+    if (!userId) return null;
+    editorLoad.current = loadPlanEditor(userId).then((d) => {
+      writeCache(userId, EDITOR_CACHE, d);
+      return d;
+    }).catch((e) => {
+      const cached = isNetworkError(e) ? readCache(userId, EDITOR_CACHE) : null;
+      if (cached) return cached.v;
+      throw e;
+    });
+    return editorLoad.current;
+  }, [userId]);
+  useEffect(() => { readEditor()?.catch(() => {}); }, [readEditor]);
+  const openPart = async (next) => {
+    try {
+      const d = await (editorLoad.current || readEditor());
+      if (!d?.plan) return;
+      setEditorData(d);
+      setPart(next);
+    } catch (e) {
+      toast.error(friendlyError(e, 'Your plan didn’t open. Check your connection and try again.'));
+    }
+  };
+  const partDone = (v) => {
+    setPart(null);
+    toast.show(partSavedMessage(v));
+    readEditor()?.catch(() => {});
+    reload();
+    notifyPlanChanged();
+  };
 
   const changeRow = (table, match, patch) => setData((d) => ({
     ...d,
@@ -125,7 +169,6 @@ export default function PerformancePlan() {
   const hideScores = view?.inRecovery && !showResults;
   const scoreLabel = view?.pausedWeek ? `Performance score in week ${view.pausedWeek}, before your recovery` : SCORE_LABEL;
 
-  const editStrategy = (id) => navigate(`/performance-plan/edit?strategy=${encodeURIComponent(id)}`);
   const meta = view
     ? [versionLabel(view.version), view.changedAt ? `Changed ${dayWords(view.changedAt)}` : null]
     : [];
@@ -171,10 +214,11 @@ export default function PerformancePlan() {
                 <WhoSees {...who('mission', 'Your mission')} />
               </div>
               {view.mission
-                ? <p className="ds-mission-card-text">{view.mission}</p>
+                ? <p className="ds-mission-card-text">{keepWords(view.mission)}</p>
                 : <p className="ds-mission-card-text ipp-muted">Your mission isn’t written yet.</p>}
               <p className="ds-mission-card-note">This is the big aim that drives your daily performance.</p>
               <p className="ds-mission-card-note">Progress on your mission is measured by your Outcome Objectives.</p>
+              <Button variant="text" className="ds-part-edit" onClick={() => openPart({ kind: 'mission', id: null })}>Edit my mission</Button>
             </section>
 
             <AlignmentCheck lines={view.alignment} className="ipp-align" />
@@ -192,6 +236,7 @@ export default function PerformancePlan() {
                       key={o.id}
                       objective={o}
                       onMarkDone={o.kind === 'milestone' ? (done) => markMilestone(o, done) : undefined}
+                      onEdit={() => openPart({ kind: 'objective', id: o.id })}
                     />
                   ))}
                 </ObjectiveGrid>
@@ -228,7 +273,8 @@ export default function PerformancePlan() {
                   strategy={open}
                   sprintRunning={view.sprintRunning}
                   onClose={() => setOpenId(null)}
-                  onEdit={() => editStrategy(open.id)}
+                  onEdit={() => openPart({ kind: 'strategy', id: open.id })}
+                  onEditHabit={(h) => openPart({ kind: 'habit', id: h.id })}
                 />
               )}
             </Section>
@@ -246,15 +292,24 @@ export default function PerformancePlan() {
         onClose={() => setOpenId(null)}
         title={<span className="ipp-panel-title">{open?.name || ''}</span>}
         closeLabel="Back to the plan"
-        footer={open ? <Button onClick={() => editStrategy(open.id)}>Edit this Strategy</Button> : null}
       >
         {open && (
           <>
             <p className="ipp-panel-serves">{open.servesLine}</p>
-            <StrategyDetailBody strategy={open} sprintRunning={view.sprintRunning} headingLevel="h3" />
+            <StrategyDetailBody
+              strategy={open}
+              sprintRunning={view.sprintRunning}
+              headingLevel="h3"
+              onEditHabit={(h) => openPart({ kind: 'habit', id: h.id })}
+            />
+            <Button variant="text" className="ds-part-edit ds-sdetail-edit" onClick={() => openPart({ kind: 'strategy', id: open.id })}>
+              Edit this Strategy
+            </Button>
           </>
         )}
       </SlidePanel>
+
+      <PlanPartPanel userId={userId} part={part} data={editorData} onDone={partDone} />
 
       <PerformanceSystem open={system} onClose={() => setSystem(false)} />
     </div>

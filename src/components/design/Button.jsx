@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import keepWords from './keepWords';
 import Crosshair from './Crosshair';
 import InfoIcon from './InfoIcon';
 import { IconText } from './IconText';
@@ -21,7 +22,7 @@ export const Button = forwardRef(function Button(
   return (
     <button ref={ref} type={type} className={`${base} ${className}`.trim()} {...rest}>
       {icon === 'plus' && <Crosshair tone={variant === 'primary' ? 'dark' : undefined} />}
-      {children}
+      {keepWords(children)}
     </button>
   );
 });
@@ -38,7 +39,7 @@ export const AddButton = forwardRef(function AddButton(
   return (
     <button ref={ref} type={type} className={`ds-btn ds-btn--outline ds-add ${className}`.trim()} {...rest}>
       <Crosshair />
-      {children}
+      {keepWords(children)}
     </button>
   );
 });
@@ -68,7 +69,7 @@ export const IconButton = forwardRef(function IconButton(
 export function SystemLink({ children = 'How the system fits together', className = '', ...rest }) {
   return (
     <IconText icon={<InfoIcon />} className={`ds-info-link ${className}`.trim()} {...rest}>
-      {children}
+      {keepWords(children)}
     </IconText>
   );
 }

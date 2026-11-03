@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from 'react';
+import keepWords from './keepWords';
 import InfoIcon from './InfoIcon';
+import InfoPop from './InfoPop';
 import useInfoToggle from './useInfoToggle';
 import './design.css';
 
@@ -37,12 +39,10 @@ export default function Section({ title, line, helpKey, as: Heading = 'h2', id, 
     }
   }, [helpKey]);
 
-  const showLine = line && (!collapsed || helpOpen);
-
   return (
     <section id={id} className={`ds-section ${className}`.trim()}>
       <div className="ds-section-head">
-        <Heading className="ds-section-title">{title}</Heading>
+        <Heading className="ds-section-title">{keepWords(title)}</Heading>
         {line && collapsed && (
           <button
             type="button"
@@ -58,11 +58,10 @@ export default function Section({ title, line, helpKey, as: Heading = 'h2', id, 
         )}
         {aside && <div className="ds-section-aside">{aside}</div>}
       </div>
-      {line && (
-        <p id={lineId} ref={helpPanelRef} className="ds-section-line" hidden={!showLine}>
-          {line}
-        </p>
-      )}
+      {/* The first visit shows the line in the page; after that the "i"
+          opens it floating over the page, so nothing moves. */}
+      {line && !collapsed && <p id={lineId} className="ds-section-line">{line}</p>}
+      {line && collapsed && <InfoPop id={lineId} open={helpOpen} anchorRef={helpButtonRef} panelRef={helpPanelRef} lines={line} />}
       {children && <div className="ds-section-body">{children}</div>}
     </section>
   );

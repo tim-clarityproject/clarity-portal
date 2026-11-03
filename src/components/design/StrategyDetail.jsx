@@ -1,4 +1,5 @@
 import { Button, IconButton } from './Button';
+import keepWords from './keepWords';
 import './design.css';
 
 // A Strategy's detail (M1 stratDetail): its habits, each with its measure
@@ -6,12 +7,14 @@ import './design.css';
 // sprint. On a laptop it opens in the page below the tiles, with the
 // rotated crosshair to close it (StrategyDetail). On a phone the page puts
 // the same body in the slide-across panel, which is full screen there
-// (StrategyDetailBody), with "Edit this Strategy" in its footer.
+// (StrategyDetailBody). Each part opens on its own from a quiet link, the
+// same for every part (Tim, 3 Nov): "Edit this Strategy" and, under each
+// habit, "Edit this habit" (onEditHabit).
 //
 // strategy: { name, servesLine, habits: [{ id, name, line }],
 //             todos: [{ id, text, when }] }
 // work:     [{ id, name, line }] tools tagged to it (none can be tagged yet).
-export function StrategyDetailBody({ strategy: s, work = [], sprintRunning = true, headingLevel = 'h4' }) {
+export function StrategyDetailBody({ strategy: s, work = [], sprintRunning = true, headingLevel = 'h4', onEditHabit }) {
   const H = headingLevel;
   return (
     <div className="ds-sdetail-grid">
@@ -20,7 +23,15 @@ export function StrategyDetailBody({ strategy: s, work = [], sprintRunning = tru
         {s.habits.length ? (
           <ul className="ds-sdetail-rows">
             {s.habits.map((h) => (
-              <li key={h.id}>{h.name}<span>{h.line}</span></li>
+              <li key={h.id}>
+                {keepWords(h.name)}
+                <span>{h.line}</span>
+                {onEditHabit && (
+                  <Button variant="text" className="ds-part-edit" onClick={() => onEditHabit(h)} aria-label={`Edit this habit: ${h.name}`}>
+                    Edit this habit
+                  </Button>
+                )}
+              </li>
             ))}
           </ul>
         ) : (
@@ -56,21 +67,21 @@ export function StrategyDetailBody({ strategy: s, work = [], sprintRunning = tru
   );
 }
 
-export default function StrategyDetail({ id, strategy, work, sprintRunning, onClose, onEdit }) {
+export default function StrategyDetail({ id, strategy, work, sprintRunning, onClose, onEdit, onEditHabit }) {
   return (
     <section id={id} className="ds-sdetail" aria-label={strategy.name}>
       <div className="ds-sdetail-head">
         <div>
-          <h3 className="ds-sdetail-title">{strategy.name}</h3>
+          <h3 className="ds-sdetail-title">{keepWords(strategy.name)}</h3>
           <p className="ds-sdetail-serves">{strategy.servesLine}</p>
         </div>
         <IconButton label="Close" onClick={onClose} />
       </div>
-      <StrategyDetailBody strategy={strategy} work={work} sprintRunning={sprintRunning} />
+      <StrategyDetailBody strategy={strategy} work={work} sprintRunning={sprintRunning} onEditHabit={onEditHabit} />
       {onEdit && (
-        <div className="ds-actions ds-sdetail-actions">
-          <Button onClick={onEdit}>Edit this Strategy</Button>
-        </div>
+        <Button variant="text" className="ds-part-edit ds-sdetail-edit" onClick={onEdit} aria-label={`Edit this Strategy: ${strategy.name}`}>
+          Edit this Strategy
+        </Button>
       )}
     </section>
   );

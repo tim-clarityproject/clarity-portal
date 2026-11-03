@@ -1,4 +1,5 @@
 import { Bar } from './Stat';
+import keepWords from './keepWords';
 import { ObjectiveNumbers } from './ObjectiveNumber';
 import './design.css';
 
@@ -35,7 +36,7 @@ export default function StrategyTile({ strategy: s, onOpen, open = false, scoreL
         aria-controls={controls}
         onClick={onOpen}
       >
-        <span className="ds-stile-name">{s.name}</span>
+        <span className="ds-stile-name">{keepWords(s.name)}</span>
       </button>
       {s.score ? (
         <div className="ds-stile-score">

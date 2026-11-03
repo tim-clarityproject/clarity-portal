@@ -1,5 +1,7 @@
 import { Bar } from './Stat';
+import keepWords from './keepWords';
 import StatusAction from './StatusAction';
+import { Button } from './Button';
 import './design.css';
 
 // An Outcome Objective's card (M1 .ob; three ways to track, Tim 22 Oct).
@@ -18,14 +20,16 @@ import './design.css';
 // objective: { number, name, kindLabel, dateText, timeLeft, figure, target,
 //              progress (0 to 1), kind, reached, strategyCount, flagged }
 // onMarkDone: (done) => void, for a milestone; leave out to show it read only.
-export default function ObjectiveCard({ objective: o, onMarkDone, as: Heading = 'h3' }) {
+// onEdit:     opens this objective on its own (Tim, 3 Nov): a quiet
+//             "Edit this objective" link at the foot of the card.
+export default function ObjectiveCard({ objective: o, onMarkDone, onEdit, as: Heading = 'h3' }) {
   const labels = [`Outcome Objective ${o.number}`, o.kindLabel, o.dateText, o.timeLeft].filter(Boolean);
   return (
     <article className={`ds-objective${o.flagged ? ' ds-objective--flagged' : ''}`}>
       <p className="ds-objective-labels">
         {labels.map((l) => <span key={l}>{l}</span>)}
       </p>
-      <Heading className="ds-objective-name">{o.name}</Heading>
+      <Heading className="ds-objective-name">{keepWords(o.name)}</Heading>
       {o.kind === 'milestone' ? (
         onMarkDone ? (
           <div className="ds-objective-milestone">
@@ -51,6 +55,11 @@ export default function ObjectiveCard({ objective: o, onMarkDone, as: Heading = 
           ? 'No Strategy working on this yet'
           : `${o.strategyCount} ${o.strategyCount === 1 ? 'Strategy' : 'Strategies'} working on this`}
       </p>
+      {onEdit && (
+        <Button variant="text" className="ds-part-edit" onClick={onEdit} aria-label={`Edit this objective: ${o.name}`}>
+          Edit this objective
+        </Button>
+      )}
     </article>
   );
 }

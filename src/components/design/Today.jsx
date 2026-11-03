@@ -1,4 +1,5 @@
 import { Button, IconButton } from './Button';
+import keepWords from './keepWords';
 import Chevron from './Chevron';
 import { SlidePanel } from './Dialogs';
 import { List, ListRow } from './ListRow';
@@ -31,7 +32,7 @@ export function SuggestionCard({ label = 'Suggested for now', question, lines = 
   return (
     <section className={`ds-suggest ${className}`.trim()} aria-label={label}>
       <p className="ds-suggest-label">{label}</p>
-      <h2 className="ds-suggest-question">{question}</h2>
+      <h2 className="ds-suggest-question">{keepWords(question)}</h2>
       {lines.map((line) => <p key={line} className="ds-suggest-line">{line}</p>)}
       {time && <p className="ds-suggest-time">{time}</p>}
       {(action || link) && (
@@ -80,8 +81,12 @@ const arc = (a0, a1) => {
  * weeks: the sprint dial's weeks ({ state: 'good'|'below'|'none'|'now'|'next' });
  * dayInWeek: today's place in this week (0 to 6); date: "Wed 21 Oct";
  * line: "Week 4 of 8"; label: what a screen reader hears.
+ * link: the line is a quiet link into the sprint (Tim, 3 Nov): "Sprint 1,
+ *   week 4 of 8" then the portal's chevron, underlined in coral on hover
+ *   and focus. The dial and the line stay one button, one tap area and one
+ *   accessible name ("Open Sprint 1, week 4 of 8").
  */
-export function MiniDial({ weeks = [], dayInWeek = 0, date, line, label, onClick }) {
+export function MiniDial({ weeks = [], dayInWeek = 0, date, line, label, onClick, link = false }) {
   const n = Math.max(1, weeks.length);
   const span = 360 - MINI.top;
   const step = span / n;
@@ -100,11 +105,16 @@ export function MiniDial({ weeks = [], dayInWeek = 0, date, line, label, onClick
     return <path key={i} className={`ds-mdial-seg ds-mdial-seg--${w.state}`} d={arc(a0, a1)} />;
   });
   return (
-    <button type="button" className="ds-mdial" onClick={onClick} aria-label={label}>
+    <button type="button" className={`ds-mdial${link ? ' ds-mdial--link' : ''}`} onClick={onClick} aria-label={label}>
       <svg viewBox="0 0 100 100" aria-hidden="true">{segs}</svg>
       <span className="ds-mdial-words">
         <span className="ds-mdial-date">{date}</span>
-        {line && <span className="ds-mdial-line">{line}</span>}
+        {line && (
+          <span className="ds-mdial-line">
+            {link ? <span className="ds-mdial-link">{line}</span> : line}
+            {link && <Chevron direction="right" size="sm" className="ds-mdial-chev" />}
+          </span>
+        )}
       </span>
     </button>
   );
@@ -118,13 +128,13 @@ export function DayFocus({ way, strategies = [] }) {
       {way && (
         <div className="ds-dayfocus-item">
           <span className="ds-dayfocus-label">How you want to be today</span>
-          <span className="ds-dayfocus-text">{way}</span>
+          <span className="ds-dayfocus-text">{keepWords(way)}</span>
         </div>
       )}
       {strategies.length > 0 && (
         <div className="ds-dayfocus-item">
           <span className="ds-dayfocus-label">{strategies.length === 1 ? 'Today’s Strategy' : 'Today’s Strategies'}</span>
-          {strategies.map((s) => <span key={s} className="ds-dayfocus-text">{s}</span>)}
+          {strategies.map((s) => <span key={s} className="ds-dayfocus-text">{keepWords(s)}</span>)}
         </div>
       )}
     </div>

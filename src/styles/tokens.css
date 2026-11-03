@@ -231,6 +231,7 @@
   --tip-edge: 12px;          /* never closer than this to a screen edge */
   --tip-gap: 8px;            /* between the mark and the pop-up */
   --tip-max-w: 240px;
+  --info-pop-max-w: 300px;   /* an ⓘ's pop-up: a sentence or two, as the Health Check's */
   /* The Individual Performance Plan (M1, Phase 2) */
   --fs-mission: calc(24 * var(--u-big));        /* the mission on its panel */
   --fs-mission-phone: calc(20 * var(--u-big));
@@ -265,6 +266,7 @@
   --daycount-btn: 48px;                /* the day counter's minus and plus (M15 .dstp) */
   --daycount-value-w: 110px;           /* its number box keeps this width, so nothing moves (M15) */
   --daycount-minus: 12px;              /* the minus line */
+  --daycount-sug-h: var(--fs-meta);    /* one line of "suggested" under the value (line-height 1) */
   --dash-paused: 6 6;                  /* the paused week's dashes, in the dial drawing's units */
   --rec-panel-max: 620px;              /* Recovery's panels and question (M15 .rq, .rcalm) */
   --rec-box-max: 520px;                /* the start screen's panel and tick line (M15 .rbox, .rtick) */

@@ -377,18 +377,6 @@
   letter-spacing: normal;
 }
 
-.ui-root .ds-page-info {
-  margin: var(--space-2) 0 0;
-  max-width: var(--nudge-max);
-  font-size: var(--fs-secondary);
-  line-height: var(--lh-text);
-  color: var(--text-2);
-}
-
-.ui-root .ds-page-info-line {
-  display: block;
-}
-
 .ui-root .ds-page-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1923,7 +1911,7 @@
 }
 
 /* On phone the toast also clears the tab bar along the bottom. */
-@media (max-width: 768px) {
+@media (max-width: 768px), (pointer: coarse) and (max-height: 500px) {
   .ui-root .ds-toast-region {
     bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--space-3)) + var(--space-3) + max(var(--ds-toast-offset, 0px), var(--tabbar-height, 0px)));
   }
@@ -3237,14 +3225,6 @@
   outline-offset: var(--space-px2);
 }
 
-.ui-root .ds-guide-info {
-  max-width: var(--nudge-max);
-  margin: var(--space-2) 0 0;
-  font-size: var(--fs-secondary);
-  line-height: var(--lh-text);
-  color: var(--text-2);
-}
-
 .ui-root .ds-guide .ds-guide-question {
   margin: var(--space-2) 0 0 !important;
   font-family: var(--font-body);
@@ -3272,9 +3252,7 @@
 }
 
 .ui-root .ds-guide-label + .ds-guide-question,
-.ui-root .ds-guide-label + .ds-guide-title,
-.ui-root .ds-guide-info + .ds-guide-question,
-.ui-root .ds-guide-info + .ds-guide-title {
+.ui-root .ds-guide-label + .ds-guide-title {
   margin-top: var(--space-2) !important;
 }
 
@@ -4229,6 +4207,84 @@
   opacity: 0.75;
 }
 
+/* "Edit my mission", "Edit this objective", "Edit this Strategy", "Edit
+   this habit": one quiet link for changing one part of the plan, the same
+   look everywhere (Tim, 3 Nov). Its 44px tap area sits on its own line;
+   the negative margin lines its words up with the text above. */
+.ui-root .ds-part-edit {
+  align-self: flex-start;
+  margin-top: calc(var(--space-1) - (var(--tap-min) - 1lh) / 2);
+  margin-bottom: calc(-1 * (var(--tap-min) - 1lh) / 2);
+}
+
+.ui-root .ds-sdetail-rows .ds-part-edit,
+.ui-root .ds-sdetail-edit {
+  display: flex;
+  width: max-content;
+}
+
+/* A word with a hyphen inside it is never broken at the hyphen (keepWords;
+   Tim, 3 Nov). */
+.ui-root .ds-keep {
+  /* !important: rules such as ".ds-sdetail-rows li span" style every span
+     inside a part; a kept word is only ever its words. */
+  display: inline !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font: inherit !important;
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+/* The ⓘ pop-up (InfoPop; Tim, 3 Nov): what an ⓘ explains, floating over
+   the page so nothing moves. The chart pop-up's look in its wider form
+   (as the Health Check's ⓘ): one sentence per line, the first in the
+   value's size. Placed by InfoPop, 12px inside both edges. */
+.ui-root .ds-infopop {
+  position: fixed;
+  z-index: var(--z-toast);
+  box-sizing: border-box;
+  display: block;
+  width: max-content;
+  max-width: var(--info-pop-max-w);
+  padding: var(--space-2) var(--space-px12);
+  border: var(--line-w) solid var(--toast-line);
+  border-radius: var(--radius-input);
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-tip);
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.ui-root .ds-infopop[hidden] {
+  display: none !important;
+}
+
+.ui-root .ds-infopop-line,
+.ui-root .ds-infopop b,
+.ui-root .ds-infopop span {
+  display: block;
+  font-weight: var(--fw-regular);
+}
+
+.ui-root .ds-infopop > :first-child {
+  font-size: var(--fs-tip-value);
+}
+
+.ui-root .ds-infopop > * + * {
+  margin-top: var(--space-1);
+  opacity: 0.85;
+}
+
 /* ---------- Dial and week chart (Tim, 26 Oct; design reference v15) ----------
    Mint at or above the standard, grey below, this week in the text
    colour, weeks to come faint. No keys: labels sit where they are and
@@ -4819,7 +4875,7 @@
   overflow-wrap: break-word;
 }
 
-.ui-root .ds-sdetail-rows li span {
+.ui-root .ds-sdetail-rows li > span {
   display: block;
   font-size: var(--fs-meta);
   color: var(--label);
@@ -6132,20 +6188,33 @@
   background-color: var(--text-2);
 }
 
+/* The value sits in the middle of the pill whether or not "suggested"
+   shows (Tim, 3 Nov: "8 days" sat high): three rows, the value in the
+   middle one and "suggested" in the one below, with an equal row above
+   it, so the value never moves when "suggested" comes or goes. Both outer
+   rows are at least one line of "suggested", so it always sits inside
+   the pill, at any text size. */
 .ui-root .ds-daycount-value {
   min-width: var(--daycount-value-w);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-self: stretch;
+  display: grid;
+  grid-template-rows: minmax(var(--daycount-sug-h), 1fr) auto minmax(var(--daycount-sug-h), 1fr);
+  justify-items: center;
   font-size: var(--fs-statement);
   line-height: var(--lh-question);
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 
+.ui-root .ds-daycount-value > span {
+  grid-row: 2;
+}
+
 .ui-root .ds-daycount-value small {
+  grid-row: 3;
+  align-self: start;
   font-size: var(--fs-meta);
-  line-height: var(--lh-text);
+  line-height: 1;
   color: var(--label);
 }
 
@@ -6895,7 +6964,8 @@
   display: none;
 }
 
-@media (max-width: 768px) {
+/* Phone navigation, also on a phone on its side (NAV_PHONE_QUERY). */
+@media (max-width: 768px), (pointer: coarse) and (max-height: 500px) {
   .ui-root .ds-phone-bar {
     position: fixed;
     left: 0;
@@ -7577,8 +7647,44 @@
 }
 
 @media (hover: hover) {
-  .ui-root .ds-mdial:hover .ds-mdial-date {
+  .ui-root .ds-mdial:not(.ds-mdial--link):hover .ds-mdial-date {
     color: var(--coral-text);
+  }
+}
+
+/* The line as a quiet link into the sprint (Tim, 3 Nov): the words, then
+   the chevron 6px after them, in the line's grey; on a laptop the words
+   underline and the line turns coral on hover and keyboard focus, as
+   other links. The whole dial is the one 44px tap area. */
+.ui-root .ds-mdial--link .ds-mdial-line {
+  display: flex;
+  align-items: center;
+  gap: var(--info-gap);
+  transition: color var(--dur) var(--ease);
+}
+
+.ui-root .ds-mdial-link {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--space-1);
+  transition: text-decoration-color var(--dur) var(--ease);
+}
+
+.ui-root .ds-mdial--link:focus-visible .ds-mdial-line {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-mdial--link:focus-visible .ds-mdial-link {
+  text-decoration-color: currentColor;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-mdial--link:hover .ds-mdial-line {
+    color: var(--coral-text);
+  }
+
+  .ui-root .ds-mdial--link:hover .ds-mdial-link {
+    text-decoration-color: currentColor;
   }
 }
 
@@ -8046,25 +8152,6 @@
   top: var(--text-info-lift);
   margin: calc((var(--tap-min) - var(--info-size)) / -2) calc((var(--tap-min) - var(--info-size)) / -2) calc((var(--tap-min) - var(--info-size)) / -2) calc(var(--info-gap) - (var(--tap-min) - var(--info-size)) / 2);
 }
-
-/* The "i" with words ("Why write it down"), and its words opened in place. */
-.ui-root .ds-info-words-panel {
-  max-width: var(--nudge-max);
-  margin: 0 0 var(--space-2);
-  font-size: var(--fs-secondary);
-  line-height: var(--lh-text);
-  color: var(--text-2);
-}
-
-.ui-root .ds-info-words-panel[hidden] { display: none; }
-
-.ui-root .ds-info-words-panel b,
-.ui-root .ds-info-words-panel span {
-  display: block;
-  font-weight: var(--fw-regular);
-}
-
-.ui-root .ds-info-words-panel b { color: var(--text); }
 
 .ui-root .ds-wind-who {
   margin-top: var(--space-px10);

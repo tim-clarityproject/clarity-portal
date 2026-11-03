@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from './Button';
 import InfoIcon from './InfoIcon';
+import InfoPop from './InfoPop';
 import { useEscapeLayer, pushLayer } from './layers';
 import { lockPage, openerOf, returnFocus, trapTab, unlockPage } from './pageLock';
 import { SaveStatus } from './Status';
@@ -150,7 +151,7 @@ function StepHead({ step, headingRef, positionId, role }) {
           )}
         </div>
       )}
-      {step.info && infoOpen && <p id={infoId} ref={infoPanelRef} className="ds-guide-info">{step.info}</p>}
+      {step.info && <InfoPop id={infoId} open={infoOpen} anchorRef={infoButtonRef} panelRef={infoPanelRef} lines={step.info} />}
       <Heading
         ref={headingRef}
         tabIndex={-1}
@@ -177,7 +178,7 @@ function StepHead({ step, headingRef, positionId, role }) {
           )}
         </p>
       ))}
-      {step.nudgeInfo && nudgeOpen && <p id={nudgeInfoId} ref={nudgePanelRef} className="ds-guide-info">{step.nudgeInfo.text}</p>}
+      {step.nudgeInfo && <InfoPop id={nudgeInfoId} open={nudgeOpen} anchorRef={nudgeButtonRef} panelRef={nudgePanelRef} lines={step.nudgeInfo.text} />}
       {example && (
         <>
           <button

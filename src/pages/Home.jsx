@@ -296,8 +296,11 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           weeks={view.weeks}
           dayInWeek={running ? view.dayInWeek : 6}
           date={dateText}
-          line={running ? `Week ${view.current} of ${view.lengthWeeks}` : `${view.name} has ended`}
-          label={`${dateText}. ${view.name}${running ? `, week ${view.current} of ${view.lengthWeeks}` : ''}. Open the Performance Sprint.`}
+          // A quiet link into the sprint (Tim, 3 Nov); with no sprint
+          // running there is no link.
+          line={running ? `Sprint ${view.number}, week ${view.current} of ${view.lengthWeeks}` : `${view.name} has ended`}
+          link={running}
+          label={running ? `Open Sprint ${view.number}, week ${view.current} of ${view.lengthWeeks}` : `${dateText}. ${view.name} has ended. Open the Performance Sprint.`}
           onClick={() => go('/performance-sprint')}
         />
       )}

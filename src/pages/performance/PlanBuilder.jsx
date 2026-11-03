@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { MissionContext } from '../../context/MissionContext';
@@ -31,20 +31,11 @@ import {
 import { readCache, writeCache } from '../../lib/pageCache';
 import { useDraft, clearDraft } from '../../lib/drafts';
 import { isNetworkError } from '../../lib/connection';
-import { newId, useQueueState } from '../../lib/syncQueue';
+import { newId } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 import {
-  archivePlanRow,
-  deletePlanRow,
   loadPlanEditor,
-  recordPlanVersion,
-  savePlan,
-  saveHabit,
-  saveObjective,
   saveSharing,
-  saveStrategy,
-  saveStrategyLink,
-  saveWorkingDays,
 } from '../../lib/performance/api';
 import {
   MAX_OBJECTIVES,
@@ -63,13 +54,10 @@ import {
   namedObjectives,
   objectiveComplete,
   objectiveSummary,
-  planSaves,
   removeObjective,
   removeStrategyFrom,
-  rowsSnapshot,
   savableRows,
   servesNames,
-  snapshotIds,
   sprintSetupFrom,
   sprintStandard,
   sprintWeeks,
@@ -81,6 +69,7 @@ import {
   workingDaysWords,
 } from '../../lib/performance';
 import { keepSprintSetup } from '../../lib/performance/sprintSetup';
+import usePlanSaves from './usePlanSaves';
 import { MISSION_EXAMPLE, MISSION_PLACEHOLDER, STRATEGY_IDEAS, exampleRole } from '../../content/planBuilder';
 import './performance.css';
 
@@ -104,7 +93,6 @@ import './performance.css';
 // sprint, which creates the sprint (Phase 2 step 3).
 
 const CACHE = 'performance-plan-editor';
-const SYNC_AFTER_MS = 700;
 const draftName = (mode) => `performance-plan:${mode}`;
 const stepDraftKey = (mode, userId) => `performance-plan-${mode}-${userId}`;
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
@@ -161,7 +149,6 @@ function PlanTool({ userId, data, mode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
-  const queue = useQueueState();
   const { mission: oldMission } = useContext(MissionContext) || {};
   const building = mode === 'build';
   const today = localToday();
@@ -201,96 +188,8 @@ function PlanTool({ userId, data, mode }) {
   });
 
   // ------------------------------------------------------------ saving
-  const savedRef = useRef(savableRows(draftFromRows(data, { planId: initial.planId }), today));
-  const planExistsRef = useRef(Boolean(data.plan));
-  const versionRef = useRef({
-    major: data.plan?.major ?? 1,
-    minor: data.plan?.minor ?? 0,
-    snapshot: data.latestVersion?.snapshot ?? null,
-  });
-  const inVersion = useMemo(() => snapshotIds(data.latestVersion?.snapshot), [data.latestVersion]);
-  const draftRef = useRef(draft);
-  const [saveState, setSaveState] = useState('idle');
-  const running = useRef(null);
-  const again = useRef(false);
-
-  useEffect(() => {
-    draftRef.current = draft;
-  }, [draft]);
-
-  const send = useCallback(async (op) => {
-    const planId = draftRef.current.planId;
-    switch (op.kind) {
-      case 'plan': return savePlan(userId, { id: op.row.id, mission: op.row.mission || null }).save;
-      case 'objective': return saveObjective(userId, planId, op.row).save;
-      case 'strategy': return saveStrategy(userId, planId, op.row).save;
-      case 'habit': return saveHabit(userId, planId, op.row).save;
-      case 'link': return saveStrategyLink(userId, op.link.strategyId, op.link.objectiveId, op.serves);
-      case 'days': return saveWorkingDays(userId, today, op.days);
-      case 'archive': return archivePlanRow(userId, op.table, op.id);
-      case 'delete': return deletePlanRow(userId, op.table, op.id);
-      default: return null;
-    }
-  }, [userId, today]);
-
-  // Sends whatever the draft says that the database doesn't hold yet, one
-  // save at a time and in order. A change made while saving is sent next.
-  const sync = useCallback(() => {
-    if (running.current) {
-      again.current = true;
-      return running.current;
-    }
-    const work = (async () => {
-      let queued = false;
-      let sent = false;
-      do {
-        again.current = false;
-        const want = savableRows(draftRef.current, today);
-        const ops = planSaves(savedRef.current, want, { planExists: planExistsRef.current, inVersion });
-        if (ops.length) {
-          sent = true;
-          setSaveState('saving');
-        }
-        for (const op of ops) {
-          const result = await send(op);
-          if (result?.status === 'queued') queued = true;
-          savedRef.current = applySave(savedRef.current, op);
-          if (op.kind === 'plan') planExistsRef.current = true;
-        }
-      } while (again.current);
-      if (sent) setSaveState(queued ? 'offline' : 'saved');
-    })();
-    running.current = work;
-    return work.catch((e) => {
-      setSaveState('failed');
-      toast.error(friendlyError(e, SAVE_ERROR));
-      throw e;
-    }).finally(() => {
-      running.current = null;
-    });
-  }, [send, today, inVersion, toast]);
-
-  // Nothing is written until the person changes something: opening a new
-  // plan never creates one (the old mission it starts from included).
-  useEffect(() => {
-    if (draft === initial) return undefined;
-    const timer = setTimeout(() => { sync().catch(() => {}); }, SYNC_AFTER_MS);
-    return () => clearTimeout(timer);
-  }, [draft, initial, sync]);
-
-  // "Will sync" turns to Saved once the queue has sent everything.
-  const shownState = saveState === 'offline' && queue.waiting === 0 ? 'saved' : saveState;
-
-  // A version, when the plan changed since its last one (editing), or the
-  // first version (finishing a new plan).
-  const keepVersion = async (first) => {
-    const after = rowsSnapshot(savedRef.current);
-    const plan = { id: draftRef.current.planId, major: versionRef.current.major, minor: versionRef.current.minor };
-    const v = await recordPlanVersion(userId, plan, { before: versionRef.current.snapshot, after, first });
-    if (!v.kind) return null;
-    versionRef.current = { major: v.major, minor: v.minor, snapshot: after };
-    return v;
-  };
+  // One engine for building, editing and changing one part (usePlanSaves).
+  const { draftRef, savedRef, planExistsRef, send, sync, keepVersion, shownState } = usePlanSaves({ userId, data, draft, initial, today });
 
   const forget = () => {
     clearOwnDraft();

@@ -374,7 +374,8 @@ export default function PerformanceSprint() {
         <PageHeader
           title={welcome ? `Welcome back${data.firstName ? `, ${data.firstName}` : ''}` : view?.name || 'Performance Sprint'}
           meta={meta}
-          info={pageText.performanceSprint}
+          // A greeting has nothing to explain (Tim, 3 Nov), so no ⓘ.
+          info={welcome ? undefined : pageText.performanceSprint}
           onSystemLink={() => setSystem(true)}
         />
         {welcome && <p className="rec-welcome">Let’s start with this week.</p>}

@@ -87,6 +87,12 @@ if (existing?.length || empty) {
   await db.from('day_plans').delete().eq('user_id', me);
   await db.from('day_reviews').delete().eq('user_id', me);
   await db.from('todos').delete().eq('user_id', me);
+  // 038 and 039's own-row tables (on a database without them these do
+  // nothing): a finished wind-down left from a run on the fixed day would
+  // hide Home's wind-down card and fill the next run's night.
+  for (const table of ['wind_down_nights', 'day_plan_habits', 'sprint_reviews', 'tool_work_strategies']) {
+    await db.from(table).delete().eq('user_id', me);
+  }
   await db.from('sprints').delete().eq('user_id', me);
   const { error } = await db.from('performance_plans').delete().eq('user_id', me);
   if (error) throw error;

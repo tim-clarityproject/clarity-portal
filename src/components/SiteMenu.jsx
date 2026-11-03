@@ -2,6 +2,7 @@ import { useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } f
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { DesktopMenu, PhoneBar, TileMenu, useCoachName } from './design';
+import { isNavPhone } from './design/pageLock';
 import { areaOf, menuAreas, TOOLS } from '../lib/navigation';
 import { usePins } from '../lib/menuPins';
 
@@ -54,7 +55,7 @@ export function SiteDesktopMenu({ open, onClose, top, buttonRef }) {
   // At phone width the phone bar's menu takes over.
   useLayoutEffect(() => {
     if (!open) return undefined;
-    const onResize = () => { if (window.innerWidth <= 768) onClose(); };
+    const onResize = () => { if (isNavPhone()) onClose(); };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [open, onClose]);
@@ -87,7 +88,7 @@ export function SitePhoneNav() {
   // menu takes over there).
   useLayoutEffect(() => {
     if (!open) return undefined;
-    const onResize = () => { if (window.innerWidth > 768) close(); };
+    const onResize = () => { if (!isNavPhone()) close(); };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [open, close]);
@@ -123,7 +124,7 @@ export function SitePhoneNav() {
       {/* Pages below the bar keep their last line clear of it (as the
           old tab bar did). */}
       <style>{`
-        @media (max-width: 768px) {
+        @media (max-width: 768px), (pointer: coarse) and (max-height: 500px) {
           body { padding-bottom: var(--tabbar-height, 86px); }
         }
       `}</style>

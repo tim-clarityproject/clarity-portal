@@ -14,6 +14,8 @@ export { AddButton, Button, IconButton, SystemLink } from './Button';
 export { default as PageHeader } from './PageHeader';
 export { default as InfoIcon } from './InfoIcon';
 export { default as useInfoToggle } from './useInfoToggle';
+export { default as InfoPop } from './InfoPop';
+export { default as keepWords } from './keepWords';
 export { default as LineIcon, LINE_ICONS } from './LineIcon';
 export { default as Section } from './Section';
 export { Stat, StatGroup, Bar } from './Stat';

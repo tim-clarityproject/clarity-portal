@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { IconText } from './IconText';
 import InfoIcon from './InfoIcon';
 import useInfoToggle from './useInfoToggle';
+import InfoPop from './InfoPop';
 import './design.css';
 
 // Sleep wind down and Work's done for today (mock-up M19, approved by Tim
@@ -35,7 +36,7 @@ export function NightScope({ children, className = '' }) {
 }
 
 // "Why write it down": an icon-with-words "i" (26 Oct rule 5) whose
-// explanation opens in place under it, as every "i" opens (useInfoToggle):
+// explanation floats over the page (InfoPop), as every "i" opens (useInfoToggle):
 // a title line, then its sentences.
 export function InfoWords({ children, title, text = [] }) {
   const { open, buttonRef, panelRef, buttonProps } = useInfoToggle();
@@ -53,10 +54,10 @@ export function InfoWords({ children, title, text = [] }) {
       >
         {children}
       </IconText>
-      <div id={id} ref={panelRef} className="ds-info-words-panel" hidden={!open}>
+      <InfoPop id={id} open={open} anchorRef={buttonRef} panelRef={panelRef}>
         {title && <b>{title}</b>}
         {sentences.map((t) => <span key={t}>{t}</span>)}
-      </div>
+      </InfoPop>
     </>
   );
 }

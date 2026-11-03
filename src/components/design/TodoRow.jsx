@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import keepWords from './keepWords';
 import { Button } from './Button';
 import './design.css';
 
@@ -46,7 +47,7 @@ export default function TodoRow({ text, strategyName, tags = [], done = false, o
         </button>
       )}
       <div className="ds-todo-main">
-        <span id={textId} className="ds-todo-text">{text}</span>
+        <span id={textId} className="ds-todo-text">{keepWords(text)}</span>
         <span className="ds-todo-line">
           {lead && <span className="ds-todo-lead">{lead}</span>}
           {strategyName && <span>{strategyName}</span>}

@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import keepWords from './keepWords';
 import Crosshair from './Crosshair';
 import Chevron from './Chevron';
 import { Bar } from './Stat';
@@ -176,7 +177,7 @@ export function LoggingRow({
   return (
     <div className={`ds-log${onMore ? ' ds-log--more' : ''}`}>
       <div className="ds-log-main">
-        <div className="ds-log-name">{name}</div>
+        <div className="ds-log-name">{keepWords(name)}</div>
         {detail && <div className="ds-log-detail">{detail}</div>}
       </div>
       <div className="ds-log-entry">{entry}</div>
@@ -286,7 +287,7 @@ export function LoggingWeekRow({
   return (
     <div className={`ds-log ds-logweek${kind === 'tick' ? ' ds-logweek--tick' : ''}${total ? ' ds-logweek--total' : ''}${onMore ? '' : ' ds-logweek--plain'}`}>
       <div className="ds-log-main">
-        <div className="ds-log-name">{name}</div>
+        <div className="ds-log-name">{keepWords(name)}</div>
         {detail && <div className="ds-log-detail">{detail}</div>}
       </div>
       {kind === 'tick' && <div className="ds-log-entry">{entry}</div>}

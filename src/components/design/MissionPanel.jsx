@@ -1,4 +1,5 @@
 import { Button, SystemLink } from './Button';
+import keepWords from './keepWords';
 import { DropPanel } from './Dialogs';
 import WhoSees from './WhoSees';
 import './design.css';
@@ -22,7 +23,7 @@ export default function MissionPanel({ open, onClose, mission, objectives = [], 
     <DropPanel open={open} onClose={onClose} title="My Mission">
       <div className="ds-mpanel">
         <div className="ds-mpanel-who"><WhoSees {...who} /></div>
-        <p className="ds-mpanel-mission">{mission}</p>
+        <p className="ds-mpanel-mission">{keepWords(mission)}</p>
         {objectives.length > 0 && (
           <ul className="ds-mpanel-objectives" aria-label="Outcome Objectives">
             {objectives.map((o) => (

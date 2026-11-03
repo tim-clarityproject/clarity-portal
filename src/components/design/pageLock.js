@@ -76,6 +76,18 @@ export function isPhoneWidth() {
   return typeof window !== 'undefined' && !!window.matchMedia?.(PHONE_QUERY).matches;
 }
 
+// The phone's navigation (the phone header, the phone bar and its menu,
+// no desktop menu button): up to 768px wide, or a phone turned on its side
+// (a touch screen under 500px tall, such as an iPhone 16 at 852 by 393;
+// Tim, 3 Nov). iPads stay on the desktop navigation. CSS can't read this
+// constant, so every stylesheet that needs it writes the same query:
+//   @media (max-width: 768px), (pointer: coarse) and (max-height: 500px)
+export const NAV_PHONE_QUERY = '(max-width: 768px), (pointer: coarse) and (max-height: 500px)';
+
+export function isNavPhone() {
+  return typeof window !== 'undefined' && !!window.matchMedia?.(NAV_PHONE_QUERY).matches;
+}
+
 export const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 // Tab and Shift+Tab go round inside `container`. Every step is moved by

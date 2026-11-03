@@ -1,4 +1,5 @@
 import { useCallback, useContext, useState, useRef, useEffect, useLayoutEffect } from 'react';
+import keepWords from './design/keepWords';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MissionContext } from '../context/MissionContext';
@@ -6,8 +7,10 @@ import { AuthContext } from '../context/AuthContext';
 import { BoldCrosshair, ChatButton } from './design';
 import { useStartChat } from './coach/startChat';
 import { useActivePlan } from '../lib/performance/hooks';
+import { onPlanChanged } from '../lib/performance/planChanged';
 import { SiteDesktopMenu } from './SiteMenu';
 import PlanMissionPanel from './PlanMissionPanel';
+import { isNavPhone } from './design/pageLock';
 
 // The header (approved Home mock-up M2, version 3; decisions "Header").
 //
@@ -70,7 +73,7 @@ function PillWords({ text, none }) {
     <>
       <span className="hdr-mis-label">My Mission</span>
       <span ref={ref} className={`hdr-mis-text${fits ? '' : ' hdr-mis-text--long'}`} aria-hidden={!fits && !none ? 'true' : undefined}>
-        {text}
+        {keepWords(text)}
       </span>
       {!fits && !none && <span className="ds-sr">, open to read it in full</span>}
     </>
@@ -83,7 +86,11 @@ export default function DesignHeader({ className = '' }) {
   const startChat = useStartChat();
   const { mission: oldMission, showInHeader } = useContext(MissionContext);
   const { user } = useContext(AuthContext);
-  const activePlan = useActivePlan(user?.id).data;
+  const activePlanLoad = useActivePlan(user?.id);
+  const activePlan = activePlanLoad.data;
+  // A part of the plan changed on this page: the pill shows it at once.
+  const reloadActivePlan = activePlanLoad.reload;
+  useEffect(() => onPlanChanged(() => { reloadActivePlan(); }), [reloadActivePlan]);
   const [planPanelOpen, setPlanPanelOpen] = useState(false);
   const [planPanelUsed, setPlanPanelUsed] = useState(false);
   const mission = activePlan ? (activePlan.mission || '') : oldMission;
@@ -115,7 +122,7 @@ export default function DesignHeader({ className = '' }) {
   useEffect(() => {
     if (!expandedPanel) return undefined;
     const handleResize = () => {
-      if (window.innerWidth > 768) setExpandedPanel(false);
+      if (!isNavPhone()) setExpandedPanel(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -216,8 +223,9 @@ export default function DesignHeader({ className = '' }) {
           line-height: var(--lh-text);
           white-space: normal;
           overflow-wrap: normal;
-          text-align: right;
-          text-wrap: balance;
+          /* Read from the left, after its label (Tim, 3 Nov). */
+          text-align: left;
+          text-wrap: pretty;
         }
         /* Too long for two lines: "My Mission" alone. */
         .ui-root .hdr-mis-text--long {
@@ -237,65 +245,6 @@ export default function DesignHeader({ className = '' }) {
           }
           .ui-root .hdr-mis--none .hdr-mis-text {
             text-align: left;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .ui-root .hdr {
-            z-index: 5002;
-          }
-          .ui-root .hdr-desktop {
-            display: none;
-          }
-          .ui-root .hdr-phone {
-            padding: var(--space-px22) var(--space-px18) var(--space-px10);
-          }
-          .ui-root .hdr-mis-card {
-            border-radius: var(--radius-pill);
-            transition: border-radius var(--dur) var(--ease);
-            background: var(--raised);
-            overflow: hidden;
-          }
-          .ui-root .hdr-phone .hdr-mis {
-            width: 100%;
-          }
-          .ui-root .hdr-mis-card .hdr-mis {
-            background: transparent;
-          }
-          .ui-root .hdr-mis-card.open {
-            border-radius: var(--radius-sheet-desktop);
-          }
-          .ui-root .hdr-mis-panel {
-            display: grid;
-            grid-template-rows: 0fr;
-            transition: grid-template-rows var(--dur) var(--ease);
-          }
-          .ui-root .hdr-mis-panel.open {
-            grid-template-rows: 1fr;
-          }
-          .ui-root .hdr-mis-panel-inner {
-            min-height: 0;
-            overflow: hidden;
-          }
-          .ui-root .hdr-mis-full {
-            margin: 0 var(--space-px22);
-            padding: var(--space-px6) 0 var(--space-px18);
-            border-top: var(--line-w) solid var(--line);
-          }
-          .ui-root .hdr-mis-full p {
-            margin: var(--space-px14) 0 0;
-            font-size: var(--fs-statement);
-            line-height: var(--lh-statement);
-            color: var(--text);
-          }
-          .ui-root .hdr-scrim {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--scrim);
-            z-index: 5001;
-            animation: hdr-scrim-fade var(--dur) var(--ease) forwards;
           }
         }
 
@@ -353,6 +302,72 @@ export default function DesignHeader({ className = '' }) {
           }
         }
 
+        /* Phone navigation (NAV_PHONE_QUERY in design/pageLock.js): the
+           full-width pill and no desktop menu button, also on a phone on
+           its side, where the phone bar is the menu (Tim, 3 Nov). After
+           the desktop rules, so it wins on a phone on its side. */
+        @media (max-width: 768px), (pointer: coarse) and (max-height: 500px) {
+          .ui-root .hdr {
+            z-index: 5002;
+          }
+          .ui-root .hdr-desktop {
+            display: none;
+          }
+          .ui-root .hdr-phone {
+            display: block;
+          }
+          .ui-root .hdr-phone {
+            padding: var(--space-px22) var(--space-px18) var(--space-px10);
+          }
+          .ui-root .hdr-mis-card {
+            border-radius: var(--radius-pill);
+            transition: border-radius var(--dur) var(--ease);
+            background: var(--raised);
+            overflow: hidden;
+          }
+          .ui-root .hdr-phone .hdr-mis {
+            width: 100%;
+          }
+          .ui-root .hdr-mis-card .hdr-mis {
+            background: transparent;
+          }
+          .ui-root .hdr-mis-card.open {
+            border-radius: var(--radius-sheet-desktop);
+          }
+          .ui-root .hdr-mis-panel {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows var(--dur) var(--ease);
+          }
+          .ui-root .hdr-mis-panel.open {
+            grid-template-rows: 1fr;
+          }
+          .ui-root .hdr-mis-panel-inner {
+            min-height: 0;
+            overflow: hidden;
+          }
+          .ui-root .hdr-mis-full {
+            margin: 0 var(--space-px22);
+            padding: var(--space-px6) 0 var(--space-px18);
+            border-top: var(--line-w) solid var(--line);
+          }
+          .ui-root .hdr-mis-full p {
+            margin: var(--space-px14) 0 0;
+            font-size: var(--fs-statement);
+            line-height: var(--lh-statement);
+            color: var(--text);
+          }
+          .ui-root .hdr-scrim {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--scrim);
+            z-index: 5001;
+            animation: hdr-scrim-fade var(--dur) var(--ease) forwards;
+          }
+        }
+
         @keyframes hdr-scrim-fade {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -385,7 +400,7 @@ export default function DesignHeader({ className = '' }) {
                 <div className={`hdr-mis-panel${expandedPanel ? ' open' : ''}`}>
                   <div className="hdr-mis-panel-inner" inert={!expandedPanel}>
                     <div className="hdr-mis-full">
-                      <p>{mission}</p>
+                      <p>{keepWords(mission)}</p>
                       <button type="button" className="ds-link" onClick={openEditMission}>
                         Edit mission
                       </button>

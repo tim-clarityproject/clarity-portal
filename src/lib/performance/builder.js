@@ -344,6 +344,48 @@ export function savableRows(draft, today) {
   };
 }
 
+/**
+ * What to save while someone is still typing: savableRows, plus the saved
+ * version of any objective, Strategy or habit that is still in the draft
+ * but not complete just now (a name cleared to retype it, a target being
+ * changed). Without this, planSaves would read it as removed and archive
+ * or delete it (Tim's preview check, 3 Nov 2026). Only a row taken out of
+ * the draft is removed. Habits of a Strategy kept this way are kept too,
+ * and so are its links to objectives it still serves in the draft.
+ */
+export function keepUnfinished(want, saved, draft) {
+  if (!saved) return want;
+  const carry = (wantList, savedList, draftList) => {
+    const inDraft = new Set((draftList || []).map((x) => x.id));
+    const have = new Set(wantList.map((x) => x.id));
+    return [...wantList, ...(savedList || []).filter((row) => inDraft.has(row.id) && !have.has(row.id))];
+  };
+  const objectives = carry(want.objectives, saved.objectives, draft.objectives);
+  const strategies = carry(want.strategies, saved.strategies, draft.strategies);
+  const objectiveIds = new Set(objectives.map((o) => o.id));
+  const strategyIds = new Set(strategies.map((x) => x.id));
+  // Complete habits of a Strategy kept above (savableRows left them out).
+  const wantHabitIds = new Set(want.habits.map((h) => h.id));
+  const extraHabits = (draft.habits || [])
+    .filter((h) => !wantHabitIds.has(h.id) && strategyIds.has(h.strategyId) && habitComplete(h))
+    .map((h, i) => habitRow(h, want.habits.length + i));
+  const habits = carry([...want.habits, ...extraHabits], saved.habits, draft.habits).filter((h) => strategyIds.has(h.strategyId));
+  const linkKeyOf = (l) => `${l.strategyId}>${l.objectiveId}`;
+  const links = [...want.links];
+  const haveLinks = new Set(links.map(linkKeyOf));
+  for (const st of draft.strategies || []) {
+    if (!strategyIds.has(st.id)) continue;
+    for (const oid of st.objectiveIds || []) {
+      const l = { strategyId: st.id, objectiveId: oid };
+      if (objectiveIds.has(oid) && !haveLinks.has(linkKeyOf(l))) {
+        links.push(l);
+        haveLinks.add(linkKeyOf(l));
+      }
+    }
+  }
+  return { ...want, objectives, strategies, links, habits };
+}
+
 /** The plan as a version keeps it, from savable rows. */
 export function rowsSnapshot(rows) {
   return planSnapshot({ mission: rows.plan?.mission, objectives: rows.objectives, strategies: rows.strategies, links: rows.links, habits: rows.habits });
