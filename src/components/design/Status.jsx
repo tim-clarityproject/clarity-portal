@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import Crosshair from './Crosshair';
 import { useCoach } from './coachContext';
 import { LOADING_DELAY_MS } from './timing';
+import { FIRST_OPEN_OFFLINE } from '../../lib/friendlyError';
+import { useOnline } from '../../lib/connection';
 import './design.css';
 
 // Saving happens automatically (no Save buttons). These say where it is:
@@ -83,6 +85,18 @@ export function ErrorMessage({ children, keepsHappening = false }) {
       </span>
     </div>
   );
+}
+
+/**
+ * A page whose data didn't load and has no copy on the device yet. With
+ * no connection it says calmly that a page needs one the first time
+ * (Works on a flight: after that it opens from the device); otherwise the
+ * page's own message, with what to do if it keeps happening.
+ */
+export function LoadError({ children }) {
+  const online = useOnline();
+  if (!online) return <ErrorMessage>{FIRST_OPEN_OFFLINE}</ErrorMessage>;
+  return <ErrorMessage keepsHappening>{children}</ErrorMessage>;
 }
 
 export function keepsHappeningLine(coach) {

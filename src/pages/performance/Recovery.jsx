@@ -8,7 +8,6 @@ import {
   Checkbox,
   Choice,
   DayCounter,
-  ErrorMessage,
   Loading,
   NumberField,
   PageHeader,
@@ -19,6 +18,7 @@ import {
   Tile,
   WhoSees,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { useRecoveryPage } from '../../lib/performance/hooks';
 import { loadSleep, saveRechargeAnswer, saveSleep } from '../../lib/performance/api';
@@ -86,7 +86,7 @@ function Waiting({ loading, error, label }) {
   if (error) {
     return (
       <div className="ipp-gap">
-        <ErrorMessage keepsHappening>That didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>That didn’t load. Check your connection and try again.</LoadError>
       </div>
     );
   }

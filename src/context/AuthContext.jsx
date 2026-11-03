@@ -262,7 +262,7 @@ export function AuthProvider({ children }) {
       } else if (err.status === 401) {
         return { success: false, error: 'Your email address hasn’t been confirmed yet. Open the link we sent you, then sign in.' };
       } else {
-        return { success: false, error: friendlyError(err, 'That didn’t sign you in. Check your connection and try again.') };
+        return { success: false, error: friendlyError(err, 'That didn’t sign you in. Check your connection and try again.', 'Signing in') };
       }
     } finally {
       setIsLoading(false);
@@ -314,7 +314,7 @@ export function AuthProvider({ children }) {
         } else if (signupErr.status === 429) {
           return { success: false, error: 'That was tried too many times. Wait a moment and try again.' };
         } else {
-          return { success: false, error: friendlyError(signupErr, 'Your account wasn’t created. Check your connection and try again.') };
+          return { success: false, error: friendlyError(signupErr, 'Your account wasn’t created. Check your connection and try again.', 'Creating an account') };
         }
       }
     } catch (err) {

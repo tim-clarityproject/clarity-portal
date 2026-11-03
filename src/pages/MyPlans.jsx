@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { clearProgress } from '../lib/saveProgress';
 import { getLocalDateKey } from '../lib/dateFormatter';
 import { useCachedLoad } from '../lib/pageCache';
+import { useOnline } from '../lib/connection';
+import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
 import { listFilters, planRows } from '../lib/savedItems';
 import { loadSavedPlans, SAVED_PLANS_CACHE } from '../lib/savedItemsApi';
 import DesignHeader from '../components/DesignHeader';
@@ -34,13 +36,14 @@ export default function MyPlans() {
   // Instant page (Tim, 26 Oct): the plans shown last time appear at once
   // from the device, then refresh quietly in the background.
   const loaded = useCachedLoad({ userId: user?.id, name: SAVED_PLANS_CACHE, load: () => loadSavedPlans(user.id) });
+  const online = useOnline();
   const today = getLocalDateKey();
   const rows = useMemo(() => planRows(loaded.data, today), [loaded.data, today]);
   const { filters, subFilters, subLabels } = useMemo(() => listFilters(rows), [rows]);
   const query = new URLSearchParams(location.search);
   const isLoading = loaded.loading;
   const error = loaded.error && !loaded.data
-    ? { message: 'Your plans didn’t load. Check your connection and try again.', onRetry: loaded.reload }
+    ? { message: online ? 'Your plans didn’t load. Check your connection and try again.' : FIRST_OPEN_OFFLINE, onRetry: loaded.reload }
     : null;
 
   // A Discard on an old tool's step lands here (it used to land on My

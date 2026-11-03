@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { friendlyError } from '../../lib/friendlyError';
 import AuthShell from '../../components/auth/AuthShell';
 import { AuthTextField } from '../../components/auth/AuthField';
 import { AuthPrimaryButton } from '../../components/auth/AuthButton';
@@ -40,14 +41,14 @@ export default function ForgotPassword() {
       });
 
       if (error) {
-        setFormError('That email didn’t send. Check your connection and try again.');
+        setFormError(friendlyError(error, 'That email didn’t send. Check your connection and try again.', 'Resetting your password'));
         setShakeToken((t) => t + 1);
         return;
       }
 
       navigate('/forgot-password/check-email', { state: { email: trimmed } });
     } catch (err) {
-      setFormError('That email didn’t send. Check your connection and try again.');
+      setFormError(friendlyError(err, 'That email didn’t send. Check your connection and try again.', 'Resetting your password'));
       setShakeToken((t) => t + 1);
     } finally {
       setIsSubmitting(false);

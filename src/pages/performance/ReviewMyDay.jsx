@@ -7,7 +7,6 @@ import {
   AddWinPanel,
   Button,
   EndScreen,
-  ErrorMessage,
   GuidedSummary,
   GuidedTool,
   LevelChoice,
@@ -25,6 +24,7 @@ import {
   WhoSees,
   clearGuideDraft,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -163,7 +163,7 @@ function ReviewLoad({ userId, date, today, pinned = false }) {
   if (!loaded.data && loaded.error) {
     return (
       <Shell>
-        <ErrorMessage keepsHappening>Your day didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>Your day didn’t load. Check your connection and try again.</LoadError>
       </Shell>
     );
   }

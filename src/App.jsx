@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase';
 import './lib/debugStorage'; // Make debugging utilities available
 import { ConnectionNotice, Crosshair, FloatingOrb, ToastProvider } from './components/design';
 import { startUpdateChecks } from './lib/appUpdate';
+import { startWarming } from './lib/warmDevice';
 import { CoachChatProvider } from './components/coach/CoachChat';
 import ProtectedLayout from './components/ProtectedLayout';
 import Home from './pages/Home';
@@ -166,6 +167,9 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+
+  // The key pages' data kept on the device, once per visit (warmDevice.js).
+  useEffect(() => { startWarming(user?.id ?? null); }, [user?.id]);
 
   // Boot diagnostics
   useEffect(() => {

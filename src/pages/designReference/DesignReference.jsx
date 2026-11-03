@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { FIRST_OPEN_OFFLINE, needsConnection } from '../../lib/friendlyError';
 import {
   DayCounter,
   RecoveryBanner,
@@ -1074,6 +1075,8 @@ function MessagesDemo() {
         <span className="ds-line">That didn’t save.</span>
         <span className="ds-line">Check your connection and try again.</span>
       </ErrorMessage>
+      <ErrorMessage>{needsConnection('Signing in')}</ErrorMessage>
+      <ErrorMessage>{FIRST_OPEN_OFFLINE}</ErrorMessage>
       <div className="dr-row">
         <Button onClick={() => toast.show('Added to this week.')}>Show a toast</Button>
         <Button onClick={() => toast.saved({ message: 'Deleted', onUndo: () => toast.show('Back again.') })}>Show Deleted with Undo</Button>
@@ -1538,6 +1541,7 @@ function Gallery() {
             <p><New /><b>Toasts</b> are black with white text in both modes.</p>
             <p>Deleting shows “Deleted” with Undo; no “Are you sure?”.</p>
             <p><New /><b>Errors</b> say what happened, then what to do, on a soft coral tint.</p>
+            <p><New /><b>Needs a connection</b> (Works on a flight): the few things that can’t work offline say so in one shape, “Signing in needs a connection, so try again when you’re back online.” (needsConnection). A page opened for the first time on this device with no connection says so instead of its load error (LoadError).</p>
           </>
         )} />
 

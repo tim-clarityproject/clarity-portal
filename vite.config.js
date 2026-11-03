@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { defineConfig, build } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 // The design gallery (/design-reference) exists only in local development
 // and on Vercel preview deployments, never on the live site. Vercel sets
@@ -55,6 +55,51 @@ function buildVersion(id) {
   }
 }
 
+// The service worker (Phase 4 step 8: the portal opens with no
+// connection). src/serviceWorker/worker.js is written by hand; at build
+// time it gets one line in front naming this build and every file to keep
+// on the device, and is written to /sw.js. The list is the portal's own
+// build (this pass only, so the outside Health Check's files, built in the
+// second pass, are never in it) and public/ (fonts, brand images, icons).
+// Left out: version.json, maps, the design gallery's own files (preview
+// builds only), and the Chinese font parts a PDF fetches only when it has
+// Chinese text (about 3 MB), which are kept once used instead.
+function publicFiles(dir, base = '') {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory()
+    ? publicFiles(join(dir, e.name), `${base}${e.name}/`)
+    : [`${base}${e.name}`]));
+}
+
+function serviceWorker(buildId) {
+  let config
+  return {
+    name: 'clarity-service-worker',
+    apply: 'build',
+    enforce: 'post',
+    configResolved(resolved) {
+      config = resolved
+    },
+    generateBundle(_options, bundle) {
+      const gallery = new Set()
+      for (const out of Object.values(bundle)) {
+        if (out.type === 'chunk' && /\/designReference\//.test(out.facadeModuleId || '')) {
+          gallery.add(out.fileName)
+          for (const css of out.viteMetadata?.importedCss || []) gallery.add(css)
+        }
+      }
+      const files = [
+        ...Object.keys(bundle),
+        ...(config.publicDir && existsSync(config.publicDir) ? publicFiles(config.publicDir) : []),
+      ].filter((f) => !gallery.has(f) && !/\.map$/.test(f) && f !== 'version.json' && f !== 'sw.js' && !/(^|\/)\.[^/]+$/.test(f))
+      const onDemand = files.filter((f) => /noto-sans-sc-/.test(f))
+      const precache = [...new Set(files.filter((f) => !onDemand.includes(f)))].map((f) => `/${f}`).sort()
+      const head = `self.__CLARITY_BUILD__ = ${JSON.stringify({ id: buildId, precache, onDemand: onDemand.map((f) => `/${f}`) })};\n`
+      const body = readFileSync(new URL('./src/serviceWorker/worker.js', import.meta.url), 'utf8')
+      this.emitFile({ type: 'asset', fileName: 'sw.js', source: head + body })
+    },
+  }
+}
+
 // The outside Strategic Alignment Health Check is its own small page
 // (health-check.html; vercel.json serves it for /health-check/*). It is built
 // in a second, separate pass once the portal's build has finished, into the
@@ -95,7 +140,7 @@ export default defineConfig(({ command }) => {
   const galleryEnabled = command === 'serve' || process.env.VERCEL_ENV === 'preview'
   const buildId = command === 'serve' ? 'dev' : (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()))
   return {
-    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), healthCheckPage(buildId)],
+    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), serviceWorker(buildId), healthCheckPage(buildId)],
     define: { __BUILD_ID__: JSON.stringify(buildId) },
   }
 })

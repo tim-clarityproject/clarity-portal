@@ -51,7 +51,7 @@ export { default as Popover } from './Popover';
 export { default as useIsPhone } from './useIsPhone';
 export { default as FilterButton } from './FilterButton';
 export { default as Collapsible } from './Collapsible';
-export { SavingIndicator, SavedIndicator, WillSyncIndicator, SaveStatus, Loading, SmallWin, ErrorMessage, keepsHappeningLine } from './Status';
+export { SavingIndicator, SavedIndicator, WillSyncIndicator, SaveStatus, Loading, SmallWin, ErrorMessage, LoadError, keepsHappeningLine } from './Status';
 export { ToastProvider } from './Toast';
 export { default as ConnectionNotice, OFFLINE_WORDS } from './ConnectionNotice';
 export { useToast, ERROR_MESSAGE } from './toastContext';

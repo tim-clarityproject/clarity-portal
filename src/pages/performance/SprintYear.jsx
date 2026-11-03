@@ -7,13 +7,13 @@ import {
   Button,
   Collapsible,
   EmptyState,
-  ErrorMessage,
   Loading,
   PageHeader,
   PerformanceSystem,
   RecoveryNotice,
   Section,
   YearChart,
+  LoadError,
 } from '../../components/design';
 import { useYearPage } from '../../lib/performance/hooks';
 import { freezeWeek } from '../../lib/performance/api';
@@ -87,7 +87,7 @@ export default function SprintYear() {
   else if (!data || error) {
     body = (
       <div className="ipp-gap">
-        <ErrorMessage keepsHappening>Your year didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>Your year didn’t load. Check your connection and try again.</LoadError>
       </div>
     );
   } else if (!data.plan) {

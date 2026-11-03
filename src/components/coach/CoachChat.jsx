@@ -6,6 +6,7 @@ import { chatWays, openChat, rememberApp } from '../../lib/contactCoach';
 import { isNetworkError } from '../../lib/connection';
 import { readCache, writeCache } from '../../lib/pageCache';
 import { loadMyCoach } from '../../lib/performance/api';
+import { needsConnection } from '../../lib/friendlyError';
 import { StartChatContext } from './startChat';
 
 // The client's own coach for the whole app (CoachContext), and "Chat to
@@ -21,7 +22,7 @@ import { StartChatContext } from './startChat';
 // Used by the header's Chat button, Home's help, My Account and About.
 const APP_NAMES = { whatsapp: 'WhatsApp', imessage: 'iMessage' };
 const CACHE = 'my-coach';
-export const CHAT_OFFLINE = 'Chat needs a connection, so try again when you’re back online.';
+export const CHAT_OFFLINE = needsConnection('Chat');
 
 function useMyCoach(userId) {
   // The answer is kept with the account it is for, so another account

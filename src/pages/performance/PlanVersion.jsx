@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { EmptyState, ErrorMessage, Loading, ObjectiveNumbers, PageHeader, Section } from '../../components/design';
+import { EmptyState, Loading, ObjectiveNumbers, PageHeader, Section, LoadError } from '../../components/design';
 import { usePlanVersions } from '../../lib/performance/hooks';
 import { VERSION_KIND_LABEL, parseVersion, versionLabel, versionView } from '../../lib/performance';
 import { dayAndTime } from './planDates';
@@ -34,7 +34,7 @@ export default function PlanVersion() {
         {loading ? (
           <Loading label="Loading this version" className="ds-loading--page" />
         ) : error ? (
-          <div className="ipp-gap"><ErrorMessage keepsHappening>This version didn’t load. Check your connection and try again.</ErrorMessage></div>
+          <div className="ipp-gap"><LoadError>This version didn’t load. Check your connection and try again.</LoadError></div>
         ) : !view ? (
           <div className="ipp-gap">
             <EmptyState question="That version isn’t in your plan’s history." action={{ label: 'See version history', onClick: back, variant: 'outline' }} />

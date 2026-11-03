@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { EmptyState, ErrorMessage, List, ListRow, Loading, PageHeader } from '../../components/design';
+import { EmptyState, List, ListRow, Loading, PageHeader, LoadError } from '../../components/design';
 import { usePlanVersions } from '../../lib/performance/hooks';
 import { VERSION_KIND_LABEL, versionLabel } from '../../lib/performance';
 import pageText from '../../content/pageText';
@@ -30,7 +30,7 @@ export default function PlanHistory() {
         {loading ? (
           <Loading label="Loading your version history" className="ds-loading--page" />
         ) : error ? (
-          <div className="ipp-gap"><ErrorMessage keepsHappening>Your version history didn’t load. Check your connection and try again.</ErrorMessage></div>
+          <div className="ipp-gap"><LoadError>Your version history didn’t load. Check your connection and try again.</LoadError></div>
         ) : !data?.plan ? (
           <div className="ipp-gap">
             <EmptyState question="Ready to build your Individual Performance Plan?" action={{ label: 'Build my plan', onClick: () => navigate('/performance-plan/build') }} />

@@ -7,7 +7,6 @@ import {
   AlignmentCheck,
   Button,
   Dropdown,
-  ErrorMessage,
   FieldLabel,
   GuidedSummary,
   GuidedTool,
@@ -27,6 +26,7 @@ import {
   dayLabel,
   nextMondayKey,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { readCache, writeCache } from '../../lib/pageCache';
 import { useDraft, clearDraft } from '../../lib/drafts';
@@ -141,7 +141,7 @@ export default function PlanBuilder({ editing = false }) {
   if (state.error) {
     return (
       <div className="ui-root plan-builder-wait">
-        <ErrorMessage keepsHappening>Your plan didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>Your plan didn’t load. Check your connection and try again.</LoadError>
       </div>
     );
   }

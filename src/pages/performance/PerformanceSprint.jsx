@@ -11,7 +11,6 @@ import {
   Choice,
   Collapsible,
   EmptyState,
-  ErrorMessage,
   IMPACT_OPTIONS,
   Loading,
   MoveTodoPanel,
@@ -28,6 +27,7 @@ import {
   TodoRow,
   WhoSees,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { useSprintPage } from '../../lib/performance/hooks';
 import {
@@ -247,7 +247,7 @@ export default function PerformanceSprint() {
   else if (!data || error) {
     body = (
       <div className="ipp-gap">
-        <ErrorMessage keepsHappening>Your sprint didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>Your sprint didn’t load. Check your connection and try again.</LoadError>
       </div>
     );
   } else if (view.state === 'paused' && view.pause.due) {

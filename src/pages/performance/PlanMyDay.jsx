@@ -7,7 +7,6 @@ import {
   AddTodoPanel,
   Button,
   Choice,
-  ErrorMessage,
   GuidedSummary,
   GuidedTool,
   Loading,
@@ -20,6 +19,7 @@ import {
   WhoSees,
   clearGuideDraft,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -106,7 +106,7 @@ export default function PlanMyDay() {
   if (!loaded.data && loaded.error) {
     return (
       <Shell>
-        <ErrorMessage keepsHappening>Your day didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>Your day didn’t load. Check your connection and try again.</LoadError>
       </Shell>
     );
   }

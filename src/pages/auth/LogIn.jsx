@@ -90,7 +90,7 @@ export default function LogIn() {
       } else if (signInError.status === 400 || signInError.message?.includes('Invalid login credentials')) {
         setError('That email and password didn’t match. Check them and try again.');
       } else {
-        setError(friendlyError(signInError, 'That didn’t sign you in. Check your connection and try again.'));
+        setError(friendlyError(signInError, 'That didn’t sign you in. Check your connection and try again.', 'Signing in'));
       }
       setShakeToken((t) => t + 1);
     } finally {
@@ -111,10 +111,10 @@ export default function LogIn() {
         options: { emailRedirectTo: `${window.location.origin}/auth/mission` },
       });
       setResendNote(resendError
-        ? (friendlyError(resendError, 'That email didn’t send. Check your connection and try again.'))
+        ? (friendlyError(resendError, 'That email didn’t send. Check your connection and try again.', 'Sending the link'))
         : 'Done. If this address needs confirming, a new link is on its way.');
     } catch (err) {
-      setResendNote(friendlyError(err, 'That email didn’t send. Check your connection and try again.'));
+      setResendNote(friendlyError(err, 'That email didn’t send. Check your connection and try again.', 'Sending the link'));
     } finally {
       setIsResending(false);
     }

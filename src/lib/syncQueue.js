@@ -318,6 +318,11 @@ export async function whenSent() {
   }
 }
 
+/** True while the waiting saves are being sent (a reload would cut that short). */
+export function sendingNow() {
+  return Boolean(flushPromise);
+}
+
 /** Saves still waiting on the device to be sent (not the refused ones). */
 export function waitingToSend(userId = currentUser) {
   return read(userId).some((x) => !x.failed);
@@ -414,13 +419,20 @@ export function flush(userId = currentUser) {
       const item = read(userId).find((x) => !x.failed);
       if (!item) break;
       // A session that expired while offline is refreshed first; until it
-      // is, nothing is sent (it would be refused as anonymous).
+      // is, nothing is sent (it would be refused as anonymous). A refresh
+      // that can't get through never signs anyone out and never drops the
+      // queue (AuthContext.jsx): it is tried again a little later.
       try {
         const { data } = await supabase.auth.getSession();
-        if (!data?.session) break;
+        if (!data?.session) {
+          sessionLater(userId);
+          break;
+        }
       } catch {
+        sessionLater(userId);
         break;
       }
+      sessionTries = 0;
       try {
         const data = await perform(item);
         if (mine !== epoch) break;
@@ -448,6 +460,24 @@ export function flush(userId = currentUser) {
   return flushPromise;
 }
 
+// After a long flight the first refresh may still be refused for want of
+// a connection, and the sign-in library then waits a minute before it
+// tries the same refresh again. So the queue tries again on its own, a
+// little later each time (10, 20, 40, then every 60 seconds), while there
+// is a connection and something to send. A refreshed sign-in sends at
+// once anyway (retrySyncQueue).
+let sessionTimer = null;
+let sessionTries = 0;
+function sessionLater(userId) {
+  if (sessionTimer || typeof window === 'undefined') return;
+  const wait = Math.min(10000 * 2 ** sessionTries, 60000);
+  sessionTries += 1;
+  sessionTimer = window.setTimeout(() => {
+    sessionTimer = null;
+    if (userId === currentUser && isOnline() && waitingToSend(userId)) flush(userId);
+  }, wait);
+}
+
 /** Who is signed in: their waiting saves are sent on every reconnect. */
 export function startSyncQueue(userId) {
   currentUser = userId;
@@ -466,6 +496,9 @@ export function startSyncQueue(userId) {
 export function stopSyncQueue() {
   epoch += 1;
   currentUser = null;
+  if (sessionTimer) window.clearTimeout(sessionTimer);
+  sessionTimer = null;
+  sessionTries = 0;
 }
 
 /**

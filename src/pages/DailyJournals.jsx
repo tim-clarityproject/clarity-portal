@@ -5,6 +5,8 @@ import { getLocalDateKey, formatSavedDate } from '../lib/dateFormatter';
 import { sortTime } from '../lib/savedItems';
 import { loadAllJournals, deleteJournal, wordCount } from '../lib/dailyJournal';
 import { useCachedLoad } from '../lib/pageCache';
+import { useOnline } from '../lib/connection';
+import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
 import DeleteDialog from '../components/ui/DeleteDialog';
@@ -25,11 +27,12 @@ export default function DailyJournals() {
   // Instant page (Tim, 26 Oct): the journals shown last time appear at
   // once from the device, then refresh quietly in the background.
   const loaded = useCachedLoad({ userId: user?.id, name: 'daily-journals', load: () => loadAllJournals(user.id) });
+  const online = useOnline();
   const journals = loaded.data || [];
   const setJournals = loaded.setData;
   const isLoading = loaded.loading;
   const error = loaded.error
-    ? { message: 'Your journals didn’t load. Check your connection and try again.', onRetry: loaded.reload }
+    ? { message: online ? 'Your journals didn’t load. Check your connection and try again.' : FIRST_OPEN_OFFLINE, onRetry: loaded.reload }
     : null;
 
   useEffect(() => {

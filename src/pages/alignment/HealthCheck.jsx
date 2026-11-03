@@ -13,6 +13,7 @@ import { requestAlignmentEmail } from '../../lib/alignmentEmail';
 import { healthCheckPdf } from '../../lib/pdf/docs/healthCheck';
 import { openSession, createSaveQueue, readBackup, clearBackup } from '../../lib/alignmentApi';
 import { strategicImportance, roundPct } from '../../lib/alignmentScore';
+import { isOffline, needsConnection } from '../../lib/friendlyError';
 import {
   CONTRIB, PROGRESS, RESOURCE, MAX_FACTORS, MAX_PROJECTS, MAX_OBJECTIVE, MAX_ITEM, RATING_SCREENS,
   blankRow, cleanItems, emptyDraft, draftFromData, dataFromDraft, stepToJson, stepFromJson, clampStep,
@@ -463,7 +464,7 @@ export default function HealthCheck() {
       setPdf({ busy: false, message: '' });
     } catch (error) {
       console.error('[HealthCheck] the PDF was not made:', error);
-      setPdf({ busy: false, message: PDF_ERROR });
+      setPdf({ busy: false, message: isOffline(error) ? needsConnection('This PDF') : PDF_ERROR });
     } finally {
       pdfBusyRef.current = false;
     }

@@ -7,7 +7,7 @@ import { archivePlan, countArchivedMissions, formatVersion, loadLatestVersion } 
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { DisclosureArrow, ErrorMessage, Loading, PageHeader, Button, EmptyState, useToast } from '../components/design';
+import { DisclosureArrow, Loading, PageHeader, Button, EmptyState, useToast, LoadError } from '../components/design';
 import { useCachedLoad } from '../lib/pageCache';
 
 function CheckIcon() {
@@ -174,7 +174,7 @@ export default function PersonalOperatingPlan() {
         <DesignHeader />
         <div className="plan-page">
           <PageHeader title="Personal operating plan" info={pageText.personalOperatingPlan} />
-          <ErrorMessage keepsHappening>Your plan didn’t load. Check your connection and try again.</ErrorMessage>
+          <LoadError>Your plan didn’t load. Check your connection and try again.</LoadError>
           <div className="pop-links-row">
             <Button type="button" variant="outline" onClick={loaded.reload}>Try again</Button>
           </div>

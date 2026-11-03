@@ -21,6 +21,7 @@ import {
   WhoSees,
   clearGuideDraft,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { readCache, writeCache } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -119,7 +120,7 @@ export default function SprintReview() {
   if (state.error) {
     return (
       <Shell>
-        <ErrorMessage keepsHappening>Your sprint didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>Your sprint didn’t load. Check your connection and try again.</LoadError>
       </Shell>
     );
   }

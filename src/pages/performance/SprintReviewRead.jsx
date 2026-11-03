@@ -8,7 +8,7 @@ import { tableReady } from '../../lib/performance/tableReady';
 import { ANSWERS_ON_DEVICE } from '../../lib/performance/sprintReviewAnswers';
 import DesignHeader from '../../components/DesignHeader';
 import { BackLink } from '../../components/ui/DiscardLink';
-import { EmptyState, ErrorMessage, Loading, PageHeader } from '../../components/design';
+import { EmptyState, Loading, PageHeader, LoadError } from '../../components/design';
 import './performance.css';
 
 // A finished end-of-sprint review, read only (Phase 4 step 4; not mocked):
@@ -54,7 +54,7 @@ export default function SprintReviewRead() {
   let body;
   if (!loaded.data && loaded.loading) body = <Loading label="Loading your review" className="ds-loading--page" />;
   else if (!loaded.data) {
-    body = <div className="ipp-gap"><ErrorMessage keepsHappening>Your review didn’t load. Check your connection and try again.</ErrorMessage></div>;
+    body = <div className="ipp-gap"><LoadError>Your review didn’t load. Check your connection and try again.</LoadError></div>;
   } else if (!sprint || !answers) {
     body = (
       <div className="ipp-gap">

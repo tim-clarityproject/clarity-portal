@@ -9,7 +9,6 @@ import {
   Button,
   Choice,
   Collapsible,
-  ErrorMessage,
   ExpandList,
   GuidedTool,
   Loading,
@@ -27,6 +26,7 @@ import {
   WhoSees,
   clearGuideDraft,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -145,7 +145,7 @@ export default function WeeklyDebrief() {
   if (!loaded.data && loaded.error) {
     return (
       <Shell>
-        <ErrorMessage keepsHappening>Your debrief didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>Your debrief didn’t load. Check your connection and try again.</LoadError>
       </Shell>
     );
   }

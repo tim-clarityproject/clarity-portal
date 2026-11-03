@@ -7,7 +7,6 @@ import {
   AlignmentCheck,
   Button,
   EmptyState,
-  ErrorMessage,
   Loading,
   ObjectiveCard,
   ObjectiveGrid,
@@ -23,6 +22,7 @@ import {
   WhoSees,
   useIsPhone,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { usePlanPage } from '../../lib/performance/hooks';
 import { saveMilestoneReached, saveSharing } from '../../lib/performance/api';
@@ -146,7 +146,7 @@ export default function PerformancePlan() {
           <Loading label="Loading your plan" className="ds-loading--page" />
         ) : error ? (
           <div className="ipp-gap">
-            <ErrorMessage keepsHappening>Your plan didn’t load. Check your connection and try again.</ErrorMessage>
+            <LoadError>Your plan didn’t load. Check your connection and try again.</LoadError>
           </div>
         ) : !view ? (
           <div className="ipp-gap">

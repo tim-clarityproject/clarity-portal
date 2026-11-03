@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Button } from './Button';
 import PdfChoice from './PdfChoice';
 import { savePdf, PDF_ERROR } from './pdfSave';
+import { isOffline, needsConnection } from '../../lib/friendlyError';
 
 // The one "Download PDF" button (PDF rule 2). It opens the Light / Dark choice,
 // then makes the PDF on the shared template and saves it. The PDF code loads
@@ -33,7 +34,9 @@ export default function PdfDownload({ getDocument, variant = 'outline', placemen
       await savePdf(getDocument, look);
     } catch (error) {
       console.error('[PdfDownload] the PDF was not made:', error);
-      setMessage(PDF_ERROR);
+      // Offline, a PDF still works from the files on the device; only one
+      // needing a font part not kept yet (Chinese text) can't be made.
+      setMessage(isOffline(error) ? needsConnection('This PDF') : PDF_ERROR);
     } finally {
       busyRef.current = false;
       setBusy(false);

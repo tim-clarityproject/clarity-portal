@@ -8,6 +8,8 @@ import { deleteJournal } from '../lib/dailyJournal';
 import { discardReviewDraft, discardPlanReviewDraft, discardMissionReviewDraft } from '../lib/discardDraft';
 import { deleteCheckin } from '../lib/wheelOfLifeApi';
 import { useCachedLoad } from '../lib/pageCache';
+import { useOnline } from '../lib/connection';
+import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
 import { listFilters, reviewRows } from '../lib/savedItems';
 import { loadSavedReviews, SAVED_REVIEWS_CACHE } from '../lib/savedItemsApi';
 import DesignHeader from '../components/DesignHeader';
@@ -37,13 +39,14 @@ export default function MyReviews() {
   // Instant page (Tim, 26 Oct): the reviews shown last time appear at
   // once from the device, then refresh quietly in the background.
   const loaded = useCachedLoad({ userId: user?.id, name: SAVED_REVIEWS_CACHE, load: () => loadSavedReviews(user.id) });
+  const online = useOnline();
   const today = getLocalDateKey();
   const rows = useMemo(() => reviewRows(loaded.data, today), [loaded.data, today]);
   const { filters, subFilters, subLabels } = useMemo(() => listFilters(rows), [rows]);
   const query = new URLSearchParams(location.search);
   const isLoading = loaded.loading;
   const error = loaded.error && !loaded.data
-    ? { message: 'Your reviews didn’t load. Check your connection and try again.', onRetry: loaded.reload }
+    ? { message: online ? 'Your reviews didn’t load. Check your connection and try again.' : FIRST_OPEN_OFFLINE, onRetry: loaded.reload }
     : null;
 
   useEffect(() => {

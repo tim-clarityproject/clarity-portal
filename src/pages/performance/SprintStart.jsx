@@ -24,6 +24,7 @@ import {
   dayLabel,
   nextMondayKey,
   useToast,
+  LoadError,
 } from '../../components/design';
 import { readCache, writeCache } from '../../lib/pageCache';
 import { clearDraft, readDraft, useDraft } from '../../lib/drafts';
@@ -128,7 +129,7 @@ export default function SprintStart() {
   if (state.error) {
     return (
       <Shell>
-        <ErrorMessage keepsHappening>Your plan didn’t load. Check your connection and try again.</ErrorMessage>
+        <LoadError>Your plan didn’t load. Check your connection and try again.</LoadError>
       </Shell>
     );
   }
