@@ -508,11 +508,16 @@ try {
 
   await page.goto(`${APP}/performance-plan`);
   await page.waitForSelector('.plan-page, main', { timeout: 30000 });
-  const planText = await until(async () => {
+  // The device copy shows first (warmed since Phase 4 step 8), then the page
+  // refreshes quietly: wait for the refreshed figure, keeping the last text.
+  let planText = '';
+  const nearOf = (t) => (t ? t.slice(t.indexOf('Coaching clients'), t.indexOf('Coaching clients') + 160) : '');
+  await until(async () => {
     const t = await page.locator('.ui-root').first().innerText();
-    return t.includes('Coaching clients') ? t : null;
+    if (t.includes('Coaching clients')) planText = t;
+    return /\b33 ?of 40\b/.test(nearOf(planText)) ? t : null;
   }, 20000);
-  const near = planText ? planText.slice(planText.indexOf('Coaching clients'), planText.indexOf('Coaching clients') + 160) : '';
+  const near = nearOf(planText);
   pass('plan page: Coaching clients shows the debrief\'s 33', /\b33 ?of 40\b/.test(near), near.replace(/\n/g, ' | '));
   await shot('next-monday-plan');
 

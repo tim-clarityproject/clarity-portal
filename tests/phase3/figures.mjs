@@ -165,6 +165,14 @@ async function toLastStep() {
     await nextOnce();
   }
 }
+// Review my day's summary is no longer its last step (Phase 4 step 6 adds
+// "Ready to close the day?" after it), so step to the summary by its heading.
+async function toSummaryStep() {
+  for (let n = 0; n < 12; n += 1) {
+    if ((await heading()).startsWith('Here’s your day')) return;
+    await nextOnce();
+  }
+}
 // The colour tokens, resolved on the page, and a stat's figure with its colour.
 const stat = (label) => page.locator('.ds-stat', { hasText: label }).first().evaluate((el) => {
   const v = el.querySelector('.ds-stat-value');
@@ -275,7 +283,7 @@ async function soFarEverywhere(tag, hand, handShown, good) {
   pass(`${tag}: Plan my day's summary says ${handShown}%, ${good ? 'mint' : 'not mint'}, labelled so far`, statOk(p, handShown, good), JSON.stringify(p));
   await page.goto(`${APP}/my-day/review`);
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
-  await toLastStep();
+  await toSummaryStep();
   const r = await stat('Performance score this week so far');
   pass(`${tag}: Review my day's summary says ${handShown}%, ${good ? 'mint' : 'not mint'}, labelled so far`, statOk(r, handShown, good), JSON.stringify(r));
   await page.goto(`${APP}/performance-sprint`);
