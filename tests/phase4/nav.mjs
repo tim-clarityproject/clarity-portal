@@ -344,7 +344,7 @@ if (part(4)) {
     }
     await shot(page, 'pins-panel-full-light');
     pass('pins: three saved to the account, in the order chosen', await until(async () => samePins(await savedPins(), ['grow', 'journal', 'meet'])), JSON.stringify(await savedPins()));
-    pass('pins: once 3 are pinned it says so', (await panel.innerText()).includes('You’ve pinned 3. Unpin one to pin another.'));
+    pass('pins: once 3 are pinned it says so', /You’ve pinned 3\.\s+Unpin one to pin another\./.test(await panel.innerText()));
     pass('pins: the rest are greyed out', await box('Breathe').isDisabled());
     await box('Breathe').click({ force: true });
     await sleep(600);

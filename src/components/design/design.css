@@ -7319,6 +7319,8 @@
   color: var(--text-2);
 }
 
+.ui-root .ds-pin-note p { margin: 0; }
+
 .ui-root .ds-pin-group {
   margin-top: var(--space-px22);
 }
@@ -8010,6 +8012,8 @@
 .ui-root .ds-guide-i.ds-guide-i--end {
   display: inline-flex;
   vertical-align: middle;
+  position: relative;
+  top: var(--text-info-lift);
   margin: calc((var(--tap-min) - var(--info-size)) / -2) calc((var(--tap-min) - var(--info-size)) / -2) calc((var(--tap-min) - var(--info-size)) / -2) calc(var(--info-gap) - (var(--tap-min) - var(--info-size)) / 2);
 }
 

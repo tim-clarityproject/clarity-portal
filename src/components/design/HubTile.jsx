@@ -121,9 +121,12 @@ export function PinPanel({ open, onClose, groups = [], pinned = [], onToggle, ma
   return (
     <SlidePanel open={open} onClose={onClose} title="Pin tools">
       <p className="ds-pin-question">Which tools do you want at the top of your menu?</p>
-      <p className="ds-pin-note" aria-live="polite">
-        {full ? `You’ve pinned ${max}. Unpin one to pin another.` : `Pick up to ${max}.`}
-      </p>
+      {/* One sentence per line (writing rule 49). */}
+      <div className="ds-pin-note" aria-live="polite">
+        {full
+          ? <><p>{`You’ve pinned ${max}.`}</p><p>Unpin one to pin another.</p></>
+          : <p>{`Pick up to ${max}.`}</p>}
+      </div>
       {groups.map((g) => (
         <section key={g.title} className="ds-pin-group">
           <h3 className="ds-pin-group-title">{g.title}</h3>

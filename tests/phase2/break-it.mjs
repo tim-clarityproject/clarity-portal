@@ -145,6 +145,20 @@ const next = async (page) => {
   await page.locator('.ds-guide-next').click();
   await page.waitForTimeout(650);
 };
+// Next once, waiting for the step to change (pressed again, at most 5
+// times, when the tool's 400ms guard swallowed the press).
+const advance = async (page) => {
+  const before = `${await heading(page)}|${await page.locator('.ds-guide-pct').first().getAttribute('aria-valuenow').catch(() => '')}`;
+  for (let k = 0; k < 5; k += 1) {
+    await page.locator('.ds-guide-next').click();
+    const moved = await until(async () => `${await heading(page)}|${await page.locator('.ds-guide-pct').first().getAttribute('aria-valuenow').catch(() => '')}` !== before, 2000);
+    if (moved) return true;
+  }
+  return false;
+};
+// GuidedTool ignores presses in the 400ms after a step arrives (the second
+// half of a double tap); a triple tap meant to land waits that out.
+const afterGuard = (page) => page.waitForTimeout(450);
 const noSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 const noErrors = (page, what) => {
   pass(`${what}: no page errors`, page.errors.length === 0, page.errors.join(' | '));
@@ -284,42 +298,51 @@ if (run('taps')) {
     await clearDrafts(s.page);
     await s.page.goto(`${APP}/performance-sprint/review`);
     await s.page.waitForSelector('.ds-guide', { timeout: 30000 });
-    for (let i = 0; i < 12; i += 1) {
-      const primary = s.page.locator('.ds-guide .ds-btn--primary').last();
-      const label = ((await primary.textContent().catch(() => '')) || '').trim();
-      if (/Start Performance Sprint|Finish|Recovery|Start my/.test(label)) break;
-      if (await s.page.getByRole('radio', { name: /Straight into Performance Sprint/ }).count()) {
-        await s.page.getByRole('radio', { name: /Straight into Performance Sprint/ }).click();
-        await primary.click({ clickCount: 3 });
-        await s.page.waitForTimeout(1200);
-        break;
-      }
-      await primary.click();
-      await s.page.waitForTimeout(700);
+    // Next, step by step, until "What's next?". Each press waits for the
+    // step to change; a press the tool's 400ms guard swallowed (just after
+    // it appeared, or just after a move) is pressed again.
+    for (let i = 0; i < 12 && !(await s.page.getByRole('radio', { name: /Straight into Performance Sprint/ }).count()); i += 1) {
+      if (!(await advance(s.page))) break;
     }
-    await s.page.waitForURL(/\/performance-sprint\/start/, { timeout: 20000 }).catch(() => null);
+    await s.page.getByRole('radio', { name: /Straight into Performance Sprint/ }).click();
+    await until(async () => (await s.page.getByRole('radio', { name: /Straight into Performance Sprint/ }).getAttribute('aria-checked')) === 'true', 5000);
+    await afterGuard(s.page);
+    await s.page.locator('.ds-guide .ds-btn--primary').last().click({ clickCount: 3 });
+    await until(async () => /\/performance-sprint\/start/.test(s.page.url()), 30000);
     const sprints = await q(db.from('sprints').select('number, status').eq('user_id', me).order('number'));
     pass('taps: a triple tap at the end of the review finishes the sprint once', sprints.filter((x) => x.status === 'finished').length === 2 && sprints.length === 2, JSON.stringify(sprints));
     const reviews = await q(db.from('sprint_reviews').select('id').eq('user_id', me)).catch(() => null);
     if (reviews) pass('taps: one review saved', reviews.length === 1, `${reviews.length}`);
     // Start a sprint: Start Performance Sprint 3, three taps.
     if (/\/start/.test(s.page.url())) {
-      for (let i = 0; i < 8 && !/Performance Sprint 3/.test(await heading(s.page)); i += 1) {
-        if (await s.page.getByRole('radio', { name: /^Tomorrow|^Today/ }).count()) await s.page.getByRole('radio', { name: /^Tomorrow|^Today/ }).first().click();
-        await next(s.page);
+      await s.page.waitForSelector('.ds-guide', { timeout: 30000 });
+      for (let i = 0; i < 10 && !/Performance Sprint 3/.test(await heading(s.page)); i += 1) {
+        const today = s.page.getByRole('radio', { name: /^Tomorrow|^Today/ });
+        if (await today.count()) await today.first().click();
+        if (!(await advance(s.page))) break;
       }
-      await s.page.getByRole('button', { name: 'Start Performance Sprint 3' }).click({ clickCount: 3 });
-      await s.page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
-      await s.page.waitForTimeout(1500);
-      const all = await q(db.from('sprints').select('id, number, status').eq('user_id', me).order('number'));
+      const start = s.page.getByRole('button', { name: 'Start Performance Sprint 3' });
+      await start.waitFor({ timeout: 10000 });
+      await afterGuard(s.page);
+      await start.click({ clickCount: 3 });
+      await until(async () => /\/performance-sprint$/.test(new URL(s.page.url()).pathname), 30000);
+      // Settled: the sprints read the same twice in a row.
+      let all = [];
+      await until(async () => {
+        const a = await q(db.from('sprints').select('id, number, status').eq('user_id', me).order('number'));
+        const same = JSON.stringify(a) === JSON.stringify(all) && a.some((x) => x.number === 3);
+        all = a;
+        return same;
+      }, 15000);
       const s3 = all.filter((x) => x.number === 3);
       const sh = s3[0] ? await q(db.from('sprint_habits').select('id, name').eq('sprint_id', s3[0].id)) : [];
-      pass('taps: a triple tap on Start makes one Sprint 3', s3.length === 1 && all.length === 3, JSON.stringify(all.map((x) => x.number)));
+      pass('taps: a triple tap on Start makes one Sprint 3', s3.length === 1 && all.length === 3, `${JSON.stringify(all.map((x) => x.number))} on ${new URL(s.page.url()).pathname}`);
       pass('taps: its habits copied once', sh.length === new Set(sh.map((h) => h.name)).size && sh.length > 0, `${sh.length}`);
     }
     noErrors(s.page, 'taps on the review and start');
   } catch (e) {
-    pass('taps on the review ran to the end', false, e.message.split('\n')[0]);
+    await shot(s.page, 'taps-review-stopped');
+    pass('taps on the review ran to the end', false, `${e.message.split('\n')[0]} (on ${new URL(s.page.url()).pathname}, "${await heading(s.page).catch(() => '')}")`);
   }
   await s.context.close();
 

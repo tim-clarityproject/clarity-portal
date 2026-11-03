@@ -1855,7 +1855,7 @@ function Gallery() {
 
         <GallerySection id="c58" title="Home: help behind one button" demo={HelpListDemo} rules={(
           <>
-            <p><New /><b>“I need help with something”</b> (M2) slides in from the side with situations in plain words, each naming its tool.</p>
+            <p><New /><b>“Get help with something”</b> (M2’s “I need help with something”: never “I” on a button, writing rule 13) slides in from the side with situations in plain words, each naming its tool.</p>
             <p>It ends with “Something else?” and Chat to the coach’s first name. Someone without a coach doesn’t get that line.</p>
           </>
         )} />

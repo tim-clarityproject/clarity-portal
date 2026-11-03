@@ -15,11 +15,13 @@ import {
   Loading,
   MiniDial,
   PageHeader,
+  PerformanceSystem,
   PlanSteps,
   QuietLines,
   SaveStatus,
   Section,
   SuggestionCard,
+  SystemLink,
   TodoList,
   TodoRow,
   WeekLine,
@@ -156,6 +158,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const d = sprint.data || {};
   const actions = useSprintActions({ userId, data: d, setData: sprint.setData, view, today });
   const [helpOpen, setHelpOpen] = useState(false);
+  const [systemOpen, setSystemOpen] = useState(false);
   const [panel, setPanel] = useState(null); // 'todo'
   const [todoForm, setTodoForm] = useState(() => emptyTodo(null));
   const [notTonight, addNotTonight] = useDeviceList(userId, 'wind-down-not-tonight');
@@ -324,11 +327,11 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
         <Section title="Your plan" className="ipp-section home-section" aside={<WhoSees audience="me" />}>
           {coach && <p className="home-line">You’ll build your plan with your coach in your first session.</p>}
           <PlanSteps steps={steps} />
-          {coach && (
-            <div className="home-links">
-              <Button variant="text" onClick={() => go('/performance-plan/build')}>Start on my own</Button>
-            </div>
-          )}
+          {/* M2: Start on my own (coaching clients), then How the system fits together. */}
+          <div className="home-links">
+            {coach && <Button variant="text" onClick={() => go('/performance-plan/build')}>Start on my own</Button>}
+            <SystemLink onClick={() => setSystemOpen(true)} />
+          </div>
         </Section>
       )}
 
@@ -438,7 +441,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
       )}
 
       <div className="home-help">
-        <Button onClick={() => setHelpOpen(true)}>I need help with something</Button>
+        <Button onClick={() => setHelpOpen(true)}>Get help with something</Button>
       </div>
       <HelpList
         open={helpOpen}
@@ -447,6 +450,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
         coach={startChat ? coach : null}
         onChat={() => { setHelpOpen(false); startChat?.(); }}
       />
+      {person === 'new' && <PerformanceSystem open={systemOpen} onClose={() => setSystemOpen(false)} />}
 
       {running && (
         <AddTodoPanel

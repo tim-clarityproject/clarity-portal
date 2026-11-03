@@ -72,7 +72,7 @@ export default function HubPage({ hub: hubKey }) {
   const onPin = async (key, on) => {
     try {
       const result = await toggle(key, on);
-      if (result === 'full') toast.show(`You’ve pinned ${MAX_PINS}. Unpin one to pin another.`);
+      if (result === 'full') toast.show(`You’ve pinned ${MAX_PINS}, so unpin one to pin another.`);
       else toast.show(result === 'queued' ? 'Will sync' : 'Saved');
     } catch {
       refresh({ force: true });

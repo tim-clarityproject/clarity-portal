@@ -116,7 +116,7 @@ export function HelpListDemo() {
   ].map(([situation, tool]) => ({ situation, tool, onClick: () => { setOpen(false); say(`Opens ${tool}.`); } }));
   return (
     <div>
-      <Button onClick={() => setOpen(true)}>I need help with something</Button>
+      <Button onClick={() => setOpen(true)}>Get help with something</Button>
       <HelpList open={open} onClose={() => setOpen(false)} items={items} coach="Tim" onChat={() => { setOpen(false); say('Opens a chat with Tim.'); }} />
     </div>
   );
