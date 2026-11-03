@@ -268,7 +268,8 @@ if (part(3)) {
     pass('debrief day mornings stay Plan my day', (await cardQuestion(c.page)) === 'Ready to plan your day?', await cardQuestion(c.page));
     await shot(c.page, 'state-debrief');
 
-    pass('mid-sprint: the mini dial says the week', (await text(c.page, '.ds-mdial')).includes('Week 4 of 8'), await text(c.page, '.ds-mdial'));
+    // The line is a quiet link into the sprint (Tim, 3 Nov): "Sprint 1, week 4 of 8".
+    pass('mid-sprint: the mini dial says the week', /Sprint \d+, week 4 of 8/.test(await text(c.page, '.ds-mdial')), await text(c.page, '.ds-mdial'));
     pass('mid-sprint: the week line', (await text(c.page, '.ds-weekline')).startsWith('Performance score this week'));
     const good = await c.page.locator('.ds-weekline-figure--good').count();
     const fig = await c.page.locator('.ds-weekline-figure').evaluate((el) => getComputedStyle(el).color).catch(() => '');
@@ -546,7 +547,7 @@ if (part(3)) {
     pass('last week: "Ready for what comes next?"', (await cardQuestion(lw.page)) === 'Ready for what comes next?', await cardQuestion(lw.page));
     pass('last week: Go straight into the next sprint, or take a Recovery week first.', (await text(lw.page, '.ds-suggest')).includes('Go straight into the next sprint, or take a Recovery week first.'));
     pass('last week: Plan what’s next', /plan what’s next/i.test(await text(lw.page, '.ds-suggest .ds-btn--primary')));
-    pass('last week: the mini dial says week 8 of 8', (await text(lw.page, '.ds-mdial')).includes('Week 8 of 8'));
+    pass('last week: the mini dial says week 8 of 8', /Sprint \d+, week 8 of 8/.test(await text(lw.page, '.ds-mdial')), await text(lw.page, '.ds-mdial'));
     await shot(lw.page, 'state-last-week');
   } finally {
     await lw.context.close();

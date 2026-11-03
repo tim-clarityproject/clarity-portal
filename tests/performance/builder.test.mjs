@@ -12,6 +12,7 @@ import {
   habitComplete,
   habitRow,
   habitTargetHint,
+  keepUnfinished,
   objectiveComplete,
   objectiveRow,
   objectiveSummary,
@@ -196,4 +197,35 @@ test('Ready’s words', () => {
   assert.equal(objectiveSummary({ kind: 'milestone', date: '2027-03-31' }), 'Milestone, by 31 Mar 2027');
   const long = draftMission({ known: 'calm leadership through every merger, restructure and difficult board meeting', serve: 'my executive team and the wider business', great: 'we are trusted' });
   assert.ok(long.length <= 120 && long.endsWith('.'));
+});
+
+test('a part still being typed is never removed (Tim, 3 Nov): only one taken out of the draft is', () => {
+  const d = blankDraft();
+  d.objectives = [{ ...emptyObjective('o1'), name: 'Clients', start: '1', target: '2', date: '2027-01-01', saved: true }];
+  d.strategies = [{ id: 's1', name: 'Referrals', description: null, objectiveIds: ['o1'] }];
+  d.habits = [{ ...emptyHabit('h1', 's1'), name: 'Messages', target: '5' }];
+  const saved = savableRows(d, TODAY);
+  const inVersion = new Set(['o1', 's1', 'h1']);
+  const opts = { planExists: true, inVersion };
+  // The objective's name cleared to retype it, the habit's target emptied,
+  // and the Strategy's name cleared: nothing is archived, deleted or unlinked.
+  const typing = {
+    ...d,
+    objectives: [{ ...d.objectives[0], name: '' }],
+    strategies: [{ ...d.strategies[0], name: ' ' }],
+    habits: [{ ...d.habits[0], target: '' }],
+  };
+  assert.deepEqual(planSaves(saved, keepUnfinished(savableRows(typing, TODAY), saved, typing), opts), []);
+  // Without keepUnfinished, the same draft would archive all three.
+  assert.ok(planSaves(saved, savableRows(typing, TODAY), opts).some((o) => o.kind === 'archive'));
+  // Retyped: the change saves as an ordinary update.
+  const retyped = { ...d, objectives: [{ ...d.objectives[0], name: 'Coaching clients' }] };
+  assert.deepEqual(planSaves(saved, keepUnfinished(savableRows(retyped, TODAY), saved, retyped), opts).map((o) => o.kind), ['objective']);
+  // Taken out of the draft: removed as before.
+  const removed = { ...d, habits: [] };
+  assert.deepEqual(planSaves(saved, keepUnfinished(savableRows(removed, TODAY), saved, removed), opts).map((o) => [o.kind, o.id]), [['archive', 'h1']]);
+  // A Strategy being renamed keeps its complete habits and its link.
+  const renaming = { ...d, strategies: [{ ...d.strategies[0], name: '' }] };
+  const kept = keepUnfinished(savableRows(renaming, TODAY), saved, renaming);
+  assert.deepEqual([kept.habits.map((h) => h.id), kept.links], [['h1'], [{ strategyId: 's1', objectiveId: 'o1' }]]);
 });

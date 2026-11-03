@@ -240,7 +240,7 @@ if (part(1)) {
     pass('review: Close the day asks "Ready to close the day?"', (await heading(page)) === 'Ready to close the day?', await heading(page));
     pass('review: "Check what moves to tomorrow." with its ⓘ at the end', (await page.locator('.ds-guide-nudge').innerText()).trim() === 'Check what moves to tomorrow.' && (await page.locator('.ds-guide-nudge .ds-guide-i--end').count()) === 1);
     await page.locator('.ds-guide-nudge .ds-guide-i--end').click();
-    pass('review: the ⓘ says why', (await page.locator('.ds-guide-info').innerText()).includes('Anything still open moves to tomorrow, so you can stop thinking about it.'));
+    pass('review: the ⓘ says why', (await page.locator('.ds-infopop:visible').innerText()).includes('Anything still open moves to tomorrow, so you can stop thinking about it.'));
     await page.keyboard.press('Escape');
     const lists = await seen(page, '.ds-guide-body');
     pass('review: Moving to tomorrow lists the open to-do', openTodo ? lists.includes('Moving to tomorrow') && lists.includes(openTodo.text) : true, lists);
@@ -282,7 +282,7 @@ if (part(2)) {
     pass('wind-down: the % bar starts at 0%', (await page.locator('.ds-guide-pct-text').innerText()).trim() === '0%');
     pass('wind-down: the eye says Only you', (await page.locator('.ds-guide-body .ds-who').innerText()).includes('Only you'));
     await page.getByRole('button', { name: 'Why write it down' }).click();
-    pass('wind-down: Why write it down opens its reason', (await page.locator('.ds-info-words-panel').innerText()).includes('fell asleep faster'));
+    pass('wind-down: Why write it down opens its reason', (await page.locator('.ds-infopop:visible').innerText()).includes('fell asleep faster'));
     await page.keyboard.press('Escape');
     pass('wind-down: Skip and Next', (await page.locator('.ds-guide-skip').count()) === 1 && (await page.locator('.ds-guide-next').innerText()).trim().toLowerCase() === 'next');
     pass('wind-down: thoughts typed save on the device (Saved)', Boolean(await typeThoughts(page, THOUGHTS)));
@@ -383,7 +383,8 @@ if (part(2)) {
       const by = (t) => made.find((m) => m.text === t);
       pass('morning: a merged thing became a to-do from Review my day', by(CARRIED[0][0])?.source === 'review_my_day' && by(CARRIED[0][0])?.source_id === reviewId, JSON.stringify(made));
       pass('morning: a review thing became a to-do from Review my day', by(CARRIED[2][0])?.source === 'review_my_day', JSON.stringify(made));
-      pass('morning: a wind-down thought became a to-do from another tool', by(CARRIED[3][0])?.source === 'other_tool' && by(CARRIED[3][0])?.source_id === null, JSON.stringify(made));
+      // sleep_wind_down once 039 has run (it has on the test project since 3 Nov), other_tool before.
+      pass('morning: a wind-down thought became a to-do from Sleep wind down', ['sleep_wind_down', 'other_tool'].includes(by(CARRIED[3][0])?.source) && by(CARRIED[3][0])?.source_id === null, JSON.stringify(made));
       pass('morning: each made once', made.length === 3, String(made.length));
       const after = await groupRows(page, 0);
       pass('morning: chosen things stay carried over, with their source', JSON.stringify(after.map((r) => r.line)) === JSON.stringify(CARRIED.map((c) => c[1])), after.map((r) => `${r.name}: ${r.line}`).join(' | '));
@@ -401,12 +402,15 @@ if (part(2)) {
   } finally {
     await context.close();
   }
-  await db.from('todos').delete().eq('user_id', me).eq('created_on', THU).in('source', ['review_my_day', 'other_tool']);
+  await db.from('todos').delete().eq('user_id', me).eq('created_on', THU).in('source', ['review_my_day', 'other_tool', 'sleep_wind_down']);
   await db.from('day_plans').delete().eq('user_id', me).eq('local_date', THU);
 }
 
 // ---------------------------------------------------------------- 4. After midnight
 if (part(4)) {
+  // A fresh night: since 039, the night finished in part 2 is on the
+  // database too and a new device brings it back (as it should).
+  await db.from('wind_down_nights').delete().eq('user_id', me).eq('night', WED);
   const { context, page } = await signedIn({ width: 390, mode: 'light', day: THU, time: '00:30' });
   try {
     await openWindDown(page);
@@ -532,7 +536,7 @@ if (part(7)) {
     }, 30000) || [];
     await sleep(3000);
     const again = (await db.from('todos').select('id').eq('user_id', me).eq('text', 'Offline thought one')).data || [];
-    pass('offline: back online, it is sent exactly once', sent.length === 1 && again.length === 1 && sent[0].source === 'other_tool', JSON.stringify(again));
+    pass('offline: back online, it is sent exactly once', sent.length === 1 && again.length === 1 && ['sleep_wind_down', 'other_tool'].includes(sent[0].source), JSON.stringify(again));
   } finally {
     await context.close();
   }
@@ -646,7 +650,7 @@ if (part(8)) {
         }
         for (const [what, , , , fields, known] of PARTS) compare(view, mode, what, mock[view][what], app[what], fields, known);
       }
-      await db.from('todos').delete().eq('user_id', me).eq('created_on', THU).in('source', ['review_my_day', 'other_tool']);
+      await db.from('todos').delete().eq('user_id', me).eq('created_on', THU).in('source', ['review_my_day', 'other_tool', 'sleep_wind_down']);
       await db.from('day_plans').delete().eq('user_id', me).eq('local_date', THU);
     }
   }

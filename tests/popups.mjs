@@ -547,7 +547,15 @@ async function portal(touch) {
     // Only an eye that can be tapped (WhoSees with onChange, CoachSees); the others are words.
     const eye = page.locator('.ds-who[aria-haspopup]:visible');
     const has = new Set([...found.map((t) => t.kind), ...((await eye.count()) ? [EYE] : [])]);
-    for (const kind of expect[how]) pass(`${where}: has ${kind}`, has.has(kind), `found ${[...has].join(', ') || 'none'}`);
+    // A greeting ("Welcome back, Sam", the first day back from a Recovery)
+    // has nothing to explain, so it has no ⓘ (Tim, 3 Nov).
+    const title = (await page.locator('.ds-page-title').first().textContent().catch(() => '')) || '';
+    const greeting = /^(Welcome back|Good to see you|Good (morning|afternoon|evening))/i.test(title.trim());
+    if (greeting) pass(`${where}: the greeting "${title.trim()}" has no ⓘ`, !has.has(TITLE));
+    for (const kind of expect[how]) {
+      if (greeting && kind === TITLE) continue;
+      pass(`${where}: has ${kind}`, has.has(kind), `found ${[...has].join(', ') || 'none'}`);
+    }
     for (const t of found) {
       if (touch) await touchChecks(page, t, where, t.other);
       else { await mouseChecks(page, t, where); await keyboardChecks(page, t, where); await flipCheck(page, t, where); }
