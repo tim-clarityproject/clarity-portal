@@ -146,13 +146,14 @@ async function signedIn(opts) {
   await c.page.fill('input[type=password]', env.TEST_CLIENT_PASSWORD);
   await c.page.keyboard.press('Enter');
   await c.page.waitForURL(/welcome/, { timeout: 30000 });
-  await c.page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
-  await sleep(1500);
+  // Signing in can open the "welcome back" screen first: Home itself after it.
+  await home(c.page);
   return c;
 }
 const path = (page) => new URL(page.url()).pathname;
 const text = async (page, sel) => ((await page.locator(sel).count()) ? (await page.locator(sel).first().innerText()).trim() : '');
-const heading = (page) => text(page, '.ds-guide-question, .ds-guide-title');
+// The words as written (a Nekst title shows in capitals).
+const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-guide-title').count()) ? (await page.locator('.ds-guide-question, .ds-guide-title').first().textContent()).trim() : '');
 const pct = async (page) => Number((await text(page, '.ds-guide-pct-text')).replace('%', '')) || 0;
 async function shot(page, name) { await page.screenshot({ path: join(out, `${name}.png`), fullPage: true }).catch(() => {}); }
 const toastSeen = (page, words) => until(async () => (await page.locator('.ds-toast-text', { hasText: words }).count()) > 0, 8000);
@@ -167,6 +168,11 @@ async function tapAnswer(page, words) {
   await page.locator('.ds-guide-body [role=radio]', { hasText: new RegExp(`^${words.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).first().click();
   // One tap moves on (M12: 380ms).
   return until(async () => (await heading(page)) + (await text(page, '.ds-statement')) !== before, 4000);
+}
+// The coral button, past the tool's double-tap guard (400ms after a move).
+async function nextStep(page) {
+  await sleep(450);
+  await page.locator('.ds-guide-next').click();
 }
 async function home(page) {
   await page.goto(`${APP}/welcome`);
@@ -214,6 +220,8 @@ function measure({ CORAL, MINT, BANNED }) {
   const writing = [];
   for (const l of lines) {
     if (/^For example: /.test(l)) continue;
+    // M12's fold line, word for word ("Lowest: Movement 45/100"): a label, one of the few colons allowed (writing rule 26).
+    if (/^Lowest: [A-Z][a-z ]+ \d+\/100$/.test(l)) continue;
     const plain = l.replace(/\be\.g\. /gi, 'eg ').replace(/\d\.\d/g, '0');
     const sentences = plain.split(/(?<=[.!?][”"’)]?)\s+(?=[A-Z“"‘0-9])/).filter((s) => /[a-z]/i.test(s));
     if (sentences.length > 1 && /[.!?]/.test(sentences[0].slice(-2))) writing.push(`two sentences: ${l}`);
@@ -292,8 +300,8 @@ if (part('A')) {
     pass('opening: no Skip', (await page.locator('.ds-guide-skip').count()) === 0);
     pass('opening: never last month’s scores before answering (rule 50)', !/\/100|last month/i.test(await text(page, '.ds-guide-page')));
     await page.locator('button', { hasText: 'Who sees my answers?' }).click();
-    pass('Who sees my answers? (no coach)', (await text(page, '.ck-who-lines')) === 'Only you see your answers.\nYour organisation never sees them.', await text(page, '.ck-who-lines'));
-    pass('opening: Monthly check-in in the top bar', (await text(page, '.ds-guide-name')) === 'Monthly check-in');
+    pass('Who sees my answers? (no coach)', (await text(page, '.ck-who-lines')).replace(/\n+/g, '|') === 'Only you see your answers.|Your organisation never sees them.', await text(page, '.ck-who-lines'));
+    pass('opening: Monthly check-in in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'monthly check-in');
     await checkScreen(page, 'A opening 1280 dark');
     await page.locator('.ds-guide-next').click();
     await until(async () => (await currentQuestion(page))?.code === 'H1');
@@ -301,7 +309,8 @@ if (part('A')) {
     pass('H1: the eye under the answers says Only you', (await text(page, '.ck-eye')).includes('Only you'));
 
     const seen = [];
-    let percents = [await pct(page)];
+    const percents = [await pct(page)];
+    let travelAt = -1;
     let reloaded = false;
     let backed = false;
     for (let guard = 0; guard < 30; guard += 1) {
@@ -319,6 +328,7 @@ if (part('A')) {
       if (q.code === 'S1') await checkScreen(page, 'A S1 statement 1280 dark');
       if (q.code === 'H5' && !backed) {
         backed = true;
+        await sleep(500); // past the tool's double-tap guard (400ms)
         await page.locator('.ds-guide-back').click();
         await until(async () => (await currentQuestion(page))?.code === 'H4');
         pass('Back: the question before, with its answer kept', (await page.locator('.ds-guide-body [role=radio][aria-checked=true]').innerText().catch(() => '')) === NOW_WORDS.H4);
@@ -333,8 +343,10 @@ if (part('A')) {
         const { data: draft } = await db.from('checkins').select('status, answers').eq('user_id', me).eq('month', CUR).limit(1);
         pass('draft: saved in the database as it goes', draft?.[0]?.status === 'draft' && Object.keys(draft[0].answers || {}).length >= 9, JSON.stringify(draft?.[0]?.answers));
         await page.reload();
+        await sleep(500);
         await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
         pass('draft: a reload carries on at the same question', (await currentQuestion(page))?.code === 'H10', await heading(page));
+        await sleep(500);
         await page.locator('.ds-guide-back').click();
         await until(async () => (await currentQuestion(page))?.code === 'H9');
         pass('draft: the answers so far are kept', (await page.locator('.ds-guide-body [role=radio][aria-checked=true]').innerText().catch(() => '')) === NOW_WORDS.H9);
@@ -342,11 +354,13 @@ if (part('A')) {
       }
       const moved = await tapAnswer(page, NOW_WORDS[q.code]);
       percents.push(await pct(page));
+      if (q.code === 'H14') travelAt = percents.length - 1;
       if (!moved) { pass(`${q.code}: one tap moves on`, false); break; }
       if ((await heading(page)) === 'Your month') break;
     }
     pass('every question once, travel after a Yes (22 screens)', seen.length === 22 && seen.includes('H15') && seen.includes('H16'), seen.join(','));
-    pass('the % bar only goes up', percents.every((v, i) => i === 0 || v >= percents[i - 1]), percents.join(','));
+    // Yes to travel adds its two questions, so the bar steps back once there (as M12's does).
+    pass('the % bar only goes up, but for the travel pair', percents.every((v, i) => i === 0 || i === travelAt || v >= percents[i - 1]), percents.join(','));
     pass('no "Last one" (rule 46)', !(await page.locator('text=Last one').count()));
 
     // Results, every figure from src/lib/scores through checkin.js.
@@ -415,6 +429,11 @@ if (part('A')) {
 
 // ---------------------------------------------------------------- D: measured against M12
 if (part('D')) {
+  // Without part A, this month's finished check-in is seeded as A leaves it.
+  if (!part('A')) {
+    await clearMonths(CUR);
+    await db.from('checkins').insert({ user_id: me, kind: 'monthly', month: CUR, status: 'finished', answers: NOW_ANS });
+  }
   // M12's own sizes, measured in the mock-up (copy with the real fonts).
   const mp = await browser.newPage({ viewport: { width: 1500, height: 1000 } });
   await mp.route(/^https?:/, (r) => r.abort());
@@ -461,6 +480,7 @@ if (part('D')) {
       await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
       await until(async () => (await currentQuestion(page))?.code === 'H1');
       const q = await checkScreen(page, `D H1 ${width} ${mode}`);
+      await sleep(300);
       pass(`D ${width} ${mode}: the page follows the mode`, q.theme === mode, q.theme);
       pass(`D ${width} ${mode}: question ${m12.question}px as M12`, Math.abs(q.sizes.question - m12.question) <= 1, q.sizes.question);
       pass(`D ${width} ${mode}: answer rows at least M12's ${m12.answer}px`, q.sizes.answer >= m12.answer, q.sizes.answer);
@@ -543,16 +563,16 @@ if (part('C') && !others?.length) {
     await page.goto(`${APP}/check-in`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('first: "What would make coaching useful for you?"', (await heading(page)) === 'What would make coaching useful for you?');
-    pass('first: First check-in in the top bar', (await text(page, '.ds-guide-name')) === 'First check-in');
+    pass('first: First check-in in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'first check-in');
     pass('first: the two nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).map((t) => t.trim()).join('|') === 'Let’s start with 5 questions about that.|Then your first Hardware and Software check-in.');
     await page.locator('.ds-guide-nudge .ds-guide-i').click();
     pass('first: the ⓘ opens hardware and software', (await page.locator('.ds-infopop:not([hidden]) .ds-infopop-line').allInnerTexts()).join('|') === HARDWARE_SOFTWARE.join('|'));
     await page.keyboard.press('Escape');
     await page.locator('button', { hasText: 'Who sees my answers?' }).click();
-    pass('first: Who sees my answers? with a coach', (await text(page, '.ck-who-lines')).split('\n')[0] === 'Only you and Tim see your answers.');
+    pass('first: Who sees my answers? with a coach', (await text(page, '.ck-who-lines')).split(/\n+/)[0] === 'Only you and Tim see your answers.');
     await checkScreen(page, 'C opening 1280 light');
     pass('first: Start with my goals', (await text(page, '.ds-guide-next')).toLowerCase() === 'start with my goals');
-    await page.locator('.ds-guide-next').click();
+    await nextStep(page);
     await until(async () => (await heading(page)).startsWith('In 12 months’ time'));
     pass('G1: Your goals, the question, the nudge', (await text(page, '.ds-guide-label')) === 'Your goals' && (await text(page, '.ds-guide-nudge')) === 'Describe what you’d be doing and what others would notice.');
     await page.locator('.ds-guide-example-link').click();
@@ -560,14 +580,14 @@ if (part('C') && !others?.length) {
     pass('G1: the eye says You and Tim', (await text(page, '.ck-eye')).includes('You and Tim'));
     pass('first: Do this later, never Skip', (await text(page, '.ds-guide-skip')) === 'Do this later');
     await page.locator('.ds-guide-body textarea').first().fill('I’d lead the board calmly through the merger.');
-    await page.locator('.ds-guide-next').click();
+    await nextStep(page);
     await page.locator('.ds-guide-body textarea').first().fill('A new role in January.');
-    await page.locator('.ds-guide-next').click();
+    await nextStep(page);
     await until(async () => (await heading(page)) === 'What 3 things do you most want from coaching?');
     const boxes = page.locator('.ck-three textarea, .ck-three input');
     pass('G3: three numbered boxes', (await boxes.count()) === 3);
     for (const [i, t] of ['Lead the merger well', 'Delegate properly', 'Get my energy back'].entries()) await boxes.nth(i).fill(t);
-    await page.locator('.ds-guide-next').click();
+    await nextStep(page);
     await until(async () => (await heading(page)) === 'What has got in the way of progress before?');
     await sleep(1200);
     await page.locator('.ds-guide-skip').click();
@@ -579,11 +599,11 @@ if (part('C') && !others?.length) {
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('carries on where it was left', (await heading(page)) === 'What has got in the way of progress before?', await heading(page));
     await page.locator('.ds-guide-body textarea').first().fill('I say yes to everything.');
-    await page.locator('.ds-guide-next').click();
+    await nextStep(page);
     await until(async () => (await heading(page)) === 'How do you like to be challenged?');
     pass('G5: names the coach in the nudge', (await text(page, '.ds-guide-nudge')) === 'Add anything else Tim should know about you.');
     await page.locator('.ds-guide-body textarea').first().fill('Straight talking.');
-    await page.locator('.ds-guide-next').click();
+    await nextStep(page);
     const risky = { ...NOW_WORDS, H3: 'Always', H14: 'No' };
     for (let i = 0; i < 25; i += 1) {
       const q = await currentQuestion(page);
@@ -598,12 +618,12 @@ if (part('C') && !others?.length) {
     await until(async () => (await heading(page)) === 'Your starting point');
     pass('results: "Your starting point"', (await heading(page)) === 'Your starting point');
     pass('results: the scores say what they are', (await text(page, '.ck-scores')).includes('Sleep, stress, movement, fuel, energy and health.'));
-    pass('results: "Your graph starts here. Each monthly check-in adds a point."', (await text(page, '.ck-hint')) === 'Your graph starts here. Each monthly check-in adds a point.');
+    pass('results: "Your graph starts here. Each monthly check-in adds a point."', (await page.locator('.ck-hint p').allInnerTexts()).join(' ') === 'Your graph starts here. Each monthly check-in adds a point.');
     pass('results: no What improved on the first', (await page.locator('.ck-improved').count()) === 0);
     pass('results: My goals, one per line', (await page.locator('.ck-goal-text').allInnerTexts()).join('|') === 'I’d lead the board calmly through the merger.|Lead the merger well|Delegate properly|Get my energy back');
     pass('results: no note for the client (rule 51)', !/samaritans|nhs|gp/i.test(await text(page, '.ds-guide-page')));
     await checkScreen(page, 'C results 1280 light');
-    await page.locator('.ds-guide-next').click();
+    await nextStep(page);
     pass('Finish: "Saved. Tim will see this before your first session."', Boolean(await toastSeen(page, 'Saved. Tim will see this before your first session.')));
     await sleep(2000);
     const { data: first } = await db.from('checkins').select('id, kind, status, goals, answers').eq('user_id', me).eq('month', CUR).limit(1);

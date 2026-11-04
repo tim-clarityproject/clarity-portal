@@ -643,7 +643,13 @@ function Results({ userId, today, kind, coach, results, points, goals, note, spr
           <Stat panel label="Software score" value={String(r.software.value)} unit="/100" note={r.compared ? <ChangeNote change={r.software.change} /> : SCORE_LINES.software} />
         )}
       </StatGroup>
-      {!r.compared && <p className="ck-hint">Your graph starts here. Each monthly check-in adds a point.</p>}
+      {/* M12's line, one sentence per line (writing rule 49). */}
+      {!r.compared && (
+        <div className="ck-hint">
+          <p>Your graph starts here.</p>
+          <p>Each monthly check-in adds a point.</p>
+        </div>
+      )}
 
       {r.compared && (
         <Section title="What improved" as="h3" className="ck-sec">
