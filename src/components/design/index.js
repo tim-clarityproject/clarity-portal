@@ -90,5 +90,7 @@ export { default as DayCounter } from './DayCounter';
 export { RecoveryNotice, RecoveryBanner, RecoveryLinks } from './Recovery';
 export { SuggestionCard, QuietLines, MiniDial, DayFocus, WeekLine, PlanSteps, HelpList, CarryOnList } from './Today';
 export { default as SleepChart } from './SleepChart';
+export { default as CheckinChart } from './CheckinChart';
+export { default as ChartTable } from './ChartTable';
 export { SleepTargetLink, SleepTargetEditor } from './SleepTarget';
 export { default as useSleepTarget } from './useSleepTarget';

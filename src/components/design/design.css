@@ -8470,3 +8470,123 @@
   line-height: var(--lh-text);
   color: var(--text-2);
 }
+
+/* ---------------------------------------------------------------- the check-in's two-line graph (CheckinChart, Phase 5)
+   M12 "Over time" with M4 v47's look: Hardware in the text colour, Software
+   dashed grey, rises mint, no key, every mark with the shared pop-up. */
+.ui-root .ds-cchart {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3);
+}
+
+.ui-root .ds-cchart-box {
+  width: 100%;
+  min-width: 0;
+}
+
+.ui-root .ds-cchart-svg {
+  display: block;
+  overflow: visible;
+}
+
+.ui-root .ds-cchart-grid {
+  stroke: var(--line-soft);
+  stroke-width: var(--line-w);
+}
+
+.ui-root .ds-cchart-text {
+  font-family: var(--font-body);
+  font-size: var(--fs-chart);
+  fill: var(--label);
+}
+
+.ui-root .ds-cchart-line {
+  fill: none;
+  stroke-width: var(--line-w-strong);
+  stroke-linejoin: round;
+}
+
+.ui-root .ds-cchart-line.ds-cchart-line--hw { stroke: var(--text); }
+.ui-root .ds-cchart-line.ds-cchart-line--sw { stroke: var(--text-2); stroke-dasharray: var(--dash-paused); }
+
+.ui-root .ds-cchart-dot {
+  stroke: var(--bg);
+  stroke-width: var(--line-w-strong);
+}
+
+.ui-root .ds-cchart-dot.ds-cchart-line--hw { fill: var(--text); }
+.ui-root .ds-cchart-dot.ds-cchart-line--sw { fill: var(--text-2); }
+.ui-root .ds-cchart-dot--up { fill: var(--good); }
+
+.ui-root .ds-cchart-end.ds-cchart-line--hw { fill: var(--text); }
+.ui-root .ds-cchart-end.ds-cchart-line--sw { fill: var(--text-2); }
+
+.ui-root .ds-cchart-trip {
+  fill: transparent;
+  stroke: var(--text-2);
+  stroke-width: var(--line-w-strong);
+}
+
+.ui-root .ds-cchart--empty {
+  padding: var(--space-3);
+  border: var(--line-w) dashed var(--line);
+  border-radius: var(--radius-card);
+}
+
+/* ---------------------------------------------------------------- Show as a table (ChartTable, Phase 5) */
+.ui-root .ds-ctable-fold {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.ui-root .ds-ctable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+}
+
+.ui-root .ds-ctable th {
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  text-align: left;
+  font-weight: var(--fw-regular);
+  color: var(--label);
+  white-space: nowrap;
+}
+
+.ui-root .ds-ctable td {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  border-top: var(--line-w) solid var(--line);
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-ctable thead {
+    display: none;
+  }
+
+  .ui-root .ds-ctable tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-top: var(--line-w) solid var(--line);
+  }
+
+  .ui-root .ds-ctable td {
+    display: block;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .ui-root .ds-ctable td:first-child {
+    color: var(--text);
+  }
+
+  .ui-root .ds-ctable td:not(:first-child)::before {
+    content: attr(data-label) ": ";
+    color: var(--label);
+  }
+}

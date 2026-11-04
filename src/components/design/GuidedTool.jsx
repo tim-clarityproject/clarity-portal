@@ -68,6 +68,8 @@ import './design.css';
 //           (e.g. when a finished tool starts again in place).
 // progress: 'steps' or 'percent'.
 // initialStep: the key of the step to open on (instead of where it was left).
+// skipMoves: false when the quiet word only calls onSkip and stays put
+//           (the First check-in's "Do this later" closes the tool, M12).
 
 const NEXT_GUARD_MS = 400;     // a second tap this soon after a move is ignored
 const TIP_PREFIX = 'ds-tip-seen:';
@@ -214,6 +216,7 @@ export default function GuidedTool({
   onFinish,
   autoFocus = false,
   initialStep,
+  skipMoves = true,
 }) {
   const scope = useThemeScope();
   const fullscreen = layout === 'fullscreen';
@@ -317,6 +320,10 @@ export default function GuidedTool({
 
   const skip = () => {
     if (Date.now() - lastMove.current < NEXT_GUARD_MS) return;
+    if (!skipMoves) {
+      onSkip?.(step.key);
+      return;
+    }
     setSkipped((s) => new Set(s).add(step.key));
     onSkip?.(step.key);
     if (last) {

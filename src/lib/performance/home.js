@@ -125,6 +125,7 @@ export function homePerson({ sprintView, recovery, steps }) {
  *   yesterday              { planned, reviewed } (a review before 04:00 can be for the day before)
  *   windDown               { from, dismissed: [evening keys] }
  *   recovery               the open Recovery row, if any; recoveryNext: the next sprint's number
+ *   firstCheckin           checkinPrompt() when it's the First check-in (Phase 5), else null
  */
 export function homeSuggestion(input) {
   const { today, hour, minute = 0, person, sprintView: v, dayPlanned, reviewed, yesterday = {}, windDown = {}, recovery, nextSprint } = input;
@@ -144,15 +145,18 @@ export function homeSuggestion(input) {
   }
 
   if (person === 'new') {
-    return input.hasCoach
-      // The coaching client's First check-in card needs Phase 6a's check-in; until then, no card.
-      ? null
-      : {
-        key: 'build',
-        question: 'Ready to build your plan?',
-        lines: ['It goes one step at a time.', 'You can stop and carry on later.'],
-        action: { label: 'Build my plan', to: '/performance-plan/build' },
-      };
+    if (input.hasCoach) {
+      // A new coaching client: the First check-in first (M2 sugCard newc),
+      // until it's finished (checkinPrompt in checkin.js).
+      const c = input.firstCheckin;
+      return c ? { key: 'first-checkin', question: c.question, lines: c.lines, time: c.time, action: c.action } : null;
+    }
+    return {
+      key: 'build',
+      question: 'Ready to build your plan?',
+      lines: ['It goes one step at a time.', 'You can stop and carry on later.'],
+      action: { label: 'Build my plan', to: '/performance-plan/build' },
+    };
   }
 
   if (person === 'recovery') {
@@ -253,14 +257,21 @@ export function homeSuggestion(input) {
 }
 
 /**
- * The quiet lines under the card (M2 qlines): at most two, in M2's order.
- * Only those with data today show: a note from the coach, the coaching
- * session tomorrow, the First check-in, the agreement and the monthly
- * check-in wait for Phase 6a. "Ready to add your mission?" shows once,
- * two weeks after someone without a coach joined, until Not now.
+ * The quiet lines under the card (M2 qlines): at most two, in M2's order:
+ * a note from the coach, the coaching session tomorrow, the First
+ * check-in, the agreement to sign, then the monthly check-in. Only those
+ * with data today show: the note, the session and the agreement wait for
+ * Phase 6a. The check-in's line (checkinPrompt in checkin.js, Phase 5)
+ * shows while it's due and goes once it's done; a new coaching client's
+ * First check-in is the card instead (homeSuggestion), so not here too.
+ * "Ready to add your mission?" shows once, two weeks after someone
+ * without a coach joined, until Not now.
  */
-export function quietLines({ person, hasCoach, mission, joinedDaysAgo = 0, dismissed = [] }) {
+export function quietLines({ person, hasCoach, mission, joinedDaysAgo = 0, dismissed = [], checkin = null }) {
   const out = [];
+  if (checkin && !(checkin.first && person === 'new' && hasCoach)) {
+    out.push({ key: checkin.key, lines: [checkin.question], action: checkin.action, time: checkin.time });
+  }
   if (person === 'new' && !hasCoach && !mission && joinedDaysAgo >= 14) {
     out.push({ key: 'mission', lines: ['Ready to add your mission?'], action: { label: 'Add my mission', to: '/performance-plan/build' }, dismissable: true });
   }

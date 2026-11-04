@@ -1126,3 +1126,91 @@ export function objectiveFigureOp(userId, { id, objectiveId, value, recordedOn, 
     values: { id, user_id: userId, objective_id: objectiveId, value, recorded_on: recordedOn, sprint_id: sprintId, sprint_week: sprintWeek },
   };
 }
+
+// ---------------------------------------------------------------- the Hardware and Software check-in
+
+const CHECKIN_COLS = 'id, kind, month, status, answers, goals, hardware_score, software_score, area_scores, finished_at, created_at, updated_at';
+
+/**
+ * Everything the check-in shows (mock-up M12; 029's checkins): every one
+ * of the person's check-ins, newest first, their coach, whether the
+ * check-in is shared with the coach (on by default, 033's sharing_parts),
+ * the role (for the goal examples) and any note the coach sent about a
+ * check-in (my_coach_notes; the coach's side is Phase 6a).
+ */
+export async function loadCheckinPage(userId) {
+  const [checkins, coach, sharing, settings, notes] = await Promise.all([
+    rows(supabase.from('checkins').select(CHECKIN_COLS).eq('user_id', userId).order('month', { ascending: false })),
+    loadMyCoach().catch(() => null),
+    rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId).eq('part', 'checkin')),
+    one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)).catch(() => null),
+    supabase.rpc('my_coach_notes').then(({ data, error }) => (error ? [] : data || []), () => []),
+  ]);
+  return {
+    checkins,
+    coach,
+    sharingOn: sharing[0] ? Boolean(sharing[0].is_on) : true,
+    describesYou: settings?.describes_you || null,
+    notes: (notes || []).filter((n) => n.note).map((n) => ({ note: n.note, sentAt: n.sent_at, month: n.checkin_month })),
+  };
+}
+
+/** Only the check-ins, for Home's line and the saved lists. */
+export async function loadCheckins(userId) {
+  return rows(supabase.from('checkins').select('id, kind, month, status, answers, finished_at, updated_at').eq('user_id', userId).order('month', { ascending: false }));
+}
+
+/** A month's check-in row made once, with its id from the device, so a to-do added from its results can name it at once, offline too. */
+export function createCheckin(userId, id, month, kind) {
+  return saveOrQueue(userId, {
+    table: 'checkins',
+    kind: 'upsert',
+    onConflict: 'user_id,month',
+    ignoreDuplicates: true,
+    values: { id, user_id: userId, month, kind },
+  });
+}
+
+/** The check-in's answers (found by its person and month, so a resend writes the same row; never its id). */
+export function checkinAnswersOp(userId, month, values) {
+  return { table: 'checkins', kind: 'upsert', onConflict: 'user_id,month', values: { user_id: userId, month, ...values } };
+}
+
+/** The check-in row as it is now (when the first save found one already there). */
+export async function loadCheckinRow(userId, month) {
+  return one(supabase.from('checkins').select(CHECKIN_COLS).eq('user_id', userId).eq('month', month).limit(1));
+}
+
+/**
+ * A habit added to the running sprint from the check-in's results (M12
+ * Add to my sprint): the sprint's own habit (not in the plan) with its
+ * setting from `fromWeek` (M1: a change mid-sprint applies from the next
+ * sprint week). Ids come from the device, so a resend writes the same rows.
+ */
+export async function addSprintHabit(userId, h) {
+  const first = await saveOrQueue(userId, {
+    table: 'sprint_habits',
+    kind: 'upsert',
+    values: { id: h.sprintHabitId, sprint_id: h.sprintId, user_id: userId, habit_id: null, strategy_id: h.strategyId, name: h.name, sort_order: h.sortOrder },
+  });
+  const second = await saveOrQueue(userId, {
+    table: 'sprint_habit_settings',
+    kind: 'upsert',
+    values: {
+      id: h.settingId,
+      sprint_habit_id: h.sprintHabitId,
+      user_id: userId,
+      from_week: h.fromWeek,
+      measure: h.measure,
+      unit: h.unit ?? null,
+      target: h.target ?? null,
+      target_per: h.targetPer ?? null,
+      limit_value: h.limit ?? null,
+      limit_per: h.limitPer ?? null,
+      direction: h.direction ?? null,
+      top_number: h.topNumber ?? null,
+      impact: h.impact ?? 2,
+    },
+  });
+  return first?.status === 'queued' || second?.status === 'queued' ? { status: 'queued' } : second;
+}

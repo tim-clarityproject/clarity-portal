@@ -13,12 +13,17 @@ import './design.css';
 // form:                'pills' or 'rows' to force one form.
 // options:             [{ value, label, note }], note being a small grey
 //                      word after the label, e.g. "suggested".
+// onChoose:            called after onChange when an option is tapped,
+//                      clicked or pressed with Enter or Space, never when
+//                      the arrow keys move the choice (the check-in's one
+//                      tap moves on, M12; arrows only change the answer).
 export default function InlineChoice({
   label,
   ariaLabel,
   options,
   value,
   onChange,
+  onChoose,
   semantics = 'radio',
   form: forced,
   who,
@@ -72,7 +77,7 @@ export default function InlineChoice({
         type="button"
         className={form === 'pills' ? 'ds-seg-btn' : 'ds-answer'}
         {...stateProps}
-        onClick={() => onChange(option.value)}
+        onClick={() => { onChange(option.value); onChoose?.(option.value); }}
         onFocus={() => { focused.current = i; }}
         onBlur={(e) => { if (e.relatedTarget) focused.current = null; }}
         onKeyDown={radio ? (e) => {

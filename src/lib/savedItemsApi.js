@@ -78,7 +78,7 @@ async function loadSprintReviews(userId) {
   return [...fromTable, ...fromDevice.filter((r) => !ids.has(r.sprint_id))];
 }
 
-/** Every saved review: { entries, missionReviews, journals, checkins, dayReviews, debriefs, sprints, sprintReviews }. */
+/** Every saved review: { entries, missionReviews, journals, checkins, dayReviews, debriefs, sprints, sprintReviews, hsCheckins }. */
 export async function loadSavedReviews(userId) {
   const parts = await Promise.all([
     part('journal entries', () => rows(supabase.from('journal_entries').select('*').eq('user_id', userId))),
@@ -107,10 +107,14 @@ export async function loadSavedReviews(userId) {
       .select('id, sprint_id, sprint_week, status, stress, went_well, got_in_way, adjust').eq('user_id', userId))),
     part('sprints', () => rows(supabase.from('sprints').select('id, number, start_on, actual_end_on, planned_end_on').eq('user_id', userId))),
     part('sprint reviews', () => loadSprintReviews(userId)),
+    // The Hardware and Software check-in (029's checkins; Phase 5). The
+    // "checkins" above are the Life balance review's, an older name.
+    part('Hardware and Software check-ins', () => rows(supabase.from('checkins')
+      .select('id, kind, month, status, finished_at, updated_at').eq('user_id', userId))),
   ]);
   // The device's own sprint reviews don't count: offline, the list keeps
   // what it showed last time instead of only those.
   allFailed(parts.slice(0, 7));
-  const [entries, missionReviews, journals, checkins, dayReviews, debriefs, sprints, sprintReviews] = parts.map((p) => p.rows);
-  return { entries, missionReviews, journals, checkins, dayReviews, debriefs, sprints, sprintReviews };
+  const [entries, missionReviews, journals, checkins, dayReviews, debriefs, sprints, sprintReviews, hsCheckins] = parts.map((p) => p.rows);
+  return { entries, missionReviews, journals, checkins, dayReviews, debriefs, sprints, sprintReviews, hsCheckins };
 }

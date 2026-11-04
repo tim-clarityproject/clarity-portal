@@ -10,12 +10,13 @@ import pageText from '../content/pageText';
 // the old addresses redirect, RENAMED below). Not built yet, so no tile: the
 // Dashboard (Phase 5), Find my sweet spot, Deliberate vs default, Travel
 // and jet lag plan, Delegation audit, Emotional wash, Identity beyond the
-// role, Hardware and Software check-in, Stay deliberate under pressure,
+// role, Stay deliberate under pressure,
 // Performance Evidence, Prepare for a difficult conversation, Prepare for
 // a pitch, Map my stakeholders, Map my team, Understand their sweet spot,
 // Decide who decides, Strategy on a page and Pre-mortem for an initiative.
 // Sleep wind down joined Reset in step 6 (M19), second, marked New for its
-// first two weeks (`newUntil`). Points of leverage is removed
+// first two weeks (`newUntil`). The Hardware and Software check-in joined
+// Review in Phase 5 step 1, last, so M3's own order is kept. Points of leverage is removed
 // (Tim, 2 Nov): no tile anywhere, and its address goes to Strategic.
 //
 // Tiles are in the order M3 shows. Later, most used first, from private
@@ -126,6 +127,13 @@ export const TOOLS = {
     to: '/life-balance-review',
     routes: ['/life-balance-review'],
   },
+  check: {
+    name: 'Hardware and Software check-in',
+    line: 'Check your body and mind are backing your performance.',
+    time: '~3 minutes',
+    to: '/check-in',
+    routes: ['/check-in'],
+  },
   meet: {
     name: 'Meeting planner',
     line: 'Plan a meeting so it gets the result you need.',
@@ -195,7 +203,7 @@ export const HUBS = {
     up: 'personal',
     line: 'Turn what happened into better performance.',
     info: pageText.hubReview,
-    groups: [{ tools: ['rmd', 'debrief', 'aar', 'lbr'] }],
+    groups: [{ tools: ['rmd', 'debrief', 'aar', 'lbr', 'check'] }],
     recent: { list: 'reviews', area: 'personal', title: 'My Reviews', to: '/my-reviews?area=personal' },
   },
   interpersonal: {

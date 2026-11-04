@@ -18,3 +18,4 @@ export * from './debrief';
 export * from './home';
 export * from './windDown';
 export * from './sleepChart';
+export * from './checkin';

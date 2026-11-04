@@ -96,6 +96,7 @@ import SprintTool from './SprintTool';
 import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } from './DailyPartsDemos';
 import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo, SavedItemsDemo } from './NavigationDemos';
 import { CarryOnDemo, DayFocusDemo, HelpListDemo, MiniDialDemo, PlanStepsDemo, SuggestionDemo } from './TodayDemos';
+import { CheckinChartDemo } from './CheckinDemos';
 import { BreathOrbDemo } from './OrbDemos';
 import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
@@ -1891,6 +1892,15 @@ function Gallery() {
             <p><New /><b>One list the next morning</b> (M19): Review my day’s things for tomorrow first, then last night’s sleep wind down thoughts, then This week.</p>
             <p>Each row says where it came from. A line in both is one row, when it matches once case and punctuation are ignored.</p>
             <p>Up to 3 can be chosen. Once 3 are chosen the rest grey out, and the line under the list says how many.</p>
+          </>
+        )} />
+
+        <GallerySection id="c65" title="The check-in’s two lines, and Show as a table" wide demo={CheckinChartDemo} rules={(
+          <>
+            <p><New /><b>Two thin lines, month by month</b> (M12 Over time, with M4’s look): the Hardware score in the text colour, the Software score dashed grey. A month that rose is a mint dot. Coral is never a data colour.</p>
+            <p>No key: each line is named at its right end with its latest score, months run along the bottom, and a small ring under a month marks long-haul travel. Every dot and ring has the shared pop-up.</p>
+            <p>Show as a table sits under every chart, closed until opened, so nothing depends on colour or on pointing. Under about 600px each row becomes a small card.</p>
+            <p>With one month, the empty frame says when the graph starts.</p>
           </>
         )} />
 

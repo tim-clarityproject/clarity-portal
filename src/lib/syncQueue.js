@@ -117,11 +117,12 @@ const ROW_KEYS = {
   sprint_reviews: ['sprint_id'],
   day_plan_habits: ['user_id', 'local_date'],
   wind_down_nights: ['user_id', 'night'],
+  checkins: ['user_id', 'month'],
 };
 // Only the tables whose updated_at the database keeps itself (the p1_touch
 // trigger, server time). Older tables (decisions, journal_entries) write
 // their own, so they are never guarded and save exactly as before.
-export const VERSIONED_TABLES = ['outcome_objectives', 'performance_plans', 'plan_strategies', 'habits', 'sprints', 'todos', 'wins', 'habit_logs', 'recovery_periods', 'recovery_recharge_answers', 'day_plans', 'day_reviews', 'weekly_debriefs', 'person_settings', 'sprint_reviews', 'day_plan_habits', 'wind_down_nights'];
+export const VERSIONED_TABLES = ['outcome_objectives', 'performance_plans', 'plan_strategies', 'habits', 'sprints', 'todos', 'wins', 'habit_logs', 'recovery_periods', 'recovery_recharge_answers', 'day_plans', 'day_reviews', 'weekly_debriefs', 'person_settings', 'sprint_reviews', 'day_plan_habits', 'wind_down_nights', 'checkins'];
 const versioned = new Set(VERSIONED_TABLES);
 const versions = new Map();
 // Queued saves refused as superseded: never read as "Saved" (useQueuedSave).

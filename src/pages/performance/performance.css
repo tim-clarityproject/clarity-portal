@@ -1356,3 +1356,276 @@
     justify-content: center;
   }
 }
+
+/* ---------------------------------------------------------------- the Hardware and Software check-in (M12 v14, Phase 5 step 1) */
+.ui-root .ck-quiet {
+  margin: var(--space-4) 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-secondary);
+}
+
+/* The eye under the answers, on the left (M12 .whob). */
+.ui-root .ck-eye {
+  margin-top: var(--space-px18);
+}
+
+.ui-root .ck-q {
+  max-width: var(--rec-box-max);
+}
+
+.ui-root .ck-who,
+.ui-root .ck-units-fold {
+  margin-top: var(--space-px14);
+}
+
+.ui-root .ck-who-lines p,
+.ui-root .ck-units p {
+  margin: 0;
+}
+
+.ui-root .ck-who-lines p + p {
+  margin-top: var(--space-1);
+}
+
+.ui-root .ck-units {
+  margin-top: var(--space-px6);
+  padding: var(--space-px18) var(--space-px20);
+  border-radius: var(--radius-card);
+  background: var(--raised);
+  max-width: var(--rec-box-max);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ck-units > p {
+  margin-bottom: var(--space-px6);
+}
+
+.ui-root .ck-units-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-px14);
+  padding: var(--space-2) 0;
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ck-units-row em {
+  font-style: normal;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* G3: three numbered boxes (M12 .q3). */
+.ui-root .ck-three {
+  display: grid;
+  gap: var(--space-px10);
+  max-width: var(--rec-box-max);
+}
+
+.ui-root .ck-three-row {
+  display: grid;
+  grid-template-columns: var(--space-5) minmax(0, 1fr);
+  gap: var(--space-px10);
+  align-items: center;
+}
+
+.ui-root .ck-three-n {
+  font-family: var(--font-display);
+  font-size: var(--fs-min);
+  color: var(--label);
+}
+
+/* Results (M12 kresults, mresults). */
+.ui-root .ck-results {
+  min-width: 0;
+}
+
+.ui-root .ck-note {
+  margin-bottom: var(--space-px20);
+}
+
+.ui-root .ck-scores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-px12);
+}
+
+@media (max-width: 768px) {
+  .ui-root .ck-scores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ui-root .ck-up {
+  color: var(--mint-text);
+}
+
+.ui-root .ck-hint {
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ck-sec {
+  margin-top: var(--space-5);
+}
+
+.ui-root .ck-plain {
+  margin: var(--space-px12) 0 0;
+  font-size: var(--fs-body);
+}
+
+.ui-root .ck-improved {
+  margin: var(--space-px12) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ui-root .ck-improved li {
+  display: flex;
+  gap: var(--space-px10);
+  align-items: baseline;
+  font-size: var(--fs-body);
+}
+
+.ui-root .ck-improved i {
+  flex: none;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  background: var(--good);
+  transform: translateY(calc(-1 * var(--space-px2)));
+}
+
+/* One thing to work on (M12 .one). */
+.ui-root .ck-one {
+  margin-top: var(--space-px14);
+  padding: var(--space-px20);
+  border-radius: var(--radius-card);
+  border: var(--line-w) solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.ui-root .ck-one-area {
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ck-one-tip {
+  margin-top: var(--space-1);
+  font-size: var(--fs-tile-title);
+  color: var(--text);
+}
+
+.ui-root .ck-one-line {
+  margin: var(--space-px6) 0 0;
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+.ui-root .ck-one-next {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-secondary);
+  color: var(--text);
+}
+
+.ui-root .ck-one-added {
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-secondary);
+  color: var(--mint-text);
+}
+
+.ui-root .ck-one-add {
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .ui-root .ck-one-add {
+    align-self: stretch;
+  }
+}
+
+/* The areas, folded into one line each (M12 .fold, .ar). */
+.ui-root .ck-fold {
+  margin-top: var(--space-3);
+}
+
+.ui-root .ck-fold-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: left;
+}
+
+.ui-root .ck-fold-title {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-section-title);
+  font-size: var(--fs-fold-head);
+}
+
+.ui-root .ck-fold-line {
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ck-areas {
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ck-area {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--ck-bar-w) var(--ck-value-w);
+  gap: var(--space-px12);
+  align-items: center;
+  min-height: var(--ck-area-h);
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-secondary);
+}
+
+@media (max-width: 768px) {
+  .ui-root .ck-area {
+    grid-template-columns: minmax(0, 1fr) var(--ck-bar-w-phone) var(--ck-value-w);
+  }
+}
+
+.ui-root .ck-area-name {
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ck-area-value {
+  text-align: right;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-root .ck-goals {
+  margin-top: var(--space-2);
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ck-goal {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-px12) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ck-goal-label {
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .ck-goal-text {
+  font-size: var(--fs-secondary);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ck-change {
+  margin-top: var(--space-5);
+}

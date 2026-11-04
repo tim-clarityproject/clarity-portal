@@ -1,5 +1,6 @@
 import { getLocalDateKey, parseDbTimestamp, formatSavedDate } from './dateFormatter';
 import { STANDARD_AREAS, areaName } from './wheelOfLife';
+import { checkinMonth, checkinPath, checkinTitle } from './performance/checkin';
 
 // My Plans and My Reviews (Phase 4 step 4): one list each across the three
 // areas, every saved item in it, old and new. This file only turns rows
@@ -11,7 +12,8 @@ import { STANDARD_AREAS, areaName } from './wheelOfLife';
 // Never a date as the name. Day plans read "Today’s plan", "Yesterday’s
 // plan", then "Day plan" (reviews the same); debriefs "Sprint 4, week 3";
 // the Life balance review the area chosen ("Focus on sleep"), otherwise
-// "October review"; a journal "Journal entry", never its first words; the
+// "October review"; the Hardware and Software check-in "October check-in",
+// the first one "First check-in"; a journal "Journal entry", never its first words; the
 // other tools what was typed first. Tool names follow CLAUDE.md rule 26.
 //
 // Each row: { id (unique in the list), dbId, source, area, title,
@@ -442,6 +444,29 @@ export function reviewRows(data, today = getLocalDateKey()) {
       to: { path: `/performance-sprint/review/${r.sprint_id}` },
     }));
   });
+
+  // The Hardware and Software check-in (Phase 5): every finished one, and
+  // this month's while it's half done (a draft from an earlier month
+  // can't be finished any more, so it isn't listed).
+  const month = checkinMonth(today);
+  (data.hsCheckins || [])
+    .filter((c) => c.status === 'finished' || c.month === month)
+    .forEach((c) => {
+      const draft = c.status !== 'finished';
+      out.push(base(today, {
+        id: `hs-checkin:${c.id}`,
+        dbId: c.id,
+        source: 'hs-checkin',
+        area: 'personal',
+        title: checkinTitle(c),
+        typeLabel: 'Hardware and Software check-in',
+        at: c.finished_at || c.updated_at,
+        isDraft: draft,
+        canEdit: draft,
+        to: { path: draft ? '/check-in' : checkinPath(c.month) },
+        edit: draft ? { path: '/check-in' } : null,
+      }));
+    });
 
   return out;
 }

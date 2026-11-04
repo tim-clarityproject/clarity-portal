@@ -287,6 +287,10 @@
   --schart-h: 140px;         /* Recovery's sleep chart (Tim, 3 Nov) */
   --schart-side-w: 168px;    /* its target range's label, right of the chart on a laptop */
   --chart-stub: 2px;         /* a night to come, or not answered: a faint stub */
+  --ck-bar-w: 110px;         /* the check-in's area bars (M12 .ar: 110px, 64px on a phone) */
+  --ck-bar-w-phone: 64px;
+  --ck-value-w: 70px;        /* "45/100" beside each area (M12 .ar) */
+  --ck-area-h: 46px;         /* one area's row (M12 .ar) */
   --band-mix: 14%;           /* the target range's faint mint band: this much mint, flat */
   --dial-size: 120px;
   --dial-w: 10px;

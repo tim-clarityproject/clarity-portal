@@ -178,16 +178,17 @@ const AREAS = [
   ['Strategic', '/strategic'],
   ['My Account', '/my-account'],
 ];
+// The Hardware and Software check-in joined Review in Phase 5 step 1.
 const HUB_TILES = {
   '/personal': [['Plan', '/personal/plan'], ['Reset', '/personal/reset'], ['Review', '/personal/review']],
   '/personal/plan': [['Individual Performance Plan', '/performance-plan'], ['Performance Sprint', '/performance-sprint'], ['Plan my day', '/my-day/plan'], ['Get unstuck', '/get-unstuck'], ['Pre-mortem', '/pre-mortem'], ['Time audit', '/time-audit']],
   '/personal/reset': [['Breathe', '/breathe'], ['Sleep wind down', '/sleep-wind-down'], ['Pressure plan', '/pressure-plan'], ['Journal', '/daily-journal']],
-  '/personal/review': [['Review my day', '/my-day/review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/life-balance-review']],
+  '/personal/review': [['Review my day', '/my-day/review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/life-balance-review'], ['Hardware and Software check-in', '/check-in']],
   '/interpersonal': [['Meeting planner', '/plan-meeting'], ['Give difficult feedback', '/give-difficult-feedback']],
   '/strategic': [['Strategic Alignment Health Check', '/goal-setting']],
 };
 const HUB_TITLES = { '/personal': 'Personal', '/personal/plan': 'Plan', '/personal/reset': 'Reset', '/personal/review': 'Review', '/interpersonal': 'Interpersonal', '/strategic': 'Strategic' };
-const NOT_BUILT = ['Dashboard', 'Find my sweet spot', 'Deliberate vs default', 'Travel and jet lag plan', 'Delegation audit', 'Emotional wash', 'Identity beyond the role', 'Hardware and Software check-in', 'Above or below the line', 'Stay deliberate under pressure', 'Performance Evidence', 'Prepare for a difficult conversation', 'Prepare for a pitch', 'Map my stakeholders', 'Map my team', 'Understand their sweet spot', 'Decide who decides', 'Strategy on a page', 'Points of leverage', 'Pre-mortem for an initiative'];
+const NOT_BUILT = ['Dashboard', 'Find my sweet spot', 'Deliberate vs default', 'Travel and jet lag plan', 'Delegation audit', 'Emotional wash', 'Identity beyond the role', 'Above or below the line', 'Stay deliberate under pressure', 'Performance Evidence', 'Prepare for a difficult conversation', 'Prepare for a pitch', 'Map my stakeholders', 'Map my team', 'Understand their sweet spot', 'Decide who decides', 'Strategy on a page', 'Points of leverage', 'Pre-mortem for an initiative'];
 const MOVED = [
   ['/plan-section', '/personal/plan'],
   ['/planning-tools', '/personal/plan'],

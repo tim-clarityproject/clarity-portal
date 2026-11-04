@@ -34,10 +34,11 @@ import { useDraft } from '../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../lib/deviceStore';
 import { carryOnItems, carryOnWhen } from '../lib/carryOn';
 import { parseDbTimestamp } from '../lib/dateFormatter';
-import { loadHomeDay } from '../lib/performance/api';
+import { loadCheckins, loadHomeDay } from '../lib/performance/api';
 import { useRecoveryPage, useSprintPage } from '../lib/performance/hooks';
 import {
   addDayKey,
+  checkinPrompt,
   dayName,
   dayPicks,
   dayStrategyNames,
@@ -83,7 +84,8 @@ import './performance/performance.css';
 // to the basics (M15). A first visit after a gap of 7 days says "Good to
 // see you." (experience rule 18); the first day back from a Recovery says
 // "Welcome back." (M15). Data that doesn't exist yet (coach notes,
-// coaching sessions, the first check-in, agreements) shows nothing.
+// coaching sessions, agreements) shows nothing; the check-in (Phase 5)
+// shows its line while due.
 
 const emptyTodo = (week) => ({ text: '', strategyId: null, impact: 2, week });
 const MINUTE_MS = 60000;
@@ -165,6 +167,10 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const [notTonight, addNotTonight] = useDeviceList(userId, 'wind-down-not-tonight');
   const [notNow, addNotNow] = useDeviceList(userId, 'quiet-not-now');
   const logRef = useRef(null);
+  // The Hardware and Software check-in's line while it's due (Phase 5),
+  // from the check-in's own copy on the device, which it updates when
+  // finished, so the line goes at once, offline too.
+  const checkins = useCachedLoad({ userId, name: 'checkins', load: () => loadCheckins(userId) });
 
   // Choices made and wind-downs finished on another device, once migration
   // 039 has run (nothing until then): read quietly, shown when they differ.
@@ -179,6 +185,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
 
   const recovery = openRecovery(d.recoveries || []);
   const coach = day.coach?.firstName || null;
+  const checkin = checkins.data ? checkinPrompt({ hasCoach: Boolean(coach), coachName: coach, checkins: checkins.data, today }) : null;
   const steps = planSteps({
     mission: day.plan?.mission,
     objectives: day.objectives || 0,
@@ -204,9 +211,10 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     windDown: { dismissed: [...notTonight, ...finishedNights(userId)] },
     recovery,
     nextSprint: (day.lastSprintNumber || 0) + 1,
+    firstCheckin: checkin?.first ? checkin : null,
   });
   const joined = user?.created_at ? Math.floor((now - parseDbTimestamp(user.created_at)) / 86400000) : 0;
-  const quiet = quietLines({ person, hasCoach: Boolean(coach), mission: day.plan?.mission, joinedDaysAgo: joined, dismissed: notNow });
+  const quiet = quietLines({ person, hasCoach: Boolean(coach), mission: day.plan?.mission, joinedDaysAgo: joined, dismissed: notNow, checkin });
 
   // Coming back: the first day back from a Recovery (M15), or the first
   // visit after a gap of 7 days with nothing logged, planned or reviewed.
@@ -323,6 +331,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           key: q.key,
           lines: q.lines,
           action: { label: q.action.label, onClick: () => go(q.action.to) },
+          time: q.time,
           onDismiss: q.dismissable ? () => { addNotNow(q.key); toast.show('We won’t ask again.'); } : undefined,
         }))}
       />

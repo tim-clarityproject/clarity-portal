@@ -2,7 +2,7 @@ import { readCache, writeCache } from './pageCache';
 import { isOnline, subscribeOnline } from './connection';
 import { changesMade, readQuietly, waitingToSend, whenSent } from './syncQueue';
 import { loadSavedPlans, loadSavedReviews, SAVED_PLANS_CACHE, SAVED_REVIEWS_CACHE } from './savedItemsApi';
-import { loadActivePlan, loadDayPlan, loadDayReview, loadDebrief, loadHomeDay, loadPlanPage, loadSprintPage } from './performance/api';
+import { loadActivePlan, loadCheckinPage, loadCheckins, loadDayPlan, loadDayReview, loadDebrief, loadHomeDay, loadPlanPage, loadSprintPage } from './performance/api';
 import { PLAN_CACHE, SPRINT_CACHE } from './performance/hooks';
 import { localToday } from './performance/rows';
 import { addDayKey } from './performance/dayPlan';
@@ -41,6 +41,10 @@ function pages(userId) {
     ['debrief:now', () => loadDebrief(userId, { today })],
     [SAVED_PLANS_CACHE, () => loadSavedPlans(userId)],
     [SAVED_REVIEWS_CACHE, () => loadSavedReviews(userId)],
+    // The Hardware and Software check-in (Phase 5): Home's line, and the
+    // check-in itself, so it can be done on a flight (CheckIn.jsx CHECKIN_CACHE).
+    ['checkins', () => loadCheckins(userId)],
+    ['checkin-page', () => loadCheckinPage(userId)],
   ];
   // Just after midnight, Review my day may be for the day before.
   if (now.getHours() < REVIEW_EARLY_HOURS) {
