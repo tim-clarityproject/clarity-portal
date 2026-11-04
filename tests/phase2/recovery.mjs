@@ -245,7 +245,8 @@ await everyLayout('running-with-link', async (page) => go(page, '/performance-sp
   pass('... and kept after a refresh', (await page.locator('.rec-q textarea').first().inputValue()) === 'A long walk by the river, no phone');
   await page.getByRole('button', { name: /^Sleep/ }).click();
   await page.waitForSelector('.rec-sleep');
-  await page.getByLabel('Total hours').fill('7.5');
+  // Total hours is the stepper now, as Plan my day's (Tim, 3 Nov): 7.5 is one press on from 7.
+  await page.getByRole('button', { name: 'Half an hour more' }).click();
   await page.getByRole('radio', { name: 'Good', exact: true }).click();
   await layoutChecks(page, '390px light sleep panel', 'light');
   await page.getByRole('button', { name: 'Save my sleep' }).click();
