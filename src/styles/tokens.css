@@ -284,6 +284,10 @@
   /* Charts drawn on screen (design reference v15, M4) */
   --chart-h: 120px;
   --chart-bar-max: 22px;
+  --schart-h: 140px;         /* Recovery's sleep chart (Tim, 3 Nov) */
+  --schart-side-w: 168px;    /* its target range's label, right of the chart on a laptop */
+  --chart-stub: 2px;         /* a night to come, or not answered: a faint stub */
+  --band-mix: 14%;           /* the target range's faint mint band: this much mint, flat */
   --dial-size: 120px;
   --dial-w: 10px;
   --fs-chart: calc(12 * var(--u));          /* labels inside a chart (the mock-ups use 11px; 12px keeps the "nothing below 12px" rule) */

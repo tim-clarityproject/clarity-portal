@@ -7,16 +7,23 @@ import {
   Button,
   Checkbox,
   Choice,
+  Collapsible,
   DayCounter,
   Loading,
-  NumberField,
   PageHeader,
   RecoveryBanner,
   RecoveryLinks,
+  Section,
+  SleepChart,
+  SleepTargetEditor,
+  SleepTargetLink,
   SlidePanel,
+  Stat,
+  Stepper,
   TextBox,
   Tile,
   WhoSees,
+  useSleepTarget,
   useToast,
   LoadError,
 } from '../../components/design';
@@ -32,6 +39,13 @@ import {
   RECOVERY_MIN_DAYS,
   RECOVERY_SUGGESTED_DAYS,
   recoveryView,
+  recoverySleepView,
+  hoursFigure,
+  qualityWords,
+  SLEEP_CHART_STARTS,
+  SLEEP_MAX_HOURS,
+  SLEEP_QUALITY_OPTIONS,
+  SLEEP_SUGGESTED_LINE,
 } from '../../lib/performance';
 import { useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
@@ -175,13 +189,6 @@ export default function RecoveryStart() {
 // ---------------------------------------------------------------- the recovery day
 
 const SAVE_DELAY_MS = 800;
-const QUALITY = [
-  { value: 'very_poor', label: 'Very poor' },
-  { value: 'poor', label: 'Poor' },
-  { value: 'fair', label: 'Fair' },
-  { value: 'good', label: 'Good' },
-  { value: 'very_good', label: 'Very good' },
-];
 
 /** The hour on the device's own clock (M0.2: the person's day is the device's). */
 function localHour() {
@@ -226,6 +233,7 @@ export function RecoveryDay({ recovery }) {
   const [shared, setShared] = useState(null);
   const [save, setSave] = useState(null);
   const [sleepOpen, setSleepOpen] = useState(false);
+  const [grow, setGrow] = useState(null);
   const timer = useRef(null);
   const latest = useRef({});
   const saved = view?.answer || null;
@@ -335,6 +343,8 @@ export function RecoveryDay({ recovery }) {
         <Tile name="Breathe" description="Slow your breathing to settle your body." note="1, 3 or 5 minutes" onClick={() => navigate('/breathe')} />
       </div>
 
+      <RecoverySleep recovery={recovery} grow={grow} />
+
       <RecoveryLinks
         className="rec-links"
         links={[
@@ -343,45 +353,164 @@ export function RecoveryDay({ recovery }) {
         ]}
       />
 
-      <SleepPanel open={sleepOpen} onClose={() => setSleepOpen(false)} userId={userId} today={today} />
+      <SleepPanel
+        open={sleepOpen}
+        onClose={() => setSleepOpen(false)}
+        userId={userId}
+        today={today}
+        saved={(recovery.data?.nights || []).find((n) => n.local_date === today) || null}
+        onSaved={(night) => {
+          // Back on Recovery's Home with "Saved", and the new bar grows in once.
+          // Merged over the night already there: an answer left blank keeps
+          // what was saved before.
+          setData((d) => {
+            if (!d) return d;
+            const old = (d.nights || []).find((n) => n.local_date === night.local_date) || {};
+            const merged = {
+              ...old,
+              local_date: night.local_date,
+              sleep_hours: night.sleep_hours ?? old.sleep_hours ?? null,
+              sleep_quality: night.sleep_quality ?? old.sleep_quality ?? null,
+            };
+            return { ...d, nights: [...(d.nights || []).filter((n) => n.local_date !== night.local_date), merged] };
+          });
+          setGrow(night.sleep_hours == null ? null : night.local_date);
+        }}
+      />
     </>
   );
 }
 
-/** "How did you sleep last night?" (M15's Sleep tile): total hours and quality, on today's day plan. */
-function SleepPanel({ open, onClose, userId, today }) {
+/**
+ * Recovery's sleep (approved by Tim, 3 Nov 2026, 14:26): under the Sleep
+ * and Breathe tiles, a section headed "Sleep" with the eye on the right.
+ * Last night's hours as the big figure, the usual quality beside it, one
+ * bar per night with the person's target range (SleepChart), "Show as a
+ * table", then one action, so the daily sleep answer always leads
+ * somewhere (never data collection for its own sake): Sleep wind down
+ * after a night below the range, "Keep doing what's working." otherwise.
+ * "Change my target range" sits beside the action and opens the control
+ * in place. No line repeats a figure or label the chart already shows
+ * (Tim, 3 Nov, 15:06).
+ */
+function RecoverySleep({ recovery, grow }) {
+  const navigate = useNavigate();
+  const { view, today } = recovery;
+  const [target, changeTarget] = useSleepTarget();
+  const [editing, setEditing] = useState(false);
+  const sleep = useMemo(
+    () => recoverySleepView({ recovery: view?.recovery, nights: recovery.data?.nights || [], today, target }),
+    [view?.recovery, recovery.data?.nights, today, target],
+  );
+  if (!sleep) return null;
+  const { last, average, action } = sleep;
+  const answered = sleep.slots.filter((s) => s.hours != null || s.quality);
+  return (
+    <Section title="Sleep" aside={<WhoSees audience="me" />} className="rec-sleep-sec">
+      {(last?.hours != null || average) && (
+        <div className="rec-sleep-figs">
+          {last?.hours != null && <Stat label="Last night" value={hoursFigure(last.hours)} unit="hours" />}
+          {average && <Stat label="Average quality" value={average} className="rec-sleep-word" />}
+        </div>
+      )}
+      <SleepChart
+        slots={sleep.slots}
+        target={target}
+        note={target.own ? null : SLEEP_SUGGESTED_LINE}
+        grow={grow}
+        enough={sleep.enough}
+        empty={SLEEP_CHART_STARTS}
+      />
+      {sleep.enough && (
+        <div className="rec-sleep-table">
+          <Collapsible summary="Show as a table">
+            <table className="year-tbl">
+              <thead>
+                <tr><th scope="col">Night</th><th scope="col">Hours</th><th scope="col">Quality</th></tr>
+              </thead>
+              <tbody>
+                {answered.map((s) => (
+                  <tr key={s.date}>
+                    <td data-label="Night">{s.night.replace(/^Night of /, '')}</td>
+                    <td data-label="Hours">{s.hours == null ? 'Not answered' : `${hoursFigure(s.hours)} hours`}</td>
+                    <td data-label="Quality">{qualityWords(s.quality) || 'Not answered'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Collapsible>
+        </div>
+      )}
+      <div className="rec-sleep-act">
+        {action?.lines.map((line) => <p key={line} className="rec-sleep-line">{line}</p>)}
+        <div className="rec-sleep-links">
+          {action?.windDown && <Button variant="text" onClick={() => navigate('/sleep-wind-down')}>Open Sleep wind down</Button>}
+          <SleepTargetLink open={editing} onToggle={() => setEditing((v) => !v)} controls="rec-sleep-target" />
+        </div>
+        {editing && <SleepTargetEditor id="rec-sleep-target" target={target} onChange={changeTarget} />}
+      </div>
+    </Section>
+  );
+}
+
+/** "How did you sleep last night?" (M15's Sleep tile): total hours and quality on one screen, as Plan my day's first screen, on today's day plan. */
+function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
   const toast = useToast();
-  const [hours, setHours] = useState('');
+  const [hours, setHours] = useState(null);
   const [quality, setQuality] = useState(null);
   const [problem, setProblem] = useState(null);
   const [busy, setBusy] = useState(false);
+  // What the person has changed since the panel opened: an answer arriving
+  // from the server later never overwrites it.
+  const touched = useRef({ hours: false, quality: false });
+  // Which answers came from a saved night (not from the person, just now).
+  const savedHas = useRef({ hours: false, quality: false });
+  const savedRef = useRef(saved);
+  useEffect(() => { savedRef.current = saved; });
 
   useEffect(() => {
     if (!open || !userId) return;
     let live = true;
-    loadSleep(userId, today).then((row) => {
-      if (!live || !row) return;
-      if (row.sleep_hours != null) setHours(String(Number(row.sleep_hours)));
-      if (row.sleep_quality) setQuality(row.sleep_quality);
-    }).catch(() => {});
+    touched.current = { hours: false, quality: false };
+    savedHas.current = { hours: false, quality: false };
+    // The page's own copy first (it is there offline too), then the server's.
+    const fill = (row) => {
+      if (!row) return;
+      const h = row.sleep_hours == null || row.sleep_hours === '' ? NaN : Number(row.sleep_hours);
+      // An older answer above 14 (the old panel took up to 24) shows as 14;
+      // it is only sent again if the person changes the hours.
+      if (Number.isFinite(h) && !touched.current.hours) {
+        savedHas.current.hours = true;
+        setHours(Math.max(0, Math.min(SLEEP_MAX_HOURS, h)));
+      }
+      if (row.sleep_quality && !touched.current.quality) {
+        savedHas.current.quality = true;
+        setQuality(row.sleep_quality);
+      }
+    };
+    setHours(null);
+    setQuality(null);
+    fill(savedRef.current);
+    loadSleep(userId, today).then((row) => { if (live) fill(row); }).catch(() => {});
     return () => { live = false; };
   }, [open, userId, today]);
 
   const keep = async () => {
-    const typed = hours.replace(',', '.');
-    const n = typed === '' ? null : Number(typed);
-    if (n != null && (!Number.isFinite(n) || n < 0 || n > 24)) {
-      setProblem('Any figure from 0 to 24.');
-      return;
-    }
-    if (n == null && !quality) {
+    if (hours == null && !quality) {
       setProblem('Add your hours or how well you slept, or close this.');
       return;
     }
     setBusy(true);
     try {
-      await saveSleep(userId, today, { hours: n == null ? null : Math.round(n * 2) / 2, quality });
-      toast.show('Saved');
+      // Only what the person answered or changed is sent, so an answer
+      // shown from before is never rewritten (or cut to 14).
+      const sent = {
+        hours: touched.current.hours || !savedHas.current.hours ? hours : null,
+        quality: touched.current.quality || !savedHas.current.quality ? quality : null,
+      };
+      const r = await saveSleep(userId, today, sent);
+      toast.show(r?.status === 'queued' ? 'Will sync' : 'Saved');
+      onSaved?.({ local_date: today, sleep_hours: sent.hours, sleep_quality: sent.quality });
       onClose();
     } catch (e) {
       toast.error(friendlyError(e, 'That didn’t save. Check your connection and try again.'));
@@ -398,13 +527,27 @@ function SleepPanel({ open, onClose, userId, today }) {
       footer={<Button variant="primary" disabled={busy} onClick={keep}>Save my sleep</Button>}
     >
       <div className="rec-sleep">
-        <div className="rec-sleep-row">
-          <span className="ds-label-row-text" id="rec-hours">Total hours</span>
-          <NumberField value={hours} onChange={(v) => { setHours(v); setProblem(null); }} decimals maxDigits={4} unit="hours" label="Total hours" size="box" />
+        <div className="ds-label-row">
+          <span className="ds-label-row-text">Total hours</span>
+          <WhoSees audience="me" />
         </div>
+        <Stepper
+          label="Total hours"
+          value={hours}
+          onChange={(v) => { touched.current.hours = true; setHours(v); setProblem(null); }}
+          min={0}
+          max={SLEEP_MAX_HOURS}
+          step={0.5}
+          startFrom={7}
+          lessLabel="Half an hour less"
+          moreLabel="Half an hour more"
+          format={(v) => `${v}`}
+          unit="hours"
+        />
         {problem && <p className="rec-problem" role="alert">{problem}</p>}
-        <Choice label="Quality" options={QUALITY} value={quality} onChange={(v) => { setQuality(v); setProblem(null); }} form="rows" />
-        <div className="rec-sleep-who"><WhoSees audience="me" /></div>
+        <div className="rec-sleep-quality">
+          <Choice label="Quality" options={SLEEP_QUALITY_OPTIONS} value={quality} onChange={(v) => { touched.current.quality = true; setQuality(v); setProblem(null); }} form="rows" />
+        </div>
       </div>
     </SlidePanel>
   );

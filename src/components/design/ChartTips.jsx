@@ -88,15 +88,16 @@ export default function ChartTips({ children, className = '' }) {
     box.style.left = '0px';
     box.style.top = '0px';
     const mark = shown.el.getBoundingClientRect();
-    const w = box.offsetWidth;
-    const h = box.offsetHeight;
+    // Whole pixels, rounded up, so it never ends up a fraction inside the edge.
+    const w = Math.ceil(box.getBoundingClientRect().width);
+    const h = Math.ceil(box.getBoundingClientRect().height);
     const centre = mark.left + mark.width / 2;
     const left = Math.max(edge, Math.min(viewW - edge - w, centre - w / 2));
     let top = mark.top - gap - h;
     if (top < edge) top = mark.bottom + gap;
     // Never past the bottom of the screen either (a mark scrolled away).
     top = Math.max(edge, Math.min(window.innerHeight - edge - h, top));
-    box.style.left = `${Math.round(left)}px`;
+    box.style.left = `${Math.floor(left)}px`;
     box.style.top = `${Math.round(top)}px`;
   }, [shown]);
 

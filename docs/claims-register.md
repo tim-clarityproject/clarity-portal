@@ -1,6 +1,6 @@
 # Claims register: the evidence behind what the portal says
 
-Version 1.1, written 26 Oct 2026 by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); audited the same evening to the citation standard Tim set at 18:47 (Part C).
+Version 1.2 (3 Nov 2026), first written 26 Oct 2026 by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); audited the same evening to the citation standard Tim set at 18:47 (Part C).
 
 Every claim the portal makes, every score's basis, and every tool, with how strong the evidence is and where it comes from (Tim, 26 Oct, 16:47 to 16:54). It sits beside the methods document (claude/methods/scoring-methods.md), which says how each score is worked out. The coach portal's evidence library is built from this register, and Tim adds to it there.
 
@@ -50,6 +50,7 @@ Each claim has where it shows in the portal, its strength, its sources (Part C) 
 | C17 | Switching off and recovering from work helps people sustain energy and performance. | Recovery, Home's recharge question | Moderate | R17 | Mostly surveys over time; some recovery training trials. |
 | C18 | Timing light exposure and shifting sleep before travel can reduce jet lag. | Travel and jet lag plan | Moderate (light shifts the body clock); Early (full travel plans) | R18 | Expert reviews and an expert consensus, built mostly on lab studies; the consensus itself says field evidence is lacking. The portal gives no melatonin or medication advice. |
 | C20 | Adults need 7 hours of sleep or more a night. | Check-in scoring, "green nights" | Strong | R20 | A population guideline; individual need varies. |
+| C48 | 7 to 9 hours a night is the range suggested for adults aged 18 to 64. | Recovery's sleep chart ("Your target range 7 to 9 hours", "Suggested for adults aged 18 to 64."), the sleep target range in My Account | Strong | R20 | A population guideline from expert consensus; individual need varies, so the person can change their own range (4 to 12 hours). The National Sleep Foundation gives 7 to 9 hours for adults 18 to 64 (and 7 to 8 from 65); the AASM and SRS consensus gives 7 hours or more, also published in Sleep, 38(6), 843–844. |
 | C21 | Adults are advised at least 150 minutes of moderate activity, or 75 vigorous, a week, plus muscle strengthening on 2 or more days. | Check-in movement questions | Strong | R21 | Guidelines for health, not for performance. |
 | C22 | Long hours of sitting carry extra health risk, which enough activity largely offsets. | Check-in sitting question | Moderate | R22 | From observational studies. |
 | C23 | The UK low-risk guideline is no more than 14 units a week, spread over 3 or more days. | Check-in alcohol questions and units guide | Strong | R23 | A UK guideline; other countries differ. The heavy-session question uses the UK version of AUDIT-C's third question (6 units for women, 8 for men), with our own wording and time frame. |
@@ -203,5 +204,6 @@ These claims and tools have early evidence or are our model. Nothing needs chang
 ## Change log
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 3 Nov 2026 | C48 added: the 7 to 9 hours target range on Recovery's sleep chart (Tim, 3 Nov, 14:26), from R20's two sources. |
 | 1.1 | 26 Oct 2026 | Scientific audit (Tim, 18:47): every citation re-checked on a primary or institutional record by two independent checks; four weaker sources replaced and twelve stronger or more recent ones added; three claims raised to Strong (if-then plans, debriefs) or Moderate (self-concordance, strengths) on the new evidence; the AUDIT-C note corrected (the UK version uses 6 and 8 units); the pre-mortem finding restated accurately; the King reference given its chapter and pages; one author error removed with its source. |
 | 1.0 | 26 Oct 2026 | First version; 34 of 35 sources confirmed on the web. |

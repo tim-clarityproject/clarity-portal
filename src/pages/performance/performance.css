@@ -900,6 +900,78 @@
   gap: var(--space-2);
 }
 
+/* Recovery's sleep chart (Tim, 3 Nov 2026): under the Sleep and Breathe
+   tiles, as wide as they are. */
+.ui-root .rec-sleep-sec {
+  max-width: var(--rec-panel-max);
+  margin-top: var(--space-px26);
+}
+
+/* The two figures share one row of labels and one row of values, so the
+   labels line up and the word sits on the figure's baseline. */
+.ui-root .rec-sleep-figs {
+  display: grid;
+  /* The second label wraps rather than running off a phone at large text. */
+  grid-template-columns: max-content minmax(0, max-content);
+  grid-template-rows: auto auto;
+  align-items: baseline;
+  gap: 0 var(--space-6);
+  margin-top: var(--space-3);
+}
+
+.ui-root .rec-sleep-figs > .ds-stat {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  align-items: baseline;
+}
+
+/* The usual quality is a word, so DM Sans, not a big Nekst figure. */
+.ui-root .rec-sleep-word .ds-stat-value {
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+}
+
+.ui-root .rec-sleep-table {
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .ui-root .rec-sleep-table .year-tbl td:not(:first-child)::before {
+    content: attr(data-label) ": ";
+    color: var(--label);
+  }
+}
+
+.ui-root .rec-sleep-act {
+  margin-top: var(--space-4);
+}
+
+.ui-root .rec-sleep-line {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .rec-sleep-line + .rec-sleep-line {
+  color: var(--text-2);
+}
+
+.ui-root .rec-sleep-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-5);
+  margin-top: var(--space-1);
+}
+
+.ui-root .rec-sleep-quality {
+  margin-top: var(--space-3);
+}
+
 .ui-root .rec-problem {
   margin: 0;
   font-size: var(--fs-note);

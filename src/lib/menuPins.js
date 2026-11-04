@@ -123,6 +123,16 @@ export function setPreference(userId, name, value) {
   return change(userId, (prefs) => ({ ...prefs, [name]: value }));
 }
 
+/**
+ * Changes one page setting from its latest value: `update(old)` gives the
+ * new one. When the setting moved on in another window or device since
+ * this one read it, the change is made again on top of theirs, so a press
+ * in one tab never undoes another tab's.
+ */
+export function updatePreference(userId, name, update) {
+  return change(userId, (prefs) => ({ ...prefs, [name]: update(prefs?.[name]) }));
+}
+
 /** The account's page settings as this device last read them ({} until read). */
 export function usePreferences(userId) {
   return useSyncExternalStore(subscribe, () => current(userId), () => current(userId)).prefs;

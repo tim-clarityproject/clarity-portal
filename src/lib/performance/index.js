@@ -17,3 +17,4 @@ export * from './dayReview';
 export * from './debrief';
 export * from './home';
 export * from './windDown';
+export * from './sleepChart';

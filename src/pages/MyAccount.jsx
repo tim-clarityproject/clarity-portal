@@ -9,7 +9,8 @@ import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
-import { useCoachName, Crosshair, PageHeader, Button, useToast } from '../components/design';
+import { useCoachName, Crosshair, PageHeader, Button, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget } from '../components/design';
+import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart';
 import { useStartChat } from '../components/coach/startChat';
 
 export default function MyAccount() {
@@ -33,6 +34,9 @@ export default function MyAccount() {
     toast.error(text);
   };
   const [showGoalModal, setShowGoalModal] = useState(false);
+  // The sleep target range (Tim, 3 Nov 2026): the same control as Recovery's Home.
+  const [sleepTarget, changeSleepTarget] = useSleepTarget();
+  const [sleepEditing, setSleepEditing] = useState(false);
   const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
 
@@ -313,6 +317,34 @@ export default function MyAccount() {
           margin-top: 6px;
         }
 
+        /* The sleep target range's steppers open in place, under its row. */
+        /* The link goes under the words when they'd squeeze it (large text). */
+        .account-row--sleep {
+          flex-wrap: wrap;
+          row-gap: var(--space-2);
+        }
+
+        .account-row--sleep .account-row-text {
+          flex: 1 1 14em;
+        }
+
+        .account-row--sleep .ds-starget-link {
+          flex: 0 0 auto;
+        }
+
+        .account-sleep-target {
+          padding: 0 0 var(--space-4);
+          border-bottom: var(--line-w) solid var(--line);
+        }
+
+        .account-sleep-target .ds-starget {
+          margin-top: 0;
+        }
+
+        .account-row--sleep:has(+ .account-sleep-target) {
+          border-bottom: 0;
+        }
+
         .account-row-buttons {
           display: flex;
           gap: 8px;
@@ -434,6 +466,23 @@ export default function MyAccount() {
               Open
             </Button>
           </div>
+
+          {/* Settings: the sleep target range, the same control as
+              Recovery's Home (Tim, 3 Nov 2026). */}
+          <div className="account-section-label">Settings</div>
+          <div className="account-row account-row--sleep">
+            <div className="account-row-text">
+              <div className="account-row-title">Sleep target range</div>
+              <div className="account-row-desc">{rangeWords(sleepTarget)}</div>
+              {!sleepTarget.own && <div className="account-row-desc">{SLEEP_SUGGESTED_LINE}</div>}
+            </div>
+            <SleepTargetLink open={sleepEditing} onToggle={() => setSleepEditing((v) => !v)} controls="account-sleep-target" />
+          </div>
+          {sleepEditing && (
+            <div className="account-sleep-target">
+              <SleepTargetEditor id="account-sleep-target" target={sleepTarget} onChange={changeSleepTarget} />
+            </div>
+          )}
 
           {/* Portal */}
           <div className="account-section-label">Portal</div>

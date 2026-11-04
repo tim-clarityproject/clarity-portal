@@ -783,11 +783,17 @@ export async function loadRecoveryPage(userId) {
     loadMyCoach().catch(() => null),
   ]);
   const open = recoveries.find((r) => !r.ended_at);
-  const answers = open
-    ? await rows(supabase.from('recovery_recharge_answers').select('id, recovery_id, local_date, answer, shared, updated_at')
-      .eq('recovery_id', open.id).order('local_date'))
-    : [];
-  return { sprint, recoveries, personSettings, firstName: profile?.first_name || '', coach, answers };
+  // The open Recovery's recharge answers, and its nights' sleep (the
+  // sleep chart: each day's day plan holds the night before it).
+  const [answers, nights] = open
+    ? await Promise.all([
+      rows(supabase.from('recovery_recharge_answers').select('id, recovery_id, local_date, answer, shared, updated_at')
+        .eq('recovery_id', open.id).order('local_date')),
+      rows(supabase.from('day_plans').select('local_date, sleep_hours, sleep_quality')
+        .eq('user_id', userId).gte('local_date', open.start_on).order('local_date').limit(400)),
+    ])
+    : [[], []];
+  return { sprint, recoveries, personSettings, firstName: profile?.first_name || '', coach, answers, nights };
 }
 
 /** Start a Recovery (M15 "Start my recovery"): its id comes from the device, so a resend writes the same row. */
@@ -833,11 +839,16 @@ export function saveRechargeAnswer(userId, recoveryId, localDate, answer, shared
  * finds the same row. Only the sleep fields are written.
  */
 export function saveSleep(userId, localDate, { hours, quality }) {
+  // An answer left blank is not sent, so it never wipes one saved before
+  // (from this panel or Plan my day, offline or on a slow connection).
+  const values = { user_id: userId, local_date: localDate };
+  if (hours != null) values.sleep_hours = hours;
+  if (quality) values.sleep_quality = quality;
   return saveOrQueue(userId, {
     table: 'day_plans',
     kind: 'upsert',
     onConflict: 'user_id,local_date',
-    values: { user_id: userId, local_date: localDate, sleep_hours: hours, sleep_quality: quality },
+    values,
   });
 }
 
