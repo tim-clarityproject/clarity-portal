@@ -35,6 +35,7 @@ import { clearDraft, useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
 import { newId, keepForLater, saveOrQueue, useQueueState } from '../../lib/syncQueue';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
+import { dropCheckinExtras, extrasKnown, keepCheckinExtras, readCheckinExtras } from '../../lib/performance/answerExtras';
 import {
   addSprintHabit,
   checkinAnswersOp,
@@ -72,6 +73,8 @@ import {
   unitsLine,
   cleanAnswers,
   cleanGoals,
+  extrasFromRow,
+  extrasToRow,
   finishToastWords,
   goalQuestions,
   habitComplete,
@@ -248,10 +251,11 @@ function CheckinFlow({ userId, today, month, loaded }) {
   const first = kind === 'first';
   const role = exampleRole(data.describesYou);
 
-  // The drinks counted and the kind of trip stay on this device (029 takes
-  // only the answers themselves), so changing an answer starts from them.
-  const extrasKey = deviceKey('checkin-extras', userId, month);
-  const [answers, setAnswers] = useState(() => ({ ...(readJson(extrasKey) || {}), ...(row?.answers || {}) }));
+  // The drinks counted and the kind of trip: with the month's row once
+  // migration 040 is there (checkins.drinks, checkins.trip), so another
+  // device sees them; until then on this device only (answerExtras.js).
+  // The row's own wins over the device's.
+  const [answers, setAnswers] = useState(() => ({ ...(readCheckinExtras(userId, month) || {}), ...(row?.answers || {}), ...extrasFromRow(row) }));
   const [goals, setGoals] = useState(() => ({ ...(row?.goals || {}) }));
   const [save, setSave] = useState('idle');
   const checkinId = useRef(row?.id || null);
@@ -265,7 +269,7 @@ function CheckinFlow({ userId, today, month, loaded }) {
   // Another device's answers, until this one changes something.
   useEffect(() => {
     if (!typedYet.current && row?.updated_at) {
-      setAnswers({ ...(row.answers || {}) });
+      setAnswers((a) => ({ _drinks: a._drinks, _trip: a._trip, ...(row.answers || {}), ...extrasFromRow(row) }));
       setGoals({ ...(row.goals || {}) });
     }
   }, [row?.updated_at]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -335,7 +339,8 @@ function CheckinFlow({ userId, today, month, loaded }) {
 
   const values = (extra = {}) => {
     const { answers: a, goals: g } = latest.current;
-    return { kind, answers: cleanAnswers(a), ...(first ? { goals: cleanGoals(g) } : {}), ...extra };
+    // The drinks and the trip go with the row once 040's columns are there.
+    return { kind, answers: cleanAnswers(a), ...(extrasKnown() ? extrasToRow(a) : {}), ...(first ? { goals: cleanGoals(g) } : {}), ...extra };
   };
 
   const send = (extra = {}) => {
@@ -348,7 +353,10 @@ function CheckinFlow({ userId, today, month, loaded }) {
       const patch = { month, ...v };
       setData((d) => ({ ...d, checkins: d.checkins.map((c) => (c.month === month ? { ...c, ...patch } : c)) }));
       noteCheckinOnDevice(userId, patch);
-      return saveOrQueue(userId, checkinAnswersOp(userId, month, v));
+      const r = await saveOrQueue(userId, checkinAnswersOp(userId, month, v));
+      // Saved with the row (or waiting with it in the queue): the device's own copy goes.
+      if ('drinks' in v || 'trip' in v) dropCheckinExtras(userId, month);
+      return r;
     });
   };
 
@@ -384,8 +392,9 @@ function CheckinFlow({ userId, today, month, loaded }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Until 040 is there, the device keeps them (answerExtras.js).
   useEffect(() => {
-    if (answers._drinks || answers._trip) writeJson(extrasKey, { _drinks: answers._drinks, _trip: answers._trip });
+    keepCheckinExtras(userId, month, answers);
   }, [answers._drinks, answers._trip]); // eslint-disable-line react-hooks/exhaustive-deps
   const patchAnswers = (fn) => {
     typedYet.current = true;
@@ -407,7 +416,6 @@ function CheckinFlow({ userId, today, month, loaded }) {
   const previous = previousCheckin(data.checkins, month);
   const results = useMemo(() => checkinResults({ answers, previous }), [answers, previous]);
   const points = useMemo(() => checkinPoints(data.checkins, { month, answers }), [data.checkins, month, answers]);
-  const eyeLine = <div className="ck-eye">{eye}</div>;
   const goalQs = goalQuestions(coach);
 
   const intro = first
@@ -495,6 +503,8 @@ function CheckinFlow({ userId, today, month, loaded }) {
     title: first || !results.compared ? 'Your starting point' : 'Your month',
     nudges: [first || !results.compared ? 'Next month’s check-in will show what’s changed.' : 'Here’s how this month compares with last month.'],
     nextLabel: first ? 'Finish my first check-in' : 'Finish my check-in',
+    // The eye beside the title, never on its own row (rule 29d, Tim, 5 Nov).
+    eye,
     render: () => (
       <Results
         userId={userId}
@@ -509,7 +519,7 @@ function CheckinFlow({ userId, today, month, loaded }) {
         checkinId={checkinId}
         ensureCheckin={ensureCheckin}
         month={month}
-        eye={eyeLine}
+        eye={null}
       />
     ),
   };

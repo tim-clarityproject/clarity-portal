@@ -195,6 +195,44 @@ export function unitsLine(units) {
   return `That’s about ${u} unit${u === 1 ? '' : 's'} a week.`;
 }
 
+// ------------------------------------------------------------------ kept with the row (040)
+// The drinks counted and the kind of trip are saved with the month's row
+// once migration 040 is there (checkins.drinks, checkins.trip); until then
+// they stay on the device. On the page they travel with the answers as
+// _drinks and _trip, which cleanAnswers leaves out of answers.
+
+const TRIP_KINDS = new Set(TRIP_OPTIONS.map((o) => o.value));
+const DRINK_KEYS = new Set([...DRINKS.map((d) => d.key), 'other']);
+
+/** The drinks counted as checkins.drinks holds them: known drinks only, numbers 0 to 99 ("other": units, 0 to 999). */
+export function drinksToRow(drinks) {
+  if (drinks == null || typeof drinks !== 'object') return null;
+  const out = {};
+  for (const [key, raw] of Object.entries(drinks)) {
+    if (!DRINK_KEYS.has(key) || raw === '' || raw == null) continue;
+    const n = Number(String(raw).replace(',', '.'));
+    if (!Number.isFinite(n) || n <= 0) continue;
+    out[key] = key === 'other' ? Math.min(999, Math.round(n * 10) / 10) : Math.min(DRINK_MAX, Math.round(n));
+  }
+  return out;
+}
+
+/** What the month's row holds for the page (_drinks, _trip), only where the row has them. */
+export function extrasFromRow(row) {
+  const out = {};
+  if (row?.drinks && typeof row.drinks === 'object') out._drinks = { ...row.drinks };
+  if (row?.trip && TRIP_KINDS.has(row.trip)) out._trip = row.trip;
+  return out;
+}
+
+/** The row's columns for what this page knows of them: never sends an empty one over another device's. */
+export function extrasToRow(answers = {}) {
+  const out = {};
+  if (answers._drinks !== undefined) out.drinks = drinksToRow(answers._drinks);
+  if (answers._trip !== undefined && (answers._trip === null || TRIP_KINDS.has(answers._trip))) out.trip = answers._trip;
+  return out;
+}
+
 /** The words of an answer, as people saw it ("Fair"), or null. */
 export function answerWords(code, value) {
   return BY_CODE.get(code)?.options.find((o) => o.value === value)?.label || null;

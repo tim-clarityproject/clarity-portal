@@ -8,6 +8,7 @@ import { PATTERNS_CACHE } from './performance/patterns';
 import { PLAN_CACHE, SPRINT_CACHE } from './performance/hooks';
 import { localToday } from './performance/rows';
 import { addDayKey } from './performance/dayPlan';
+import { moveAnswerExtras } from './performance/answerExtras';
 import { REVIEW_EARLY_HOURS } from './performance/dayReview';
 
 // The key pages are on the device before they are needed (Phase 4 step 8,
@@ -110,7 +111,9 @@ export function startWarming(userId) {
       });
       return;
     }
-    running = warm(userId).finally(() => { running = null; });
+    // First, anything still kept on this device that migration 040 now
+    // holds with its row (answerExtras.js), then the pages' copies.
+    running = moveAnswerExtras(userId).catch(() => 0).then(() => warm(userId)).finally(() => { running = null; });
   };
   window.setTimeout(() => {
     if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(go, { timeout: 4000 });

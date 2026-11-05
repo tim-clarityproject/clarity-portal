@@ -17,6 +17,7 @@ import { supabase } from '../supabase';
 import { newId, noteVersions, saveOrQueue } from '../syncQueue';
 import { nextVersion, planChangeKind } from './versions';
 import { pickDebriefWeek } from './debrief';
+import { CHECKIN_EXTRA_COLS, REVIEW_EXTRA_COLS, extrasReady } from './answerExtras';
 
 const PLAN_COLS = 'id, mission, status, major, minor, created_at, updated_at';
 const OBJECTIVE_COLS = 'id, plan_id, name, kind, unit, direction, start_value, start_set_on, target_value, by_when, due_on, reached_on, source, sort_order, archived_at, created_at, updated_at';
@@ -941,6 +942,8 @@ export async function loadDayPlanRow(userId, date) {
 // ---------------------------------------------------------------- Review my day
 
 const DAY_REVIEW_COLS = 'id, user_id, local_date, way_of_being_rating, where_it_showed, went_well, differently, tomorrow, on_my_mind, status, finished_at, updated_at';
+// With way_of_being once migration 040 is there (answerExtras.js).
+const reviewCols = async () => DAY_REVIEW_COLS + ((await extrasReady()) ? REVIEW_EXTRA_COLS : '');
 
 /**
  * Everything Review my day shows for one day (M5), as rows: Plan my day's
@@ -951,7 +954,7 @@ const DAY_REVIEW_COLS = 'id, user_id, local_date, way_of_being_rating, where_it_
 export async function loadDayReview(userId, date) {
   const [plan, dayReview] = await Promise.all([
     loadDayPlan(userId, date),
-    one(supabase.from('day_reviews').select(DAY_REVIEW_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
+    reviewCols().then((cols) => one(supabase.from('day_reviews').select(cols).eq('user_id', userId).eq('local_date', date).limit(1))),
   ]);
   const reviewStrategies = dayReview
     ? await rows(supabase.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', dayReview.id))
@@ -1040,7 +1043,7 @@ export function dayReviewAnswersOp(userId, date, values) {
 
 /** The review row as it is now (when a first save found one already there). */
 export async function loadDayReviewRow(userId, date) {
-  return one(supabase.from('day_reviews').select(DAY_REVIEW_COLS).eq('user_id', userId).eq('local_date', date).limit(1));
+  return one(supabase.from('day_reviews').select(await reviewCols()).eq('user_id', userId).eq('local_date', date).limit(1));
 }
 
 // ---------------------------------------------------------------- the weekly debrief
@@ -1130,6 +1133,8 @@ export function objectiveFigureOp(userId, { id, objectiveId, value, recordedOn, 
 // ---------------------------------------------------------------- the Hardware and Software check-in
 
 const CHECKIN_COLS = 'id, kind, month, status, answers, goals, hardware_score, software_score, area_scores, finished_at, created_at, updated_at';
+// With the drinks counted and the trip once migration 040 is there (answerExtras.js).
+const checkinCols = async () => CHECKIN_COLS + ((await extrasReady()) ? CHECKIN_EXTRA_COLS : '');
 
 /**
  * Everything the check-in shows (mock-up M12; 029's checkins): every one
@@ -1140,7 +1145,7 @@ const CHECKIN_COLS = 'id, kind, month, status, answers, goals, hardware_score, s
  */
 export async function loadCheckinPage(userId) {
   const [checkins, coach, sharing, settings, notes] = await Promise.all([
-    rows(supabase.from('checkins').select(CHECKIN_COLS).eq('user_id', userId).order('month', { ascending: false })),
+    checkinCols().then((cols) => rows(supabase.from('checkins').select(cols).eq('user_id', userId).order('month', { ascending: false }))),
     loadMyCoach().catch(() => null),
     rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId).eq('part', 'checkin')),
     one(supabase.from('person_settings').select('describes_you').eq('user_id', userId).limit(1)).catch(() => null),
@@ -1310,7 +1315,7 @@ export function checkinAnswersOp(userId, month, values) {
 
 /** The check-in row as it is now (when the first save found one already there). */
 export async function loadCheckinRow(userId, month) {
-  return one(supabase.from('checkins').select(CHECKIN_COLS).eq('user_id', userId).eq('month', month).limit(1));
+  return one(supabase.from('checkins').select(await checkinCols()).eq('user_id', userId).eq('month', month).limit(1));
 }
 
 /**

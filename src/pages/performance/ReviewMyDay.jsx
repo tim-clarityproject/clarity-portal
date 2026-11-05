@@ -31,6 +31,7 @@ import {
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
+import { extrasKnown } from '../../lib/performance/answerExtras';
 import { readDayChoices, refreshDayChoices } from '../../lib/performance/dayPlanHabits';
 import { friendlyError } from '../../lib/friendlyError';
 import { keepForLater, newId, saveOrQueue, useQueueState, useSuperseded } from '../../lib/syncQueue';
@@ -225,10 +226,24 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
 
   const view = useMemo(() => dayReviewView(data, { date, planLocal, local }), [data, date, planLocal, local]);
   // The way of being: this morning's, or the one chosen here when the day
-  // wasn't planned (kept on this device: day_reviews has no place for it).
-  const way = view.way || local.way || '';
+  // wasn't planned. Saved with the day's review once migration 040 is
+  // there (day_reviews.way_of_being), so another device sees it; until
+  // then kept on this device (answerExtras.js).
+  const way = view.way || data.dayReview?.way_of_being || local.way || '';
   const wayChoices = recentWays(data.earlierWays || [], date);
-  const chooseWay = (w) => setLocal((l) => ({ ...l, way: (w || '').trim() }));
+  const chooseWay = (w) => {
+    const next = (w || '').trim().slice(0, 120);
+    if (!extrasKnown()) {
+      setLocal((l) => ({ ...l, way: next }));
+      return;
+    }
+    setData((d) => ({ ...d, dayReview: { ...(d.dayReview || {}), way_of_being: next || null } }));
+    if (local.way !== undefined) setLocal(({ way: _old, ...rest }) => rest);
+    sent(async () => {
+      await ensureReview();
+      return saveOrQueue(userId, dayReviewAnswersOp(userId, date, { way_of_being: next || null }));
+    });
+  };
   const [picking, setPicking] = useState(null);
   const [answers, setAnswers] = useState(() => reviewAnswersFromRow(data.dayReview));
   const [save, setSave] = useState('idle');
