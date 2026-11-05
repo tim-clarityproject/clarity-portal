@@ -157,9 +157,15 @@ export function noteVersions(table, rows) {
 // older version, and it would be refused as if another window had made
 // the newer one. Another window's change is always later, so it is still
 // taken.
-function noteVersion(k, at) {
+//
+// A version this window's own save made (rebase) is always taken, even
+// while a quiet read is under way: the page shows that save. Skipping it
+// left the book on the version before, so a change kept on the device as
+// the page was refreshed went out based on it and, the new page knowing
+// nothing of the old one's saves, was refused as another window's.
+function noteVersion(k, at, { mine = false } = {}) {
   const had = versions.get(k);
-  if (had && quietReads > 0) return;
+  if (had && quietReads > 0 && !mine) return;
   if (had && Date.parse(had) > Date.parse(at)) return;
   versions.set(k, at);
 }
@@ -233,7 +239,7 @@ function rebase(userId, op, data) {
   const at = data?.[0]?.updated_at;
   if (!at) return;
   noteOwn(k, at);
-  noteVersion(k, at);
+  noteVersion(k, at, { mine: true });
   if (!userId) return;
   const move = (items) => items.map((x) => (x.basedOn && x.qid !== op.qid && opKey(x) === k ? { ...x, basedOn: at } : x));
   const queued = read(userId);

@@ -175,3 +175,30 @@ test('a change based before this window\'s own save landed goes on top of it, ne
   assert.equal(r3.status, 'superseded');
   assert.equal(heard.length, 1);
 });
+
+test('a save that lands while the device is being warmed still moves the version on', async () => {
+  // Review my day, refreshed part way (tests/phase3/review-my-day.mjs):
+  // warmDevice.js was reading quietly when the page's own save landed, so
+  // the book kept the version before it; the answers kept for later as the
+  // page closed went out on that version and, the new page knowing nothing
+  // of the old one's saves, were refused as another window's.
+  const todo = fake.put('todos', { id: 't11', user_id: ME, text: 'Draft' });
+  q.noteVersions('todos', [todo]);
+  let finishRead;
+  const warming = q.readQuietly(() => new Promise((r) => { finishRead = r; }));
+  const r1 = await q.saveOrQueue(ME, { table: 'todos', kind: 'update', match: { id: 't11', user_id: ME }, values: { text: 'Draft the case study' } });
+  assert.equal(r1.status, 'saved');
+  const landed = row('todos', 't11').updated_at;
+  setOnline(false);
+  q.keepForLater(ME, { table: 'todos', kind: 'update', match: { id: 't11', user_id: ME }, values: { text: 'Draft the Harbour case study' } });
+  const kept = q.queueState(ME);
+  assert.equal(kept.waiting, 1);
+  const waiting = JSON.parse([...store.entries()].find(([k]) => k.includes('queue'))[1]);
+  assert.equal(waiting[0].basedOn, landed, 'based on the version its own save made');
+  finishRead();
+  await warming;
+  setOnline(true);
+  await q.flush(ME);
+  assert.equal(row('todos', 't11').text, 'Draft the Harbour case study');
+  assert.equal(heard.length, 0);
+});
