@@ -409,7 +409,6 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
   };
   const impactWord = (n) => `${IMPACTS.find((i) => i.value === n)?.label || 'Medium'} impact`;
 
-  const eyeRow = <div className="ds-label-row ds-label-row--solo"><WhoSees audience="me" /></div>;
 
   // ------------------------------------------------------------ steps
   const steps = [
@@ -458,9 +457,10 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
       label: 'From your plan',
       question: 'Which habits are you bringing across?',
       nudges: ['Keep, change or remove each one.', 'Changes start with this sprint.'],
+      // The eye beside the question (rule 29d, Tim, 5 Nov).
+      eye: <WhoSees audience="me" />,
       render: () => (
         <div>
-          {eyeRow}
           {planHabits.length ? (
             <div className="ds-carry">
               {planHabits.map((row) => {
@@ -545,10 +545,10 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
     name: 'Ready',
     title: name,
     nudges: ['Check it, then start.'],
+    eye: <WhoSees audience="me" />,
     render: (tool) => (
       <div>
         <SprintDial length={weeks ?? 12} />
-        {eyeRow}
         <GuidedSummary
           onChange={tool.go}
           rows={[

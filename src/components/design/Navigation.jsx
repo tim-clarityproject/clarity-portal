@@ -104,12 +104,15 @@ function useMenuFocus({ open, onClose, panelRef, buttonRef }) {
 
 /** The pinned tools at the top of either menu ("Pinned", then up to 3). */
 export function MenuPins({ pins = [], onGo, tabIndex }) {
-  if (!pins.length) return null;
+  // Breathe already has its own button at the foot of both menus, so a pin
+  // for it never shows it twice (Tim, 5 Nov).
+  const shown = pins.filter((p) => p.key !== 'breathe');
+  if (!shown.length) return null;
   return (
     <div className="ds-menu-pins">
       <p className="ds-menu-pins-head" id="ds-menu-pins-head">Pinned</p>
       <ul aria-labelledby="ds-menu-pins-head">
-        {pins.map((p) => (
+        {shown.map((p) => (
           <li key={p.key}>
             <a href={p.to} onClick={goHandler(onGo, p)} tabIndex={tabIndex}>
               <span>{p.name}</span>

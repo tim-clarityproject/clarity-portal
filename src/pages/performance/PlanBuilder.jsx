@@ -270,9 +270,6 @@ function PlanTool({ userId, data, mode }) {
   };
   const missionWho = who('mission', 'Your mission');
   const progressWho = who('progress', 'Your Outcome Objective figures and scores');
-  const eyeRow = (props) => (
-    <div className="ds-label-row ds-label-row--solo"><WhoSees {...props} /></div>
-  );
 
   // ------------------------------------------------------------ edits
   const changeObjective = (id, patch) => set((d) => ({ objectives: d.objectives.map((o) => (o.id === id ? { ...o, ...patch } : o)) }));
@@ -325,9 +322,10 @@ function PlanTool({ userId, data, mode }) {
     nudges: ['Write the big aim that drives your daily performance.', 'You can change it any time.'],
     example: MISSION_EXAMPLE,
     nextLabel: 'Save my mission',
+    // The eye beside the question (rule 29d, Tim, 5 Nov).
+    eye: <WhoSees {...missionWho} />,
     render: () => (
       <div>
-        {eyeRow(missionWho)}
         <TextBox
           ariaLabel="My Mission"
           value={draft.mission}
@@ -365,9 +363,9 @@ function PlanTool({ userId, data, mode }) {
     question: 'What 2 to 4 results would show your mission is moving?',
     nudges: ['Pick ones you can track.'],
     tip: { key: 'performance-plan-saves', text: 'Everything saves as you go.' },
+    eye: <WhoSees {...progressWho} />,
     render: () => (
       <div>
-        {eyeRow(progressWho)}
         {draft.objectives.map((o, i) => (
           <ObjectiveEditor
             key={o.id}
@@ -438,6 +436,7 @@ function PlanTool({ userId, data, mode }) {
       name: o ? o.name.trim() : 'Strategies',
       question: o ? `How will you move “${o.name.trim()}”?` : 'What approaches will you use to achieve your objectives?',
       nudges: [o ? (k === 0 ? 'Add 1 or 2 Strategies.' : '1 or 2 Strategies is usually enough.') : 'Add 2 to 4 Strategies.'],
+      eye: <WhoSees {...progressWho} />,
       render: () => (
         <div>
           {k === 0 && (
@@ -448,7 +447,6 @@ function PlanTool({ userId, data, mode }) {
               />
             </div>
           )}
-          {eyeRow(progressWho)}
           {strategyRows(mine, o?.id || null)}
           <AddButton className="plan-add" onClick={() => addStrategy(o?.id || null)}>Add a Strategy</AddButton>
           {others.length > 0 && (
@@ -636,10 +634,10 @@ function PlanTool({ userId, data, mode }) {
     name: 'Ready',
     title: building ? 'Your plan and first sprint' : 'Your plan',
     nudges: building ? ['Check it, then start.', 'You can change anything later.'] : ['Check it, then save.', 'You can change anything later.'],
+    eye: <WhoSees audience="me" />,
     render: (tool) => (
       <div>
         {building && <SprintDial length={sprintWeeks(sprint) ?? 12} />}
-        {eyeRow({ audience: 'me' })}
         <GuidedSummary rows={readyRows()} onChange={tool.go} />
         {(rows.objectives.length > 0 || rows.strategies.length > 0) && (
           <AlignmentCheck lines={alignmentLines(check)} className="plan-ready-align" />

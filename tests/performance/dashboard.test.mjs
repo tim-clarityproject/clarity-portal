@@ -220,7 +220,7 @@ test('Strategies: the strip for the span, the latest figure, last week at the st
   assert.equal(a.strip.length, 8);
   assert.deepEqual(a.serves.map((s) => s.number), [1, 2]);
   assert.equal(a.latest.now, true);
-  assert.equal(a.latestLabel, 'This week so far');
+  assert.equal(a.latestLabel, 'Latest week');
   assert.equal(b.strip[3].state, 'below');
   assert.equal(v.chain.strategies.summary, '1 of 2 were at your standard last week.');
   const all = dashboardView(rows(), { today: TODAY, target, span: 'all' });
@@ -298,13 +298,15 @@ test('the check-in card: the latest scores and their change (M13 through checkin
   const [p0, p1] = points;
   const v = dashboardView(rows({ checkins: cks }), { today: TODAY, target });
   const check = v.behind.rows.find((r) => r.key === 'check');
-  const move = (a, b) => (a > b ? `, up ${a - b}` : a < b ? `, down ${b - a}` : ', the same as last time');
-  assert.equal(check.line, `Your Hardware score is ${p1.hardware}/100${move(p1.hardware, p0.hardware)}, and Software ${p1.software}/100${move(p1.software, p0.software)}.`);
+  // The figure says what each score is; the line says only how they moved (rule 29n, 5 Nov).
+  const move = (name, a, b) => (a > b ? `${name} is up ${a - b}` : a < b ? `${name} is down ${b - a}` : `${name} is the same`);
+  assert.equal(check.line, `${move('Hardware', p1.hardware, p0.hardware)} and ${move('Software', p1.software, p0.software)} since your last check-in.`);
   assert.ok(p1.hardware > p0.hardware);
-  assert.equal(check.figure.text, `${p1.hardware}/${p1.software}`);
+  assert.equal(check.figure.text, `Hardware ${p1.hardware}, Software ${p1.software}`);
   assert.equal(check.points.length, 2);
   const one = dashboardView(rows({ checkins: [cks[1]] }), { today: TODAY, target }).behind.rows.find((r) => r.key === 'check');
-  assert.equal(one.line, `Your first check-in scored Hardware ${p1.hardware}/100 and Software ${p1.software}/100.`);
+  assert.equal(one.line, null, 'a first check-in: the figure alone');
+  assert.equal(one.figure.text, `Hardware ${p1.hardware}, Software ${p1.software}`);
 });
 
 test('the life balance review: the average and its move over the review’s 6 months (M20.2)', () => {

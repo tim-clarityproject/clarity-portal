@@ -20,7 +20,7 @@ const SWIPE_CLOSE_PX = 90;
 const KIND_CLASS = { panel: 'ds-panel', popup: 'ds-popup', sheet: 'ds-choice-sheet', drop: 'ds-choice-sheet ds-drop' };
 const DOUBLE_CLICK_MS = 400;
 
-function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, closeLabel = 'Close' }) {
+function Modal({ kind, open, onClose, title, titleAside = null, children, footer, initialFocusRef, closeLabel = 'Close' }) {
   const ms = kind === 'panel' ? PANEL_MS : POPUP_MS;
   const titleId = useId();
   const scope = useThemeScope();
@@ -176,7 +176,8 @@ function Modal({ kind, open, onClose, title, children, footer, initialFocusRef, 
       >
         {(kind === 'sheet' || kind === 'drop') && phoneForm && <span className="ds-sheet-grab" aria-hidden="true" />}
         <div className="ds-dialog-head">
-          <h2 id={titleId} className="ds-dialog-title">{title}</h2>
+          {/* titleAside: the panel's eye, beside its title (rule 29d). */}
+          <h2 id={titleId} className="ds-dialog-title">{title}{titleAside && <span className="ds-page-aside">{titleAside}</span>}</h2>
           <IconButton label={closeLabel} onClick={() => onCloseRef.current?.()} />
         </div>
         <div ref={bodyRef} className="ds-dialog-body">{children}</div>

@@ -1120,6 +1120,18 @@
   color: var(--text-2);
 }
 
+/* ---------- No lonely last words (rule 29h, 5 Nov) ----------
+   Text never ends a paragraph with one word alone, at any width or text
+   size; headings, labels and buttons balance their lines. The longhand
+   (text-wrap-style), so nothing set not to wrap ever starts wrapping. */
+.ui-root {
+  text-wrap-style: pretty;
+}
+
+.ui-root :is(h1, h2, h3, h4, h5, h6, label, legend, button, .ds-mdial-link, .ds-stat-label, .ds-suggest-question) {
+  text-wrap-style: balance;
+}
+
 /* ---------- Controls ---------- */
 
 .ui-root .ds-seg {
@@ -8989,10 +9001,12 @@
 }
 
 /* The page's eye beside its title, aligned with the title's middle (Tim, 5 Nov, 11:09). */
+/* A title's small icon (the eye): 12px from its last letter, level with the
+   middle of its capitals (rule 29d). The 44px tap area is invisible. */
 .ui-root .ds-page-aside {
   display: inline-flex;
   align-items: center;
-  margin-left: var(--info-gap);
+  margin-left: var(--icon-title-gap);
   vertical-align: middle;
   font-size: var(--fs-body);
   line-height: 1;

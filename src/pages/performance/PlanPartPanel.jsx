@@ -190,14 +190,14 @@ function PartEditor({ userId, part, open, data, start, onDone, onGone }) {
       },
     };
   };
-  const eyeRow = (props) => <div className="ds-label-row ds-label-row--solo"><WhoSees {...props} /></div>;
-
+  // The panel's eye, beside its title (rule 29d, Tim, 5 Nov).
+  let eyeProps = null;
   let body = null;
   let unfinished = null;
   if (part.kind === 'mission') {
+    eyeProps = who('mission', 'Your mission');
     body = (
       <>
-        {eyeRow(who('mission', 'Your mission'))}
         <TextBox
           ariaLabel="My Mission"
           value={draft.mission}
@@ -209,9 +209,9 @@ function PartEditor({ userId, part, open, data, start, onDone, onGone }) {
     );
     unfinished = 'Write your mission to save it.';
   } else if (objective) {
+    eyeProps = who('progress', 'Your Outcome Objective figures and scores');
     body = (
       <>
-        {eyeRow(who('progress', 'Your Outcome Objective figures and scores'))}
         <ObjectiveEditor
           objective={objective}
           startLabel="Where did you start?"
@@ -222,9 +222,9 @@ function PartEditor({ userId, part, open, data, start, onDone, onGone }) {
     unfinished = 'Fill in each box to save this objective.';
   } else if (strategy) {
     const named = draft.objectives.filter((o) => (o.name || '').trim());
+    eyeProps = who('progress', 'Your Outcome Objective figures and scores');
     body = (
       <>
-        {eyeRow(who('progress', 'Your Outcome Objective figures and scores'))}
         <TextBox
           label="What is the Strategy?"
           lines="one"
@@ -247,9 +247,9 @@ function PartEditor({ userId, part, open, data, start, onDone, onGone }) {
     );
     unfinished = 'Name the Strategy to save it.';
   } else if (habit) {
+    eyeProps = { audience: 'me' };
     body = (
       <>
-        {eyeRow({ audience: 'me' })}
         <HabitEditor
           habit={habit}
           onChange={(patch) => set((d) => ({
@@ -269,6 +269,7 @@ function PartEditor({ userId, part, open, data, start, onDone, onGone }) {
       open={open}
       onClose={leave}
       title={PART_TITLE[part.kind]}
+      titleAside={eyeProps ? <WhoSees {...eyeProps} /> : null}
       closeLabel="Back to the plan"
       footer={(
         <div className="plan-part-foot">

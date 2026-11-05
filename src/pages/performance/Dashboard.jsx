@@ -519,7 +519,7 @@ function ChainSection({ view, closed, toggle, span, setSpan, phone }) {
               {chain.strategies.rows.some((r) => r.latest) && (
                 <ChartTable
                   caption="Strategies, week by week"
-                  columns={[{ key: 'name', label: 'Strategy' }, { key: 'latest', label: 'Latest' }, { key: 'std', label: 'Weeks at your standard' }]}
+                  columns={[{ key: 'name', label: 'Strategy' }, { key: 'latest', label: 'Latest week' }, { key: 'std', label: 'Weeks at your standard' }]}
                   rows={chain.strategies.rows.map((r) => ({ key: r.id, cells: { name: r.name, latest: r.latest ? `${r.latest.value}%` : 'Not yet', std: r.atStandard || 'No finished week yet' } }))}
                 />
               )}

@@ -315,7 +315,6 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
     },
   });
 
-  const eyeRow = <div className="ds-label-row ds-label-row--solo"><WhoSees audience="me" /></div>;
   const objectivesById = new Map(view.objectives.map((o) => [o.id, o]));
 
   // ------------------------------------------------------------ objectives
@@ -423,9 +422,10 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
       name: 'Objectives',
       question: 'Which objectives will you keep?',
       nudges: ['Keep, change or retire each one.'],
+      // The eye beside the question (rule 29d, Tim, 5 Nov).
+      eye: <WhoSees audience="me" />,
       render: () => (
         <div>
-          {eyeRow}
           {view.objectives.length ? (
             <div className="ds-carry">
               {view.objectives.map((o) => {

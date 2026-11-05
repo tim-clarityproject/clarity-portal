@@ -279,7 +279,8 @@ function previousSprintAverage(weeks, sprint) {
 }
 
 function heroView(d, weeks, sprint, today) {
-  const label = 'Performance score this sprint';
+  // What the figure is, in its own words (Tim, 5 Nov: "84%" read as unclear).
+  const label = 'Average of finished weeks';
   if (!sprint) {
     return { label, value: 'Not yet', good: false, change: null, lines: ['Your dashboard fills in once your first Performance Sprint starts.'], usualLine: null, chart: null, empty: true };
   }
@@ -480,7 +481,8 @@ function strategyRows(d, weeks, sprint, span, today) {
       serves,
       strip: strip(inSpan, (w) => w.strategies.get(s.id) ?? null),
       latest,
-      latestLabel: latest?.now ? 'This week so far' : 'Latest',
+      // Its latest week with something planned (M4), this week included (Tim, 5 Nov).
+      latestLabel: 'Latest week',
       atStandard: finished.length ? `${atStandard} of ${finished.length}` : null,
     };
   });
@@ -650,20 +652,22 @@ function checkRow(d) {
   const points = checkinPoints(d.checkins || []);
   const last = points[points.length - 1] || null;
   const prev = points[points.length - 2] || null;
-  const move = (a, b) => {
-    if (b == null || a == null) return '';
+  // The scores are the figure, in words that say what each is ("Hardware 60,
+  // Software 71"); the line says only how they moved, so nothing is said
+  // twice (rule 29n, Tim, 5 Nov). A first check-in has no line.
+  const move = (name, a, b) => {
     const x = a - b;
-    return x > 0 ? `, up ${x}` : x < 0 ? `, down ${-x}` : ', the same as last time';
+    return x > 0 ? `${name} is up ${x}` : x < 0 ? `${name} is down ${-x}` : `${name} is the same`;
   };
   let line;
   if (!last) line = 'You haven’t done a check-in yet.';
-  else if (!prev) line = `Your first check-in scored Hardware ${last.hardware}/100 and Software ${last.software}/100.`;
-  else line = `Your Hardware score is ${last.hardware}/100${move(last.hardware, prev.hardware)}, and Software ${last.software}/100${move(last.software, prev.software)}.`;
+  else if (!prev) line = null;
+  else line = `${move('Hardware', last.hardware, prev.hardware)} and ${move('Software', last.software, prev.software)} since your last check-in.`;
   return {
     key: 'check',
     title: 'Hardware and Software check-in',
     line,
-    figure: last ? { text: `${last.hardware}/${last.software}` } : null,
+    figure: last ? { text: `Hardware ${last.hardware}, Software ${last.software}` } : null,
     points,
     started: Boolean(last),
   };

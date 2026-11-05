@@ -650,11 +650,12 @@ function DebriefFlow({ userId, today, loaded, view }) {
       question: `How did week ${week} go?`,
       // Writing rule 5 over M1's "Fill in any day you missed".
       nudges: ['Let’s start with your numbers.', 'Fill in any day you didn’t log, or leave it empty.'],
+      // The eye beside the question, never on its own row (rule 29d, Tim, 5 Nov).
+      eye: eye(),
       render: () => (
         <div>
           <div className="deb-subrow">
             <span>{view.range}</span>
-            {eye()}
           </div>
           {view.groups.length ? view.groups.map((g) => (
             <div key={g.id} className="deb-group">
@@ -679,9 +680,9 @@ function DebriefFlow({ userId, today, loaded, view }) {
       question: STRESS_QUESTION,
       nudges: ['Choose the answer closest to your week.'],
       oneTap: true,
+      eye: eye('me'),
       render: (tool) => (
         <div className="day-narrow">
-          <div className="ds-label-row ds-label-row--solo">{eye('me')}</div>
           <Choice ariaLabel={STRESS_QUESTION} options={STRESS_OPTIONS} value={answers.stress} onChange={(stress) => change({ stress })} onChoose={() => tool.next()} form="rows" />
         </div>
       ),
@@ -691,6 +692,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
       name: 'Objectives',
       question: 'Where are your Outcome Objectives now?',
       nudges: ['Update any that have moved since last week.'],
+      eye: eye(),
       render: () => (
         <div className="day-narrow">
           {view.objectives.length ? view.objectives.map((o) => (o.kind === 'milestone' ? (
@@ -711,7 +713,6 @@ function DebriefFlow({ userId, today, loaded, view }) {
               change={figureChange(o.objective, o.value, o.before)}
             />
           ))) : <p className="day-quiet-line">Your plan has no Outcome Objectives yet.</p>}
-          <div className="deb-subrow deb-subrow--end">{eye()}</div>
         </div>
       ),
     },
@@ -772,6 +773,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
       name: 'Next week',
       question: view.nextWeek ? 'What’s planned for next week?' : 'What comes next?',
       nudges: view.nextWeek ? ['Open to-dos roll over.', 'Add anything new.'] : [],
+      eye: view.nextWeek ? eye('me') : null,
       render: () => (!view.nextWeek ? (
         // UNDEFINED (audit D7): the sprint's last week has no next week.
         <div className="day-quiet">
@@ -782,7 +784,6 @@ function DebriefFlow({ userId, today, loaded, view }) {
         <div className="day-narrow">
           <div className="deb-subrow">
             <span>{view.nextWeek.range}</span>
-            {eye('me')}
           </div>
           {view.nextWeek.todos.length ? (
             <TodoList label="Next week’s to-dos" className="rev-list">
