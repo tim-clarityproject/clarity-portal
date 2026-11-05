@@ -33,7 +33,7 @@ import { clearDraft, useDraft } from '../../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
 import { readDayChoices, refreshDayChoices } from '../../lib/performance/dayPlanHabits';
 import { friendlyError } from '../../lib/friendlyError';
-import { keepForLater, newId, saveOrQueue, useQueueState } from '../../lib/syncQueue';
+import { keepForLater, newId, saveOrQueue, useQueueState, useSuperseded } from '../../lib/syncQueue';
 import { toStored } from '../../lib/units';
 import {
   createDayReview,
@@ -330,9 +330,25 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     return sent(async () => {
       await ensureReview();
       setData((d) => ({ ...d, dayReview: { ...(d.dayReview || {}), ...reviewAnswersToRow(a), ...extra } }));
-      return saveOrQueue(userId, answersOp(a, extra));
+      const r = await saveOrQueue(userId, answersOp(a, extra));
+      // Saved on the server, with nothing newer typed: the device's draft
+      // goes, so a reload shows the saved row, never older typing over a
+      // newer save from another window (break-it tester, 5 Nov).
+      if (r?.status === 'saved' && answersRef.current === a) clearAnswersDraft();
+      return r;
     });
   };
+
+  // Another window saved first ("Showing the latest."): its answers come in
+  // here and this window's older typing is set aside, so the next change
+  // builds on the latest and never overwrites it unseen.
+  useSuperseded(['day_reviews'], () => {
+    typedYet.current = false;
+    clearTimeout(timer.current);
+    timer.current = null;
+    waiting.current = null;
+    clearAnswersDraft();
+  });
 
   const change = (patch) => {
     typedYet.current = true;

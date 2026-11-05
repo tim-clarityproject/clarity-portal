@@ -99,10 +99,12 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
     case 'count': {
       const weekTarget = m.target * (daily ? workingDays.length : 1);
       const sh = m.measure === 'amount' ? show : (v) => v;
-      weekLine = `${n(sh(total))} of ${n(sh(weekTarget))}${m.measure === 'amount' ? u : ''} this week`;
+      // Half an hour said the way people say it (break-it tester, 5 Nov): "Half an hour of 3 hours this week", never "0.5 of 3 hours".
+      const halfHour = (v) => (m.measure === 'amount' && /^(hours?|h)$/i.test((unit || '').trim()) && Number(v) === 0.5 ? 'Half an hour' : n(v));
+      weekLine = `${halfHour(sh(total))} of ${n(sh(weekTarget))}${m.measure === 'amount' ? u : ''} this week`;
       weekFigures = { got: sh(total), of: sh(weekTarget) };
       weekBar = fill(total, weekTarget);
-      line = daily ? `${n(sh(todayValue || 0))} of ${n(sh(m.target))}${m.measure === 'amount' ? u : ''} today` : weekLine;
+      line = daily ? `${halfHour(sh(todayValue || 0))} of ${n(sh(m.target))}${m.measure === 'amount' ? u : ''} today` : weekLine;
       lineBar = daily ? fill(todayValue || 0, m.target) : weekBar;
       break;
     }
@@ -152,7 +154,8 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
     measure: m.measure,
     unit,
     storedUnit: m.unit,
-    decimals: m.measure === 'amount',
+    // Things counted whole (steps) take whole numbers; hours, litres and the like take decimals.
+    decimals: m.measure === 'amount' && !/^steps?$/i.test((unit || '').trim()),
     target: m.target,
     limit: m.limit,
     direction: m.direction,

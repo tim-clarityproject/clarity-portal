@@ -167,6 +167,11 @@ test('habit lines for every way to measure, and US units for water', () => {
   const st = (m) => ({ id: 'x', from_week: 1, unit: null, target: null, target_per: null, limit_value: null, limit_per: null, direction: null, top_number: null, impact: 2, ...m });
   assert.equal(logRow(sh, st({ measure: 'amount', unit: 'steps', target: 10000, target_per: 'day' }), ctx([L(8400)])).line, '8,400 of 10,000 steps today');
   assert.equal(logRow(sh, st({ measure: 'count', unit: 'sessions', target: 4, target_per: 'week' }), ctx([L(1, '2026-10-12')])).line, '1 of 4 this week');
+  // Break-it tester, 5 Nov: half an hour said as people say it; steps are whole numbers.
+  assert.equal(logRow(sh, st({ measure: 'amount', unit: 'hours', target: 3, target_per: 'week' }), ctx([L(0.5)])).weekLine, 'Half an hour of 3 hours this week');
+  assert.equal(logRow(sh, st({ measure: 'amount', unit: 'hours', target: 3, target_per: 'week' }), ctx([L(1.5)])).weekLine, '1.5 of 3 hours this week');
+  assert.equal(logRow(sh, st({ measure: 'amount', unit: 'steps', target: 10000, target_per: 'day' }), ctx([])).decimals, false);
+  assert.equal(logRow(sh, st({ measure: 'amount', unit: 'hours', target: 3, target_per: 'week' }), ctx([])).decimals, true);
   assert.equal(logRow(sh, st({ measure: 'count', target: 4, target_per: 'week', top_number: 3 }), ctx([])).top, 3);
   assert.equal(logRow(sh, st({ measure: 'yes_no_days_limit', limit_value: 2 }), ctx([L(1), L(0, '2026-10-12')])).line, '1 this week, no more than 2');
   assert.equal(logRow(sh, st({ measure: 'yes_no_days_target', target: 4 }), ctx([L(1)])).line, '1 of 4 days this week');

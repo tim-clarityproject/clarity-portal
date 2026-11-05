@@ -83,6 +83,8 @@ const sprint = (await db.from('sprints').select('*').eq('user_id', me).eq('statu
 async function cleanToday() {
   await db.from('day_plans').delete().eq('user_id', me).eq('local_date', today);
   await db.from('todos').delete().eq('user_id', me).in('source', ['review_my_day', 'plan_my_day']);
+  // Since 039 the habits chosen for the day are kept in day_plan_habits: last width's picks go too.
+  await db.from('day_plan_habits').delete().eq('user_id', me).eq('local_date', today);
 }
 
 async function rowsNow() {
@@ -165,7 +167,7 @@ async function openPlan(page, path = '/my-day/plan') {
 }
 
 // One screen: one coral button, 44px tap areas, no sideways scroll, the writing rules, the eye.
-async function checkScreen(page, tag, { eye = true } = {}) {
+async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
   // Away from any button, and once any hover fade has settled.
   await page.mouse.move(1, 1);
   // The step slides in from the side: measure once it has arrived.
@@ -215,10 +217,13 @@ async function checkScreen(page, tag, { eye = true } = {}) {
       text,
       sideways: document.documentElement.scrollWidth - window.innerWidth,
       scrollSideways: (() => { const s = root.querySelector('.ds-guide-scroll'); return s ? s.scrollWidth - s.clientWidth : 0; })(),
-      eye: [...root.querySelectorAll('.ds-who')].filter(shown).map((e) => e.textContent.trim()),
+      // The eye alone (Tim, 5 Nov): its words are for screen readers and the pop-up.
+      eye: [...root.querySelectorAll('.ds-who')].filter(shown).map((e) => (e.getAttribute('aria-label') || e.querySelector('[aria-label]')?.getAttribute('aria-label') || e.textContent).trim()),
     };
   });
-  pass(`${tag}: one coral button`, facts.coral === 1, `${facts.coral}`);
+  // A one-answer screen has no Next (Tim, 5 Nov), so no coral button there.
+  if (oneTap) pass(`${tag}: no coral button on a one-answer screen`, facts.coral === 0, `${facts.coral}`);
+  else pass(`${tag}: one coral button`, facts.coral === 1, `${facts.coral}`);
   pass(`${tag}: nothing coral is a label or a figure`, facts.coralText.length === 0, facts.coralText.join(' | '));
   pass(`${tag}: 44px tap areas`, facts.small.length === 0, JSON.stringify(facts.small));
   pass(`${tag}: no sideways scroll`, facts.sideways <= 0 && facts.scrollSideways <= 0, `${facts.sideways} ${facts.scrollSideways}`);
@@ -227,7 +232,7 @@ async function checkScreen(page, tag, { eye = true } = {}) {
   pass(`${tag}: no banned words`, !/\bmissed\b|\bfail(ed)?\b|\bstep \d+ of\b|\babout \d+ minutes?\b|\btap\b|\bclick\b|\bpurpose\b|…/i.test(facts.text), facts.text.slice(0, 80));
   const bad = facts.lines.filter((l) => !/[.?!]$/.test(l));
   pass(`${tag}: every sentence ends with a full stop or a question mark`, bad.length === 0, bad.join(' | '));
-  if (eye) pass(`${tag}: the eye says Only you`, facts.eye.includes('Who can see this: Only you') || facts.eye.includes('Only you'), JSON.stringify(facts.eye));
+  if (eye) pass(`${tag}: the eye says Only you`, facts.eye.some((e) => /Only you/.test(e)), JSON.stringify(facts.eye));
 }
 
 const shot = async (page, name) => { if (out) await page.screenshot({ path: `${out}/${name}.png`, fullPage: false }); };
@@ -292,9 +297,10 @@ async function playThrough(page, tag, { deep = false } = {}) {
 
   // 5. Priority
   pass(`${tag}: Priority on its own screen`, (await heading(page)) === 'Which one is your highest priority?');
-  await checkScreen(page, `${tag} priority`);
+  await checkScreen(page, `${tag} priority`, { oneTap: true });
+  // One tap moves on after about 300ms (Tim, 5 Nov): no Next here.
   await page.getByRole('radio', { name: 'Draft the Harbour case study' }).click();
-  await next(page);
+  await until(async () => (await heading(page)) !== 'Which one is your highest priority?', 4000);
 
   // 6. Strategy
   pass(`${tag}: Strategy`, (await heading(page)) === 'Which Strategies does today serve most?');

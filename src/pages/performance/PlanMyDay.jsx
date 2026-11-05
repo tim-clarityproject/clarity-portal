@@ -25,7 +25,7 @@ import {
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
-import { keepForLater, newId, saveOrQueue, useQueueState } from '../../lib/syncQueue';
+import { keepForLater, newId, saveOrQueue, useQueueState, useSuperseded } from '../../lib/syncQueue';
 import { createDayPlan, dayPlanAnswersOp, loadDayPlan, loadDayPlanRow, saveTodo, setTodoDeleted } from '../../lib/performance/api';
 import { useLatestWhenSuperseded } from '../../lib/performance/hooks';
 import { readDayChoices, refreshDayChoices, saveDayChoices } from '../../lib/performance/dayPlanHabits';
@@ -272,9 +272,23 @@ function PlanFlow({ userId, date, today, loaded }) {
       // The device's copy of the page learns the answers too, so the
       // next visit shows them at once, offline as well.
       setData((d) => ({ ...d, dayPlan: { ...(d.dayPlan || {}), ...answersToRow(a), ...extra } }));
-      return saveOrQueue(userId, answersOp(a, extra));
+      const r = await saveOrQueue(userId, answersOp(a, extra));
+      // Saved, with nothing newer typed: the draft goes, so a reload shows
+      // the saved row, never older typing over another window's newer save.
+      if (r?.status === 'saved' && answersRef.current === a) clearAnswersDraft();
+      return r;
     });
   };
+
+  // Another window saved first ("Showing the latest."): its answers come
+  // in and this window's older typing is set aside (break-it tester, 5 Nov).
+  useSuperseded(['day_plans'], () => {
+    typedYet.current = false;
+    clearTimeout(timer.current);
+    timer.current = null;
+    waiting.current = null;
+    clearAnswersDraft();
+  });
 
   const change = (patch) => {
     typedYet.current = true;

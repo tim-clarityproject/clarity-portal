@@ -201,7 +201,7 @@ async function open(page, path) {
 }
 
 // One screen: one coral button, 44px tap areas, no sideways scroll, the writing rules, the eye.
-async function checkScreen(page, tag, { eye = true } = {}) {
+async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
   await page.mouse.move(1, 1);
   await page.evaluate(() => Promise.race([
     Promise.all(document.getAnimations().map((a) => a.finished.catch(() => null))),
@@ -251,19 +251,23 @@ async function checkScreen(page, tag, { eye = true } = {}) {
       text,
       sideways: document.documentElement.scrollWidth - window.innerWidth,
       scrollSideways: (() => { const s = root.querySelector('.ds-guide-scroll'); return s ? s.scrollWidth - s.clientWidth : 0; })(),
-      eye: [...root.querySelectorAll('.ds-who')].filter(shown).map((e) => e.textContent.trim()),
+      // The eye alone (Tim, 5 Nov): its words are for screen readers and the pop-up.
+      eye: [...root.querySelectorAll('.ds-who')].filter(shown).map((e) => (e.getAttribute('aria-label') || e.querySelector('[aria-label]')?.getAttribute('aria-label') || e.textContent).trim()),
     };
   }, CORAL);
-  pass(`${tag}: one coral button`, facts.coral === 1, `${facts.coral}`);
+  // A one-answer screen has no Next (Tim, 5 Nov), so no coral button there.
+  if (oneTap) pass(`${tag}: no coral button on a one-answer screen`, facts.coral === 0, `${facts.coral}`);
+  else pass(`${tag}: one coral button`, facts.coral === 1, `${facts.coral}`);
   pass(`${tag}: nothing coral is a label or a figure`, facts.coralText.length === 0, facts.coralText.join(' | '));
   pass(`${tag}: 44px tap areas`, facts.small.length === 0, JSON.stringify(facts.small));
   pass(`${tag}: no sideways scroll`, facts.sideways <= 0 && facts.scrollSideways <= 0, `${facts.sideways} ${facts.scrollSideways}`);
   const text = facts.text.replace(/\d{1,2}:\d{2}/g, '');
   pass(`${tag}: no colons or brackets in its words`, !/[:()[\]]/.test(text), (text.match(/.{0,20}[:()[\]].{0,20}/) || [''])[0]);
   pass(`${tag}: no banned words`, !/\bmissed\b|\bfail(ed)?\b|\bstep \d+ of\b|\babout \d+ minutes?\b|\btap\b|\bclick\b|\bpurpose\b|…/i.test(facts.text), facts.text.slice(0, 80));
-  const bad = facts.lines.filter((l) => !/[.?!]$/.test(l));
+  // "This was your day" is the summary's heading, word for word from the entry (Tim, 5 Nov).
+  const bad = facts.lines.filter((l) => !/[.?!]$/.test(l) && l !== 'This was your day');
   pass(`${tag}: every sentence ends with a full stop or a question mark`, bad.length === 0, bad.join(' | '));
-  if (eye) pass(`${tag}: the eye says Only you`, facts.eye.some((e) => /Only you$/.test(e)), JSON.stringify(facts.eye));
+  if (eye) pass(`${tag}: the eye says Only you`, facts.eye.some((e) => /Only you/.test(e)), JSON.stringify(facts.eye));
 }
 
 const shot = async (page, name) => { if (out) await page.screenshot({ path: `${out}/${name}.png`, fullPage: false }); };
@@ -304,9 +308,10 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await next(page);
 
   // 3. Numbers
-  pass(`${tag}: Numbers`, (await heading(page)) === 'What are today’s numbers?');
+  pass(`${tag}: Log today`, (await heading(page)) === 'Log today', await heading(page));
   const weekly = (await page.locator('.rev-week').innerText()).trim();
-  pass(`${tag}: the weekly habits in one sentence`, /^So far this week you have .+\.\n?/.test(weekly) && weekly.includes('training sessions at'), weekly);
+  // Tim's model sentence (5 Nov): "So far this week you’ve completed 2 out of 4 training sessions, …".
+  pass(`${tag}: the weekly habits in one sentence`, /^So far this week you’ve .+\.\n?/.test(weekly) && weekly.includes('out of 4 training sessions'), weekly);
   await checkScreen(page, `${tag} numbers`);
   await page.getByRole('textbox', { name: 'Steps today' }).fill('9800');
   await page.getByRole('textbox', { name: 'Water today' }).fill('1.5');
@@ -358,21 +363,20 @@ async function playThrough(page, tag, { deep = false } = {}) {
 
   // 7. Tomorrow, as rows
   pass(`${tag}: Tomorrow`, (await heading(page)) === 'What are the most important things to do tomorrow?');
-  for (let i = 0; i < 3; i += 1) {
-    if (i) await page.getByRole('button', { name: 'Add another' }).click();
-    await page.getByRole('textbox', { name: `Important thing ${i + 1} for tomorrow` }).fill(THINGS[i]);
-  }
-  pass(`${tag}: three at most (Add another goes)`, (await page.getByRole('button', { name: 'Add another' }).count()) === 0);
+  // Three numbered rows, 1 to 3 (Tim, 5 Nov).
+  for (let i = 0; i < 3; i += 1) await page.getByRole('textbox', { name: `Priority ${i + 1} for tomorrow` }).fill(THINGS[i]);
+  pass(`${tag}: three numbered rows, 1 to 3`, (await page.locator('.ds-prio-n').allInnerTexts()).join(',') === '1,2,3');
   await page.getByRole('textbox', { name: 'Is there anything else on your mind?' }).fill(NOTE);
   await checkScreen(page, `${tag} tomorrow`);
   await shot(page, `${tag}-7-tomorrow`);
   await next(page);
 
   // 8. The summary
-  pass(`${tag}: the summary greets by first name`, /^Here’s your day, \S+\.$/.test(await heading(page)), await heading(page));
+  pass(`${tag}: the summary is "This was your day"`, (await heading(page)) === 'This was your day', await heading(page));
   await checkScreen(page, `${tag} summary`, { eye: false });
   await shot(page, `${tag}-8-summary`);
   const summary = await page.locator('.ds-guide-summary').innerText();
+  for (const label of ['What you got done', 'How you showed up', 'What went well', 'What you’d do differently', 'How today aligned with your Strategies', 'Priorities for tomorrow', 'Anything else on your mind']) pass(`${tag}: the summary's label "${label}"`, summary.includes(label));
   for (const words of ['2 of 3 done', 'Plus 1 more from this week’s list.', 'Calm under pressure, 7/10', 'In the Harbour call', 'The Harbour call landed', 'Plus 1 unplanned win.', 'Leave ten minutes between calls.', 'Grow through referrals, High', `1. ${THINGS[0]}`, `3. ${THINGS[2]}`, NOTE]) {
     pass(`${tag}: the summary shows "${words}"`, summary.includes(words), summary.slice(0, 300));
   }
@@ -453,8 +457,8 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
 
       // A finished review opens on its summary, still changeable.
       await open(page, '/my-day/review');
-      pass('a finished review opens on its summary', /^Here’s your day/.test(await heading(page)), await heading(page));
-      pass('its answers can still be changed', (await page.getByRole('button', { name: 'Change Differently' }).count()) === 1);
+      pass('a finished review opens on its summary', (await heading(page)) === 'This was your day', await heading(page));
+      pass('its answers can still be changed', (await page.getByRole('button', { name: /^Change (Differently|What you’d do differently)/ }).count()) === 1);
     }
   } catch (e) {
     pass(`${tag}: the play-through finished`, false, e.message);
