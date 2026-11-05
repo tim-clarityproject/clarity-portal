@@ -542,7 +542,7 @@ function Fold({ row, phone, children }) {
       <button type="button" className="dash-fold-h" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>
         <span className="dash-fold-words">
           <span className="dash-fold-t">{keepWords(row.title)}</span>
-          <small className="dash-fold-l">{row.line}</small>
+          {row.line && <small className="dash-fold-l">{row.line}</small>}
         </span>
         {fig && (
           <span className="dash-fv">
