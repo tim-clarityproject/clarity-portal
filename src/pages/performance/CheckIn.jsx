@@ -21,6 +21,7 @@ import {
   Stat,
   StatGroup,
   StatementPanel,
+  PriorityRows,
   Stepper,
   NumberField,
   TextBox,
@@ -438,18 +439,14 @@ function CheckinFlow({ userId, today, month, loaded }) {
     example: g.example,
     render: () => (g.three ? (
       <div className="ck-three">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="ck-three-row">
-            <span className="ck-three-n" aria-hidden="true">{i + 1}</span>
-            <TextBox
-              lines="one"
-              ariaLabel={`Thing ${i + 1}`}
-              maxLength={150}
-              value={(Array.isArray(goals.G3) ? goals.G3 : [])[i] || ''}
-              onChange={(v) => setGoal('G3', [0, 1, 2].map((j) => (j === i ? v : ((Array.isArray(goals.G3) ? goals.G3 : [])[j] || ''))))}
-            />
-          </div>
-        ))}
+        {/* An "up to three" list: numbered, in order (Tim, 5 Nov). */}
+        <PriorityRows
+          rows={Array.isArray(goals.G3) ? goals.G3 : []}
+          onChange={(rows) => setGoal('G3', rows)}
+          count={3}
+          maxLength={150}
+          itemLabel={(n) => `Thing ${n}`}
+        />
         {eyeLine}
       </div>
     ) : (
