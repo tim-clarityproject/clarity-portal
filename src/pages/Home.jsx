@@ -29,7 +29,7 @@ import {
   WhoSees,
   useToast,
 } from '../components/design';
-import { useCachedLoad } from '../lib/pageCache';
+import { readCache, useCachedLoad } from '../lib/pageCache';
 import { useDraft } from '../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../lib/deviceStore';
 import { carryOnItems, carryOnWhen } from '../lib/carryOn';
@@ -44,6 +44,7 @@ import {
   dayStrategyNames,
   homeGreeting,
   homePerson,
+  dayState,
   homeSuggestion,
   isComingBack,
   lastActiveBefore,
@@ -194,8 +195,21 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   });
   const person = homePerson({ sprintView: view, recovery, steps });
   const running = view?.state === 'running';
-  const dayPlanned = day.dayPlan?.status === 'finished';
-  const reviewed = day.dayReview?.status === 'finished';
+  // What's been done today, from the database or, sooner, from Plan my day's
+  // and Review my day's own copies on this device (finished a moment ago,
+  // offline too).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const local = useMemo(() => ({
+    plan: readCache(userId, `day-plan:${today}`)?.v?.dayPlan || null,
+    review: readCache(userId, `day-review:${today}`)?.v?.dayReview || null,
+  }), [userId, today, location.key]);
+  const dayPlanned = day.dayPlan?.status === 'finished' || local.plan?.status === 'finished';
+  const localReviewed = local.review?.status === 'finished';
+  const reviewed = day.dayReview?.status === 'finished' || localReviewed;
+  const state = dayState({ hour, dayPlanned, reviewed, yesterday: day.yesterday || {} });
+  const tomorrowList = reviewed
+    ? (localReviewed ? local.review.tomorrow : day.dayReview?.tomorrow)
+    : day.yesterday?.tomorrow;
 
   const card = homeSuggestion({
     today,
@@ -212,9 +226,13 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     recovery,
     nextSprint: (day.lastSprintNumber || 0) + 1,
     firstCheckin: checkin?.first ? checkin : null,
+    // Anything timed takes its turn on the one card (Tim, 5 Nov).
+    checkin: person !== 'new' ? checkin : null,
+    tomorrow: tomorrowList,
+    reviewTo: reviewed ? '/my-day/review' : `/my-day/review/${addDayKey(today, -1)}`,
   });
   const joined = user?.created_at ? Math.floor((now - parseDbTimestamp(user.created_at)) / 86400000) : 0;
-  const quiet = quietLines({ person, hasCoach: Boolean(coach), mission: day.plan?.mission, joinedDaysAgo: joined, dismissed: notNow, checkin });
+  const quiet = quietLines({ person, hasCoach: Boolean(coach), mission: day.plan?.mission, joinedDaysAgo: joined, dismissed: notNow });
 
   // Coming back: the first day back from a Recovery (M15), or the first
   // visit after a gap of 7 days with nothing logged, planned or reviewed.
@@ -222,14 +240,16 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const comingBack = !welcomeBack && person !== 'new' && isComingBack(lastActiveBefore(day.lastActive || [], today), today);
   const firstName = d.firstName || '';
   const named = (words) => (firstName ? `${words}, ${firstName}` : words);
-  const title = welcomeBack ? named('Welcome back') : comingBack ? named('Good to see you') : named(homeGreeting(hour));
+  // The day's done (Tim, 5 Nov): "Your day's done, Sam." at any time of day.
+  const dayDone = state === 'reviewed' && person !== 'recovery' && person !== 'new';
+  const title = welcomeBack ? named('Welcome back') : comingBack ? named('Good to see you') : dayDone ? named('Your day’s done') : named(homeGreeting(hour));
 
   // Today's to-dos: the day's picks from Plan my day, highest priority first
   // (the habits and order as kept on the device; dayPlanHabits.js).
   // Read again when another device's choices arrive (fresh).
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const local = useMemo(() => readDayChoices(userId, today), [userId, today, fresh]);
-  const { picks, top } = dayPicks(day.dayTodos || [], local);
+  const choices = useMemo(() => readDayChoices(userId, today), [userId, today, fresh]);
+  const { picks, top } = dayPicks(day.dayTodos || [], choices);
   const items = running && dayPlanned ? todayItems({ picks, top, sprintView: view, todos: d.todos || [], strategies: d.strategies || [] }) : [];
   const { daily, weekly } = splitHabits(d, view);
 
@@ -299,7 +319,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const cardAction = card?.action ? { label: card.action.label, onClick: () => (card.action.jump ? jumpToLog() : go(card.action.to)) } : null;
   const cardLink = card?.notTonight
     ? { label: 'Not tonight', onClick: () => { addNotTonight(card.notTonight); toast.show('You can wind down tomorrow evening.'); } }
-    : null;
+    : card?.link ? { label: card.link.label, onClick: () => go(card.link.to) } : null;
 
   const dateText = dayName(today, today);
   const sprintOn = person === 'sprint' && view && (view.state === 'running' || view.state === 'over');
@@ -329,6 +349,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           className="home-suggest"
           label={card.label}
           question={card.question}
+          list={card.list}
           lines={card.lines}
           time={card.time}
           action={cardAction}
@@ -365,7 +386,6 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
 
       {hasPlan && person !== 'recovery' && (
         <Section title="Today" className="ipp-section home-section home-today" aside={<WhoSees audience="me" />}>
-          {running && !dayPlanned && <p className="home-line">Your to-dos for today show here once you’ve planned your day.</p>}
           {running && dayPlanned && (
             <>
               <DayFocus way={day.dayPlan?.way_of_being || ''} strategies={dayStrategyNames(day.dayStrategies || [], d.strategies || [])} />
@@ -398,8 +418,10 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           )}
           {/* Two taps from Home, always (experience rule 21). */}
           <div className="home-links">
-            {card?.key !== 'plan' && <Button variant="text" onClick={() => go('/my-day/plan')}>Plan my day</Button>}
-            {card?.key !== 'review' && <Button variant="text" onClick={() => go('/my-day/review')}>Review my day</Button>}
+            {/* Planning after reviewing isn't offered for the same day, and
+                the done card has "Change my review" (Tim, 5 Nov). */}
+            {card?.key !== 'plan' && !dayDone && <Button variant="text" onClick={() => go('/my-day/plan')}>Plan my day</Button>}
+            {card?.key !== 'review' && card?.key !== 'done' && <Button variant="text" onClick={() => go('/my-day/review')}>Review my day</Button>}
           </div>
           {running && (
             <AddButton className="home-add" onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.current))); setPanel('todo'); }}>

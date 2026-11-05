@@ -7614,6 +7614,37 @@
   }
 }
 
+/* Tomorrow's priorities on the day-done card (Tim, 5 Nov). */
+.ui-root .ds-suggest-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .ds-suggest-list li {
+  display: grid;
+  grid-template-columns: var(--space-5) minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.ui-root .ds-suggest-num {
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-question) !important;
+  line-height: 1;
+  color: var(--text);
+}
+
+.ui-root .ds-suggest-item {
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
 /* Quiet lines (M2 .hq). */
 .ui-root .ds-quiet {
   margin-top: var(--space-px14);
@@ -7627,6 +7658,10 @@
   gap: var(--space-px12);
   padding: var(--space-px14) 0;
   border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .ds-quiet-row:last-child {
+  border-bottom: 0;
 }
 
 .ui-root .ds-quiet-main {

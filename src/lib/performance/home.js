@@ -111,7 +111,46 @@ export function homePerson({ sprintView, recovery, steps }) {
 }
 
 /**
- * The one suggestion for now (M2 sugCard, M19's wind-down card), or null
+ * Home's three day states (Tim, 5 Nov: "Home follows what's been done, not
+ * only the clock"):
+ *   'not-planned'  Plan my day isn't done yet
+ *   'planned'      today is planned and not yet reviewed
+ *   'reviewed'     Review my day is finished (Close my day): "Your day's
+ *                  done", at any time of day
+ * From 04:00 (the review rule, REVIEW_EARLY_HOURS) a new day starts at
+ * 'not-planned'; before 04:00 the day before's finished review still counts.
+ */
+export function dayState({ hour, dayPlanned, reviewed, yesterday = {} }) {
+  if (reviewed || (hour < REVIEW_EARLY_HOURS && yesterday.reviewed)) return 'reviewed';
+  return dayPlanned ? 'planned' : 'not-planned';
+}
+
+/** Tomorrow's priorities from a review's tomorrow list: typed ones only, three at most. */
+export function tomorrowPriorities(list) {
+  return (Array.isArray(list) ? list : []).map((t) => String(t || '').trim()).filter(Boolean).slice(0, 3);
+}
+
+/**
+ * The one suggestion for now, taking turns (Tim, 5 Nov): Plan my day in the
+ * morning, then anything timed that is due (the monthly check-in), then
+ * Review my day in the evening. Anything timed queues for this one card and
+ * is never a loose line under it; when it isn't its turn, Home doesn't
+ * mention it. `checkin`: checkinPrompt() while one is due.
+ */
+export function homeSuggestion(input) {
+  const card = suggestionInTurn(input);
+  const c = input.checkin;
+  // The check-in's turn: once the day is planned (or Plan my day's morning
+  // has gone), in place of "How is today going?", or when nothing else is
+  // suggested. A new coaching client's First check-in is already the card.
+  if (c && card?.key !== 'first-checkin' && (!card || card.key === 'today')) {
+    return { key: c.key, question: c.question, lines: c.lines || [], time: c.time, action: c.action };
+  }
+  return card;
+}
+
+/**
+ * The suggestion before anything timed takes its turn (M2 sugCard, M19's wind-down card), or null
  * when there is nothing to suggest. A card: { key, label, question,
  * lines, time, action: { label, to | jump }, notTonight }.
  *
@@ -127,7 +166,7 @@ export function homePerson({ sprintView, recovery, steps }) {
  *   recovery               the open Recovery row, if any; recoveryNext: the next sprint's number
  *   firstCheckin           checkinPrompt() when it's the First check-in (Phase 5), else null
  */
-export function homeSuggestion(input) {
+function suggestionInTurn(input) {
   const { today, hour, minute = 0, person, sprintView: v, dayPlanned, reviewed, yesterday = {}, windDown = {}, recovery, nextSprint } = input;
 
   // Sleep wind down, from 21:00 until 03:00, even in Recovery (M19).
@@ -202,6 +241,20 @@ export function homeSuggestion(input) {
   }
 
   const running = v?.state === 'running';
+  // The day is reviewed or closed: "Your day's done", with tomorrow's
+  // priorities from the review, waiting in tomorrow's Plan my day.
+  if (dayState({ hour, dayPlanned, reviewed, yesterday }) === 'reviewed') {
+    const priorities = tomorrowPriorities(input.tomorrow);
+    return {
+      key: 'done',
+      label: 'Priorities for tomorrow',
+      question: null,
+      list: priorities,
+      lines: priorities.length ? ['They’re waiting in tomorrow’s Plan my day.'] : ['Nothing is set for tomorrow yet.'],
+      action: null,
+      link: { label: 'Change my review', to: input.reviewTo || '/my-day/review' },
+    };
+  }
   // Before 04:00: yesterday's review, if yesterday was planned and not reviewed (dayReview.js reviewDayFor).
   if (hour < REVIEW_EARLY_HOURS) {
     if (yesterday.planned && !yesterday.reviewed) return reviewCard();
@@ -257,21 +310,18 @@ export function homeSuggestion(input) {
 }
 
 /**
- * The quiet lines under the card (M2 qlines): at most two, in M2's order:
- * a note from the coach, the coaching session tomorrow, the First
- * check-in, the agreement to sign, then the monthly check-in. Only those
- * with data today show: the note, the session and the agreement wait for
- * Phase 6a. The check-in's line (checkinPrompt in checkin.js, Phase 5)
- * shows while it's due and goes once it's done; a new coaching client's
- * First check-in is the card instead (homeSuggestion), so not here too.
+ * The quiet lines under the card (M2 qlines): at most two: a note from the
+ * coach, the coaching session tomorrow and the agreement to sign (Phase
+ * 6a). Timed things (the check-ins) queue for the card instead
+ * (homeSuggestion; Tim, 5 Nov).
  * "Ready to add your mission?" shows once, two weeks after someone
  * without a coach joined, until Not now.
  */
 export function quietLines({ person, hasCoach, mission, joinedDaysAgo = 0, dismissed = [], checkin = null }) {
   const out = [];
-  if (checkin && !(checkin.first && person === 'new' && hasCoach)) {
-    out.push({ key: checkin.key, lines: [checkin.question], action: checkin.action, time: checkin.time });
-  }
+  // The check-in is timed, so it waits for the one card (homeSuggestion),
+  // never a quiet line (Tim, 5 Nov). `checkin` is kept for older callers.
+  void checkin;
   if (person === 'new' && !hasCoach && !mission && joinedDaysAgo >= 14) {
     out.push({ key: 'mission', lines: ['Ready to add your mission?'], action: { label: 'Add my mission', to: '/performance-plan/build' }, dismissable: true });
   }

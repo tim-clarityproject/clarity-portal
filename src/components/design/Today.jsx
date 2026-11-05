@@ -28,11 +28,23 @@ import './design.css';
 //   tool, named in words.
 
 /** Suggested for now (M2 sugCard). action: { label, onClick }; link: { label, onClick }. */
-export function SuggestionCard({ label = 'Suggested for now', question, lines = [], time, action, link, className = '' }) {
+// list: numbered rows (tomorrow's priorities 1 to 3, Tim, 5 Nov), the
+// numbers in the display font like the plan's numbered Outcome Objectives.
+export function SuggestionCard({ label = 'Suggested for now', question, list = [], lines = [], time, action, link, className = '' }) {
   return (
     <section className={`ds-suggest ${className}`.trim()} aria-label={label}>
       <p className="ds-suggest-label">{label}</p>
-      <h2 className="ds-suggest-question">{keepWords(question)}</h2>
+      {question && <h2 className="ds-suggest-question">{keepWords(question)}</h2>}
+      {list.length > 0 && (
+        <ol className="ds-suggest-list">
+          {list.map((item, i) => (
+            <li key={`${i}:${item}`}>
+              <span className="ds-suggest-num" aria-hidden="true">{i + 1}</span>
+              <span className="ds-suggest-item">{keepWords(item)}</span>
+            </li>
+          ))}
+        </ol>
+      )}
       {lines.map((line) => <p key={line} className="ds-suggest-line">{line}</p>)}
       {time && <p className="ds-suggest-time">{time}</p>}
       {(action || link) && (

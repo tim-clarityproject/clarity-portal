@@ -6,6 +6,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GAP_DAYS,
+  dayState,
+  tomorrowPriorities,
   dayStrategyNames,
   homeGreeting,
   homePerson,
@@ -59,11 +61,49 @@ test('afternoon: how today is going, with no to-do count (UNDEFINED)', () => {
   assert.equal(homeSuggestion(base({ hour: 16, minute: 59 })).key, 'today');
 });
 
-test('evening: Review my day from 17:00, nothing once it is done', () => {
+test('evening: Review my day from 17:00, then the day is done', () => {
   const c = homeSuggestion(base({ hour: 17 }));
   assert.equal(c.key, 'review');
   assert.equal(c.time, '~5 minutes');
-  assert.equal(homeSuggestion(base({ hour: 20, reviewed: true })), null);
+  assert.equal(homeSuggestion(base({ hour: 20, reviewed: true })).key, 'done');
+});
+
+test('the three day states: not planned, planned, then reviewed or closed until 04:00 (Tim, 5 Nov)', () => {
+  assert.equal(dayState({ hour: 9, dayPlanned: false, reviewed: false }), 'not-planned');
+  assert.equal(dayState({ hour: 9, dayPlanned: true, reviewed: false }), 'planned');
+  // Reviewed at any time of day, planned or not.
+  assert.equal(dayState({ hour: 10, dayPlanned: false, reviewed: true }), 'reviewed');
+  // After midnight, the day before's review still counts until 04:00.
+  assert.equal(dayState({ hour: 2, dayPlanned: false, reviewed: false, yesterday: { reviewed: true } }), 'reviewed');
+  assert.equal(dayState({ hour: 4, dayPlanned: false, reviewed: false, yesterday: { reviewed: true } }), 'not-planned');
+
+  // The done card: tomorrow's priorities 1 to 3, waiting in tomorrow's Plan my day, and Change my review.
+  const done = homeSuggestion(base({ hour: 11, dayPlanned: true, reviewed: true, tomorrow: ['Send the Q3 numbers', '', 'Book the physio', 'Call Jo', 'A fourth'] }));
+  assert.equal(done.key, 'done');
+  assert.equal(done.label, 'Priorities for tomorrow');
+  assert.deepEqual(done.list, ['Send the Q3 numbers', 'Book the physio', 'Call Jo']);
+  assert.deepEqual(done.lines, ['They’re waiting in tomorrow’s Plan my day.']);
+  assert.equal(done.action, null); // no Plan my day, no coral button
+  assert.equal(done.link.label, 'Change my review');
+  assert.deepEqual(homeSuggestion(base({ hour: 18, reviewed: true })).lines, ['Nothing is set for tomorrow yet.']);
+  assert.deepEqual(tomorrowPriorities(['  a ', null, 'b']), ['a', 'b']);
+  // Before 04:00 the day before's review keeps the day done.
+  assert.equal(homeSuggestion(base({ hour: 3, yesterday: { reviewed: true, planned: true } })).key, 'done');
+  // Wind down still takes its turn in the evening.
+  assert.equal(homeSuggestion(base({ hour: 21, reviewed: true })).key, 'wind-down');
+});
+
+test('one card takes turns: Plan my day, then a due check-in, then Review my day (Tim, 5 Nov)', () => {
+  const checkin = { key: 'checkin', question: 'Ready for your monthly check-in?', lines: [], time: '~3 minutes', action: { label: 'Start my check-in', to: '/check-in' } };
+  assert.equal(homeSuggestion(base({ checkin })).key, 'plan');
+  const c = homeSuggestion(base({ dayPlanned: true, checkin }));
+  assert.deepEqual([c.key, c.question, c.time, c.action.label], ['checkin', 'Ready for your monthly check-in?', '~3 minutes', 'Start my check-in']);
+  // Plan my day's morning has gone: the check-in's turn.
+  assert.equal(homeSuggestion(base({ hour: 13, checkin })).key, 'checkin');
+  assert.equal(homeSuggestion(base({ hour: 17, dayPlanned: true, checkin })).key, 'review');
+  assert.equal(homeSuggestion(base({ hour: 18, reviewed: true, checkin })).key, 'done');
+  // Never a quiet line.
+  assert.equal(quietLines({ person: 'sprint', hasCoach: false, checkin }).length, 0);
 });
 
 test('Sleep wind down from 21:00 until 03:00, and Not tonight', () => {

@@ -1342,6 +1342,13 @@
   margin-top: var(--space-px28);
 }
 
+/* Log today above ends on its own line, so the week line keeps only its
+   lower one: never two lines with nothing between (Tim, 26 Oct, 11:24). */
+.ui-root .home-week .ds-weekline {
+  border-top: 0;
+  padding-top: 0 !important;
+}
+
 .ui-root .home-help {
   margin-top: var(--space-5);
 }

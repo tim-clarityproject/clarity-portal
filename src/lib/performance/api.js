@@ -989,9 +989,9 @@ export async function loadHomeDay(userId, date) {
     .lt('local_date', date).order('local_date', { ascending: false }).limit(1));
   const [dayPlan, dayReview, yesterdayPlan, yesterdayReview, lastLog, lastPlan, lastReview, plan, lastSprint, coach] = await Promise.all([
     one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1)),
-    one(supabase.from('day_reviews').select('id, local_date, status, updated_at').eq('user_id', userId).eq('local_date', date).limit(1)),
+    one(supabase.from('day_reviews').select('id, local_date, status, tomorrow, updated_at').eq('user_id', userId).eq('local_date', date).limit(1)),
     one(supabase.from('day_plans').select('id').eq('user_id', userId).eq('local_date', yesterday).limit(1)),
-    one(supabase.from('day_reviews').select('id').eq('user_id', userId).eq('local_date', yesterday).eq('status', 'finished').limit(1)),
+    one(supabase.from('day_reviews').select('id, tomorrow').eq('user_id', userId).eq('local_date', yesterday).eq('status', 'finished').limit(1)),
     latest('habit_logs'),
     latest('day_plans'),
     latest('day_reviews'),
@@ -1012,7 +1012,7 @@ export async function loadHomeDay(userId, date) {
     dayTodos,
     dayStrategies,
     dayReview,
-    yesterday: { planned: Boolean(yesterdayPlan), reviewed: Boolean(yesterdayReview) },
+    yesterday: { planned: Boolean(yesterdayPlan), reviewed: Boolean(yesterdayReview), tomorrow: yesterdayReview?.tomorrow || [] },
     lastActive: [lastLog?.local_date, lastPlan?.local_date, lastReview?.local_date].filter(Boolean),
     plan: plan ? { id: plan.id, mission: plan.mission || null } : null,
     objectives: objectives.length,

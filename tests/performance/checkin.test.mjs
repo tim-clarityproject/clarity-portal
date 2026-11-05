@@ -155,16 +155,17 @@ test('Home: the First check-in card for a new coaching client, then the monthly 
   assert.equal(card.action.to, '/check-in');
   // Not as a quiet line too while it's the card.
   assert.equal(quietLines({ person: 'new', hasCoach: true, checkin: first }).length, 0);
-  // Someone already running a sprint gets it as a quiet line.
-  assert.equal(quietLines({ person: 'sprint', hasCoach: true, checkin: first })[0].lines[0], 'Ready to finish your first check-in?');
+  // Someone already running a sprint gets it on the one card in its turn, never as a quiet line (Tim, 5 Nov).
+  assert.equal(quietLines({ person: 'sprint', hasCoach: true, checkin: first }).length, 0);
+  assert.equal(homeSuggestion({ today: TODAY, hour: 13, person: 'sprint', sprintView: { state: 'running', current: 3, lengthWeeks: 8 }, checkin: first }).question, 'Ready to finish your first check-in?');
   // Nothing started yet.
   assert.equal(checkinPrompt({ hasCoach: true, coachName: 'Tim', checkins: [], today: TODAY }).action.label, 'Start my first check-in');
 
   const monthly = checkinPrompt({ hasCoach: false, coachName: null, checkins: [{ month: '2026-09-01', kind: 'monthly', status: 'finished' }], today: TODAY });
   assert.deepEqual([monthly.question, monthly.action.label, monthly.time], ['Ready for your monthly check-in?', 'Start my check-in', '~3 minutes']);
   const lines = quietLines({ person: 'new', hasCoach: false, mission: null, joinedDaysAgo: 20, checkin: monthly });
-  assert.deepEqual(lines.map((q) => q.key), ['checkin', 'mission']); // M2's order: the check-in before the mission line
-  assert.equal(lines[0].time, '~3 minutes');
+  assert.deepEqual(lines.map((q) => q.key), ['mission']); // the check-in waits for the card
+  assert.equal(monthly.time, '~3 minutes');
   // Gone once done.
   assert.equal(checkinPrompt({ hasCoach: false, checkins: [{ month: '2026-10-01', kind: 'monthly', status: 'finished' }], today: TODAY }), null);
   assert.equal(quietLines({ person: 'sprint', hasCoach: false, checkin: null }).length, 0);
