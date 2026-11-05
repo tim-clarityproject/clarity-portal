@@ -205,6 +205,23 @@ test('Too little data: no row, and the debrief explains the gap once (rule 22)',
   assert.equal(debriefPattern(after, 'sp1:5', built), null, 'only once');
 });
 
+test('Too little data, 0 to 2 weeks (break-it tester): no card, no row, no figure, and a broken saved state is read as empty', () => {
+  for (const [weeks, today] of [[0, '2026-02-11'], [1, '2026-02-18'], [2, '2026-02-25']]) {
+    const built = buildPatternPerson(rowsFor({ weeks }), today);
+    // The page runs the check only when one is due (patternCheckDue: never with no finished week).
+    if (!built.check) assert.equal(patternCheckDue(empty(), built, today), false, `${weeks} weeks: no check due`);
+    const s = built.check ? nextPatternState(empty(), built, { today, seed: seedOf(built) }).state : empty();
+    assert.equal(s.cards.length, 0, `${weeks} weeks: no card`);
+    assert.equal(shownCards(s, today).length, 0, `${weeks} weeks: nothing shown`);
+    assert.equal(patternsRow(s, today, built.names), null, `${weeks} weeks: no dashboard row`);
+  }
+  for (const garbage of ['not an object', [1, 2, 3], { cards: 'x', week: 5, shown: { a: null } }, null, 42]) {
+    const s = readPatternState({ patterns: garbage });
+    assert.equal(shownCards(s, '2026-02-25').length, 0);
+    assert.equal(patternsRow(s, '2026-02-25', {}), null);
+  }
+});
+
 test('Rule 17: a new card arrives in the weekly debrief, at most one a week, then shows on the dashboard', () => {
   const built = buildPatternPerson(rowsFor(), TODAY);
   const s = nextPatternState(empty(), built, { today: TODAY, seed: seedOf(built) }).state;
