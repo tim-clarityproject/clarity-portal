@@ -25,6 +25,7 @@ const REFRESH_MS = 30000;
 const listeners = new Set();
 const lastRead = new Map();
 const snapshots = new Map();
+const reading = new Map(); // a read of the account's copy still on its way
 
 function read(userId) {
   const c = readCache(userId, CACHE)?.v;
@@ -65,14 +66,22 @@ export async function refreshPins(userId, { force = false } = {}) {
   if (!userId) return;
   if (!force && Date.now() - (lastRead.get(userId) || 0) < REFRESH_MS) return;
   lastRead.set(userId, Date.now());
+  const run = (async () => {
+    try {
+      await whenSent();
+      const prefs = await readServer(userId);
+      if (waitingToSend(userId)) return;
+      keep(userId, { pins: cleanPins(prefs.menu_pins), prefs });
+    } catch {
+      // Offline or refused: the device's copy stays.
+      lastRead.delete(userId);
+    }
+  })();
+  reading.set(userId, run);
   try {
-    await whenSent();
-    const prefs = await readServer(userId);
-    if (waitingToSend(userId)) return;
-    keep(userId, { pins: cleanPins(prefs.menu_pins), prefs });
-  } catch {
-    // Offline or refused: the device's copy stays.
-    lastRead.delete(userId);
+    await run;
+  } finally {
+    if (reading.get(userId) === run) reading.delete(userId);
   }
 }
 
@@ -89,6 +98,9 @@ function send(userId, prefs) {
 // device that hasn't read the account's copy this visit reads it first
 // (when it can), so a change never sends an empty object over the rest.
 async function change(userId, apply) {
+  // A read already on its way is waited for, so a change is never made on
+  // top of a device copy that hasn't caught up with the account yet.
+  if (reading.has(userId)) await reading.get(userId);
   if (!lastRead.has(userId)) await refreshPins(userId, { force: true });
   const next = apply(current(userId).prefs);
   keep(userId, { pins: cleanPins(next.menu_pins), prefs: next });

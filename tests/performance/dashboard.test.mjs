@@ -253,9 +253,9 @@ test('what’s behind: wins, streaks, sleep (Recovery’s chart and range), stre
   assert.equal(by.lbr.line, 'You haven’t done a life balance review yet.');
   // No tool writes the emotional control checks yet: the row waits for the first one.
   assert.equal(by.line, undefined);
-  // Patterns appear only once a pattern exists (Step 3 fills the slot).
+  // Patterns appear only once there is enough data to check (patterns.js patternsRow).
   assert.equal(by.pat, undefined);
-  const withPattern = dashboardView(rows(), { today: TODAY, target, patterns: [{ key: 'x' }] });
+  const withPattern = dashboardView(rows(), { today: TODAY, target, patterns: { key: 'pat', title: 'Patterns in your numbers', line: '1 pattern has been found in your own numbers.', cards: [{ key: 'x' }] } });
   assert.equal(withPattern.behind.rows[2].key, 'pat');
   assert.equal(withPattern.behind.closedLine, 'Your wins, streaks, 1 pattern and more.');
 });

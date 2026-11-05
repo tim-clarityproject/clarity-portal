@@ -8590,3 +8590,102 @@
     color: var(--label);
   }
 }
+
+/* ---------------------------------------------------------------- Pattern cards (M4 v47 .pcs, .pc; Phase 5 step 3) */
+.ui-root .ds-patterns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-px12);
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-patterns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ui-root .ds-pattern {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-px10);
+  padding: var(--space-px22);
+  border-radius: var(--radius-pattern);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.ui-root .ds-pattern-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-px12);
+  flex-wrap: wrap;
+}
+
+.ui-root .ds-pattern-kind {
+  font-size: var(--fs-meta);
+  color: var(--placeholder);
+}
+
+.ui-root .ds-pattern-strength {
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+}
+
+.ui-root .ds-pattern-line {
+  margin: 0;
+  font-size: var(--fs-text);
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .ds-pattern-q {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  color: var(--text-2);
+}
+
+.ui-root .ds-pattern .ds-pattern-act {
+  align-self: flex-start;
+  font-size: var(--fs-secondary);
+}
+
+.ui-root .ds-pattern-how {
+  border-top: var(--line-w) solid var(--line);
+  padding-top: var(--space-px12);
+  animation: ds-pattern-up var(--dur) var(--ease);
+}
+
+.ui-root .ds-pattern-how p {
+  margin: 0;
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .ds-pattern-how p + p {
+  margin-top: var(--space-1);
+}
+
+.ui-root .ds-pattern-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-px10);
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.ui-root .ds-pattern-foot .ds-link {
+  font-size: var(--fs-note) !important; /* M4 .pc .pf .text 14px, over .ds-link's 15px */
+}
+
+@keyframes ds-pattern-up {
+  from { opacity: 0; transform: translateY(var(--space-1)); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-pattern-how {
+    animation: none;
+  }
+}

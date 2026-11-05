@@ -15,6 +15,7 @@ import {
   LoggingWeekRow,
   ObjectiveFigureRow,
   PageHeader,
+  PatternCard,
   Section,
   Stat,
   StatGroup,
@@ -65,6 +66,8 @@ import {
   shareLine,
   yourDaysLine,
 } from '../../lib/performance';
+import { debriefPattern, patternCardWords } from '../../lib/performance/patterns';
+import { usePatterns } from './usePatterns';
 import './performance.css';
 
 // The Weekly performance debrief (mock-up M1, R.debrief, read in full with
@@ -213,6 +216,28 @@ function NotOpen({ view }) {
 }
 
 
+/** The weekly debrief's pattern (rule 17) or its one logging-gap line (rule 22), marked as shown once seen. */
+function DebriefPattern({ shown, names, onShown, onAct }) {
+  const marked = useRef(false);
+  useEffect(() => {
+    if (marked.current) return;
+    marked.current = true;
+    onShown();
+  }, [onShown]);
+  if (shown.kind === 'gap') {
+    return (
+      <Section title="Patterns in your numbers" as="h3" className="deb-pattern">
+        {shown.lines.map((l) => <p key={l} className="day-quiet-line">{l}</p>)}
+      </Section>
+    );
+  }
+  return (
+    <Section title="A new pattern in your numbers" as="h3" className="deb-pattern">
+      <PatternCard card={patternCardWords(shown.card, names)} onAct={onAct} />
+    </Section>
+  );
+}
+
 function DebriefFlow({ userId, today, loaded, view }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -221,6 +246,14 @@ function DebriefFlow({ userId, today, loaded, view }) {
   const { data, setData } = loaded;
   const { sprintId, week } = view;
   const key = nameOf(sprintId, week);
+  // A new pattern arrives here, at most one a week (pattern rule 17), or a
+  // logging gap is explained once (rule 22). What showed first stays for
+  // this visit, even once it is marked as shown.
+  const pat = usePatterns(today);
+  const patFirst = useRef(null);
+  const patNow = useMemo(() => debriefPattern(pat.state, key, pat.built || {}), [pat.state, pat.built, key]);
+  if (!patFirst.current && patNow && !pat.checking) patFirst.current = patNow;
+  const patShown = patFirst.current;
 
   const [answers, setAnswers] = useState(() => debriefAnswersFromRow(data.debrief));
   const [shared, setShared] = useState(() => Boolean(data.debrief?.shared_with_coach));
@@ -787,6 +820,14 @@ function DebriefFlow({ userId, today, loaded, view }) {
             <div className="deb-share">
               <SwitchRow label={`Share with ${view.coach}`} note={shareLine(view.coach, shared)} checked={shared} onChange={share} />
             </div>
+          )}
+          {patShown && (
+            <DebriefPattern
+              shown={patShown}
+              names={pat.built?.names}
+              onShown={() => { pat.markDebrief(key, patShown).catch(() => {}); }}
+              onAct={(a) => navigate(a.to, a.state ? { state: a.state } : undefined)}
+            />
           )}
         </div>
       ),

@@ -681,6 +681,25 @@ Run by `npm run sim:patterns -- --seed N --no-tighten` at the 2.6% threshold, wi
 - **Option 3 is not adopted (Claude, by Tim's rule: adopt it only if the 2-swing rate rises).** It changed almost nothing (74.0% to 74.2%, and 76.5% to 76.5%), because the engine already leaves out any habit without 6 weeks in each group, which over 26 weeks is about 27% to 73% kept. The narrower band adds about 2 points, but the simulation flatters it: every planted habit is kept about half the time, so a real link on a habit kept in 30% or 70% of weeks would never be checked. The setting stays in the code, switched off (`M14.l3KeptShare`), so it can be rerun.
 - The figures for 1 swing differ from the first run (11.4% then, 15.3% now) only because the information rows now use a different set of invented people (seed + 17); the method is unchanged.
 
+### The rerun before the first cards show, 5 Nov 2026 (Phase 5 step 3)
+
+Run by `npm run sim:patterns -- --seed 1` and `--seed 2` (files `tests/patterns/sim-results-phase5.json` and `sim-results-phase5-seed2.json`) on the engine as the device runs it: every person goes through `m14WeeklyCheck`, the same weekly check the dashboard and the debrief run, every week from week 8 to week 26, with the 4-week rule on, at 2.6%. Every link on the fixed list was planted at 2 usual swings in its own 1,000 people with at least 12 weeks in each group. Figures at week 26, with the 95% interval.
+
+| | First set | Fresh set |
+|---|---|---|
+| False cards, the person's (5,000 people) | 3.8% (3.3% to 4.4%) | 3.5% (3.0% to 4.0%) |
+| False cards, coach-only | 4.1% (3.6% to 4.7%) | 3.5% (3.0% to 4.1%) |
+| L1 sleep hours and the day score | 77.2% (74.5% to 79.7%) | 77.5% (74.8% to 80.0%) |
+| L2 sleep quality and the day score | 86.4% (84.1% to 88.4%) | 86.1% (83.8% to 88.1%) |
+| L3 a habit and its Strategy (target 3 in 4) | 74.0% (71.2% to 76.6%) | 76.5% (73.8% to 79.0%) |
+| L4 stress and the weekly score | 63.8% (60.8% to 66.7%) | 64.0% (61.0% to 66.9%) |
+| L5 the way of being and the weekly score | 65.0% (62.0% to 67.9%) | 63.8% (60.8% to 66.7%) |
+| L6 a Strategy and its objective 2 to 4 weeks later | 25.7% (23.1% to 28.5%) | 26.4% (23.8% to 29.2%) |
+
+- The false-card and L3 figures are exactly those of 27 Oct, so the device's weekly check makes the same decisions as the engine proved then. False cards stay under 1 in 20 for the whole interval.
+- L4 and L5 are found less often because links measured in the same week must reach Strong (M14.5 rule 5). L6 is found least: a week at the standard spreads over the overlapping 2 to 4 week windows, and every Strategy and objective pair is checked and corrected together. Only L3 has a target; the others are for Tim.
+- M14.2's day score has its function (`m14DayScore`); its detail is Claude's (Phase 5 step 3): a count or amount with a daily target, or a yes or no each day, against that day; limits, ratings and weekly habits have no daily target and are left out; a day with nothing logged or planned has no day score.
+
 ### Claude's calls in version 1.0 (for Tim to change if he wants)
 1. Comparisons with the standard use the rounded figure people see (M0.1).
 2. A change to the working pattern applies from the next sprint week (M0.3).

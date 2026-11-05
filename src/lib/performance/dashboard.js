@@ -15,8 +15,8 @@
 // left as an empty frame and listed in the step's report, never invented:
 // "Best week this year" and "the same week last sprint" (M6), an
 // objective's change over 3 months, a year or all time (M9.1), Breathe as
-// an average a week (M11), and the patterns (M14: Phase 5 step 3 fills
-// their slot).
+// an average a week (M11). The patterns row (M14) is worked out in
+// patterns.js and passed in.
 //
 // Choices made here because Tim wasn't there (listed in the report):
 // - What's behind your performance is always about the current sprint, as
@@ -849,7 +849,8 @@ function stressRow(d, sprint, here) {
 /**
  * The dashboard's whole view.
  * @param {object} d rows from loadDashboard
- * @param {{ today: string, span?: string, target: {from, to, own}, patterns?: object[]|null, showResults?: boolean }} opts
+ * @param {{ today: string, span?: string, target: {from, to, own}, patterns?: object|null, showResults?: boolean }} opts
+ *   patterns: the patterns row from patterns.js patternsRow, or null
  */
 export function dashboardView(d, { today, span = 'sprint', target, patterns = null, showResults = false }) {
   if (!d) return null;
@@ -914,7 +915,10 @@ export function dashboardView(d, { today, span = 'sprint', target, patterns = nu
   const rows = [
     winsRow(d, sprint, here),
     rhythmRow(d, sprint, here, today),
-    patterns && patterns.length ? { key: 'pat', title: 'Patterns in your numbers', line: `${plural(patterns.length, 'pattern has', 'patterns have')} been found in your own numbers.`, figure: { text: String(patterns.length) }, patterns } : null,
+    // Patterns in your numbers (M14, patterns.js patternsRow): the row
+    // appears once there is enough data to check, with its cards or the
+    // honest "No clear link yet".
+    patterns || null,
     checkRow(d),
     lifeRow(d),
     wayRow(d, sprint, here),
@@ -924,8 +928,8 @@ export function dashboardView(d, { today, span = 'sprint', target, patterns = nu
   ].filter(Boolean);
   const behind = {
     lead: 'This section shows the current sprint.',
-    closedLine: patterns && patterns.length
-      ? `Your wins, streaks, ${plural(patterns.length, 'pattern')} and more.`
+    closedLine: patterns?.cards?.length
+      ? `Your wins, streaks, ${plural(patterns.cards.length, 'pattern')} and more.`
       : 'Your wins, streaks, check-in and more.',
     rows,
   };

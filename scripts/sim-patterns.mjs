@@ -16,6 +16,14 @@
 //      Strategy's score without it), 2 of their usual swings, with at least
 //      12 weeks in each group. Target: at least 3 in 4 found (Tim, 27 Oct,
 //      "rare but right"; was 8 in 10 at one swing).
+//      Phase 5 step 3: the same for every link on the fixed list, 1,000
+//      people each (L1 sleep hours and L2 sleep quality against the day
+//      score, L3 a habit, L4 stress and L5 the way of being against the
+//      weekly score, L6 a Strategy against its objective 2 to 4 weeks
+//      later), each planted at 2 usual swings with at least 12 weeks in each
+//      group. Only L3 has a target in the methods (M14.7); the others are
+//      reported for Tim. Each person runs through m14WeeklyCheck, the exact
+//      weekly check the device runs.
 //   3. Early stopping against the full 10,000 shuffles, on a sample of
 //      weekly checks: how often the decisions agree.
 //
@@ -31,7 +39,7 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { M14, m14Rng, m14Check, m14Steady, m14WeeklyResiduals } from '../src/lib/scores/m14.js';
+import { M14, m14Rng, m14Check, m14DailyResiduals, m14WeeklyCheck, m14WeeklyResiduals } from '../src/lib/scores/m14.js';
 
 const FIRST_CHECK = 8;
 const WEEKS = 26;
@@ -55,8 +63,30 @@ function series(rng, n, { phi, sd, trend = 0, base = 0 }) {
   return out;
 }
 
-export function makePerson(seed, { planted = false, effect = 1 } = {}) {
+const sdOf = (v) => {
+  const m = v.reduce((a, b) => a + b, 0) / v.length;
+  return Math.sqrt(v.reduce((a, b) => a + (b - m) * (b - m), 0) / (v.length - 1));
+};
+
+// Half the eligible weeks (at least 12 in each group, so at least 24
+// eligible weeks), chosen at random: the weeks a planted cause is true.
+function halfOfEligible(rng, eligible) {
+  while (eligible.filter(Boolean).length < 24) {
+    const off = eligible.map((e, t) => (e ? -1 : t)).filter((t) => t >= 0);
+    eligible[off[Math.floor(rng() * off.length)]] = true;
+  }
+  const elig = eligible.map((e, t) => (e ? t : -1)).filter((t) => t >= 0);
+  for (let i = elig.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [elig[i], elig[j]] = [elig[j], elig[i]];
+  }
+  const inGroup = new Set(elig.slice(0, Math.floor(elig.length / 2)));
+  return Array.from({ length: eligible.length }, (_, t) => (eligible[t] ? inGroup.has(t) : rng() < 0.5));
+}
+
+export function makePerson(seed, { planted = false, effect = 1, plant = 'L3' } = {}) {
   const rng = m14Rng(seed);
+  const plantL3 = planted && plant === 'L3';
   const n = WEEKS;
   // Which weeks count (M0.5): thin weeks, unusual weeks and Recovery.
   const eligible = Array.from({ length: n }, () => rng() > 0.08 && rng() > 0.04);
@@ -65,11 +95,11 @@ export function makePerson(seed, { planted = false, effect = 1 } = {}) {
     const len = rng() < 0.5 ? 1 : 2;
     for (let t = start; t < start + len; t += 1) eligible[t] = false;
   }
-  const nStrategies = planted ? 3 + Math.floor(rng() * 2) : 3 + Math.floor(rng() * 3);
+  const nStrategies = plantL3 ? 3 + Math.floor(rng() * 2) : 3 + Math.floor(rng() * 3);
   const nObjectives = 2 + Math.floor(rng() * 2);
   const strategies = [];
   for (let s = 0; s < nStrategies; s += 1) {
-    const plantedHere = planted && s === 0;
+    const plantedHere = plantL3 && s === 0;
     const nHabits = plantedHere ? 1 : 1 + Math.floor(rng() * 3);
     const habits = [];
     for (let h = 0; h < nHabits; h += 1) {
@@ -88,7 +118,7 @@ export function makePerson(seed, { planted = false, effect = 1 } = {}) {
   // eligible weeks in each group, lifting its Strategy's other items by the
   // usual swing of that score.
   let plantedKey = null;
-  if (planted) {
+  if (plantL3) {
     const s = strategies[0];
     const h = s.habits[0];
     // At least 12 weeks in each group needs at least 24 eligible weeks.
@@ -170,14 +200,60 @@ export function makePerson(seed, { planted = false, effect = 1 } = {}) {
       dayScore: clamp(dayLevel[i] + (weekday === 0 ? -6 : weekday === 4 ? 3 : 0), 0, 100),
     });
   }
+  // The other planted links (Phase 5 step 3), each at `effect` usual swings.
+  const eligibleNow = weeks.map((w) => w.eligible);
+  if (planted && (plant === 'L4' || plant === 'L5')) {
+    const on = halfOfEligible(rng, eligibleNow);
+    weeks.forEach((w, t) => { w.eligible = eligibleNow[t]; });
+    const swing = sdOf(m14WeeklyResiduals(weeks.filter((w) => w.eligible).map((w) => w.score)));
+    weeks.forEach((w, t) => {
+      if (plant === 'L4') w.stress = on[t] ? STRESS[Math.floor(rng() * 2)] : STRESS[2 + Math.floor(rng() * 3)];
+      else w.wayOfBeing = on[t] ? between(rng, 7, 9.5) : between(rng, 3, 6.9);
+      if (on[t]) w.score += effect * swing;
+    });
+    plantedKey = plant;
+  }
+  if (planted && plant === 'L6') {
+    // A Strategy at the standard in about half the eligible weeks, and an
+    // objective it alone serves that moves more 2 to 4 weeks later: each
+    // week at the standard adds to the objective's 3rd and 4th weeks after,
+    // so the change from 2 to 4 weeks later (M14.1) is `effect` swings more.
+    const on = halfOfEligible(rng, eligibleNow);
+    weeks.forEach((w, t) => { w.eligible = eligibleNow[t]; w.strategies.s0.atStandard = on[t]; });
+    let x = 50;
+    const drift = between(rng, 0, 0.5);
+    const sdStep = between(rng, 1, 3);
+    const steps = Array.from({ length: n }, () => drift + gauss(rng) * sdStep);
+    const change = (inc) => weeks.map((_, t) => (t + 4 < n ? inc[t + 3] + inc[t + 4] : null));
+    const base = change(steps);
+    const swing = sdOf(m14WeeklyResiduals(base.filter((v, t) => v != null && weeks[t].eligible)));
+    const planted2 = steps.map((v, k) => v + (effect * swing / 2) * ((on[k - 3] ? 1 : 0) + (on[k - 4] ? 1 : 0)));
+    const figures = planted2.map((v) => (x += v));
+    weeks.forEach((w, t) => { w.objectives.oP = { figure: figures[t], direction: 'up', servedBy: ['s0'] }; });
+    plantedKey = 'L6:s0:oP';
+  }
+  if (planted && (plant === 'L1' || plant === 'L2')) {
+    // Days after a night of 7 hours or more (L1), or rated Good or Very
+    // good (L2), get more of the day's plan done, by `effect` usual swings
+    // of the day score (worked out as the engine does, against the same
+    // weekday nearby).
+    const use = days.map((d, index) => ({ d, index })).filter((x) => x.d.eligible && x.d.working);
+    const res = m14DailyResiduals(use.map((x) => ({ index: x.index, weekday: x.d.weekday, value: x.d.dayScore }))).filter((r) => r != null);
+    const swing = sdOf(res);
+    for (const d of days) {
+      const cause = plant === 'L1' ? d.sleepHours != null && d.sleepHours >= 7 : d.sleepQuality === 'good' || d.sleepQuality === 'very_good';
+      if (cause) d.dayScore += effect * swing;
+    }
+    plantedKey = plant;
+  }
   return { person: { weeks, days, questions: [] }, plantedKey };
 }
 
 // One person through every weekly check, with the 4-week rule on.
-function runPerson(seed, { planted, alpha, effect = 1, earlyStop = true, keptShare = null }) {
-  const { person, plantedKey } = makePerson(seed, { planted, effect });
+function runPerson(seed, { planted, alpha, effect = 1, earlyStop = true, keptShare = null, plant = 'L3' }) {
+  const { person, plantedKey } = makePerson(seed, { planted, effect, plant });
   const rng = m14Rng(seed * 7919 + 13);
-  let state = { cards: [] };
+  let state = { cards: [], coach: [] };
   let anyCard = false;
   let anyCoachCard = false;
   let firstCardWeek = null;
@@ -185,12 +261,12 @@ function runPerson(seed, { planted, alpha, effect = 1, earlyStop = true, keptSha
   let foundEver = false;
   for (let week = FIRST_CHECK; week <= WEEKS; week += 1) {
     const sofar = { weeks: person.weeks.slice(0, week), days: person.days.slice(0, week * 7), questions: [] };
-    const fullFor = new Set(state.cards.map((c) => c.key));
-    const results = m14Check(sofar, { rng, alpha, earlyStop, fullFor, keptShare });
-    state = m14Steady(results, state, week);
-    const positive = state.cards.filter((c) => c.positive);
+    // The device's own weekly check (m14WeeklyCheck), with coach-only
+    // cards worked out too, so both rates are counted.
+    state = m14WeeklyCheck(sofar, state, week, { rng, alpha, earlyStop, keptShare, withCoach: true });
+    const positive = state.cards;
     if (positive.length && !anyCard) { anyCard = true; firstCardWeek = week; }
-    if (state.cards.some((c) => !c.positive)) anyCoachCard = true;
+    if (state.coach.length) anyCoachCard = true;
     if (plantedKey && positive.some((c) => c.key === plantedKey)) { foundEver = true; if (week === WEEKS) foundAtEnd = true; }
   }
   return { anyCard, anyCoachCard, firstCardWeek, foundAtEnd, foundEver };
@@ -218,11 +294,13 @@ function agreement(seed, alpha, keptShare = null) {
 }
 
 if (!isMainThread) {
-  const { kind, from, to, alpha, seed, effect, keptShare } = workerData;
+  const { kind, from, to, alpha, seed, effect, keptShare, plant } = workerData;
   const results = [];
+  // Each planted link type gets its own invented people.
+  const offset = { L1: 100000, L2: 200000, L3: 0, L4: 300000, L5: 400000, L6: 600000 }[plant || 'L3'];
   for (let i = from; i < to; i += 1) {
-    const s = seed * 1000003 + i + (kind === 'planted' ? 500000 : kind === 'agree' ? 900000 : 0);
-    results.push(kind === 'agree' ? agreement(s, alpha, keptShare) : runPerson(s, { planted: kind === 'planted', alpha, effect, keptShare }));
+    const s = seed * 1000003 + i + (kind === 'planted' ? 500000 + offset : kind === 'agree' ? 900000 : 0);
+    results.push(kind === 'agree' ? agreement(s, alpha, keptShare) : runPerson(s, { planted: kind === 'planted', alpha, effect, keptShare, plant }));
   }
   parentPort.postMessage(results);
 }
@@ -233,7 +311,7 @@ const arg = (name, def) => {
   return i >= 0 ? Number(process.argv[i + 1]) : def;
 };
 
-function runAll(kind, count, alpha, workers, seed, effect = 1, keptShare = null) {
+function runAll(kind, count, alpha, workers, seed, effect = 1, keptShare = null, plant = 'L3') {
   const per = Math.ceil(count / workers);
   const jobs = [];
   for (let w = 0; w < workers; w += 1) {
@@ -241,7 +319,7 @@ function runAll(kind, count, alpha, workers, seed, effect = 1, keptShare = null)
     const to = Math.min(count, from + per);
     if (from >= to) continue;
     jobs.push(new Promise((resolve, reject) => {
-      const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { kind, from, to, alpha, seed, effect, keptShare } });
+      const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { kind, from, to, alpha, seed, effect, keptShare, plant } });
       worker.on('message', resolve);
       worker.on('error', reject);
     }));
@@ -300,6 +378,16 @@ async function main() {
   const foundEver = rate(pres.filter((r) => r.foundEver).length, plantedN);
   console.log(`Planted links of ${effect} swings, alpha ${alpha}: found at week 26: ${pct(foundEnd)}; found at any check: ${pct(foundEver)}.`);
 
+  // Every other link on the fixed list, planted the same way (for Tim; the
+  // methods set a target for the habit link only).
+  const byType = { L3: { foundAtWeek26: foundEnd, foundAtAnyCheck: foundEver } };
+  const types = process.argv.includes('--types') ? process.argv[process.argv.indexOf('--types') + 1].split(',') : ['L1', 'L2', 'L4', 'L5', 'L6'];
+  for (const plant of types.filter((t) => t !== 'L3')) {
+    const r = await runAll('planted', plantedN, alpha, workers, seed, effect, keptShare, plant);
+    byType[plant] = { foundAtWeek26: rate(r.filter((x) => x.foundAtEnd).length, plantedN), foundAtAnyCheck: rate(r.filter((x) => x.foundEver).length, plantedN) };
+    console.log(`  ${plant} planted at ${effect} swings: found at week 26: ${pct(byType[plant].foundAtWeek26)}; at any check: ${pct(byType[plant].foundAtAnyCheck)}.`);
+  }
+
   // Sensitivity: the same, with bigger planted links (not a target; for Tim).
   const sensitivity = [];
   for (const size of listArg('effects', '1,1.5')) {
@@ -326,7 +414,7 @@ async function main() {
     keptShare,
     tried,
     noRealLinks: { falseCard: nullRes.any, coachOnlyFalseCard: nullRes.coach, target: 'under 5%' },
-    plantedLinks: { effectInSwings: effect, foundAtWeek26: foundEnd, foundAtAnyCheck: foundEver, target: effect === 2 ? 'at least 75%' : 'none (the target is set at 2 swings)', sensitivity },
+    plantedLinks: { effectInSwings: effect, foundAtWeek26: foundEnd, foundAtAnyCheck: foundEver, target: effect === 2 ? 'at least 75%' : 'none (the target is set at 2 swings)', sensitivity, byType },
     earlyStopping: agree,
     minutes: Number(((Date.now() - started) / 60000).toFixed(1)),
   };

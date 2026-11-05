@@ -315,6 +315,7 @@
   --dash-fold-min-h: 76px;   /* a fold row (M4 .mt .fold) */
   --dash-span-w: 440px;      /* the time switch on a laptop (M4 .d .segw) */
   --dash-lead-max: 54ch;     /* a section's lead lines (M4 .sec2 .lead) */
+  --radius-pattern: 18px;    /* a pattern card (M4 .pc 18px) */
   --dial-size: 120px;
   --dial-w: 10px;
   --fs-chart: calc(12 * var(--u));          /* labels inside a chart (the mock-ups use 11px; 12px keeps the "nothing below 12px" rule) */

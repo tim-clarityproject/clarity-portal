@@ -1207,6 +1207,7 @@
   margin-top: var(--space-4);
 }
 .ui-root .deb-share { margin-top: var(--space-px22); }
+.ui-root .deb-pattern { margin-top: var(--space-5); }
 
 .ui-root .deb-closed p {
   margin: 0;

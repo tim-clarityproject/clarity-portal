@@ -15,6 +15,7 @@ import {
   Loading,
   ObjectiveNumbers,
   PageHeader,
+  PatternCard,
   PerformanceSystem,
   RecoveryNotice,
   SegmentedControl,
@@ -38,7 +39,9 @@ import { tripsWords } from '../../lib/performance/checkin';
 import { SLEEP_SUGGESTED_LINE } from '../../lib/performance/sleepChart';
 import { dayName } from '../../lib/performance/sprintPage';
 import { areaName } from '../../lib/wheelOfLife';
+import { patternsRow } from '../../lib/performance/patterns';
 import { DashboardCustomise, useDashboardPrefs, useFold } from './DashboardCustomise';
+import { usePatterns } from './usePatterns';
 
 // The Individual Performance Dashboard (mock-up M4 v47, approved by Tim on
 // 26 Oct; Phase 5 step 2): the mirror. At a glance, what's improving and
@@ -62,8 +65,9 @@ import { DashboardCustomise, useDashboardPrefs, useFold } from './DashboardCusto
 //
 // On a phone the big chart is full width, the small charts in the rows
 // become just the figure, and a line that repeats a small chart shows only
-// when the chart is tapped (26 Oct rule 10). Patterns (Phase 5 step 3)
-// have their slot in What's behind: a row appears with the first pattern.
+// when the chart is tapped (26 Oct rule 10). Patterns in your numbers
+// (Phase 5 step 3, usePatterns and patterns.js) is a row in What's behind
+// once there is enough data to check: its cards, or "No clear link yet".
 // The coach's "View as" waits for Phase 6a, and the PDF isn't in this step.
 
 const pct = (v, top = 100) => `${Math.max(0, Math.min(100, (v / top) * 100))}%`;
@@ -83,9 +87,11 @@ export default function Dashboard() {
   const [system, setSystem] = useState(false);
   const [customise, setCustomise] = useState(false);
   const phone = useIsPhone();
+  const pat = usePatterns(today);
+  const patRow = useMemo(() => patternsRow(pat.state, today, pat.built?.names), [pat.state, pat.built, today]);
   const view = useMemo(
-    () => (loaded.data ? dashboardView(loaded.data, { today, span, target, showResults }) : null),
-    [loaded.data, today, span, target, showResults],
+    () => (loaded.data ? dashboardView(loaded.data, { today, span, target, showResults, patterns: patRow }) : null),
+    [loaded.data, today, span, target, showResults, patRow],
   );
 
   const coach = loaded.data?.coach?.firstName || null;
@@ -110,7 +116,7 @@ export default function Dashboard() {
     const recovery = openRecovery(loaded.data.recoveries || []);
     const sections = {
       chain: !settings.hidden.chain && <ChainSection key="chain" view={view} closed={closed} toggle={toggle} span={span} setSpan={setSpan} phone={phone} />,
-      more: !settings.hidden.more && <BehindSection key="more" view={view} closed={closed} toggle={toggle} phone={phone} target={target} changeTarget={changeTarget} coach={coach} shared={shared} setShared={setShared} navigate={navigate} />,
+      more: !settings.hidden.more && <BehindSection key="more" view={view} closed={closed} toggle={toggle} phone={phone} target={target} changeTarget={changeTarget} coach={coach} shared={shared} setShared={setShared} navigate={navigate} go={go} hidePattern={pat.hide} />,
     };
     body = (
       <>
@@ -614,7 +620,7 @@ function SleepBody({ row, target, changeTarget, navigate }) {
   );
 }
 
-function BehindSection({ view, closed, toggle, phone, target, changeTarget, coach, shared, setShared, navigate }) {
+function BehindSection({ view, closed, toggle, phone, target, changeTarget, coach, shared, setShared, navigate, go, hidePattern }) {
   const { behind } = view;
   const shut = closed.more;
   const checkEye = coach
@@ -645,7 +651,17 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
         {row.items.map((x) => <li key={x.key}><span>{x.title}</span><span className="dash-stick-d">{x.value}</span></li>)}
       </ul>
     ),
-    pat: () => null, // Phase 5 step 3 fills the pattern cards here.
+    // Patterns in your numbers (M4 .pcs; M14): up to 4 cards, or the honest "No clear link yet".
+    pat: (row) => (
+      <>
+        <Lab text={row.lead} eye={<WhoSees audience="me" />} />
+        {row.cards.length ? (
+          <div className="ds-patterns">
+            {row.cards.map((c) => <PatternCard key={c.key} card={c} onAct={go} onHide={(k) => { hidePattern(k).catch(() => {}); }} />)}
+          </div>
+        ) : row.empty.map((l) => <p key={l} className="dash-fp">{l}</p>)}
+      </>
+    ),
     check: (row) => (
       <>
         <Lab text="Each score out of 100, month by month" eye={checkEye} />

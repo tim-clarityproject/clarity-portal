@@ -77,6 +77,49 @@ export function m14Rng(seed) {
   };
 }
 
+// ---------------------------------------------------------------- M14.2 the day score
+const DAILY_MEASURES = new Set(['count', 'amount', 'yes_no_days_target']);
+
+/**
+ * M14.2: the day score, used only for the daily links (L1, L2) and never
+ * shown as a number. The impact-weighted share of that day's planned items
+ * done: each daily habit against its daily target, and each to-do chosen in
+ * that morning's Plan my day (done that day or before). Any sleep habit is
+ * left out, so the sleep links never contain their own cause (M14.1).
+ *
+ * Claude's calls on the detail (Phase 5 step 3, listed in the report):
+ * a "daily habit" is a count or amount with a daily target (the day's
+ * share is what was logged over the target, at most all of it) or a yes or
+ * no each day against a target (yes is all of it); a limit, a rating and a
+ * weekly yes or no have no daily target, so they are left out. A day with
+ * no such item has no day score.
+ * @param {{ habits?: { measure, target, targetPer, impact, sleep?, value }[],
+ *   todos?: { impact, done }[] }} day value: what was logged that day, or null
+ * @returns {number|null} 0 to 100
+ */
+export function m14DayScore(day) {
+  let num = 0;
+  let den = 0;
+  const weight = (impact) => (impact === 1 || impact === 2 || impact === 3 ? impact : { low: 1, medium: 2, high: 3 }[impact] || 2);
+  for (const h of day?.habits || []) {
+    if (h.sleep || !DAILY_MEASURES.has(h.measure)) continue;
+    let share;
+    if (h.measure === 'yes_no_days_target') share = Number(h.value) > 0 ? 1 : 0;
+    else {
+      if (h.targetPer !== 'day' || !(h.target > 0)) continue;
+      const v = Number(h.value);
+      share = Number.isFinite(v) && v > 0 ? Math.min(1, v / h.target) : 0;
+    }
+    num += weight(h.impact) * share;
+    den += weight(h.impact);
+  }
+  for (const t of day?.todos || []) {
+    num += weight(t.impact) * (t.done ? 1 : 0);
+    den += weight(t.impact);
+  }
+  return den ? (num / den) * 100 : null;
+}
+
 // ---------------------------------------------------------------- M14.4 allowing for getting better
 /**
  * Weekly residuals: each week's figure minus the median of the 9 weeks
@@ -213,6 +256,11 @@ export function m14Evaluate(link, opts) {
     resultIsScore: Boolean(link.resultIsScore),
     sizes: [inGroup, u.length - inGroup],
     averages: [mean(res.filter((_, i) => groups[i])), mean(res.filter((_, i) => !groups[i]))],
+    // Each group's own average of the result as it was (before the trend
+    // was taken out), for "How was this worked out?" (M14.8).
+    values: u.every((x) => Number.isFinite(x.value))
+      ? [mean(u.filter((x) => x.group).map((x) => x.value)), mean(u.filter((x) => !x.group).map((x) => x.value))]
+      : null,
     gap,
     swing,
     bigEnough,
@@ -232,7 +280,7 @@ function weeklyUnits(points) {
   const usable = points.filter((p) => p.result != null && Number.isFinite(p.result));
   const res = m14WeeklyResiduals(usable.map((p) => p.result));
   return usable
-    .map((p, i) => ({ t: p.t, group: p.cause, residual: res[i] }))
+    .map((p, i) => ({ t: p.t, group: p.cause, residual: res[i], value: p.result }))
     .filter((x) => x.group === true || x.group === false)
     .map((x, i) => ({ ...x, block: Math.floor(i / M14.blockWeeks) }));
 }
@@ -254,7 +302,7 @@ export function m14Links(person, { keptShare = M14.l3KeptShare } = {}) {
     const base = days.map((d, i) => ({ d, residual: resid[i] })).filter((x) => x.residual != null);
     const daily = (id, cause) => ({
       id, key: id, kind: 'daily', resultIsScore: true, sameWeek: false,
-      units: base.map(({ d, residual }) => ({ t: d.index, group: cause(d), residual, block: d.weekday }))
+      units: base.map(({ d, residual }) => ({ t: d.index, group: cause(d), residual, value: d.dayScore, block: d.weekday }))
         .filter((x) => x.group === true || x.group === false),
     });
     links.push(daily('L1', (d) => (d.sleepHours == null || d.sleepToConfirm ? null : d.sleepHours >= 7)));
@@ -417,6 +465,33 @@ export function m14Steady(results, state, week) {
     }
   }
   return { cards: kept, added, removed };
+}
+
+/**
+ * One weekly check, as the device runs it and the simulation proves it:
+ * every link checked and corrected together (m14Check, stopping a shuffle
+ * test early only for links not already on a card), then the person's
+ * cards kept steady (m14Steady) from their positive links only. Links the
+ * other way are coach-only (rule 18) and are worked out only when asked
+ * (`withCoach`), in their own steady set; the person's device never keeps
+ * them (Phase 6a's server job shows them to the coach).
+ * @param {object} person see the top of this file
+ * @param {{ cards?: object[], coach?: object[] }} state last week's cards
+ * @param {number} week this week's number
+ * @param {{ rng: () => number, alpha?: number, earlyStop?: boolean, keptShare?: number[]|null, withCoach?: boolean }} opts
+ * @returns {{ cards: object[], added: object|null, removed: object[], evaluated: number, coach?: object[] }}
+ *   evaluated: how many links had enough data to be checked
+ */
+export function m14WeeklyCheck(person, state, week, { rng, alpha, earlyStop = true, keptShare, withCoach = false } = {}) {
+  const shown = [...(state?.cards || []), ...(withCoach ? state?.coach || [] : [])];
+  const opts = { rng, earlyStop, fullFor: new Set(shown.map((c) => c.key)) };
+  if (alpha != null) opts.alpha = alpha;
+  if (keptShare !== undefined) opts.keptShare = keptShare;
+  const results = m14Check(person, opts);
+  const mine = m14Steady(results.filter((r) => r.positive), { cards: state?.cards || [] }, week);
+  const out = { cards: mine.cards, added: mine.added, removed: mine.removed, evaluated: results.length };
+  if (withCoach) out.coach = m14Steady(results.filter((r) => !r.positive), { cards: state?.coach || [] }, week).cards;
+  return out;
 }
 
 /**

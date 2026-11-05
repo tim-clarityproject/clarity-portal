@@ -1210,6 +1210,83 @@ export async function loadDashboard(userId, today) {
   };
 }
 
+/**
+ * Everything the pattern check (M14; patterns.js) reads, as rows: the
+ * person's own sprints that reach into the last 26 weeks with their habits,
+ * settings, logs and to-dos (scored as the sprint page scores them), the
+ * plans' Strategies and live Outcome Objectives with their figures, the
+ * debriefs (stress, unusual), Recovery, working days, wins, and the days'
+ * sleep, chosen to-dos and way of being ratings. Only the person's own
+ * rows, so a pattern is never compared with anyone else (rule 19).
+ */
+export async function loadPatternRows(userId, today) {
+  const since = dayBefore(today, 26 * 7);
+  const [sprints, recoveries, workingPatterns, debriefs, links, figures, wins, winLinks, dayPlans, dayPlanTodos, dayReviews, todoMoves] = await Promise.all([
+    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    rows(supabase.from('recovery_periods').select(RECOVERY_COLS).eq('user_id', userId).order('start_on')),
+    rows(supabase.from('working_patterns').select('starts_on, days').eq('user_id', userId).order('starts_on')),
+    rows(supabase.from('weekly_debriefs').select('sprint_id, sprint_week, stress, unusual, status').eq('user_id', userId)),
+    rows(supabase.from('strategy_objectives').select('strategy_id, objective_id').eq('user_id', userId)),
+    rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, created_at').eq('user_id', userId).order('recorded_on')),
+    rows(supabase.from('wins').select('id, what, local_date, impact, deleted_at, updated_at').eq('user_id', userId).gte('local_date', since).is('deleted_at', null)),
+    rows(supabase.from('win_strategies').select('win_id, strategy_id').eq('user_id', userId)),
+    rows(supabase.from('day_plans').select('id, local_date, sleep_hours, sleep_quality, sleep_to_confirm')
+      .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
+    rows(supabase.from('day_plan_todos').select('day_plan_id, todo_id').eq('user_id', userId).limit(3000)),
+    rows(supabase.from('day_reviews').select('local_date, way_of_being_rating')
+      .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
+    rows(supabase.from('todo_moves').select('todo_id, moved_on, from_sprint_id, from_week, to_sprint_id, to_week, created_at').eq('user_id', userId)),
+  ]);
+  // Sprints that reach into the last 26 weeks (a running one always does).
+  const inRange = sprints.filter((s) => s.start_on <= today && (s.status === 'running' || !s.actual_end_on || s.actual_end_on >= since || (s.planned_end_on && s.planned_end_on >= since)));
+  const ids = inRange.map((s) => s.id);
+  const planIds = [...new Set(inRange.map((s) => s.plan_id).filter(Boolean))];
+  const [strategies, objectives, sprintHabits, todos] = await Promise.all([
+    planIds.length ? rows(supabase.from('plan_strategies').select(STRATEGY_COLS).in('plan_id', planIds).order('sort_order')) : [],
+    planIds.length ? rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).in('plan_id', planIds).is('archived_at', null).order('sort_order')) : [],
+    ids.length ? rows(supabase.from('sprint_habits').select('id, sprint_id, habit_id, strategy_id, name, sort_order').in('sprint_id', ids).order('sort_order')) : [],
+    ids.length ? rows(supabase.from('todos').select('id, strategy_id, text, impact, sprint_id, planned_week, created_on, done_on, source, source_id, move_on, deleted_at, updated_at')
+      .eq('user_id', userId).in('sprint_id', ids).is('deleted_at', null)) : [],
+  ]);
+  const habitIds = sprintHabits.map((h) => h.id);
+  const [settings, logs] = habitIds.length ? await Promise.all([
+    rows(supabase.from('sprint_habit_settings').select('*').in('sprint_habit_id', habitIds)),
+    rows(supabase.from('habit_logs').select('id, sprint_habit_id, local_date, value, to_confirm').in('sprint_habit_id', habitIds).gte('local_date', since).limit(5000)),
+  ]) : [[], []];
+  // The running plan's archived Strategies are gone from its sprint page, so
+  // they are left out here too; an older plan keeps every Strategy it had.
+  const running = inRange.find((s) => s.status === 'running');
+  const bySprint = {};
+  for (const s of inRange) {
+    const mine = sprintHabits.filter((h) => h.sprint_id === s.id);
+    const mineIds = new Set(mine.map((h) => h.id));
+    bySprint[s.id] = {
+      sprintHabits: mine,
+      sprintSettings: settings.filter((x) => mineIds.has(x.sprint_habit_id)),
+      logs: logs.filter((l) => mineIds.has(l.sprint_habit_id)),
+      todos: todos.filter((t) => t.sprint_id === s.id),
+      todoMoves,
+    };
+  }
+  return {
+    sprints: inRange,
+    recoveries,
+    workingPatterns,
+    debriefs,
+    strategies: strategies.filter((x) => !(running && x.plan_id === running.plan_id && x.archived_at)),
+    links,
+    objectives,
+    figures,
+    wins,
+    winLinks,
+    dayPlans,
+    dayPlanTodos,
+    dayReviews,
+    allTodos: todos,
+    bySprint,
+  };
+}
+
 /** Only the check-ins, for Home's line and the saved lists. */
 export async function loadCheckins(userId) {
   return rows(supabase.from('checkins').select('id, kind, month, status, answers, finished_at, updated_at').eq('user_id', userId).order('month', { ascending: false }));

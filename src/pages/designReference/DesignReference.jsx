@@ -97,6 +97,7 @@ import { FiguresDemo, NoteSwitchDemo, RowsDemo, ScaleLevelDemo, SummaryDemo } fr
 import { DesktopMenuDemo, HubTilesDemo, PhoneNavDemo, PinPanelDemo, SavedItemsDemo } from './NavigationDemos';
 import { CarryOnDemo, DayFocusDemo, HelpListDemo, MiniDialDemo, PlanStepsDemo, SuggestionDemo } from './TodayDemos';
 import { CheckinChartDemo } from './CheckinDemos';
+import { PatternCardDemo } from './PatternDemos';
 import { BreathOrbDemo } from './OrbDemos';
 import { CarriedOverDemo, NightDemo, WorkDoneDemo } from './WindDownDemos';
 import { samplePdf } from '../../lib/pdf/docs/sample';
@@ -1901,6 +1902,17 @@ function Gallery() {
             <p>No key: each line is named at its right end with its latest score, months run along the bottom, and a small ring under a month marks long-haul travel. Every dot and ring has the shared pop-up.</p>
             <p>Show as a table sits under every chart, closed until opened, so nothing depends on colour or on pointing. Under about 600px each row becomes a small card.</p>
             <p>With one month, the empty frame says when the graph starts.</p>
+          </>
+        )} />
+
+        <GallerySection id="c66" title="Pattern cards" wide demo={PatternCardDemo} rules={(
+          <>
+            <p><New /><b>One card per pattern in the person’s own numbers</b> (M4, methods M14): the kind, then Strong link or Clear link at the right.</p>
+            <p>The sentence says what happened together, “In weeks you…”, never “because”, then an open question in grey.</p>
+            <p>One action worded as the action, then How was this worked out? with the groups, the averages, the usual swing, how unlikely chance is and that it held in both halves.</p>
+            <p>Not useful hides a card.</p>
+            <p>At most 4 cards show, two across on a laptop and one on a phone.</p>
+            <p>The weekly debrief introduces a new one, at most one a week.</p>
           </>
         )} />
 

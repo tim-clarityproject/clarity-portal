@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   M14, m14Rng, m14WeeklyResiduals, m14DailyResiduals, m14ShuffleTest, m14BenjaminiHochberg,
-  m14Links, m14Check, m14Steady, m14QuestionAllowed, m14HowWorkedOut,
+  m14Links, m14Check, m14Steady, m14QuestionAllowed, m14HowWorkedOut, m14WeeklyCheck,
 } from '../../src/lib/scores/m14.js';
 
 const near = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg}: expected ${b} ± ${tol}, got ${a}`);
@@ -227,4 +227,22 @@ test('Option 3, when switched on, leaves out a habit kept in under a quarter or 
   const l3 = (opts) => m14Links({ weeks, days: [] }, opts).filter((l) => l.id === 'L3').map((l) => l.key).sort();
   assert.deepEqual(l3(), ['L3:half', 'L3:often'], 'off: every habit');
   assert.deepEqual(l3({ keptShare: [0.25, 0.75] }), ['L3:half'], 'kept in 18 of 20 weeks is left out');
+});
+
+test('The weekly check the device runs: the person keeps positive cards only; coach-only cards only when asked', () => {
+  const kept = (t) => t % 2 === 0;
+  const rng = m14Rng(21);
+  const down = person({ kept, without: (t) => 70 - (kept(t) ? 15 : 0) + (rng() - 0.5) * 6 });
+  const mine = m14WeeklyCheck(down, { cards: [] }, 1, { rng: m14Rng(22) });
+  assert.equal(mine.cards.length, 0, 'a link the other way never reaches the person');
+  assert.equal(mine.coach, undefined);
+  assert.equal(mine.evaluated, 1);
+  const both = m14WeeklyCheck(down, { cards: [], coach: [] }, 1, { rng: m14Rng(22), withCoach: true });
+  assert.equal(both.coach.length, 1);
+  const rng2 = m14Rng(23);
+  const up = person({ kept, without: (t) => 70 + (kept(t) ? 15 : 0) + (rng2() - 0.5) * 6 });
+  const r = m14WeeklyCheck(up, { cards: [] }, 5, { rng: m14Rng(24) });
+  assert.equal(r.added.key, 'L3:h1');
+  assert.equal(r.cards[0].shownAt, 5);
+  assert.ok(r.cards[0].result.values, 'each group\'s own average, for How was this worked out?');
 });
