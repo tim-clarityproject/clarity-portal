@@ -181,6 +181,10 @@
   --info-size: 16px;         /* the one "i", drawn like ⓘ */
   --info-gap: 6px;           /* from the last word of a sentence to its "i" */
   --back-gap: var(--space-px14);      /* from Back's chevron to its label (rule 29t, Tim, 5 Nov) */
+  /* Where the left-pointing chevron's strokes sit inside its 16px square
+     (measured from pixels, 5 Nov), so its visible edge can line up (29t). */
+  --chev-left-inset: 5px;
+  --chev-right-inset: 5.5px;
   --icon-title-gap: var(--space-px12); /* from a title's last letter to its eye or play icon (rule 29d, Tim, 5 Nov) */
   --page-info-lift: -0.088em; /* the page title's "i", from its line's middle up to the middle of the capitals (measured on Nekst) */
   --text-info-lift: -0.092em; /* an "i" at the end of a DM Sans sentence, from vertical-align middle up to the middle of the capitals (measured) */

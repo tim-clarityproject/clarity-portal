@@ -146,9 +146,17 @@ html:has(.ui-root) {
   border: 1px solid var(--btn-line);
   cursor: pointer;
   position: relative;
+  z-index: 1; /* its 44px tap area above the rows beside it */
   box-sizing: border-box;
   transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
   flex-shrink: 0;
+}
+
+/* The 26px track reaches the full 44px tap area invisibly (CLAUDE.md 9; the knob is ::after). */
+.ui-root .ui-switch::before {
+  content: '';
+  position: absolute;
+  inset: calc((26px - var(--tap-min)) / 2) 0;
 }
 
 .ui-root .ui-switch--on {
@@ -1071,6 +1079,12 @@ html:has(.ui-root) {
    hover only the chevron turns coral, never a shape behind it. */
 .ui-root .ui-back-link {
   gap: var(--back-gap);
+}
+
+/* The chevron's visible strokes, not its square, on the content edge and 14px before the label. */
+.ui-root .ui-back-link .ui-back-link-icon {
+  margin-left: calc(-1 * var(--chev-left-inset));
+  margin-right: calc(-1 * var(--chev-right-inset));
 }
 
 .ui-root .ui-back-link:hover .ui-back-link-icon,

@@ -3432,10 +3432,13 @@
   height: var(--tap-min);
   min-height: 0 !important;
   padding: 0 !important;
-  margin: 0 calc((var(--who-icon) - var(--tap-min)) / 2);
+  margin: 0 calc((var(--who-icon) - var(--tap-min)) / 2 - var(--chev-right-inset)) 0 calc((var(--who-icon) - var(--tap-min)) / 2 - var(--chev-left-inset));
   color: var(--text-2);
   transition: color var(--dur-fast) var(--ease);
   -webkit-tap-highlight-color: transparent;
+  /* Above the name, so the whole 44px tap area is Back's. */
+  position: relative;
+  z-index: 1;
 }
 
 .ui-root .ds-guide-back .ds-chevron {
