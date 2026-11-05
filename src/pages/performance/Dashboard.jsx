@@ -116,7 +116,8 @@ export default function Dashboard() {
   } else {
     const recovery = openRecovery(loaded.data.recoveries || []);
     const sections = {
-      chain: !settings.hidden.chain && <ChainSection key="chain" view={view} closed={closed} toggle={toggle} span={span} setSpan={setSpan} phone={phone} />,
+      // Hidden until there's an objective or a Strategy to show (declutter, Tim, 5 Nov).
+      chain: !settings.hidden.chain && (view.chain.objectives.rows.length > 0 || view.chain.strategies.rows.length > 0) && <ChainSection key="chain" view={view} closed={closed} toggle={toggle} span={span} setSpan={setSpan} phone={phone} />,
       more: !settings.hidden.more && <BehindSection key="more" view={view} closed={closed} toggle={toggle} phone={phone} target={target} changeTarget={changeTarget} coach={coach} shared={shared} setShared={setShared} navigate={navigate} go={go} hidePattern={pat.hide} />,
     };
     body = (

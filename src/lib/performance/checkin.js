@@ -158,9 +158,9 @@ export const DRINKS = Object.freeze([
   // NHS: a 330ml bottle at 5% is 1.7 units and a 440ml can at 5.5% is 2.4, so the middle of the two.
   { key: 'bottle', label: 'Bottle or can of beer', units: (1.7 + 2.4) / 2 },
   // NHS: a standard glass (175ml, 12%) is 2.1 units.
-  { key: 'wine', label: 'Glass of wine (standard)', units: 2.1 },
+  { key: 'wine', label: 'Standard glass of wine', units: 2.1 },
   // NHS: a large glass (250ml, 12%) is 3 units.
-  { key: 'wine_large', label: 'Glass of wine (large)', units: 3 },
+  { key: 'wine_large', label: 'Large glass of wine', units: 3 },
   // NHS: a single small shot of spirits (25ml, 40%) is 1 unit.
   { key: 'spirit', label: 'Single spirit', units: 1 },
 ]);

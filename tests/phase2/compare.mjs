@@ -526,7 +526,7 @@ const GROUPS = [
     seed: ['--reset'],
     screens: [
       { id: 'plan', mock: [M1, 'ipp', []], open: (p) => go(p, '/performance-plan', '.ds-stile') },
-      { id: 'plan system pop-up', scope: '[role=dialog]', mock: [M1, 'ipp', ['sys']], open: async (p) => { await go(p, '/performance-plan', '.ds-stile'); await p.locator('.ds-page-meta .ds-info-link').click(); await p.waitForSelector('[role=dialog]'); await p.waitForTimeout(500); } },
+      // 'plan system pop-up' is gone: no "How the system fits together" in the meta line (Tim, 5 Nov, declutter).
       { id: 'plan My Mission panel', scope: '[role=dialog]', mock: [M1, 'ipp', ['mp']], open: async (p, phone) => { await go(p, '/performance-plan', '.ds-stile'); await p.locator(phone ? '.hdr-phone .hdr-mis' : '.hdr-desktop .hdr-mis').click(); await p.waitForSelector('.ds-drop'); await p.waitForTimeout(500); } },
       { id: 'plan Strategy detail', mock: [M1, 'ipp', ['tile:0']], open: async (p) => { await go(p, '/performance-plan', '.ds-stile'); await p.locator('.ds-stile-btn').first().click(); await p.waitForSelector('.ds-dialog.ds-panel, .ds-sdetail'); await p.waitForTimeout(500); } },
       { id: 'plan version history', mock: null, open: (p) => go(p, '/performance-plan/history', '.ds-row') },

@@ -620,6 +620,12 @@ const go = async (page, path, sel) => {
   await page.waitForTimeout(700);
   await settle(page);
 };
+// The walk before leaves the debrief's step on the device; these screens start at step 1.
+const freshDebrief = async (page) => {
+  await go(page, '/performance-sprint/debrief', '.ds-guide-question');
+  const had = await page.evaluate(() => { let n = 0; for (const k of Object.keys(localStorage)) if (k.includes('ds-guide:') && /debrief/i.test(k)) { localStorage.removeItem(k); n += 1; } return n; });
+  if (had) await go(page, '/performance-sprint/debrief', '.ds-guide-question');
+};
 const button = (page, name) => page.getByRole('button', { name, exact: true }).first();
 const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-guide-title').first().textContent()) || '').trim();
 // Next, one step at a time. A press the double-tap guard swallowed is
@@ -631,7 +637,15 @@ async function nextStep(page, times = 1) {
     const before = `${await heading(page)}|${await percent(page)}`;
     for (let i = 0; i < 5; i += 1) {
       if ((await percent(page)) >= 100) throw new Error('nextStep reached the last step');
-      await page.locator('.ds-guide-next').click();
+      // A one-answer screen has no Next (Tim, 5 Nov): choosing moves on after ~300ms.
+      // Skip first where there is one, so the walk saves no answer (a saved
+      // answer would make the next screens open where this one left off).
+      if (!(await page.locator('.ds-guide-next').count()) && (await page.locator('.ds-guide-skip').count())) {
+        await page.locator('.ds-guide-skip').click();
+      } else if (!(await page.locator('.ds-guide-next').count())) {
+        const chosen = page.locator('.ds-guide [role=radio][aria-checked=true], .ds-guide .ds-answer[aria-pressed=true]');
+        await ((await chosen.count()) ? chosen.first() : page.locator('.ds-guide [role=radio], .ds-guide .ds-answer').first()).click();
+      } else await page.locator('.ds-guide-next').click();
       const end = Date.now() + 3000;
       while (Date.now() < end && `${await heading(page)}|${await percent(page)}` === before) await page.waitForTimeout(100);
       if (`${await heading(page)}|${await percent(page)}` !== before) break;
@@ -736,9 +750,9 @@ const GROUPS = [
     screens: [
       { id: 'sprint page, debrief ready', mock: null, open: (p) => go(p, '/performance-sprint', '.ds-sdial--running') },
       { id: 'debrief', flow: [M1, 'debrief'], open: (p) => go(p, '/performance-sprint/debrief', '.ds-guide-question') },
-      { id: 'debrief, add a win', scope: DIALOG, mock: [M1, 'debrief', ['winopen']], open: async (p) => { await go(p, '/performance-sprint/debrief', '.ds-guide-question'); await openPanel(p, 'Add an unplanned win'); } },
-      { id: 'debrief, your days open', scope: GUIDE, mock: [M1, 'debrief', ['ds:3', 'fold:days', 'day:0']], open: async (p) => { await go(p, '/performance-sprint/debrief', '.ds-guide-question'); await nextStep(p, 3); await p.locator('.deb-days .ds-collapse-summary, .deb-days button').first().click(); await p.locator('.deb-days [aria-expanded]').nth(1).click().catch(() => {}); await settle(p); } },
-      { id: 'debrief, add a to-do', scope: DIALOG, mock: [M1, 'debrief', ['ds:6', 'addopen']], open: async (p) => { await go(p, '/performance-sprint/debrief', '.ds-guide-question'); await nextStep(p, 6); await openPanel(p, 'Add a to-do'); } },
+      { id: 'debrief, add a win', scope: DIALOG, mock: [M1, 'debrief', ['winopen']], open: async (p) => { await freshDebrief(p); await openPanel(p, 'Add an unplanned win'); } },
+      { id: 'debrief, your days open', scope: GUIDE, mock: [M1, 'debrief', ['ds:3', 'fold:days', 'day:0']], open: async (p) => { await freshDebrief(p); await nextStep(p, 3); await p.locator('.deb-days .ds-collapse-summary, .deb-days button').first().click(); await p.locator('.deb-days [aria-expanded]').nth(1).click().catch(() => {}); await settle(p); } },
+      { id: 'debrief, add a to-do', scope: DIALOG, mock: [M1, 'debrief', ['ds:6', 'addopen']], open: async (p) => { await freshDebrief(p); await nextStep(p, 6); await openPanel(p, 'Add a to-do'); } },
       { id: 'debrief, week 2 closed', mock: null, open: (p) => go(p, `/performance-sprint/debrief/${sprint.id}/2`, '.deb-closed') },
       { id: 'debrief, none open today', mock: null, clock: () => londonInstant(dayKey(1), '12:30'), open: (p) => go(p, '/performance-sprint/debrief', '.deb-closed') },
     ],
@@ -823,11 +837,13 @@ for (const group of GROUPS) {
           for (let i = 0; i < 20; i += 1) {
             const r = await appMeasure(page, width, mode, true, GUIDE);
             appSteps.push(r);
-            ruleChecks(`${tag}, step ${i + 1} "${(r.headings.find((h) => h) || '').slice(0, 40)}"`, r, true);
+            // A one-answer screen has no Next, so it may have no coral button (at most one).
+            const oneTap = !(await page.locator('.ds-guide-next').count());
+            ruleChecks(`${tag}, step ${i + 1} "${(r.headings.find((h) => h) || '').slice(0, 40)}"`, r, !oneTap);
             if (SHOTS && (width === 1280 || width === 360)) await page.screenshot({ path: join(out, `${s.id.replace(/\W+/g, '-')}-${i + 1}-${width}-${mode}.png`), fullPage: true });
             // The last step is the one at 100%; its button finishes, so it is never pressed.
             const pct = (await page.locator('.ds-guide-pct').count()) ? Number(await page.locator('.ds-guide-pct').first().getAttribute('aria-valuenow')) : 0;
-            if (pct >= 100 || !(await page.locator('.ds-guide-next').count())) break;
+            if (pct >= 100 || (!(await page.locator('.ds-guide-next').count()) && !(await page.locator('.ds-guide [role=radio], .ds-guide .ds-answer').count()))) break;
             await nextStep(page);
           }
         } else {

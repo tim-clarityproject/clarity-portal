@@ -439,6 +439,8 @@ function CheckinFlow({ userId, today, month, loaded }) {
     question: g.question,
     nudges: g.nudges,
     example: g.example,
+    // The eye beside the question (Tim, 5 Nov, 11:09).
+    eye,
     render: () => (g.three ? (
       <div className="ck-three">
         {/* An "up to three" list: numbered, in order (Tim, 5 Nov). */}
@@ -449,12 +451,10 @@ function CheckinFlow({ userId, today, month, loaded }) {
           maxLength={150}
           itemLabel={(n) => `Thing ${n}`}
         />
-        {eyeLine}
       </div>
     ) : (
       <div>
         <TextBox ariaLabel={g.question} focusMode maxLength={1000} value={goals[g.code] || ''} onChange={(v) => setGoal(g.code, v)} />
-        {eyeLine}
       </div>
     )),
   })) : [];

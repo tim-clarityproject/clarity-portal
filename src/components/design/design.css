@@ -8939,21 +8939,18 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: var(--who-icon);
-  height: var(--who-icon);
+  /* The box is the 44px tap area; the negative margin keeps the 16px eye's
+     own footprint, so it sits beside the title as before. */
+  width: var(--tap-min);
+  height: var(--tap-min);
   min-width: 0 !important;
   min-height: 0 !important;
   padding: 0 !important;
+  margin: calc((var(--who-icon) - var(--tap-min)) / 2);
   vertical-align: middle;
   cursor: pointer;
   color: var(--text-2);
   transition: color var(--dur-fast) var(--ease);
-}
-
-.ui-root .ds-who--eye::before {
-  content: '';
-  position: absolute;
-  inset: calc((var(--who-icon) - var(--tap-min)) / 2);
 }
 
 .ui-root .ds-who--eye:hover,
@@ -9007,4 +9004,10 @@
   display: inline-flex;
   align-items: center;
   gap: var(--info-gap);
+}
+
+/* The 44px tap area reaches past the 16px "i", so the gap is measured to
+   the icon's visible edge (26 Oct rule 5). */
+.ui-root .ds-term-info {
+  margin: calc((var(--info-size) - var(--tap-min)) / 2);
 }

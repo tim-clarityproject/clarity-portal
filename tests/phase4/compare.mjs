@@ -393,6 +393,12 @@ const ALLOWED = [
   { side: 'both', re: /^[−–+]$/, why: 'the stepper’s minus and plus, drawn as icons in the mock-up' },
   { side: 'both', re: /^# <day>, no more than #$|^#( <name>)? today$/, why: 'each habit’s own measure line, from the seeded plan through src/lib (the mock-up’s habits differ)' },
   // Home (M2)
+  // Phase 5 preview fixes (Tim, 5 Nov; decisions part 4, "Phase 5 preview check").
+  { screen: /./, side: 'mock', re: /^only you$/, why: 'DECLUTTER (Tim, 5 Nov): the eye alone beside the title, its words in the pop-up and for screen readers' },
+  { screen: /^home/, side: 'mock', re: /^your to-dos for <day> show here once you've planned your day\.$/, why: 'DECLUTTER (Tim, 5 Nov): no line saying what will show' },
+  { screen: /^home, afternoon/, side: 'mock', re: /^(how is <day> going\?|your review is suggested from #.*)$/, why: 'ONE CARD TAKES TURNS (Tim, 5 Nov): after Plan my day’s morning, the due monthly check-in takes the card' },
+  { screen: /^home/, side: 'app', re: /^your day's done, <name>$|^your day's done, sam$/, why: 'DAY STATES (Tim, 5 Nov): reviewed, the greeting is “Your day’s done, Sam.” at any time of day' },
+  { screen: /^home, recovery|recovery/i, side: 'app', re: /^you're in recovery, so there are no numbers to log <day>\.$/, why: 'A PAUSED TOOL IS A GATE (Tim, 5 Nov): Recovery’s Home says there are no numbers to log today' },
   { screen: /^home/, side: 'mock', re: /^((coaching )?session with (<name>|tim) <day> at #\.?|what would make it useful\?|get ready for my session|ready for your monthly check-in\?|start my check-in|<name> has sent you a note\.|read my note|your agreement is ready to sign\.|read and sign)$/, why: 'quiet lines with no data until Phase 6a (the coach’s note, the coaching session, the agreement): left out (Step 2); the monthly check-in’s line (Phase 5 step 1) shows only while this month’s check-in is due' },
   { screen: /^home, new coaching/, side: 'app', re: /^(ready for your first check-in\?|start my first check-in)$/, why: 'data: the new coaching client has not started the First check-in, so Home asks “Ready for your first check-in?” (Phase 5 step 1, M12 v14); M2 draws it half done (“Ready to finish your first check-in?”)' },
   { screen: /^home/, side: 'app', re: /^(ready for your monthly check-in\?|start my check-in)$/, why: 'the monthly check-in’s quiet line (M2, built in Phase 5 step 1) shows while this month’s check-in is due; the mock-up’s state shows it only on some moments' },
@@ -643,6 +649,13 @@ async function cleanDays() {
   await db.from('day_plans').delete().eq('user_id', me).in('local_date', [WED, THU]);
   await db.from('day_reviews').delete().eq('user_id', me).in('local_date', [WED, THU]);
 }
+async function holdWedReview() {
+  await db.from('day_reviews').delete().eq('user_id', me).eq('local_date', WED);
+}
+async function restoreWedReview() {
+  const { data } = await db.from('day_reviews').select('id').eq('user_id', me).eq('local_date', WED).limit(1);
+  if (!data?.length) await db.from('day_reviews').insert({ user_id: me, local_date: WED, status: 'finished', finished_at: `${WED}T19:30:00Z`, tomorrow: REVIEW });
+}
 async function cleanMorning() {
   await db.from('todos').delete().eq('user_id', me).in('source', ['review_my_day', 'other_tool', 'plan_my_day']).eq('created_on', THU);
   await db.from('day_plans').delete().eq('user_id', me).eq('local_date', THU);
@@ -686,8 +699,10 @@ const GROUPS = [
       { id: 'home, morning', mock: m2('mid', 'am'), coral: 'one', open: (p) => homeAt(p, THU, '08:30') },
       { id: 'home, afternoon', mock: m2('mid', 'pm'), coral: 'one', open: (p) => homeAt(p, THU, '13:00') },
       { id: 'home, evening', mock: m2('mid', 'eve'), coral: 'one', open: (p) => homeAt(p, THU, '17:30') },
-      { id: 'home, debrief ready', mock: m2('mid', 'deb'), coral: 'one', open: (p) => homeAt(p, WED, '13:00') },
-      { id: 'home, coming back after a gap', mock: null, coral: 'atMost', open: (p) => homeAt(p, '2026-10-30', '10:00') },
+      // At 13:00 Wednesday's review (finished at 19:30) hasn't happened yet:
+      // held back for this screen, or Home shows the day's done (Tim, 5 Nov).
+      { id: 'home, debrief ready', mock: m2('mid', 'deb'), coral: 'one', open: async (p) => { await holdWedReview(); await homeAt(p, WED, '13:00'); } },
+      { id: 'home, coming back after a gap', mock: null, coral: 'atMost', open: async (p) => { await restoreWedReview(); await homeAt(p, '2026-10-30', '10:00'); } },
       { id: 'home, help open', mock: null, coral: 'atMost', open: async (p) => { await homeAt(p, THU, '13:00'); await p.locator('.home-help .ds-btn').click(); await p.waitForSelector('.ds-helplist-row', { timeout: 5000 }); await settle(p); } },
       { id: 'header', mock: null, coral: 'none', scope: '.hdr', open: (p) => homeAt(p, THU, '13:00') },
       { id: 'phone bar', mock: null, coral: 'none', scope: 'nav.ds-phone-bar', widths: phoneOnly, open: (p) => homeAt(p, THU, '13:00') },
@@ -705,7 +720,8 @@ const GROUPS = [
       { id: 'My Plans, filter open', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-plans', '.hlist-wrap'); await p.locator('.ds-filter > button').click(); await p.waitForSelector('.ds-filter-panel:not([hidden])', { timeout: 5000 }); await settle(p); } },
       { id: 'My Reviews', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-reviews', '.hlist-wrap'); await until(async () => (await p.locator('.hlist-row, .hlist-empty').count()) > 0, 20000); } },
       // Wednesday night, then Thursday morning: in this order, on one device.
-      { id: 'home, wind down from 21:00', mock: m19('home'), coral: 'one', open: (p) => homeAt(p, WED, '21:15') },
+      // Each width is a new device: last width's finished night is cleared first.
+      { id: 'home, wind down from 21:00', mock: m19('home'), coral: 'one', open: async (p) => { await restoreWedReview(); await db.from('wind_down_nights').delete().eq('user_id', me).eq('night', WED); await homeAt(p, WED, '21:15'); } },
       { id: 'sleep wind down, tomorrow', mock: m19('think'), coral: 'one', scope: GUIDE, open: async (p) => { await at(p, WED, '22:30'); await go(p, '/sleep-wind-down', '.ds-guide-question'); await p.getByRole('textbox', { name: 'Thought 1' }).fill('Book a day off for the half term'); await until(async () => (await p.locator('.ds-guide-bar').innerText()).includes('Saved'), 8000); } },
       { id: 'sleep wind down, breathe', mock: m19('breathe'), coral: 'none', scope: GUIDE, open: async (p) => { await p.locator('.ds-guide-next').click(); await p.locator('.ds-night-breathe .ds-borb').waitFor({ timeout: 8000 }); await settle(p); } },
       { id: 'sleep wind down, Sleep well', mock: m19('night'), coral: 'none', scope: GUIDE, open: async (p) => { await p.getByRole('button', { name: 'End early' }).click(); await until(async () => (await heading(p)) === 'Sleep well', 8000); await settle(p); } },

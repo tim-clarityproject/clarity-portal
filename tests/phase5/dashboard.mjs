@@ -444,9 +444,10 @@ for (const mode of ['dark', 'light']) {
           has(v.hero.value, 'the score this sprint (M6)');
           v.hero.lines.forEach((l) => has(l, 'the line against the standard'));
           if (v.hero.change) pass('F: the glance figure since last sprint (M6)', (await page.locator('.dash-glance').innerText()).trim() === v.hero.change.text);
-          if (v.logging) has(v.logging, 'the logging line (M11)');
+          // Declutter (Tim, 5 Nov): the logging line and the sprint-week line are gone.
+          if (v.logging) pass('F: no logging line (declutter, 5 Nov)', !screen.includes(v.logging));
           if (v.current) {
-            has(v.current.lead, 'the sprint week (M0)');
+            pass('F: no sprint-week line (declutter, 5 Nov)', !screen.includes(v.current.lead));
             for (const x of [...v.current.improving, ...v.current.holdingBack]) {
               has(x.title, `an M10 item, ${x.kind}`);
               if (x.line && !x.repeats) has(x.line, 'its line');
@@ -478,7 +479,10 @@ if (part('S')) {
       await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('clarity-cache:')) localStorage.removeItem(k); });
       await dashboard(page);
       const t = await page.locator('.dash-page').innerText();
-      for (const words of ['Not yet', 'Your score starts with your first Performance Sprint.', 'You haven’t added an unplanned win this sprint.', 'You haven’t done a check-in yet.', 'You haven’t logged sleep yet.', 'This starts after your first weekly debrief.', 'Customise my dashboard']) {
+      pass('new person: no "Not yet" in the figure style (declutter, 5 Nov)', !t.includes('Not yet'));
+      pass('new person: one calm card with one action', t.includes('Your dashboard fills in once your first Performance Sprint starts.') && /start my first sprint/i.test(t));
+      pass('new person: no Objectives and Strategies section until there is something in it', !/objectives and strategies/i.test(t));
+      for (const words of ['You haven’t added an unplanned win this sprint.', 'You haven’t done a check-in yet.', 'You haven’t logged sleep yet.', 'This starts after your first weekly debrief.', 'Customise my dashboard']) {
         pass(`new person: "${words}"`, t.includes(words));
       }
       pass('new person: no Current sprint until a sprint runs', !(await page.locator('.dash-sec-h .dash-colb').allInnerTexts()).some((x) => /current sprint/i.test(x)));

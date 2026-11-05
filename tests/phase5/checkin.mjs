@@ -165,6 +165,14 @@ async function currentQuestion(page) {
 }
 async function tapAnswer(page, words) {
   const before = await heading(page) + (await text(page, '.ds-statement'));
+  // The drinks question counts drinks and keeps Next (Tim, 5 Nov): 4 pints, about 9 units.
+  if (await page.locator('.ck-drinks').count()) {
+    for (let i = 0; i < 4; i += 1) await page.getByRole('button', { name: 'One more: pint of beer or cider' }).click();
+    await nextStep(page);
+    return until(async () => (await heading(page)) + (await text(page, '.ds-statement')) !== before, 4000);
+  }
+  // "Did you travel this month?" (Tim, 5 Nov): a Yes is "Long journeys or time zones" (then the time-zone questions).
+  if (words === 'Yes' && (await page.locator('.ds-guide-body [role=radio]', { hasText: 'Long journeys or time zones' }).count())) words = 'Long journeys or time zones';
   await page.locator('.ds-guide-body [role=radio]', { hasText: new RegExp(`^${words.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).first().click();
   // One tap moves on (M12: 380ms).
   return until(async () => (await heading(page)) + (await text(page, '.ds-statement')) !== before, 4000);
@@ -291,11 +299,19 @@ if (part('A')) {
   const { context, page } = await signedIn({ width: 1280, mode: 'dark', coach: null });
   try {
     await home(page);
-    const line = page.locator('.ds-quiet-row', { hasText: 'Ready for your monthly check-in?' });
-    pass('Home: "Ready for your monthly check-in?"', (await line.count()) === 1, await text(page, '.ds-quiet'));
-    pass('Home: ~3 minutes', (await line.locator('.ds-quiet-time').innerText().catch(() => '')) === '~3 minutes');
-    await line.locator('button', { hasText: 'Start my check-in' }).click();
-    pass('the line opens the check-in', Boolean(await until(async () => path(page) === '/check-in')));
+    // The check-in is timed, so it queues for the one Suggested for now
+    // card (Tim, 5 Nov), never a quiet line. While Plan my day (or Review my
+    // day, or the debrief) holds the card, it waits its turn.
+    pass('Home: the check-in is never a quiet line', (await page.locator('.ds-quiet-row', { hasText: 'check-in' }).count()) === 0);
+    const card = page.locator('.ds-suggest', { hasText: 'Ready for your monthly check-in?' });
+    if (await card.count()) {
+      pass('Home: ~3 minutes', (await card.locator('.ds-suggest-time').innerText().catch(() => '')) === '~3 minutes');
+      await card.locator('button', { hasText: 'Start my check-in' }).click();
+      pass('the card opens the check-in', Boolean(await until(async () => path(page) === '/check-in')));
+    } else {
+      results.push(`NOTE  Home: the card holds "${await text(page, '.ds-suggest-question')}", so the check-in waits its turn`);
+      await page.goto(`${APP}/check-in`);
+    }
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('opening: "Ready to look back on your month?"', (await heading(page)) === 'Ready to look back on your month?', await heading(page));
     pass('opening: ~3 minutes', (await text(page, '.ds-guide-label')) === '~3 minutes', await text(page, '.ds-guide-label'));
@@ -309,7 +325,8 @@ if (part('A')) {
     await page.locator('.ds-guide-next').click();
     await until(async () => (await currentQuestion(page))?.code === 'H1');
     pass('Start my check-in opens the first question', (await currentQuestion(page))?.code === 'H1', await heading(page));
-    pass('H1: the eye under the answers says Only you', (await text(page, '.ck-eye')).includes('Only you'));
+    // The eye beside the question (Tim, 5 Nov, 11:09): the icon alone, its words for screen readers and in the pop-up.
+    pass('H1: the eye beside the question says Only you can see this', /only you can see this/i.test((await page.locator('.ds-guide-eye').innerText().catch(() => '')) + (await page.locator('.ds-guide-eye [aria-label]').first().getAttribute('aria-label').catch(() => '') || '')));
 
     const seen = [];
     const percents = [await pct(page)];
@@ -321,14 +338,18 @@ if (part('A')) {
       if (!q) break;
       seen.push(q.code);
       if (q.code === 'H8') {
-        await page.locator('button', { hasText: 'What’s a unit?' }).click();
-        pass('H8: What’s a unit? opens the units guide', (await text(page, '.ck-units')).startsWith('One unit is 10ml of pure alcohol.'));
-        await checkScreen(page, 'A H8 units open 1280 dark');
-        await page.locator('.ds-guide-label .ds-guide-i').hover();
-        pass('H8: the ⓘ starts by saying what it is', (await until(async () => (await text(page, '.ds-infopop:not([hidden])')).startsWith('Alcohol counts in Fuel and alcohol'), 3000)) || false);
-        await page.mouse.move(5, 5);
+        // By drinks, adding up live (Tim, 5 Nov, 10:25): 4 pints is 4 × 14/6 units, about 9.
+        pass('H8: "On average, what do you drink in a week?"', (await heading(page)) === 'On average, what do you drink in a week?', await heading(page));
+        for (let i = 0; i < 4; i += 1) await page.getByRole('button', { name: 'One more: pint of beer or cider' }).click();
+        pass('H8: the units add up live', (await until(async () => (await text(page, '.ck-drinks-total')) === 'That’s about 9 units a week.', 3000)) || false, await text(page, '.ck-drinks-total'));
+        await checkScreen(page, 'A H8 drinks 1280 dark');
+        await nextStep(page);
+        await until(async () => (await currentQuestion(page))?.code !== 'H8', 4000);
+        percents.push(await pct(page));
+        continue;
       }
-      if (q.code === 'S1') await checkScreen(page, 'A S1 statement 1280 dark');
+      // A one-answer screen has no Next (Tim, 5 Nov), so no coral button.
+      if (q.code === 'S1') await checkScreen(page, 'A S1 statement 1280 dark', { coral: 0 });
       if (q.code === 'H5' && !backed) {
         backed = true;
         await sleep(500); // past the tool's double-tap guard (400ms)
@@ -376,13 +397,18 @@ if (part('A')) {
     pass(`results: Software score ${want.software.value}/100 and its change`, stats[1]?.replace(/\s+/g, ' ').includes(`Software score ${want.software.value}/100 ${want.software.change.text}`), stats[1]);
     const improved = await page.locator('.ck-improved li').allInnerTexts();
     pass('results: what improved, up to three, biggest first', JSON.stringify(improved) === JSON.stringify(want.improved.map((x) => x.line)), `${improved} vs ${want.improved.map((x) => x.line)}`);
-    pass(`results: one thing to work on is ${want.workOn.name}`, (await text(page, '.ck-one-area')) === want.workOn.name && (await text(page, '.ck-one-tip')) === want.workOn.tip[0]);
+    // One thing to work on is a short choice (Tim, 5 Nov, 10:30): "What could help with movement?", each option with Already doing this.
+    pass(`results: one thing to work on is ${want.workOn.name}`, (await text(page, '.ck-one-question')) === `What could help with ${want.workOn.name.toLowerCase()}?`, await text(page, '.ck-one-question'));
+    const optionCount = await page.locator('.ck-option').count();
+    pass('results: 3 or 4 options, each with Already doing this', optionCount >= 3 && optionCount <= 4 && (await page.locator('.ck-option', { hasText: 'Already doing this' }).count()) === optionCount, optionCount);
+    pass('results: Something else and Nothing this month', (await page.locator('.ck-one-add', { hasText: 'Something else' }).count()) === 1 && (await page.locator('.ck-one-nothing').count()) === 1);
     pass('results: the graph has 4 dots with pop-ups and a travel ring', (await page.locator('.ds-cchart-dot[data-tip]').count()) === 4 && (await page.locator('.ds-cchart-trip[data-tip]').count()) === 1);
     pass('results: each line named at its end, no key', (await page.locator('.ds-cchart-end').allTextContents()).join('|') === `Hardware ${want.hardware.value}|Software ${want.software.value}`);
     await page.locator('.ds-ctable-fold .ds-collapse-head').click();
     pass('results: Show as a table', (await page.locator('.ds-ctable tbody tr').count()) === 2);
     await page.locator('.ck-fold .ds-collapse-head').first().click();
-    pass('results: Hardware areas fold, lowest first in its line', (await text(page, '.ck-fold-line')) === want.hardwareAreas.lowest && (await page.locator('.ck-area').count()) >= 6);
+    // Bands (Tim, 5 Nov; methods M0.8): no "Lowest" line; the single lowest bar is the coral one.
+    pass('results: Hardware areas fold, no "Lowest" line, one lowest bar', (await page.locator('.ck-fold-line').count()) === 0 && (await page.locator('.ck-area').count()) >= 6 && (await page.locator('.ck-fold').first().locator('.ds-bar--lowest').count()) === 1);
     pass('results: no Support, any time, and no note (rule 51)', !/support|samaritans|nhs/i.test(await text(page, '.ds-guide-page')));
     await page.locator('.ds-cchart-dot').last().hover();
     pass('results: a dot’s pop-up shows the score first', (await until(async () => /score \d+\/100/.test(await text(page, '.ds-tip:not([hidden])')), 3000)) || false);
@@ -390,7 +416,8 @@ if (part('A')) {
     await checkScreen(page, 'A results 1280 dark');
 
     if (sprint) {
-      await page.locator('.ck-one-add').click();
+      // A repeating suggestion is added only as a habit with a measure.
+      await page.locator('.ck-option', { hasText: 'Three 30-minute training sessions a week' }).getByRole('button', { name: 'Add as a habit' }).click();
       await page.waitForSelector('.ds-dialog', { timeout: 5000 });
       pass('Add to my sprint: the panel asks which Strategy', (await page.locator('.ds-dialog .ds-field-label, .ds-dialog label, .ds-dialog .ds-choice', { hasText: 'Which Strategy' }).count()) > 0);
       await page.locator('.ds-dialog .ds-choice').last().locator('[role=radio]').first().click();
@@ -398,7 +425,7 @@ if (part('A')) {
       pass('Add to my sprint: says where it went', Boolean(await toastSeen(page, `Added to Performance Sprint ${sprint.number} as a habit.`)));
       pass('Add to my sprint: the line under the tip', (await text(page, '.ck-one-added')) === `It’s in Performance Sprint ${sprint.number} as a habit.`);
       const sh = await until(async () => {
-        const { data } = await db.from('sprint_habits').select('id, name').eq('sprint_id', sprint.id).eq('name', '30-minute training sessions');
+        const { data } = await db.from('sprint_habits').select('id, name').eq('sprint_id', sprint.id).eq('name', '30-minute training session');
         return data?.length ? data : null;
       });
       sh?.forEach((h) => added.habits.push(h.id));
@@ -464,14 +491,18 @@ if (part('D')) {
 
   // M12's words, verbatim (or a later rule's, listed in the report).
   const LATER = new Set(['Fair', '2 days or more']);
+  // Later wording, Tim's of 5 Nov (decisions part 4, "Phase 5 preview check"): the
+  // drinks question, the travel question first, and the fuel tip worded for the day.
+  const LATER_WORDS = new Set(['On average, what do you drink in a week?', 'Count a typical week in the past month.', 'Did you travel this month?']);
   for (const q of QUESTIONS) {
     const words = q.question.slice(0, 40);
-    pass(`M12 words: ${q.code} question`, src.includes(q.question.replace(/^In the past month, on average, /, '')) || src.includes(words), q.question);
-    for (const n of q.nudges || []) pass(`M12 words: ${q.code} "${n.slice(0, 30)}"`, src.includes(n), n);
+    if (LATER_WORDS.has(q.question)) { results.push(`NOTE  M12 words: ${q.code} question is Tim's of 5 Nov: ${q.question}`); for (const n of q.nudges || []) if (LATER_WORDS.has(n)) results.push(`NOTE  M12 words: ${q.code} nudge is Tim's of 5 Nov: ${n}`); }
+    else pass(`M12 words: ${q.code} question`, src.includes(q.question.replace(/^In the past month, on average, /, '')) || src.includes(words), q.question);
+    for (const n of q.nudges || []) if (!LATER_WORDS.has(n)) pass(`M12 words: ${q.code} "${n.slice(0, 30)}"`, src.includes(n), n);
     if (q.statement) pass(`M12 words: ${q.code} statement`, src.includes(q.statement));
     for (const o of q.options) if (!LATER.has(o.label)) pass(`M12 words: ${q.code} "${o.label}"`, src.includes(`'${o.label}'`), o.label);
   }
-  for (const [k, lines] of Object.entries(TIPS)) for (const l of lines) pass(`M12 words: tip ${k} "${l.slice(0, 30)}"`, src.includes(l), l);
+  for (const [k, lines] of Object.entries(TIPS)) for (const l of lines) if (k === 'fuel') results.push(`NOTE  M12 words: tip fuel reworded (Tim, 5 Nov): ${l}`); else pass(`M12 words: tip ${k} "${l.slice(0, 30)}"`, src.includes(l), l);
   for (const l of HARDWARE_SOFTWARE) pass(`M12 words: "${l.slice(0, 30)}"`, src.includes(l));
 
   for (const width of [1280, 390, 360]) for (const mode of ['dark', 'light']) {
@@ -482,7 +513,7 @@ if (part('D')) {
       await page.goto(`${APP}${CUR_PATH}/answers`);
       await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
       await until(async () => (await currentQuestion(page))?.code === 'H1');
-      const q = await checkScreen(page, `D H1 ${width} ${mode}`);
+      const q = await checkScreen(page, `D H1 ${width} ${mode}`, { coral: 0 });
       await sleep(300);
       pass(`D ${width} ${mode}: the page follows the mode`, q.theme === mode, q.theme);
       pass(`D ${width} ${mode}: question ${m12.question}px as M12`, Math.abs(q.sizes.question - m12.question) <= 1, q.sizes.question);
@@ -497,7 +528,7 @@ if (part('D')) {
         if (!cq || cq.code === 'S1') break;
         await tapAnswer(page, NOW_WORDS[cq.code]);
       }
-      const s = await checkScreen(page, `D S1 ${width} ${mode}`);
+      const s = await checkScreen(page, `D S1 ${width} ${mode}`, { coral: 0 });
       const ms = phone ? mockS.phone : mockS.desktop;
       pass(`D ${width} ${mode}: statement ${ms.statement}px as M12`, Math.abs(s.sizes.statement - ms.statement) <= 1, s.sizes.statement);
       for (let i = 0; i < 8; i += 1) {
@@ -580,7 +611,7 @@ if (part('C') && !others?.length) {
     pass('G1: Your goals, the question, the nudge', (await text(page, '.ds-guide-label')) === 'Your goals' && (await text(page, '.ds-guide-nudge')) === 'Describe what you’d be doing and what others would notice.');
     await page.locator('.ds-guide-example-link').click();
     pass('G1: See an example', (await text(page, '.ds-guide-example')).startsWith('For example: '));
-    pass('G1: the eye says You and Tim', (await text(page, '.ck-eye')).includes('You and Tim'));
+    pass('G1: the eye says You and Tim can see this', /you and tim can see this/i.test((await page.locator('.ds-guide-eye [aria-label]').first().getAttribute('aria-label').catch(() => '')) || ''));
     pass('first: Do this later, never Skip', (await text(page, '.ds-guide-skip')) === 'Do this later');
     await page.locator('.ds-guide-body textarea').first().fill('I’d lead the board calmly through the merger.');
     await nextStep(page);
@@ -620,8 +651,9 @@ if (part('C') && !others?.length) {
     }
     await until(async () => (await heading(page)) === 'Your starting point');
     pass('results: "Your starting point"', (await heading(page)) === 'Your starting point');
-    pass('results: the scores say what they are', (await text(page, '.ck-scores')).includes('Sleep, stress, movement, fuel, energy and health.'));
-    pass('results: "Your graph starts here. Each monthly check-in adds a point."', (await page.locator('.ck-hint p').allInnerTexts()).join(' ') === 'Your graph starts here. Each monthly check-in adds a point.');
+    // Declutter (Tim, 5 Nov): no descriptions under the scores and no "Your graph starts here."; the ⓘ beside each term explains it.
+    pass('results: no description under the scores, an ⓘ beside each term', !(await text(page, '.ck-scores')).includes('Sleep, stress, movement, fuel, energy and health.') && (await page.locator('.ck-scores .ds-term-info').count()) === 2);
+    pass('results: no "Your graph starts here."', !(await text(page, '.ds-guide-page')).includes('Your graph starts here'));
     pass('results: no What improved on the first', (await page.locator('.ck-improved').count()) === 0);
     pass('results: My goals, one per line', (await page.locator('.ck-goal-text').allInnerTexts()).join('|') === 'I’d lead the board calmly through the merger.|Lead the merger well|Delegate properly|Get my energy back');
     pass('results: no note for the client (rule 51)', !/samaritans|nhs|gp/i.test(await text(page, '.ds-guide-page')));

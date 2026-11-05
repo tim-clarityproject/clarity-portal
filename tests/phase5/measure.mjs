@@ -81,10 +81,21 @@ export function measure({ CORAL, MINT, BANNED, scope, exempt }) {
       if (b.width === 0 && b.height === 0) continue;
       const paints = [st.backgroundColor, el instanceof SVGElement ? st.fill : null, el instanceof SVGElement ? st.stroke : null]
         .filter((c) => c && c !== 'none' && c !== 'rgba(0, 0, 0, 0)' && !/^url/.test(c));
-      for (const c of paints) marks.push({ c, el: label(el), coral: CORAL.includes(c) });
+      // The one agreed coral data mark (methods M0.8, Tim 5 Nov): the single
+      // lowest bar in a list, counted per list below.
+      const lowest = Boolean(el.closest('.ds-bar--lowest'));
+      for (const c of paints) marks.push({ c, el: label(el), coral: CORAL.includes(c) && !lowest });
     }
   }
   const coralMarks = [...new Set(marks.filter((m) => m.coral).map((m) => `${m.el} ${m.c}`))];
+  // At most one lowest bar per list, never on anything tappable.
+  for (const list of root.querySelectorAll('.ck-areas, [data-band-list]')) {
+    const n = [...list.querySelectorAll('.ds-bar--lowest')].filter(vis).length;
+    if (n > 1) coralMarks.push(`${label(list)} has ${n} coral bars`);
+  }
+  for (const el of root.querySelectorAll('.ds-bar--lowest')) {
+    if (el.closest('button, a, [role=button]')) coralMarks.push(`${label(el)} coral bar on something tappable`);
+  }
 
   // Icons with words: centred on the middle of the capitals, 16px, 6px.
   const capMiddle = (textEl) => {

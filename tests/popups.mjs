@@ -490,10 +490,10 @@ const SECTION = 'ⓘ (section or step)';
 const MARK = 'chart mark (ChartTips)';
 const EYE = 'eye';
 const PAGES = [
-  { path: '/performance-sprint', name: 'the sprint', ready: '.ds-sdial--running', desktop: [TITLE, MARK], touch: [TITLE, MARK] },
-  { path: '/performance-sprint/year', name: 'the year', ready: '.ds-ychart-col', desktop: [TITLE, MARK], touch: [TITLE, MARK] },
+  { path: '/performance-sprint', name: 'the sprint', ready: '.ds-sdial--running', desktop: [MARK], touch: [MARK] },
+  { path: '/performance-sprint/year', name: 'the year', ready: '.ds-ychart-col', desktop: [MARK], touch: [MARK] },
   // The test client has no coach, so the plan's eyes are words, not a tap.
-  { path: '/performance-plan', name: 'the plan', ready: '.ds-stile', desktop: [TITLE, MARK], touch: [TITLE, MARK] },
+  { path: '/performance-plan', name: 'the plan', ready: '.ds-stile', desktop: [MARK], touch: [MARK] },
   // The gallery has no page title of its own: its sections show each kind.
   { path: '/design-reference', name: 'the design gallery', ready: '.dr-tool-frame', desktop: [SECTION, MARK, EYE], touch: [SECTION, MARK, EYE] },
   // Phase 3's guided tools have no "i", chart mark or tappable eye (the
@@ -503,8 +503,9 @@ const PAGES = [
   { path: '/my-day/plan', name: 'Plan my day', ready: '.ds-guide-question', desktop: [], touch: [] },
   { path: '/my-day/review', name: 'Review my day', ready: '.ds-guide-question', desktop: [], touch: [] },
   { path: '/performance-sprint/debrief', name: 'the weekly debrief', ready: '.ds-guide-question, .deb-closed', desktop: [], touch: [] },
-  { path: '/daily-journal', name: 'an older page (Daily journal)', ready: '.ds-page-info-toggle', desktop: [TITLE], touch: [TITLE] },
-  { path: '/decision-tools', name: 'an older page (Decision tools)', ready: '.ds-page-info-toggle', desktop: [TITLE], touch: [TITLE] },
+  // No ⓘ beside any page title (Tim, 5 Nov, declutter): checked below on every page.
+  { path: '/daily-journal', name: 'an older page (Daily journal)', ready: '.ds-page-title', desktop: [], touch: [] },
+  { path: '/decision-tools', name: 'an older page (Decision tools)', ready: '.ds-page-title', desktop: [], touch: [] },
 ];
 
 async function portal(touch) {
@@ -552,6 +553,7 @@ async function portal(touch) {
     const title = (await page.locator('.ds-page-title').first().textContent().catch(() => '')) || '';
     const greeting = /^(Welcome back|Good to see you|Good (morning|afternoon|evening))/i.test(title.trim());
     if (greeting) pass(`${where}: the greeting "${title.trim()}" has no ⓘ`, !has.has(TITLE));
+    pass(`${where}: no ⓘ beside the page title (declutter, 5 Nov)`, !has.has(TITLE));
     for (const kind of expect[how]) {
       if (greeting && kind === TITLE) continue;
       pass(`${where}: has ${kind}`, has.has(kind), `found ${[...has].join(', ') || 'none'}`);

@@ -259,10 +259,23 @@ async function checkOffline(context, page, tag, to, label, want) {
 }
 
 // ---------------------------------------------------------------- 1 and 3: Recovery
+// A paused tool is a gate (Tim, 5 Nov): only the calm screen, with "Back to
+// recovery" and "<tool> anyway". Going on "anyway" opens the tool itself.
+async function throughGate(page, tag, tool) {
+  const gate = await until(async () => (await bodyText(page)).includes('Your daily tools are paused while you recharge.'), 20000);
+  pass(`${tag}: ${tool} opens on the paused gate`, Boolean(gate), (await bodyText(page)).slice(0, 300));
+  pass(`${tag}: the gate offers Back to recovery`, (await page.getByRole('button', { name: 'Back to recovery' }).count()) === 1);
+  const anyway = page.getByRole('button', { name: `${tool} anyway` });
+  pass(`${tag}: the gate offers "${tool} anyway"`, (await anyway.count()) === 1);
+  if (await anyway.count()) await anyway.click();
+  await sleep(600);
+}
+
 async function checkRecovery(page, tag) {
   // Review my day: the to-dos screen.
   await page.goto(`${APP}/my-day/review`);
   await page.waitForSelector('.ui-root h1, .ui-root h2', { timeout: 30000 });
+  await throughGate(page, tag, 'Review my day');
   const line = await until(async () => (await bodyText(page)).includes(RECOVERY_DAY_LINE), 20000);
   const text = await bodyText(page);
   pass(`${tag}: Review my day says Recovery's calm line`, Boolean(line), text.slice(0, 400));
@@ -284,6 +297,7 @@ async function checkRecovery(page, tag) {
   // Plan my day: the to-dos screen.
   await page.goto(`${APP}/my-day/plan`);
   await page.waitForSelector('.ui-root h1, .ui-root h2', { timeout: 30000 });
+  await throughGate(page, tag, 'Plan my day');
   let planLine = false;
   for (let i = 0; i < 6 && !planLine; i += 1) {
     planLine = Boolean(await until(async () => (await bodyText(page)).includes(RECOVERY_DAY_LINE), i ? 3000 : 15000));
