@@ -13,6 +13,7 @@
 import { weekday } from '../scores/dates.js';
 import { addDayKey, dayPlanView } from './dayPlan';
 import { settingForWeek, toMeasure } from './rows';
+import { plainNumber } from './words';
 import { sprintPageView } from './sprintPage';
 
 export const REVIEW_TEXT_MAX = 4000;   // went_well, differently, on_my_mind
@@ -61,21 +62,106 @@ function listWords(items) {
 }
 
 /**
- * The one sentence for the weekly habits on the numbers screen (M5 "So far
- * this week: training 1 of 4, …"), as a full sentence with no colon
- * (writing rules): "So far this week you have training sessions at 1 of 4
- * and weekly strategic block still to do." The figures are the sprint's
- * own week lines (logRow), never worked out here.
+ * An amount of time as a person would say it (Tim, 5 Nov, 10:37): "half an
+ * hour", "45 minutes", "1 hour", "1 and a half hours", "12 hours".
+ * `hours` may be in minutes when `unit` is minutes.
+ */
+export function timeWords(value, unit = 'hours') {
+  const hours = unit === 'minutes' ? Number(value) / 60 : Number(value);
+  if (!(hours > 0)) return unit === 'minutes' ? '0 minutes' : '0 hours';
+  if (hours === 0.5) return 'half an hour';
+  if (hours < 1) {
+    const mins = Math.round(hours * 60);
+    return `${mins} minute${mins === 1 ? '' : 's'}`;
+  }
+  const whole = Math.floor(hours);
+  const rest = Math.round((hours - whole) * 60);
+  if (rest === 0) return `${whole} hour${whole === 1 ? '' : 's'}`;
+  if (rest === 30) return `${whole} and a half hours`;
+  return `${plainNumber(Math.round(hours * 10) / 10)} hours`;
+}
+
+const TIME_UNITS = new Set(['hours', 'hour', 'minutes', 'minute', 'h', 'mins']);
+const plural = (word) => {
+  if (/s$/i.test(word)) return word;
+  if (/[^aeiou]y$/i.test(word)) return `${word.slice(0, -1)}ies`;
+  if (/(ch|sh|x)$/i.test(word)) return `${word}es`;
+  return `${word}s`;
+};
+const singular = (word) => {
+  if (/ies$/i.test(word)) return `${word.slice(0, -3)}y`;
+  if (/(ch|sh|x)es$/i.test(word)) return word.slice(0, -2);
+  if (/[^s]s$/i.test(word)) return word.slice(0, -1);
+  return word;
+};
+/** "training sessions" for 4, "training session" for 1; names longer than three words stay as they are. */
+function countNoun(name, count) {
+  const words = lowerFirst(name).split(' ');
+  if (words.length > 3) return words.join(' ');
+  const last = words[words.length - 1];
+  return [...words.slice(0, -1), count === 1 ? singular(last) : plural(last)].join(' ');
+}
+/** A verb for each kind of thing (Tim's model): sent, read, completed, else done. */
+function verbFor(name) {
+  if (/message|email|call|text|note to|thank/i.test(name)) return 'sent';
+  if (/read|book|page/i.test(name)) return 'read';
+  if (/session|workout|training|run|class|swim|ride|match|game|practice/i.test(name)) return 'completed';
+  return 'done';
+}
+
+/**
+ * The one sentence for the weekly habits on the numbers screen, written the
+ * way a person would say it (Tim, 5 Nov, 10:37, his model): "So far this
+ * week you've completed 1 out of 4 training sessions, read half an hour of
+ * your 3 hours of reading and sent 4 out of 5 check-in messages, and you've
+ * still got your weekly strategic block to do." What's left is still to
+ * come, never missed. The figures are the sprint's own (logRow's
+ * weekFigures), never worked out here.
  */
 export function weeklySentence(habits = []) {
-  const parts = habits.map((h) => {
+  const done = [];
+  const toCome = [];
+  for (const h of habits) {
     const name = lowerFirst(h.name);
-    if (h.measure === 'yes_no_weekly') return /^Done/.test(h.weekLine) ? `${name} done` : `${name} still to do`;
-    const limit = /^(.*) this week, no more than (.*)$/.exec(h.weekLine || '');
-    if (limit) return `${name} at ${limit[1]} with a limit of ${limit[2]}`;
-    return `${name} at ${(h.weekLine || '').replace(/ this week$/, '')}`;
-  });
-  return parts.length ? `So far this week you have ${listWords(parts)}.` : '';
+    const f = h.weekFigures;
+    if (h.measure === 'yes_no_weekly') {
+      const isDone = h.weekDone ?? /^Done/.test(h.weekLine || '');
+      if (isDone) done.push(`done your ${name}`);
+      else toCome.push(`your ${name}`);
+      continue;
+    }
+    if (h.measure === 'count_limit' && f) {
+      done.push(`had ${plainNumber(f.got)} ${countNoun(h.name, f.got)}, with a limit of ${plainNumber(f.limit)}`);
+      continue;
+    }
+    if ((h.measure === 'count' || h.measure === 'amount') && f) {
+      const timed = h.measure === 'amount' && TIME_UNITS.has(String(h.unit || '').toLowerCase());
+      if (!(f.got > 0)) {
+        if (timed) toCome.push(`${timeWords(f.of, h.unit)} of ${name}`);
+        else if (h.measure === 'amount') toCome.push(`${plainNumber(f.of)} ${h.unit || ''} of ${name}`.replace(/\s+/g, ' '));
+        else toCome.push(`${plainNumber(f.of)} ${countNoun(h.name, f.of)}`);
+        continue;
+      }
+      if (timed) done.push(`${verbFor(h.name) === 'read' ? 'read' : 'done'} ${timeWords(f.got, h.unit)} of your ${timeWords(f.of, h.unit)} of ${name}`);
+      else if (h.measure === 'amount') done.push(`done ${plainNumber(f.got)} out of ${plainNumber(f.of)} ${h.unit || ''} of ${name}`.replace(/\s+/g, ' '));
+      else done.push(`${verbFor(h.name)} ${plainNumber(f.got)} out of ${plainNumber(f.of)} ${countNoun(h.name, f.of)}`);
+      continue;
+    }
+    // Anything else: its own week line, as a full clause.
+    if (h.weekLine) done.push(`logged ${name} at ${h.weekLine.replace(/ this week/, '')}`);
+  }
+  if (!done.length && !toCome.length) return '';
+  const still = toCome.length ? `you’ve still got ${listWords(toCome)} to do` : '';
+  if (!done.length) return `So far this week ${still}.`;
+  // The verbs: "you've completed 1 out of 4 training sessions, 3 out of 5 ..."
+  const body = `So far this week you’ve ${listWords(done)}`;
+  return still ? `${body}, and ${still}.` : `${body}.`;
+}
+
+/** "Where did being calm under pressure show today?" (rule 64: the question names it). */
+export function whereQuestion(way) {
+  const w = (way || '').trim().replace(/[.!?]+$/, '');
+  return w ? `Where did being ${lowerFirst(w)} show today?` : 'Where did it show today?';
 }
 
 /**

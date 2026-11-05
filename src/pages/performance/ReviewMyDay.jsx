@@ -15,8 +15,9 @@ import {
   Loading,
   LoggingRow,
   PageHeader,
-  RowList,
+  PriorityRows,
   ScaleChoice,
+  Choice,
   Stat,
   TextBox,
   TodoList,
@@ -69,7 +70,9 @@ import {
   reviewAnswersToRow,
   reviewDayFor,
   tomorrowToRow,
+  recentWays,
   wayQuestion,
+  whereQuestion,
 } from '../../lib/performance';
 import './performance.css';
 
@@ -120,6 +123,8 @@ const isDay = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const cacheName = (date) => `day-review:${date}`;
 const draftName = (date) => `day-review:${date}`;
 const stepKey = (userId, date) => `day-review-${userId}-${date}`;
+// A one-answer choice shows as chosen for a moment before moving on (Tim, 5 Nov).
+const ADVANCE_MS = 300;
 const localKey = (userId, date) => deviceKey('day-review-local', userId, date);
 const emptyWin = (day) => ({ text: '', strategyIds: [], impact: 2, day });
 const toText = (v) => (v == null ? '' : String(v));
@@ -218,6 +223,12 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
   }), [userId, date]);
 
   const view = useMemo(() => dayReviewView(data, { date, planLocal, local }), [data, date, planLocal, local]);
+  // The way of being: this morning's, or the one chosen here when the day
+  // wasn't planned (kept on this device: day_reviews has no place for it).
+  const way = view.way || local.way || '';
+  const wayChoices = recentWays(data.earlierWays || [], date);
+  const chooseWay = (w) => setLocal((l) => ({ ...l, way: (w || '').trim() }));
+  const [picking, setPicking] = useState(null);
   const [answers, setAnswers] = useState(() => reviewAnswersFromRow(data.dayReview));
   const [save, setSave] = useState('idle');
   const [showWeek, setShowWeek] = useState(false);
@@ -549,12 +560,31 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'be',
       name: 'Be',
-      question: wayQuestion(view.way),
-      render: () => (
+      // Named in both questions (Tim, 5 Nov, 10:39; rule 64). With no way of
+      // being from this morning, it first asks how they wanted to be today;
+      // Skip skips both. Never a rating of nothing in particular.
+      question: way ? wayQuestion(way) : 'How did you want to be today?',
+      nudges: way ? [] : ['Choose one, or write your own.'],
+      render: () => (!way ? (
+        <div className="day-narrow day-stack">
+          {wayChoices.length > 0 && (
+            <Choice
+              ariaLabel="How did you want to be today?"
+              options={wayChoices.map((w) => ({ value: w, label: w }))}
+              value={picking}
+              // Shown as chosen for a moment, then the rating (Tim, 5 Nov, 10:23).
+              onChange={(w) => { setPicking(w); setTimeout(() => { chooseWay(w); setPicking(null); }, ADVANCE_MS); }}
+              form="rows"
+            />
+          )}
+          <WayOwnWords onDone={chooseWay} />
+          {eye}
+        </div>
+      ) : (
         <div className="day-stack">
           <div>
             <ScaleChoice
-              ariaLabel={wayQuestion(view.way)}
+              ariaLabel={wayQuestion(way)}
               who="me"
               value={answers.rating}
               onChange={(rating) => change({ rating })}
@@ -562,14 +592,16 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
               highLabel="10 is completely"
             />
           </div>
-          <TextBox label="Where did it show today?" who="me" maxLength={WHERE_MAX} value={answers.where} onChange={(where) => change({ where })} />
+          <TextBox label={whereQuestion(way)} maxLength={WHERE_MAX} value={answers.where} onChange={(where) => change({ where })} />
+          {!view.way && <Button variant="text" className="rev-way-change" onClick={() => chooseWay('')}>Choose another way of being</Button>}
         </div>
-      ),
+      )),
     },
     {
       key: 'numbers',
       name: 'Numbers',
-      question: 'What are today’s numbers?',
+      // "Log today", as Home's Log today section (Tim, 5 Nov, 10:37).
+      title: 'Log today',
       nudges: ['Anything you logged earlier is already here.'],
       render: () => (
         <div>
@@ -668,22 +700,21 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       key: 'tomorrow',
       name: 'Tomorrow',
       question: 'What are the most important things to do tomorrow?',
-      nudges: ['Add up to three.', 'They’ll be waiting in tomorrow’s Plan my day.'],
+      nudges: ['They’ll be waiting in tomorrow’s Plan my day, in this order.'],
       example: TOMORROW_EXAMPLE,
       render: () => (
-        <div>
-          <div className="day-narrow">
-            {eye}
-            <RowList
-              rows={answers.tomorrow}
-              onChange={(tomorrow) => change({ tomorrow })}
-              max={MAX_TOMORROW}
-              maxLength={TOMORROW_ITEM_MAX}
-              itemLabel={(n) => `Important thing ${n} for tomorrow`}
-            />
-          </div>
+        // One eye for the screen, and both boxes the same width (Tim, 5 Nov).
+        <div className="day-narrow">
+          {eye}
+          <PriorityRows
+            rows={answers.tomorrow}
+            onChange={(tomorrow) => change({ tomorrow })}
+            count={MAX_TOMORROW}
+            maxLength={TOMORROW_ITEM_MAX}
+            itemLabel={(n) => `Priority ${n} for tomorrow`}
+          />
           <div className="rev-gap">
-            <TextBox label="Is there anything else on your mind?" who="me" maxLength={REVIEW_TEXT_MAX} value={answers.onMind} onChange={(onMind) => change({ onMind })} />
+            <TextBox label="Is there anything else on your mind?" maxLength={REVIEW_TEXT_MAX} value={answers.onMind} onChange={(onMind) => change({ onMind })} />
           </div>
         </div>
       ),
@@ -692,7 +723,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       key: 'summary',
       name: 'Your day',
       required: true, // nothing to skip: Next goes on to closing the day
-      question: view.firstName ? `Here’s your day, ${view.firstName}.` : 'Here’s your day.',
+      question: 'This was your day',
       nudges: ['Check it over.', 'Change anything you need to.'],
       render: (tool) => {
         const tomorrow = tomorrowToRow(answers.tomorrow);
@@ -703,13 +734,14 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
               addWhenEmpty
               onChange={tool.go}
               rows={[
-                { label: 'To-dos', value: view.todoLine, good: view.todoPlus, step: stepIndex('do') },
-                { label: 'How you were', value: howYouWere(view.way, answers.rating), sub: answers.where.trim(), step: stepIndex('be') },
-                { label: 'Went well', value: answers.wentWell.trim() || view.winsLine, good: answers.wentWell.trim() ? view.winsLine : null, step: stepIndex('well') },
-                { label: 'Differently', value: answers.differently.trim(), step: stepIndex('differently') },
-                { label: 'Strategies that moved', value: movedLines(view.moved, view.strategies), step: stepIndex('strategies') },
-                { label: 'For tomorrow', value: tomorrow.map((t, i) => `${i + 1}. ${t}`), step: stepIndex('tomorrow') },
-                { label: 'On your mind', value: answers.onMind.trim(), step: stepIndex('tomorrow') },
+                // Plain, full labels (Tim, 5 Nov, 10:41).
+                { label: 'What you got done', value: view.todoLine, good: view.todoPlus, step: stepIndex('do') },
+                { label: 'How you showed up', value: howYouWere(way, answers.rating), sub: answers.where.trim(), step: stepIndex('be') },
+                { label: 'What went well', value: answers.wentWell.trim() || view.winsLine, good: answers.wentWell.trim() ? view.winsLine : null, step: stepIndex('well') },
+                { label: 'What you’d do differently', value: answers.differently.trim(), step: stepIndex('differently') },
+                { label: 'How today aligned with your Strategies', value: movedLines(view.moved, view.strategies), step: stepIndex('strategies') },
+                { label: 'Priorities for tomorrow', value: tomorrow.map((t, i) => `${i + 1}. ${t}`), step: stepIndex('tomorrow') },
+                { label: 'Anything else on your mind', value: answers.onMind.trim(), step: stepIndex('tomorrow') },
               ]}
             />
             {view.score && (
@@ -833,6 +865,17 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
         days={view.winDays.map((d) => ({ ...d, label: d.value === date ? 'Today' : d.label }))}
         onAdd={addWin}
       />
+    </div>
+  );
+}
+
+/** "How did you want to be today?" in their own words (Tim, 5 Nov, 10:39). */
+function WayOwnWords({ onDone }) {
+  const [text, setText] = useState('');
+  return (
+    <div className="rev-way-own">
+      <TextBox label="In your own words" lines="one" maxLength={120} value={text} onChange={setText} placeholder="e.g. Calm under pressure" />
+      {text.trim() && <Button className="rev-way-use" onClick={() => onDone(text)}>Use these words</Button>}
     </div>
   );
 }

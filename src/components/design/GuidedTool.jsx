@@ -228,6 +228,10 @@ export default function GuidedTool({
     return asked >= 0 ? asked : Math.min(saved?.index ?? 0, steps.length - 1);
   });
   const [skipped, setSkipped] = useState(() => new Set(saved?.skipped || []));
+  // "Change" on a summary (Tim, 5 Nov, 10:41): only that question opens,
+  // and moving on from it goes straight back to the summary, with the
+  // change shown. The steps in between are never shown again.
+  const [returnTo, setReturnTo] = useState(null);
   const [direction, setDirection] = useState('none');
   const rootRef = useRef(null);
   const scrollRef = useRef(null);
@@ -304,12 +308,23 @@ export default function GuidedTool({
     );
   };
 
+  // Back to the summary the change was made from.
+  const backToSummary = () => {
+    const to = returnTo;
+    setReturnTo(null);
+    go(to, 'jump');
+  };
+
   const next = () => {
     if (Date.now() - lastMove.current < NEXT_GUARD_MS) return;
     if (skipped.has(step.key)) {
       const rest = new Set(skipped);
       rest.delete(step.key);
       setSkipped(rest);
+    }
+    if (returnTo != null && returnTo !== i) {
+      backToSummary();
+      return;
     }
     if (last) {
       finish();
@@ -326,6 +341,10 @@ export default function GuidedTool({
     }
     setSkipped((s) => new Set(s).add(step.key));
     onSkip?.(step.key);
+    if (returnTo != null && returnTo !== i) {
+      backToSummary();
+      return;
+    }
     if (last) {
       finish();
       return;
@@ -346,7 +365,28 @@ export default function GuidedTool({
   const showSkip = !(step.required || (step.title && !last) || (last && !step.skippable));
   const previous = steps[i - 1];
   const showBack = i > 0 && !previous?.bare;
-  const tool = { go: (to) => go(to, 'jump'), index: i, skipped, steps, headingRef };
+  const changing = returnTo != null && returnTo !== i;
+  // tool.go(to, { fromSummary: true }) opens one question from a summary
+  // (GuidedSummary does this); a step moving itself on (a one-tap answer)
+  // then goes back to that summary too.
+  const tool = {
+    go: (to, opts) => {
+      if (opts?.fromSummary) {
+        setReturnTo(i);
+        go(to, 'jump');
+        return;
+      }
+      if (changing && to > i) {
+        backToSummary();
+        return;
+      }
+      go(to, 'jump');
+    },
+    index: i,
+    skipped,
+    steps,
+    headingRef,
+  };
 
   const progressBar = progress === 'percent' ? (
     <div
@@ -418,7 +458,7 @@ export default function GuidedTool({
         {!step.bare && !step.plain && (
           <div className="ds-guide-foot">
             {showBack ? (
-              <button type="button" className="ds-guide-back" aria-label="Back" onClick={() => go(i - 1)}>
+              <button type="button" className="ds-guide-back" aria-label="Back" onClick={() => (changing ? backToSummary() : go(i - 1))}>
                 {ARROW}
                 <span aria-hidden="true">Back</span>
               </button>
@@ -428,7 +468,7 @@ export default function GuidedTool({
                 <button type="button" className="ds-guide-skip" onClick={skip}>{skipLabel}</button>
               )}
               <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
-                {step.nextLabel || (last ? finishLabel : 'Next')}
+                {changing ? 'Save my change' : (step.nextLabel || (last ? finishLabel : 'Next'))}
               </button>
             </div>
           </div>
@@ -477,7 +517,7 @@ export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEm
                 type="button"
                 className="ds-guide-summary-change"
                 aria-label={`${action} ${row.label}`}
-                onClick={() => onChange(row.step)}
+                onClick={() => onChange(row.step, { fromSummary: true })}
               >
                 {action}
               </button>

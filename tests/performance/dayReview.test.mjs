@@ -157,16 +157,16 @@ test('the numbers screen: the habits logged a day at a time, with the sprint’s
   const v = dayReviewView(rows(), { date: DATE });
   assert.deepEqual(v.numbers.map((h) => [h.id, h.kind]), [['steps', 'number'], ['late', 'yesno'], ['focus', 'rating']]);
   assert.equal(v.numbers[0].line, '9,800 of 10,000 steps today');
-  assert.equal(v.weeklyLine, 'So far this week you have training sessions at 1 of 4, weekly strategic block still to do, reflective notes at 2 of 2 and reading at 0 of 3 hours.');
+  assert.equal(v.weeklyLine, 'So far this week you’ve completed 1 out of 4 training sessions and done 2 out of 2 reflective notes, and you’ve still got your weekly strategic block and 3 hours of reading to do.');
   // An amount a week chosen for the day gets its row here.
   const chosen = dayReviewView(rows(), { date: DATE, planLocal: { habits: ['read'], order: ['habit:read'] } });
   assert.ok(chosen.numbers.some((h) => h.id === 'read'));
 });
 
 test('the weekly sentence: no colon, a limit in words, nothing when there are none', () => {
-  assert.equal(weeklySentence([{ name: 'Coffees', measure: 'count_limit', weekLine: '3 this week, no more than 5' }]), 'So far this week you have coffees at 3 with a limit of 5.');
-  assert.equal(weeklySentence([{ name: 'Strategic block', measure: 'yes_no_weekly', weekLine: 'Done this week' }]), 'So far this week you have strategic block done.');
-  assert.equal(weeklySentence([{ name: 'PR reviews', measure: 'count', weekLine: '1 of 2 this week' }]), 'So far this week you have PR reviews at 1 of 2.');
+  assert.equal(weeklySentence([{ name: 'Coffees', measure: 'count_limit', weekLine: '3 this week, no more than 5', weekFigures: { got: 3, limit: 5 } }]), 'So far this week you’ve had 3 coffees, with a limit of 5.');
+  assert.equal(weeklySentence([{ name: 'Strategic block', measure: 'yes_no_weekly', weekLine: 'Done this week' }]), 'So far this week you’ve done your strategic block.');
+  assert.equal(weeklySentence([{ name: 'PR reviews', measure: 'count', weekLine: '1 of 2 this week', weekFigures: { got: 1, of: 2 } }]), 'So far this week you’ve done 1 out of 2 PR reviews.');
   assert.equal(weeklySentence([]), '');
   assert.ok(!/:/.test(weeklySentence([{ name: 'A', measure: 'count', weekLine: '1 of 2 this week' }])));
 });

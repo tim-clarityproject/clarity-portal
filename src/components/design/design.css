@@ -8828,3 +8828,64 @@
   justify-content: flex-start;
   margin-top: var(--space-3);
 }
+
+/* Numbered priorities (PriorityRows; Tim, 5 Nov): three rows, 1 to 3, the
+   numbers in the display font; drag a number, or use the arrow keys. */
+.ui-root .ds-prio-rows {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .ds-prio-row {
+  display: grid;
+  grid-template-columns: var(--tap-min) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-card);
+  transition: background-color var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-prio-row--over {
+  background: var(--raised);
+}
+
+.ui-root .ds-prio-row--moving {
+  opacity: 0.6;
+}
+
+.ui-root .ds-prio-n {
+  all: unset;
+  box-sizing: border-box;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-question) !important;
+  line-height: 1;
+  color: var(--text);
+  border-radius: var(--radius-pill);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-prio-n:hover {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-prio-n:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .ds-prio-row {
+    transition: none;
+  }
+}

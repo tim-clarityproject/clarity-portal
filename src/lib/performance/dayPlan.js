@@ -210,7 +210,9 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
   const used = new Set();
   const options = [];
   carried.forEach((c, i) => {
-    const source = carriedSource(c, review?.local_date, date);
+    // Review my day's priorities keep their order as priority 1, 2 and 3 (Tim, 5 Nov, 10:38).
+    const where = carriedSource(c, review?.local_date, date);
+    const tags = c.review && c.reviewIndex != null ? [`Priority ${c.reviewIndex + 1}`, where] : [where];
     const made = madeFrom.find((t) => !used.has(t.id) && thingKey(t.text) === thingKey(c.text) && ((c.review && fromReview(t)) || (c.windDown && fromWindDown(t))));
     if (made) {
       used.add(made.id);
@@ -218,10 +220,10 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
       const t = open.find((o) => o.id === made.id);
       // M19: a carried-over row shows only where it came from; the
       // Strategy stays on the option for Review my day.
-      options.push({ value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags: [source], kind: 'todo', id: t.id, group: 'carried', onlyTags: true });
+      options.push({ value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags, kind: 'todo', id: t.id, group: 'carried', onlyTags: true });
       return;
     }
-    options.push({ value: `night:${i}`, label: c.text, tags: [source], kind: 'night', text: c.text, review: c.review, windDown: c.windDown, group: 'carried' });
+    options.push({ value: `night:${i}`, label: c.text, tags, kind: 'night', text: c.text, review: c.review, windDown: c.windDown, group: 'carried' });
   });
 
   const tagFor = (t) => {

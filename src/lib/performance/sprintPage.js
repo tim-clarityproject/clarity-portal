@@ -90,6 +90,8 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
   const scoreBar = score == null ? 0 : score / 100;
   let line;
   let weekLine;
+  // The week's own figures, in the units shown, for sentences built from them (weeklySentence).
+  let weekFigures = null;
   let lineBar = scoreBar;
   let weekBar = scoreBar;
   switch (m.measure) {
@@ -98,12 +100,14 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
       const weekTarget = m.target * (daily ? workingDays.length : 1);
       const sh = m.measure === 'amount' ? show : (v) => v;
       weekLine = `${n(sh(total))} of ${n(sh(weekTarget))}${m.measure === 'amount' ? u : ''} this week`;
+      weekFigures = { got: sh(total), of: sh(weekTarget) };
       weekBar = fill(total, weekTarget);
       line = daily ? `${n(sh(todayValue || 0))} of ${n(sh(m.target))}${m.measure === 'amount' ? u : ''} today` : weekLine;
       lineBar = daily ? fill(todayValue || 0, m.target) : weekBar;
       break;
     }
     case 'count_limit':
+      weekFigures = { got: total, limit: m.limit };
       weekLine = daily ? `${n(total)} this week, no more than ${n(m.limit)} a day` : `${n(total)} this week, no more than ${n(m.limit)}`;
       line = daily ? `${n(todayValue || 0)} today, no more than ${n(m.limit)}` : weekLine;
       break;
@@ -163,6 +167,8 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
     todayShown: show(todayValue),
     line,
     weekLine,
+    weekFigures,
+    weekDone: m.measure === 'yes_no_weekly' ? yesDays > 0 : null,
     measureLine: habitMeasureLine({ ...m, unit, target: m.measure === 'amount' ? show(m.target) : m.target }),
     // The habit's score so far (Home's "met" counts), and the bars that
     // sit under `line` (Log today) and `weekLine` (Log this week).
@@ -195,7 +201,8 @@ export function sprintTodos(d, calendar, number, today) {
     const t = toTodo(row, d.todoMoves || [], d.sprint.id);
     const base = { id: t.id, text: t.text, strategyName: strategyName.get(t.strategyId) || '', kind: 'todo', plannedWeek: t.currentWeek, impact: t.impact };
     if (t.doneOn) {
-      if (m0WeekOfDay(calendar.weeks, t.doneOn) === number) thisWeek.push({ ...base, done: true });
+      // A rolled-over to-do keeps where it came from once ticked (Tim, 5 Nov).
+      if (m0WeekOfDay(calendar.weeks, t.doneOn) === number) thisWeek.push({ ...base, done: true, rolledFrom: t.currentWeek != null && t.currentWeek < number ? t.currentWeek : null });
       continue;
     }
     const planned = t.currentWeek;
