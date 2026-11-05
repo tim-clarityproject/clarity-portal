@@ -7,6 +7,7 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, Button, ChartTips, tipProps } from '../components/design';
+import SavedItemActions from '../components/SavedItemActions';
 
 // Types with their own dedicated, design-system summary page now - an
 // old bookmark/link that still points here gets sent on rather than
@@ -179,6 +180,7 @@ export default function DecisionSummary() {
             Edit
           </Button>
         </div>
+        <SavedItemActions />
       </div>
     </div>
   );

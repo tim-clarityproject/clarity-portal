@@ -8,6 +8,7 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, Button, useToast } from '../components/design';
+import SavedItemActions from '../components/SavedItemActions';
 
 export default function ToughConversationSummary() {
   const navigate = useNavigate();
@@ -135,6 +136,7 @@ export default function ToughConversationSummary() {
             Edit
           </Button>
         </div>
+        <SavedItemActions />
       </div>
     </div>
   );

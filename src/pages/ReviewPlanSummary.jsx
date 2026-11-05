@@ -6,6 +6,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, Button, useToast } from '../components/design';
+import SavedItemActions from '../components/SavedItemActions';
 
 const RQ = [
   { key: 'a', label: 'What went well?' },
@@ -159,6 +160,7 @@ export default function ReviewPlanSummary() {
             Edit
           </Button>
         </div>
+        <SavedItemActions />
       </div>
     </div>
   );

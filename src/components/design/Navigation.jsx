@@ -122,7 +122,7 @@ export function MenuPins({ pins = [], onGo, tabIndex }) {
   );
 }
 
-/** Log today (the one coral button) and Breathe, at the foot of either menu. */
+/** Log today (the one coral button) and Breathe, at the foot of either menu; Sign out (`signOut`, a node or a function of the tab index) below them. */
 export function MenuActions({ onLogToday, onBreathe, tabIndex }) {
   return (
     <div className="ds-menu-actions">
@@ -137,7 +137,7 @@ export function MenuActions({ onLogToday, onBreathe, tabIndex }) {
  * scrim start there). `buttonRef` is the header's menu button. `inline`
  * draws it in place, for the gallery.
  */
-export function DesktopMenu({ open, onClose, top = 0, areas = [], pins = [], onGo, onLogToday, onBreathe, buttonRef, id = 'site-menu', inline = false }) {
+export function DesktopMenu({ open, onClose, top = 0, areas = [], pins = [], onGo, onLogToday, onBreathe, signOut, buttonRef, id = 'site-menu', inline = false }) {
   const panelRef = useRef(null);
   const [mounted, shown] = useShown(open);
   useMenuFocus({ open: open && !inline, onClose, panelRef, buttonRef });
@@ -160,6 +160,8 @@ export function DesktopMenu({ open, onClose, top = 0, areas = [], pins = [], onG
           ))}
         </ul>
         <MenuActions onLogToday={onLogToday} onBreathe={onBreathe} tabIndex={tab} />
+        {/* Sign out, at the very bottom below a thin line (Tim, 5 Nov). */}
+        {signOut && <div className="ds-menu-signout">{typeof signOut === 'function' ? signOut(tab) : signOut}</div>}
       </nav>
     </div>
   );
@@ -220,7 +222,7 @@ export const PhoneBar = forwardRef(function PhoneBar(
  * The phone menu, above the bar. `buttonRef` is the bar's centre button.
  * `inline` draws it in place, for the gallery.
  */
-export function TileMenu({ open, onClose, areas = [], pins = [], onGo, onLogToday, onBreathe, buttonRef, id = 'site-tile-menu', inline = false }) {
+export function TileMenu({ open, onClose, areas = [], pins = [], onGo, onLogToday, onBreathe, signOut, buttonRef, id = 'site-tile-menu', inline = false }) {
   const panelRef = useRef(null);
   const [mounted, shown] = useShown(open);
   useMenuFocus({ open: open && !inline, onClose, panelRef, buttonRef });
@@ -242,6 +244,8 @@ export function TileMenu({ open, onClose, areas = [], pins = [], onGo, onLogToda
           ))}
         </ul>
         <MenuActions onLogToday={onLogToday} onBreathe={onBreathe} tabIndex={tab} />
+        {/* Sign out, at the very bottom below a thin line (Tim, 5 Nov). */}
+        {signOut && <div className="ds-menu-signout">{typeof signOut === 'function' ? signOut(tab) : signOut}</div>}
       </nav>
     </div>
   );

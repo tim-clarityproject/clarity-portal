@@ -2237,8 +2237,13 @@
 }
 
 /* Never on phone (Tim, 21 Oct): it only exists where there is a mouse,
-   and never at phone width, where the tab bar sits at the bottom. */
-@media not ((hover: hover) and (pointer: fine)), (max-width: 768px) {
+   and never at phone width, where the tab bar sits at the bottom. It
+   never sits over content either (Tim, 5 Nov: it covered "Show as a
+   table" and the check-in's figures): it shows only where the margin
+   beside the page's column (--content-max, 760px) is wider than the
+   pill and its gap (196px each side), and narrower than that Breathe is in the
+   menu, as on a phone. */
+@media not ((hover: hover) and (pointer: fine)), (max-width: 1151px) {
   .ui-root .ds-orb {
     display: none;
   }
@@ -6999,6 +7004,23 @@
   padding-top: var(--space-4);
 }
 
+/* Sign out (Tim, 5 Nov): the very bottom of either menu, below a thin
+   line, a quiet text link in the secondary grey (IconText), coral only on
+   hover or focus. */
+.ui-root .ds-menu-signout {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .ds-signout-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
 /* The phone bar: Home, the bold crosshair, This week. Phone only. */
 .ui-root .ds-phone-bar {
   display: none;
@@ -8757,4 +8779,12 @@
   .ui-root .ds-pattern-how {
     animation: none;
   }
+}
+
+/* Delete inside an opened saved item (SavedItemActions; Tim, 5 Nov: no
+   icons in list rows). A quiet text link under the item's own actions. */
+.ui-root .saved-item-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: var(--space-3);
 }

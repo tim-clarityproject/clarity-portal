@@ -53,22 +53,7 @@ import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, Search
 // `initialSearch` opens it already searched (?q=).
 const DEFAULT_VISIBLE = 50;
 
-function PencilIcon() {
-  return (
-    <svg className="hlist-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4.5 19.5l1-4L16.8 4.2a1.8 1.8 0 0 1 2.5 0l.5.5a1.8 1.8 0 0 1 0 2.5L8.5 18.5z" />
-      <path d="M14.5 6.5l3 3" />
-    </svg>
-  );
-}
 
-function BinIcon() {
-  return (
-    <svg className="hlist-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 7h14M10 7V4.5h4V7M7 7l.8 12.5h8.4L17 7M10.5 11v5M13.5 11v5" />
-    </svg>
-  );
-}
 
 function rowTime(row) {
   if (typeof row.sortAt === 'number') return row.sortAt;
@@ -114,7 +99,6 @@ export default function HistoryList({
   error,
   onOpen,
   onEdit,
-  onDelete,
   onReview,
 }) {
   const allFilters = filters.length ? [{ id: 'all', label: 'All' }, ...filters] : [];
@@ -241,8 +225,8 @@ export default function HistoryList({
             lastMonth = mm;
             const canReview = Boolean(onReview && row.canReview);
             const canContinue = Boolean(onEdit && row.isDraft && row.canEdit !== false);
-            const canPencil = Boolean(onEdit && !row.isDraft && row.canEdit !== false);
-            const canBin = Boolean(onDelete && row.canDelete !== false);
+            // No icons in rows (Tim, 5 Nov): every row is the same height;
+            // editing and deleting sit inside the item once opened.
             return (
               <Fragment key={row.id}>
                 {showMonth && <div className="hlist-month">{mm}</div>}
@@ -262,7 +246,7 @@ export default function HistoryList({
                   </button>
                   {/* Always there on a laptop, empty or not, so every row's
                       date lines up; a phone shows no empty action row. */}
-                  <div className={`hlist-row-controls${canReview || canContinue || canPencil || canBin ? '' : ' hlist-row-controls--empty'}`}>
+                  <div className={`hlist-row-controls${canReview || canContinue ? '' : ' hlist-row-controls--empty'}`}>
                     {canReview && (
                       <button
                         type="button"
@@ -279,26 +263,6 @@ export default function HistoryList({
                         onClick={(e) => { e.stopPropagation(); onEdit(row); }}
                       >
                         Continue
-                      </button>
-                    )}
-                    {canPencil && (
-                      <button
-                        type="button"
-                        className="hlist-icon-btn"
-                        aria-label={`Edit ${row.title}`}
-                        onClick={(e) => { e.stopPropagation(); onEdit(row); }}
-                      >
-                        <PencilIcon />
-                      </button>
-                    )}
-                    {canBin && (
-                      <button
-                        type="button"
-                        className="hlist-icon-btn hlist-icon-btn--del"
-                        aria-label={`Delete ${row.title}`}
-                        onClick={(e) => { e.stopPropagation(); onDelete(row); }}
-                      >
-                        <BinIcon />
                       </button>
                     )}
                   </div>

@@ -7,7 +7,8 @@ import { clearAppStorage } from '../lib/clearAppStorage';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
-import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
+import PersonalGoalModal from '../components/PersonalGoalModal';
+import { SignOutLink, useSignOut } from '../components/SignOut';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import { useCoachName, Crosshair, PageHeader, Button, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget } from '../components/design';
 import { DashboardCustomise } from './performance/DashboardCustomise';
@@ -20,7 +21,7 @@ export default function MyAccount() {
   const { user, logout, isLoading } = useContext(AuthContext);
   // The mission shown here is the same one the header pill shows (the
   // missions table, through MissionContext), never a separate copy.
-  const { mission: personalGoal, showInHeader, updateShowInHeader } = useContext(MissionContext);
+  const { mission: personalGoal, hasPlan, showInHeader, updateShowInHeader } = useContext(MissionContext);
   const coachName = useCoachName();
   const startChat = useStartChat();
   const [firstName, setFirstName] = useState('');
@@ -61,14 +62,7 @@ export default function MyAccount() {
     }
   }, [location.state?.openEditMission]);
 
-  const handleLogout = async () => {
-    const result = await logout();
-    if (result?.pending) {
-      toast.error(`${result.pending === 1 ? 'One change hasn’t' : `${result.pending} changes haven’t`} been sent yet, so you’re still signed in. Connect to the internet, wait for Saved, then sign out.`);
-      return;
-    }
-    navigate('/');
-  };
+  const signOutFlow = useSignOut();
 
   // Two stages in one shared DeleteDialog (the same two confirmations the
   // old window.confirm chain asked): "Are you sure?" then "This cannot be
@@ -422,9 +416,15 @@ export default function MyAccount() {
             <div className="account-row-text">
               <div className="account-row-title">Statement</div>
               <div className="account-row-desc">{personalGoal || 'No mission set yet'}</div>
-              <div className="account-row-count">{personalGoal.length}/{MAX_GOAL_LENGTH} characters</div>
             </div>
-            <Button variant="outline" onClick={() => setShowGoalModal(true)}>
+            {/* One Mission (Tim, 5 Nov): with a plan, it is changed only on
+                the plan, in Edit my mission, so it reads the same everywhere. */}
+            <Button
+              variant="outline"
+              onClick={() => (hasPlan
+                ? navigate('/performance-plan', { state: { openPart: 'mission' } })
+                : setShowGoalModal(true))}
+            >
               Edit
             </Button>
           </div>
@@ -520,15 +520,12 @@ export default function MyAccount() {
               </Button>
             </div>
           )}
+          {/* Sign out, as in the menu (Tim, 5 Nov): the same quiet link,
+              sending anything waiting first. */}
           <div className="account-row">
-            <div className="account-row-text">
-              <div className="account-row-title">Log out</div>
-              <div className="account-row-desc">Sign out of this device</div>
-            </div>
-            <Button variant="outline" onClick={handleLogout}>
-              Log out
-            </Button>
+            <SignOutLink onSignOut={signOutFlow.start} busy={signOutFlow.busy} />
           </div>
+          {signOutFlow.choice}
 
           {/* Danger zone */}
           <div className="account-danger-zone">

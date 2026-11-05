@@ -9,6 +9,7 @@ import { BackLink } from '../components/ui/DiscardLink';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, Button, PdfDownload, useToast } from '../components/design';
 import { meetingPlanPdf, meetingEndTime } from '../lib/pdf/docs/meetingPlan';
+import SavedItemActions from '../components/SavedItemActions';
 
 // "Fri, 2 Oct" - UK order, device local time. Plain input[type=date]
 // string ("YYYY-MM-DD"), so noon is used to dodge UTC/local day-shift.
@@ -232,6 +233,7 @@ export default function MeetingSummary() {
           </Button>
           <PdfDownload getDocument={getMeetingPdf} />
         </div>
+        <SavedItemActions />
       </div>
     </div>
   );

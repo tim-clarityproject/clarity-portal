@@ -25,13 +25,17 @@ function stepOf(key) {
 /**
  * The rows, newest first: [{ key, title, to, at }].
  * @param {string} userId
- * @param {{ today: string, yesterday: string, exclude?: string[] }} opts
+ * @param {{ today: string, yesterday: string, exclude?: string[], finished?: string[] }} opts
  *   exclude: the routes the suggestion card already offers
+ *   finished: the keys of tools already finished ('plan-my-day',
+ *   'review-my-day:<day>'): never listed, whatever the device remembers
+ *   of them (Tim, 5 Nov: reopening a finished review made it part-way)
  */
-export function carryOnItems(userId, { today, yesterday, exclude = [] }) {
+export function carryOnItems(userId, { today, yesterday, exclude = [], finished = [] }) {
   if (!userId) return [];
   const found = [];
   const add = (key, title, to, { step, draft } = {}) => {
+    if (finished.includes(key)) return;
     const d = draft ? readDraft(userId, draft) : null;
     const s = step ? stepOf(step) : null;
     if (!s && !d) return;

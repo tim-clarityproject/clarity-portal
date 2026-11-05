@@ -865,6 +865,12 @@ function DebriefFlow({ userId, today, loaded, view }) {
   const close = () => {
     if (waiting.current) sendAnswers();
     if (!view.finished) toast.show(`Saved as a draft, so you can finish it by ${view.window.closesOnText}.`);
+    else {
+      // A finished debrief looked at again never becomes part-way (Tim, 5 Nov).
+      clearAnswersDraft();
+      clearDraft(userId, `debrief:${key}`);
+      clearGuideDraft(draftKey);
+    }
     navigate(backTo, { replace: true });
   };
 

@@ -1,15 +1,14 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { getLocalDateKey, formatSavedDate } from '../lib/dateFormatter';
 import { sortTime } from '../lib/savedItems';
-import { loadAllJournals, deleteJournal, wordCount } from '../lib/dailyJournal';
+import { loadAllJournals, wordCount } from '../lib/dailyJournal';
 import { useCachedLoad } from '../lib/pageCache';
 import { useOnline } from '../lib/connection';
 import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
 import DesignHeader from '../components/DesignHeader';
 import HistoryList from '../components/ui/HistoryList';
-import DeleteDialog from '../components/ui/DeleteDialog';
 import { Loading, useToast } from '../components/design';
 
 const FILTERS = [
@@ -21,7 +20,6 @@ export default function DailyJournals() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
   // Instant page (Tim, 26 Oct): the journals shown last time appear at
@@ -29,7 +27,6 @@ export default function DailyJournals() {
   const loaded = useCachedLoad({ userId: user?.id, name: 'daily-journals', load: () => loadAllJournals(user.id) });
   const online = useOnline();
   const journals = loaded.data || [];
-  const setJournals = loaded.setData;
   const isLoading = loaded.loading;
   const error = loaded.error
     ? { message: online ? 'Your journals didn’t load. Check your connection and try again.' : FIRST_OPEN_OFFLINE, onRetry: loaded.reload }
@@ -70,19 +67,6 @@ export default function DailyJournals() {
 
   const editRow = (row) => navigate('/daily-journal', { state: { date: row.journalDate } });
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    const { id } = deleteTarget;
-    setDeleteTarget(null);
-    try {
-      await deleteJournal(user.id, id);
-      setJournals((prev) => prev.filter((j) => j.id !== id));
-      toast.show('Deleted');
-    } catch (err) {
-      console.error('[DailyJournals] delete failed:', err);
-      toast.error('That didn’t delete. Check your connection and try again.');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -108,17 +92,9 @@ export default function DailyJournals() {
           error={error}
           onOpen={openRow}
           onEdit={editRow}
-          onDelete={(row) => setDeleteTarget(row)}
         />
       </div>
 
-      <DeleteDialog
-        open={Boolean(deleteTarget)}
-        title="Delete this journal?"
-        body="It will be deleted for good and removed from My Reviews. This cannot be undone."
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
     </div>
   );
 }

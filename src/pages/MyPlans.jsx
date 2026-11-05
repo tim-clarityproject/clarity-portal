@@ -1,10 +1,9 @@
-import { useState, useContext, useEffect, useMemo } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { clearProgress } from '../lib/saveProgress';
 import { getLocalDateKey } from '../lib/dateFormatter';
 import { useCachedLoad } from '../lib/pageCache';
+import { savedItemRef } from '../lib/savedItemDelete';
 import { useOnline } from '../lib/connection';
 import { FIRST_OPEN_OFFLINE } from '../lib/friendlyError';
 import { listFilters, planRows } from '../lib/savedItems';
@@ -12,7 +11,6 @@ import { loadSavedPlans, SAVED_PLANS_CACHE } from '../lib/savedItemsApi';
 import DesignHeader from '../components/DesignHeader';
 import pageText from '../content/pageText';
 import HistoryList from '../components/ui/HistoryList';
-import DeleteDialog from '../components/ui/DeleteDialog';
 import { Loading, PageHeader, useToast } from '../components/design';
 
 // My Plans (Phase 4 step 4; decisions part 1 "My Plans and My Reviews"):
@@ -30,7 +28,6 @@ export default function MyPlans() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
   // Instant page (Tim, 26 Oct): the plans shown last time appear at once
@@ -57,6 +54,11 @@ export default function MyPlans() {
   }, []);
 
   const go = (to) => to && navigate(to.path, to.state ? { state: to.state } : undefined);
+  // Opening a row takes the row along, so the opened item can delete
+  // itself (SavedItemActions) and come back here.
+  const open = (row) => row.to && navigate(row.to.path, {
+    state: { ...(row.to.state || {}), savedItem: { ...savedItemRef(row), from: `${location.pathname}${location.search}` } },
+  });
 
   const reviewRow = (row) => {
     if (row.reviewed) {
@@ -66,21 +68,6 @@ export default function MyPlans() {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    const { dbId } = deleteTarget;
-    setDeleteTarget(null);
-    try {
-      const { error: deleteError } = await supabase.from('decisions').delete().eq('id', dbId);
-      if (deleteError) throw deleteError;
-      loaded.setData((prev) => ({ ...prev, decisions: (prev?.decisions || []).filter((d) => d.id !== dbId) }));
-      clearProgress();
-      toast.show('Deleted');
-    } catch (err) {
-      console.error('[MyPlans] delete failed:', err);
-      toast.error('That didn’t delete. Check your connection and try again.');
-    }
-  };
 
   return (
     <div className="ui-root">
@@ -108,21 +95,13 @@ export default function MyPlans() {
             newButton={{ label: 'New plan', onClick: () => navigate('/personal/plan') }}
             emptyText="No plans yet."
             error={error}
-            onOpen={(row) => go(row.to)}
+            onOpen={open}
             onEdit={(row) => go(row.edit || row.to)}
             onReview={reviewRow}
-            onDelete={(row) => setDeleteTarget(row)}
           />
         )}
       </div>
 
-      <DeleteDialog
-        open={Boolean(deleteTarget)}
-        title="Delete this plan?"
-        body={deleteTarget ? `"${deleteTarget.title}" will be removed for good. This cannot be undone.` : ''}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
     </div>
   );
 }

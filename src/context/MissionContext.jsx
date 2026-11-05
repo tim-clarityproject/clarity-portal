@@ -2,6 +2,8 @@ import React, { createContext, useState, useEffect, useContext, useRef, useCallb
 import { AuthContext } from './AuthContext';
 import { supabase } from '../lib/supabase';
 import { MISSION_CHANGED } from '../lib/missionEvents';
+import { onPlanChanged } from '../lib/performance/planChanged';
+import { readCache } from '../lib/pageCache';
 
 export const MissionContext = createContext();
 
@@ -19,6 +21,12 @@ export function MissionProvider({ children }) {
   const userId = user?.id || null;
   const [mission, setMission] = useState('');
   const [showInHeader, setShowInHeader] = useState(true);
+  // One Mission (Tim, 5 Nov): with an Individual Performance Plan, its
+  // Mission is the only one, read here and changed only on the plan (Edit
+  // my mission), so the header, My Account and every other page show the
+  // same words. The old missions table is read only for someone with no
+  // plan yet; its older missions stay readable in the history.
+  const [planId, setPlanId] = useState(null);
   // Only the newest read may change what shows, so a slow older read can
   // never overwrite a newer one or a change just made.
   const readSeq = useRef(0);
@@ -35,7 +43,16 @@ export function MissionProvider({ children }) {
     if (!forUser) {
       setMission('');
       setShowInHeader(true);
+      setPlanId(null);
       return;
+    }
+
+    // The device's copy of the plan first (the header pill's own copy), so
+    // an older mission never shows while the read is out, or offline.
+    const head = readCache(forUser, 'performance-plan-head')?.v;
+    if (head?.id) {
+      setPlanId(head.id);
+      setMission(head.mission || '');
     }
 
     try {
@@ -45,7 +62,13 @@ export function MissionProvider({ children }) {
       if (seq !== readSeq.current) return;
       if (session?.user?.id !== forUser) throw new Error('Session not ready');
 
-      const [missionResult, profileResult] = await Promise.all([
+      const [planResult, missionResult, profileResult] = await Promise.all([
+        supabase
+          .from('performance_plans')
+          .select('id, mission')
+          .eq('user_id', forUser)
+          .eq('status', 'active')
+          .limit(1),
         supabase
           .from('missions')
           .select('title')
@@ -62,7 +85,9 @@ export function MissionProvider({ children }) {
       if (seq !== readSeq.current || userIdRef.current !== forUser) return;
       if (missionResult.error) throw missionResult.error;
 
-      setMission(missionResult.data?.[0]?.title || '');
+      const plan = planResult.error ? null : planResult.data?.[0] || null;
+      setPlanId(plan?.id || null);
+      setMission(plan ? plan.mission || '' : missionResult.data?.[0]?.title || '');
       const visible = profileResult.data?.[0]?.show_mission_in_header;
       if (visible !== null && visible !== undefined) setShowInHeader(visible);
     } catch (error) {
@@ -93,10 +118,12 @@ export function MissionProvider({ children }) {
       if (document.visibilityState === 'visible') fetchMission();
     };
     const onChanged = () => fetchMission();
+    const offPlan = onPlanChanged(onChanged);
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener(MISSION_CHANGED, onChanged);
     return () => {
       subscription?.unsubscribe();
+      offPlan();
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener(MISSION_CHANGED, onChanged);
     };
@@ -172,7 +199,7 @@ export function MissionProvider({ children }) {
   };
 
   return (
-    <MissionContext.Provider value={{ mission, showInHeader, setShowInHeader, updateMission, updateShowInHeader, refetchMission: fetchMission }}>
+    <MissionContext.Provider value={{ mission, hasPlan: Boolean(planId), showInHeader, setShowInHeader, updateMission, updateShowInHeader, refetchMission: fetchMission }}>
       {children}
     </MissionContext.Provider>
   );

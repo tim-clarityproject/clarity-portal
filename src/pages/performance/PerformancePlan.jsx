@@ -113,6 +113,15 @@ export default function PerformancePlan() {
       toast.error(friendlyError(e, 'Your plan didn’t open. Check your connection and try again.'));
     }
   };
+  // My Account's Mission "Edit" opens the plan's own Edit my mission (one
+  // Mission, Tim, 5 Nov).
+  const askedPart = location.state?.openPart;
+  useEffect(() => {
+    if (askedPart !== 'mission' || !view) return;
+    navigate(location.pathname, { replace: true, state: {} });
+    openPart({ kind: 'mission', id: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askedPart, Boolean(view)]);
   const partDone = (v, how, position) => {
     setPart(null);
     if (how !== 'unchanged' && position) setCarry(position);

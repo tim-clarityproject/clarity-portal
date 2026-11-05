@@ -235,10 +235,19 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
 
   // Carry on: half-finished tools on this device, except the one suggested now.
   const carry = useMemo(
-    () => carryOnItems(userId, { today, yesterday: addDayKey(today, -1), exclude: card?.action?.to ? [card.action.to] : [] }),
+    () => carryOnItems(userId, {
+      today,
+      yesterday: addDayKey(today, -1),
+      exclude: card?.action?.to ? [card.action.to] : [],
+      finished: [
+        dayPlanned ? 'plan-my-day' : null,
+        reviewed ? `review-my-day:${today}` : null,
+        day.yesterday?.reviewed ? `review-my-day:${addDayKey(today, -1)}` : null,
+      ].filter(Boolean),
+    }),
     // Read again when the moment changes or Home is opened again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [userId, today, card?.key, location.key],
+    [userId, today, card?.key, location.key, dayPlanned, reviewed, day.yesterday?.reviewed],
   );
 
   // Add a to-do: the sprint page's own panel and save (one way to save), with its draft.

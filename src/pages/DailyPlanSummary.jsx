@@ -8,6 +8,7 @@ import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
 import pageText from '../content/pageText';
 import { Loading, PageHeader, Button, useToast } from '../components/design';
+import SavedItemActions from '../components/SavedItemActions';
 
 // Headings repeat the four questions word for word - see
 // PlanMyDayStep1.jsx's QUESTIONS. Two of these were previously shortened
@@ -175,6 +176,7 @@ export default function DailyPlanSummary() {
             Edit
           </Button>
         </div>
+        <SavedItemActions />
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { DesktopMenu, PhoneBar, TileMenu, useCoachName } from './design';
 import { isNavPhone } from './design/pageLock';
 import { areaOf, menuAreas, TOOLS } from '../lib/navigation';
 import { usePins } from '../lib/menuPins';
+import { SignOutLink, useSignOut } from './SignOut';
 
 // The portal's menus, wired to the app (mock-up M3; Phase 4 step 1): the
 // areas with the one someone is in marked, their pinned tools, and Log
@@ -32,6 +33,7 @@ function useSiteMenu(onClosed) {
   const area = areaOf(location.pathname);
   const areas = useMemo(() => menuAreas(coachName).map((a) => ({ ...a, current: a.key === area })), [coachName, area]);
   const pins = useMemo(() => pinKeys.map((k) => ({ key: k, ...TOOLS[k] })), [pinKeys]);
+  const signOutFlow = useSignOut({ before: onClosed });
   const go = useCallback((to, state) => {
     onClosed();
     navigate(to, { replace: alreadyOn(to), ...(state ? { state } : {}) });
@@ -43,6 +45,8 @@ function useSiteMenu(onClosed) {
     onGo: (item) => go(item.to, item.state),
     onLogToday: () => go(LOG_TODAY),
     onBreathe: () => go('/breathe'),
+    signOut: (tabIndex) => <SignOutLink onSignOut={signOutFlow.start} busy={signOutFlow.busy} tabIndex={tabIndex} />,
+    signOutChoice: signOutFlow.choice,
   };
 }
 
@@ -59,7 +63,13 @@ export function SiteDesktopMenu({ open, onClose, top, buttonRef }) {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [open, onClose]);
-  return <DesktopMenu open={open} onClose={onClose} top={top} buttonRef={buttonRef} {...menu} />;
+  const { signOutChoice, ...parts } = menu;
+  return (
+    <>
+      <DesktopMenu open={open} onClose={onClose} top={top} buttonRef={buttonRef} {...parts} />
+      {signOutChoice}
+    </>
+  );
 }
 
 /**
@@ -136,7 +146,8 @@ export function SitePhoneNav() {
         onGo={onGo}
         current={current}
       />
-      <TileMenu open={open} onClose={close} buttonRef={buttonRef} {...menu} areas={menu.areas.filter((a) => !a.desktopOnly)} />
+      <TileMenu open={open} onClose={close} buttonRef={buttonRef} {...menu} signOutChoice={undefined} areas={menu.areas.filter((a) => !a.desktopOnly)} />
+      {menu.signOutChoice}
     </div>
   );
 }

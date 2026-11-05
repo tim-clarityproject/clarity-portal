@@ -769,6 +769,14 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
   const close = () => {
     if (waiting.current) sendAnswers();
     if (!view.finished) toast.show('Saved as a draft, so you can continue from Home for 24 hours.');
+    else {
+      // Looking at a finished one never makes it part-way again (Tim, 5
+      // Nov): any change is already sent, so the device forgets the step
+      // and the typing, and Home's Carry on never lists it.
+      clearAnswersDraft();
+      clearDraft(userId, draftName(date));
+      clearGuideDraft(stepKey(userId, date));
+    }
     navigate(backTo, { replace: true });
   };
 
