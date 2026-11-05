@@ -98,3 +98,4 @@ export { default as PatternCard } from './PatternCard';
 export { default as ChartTable } from './ChartTable';
 export { SleepTargetLink, SleepTargetEditor } from './SleepTarget';
 export { default as useSleepTarget } from './useSleepTarget';
+export { default as ButtonNote } from './ButtonNote';

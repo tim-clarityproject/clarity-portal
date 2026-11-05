@@ -35,7 +35,7 @@ import {
   BrandMark,
   CalendarPopover,
   ChatButton,
-  AddButton, Button,
+  AddButton, Button, ButtonNote, keepWords,
   Chevron,
   CoachSees,
   Dial,
@@ -91,6 +91,7 @@ import {
   useAutosave,
   WillSyncIndicator,
 } from '../../components/design';
+import { ONE_TAP_MS } from '../../components/design/GuidedTool';
 import { GallerySection, New } from './galleryKit';
 import { contrast, startingValue, usePretendServer, ViewContext, useGalleryView } from './galleryUtils';
 import SprintTool from './SprintTool';
@@ -118,7 +119,7 @@ const TOC = [
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c8', 'Dial and charts'], ['c9', 'Lists'], ['c10', 'Logging rows'],
   ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
-  ['c45', 'Scales and levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'],
+  ['c45', 'Scales and levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'], ['c50', 'Rules of 5 Nov'],
   ['c32', 'Outcome Objectives'], ['c33', 'Alignment check'], ['c34', 'Strategy tiles'], ['c35', 'My Mission panel'],
   ['c54', 'Home'], ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
@@ -1277,6 +1278,49 @@ function ModeDemo() {
   return <ColourModeChoice />;
 }
 
+// The rules of 5 Nov (START-HERE 5e: 21, 29o, 29q, 29t, 29v, 29x, 29y, 29z, 29aa), each with an example.
+function RulesOfFiveNovDemo() {
+  const [answer, setAnswer] = useState(null);
+  const [moved, setMoved] = useState(false);
+  const choose = (v) => {
+    setAnswer(v);
+    setMoved(false);
+    window.setTimeout(() => setMoved(true), ONE_TAP_MS);
+  };
+  return (
+    <div className="dr-pane dr-rules5">
+      <p className="dr-small">One tap moves on (rule 21): chosen at once, the next screen after {ONE_TAP_MS}ms</p>
+      <Choice
+        ariaLabel="How did today go?"
+        options={[{ value: 'well', label: 'It went well' }, { value: 'mixed', label: 'It was mixed' }, { value: 'hard', label: 'It was hard going' }]}
+        value={answer}
+        onChange={choose}
+        form="rows"
+      />
+      <p className="dr-small" aria-live="polite">{moved ? 'Moved on to the next screen.' : '\u00a0'}</p>
+
+      <p className="dr-small">Back at the top (rules 29o and 29t): the chevron on the content edge, 14px before the tool’s name</p>
+      <div className="ds-guide-bar dr-rules5-bar">
+        <button type="button" className="ds-guide-back" aria-label="Back"><Chevron direction="left" size="sm" /></button>
+        <b className="ds-guide-name">Review my day</b>
+        <IconButton label="Close" />
+      </div>
+
+      <p className="dr-small">A note under a button (rule 29v): centred, 10px below, grey, no full stop</p>
+      <ButtonNote note="~3 minutes"><Button variant="primary">Start my check-in</Button></ButtonNote>
+
+      <p className="dr-small">Times with the squiggle (rule 29q)</p>
+      <p>~1 minute, ~5 minutes, never “about a minute”</p>
+
+      <p className="dr-small">Hyphens that never break (rule 29x)</p>
+      <p>{keepWords('Built for high-performers who want high-performance habits.')}</p>
+
+      <p className="dr-small">Answers in the person’s own voice (rule 29aa)</p>
+      <p>Good: “The team isn’t pulling in the same direction”. Bad: “Too many priorities and not enough progress”.</p>
+    </div>
+  );
+}
+
 function Gallery() {
   const [view, setView] = useGalleryView();
   return (
@@ -1656,6 +1700,20 @@ function Gallery() {
             <p><New /><b>The celebration glow</b> (M1 debrief): a thin mint edge that fades in once and stays, at or above the standard only; with reduced motion it is simply there.</p>
             <p>Mint means good, never coral (Tim, 26 Oct).</p>
             <p><New /><b>Add a to-do from Plan my day</b>: the usual panel without “Which week?”, saying it goes into today and this week’s sprint.</p>
+          </>
+        )} />
+
+        <GallerySection id="c50" title="Rules of 5 Nov" demo={RulesOfFiveNovDemo} rules={(
+          <>
+            <p><b>One-answer questions move straight on (21):</b> the answer shows as chosen the instant it’s tapped, and the next screen follows after 150ms. Back keeps the answer. No Next button; several-answer, typed and slider questions keep Next.</p>
+            <p><b>Back lives at the top (29o):</b> a chevron at the top left, beside the tool’s name, with close at the top right. The bottom bar shows only when the screen has a button.</p>
+            <p><b>Back chevrons line up (29t):</b> the chevron’s visible edge sits on the content’s left edge, 14px before its label. Its 44px tap area is invisible, and on hover only the chevron turns coral.</p>
+            <p><b>Times use the squiggle (29q):</b> “~1 minute”, never “about a minute”.</p>
+            <p><b>Notes under buttons (29v):</b> centred on the button, 10px below, in secondary grey, with no full stop. On a phone the button and its note run full width (ButtonNote).</p>
+            <p><b>“high-performer”, “high-performers” and “high-performance” (29x)</b> always have their hyphen, and it never breaks across a line (keepWords keeps the word whole, because the fonts have no non-breaking hyphen).</p>
+            <p><b>One title per page (29z):</b> one heading at the top, never a label title plus a headline.</p>
+            <p><b>Every answer people can tap is a full sentence in their own voice (29aa),</b> with no full stop on the button.</p>
+            <p><b>Spelling follows the visitor (29y):</b> British everywhere for now; American spelling for US time zones is still to come.</p>
           </>
         )} />
 

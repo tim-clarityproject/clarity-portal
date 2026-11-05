@@ -2,7 +2,7 @@ import pageText from '../content/pageText';
 import { useNavigate } from 'react-router-dom';
 import DesignHeader from '../components/DesignHeader';
 import { BackLink } from '../components/ui/DiscardLink';
-import { Button, PageHeader, useCoachName } from '../components/design';
+import { Button, PageHeader, keepWords, useCoachName } from '../components/design';
 import { useStartChat } from '../components/coach/startChat';
 
 
@@ -123,14 +123,15 @@ export default function About() {
         />
 
         <div className="about-two">
-          <p>This is the place for high-performers who want to stay fully-engaged with their own thinking and make decisions with clarity and genuine conviction.</p>
+          {/* "high-performer" and "high-performance" always with the hyphen, never broken across a line (rule 29x): keepWords. */}
+          <p>{keepWords('This is the place for high-performers who want to stay fully-engaged with their own thinking and make decisions with clarity and genuine conviction.')}</p>
           <p>The tools found here are designed to scaffold your thinking, increase your daily intentionality, and drive your performance through true reflection.</p>
         </div>
 
         <div className="about-by">
           <span className="about-by-label">Created by The Clarity Project</span>
-          <p>The Clarity Project is a high performance consultancy and coaching practice led by Dr. Tim Dutton, BSc, MSc, DProf, CSCS.</p>
-          <p>Tim is a trusted advisor to CEOs and head coaches in professional sport, supporting them to navigate the high-pressure demands of their roles.</p>
+          <p>{keepWords('The Clarity Project is a high-performance consultancy and coaching practice led by Dr. Tim Dutton, BSc, MSc, DProf, CSCS.')}</p>
+          <p>{keepWords('Tim is a trusted advisor to CEOs and head coaches in professional sport, supporting them to navigate the high-pressure demands of their roles.')}</p>
           <a
             className="ds-btn ds-btn--outline"
             href="https://theclarityproject.co.uk/"

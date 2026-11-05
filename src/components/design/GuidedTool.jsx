@@ -207,8 +207,13 @@ function StepHead({ step, headingRef, positionId, role }) {
   );
 }
 
-/** How long a one-tap answer shows as chosen before the tool moves on (Tim, 5 Nov: about 300ms). */
-export const ONE_TAP_MS = 300;
+/**
+ * How long a one-tap answer shows as chosen before the tool moves on: the
+ * answer shows as chosen the instant it's tapped, then the next screen
+ * follows after 150ms (rule 21, Tim, 5 Nov, 15:00: 300ms felt like the
+ * tap hadn't registered). The same as --dur-fast.
+ */
+export const ONE_TAP_MS = 150;
 
 export default function GuidedTool({
   open = true,
@@ -381,6 +386,8 @@ export default function GuidedTool({
   const showSkip = !(step.required || (step.title && !last) || (last && !step.skippable));
   const previous = steps[i - 1];
   const showBack = i > 0 && !previous?.bare;
+  // A one-answer screen moves on by itself, so it has no Next (rule 21).
+  const hasNext = !(step.oneTap && !last);
   const changing = returnTo != null && returnTo !== i;
   changingRef.current = changing;
   backToSummaryRef.current = backToSummary;
@@ -465,6 +472,13 @@ export default function GuidedTool({
       <div className="ds-guide-frame">
         {!step.bare && (
           <div className="ds-guide-bar">
+            {/* Back at the top left, beside the tool's name (rules 29o and 29t,
+                Tim, 5 Nov): the chevron alone, its 44px tap area invisible. */}
+            {showBack && !step.plain && (
+              <button type="button" className="ds-guide-back" aria-label="Back" onClick={() => (changing ? backToSummary() : go(i - 1))}>
+                {ARROW}
+              </button>
+            )}
             <b className="ds-guide-name">{name}</b>
             {!step.plain && <SaveStatus state={saveState} />}
             <IconButton label="Close" className="ds-guide-close" onClick={() => onCloseRef.current?.()} />
@@ -480,27 +494,25 @@ export default function GuidedTool({
               <>
                 <StepHead step={step} headingRef={headingRef} positionId={positionId} role={role} />
                 <div className="ds-guide-body ds-guide-rv ds-guide-rv--3">{step.render(tool)}</div>
+                {!hasNext && showSkip && (
+                  <button type="button" className="ds-guide-skip ds-guide-skip--body" onClick={skip}>{skipLabel}</button>
+                )}
               </>
             )}
           </div>
         </div>
-        {!step.bare && !step.plain && (
+        {/* The bottom bar only when the screen has a button (rule 29o): a
+            screen that moves straight on has none, and its Skip sits
+            quietly under the answers instead. */}
+        {!step.bare && !step.plain && hasNext && (
           <div className="ds-guide-foot">
-            {showBack ? (
-              <button type="button" className="ds-guide-back" aria-label="Back" onClick={() => (changing ? backToSummary() : go(i - 1))}>
-                {ARROW}
-                <span aria-hidden="true">Back</span>
-              </button>
-            ) : <span />}
             <div className="ds-guide-foot-right">
               {showSkip && (
                 <button type="button" className="ds-guide-skip" onClick={skip}>{skipLabel}</button>
               )}
-              {!(step.oneTap && !last) && (
-                <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
-                  {changing ? 'Save my change' : (step.nextLabel || (last ? finishLabel : 'Next'))}
-                </button>
-              )}
+              <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
+                {changing ? 'Save my change' : (step.nextLabel || (last ? finishLabel : 'Next'))}
+              </button>
             </div>
           </div>
         )}

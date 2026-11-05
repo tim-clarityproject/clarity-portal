@@ -1066,9 +1066,16 @@ html:has(.ui-root) {
   color: var(--coral-text);
 }
 
-.ui-root .ui-back-link:hover,
-.ui-root .ui-back-link:focus-visible {
-  color: var(--text);
+/* Back (rule 29t, Tim, 5 Nov): the chevron's visible edge on the content's
+   left edge, 14px before its label; the 44px tap area is invisible, and on
+   hover only the chevron turns coral, never a shape behind it. */
+.ui-root .ui-back-link {
+  gap: var(--back-gap);
+}
+
+.ui-root .ui-back-link:hover .ui-back-link-icon,
+.ui-root .ui-back-link:focus-visible .ui-back-link-icon {
+  color: var(--coral-text);
 }
 
 .ui-root .ui-discard-link:focus-visible,

@@ -123,7 +123,7 @@ export function MiniDial({ weeks = [], dayInWeek = 0, date, line, label, onClick
         <span className="ds-mdial-date">{date}</span>
         {line && (
           <span className="ds-mdial-line">
-            {link ? <span className="ds-mdial-link">{line}</span> : line}
+            {link ? <span className="ds-mdial-link">{keepWords(line)}</span> : keepWords(line)}
             {link && <Chevron direction="right" size="sm" className="ds-mdial-chev" />}
           </span>
         )}

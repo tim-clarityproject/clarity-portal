@@ -28,6 +28,7 @@ import {
   LoadError,
   PausedGate,
 } from '../../components/design';
+import { ONE_TAP_MS } from '../../components/design/GuidedTool';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../../lib/deviceStore';
@@ -126,7 +127,8 @@ const cacheName = (date) => `day-review:${date}`;
 const draftName = (date) => `day-review:${date}`;
 const stepKey = (userId, date) => `day-review-${userId}-${date}`;
 // A one-answer choice shows as chosen for a moment before moving on (Tim, 5 Nov).
-const ADVANCE_MS = 300;
+// One tap moves on: chosen at once, the next screen after 150ms (rule 21, the guided tools' ONE_TAP_MS).
+const ADVANCE_MS = ONE_TAP_MS;
 const localKey = (userId, date) => deviceKey('day-review-local', userId, date);
 const emptyWin = (day) => ({ text: '', strategyIds: [], impact: 2, day });
 const toText = (v) => (v == null ? '' : String(v));

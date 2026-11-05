@@ -66,6 +66,22 @@
 
 30. **Lists are rows** (Tim, 26 Oct, 16:51): when someone lists several things, each gets its own box, with "Add another" (the `AddButton`) to add a row and the 45 degree crosshair (`IconButton`) to remove one, never one big box ("one per line" or similar). Tools that still ask for several things in one box change when each tool is rebuilt.
 
+## Rules of 5 Nov (START-HERE section 5e)
+
+Tim's calm-pages and wording rules of 5 Nov win over anything older in this file where they differ (the eye alone with its words in a pop-up, no ⓘ beside page titles, and so on; START-HERE 5e). Each is shown with an example in the design gallery, under "Rules of 5 Nov".
+
+- **21. One-answer questions move straight on.** The answer shows as chosen the instant it's tapped, then the next screen follows after 150ms (`ONE_TAP_MS` in GuidedTool; a step with `oneTap`). Back keeps the answer. No Next button on those screens; several-answer, typed and slider questions keep Next.
+- **29o. Back lives at the top.** In every guided tool built on GuidedTool, Back is a chevron at the top left, beside the tool's name, with close at the top right. The bottom bar shows only when the screen has a button (Next, Finish, Save my change); a screen that moves straight on has none, and its Skip sits quietly under the answers. Older tools take it when they are rebuilt.
+- **29t. Back chevrons line up with the content.** The chevron's visible edge sits on the content's left edge, 14px (`--back-gap`) before its label. Its 44px tap area is invisible, and on hover only the chevron turns coral, never a filled shape behind it (`.ds-guide-back`, `BackLink`).
+- **29q. Times use the squiggle.** "~1 minute", never "about a minute" or "around a minute".
+- **29v. Notes under buttons** (`ButtonNote`): centred on the button, 10px below it, in secondary grey, with no full stop. On a phone the button and its note run full width.
+- **29x. "high-performer", "high-performers" and "high-performance"** always have the hyphen, and it never breaks across a line. Neither font has the non-breaking hyphen (U+2011), so `keepWords` keeps the word whole instead.
+- **29z. One title per page:** one heading at the top, never a label title plus a headline.
+- **29aa. Every answer people can tap is a full sentence in their own voice** ("The team isn't pulling in the same direction", "It's for my leadership team"), with no full stop on the button. Claude writes the new wording; the build never rewords answers on its own.
+- **29y. Spelling follows the visitor:** client pages will use the spelling of the visitor's country (US time zones American, everywhere else British), from the time zone or the account's country. Not built yet: today every page is British. What decides a region today: PDF paper (`paperFor`: the country setting once there is one, then the device's region, then its time zone), units (the person's Metric or US choice), the chat app order (the time zone), and the saved time zone.
+- **29d. Small icons stand alone** (the eye, the ⓘ, the play icon), 12px (`--icon-title-gap`) from the title's last letter, level with the middle of its capitals, never on their own row: a guided step's eye is `step.eye`, a page's is PageHeader's `aside`, a panel's is the dialog's `titleAside`.
+- **29h. No lonely last words:** text wraps "pretty" everywhere inside `.ui-root`, and headings, labels and buttons balance their lines (`text-wrap-style`); `keepWords` keeps a word and its number together ("week 4", "of 8").
+
 ## Action first (Tim, 26 Oct)
 
 Every later phase follows these.

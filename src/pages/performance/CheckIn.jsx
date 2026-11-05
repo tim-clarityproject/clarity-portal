@@ -30,6 +30,7 @@ import {
   clearGuideDraft,
   useToast,
 } from '../../components/design';
+import { ONE_TAP_MS } from '../../components/design/GuidedTool';
 import { useCachedLoad, readCache, writeCache } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
 import { friendlyError } from '../../lib/friendlyError';
@@ -132,7 +133,8 @@ import './performance.css';
 
 export const CHECKIN_CACHE = 'checkin-page';
 const SAVE_AFTER_MS = 600;
-const ADVANCE_MS = 300; // shown as chosen for a moment (Tim, 5 Nov: about 300ms) // M12: a tap shows as chosen for a moment, then the next question
+// One tap moves on: chosen at once, the next screen after 150ms (rule 21, the guided tools' ONE_TAP_MS).
+const ADVANCE_MS = ONE_TAP_MS;
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 
 /** A finished or changed check-in: the device's copies learn it at once, so Home and the lists show it offline too. */

@@ -779,3 +779,13 @@
   padding: var(--space-4) var(--space-3) var(--space-5);
   border-radius: var(--radius-card);
 }
+
+/* Rules of 5 Nov: room between the examples, and the guide bar on its own. */
+.ui-root .dr-rules5 > .dr-small {
+  margin-top: var(--space-4);
+}
+
+.ui-root .dr-rules5-bar {
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-tile);
+}

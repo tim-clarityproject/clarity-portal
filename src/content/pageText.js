@@ -56,7 +56,7 @@ export const pageText = {
   // it is, in one full sentence (Tim, 2 Nov), then the glossary's words
   // (writing rule 40), one sentence per line.
   checkIn: [
-    'The Hardware and Software check-in is a monthly look at your body and mind, in about 3 minutes.',
+    'The Hardware and Software check-in is a monthly look at your body and mind, in ~3 minutes.',
     'Hardware is your body’s physiology.',
     'Software is your decision-making, emotional control and communication.',
     'Software relies on hardware being maintained, so we look after both.',

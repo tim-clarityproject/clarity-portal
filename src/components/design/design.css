@@ -1132,6 +1132,33 @@
   text-wrap-style: balance;
 }
 
+/* ---------- A note under a button (rule 29v, 5 Nov) ---------- */
+.ui-root .ds-btn-note {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+
+.ui-root .ds-btn-note-text {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .ui-root .ds-btn-note {
+    display: flex;
+    width: 100%;
+  }
+
+  .ui-root .ds-btn-note > .ds-btn {
+    width: 100%;
+  }
+}
+
 /* ---------- Controls ---------- */
 
 .ui-root .ds-seg {
@@ -3370,11 +3397,11 @@
   animation: ds-fade var(--dur-slow) var(--ease) both;
 }
 
-/* Footer: Back, then Skip and the coral button. */
+/* Footer, only when the screen has a button: Skip and the coral button (Back is at the top). */
 .ui-root .ds-guide-foot {
   flex: none;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: var(--space-px10);
   padding: var(--space-px14) var(--space-px28) max(var(--space-px18), env(safe-area-inset-bottom, 0px));
@@ -3388,20 +3415,26 @@
   gap: var(--space-px6);
 }
 
+/* Back (rules 29o and 29t, Tim, 5 Nov): the chevron alone at the top left,
+   beside the tool's name. Its 44px tap area is invisible: the negative
+   margins put the chevron's visible edge on the bar's content edge, 14px
+   (the bar's gap) before the name. On hover only the chevron turns coral,
+   with nothing filled behind it. */
 .ui-root .ds-guide-back {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
+  flex: none;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  min-height: var(--btn-h) !important;
-  padding: 0 var(--space-px6) !important;
-  font-family: var(--font-display);
-  font-size: var(--fs-btn) !important;
-  letter-spacing: var(--ls-back);
-  text-transform: uppercase;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 calc((var(--who-icon) - var(--tap-min)) / 2);
   color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -3410,12 +3443,20 @@
   height: var(--who-icon);
 }
 
-.ui-root .ds-guide-back:hover {
-  color: var(--text);
+.ui-root .ds-guide-back:hover,
+.ui-root .ds-guide-back:focus-visible {
+  color: var(--coral-text);
 }
 
 .ui-root .ds-guide-back:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: calc((var(--who-icon) - var(--tap-min)) / 2);
+}
+
+/* Skip on a screen that moves straight on: quietly under the answers. */
+.ui-root .ds-guide-skip--body {
+  margin-top: var(--space-3);
+  padding: 0 !important;
 }
 
 .ui-root .ds-guide-skip {
@@ -3588,23 +3629,6 @@
   .ui-root .ds-guide-foot {
     gap: var(--space-px6);
     padding: var(--space-px12) var(--space-px20) max(var(--space-px26), env(safe-area-inset-bottom, 0px));
-  }
-
-  .ui-root .ds-guide-back {
-    flex: none;
-    justify-content: center;
-    width: var(--tap-min);
-    padding: 0 !important;
-  }
-
-  .ui-root .ds-guide-back .ds-chevron {
-    width: var(--space-px18);
-    height: var(--space-px18);
-  }
-
-  /* The words go; the chevron (a span too) stays. */
-  .ui-root .ds-guide-back span:not(.ds-chevron) {
-    display: none;
   }
 
   .ui-root .ds-guide-foot-right {
