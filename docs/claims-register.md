@@ -1,6 +1,6 @@
 # Claims register: the evidence behind what the portal says
 
-Version 1.2 (3 Nov 2026), first written 26 Oct 2026 by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); audited the same evening to the citation standard Tim set at 18:47 (Part C).
+Version 1.3 (5 Nov 2026), first written 26 Oct 2026 by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); audited the same evening to the citation standard Tim set at 18:47 (Part C).
 
 Every claim the portal makes, every score's basis, and every tool, with how strong the evidence is and where it comes from (Tim, 26 Oct, 16:47 to 16:54). It sits beside the methods document (claude/methods/scoring-methods.md), which says how each score is worked out. The coach portal's evidence library is built from this register, and Tim adds to it there.
 
@@ -54,6 +54,7 @@ Each claim has where it shows in the portal, its strength, its sources (Part C) 
 | C21 | Adults are advised at least 150 minutes of moderate activity, or 75 vigorous, a week, plus muscle strengthening on 2 or more days. | Check-in movement questions | Strong | R21 | Guidelines for health, not for performance. |
 | C22 | Long hours of sitting carry extra health risk, which enough activity largely offsets. | Check-in sitting question | Moderate | R22 | From observational studies. |
 | C23 | The UK low-risk guideline is no more than 14 units a week, spread over 3 or more days. | Check-in alcohol questions and units guide | Strong | R23 | A UK guideline; other countries differ. The heavy-session question uses the UK version of AUDIT-C's third question (6 units for women, 8 for men), with our own wording and time frame. |
+| C49 | A pint of beer or cider is about 2.3 units, a bottle or can of beer about 2, a standard glass of wine 2.1, a large glass 3 and a single spirit 1. | Check-in alcohol question (the units added up from the drinks counted) | Strong | R48 | The NHS's own figures. Strengths vary, so these are typical drinks: the pint is the NHS's 14 units for 6 pints of average-strength beer, and the bottle or can is the middle of the NHS's 1.7 (330ml at 5%) and 2.4 (440ml at 5.5%). People can type other drinks in units. |
 | C24 | Short, single questions can track sleep quality, stress and health reliably enough to follow change over time. | Check-in, Plan my day, team pulse | Moderate | R24 | Validated mostly for comparing groups or in patient samples; not a substitute for full questionnaires or diagnosis. Our questions are worded our own way, so they aren't the validated items themselves. |
 | C30 | Software relies on hardware being maintained, so we look after both. | First check-in, How it works | Our model, built on C11, C17, C21 | R11, R17, R21 | The links between body and decision-making are well supported; the Hardware and Software frame is Tim's. |
 
@@ -184,6 +185,7 @@ Strength is the strength of the evidence behind the tool's main idea, not proof 
 | R43 | Rafaeli-Mor E, Steinberg J (2002). Self-complexity and well-being: A review and research synthesis. Personality and Social Psychology Review, 6(1), 31–58. | https://doi.org/10.1207/S15327957PSPR0601_2 | The idea that a many-sided sense of self cushions stress had little support. | Synthesis of many studies | Publisher (SAGE) |
 | R46 | Smither JW, London M, Reilly RR (2005). Does performance improve following multisource feedback? A theoretical model, meta-analysis, and review of empirical findings. Personnel Psychology, 58(1), 33–66. | https://doi.org/10.1111/j.1744-6570.2005.514_1.x | Ratings improved only a little after 360 feedback on average, more when people set goals and acted on it. No newer meta-analysis was found. | 24 longitudinal studies | Repository (Stony Brook) |
 | R47 | Hopkins WG (2000). Measures of reliability in sports medicine and science. Sports Medicine, 30(1), 1–15. | https://doi.org/10.2165/00007256-200030010-00001 | The standard sports science method: a change is only real when it is bigger than the measure's typical error between repeat tests. | Methods | Author's PDF with journal header; repository (VU) |
+| R48 | NHS (2024). Alcohol units. Page last reviewed 27 August 2024, next review due 27 August 2027. | https://www.nhs.uk/live-well/alcohol-advice/calculating-alcohol-units/ | One unit is 10ml or 8g of pure alcohol; the units in common drinks (a pint of lower-strength beer 2, higher-strength 3, a 330ml bottle 1.7, a 440ml can 2.4, a standard glass of wine 2.1, a large glass 3, a single spirit 1), and 14 units being about 6 pints of average-strength beer. | Official guidance | NHS website, read 5 Nov 2026 |
 
 **Removed in the audit (26 Oct):**
 - Zaccaro et al. (2018), on slow breathing: a review of 15 small studies with no randomised trials. Replaced by the Laborde (2022) and Fincham (2023) meta-analyses.
@@ -204,6 +206,7 @@ These claims and tools have early evidence or are our model. Nothing needs chang
 ## Change log
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 5 Nov 2026 | C49 and R48 added: the units per drink behind the check-in's alcohol question by drinks (Tim, 5 Nov, 10:25), checked on the NHS's alcohol units page at build time. |
 | 1.2 | 3 Nov 2026 | C48 added: the 7 to 9 hours target range on Recovery's sleep chart (Tim, 3 Nov, 14:26), from R20's two sources. |
 | 1.1 | 26 Oct 2026 | Scientific audit (Tim, 18:47): every citation re-checked on a primary or institutional record by two independent checks; four weaker sources replaced and twelve stronger or more recent ones added; three claims raised to Strong (if-then plans, debriefs) or Moderate (self-concordance, strengths) on the new evidence; the AUDIT-C note corrected (the UK version uses 6 and 8 units); the pre-mortem finding restated accurately; the King reference given its chapter and pages; one author error removed with its source. |
 | 1.0 | 26 Oct 2026 | First version; 34 of 35 sources confirmed on the web. |

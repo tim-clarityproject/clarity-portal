@@ -1569,6 +1569,86 @@
   }
 }
 
+/* One thing to work on as a short choice (Tim, 5 Nov). */
+.ui-root .ck-one-question {
+  margin: 0;
+  font-size: var(--fs-tile-title);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ck-one-kept {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-secondary);
+  color: var(--mint-text);
+}
+
+.ui-root .ck-options {
+  align-self: stretch;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .ck-option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) 0;
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ck-option-text {
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .ck-option-reason {
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ck-option-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+}
+
+.ui-root .ck-one-nothing {
+  margin-top: var(--space-2);
+}
+
+/* The drinks in a typical week (Tim, 5 Nov, 10:25). */
+.ui-root .ck-drinks-rows {
+  margin-top: var(--space-3);
+}
+
+.ui-root .ck-drink {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  min-height: var(--tap-min);
+  padding: var(--space-2) 0;
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .ck-drink-name {
+  flex: 1 1 12em;
+  min-width: 0;
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+
+.ui-root .ck-drinks-total {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+
 /* The areas, folded into one line each (M12 .fold, .ar). */
 .ui-root .ck-fold {
   margin-top: var(--space-3);

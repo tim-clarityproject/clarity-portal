@@ -503,6 +503,11 @@
   --coral-soft-tint: rgba(255, 189, 158, 0.12); /* behind a calm error */
   --mint-tint: rgba(95, 239, 187, 0.12);
   --below: #636362;          /* weeks under the standard: neutral grey, never coral */
+  /* Bands for a list of scores (methods M0.8, Tim 5 Nov): 50 to 66 grey,
+     below 50 a quieter grey (3.5 to 1 on the page), the single lowest coral. */
+  --band-mid: #8F8D88;
+  --band-low: #636362;
+  --band-lowest: var(--coral);
   --to-come: #262626;        /* weeks to come on the dial */
   --dial-done: #7F7F7C;
   --paused-done: #4A4A49;    /* finished weeks on a paused dial: scores hidden, so neither mint nor grey (M15) */
@@ -581,6 +586,9 @@
   --on-good: #FFFFFF;        /* white tick on deep green */
   --mint-tint: #DDF7EC;
   --below: #8F8D88;
+  --band-mid: #6B6A67;        /* 5.1 to 1 on the page */
+  --band-low: #8F8D88;        /* the quieter grey, 3.1 to 1 on the page */
+  --band-lowest: var(--coral-text);
   --to-come: #DCDAD3;
   --dial-done: #8F8D88;
   --paused-done: #B9B7B1;

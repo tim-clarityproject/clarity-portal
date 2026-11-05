@@ -85,8 +85,12 @@ test('M13-1 on the results screen: Hardware 68/100, one thing to work on is Move
   assert.equal(r.workOn.name, 'Movement');
   assert.deepEqual(r.workOn.tip, TIPS.movement);
   assert.equal(r.workOn.tip[0], 'Three 30-minute training sessions a week');
-  assert.equal(r.hardwareAreas.lowest, 'Lowest: Movement 45/100');
-  assert.equal(r.softwareAreas.lowest, 'Lowest: Conflict 0/100');
+  assert.equal(r.workOn.question, 'What could help with movement?');
+  // No "Lowest: …" line (Tim, 5 Nov): the lowest bar is coral (methods M0.8).
+  assert.equal(r.hardwareAreas.lowest, undefined);
+  assert.equal(r.hardwareAreas.rows.find((x) => x.key === 'movement').band, 'lowest');
+  assert.equal(r.softwareAreas.rows.find((x) => x.key === 'conflict').band, 'lowest');
+  assert.equal(r.hardwareAreas.rows.filter((x) => x.band === 'lowest').length, 1);
   assert.deepEqual(r.hardwareAreas.rows.map((x) => [x.name, x.value]), [['Sleep', 88], ['Movement', 45], ['Fuel and alcohol', 85], ['Stress', 50], ['Mood and energy', 63], ['Health', 75]]);
 });
 
@@ -214,4 +218,62 @@ test('My Reviews: finished check-ins named in words, and only this month’s dra
     ['October check-in', 'Hardware and Software check-in', true, '/check-in'],
   ]);
   assert.equal(rows[0].area, 'personal');
+});
+
+test('alcohol by drinks: the units add up from the NHS figures, saved as the band 029 scores (Tim, 5 Nov)', async () => {
+  const { DRINKS, drinkUnits, unitsAnswer, unitsLine } = await import('../../src/lib/performance/index.js');
+  const units = Object.fromEntries(DRINKS.map((d) => [d.key, d.units]));
+  // NHS: standard glass 2.1, large glass 3, single spirit 1; pint 14 / 6; bottle or can between 1.7 and 2.4.
+  assert.equal(units.wine, 2.1);
+  assert.equal(units.wine_large, 3);
+  assert.equal(units.spirit, 1);
+  assert.ok(Math.abs(units.pint - 2.333) < 0.001);
+  assert.ok(Math.abs(units.bottle - 2.05) < 0.001);
+  assert.equal(drinkUnits({}), 0);
+  assert.equal(drinkUnits({ wine: 2, pint: 3 }), 2 * 2.1 + 3 * (14 / 6));
+  assert.equal(drinkUnits({ other: '2,5' }), 2.5);
+  assert.equal(unitsLine(0), 'That’s no alcohol in a typical week.');
+  assert.equal(unitsLine(0.4), 'That’s less than 1 unit a week.');
+  assert.equal(unitsLine(1), 'That’s about 1 unit a week.');
+  assert.equal(unitsLine(drinkUnits({ wine: 2, pint: 2 })), 'That’s about 9 units a week.');
+  assert.deepEqual([0, 0.4, 7, 7.4, 7.6, 14, 15, 21, 22, 35, 36].map(unitsAnswer), ['none', 'u1_7', 'u1_7', 'u1_7', 'u8_14', 'u8_14', 'u15_21', 'u15_21', 'u22_35', 'u22_35', 'over_35']);
+  // Every answer it gives is one 029 takes.
+  for (const v of ['none', 'u1_7', 'u8_14', 'u15_21', 'u22_35', 'over_35']) assert.equal(typeof m13Points('H8', v), 'number');
+});
+
+test('travel is asked only when it applies: No skips the recovery question (Tim, 5 Nov)', async () => {
+  const { tripAnswers, tripKind } = await import('../../src/lib/performance/index.js');
+  const codes = (a) => questionsFor(a).map((q) => q.code).filter((c) => /^H1[4-6]$/.test(c));
+  assert.deepEqual(codes({}), ['H14']);
+  const no = tripAnswers({ H16: 'well' }, 'no');
+  assert.deepEqual(codes(no), ['H14']);
+  assert.equal(cleanAnswers(no).H16, undefined);
+  assert.equal(cleanAnswers(no).H14, 'no');
+  const short = tripAnswers({}, 'short');
+  assert.deepEqual(codes(short), ['H14', 'H16']);
+  assert.equal(cleanAnswers(short).H15, '0');
+  const long = tripAnswers({}, 'long');
+  assert.deepEqual(codes(long), ['H14', 'H15', 'H16']);
+  assert.equal(tripKind({ H14: 'yes', H15: '2' }), 'long');
+  assert.equal(tripKind({ H14: 'no' }), 'no');
+  assert.equal(cleanAnswers(long)._trip, undefined); // the device's note never reaches 029
+});
+
+test('one thing to work on: options with a kind, Already doing this for 90 days, never guideline wording (Tim, 5 Nov)', async () => {
+  const { OPTIONS, optionsToOffer, workOnQuestion } = await import('../../src/lib/performance/index.js');
+  assert.equal(workOnQuestion('Fuel and alcohol'), 'What could help with fuel and alcohol?');
+  for (const [area, list] of Object.entries(OPTIONS)) {
+    assert.ok(list.length >= 3, area);
+    for (const o of list) {
+      assert.ok(o.as === 'habit' ? o.habit?.measure : o.todo, `${area} ${o.key} knows its kind`);
+      assert.doesNotMatch(`${o.text} ${o.reason}`, /guideline|should|low-risk|within/i, `${area} ${o.key}`);
+      // A repeating one is a habit, a one-off a to-do.
+      if (/each week|a week|each day|every day|each morning|most evenings|every hour/i.test(o.text)) assert.equal(o.as, 'habit', `${area} ${o.key}`);
+    }
+  }
+  assert.equal(OPTIONS.fuel[0].habit.name, 'Alcohol-free day');
+  assert.deepEqual(optionsToOffer('fuel', {}, TODAY).map((o) => o.key), ['af_days', 'water', 'meals']);
+  // Already doing this: the next one takes its place, for 90 days.
+  assert.deepEqual(optionsToOffer('fuel', { 'fuel:af_days': '2026-10-01' }, TODAY).map((o) => o.key), ['water', 'meals', 'lunch']);
+  assert.deepEqual(optionsToOffer('fuel', { 'fuel:af_days': '2026-07-01' }, TODAY).map((o) => o.key), ['af_days', 'water', 'meals']);
 });

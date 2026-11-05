@@ -2,10 +2,12 @@ import './design.css';
 
 // The thin bar under a stat or a logging row. `value` is 0 to 1.
 // Decorative: the words beside it already say the numbers.
-export function Bar({ value = 0, className = '' }) {
+// band: methods M0.8 for a list of scores (m0Bands): 'good' mint, 'mid'
+// grey, 'low' a quieter grey, 'lowest' coral (Tim, 5 Nov).
+export function Bar({ value = 0, band, className = '' }) {
   const percent = Math.max(0, Math.min(1, Number(value) || 0)) * 100;
   return (
-    <span className={`ds-bar ${className}`.trim()} aria-hidden="true">
+    <span className={`ds-bar${band ? ` ds-bar--${band}` : ''} ${className}`.trim()} aria-hidden="true">
       <span style={{ width: `${percent}%` }} />
     </span>
   );

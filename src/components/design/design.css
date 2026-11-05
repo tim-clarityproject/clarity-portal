@@ -559,6 +559,11 @@
   transition: width var(--dur) var(--ease);
 }
 
+/* Methods M0.8 bands (Tim, 5 Nov): the colour tells the story. */
+.ui-root .ds-bar--mid > span { background: var(--band-mid); }
+.ui-root .ds-bar--low > span { background: var(--band-low); }
+.ui-root .ds-bar--lowest > span { background: var(--band-lowest); }
+
 /* ---------- List rows ---------- */
 
 .ui-root .ds-list {

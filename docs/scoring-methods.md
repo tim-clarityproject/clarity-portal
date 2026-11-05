@@ -1,6 +1,6 @@
 # Methods: how every score in The Clarity Portal is worked out
 
-Version 1.4 (draft for the build), written 26 Oct 2026, 18:16 onwards, by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); scientific audit the same evening; Tim's decisions of 26, 27 and 28 Oct added (see M22).
+Version 1.5 (draft for the build), written 26 Oct 2026, 18:16 onwards, by Claude for Tim (Dr. Tim Dutton, The Clarity Project LTD); scientific audit the same evening; Tim's decisions of 26, 27 and 28 Oct and 5 Nov added (see M22).
 
 This is the single source of truth for every score, figure, flag and pattern the portal shows. The code follows it, the PDFs follow it, and the public "How it works" page is written from it. Where a mock-up shows a different figure, this document wins on the arithmetic and the decisions doc wins on everything else.
 
@@ -61,6 +61,16 @@ Ineligible weeks still have their own scores and show on charts (Recovery hatche
 
 ### M0.7 Who sees what
 The arithmetic is the same for everyone. Who may see a figure is set by the privacy decisions in the decisions doc (sponsor rule, "never feel monitored", totals only for groups, the eye). Every section below says who sees its figures.
+
+### M0.8 Bands for a list of scores (Tim, 5 Nov 2026, 10:59)
+In plain words: in a list of areas or scores out of 100, the colours tell the story without words. Good areas are green, middling ones grey, low ones a quieter grey, and the single lowest one stands out in coral.
+- Each score's band comes from the rounded figure people see (M0.1): **67 and above: good** (mint, deep green in light); **50 to 66: mid** (grey); **below 50: low** (a quieter grey, still at least 3 to 1 against the page).
+- **The single lowest score in the list is coral** (Tim chose coral, 5 Nov). Ties go to the first in the list. A list with only one score has no lowest. A score that isn't there (not answered) has no band and is never the lowest.
+- This replaces the single "good" level of 70 Claude suggested. It is the one agreed exception to "coral is only for doing": one coral data mark per list, never on anything tappable, and the screen's one coral button stays.
+- Used for every bar of this kind: the check-in's Hardware and Software areas first. Function: `m0Bands` in src/lib/scores/m0.js.
+- Worked example M0-8a: 83, 66, 50, 49, 40, 67 gives good, mid, mid, low, **lowest**, good.
+- Worked example M0-8b (ties and rounding): 75, 66.5, 49.6, 49.6 gives good, good (66.5 shows as 67), lowest (the first 50; 49.6 shows as 50), mid.
+- Worked example M0-8c: 75, 75, 75 gives lowest, good, good (a tie for lowest: the first). A list of one, 40, gives low.
 
 ---
 
@@ -642,6 +652,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 5 Nov 2026 | Bands for a list of scores (M0.8; Tim, 5 Nov, 10:59): 67 and above good, 50 to 66 mid, below 50 low, and the single lowest in the list coral (ties: the first), replacing the single level of 70. The check-in's "Lowest: …" line is removed; the colour says it. No score's arithmetic changed. |
 | 1.4 | 28 Oct 2026 | The Health Check's results rethink (M20.1; Tim, 28 Oct, 14:00 to 15:26): each CSF is Critical, Very important or Important, weighted 1.4, 1.2 and 1, so strategic importance = Σ(contribution × weight) ÷ Σ(3 × weight) × 100, and every CSF at Very important gives exactly the old figures (test case M20-4); each Health Check sets its own line for important, 30% to 80%, 50% unless changed, used everywhere "above 50%" was; the headline ("2 of 5" important projects moving well, with the rest adding up to the total); up to three questions to start with (Timing, Progress, Resource, CSF cover, or On track); dot size from resource. Older Health Checks score and read as before. |
 | 1.2 (repo) | 27 Oct 2026 | Claude's calls in building 1.2 (migration 033): pulse results also stay private when only 1 or 2 people stayed anonymous beside named answers, and the count shows only once closed (M18); a seat's standard is set to 85 rather than refused, and set when the seat is taken up mid-sprint (M7); the single wellbeing switch moved to each organisation the person was in, which was its reach (M19.4). |
 | 1.2 (repo) | 27 Oct 2026 | M14: the rerun for Tim's "rare but right" answer, with the planted link at 2 swings, and option (3) tried and not adopted (see "The rerun, 27 Oct 2026" below). The threshold stays at 2.6%. No other arithmetic changed. |

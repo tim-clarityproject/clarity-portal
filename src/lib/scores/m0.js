@@ -181,3 +181,33 @@ export function m0WeekIsEligible(w) {
   if (w.travel || w.unusual) return false;
   return w.loggedDays >= Math.min(4, w.workingDays);
 }
+
+// ---------------------------------------------------------------- M0.8
+/** M0.8 bands for a list of 0 to 100 scores (Tim, 5 Nov, 10:59). */
+export const BAND_GOOD_FROM = 67;
+export const BAND_MID_FROM = 50;
+
+/**
+ * M0.8: each score's band in a list of areas or scores, from the rounded
+ * figures people see (M0.1): 'good' 67 and above, 'mid' 50 to 66, 'low'
+ * below 50, and the single lowest in the list 'lowest' (ties: the first in
+ * the list). A list of one, or with nothing scored, has no lowest. A
+ * missing score (null) has no band.
+ * @param {(number|null)[]} values
+ * @returns {(('good'|'mid'|'low'|'lowest')|null)[]}
+ */
+export function m0Bands(values) {
+  const shown = values.map((v) => (v == null || Number.isNaN(Number(v)) ? null : m0Round(Number(v))));
+  let lowest = -1;
+  const scored = shown.filter((v) => v != null).length;
+  if (scored > 1) {
+    shown.forEach((v, i) => { if (v != null && (lowest < 0 || v < shown[lowest])) lowest = i; });
+  }
+  return shown.map((v, i) => {
+    if (v == null) return null;
+    if (i === lowest) return 'lowest';
+    if (v >= BAND_GOOD_FROM) return 'good';
+    if (v >= BAND_MID_FROM) return 'mid';
+    return 'low';
+  });
+}

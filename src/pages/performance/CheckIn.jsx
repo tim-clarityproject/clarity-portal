@@ -21,6 +21,8 @@ import {
   Stat,
   StatGroup,
   StatementPanel,
+  Stepper,
+  NumberField,
   TextBox,
   WhoSees,
   clearGuideDraft,
@@ -47,15 +49,24 @@ import {
   HARDWARE_SOFTWARE,
   LATER_TOAST,
   NAME_MAX,
-  SCORE_LINES,
-  UNITS_GUIDE,
+  DRINKS,
+  DRINK_MAX,
+  TRIP_NUDGE,
+  TRIP_OPTIONS,
   addedLine,
+  answerWords,
   checkinKind,
   checkinMonth,
   checkinPath,
   checkinPoints,
   checkinResults,
   checkinTitle,
+  drinkUnits,
+  optionsToOffer,
+  tripAnswers,
+  tripKind,
+  unitsAnswer,
+  unitsLine,
   cleanAnswers,
   cleanGoals,
   finishToastWords,
@@ -234,7 +245,10 @@ function CheckinFlow({ userId, today, month, loaded }) {
   const first = kind === 'first';
   const role = exampleRole(data.describesYou);
 
-  const [answers, setAnswers] = useState(() => ({ ...(row?.answers || {}) }));
+  // The drinks counted and the kind of trip stay on this device (029 takes
+  // only the answers themselves), so changing an answer starts from them.
+  const extrasKey = deviceKey('checkin-extras', userId, month);
+  const [answers, setAnswers] = useState(() => ({ ...(readJson(extrasKey) || {}), ...(row?.answers || {}) }));
   const [goals, setGoals] = useState(() => ({ ...(row?.goals || {}) }));
   const [save, setSave] = useState('idle');
   const checkinId = useRef(row?.id || null);
@@ -367,6 +381,13 @@ function CheckinFlow({ userId, today, month, loaded }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (answers._drinks || answers._trip) writeJson(extrasKey, { _drinks: answers._drinks, _trip: answers._trip });
+  }, [answers._drinks, answers._trip]); // eslint-disable-line react-hooks/exhaustive-deps
+  const patchAnswers = (fn) => {
+    typedYet.current = true;
+    setAnswers((a) => fn(a));
+  };
   const answer = (code, value) => {
     // The same answer again (moving on with one tap) changes nothing, so nothing is saved.
     if (latest.current.answers[code] === value) return;
@@ -447,9 +468,21 @@ function CheckinFlow({ userId, today, month, loaded }) {
     label: <AreaLabel label={q.label} />,
     info: q.why ? whyLines(q.why, sharing ? coach : null) : undefined,
     question: q.question,
-    nudges: q.nudges,
+    nudges: q.trip ? [TRIP_NUDGE] : q.nudges,
     render: (tool) => (
-      <QuestionBody q={q} value={answers[q.code] ?? null} onAnswer={(v) => answer(q.code, v)} onNext={() => tool.go(tool.index + 1)} eye={eyeLine} />
+      q.drinks ? (
+        <DrinksBody drinks={answers._drinks || null} saved={answers.H8 || null} onPatch={patchAnswers} onNext={() => tool.go(tool.index + 1)} eye={eyeLine} />
+      ) : q.trip ? (
+        <QuestionBody
+          q={{ ...q, options: TRIP_OPTIONS }}
+          value={tripKind(answers)}
+          onAnswer={(v) => patchAnswers((a) => tripAnswers(a, v))}
+          onNext={() => tool.go(tool.index + 1)}
+          eye={eyeLine}
+        />
+      ) : (
+        <QuestionBody q={q} value={answers[q.code] ?? null} onAnswer={(v) => answer(q.code, v)} onNext={() => tool.go(tool.index + 1)} eye={eyeLine} />
+      )
     ),
   }));
 
@@ -547,7 +580,6 @@ function QuestionBody({ q, value, onAnswer, onNext, eye }) {
         form="rows"
       />
       {eye}
-      {q.units && <UnitsFold />}
     </div>
   );
 }
@@ -569,22 +601,46 @@ function WhoSeesFold({ coach, sharing }) {
   );
 }
 
-/** "What’s a unit?" (M12): folds away until wanted. */
-function UnitsFold() {
-  const [open, setOpen] = useState(false);
+/**
+ * "On average, what do you drink in a week?" (Tim, 5 Nov, 10:25): one row
+ * per drink with a minus and plus, the units added up live as one full
+ * sentence, "Other" for typed units and "None" as one tap. The units go in
+ * as H8's band (unitsAnswer), which is what 029 scores.
+ */
+function DrinksBody({ drinks: counted, saved, onPatch, onNext, eye }) {
+  const drinks = counted || {};
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const units = drinkUnits(drinks);
+  const set = (key, value) => onPatch((a) => {
+    const next = { ...(a._drinks || {}), [key]: value };
+    return { ...a, _drinks: next, H8: unitsAnswer(drinkUnits(next)) };
+  });
+  const none = () => {
+    onPatch((a) => ({ ...a, _drinks: {}, H8: 'none' }));
+    clearTimeout(timer.current);
+    timer.current = setTimeout(onNext, ADVANCE_MS);
+  };
   return (
-    <div className="ck-units-fold">
-      <button type="button" className="ds-guide-example-link" aria-expanded={open} aria-controls="ck-units" onClick={() => setOpen((v) => !v)}>
-        What’s a unit?
-      </button>
-      {open && (
-        <div id="ck-units" className="ck-units">
-          <p>{UNITS_GUIDE.lead}</p>
-          {UNITS_GUIDE.rows.map(([what, units]) => (
-            <div key={what} className="ck-units-row"><span>{what}</span><em>{units}</em></div>
-          ))}
+    <div className="ck-q ck-drinks">
+      <Button className="ck-drinks-none" onClick={none}>None</Button>
+      <div className="ck-drinks-rows">
+        {DRINKS.map((d) => (
+          <div key={d.key} className="ck-drink">
+            <span className="ck-drink-name">{d.label}</span>
+            <Stepper value={Number(drinks[d.key]) || 0} onChange={(v) => set(d.key, v)} min={0} max={DRINK_MAX} label={d.label} lessLabel={`One fewer: ${d.label.toLowerCase()}`} moreLabel={`One more: ${d.label.toLowerCase()}`} />
+          </div>
+        ))}
+        <div className="ck-drink">
+          <span className="ck-drink-name">Other, in units</span>
+          <NumberField value={drinks.other ?? ''} onChange={(v) => set('other', v)} unit="units" label="Other drinks, in units" decimals maxDigits={3} />
         </div>
-      )}
+      </div>
+      {/* Answered before drinks were counted: say the answer as it was seen (writing rule 48). */}
+      <p className="ck-drinks-total" aria-live="polite">
+        {!counted && saved && saved !== 'none' ? `You answered “${answerWords('H8', saved)}”.` : unitsLine(units)}
+      </p>
+      {eye}
     </div>
   );
 }
@@ -598,7 +654,6 @@ function AreaFold({ title, fold }) {
       <Collapsible summary={(
         <span className="ck-fold-head">
           <span className="ck-fold-title">{title}</span>
-          <span className="ck-fold-line">{fold.lowest}</span>
         </span>
       )}
       >
@@ -606,7 +661,7 @@ function AreaFold({ title, fold }) {
           {fold.rows.map((r) => (
             <div key={r.key} className="ck-area">
               <span className="ck-area-name">{r.name}</span>
-              <Bar value={r.value / 100} className="ck-area-bar" />
+              <Bar value={r.value / 100} band={r.band} className="ck-area-bar" />
               <span className="ck-area-value">{`${r.value}/100`}</span>
             </div>
           ))}
@@ -639,19 +694,12 @@ function Results({ userId, today, kind, coach, results, points, goals, note, spr
       {note && coach && <NotePanel label={`From ${coach}`} className="ck-note">{note}</NotePanel>}
       <StatGroup className="ck-scores">
         {r.hardware && (
-          <Stat panel label="Hardware score" value={String(r.hardware.value)} unit="/100" note={r.compared ? <ChangeNote change={r.hardware.change} /> : SCORE_LINES.hardware} />
+          <Stat panel label="Hardware score" value={String(r.hardware.value)} unit="/100" note={r.compared ? <ChangeNote change={r.hardware.change} /> : undefined} />
         )}
         {r.software && (
-          <Stat panel label="Software score" value={String(r.software.value)} unit="/100" note={r.compared ? <ChangeNote change={r.software.change} /> : SCORE_LINES.software} />
+          <Stat panel label="Software score" value={String(r.software.value)} unit="/100" note={r.compared ? <ChangeNote change={r.software.change} /> : undefined} />
         )}
       </StatGroup>
-      {/* M12's line, one sentence per line (writing rule 49). */}
-      {!r.compared && (
-        <div className="ck-hint">
-          <p>Your graph starts here.</p>
-          <p>Each monthly check-in adds a point.</p>
-        </div>
-      )}
 
       {r.compared && (
         <Section title="What improved" as="h3" className="ck-sec">
@@ -736,9 +784,18 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
   const running = view?.state === 'running' && (sprint.data?.strategies || []).length > 0;
   const [open, setOpen] = useState(false);
   const [added, setAdded] = useState(() => readJson(addedKey(userId, month)));
-  const [tip, ...lines] = workOn.tip;
-  const s = workOn.suggestion;
   const sprintName = view?.name;
+  // The short choice (Tim, 5 Nov, 10:29): up to 3 options, each with
+  // "Already doing this", and "Something else". "Already doing this" is
+  // remembered on this device for 90 days; choosing nothing is fine.
+  const doingKey = deviceKey('checkin-doing', userId);
+  const nothingKey = deviceKey('checkin-nothing', userId, month);
+  const [doing, setDoing] = useState(() => readJson(doingKey) || {});
+  const [kept, setKept] = useState(false);
+  const [nothing, setNothing] = useState(() => Boolean(readJson(nothingKey)));
+  const offered = optionsToOffer(workOn.key, doing, today);
+  const [chosen, setChosen] = useState(null);
+  const s = chosen?.key === 'other' ? { as: 'todo', todo: '', habit: { name: '' } } : (chosen || offered[0] || { as: 'todo', todo: '' });
   const habitFrom = running && view.current < view.lengthWeeks ? view.current + 1 : null;
   // Already in this sprint (from this check-in): never offered twice.
   const inSprint = added?.sprintId && added.sprintId === view?.sprintId ? added
@@ -749,8 +806,8 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
   const emptyForm = () => ({
     as: s.as === 'habit' && habitFrom ? 'habit' : 'todo',
     strategyId: strategies.length === 1 ? strategies[0].value : null,
-    habit: { id: null, name: s.habit?.name || tip, measure: s.habit?.measure || 'count', target: s.habit?.target ?? '', unit: '', per: s.habit?.per || 'week', direction: 'higher', impact: 2, topNumber: null },
-    todo: s.todo || tip,
+    habit: { id: null, name: s.habit?.name || '', measure: s.habit?.measure || 'count', target: s.habit?.target ?? '', unit: '', per: s.habit?.per || 'week', direction: 'higher', impact: 2, topNumber: null },
+    todo: s.todo || '',
   });
   const [form, setForm] = useState(emptyForm);
   const { clear: clearFormDraft } = useDraft({
@@ -819,19 +876,62 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
     : Boolean(form.todo.trim()));
   const strategyName = strategies.find((x) => x.value === form.strategyId)?.label;
 
+  const choose = (option) => {
+    setChosen(option);
+    const next = option.key === 'other'
+      ? { as: habitFrom ? 'habit' : 'todo', strategyId: strategies.length === 1 ? strategies[0].value : null, habit: { id: null, name: '', measure: 'count', target: '', unit: '', per: 'week', direction: 'higher', impact: 2, topNumber: null }, todo: '' }
+      : {
+        as: option.as,
+        strategyId: strategies.length === 1 ? strategies[0].value : null,
+        habit: { id: null, name: option.habit?.name || '', measure: option.habit?.measure || 'count', target: option.habit?.target ?? '', unit: '', per: option.habit?.per || 'week', direction: 'higher', impact: 2, topNumber: null },
+        todo: option.todo || '',
+      };
+    setForm(next);
+    setOpen(true);
+  };
+  const alreadyDoing = (option) => {
+    const next = { ...doing, [`${workOn.key}:${option.key}`]: today };
+    writeJson(doingKey, next);
+    setDoing(next);
+    setKept(true);
+  };
+  const nothingThisMonth = () => {
+    writeJson(nothingKey, true);
+    setNothing(true);
+  };
+  // A habit needs a week to start in; a one-off goes in this week.
+  const canAdd = (option) => running && (option.as === 'todo' || Boolean(habitFrom));
+
   return (
     <div className="ck-one">
-      <span className="ck-one-area">{workOn.name}</span>
-      <span className="ck-one-tip">{tip}</span>
-      {lines.map((l) => <p key={l} className="ck-one-line">{l}</p>)}
-      {inSprint && (
+      {inSprint ? (
         <>
           <p className="ck-one-added">{addedLine(inSprint.sprintName || sprintName, inSprint.as)}</p>
           {inSprint.as === 'habit' && <p className="ck-one-line">It starts next week.</p>}
         </>
+      ) : nothing ? (
+        <p className="ck-one-line">Nothing to add this month.</p>
+      ) : (
+        <>
+          <p className="ck-one-question">{workOn.question}</p>
+          {kept && <p className="ck-one-kept" role="status">Good, keep it going.</p>}
+          <ul className="ck-options">
+            {offered.map((o) => (
+              <li key={o.key} className="ck-option">
+                <span className="ck-option-text">{o.text}</span>
+                <span className="ck-option-reason">{o.reason}</span>
+                <span className="ck-option-actions">
+                  {canAdd(o) && <Button variant="text" onClick={() => choose(o)}>{o.as === 'habit' ? 'Add as a habit' : 'Add as a to-do'}</Button>}
+                  <Button variant="text" onClick={() => alreadyDoing(o)}>Already doing this</Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {running && <AddButton className="ck-one-add" onClick={() => choose({ key: 'other' })}>Something else</AddButton>}
+          {!running && <p className="ck-one-next">{noSprintLine({ kind, coachName: coach })}</p>}
+          <Button variant="text" className="ck-one-nothing" onClick={nothingThisMonth}>Nothing this month</Button>
+        </>
       )}
-      {!inSprint && running && <AddButton className="ck-one-add" onClick={() => { setForm((f) => (f.as ? f : emptyForm())); setOpen(true); }}>Add to my sprint</AddButton>}
-      {!inSprint && !running && <p className="ck-one-next">{noSprintLine({ kind, coachName: coach })}</p>}
       {running && (
         <SlidePanel
           open={open}
@@ -845,7 +945,7 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
           )}
         >
           <div className="ds-panel-form">
-            {habitFrom && (
+            {habitFrom && chosen?.key === 'other' && (
               <Choice
                 label="How do you want to add it?"
                 options={[{ value: 'habit', label: 'As a habit' }, { value: 'todo', label: 'As a to-do' }]}
