@@ -100,6 +100,8 @@ test('one card takes turns: Plan my day, then a due check-in, then Review my day
   assert.deepEqual([c.key, c.question, c.time, c.action.label], ['checkin', 'Ready for your monthly check-in?', '~3 minutes', 'Start my check-in']);
   // Plan my day's morning has gone: the check-in's turn.
   assert.equal(homeSuggestion(base({ hour: 13, checkin })).key, 'checkin');
+  // Never in the night: at 03:30 nothing is suggested; from 04:00 the check-in can have its turn.
+  assert.equal(homeSuggestion(base({ hour: 3, minute: 30, checkin })), null);
   assert.equal(homeSuggestion(base({ hour: 17, dayPlanned: true, checkin })).key, 'review');
   assert.equal(homeSuggestion(base({ hour: 18, reviewed: true, checkin })).key, 'done');
   // Never a quiet line.

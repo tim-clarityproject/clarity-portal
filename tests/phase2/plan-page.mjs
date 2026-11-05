@@ -173,7 +173,9 @@ for (const mode of ['dark', 'light']) {
         await gone(page, '.ds-sdetail');
       }
 
-      // The system pop-up.
+      // The system pop-up's link is gone from the meta line (Tim, 5 Nov, declutter).
+      pass(`${tag}: no "How the system fits together" in the meta line`, (await page.locator('.ds-page-meta .ds-info-link').count()) === 0);
+      if (await page.locator('.ds-page-meta .ds-info-link').count()) {
       await page.locator('.ds-page-meta .ds-info-link').click();
       await shown(page, '.ds-popup');
       const sys = await page.evaluate(() => {
@@ -185,6 +187,7 @@ for (const mode of ['dark', 'light']) {
       await page.keyboard.press('Escape');
       await gone(page, '.ds-popup');
       pass(`${tag}: Escape closes it`, (await page.locator('.ds-popup').count()) === 0);
+      }
 
       // The header pill opens the My Mission panel.
       await page.locator(phone ? '.hdr-phone .hdr-mis' : '.hdr-desktop .hdr-mis').click();

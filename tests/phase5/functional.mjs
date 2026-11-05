@@ -128,6 +128,14 @@ if (part('C')) {
       const q = QUESTIONS.find((x) => x.question === h && (!x.statement || x.statement === st));
       if (!q) { pass(`C: knows the question "${h}"`, false); break; }
       const words = W[q.code];
+      // The drinks question counts drinks (Tim, 5 Nov): 2 pints is about 5 units, so "1 to 7 units".
+      if (await page.locator('.ck-drinks').count()) {
+        for (let i = 0; i < 2; i += 1) await page.getByRole('button', { name: 'One more: pint of beer or cider' }).click();
+        await sleep(450);
+        await page.locator('.ds-guide-next').click();
+        await sleep(400);
+        continue;
+      }
       await page.locator('.ds-guide-body [role=radio]', { hasText: new RegExp(`^${words.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).first().click();
       await until(async () => (await page.locator('.ds-guide-question, .ds-guide-title').first().textContent()).trim() + (await page.locator('.ds-statement').count()) !== h + 1 || true, 1000);
       await sleep(400);
@@ -141,10 +149,12 @@ if (part('C')) {
     pass(`C Software change ${exp.swc} matches m13`, stats[1]?.includes(exp.swc > 0 ? `up ${exp.swc}` : exp.swc < 0 ? `down ${-exp.swc}` : 'same'), stats[1]);
     const improved = await page.locator('.ck-improved li').allInnerTexts();
     pass('C what improved matches m13 (names, order)', JSON.stringify(improved.map((l) => exp.improved.find((n) => l.startsWith(n)))) === JSON.stringify(exp.improved), `${improved} vs ${exp.improved}`);
-    const one = (await page.locator('.ck-one-area').innerText().catch(() => '')).trim();
-    pass(`C one thing to work on is ${exp.workOn}`, one === exp.workOn, one);
+    // One thing to work on is a short choice (Tim, 5 Nov): "What could help with health?".
+    const one = (await page.locator('.ck-one-question').innerText().catch(() => '')).trim();
+    pass(`C one thing to work on is ${exp.workOn}`, one === `What could help with ${exp.workOn.toLowerCase()}?`, one);
     if (sprint) {
-      await page.locator('.ck-one-add').click();
+      // A one-off is added only as a to-do.
+      await page.locator('.ck-option', { hasText: 'The check-up you’ve been putting off' }).getByRole('button', { name: 'Add as a to-do' }).click();
       await page.waitForSelector('.ds-dialog', { timeout: 5000 });
       const dlg = (await page.locator('.ds-dialog').innerText()).replace(/\s+/g, ' ');
       note(`C add panel: ${dlg.slice(0, 300)}`);

@@ -70,4 +70,6 @@ for (const scale of sc.split(',').map(Number)) for (const width of w.split(',').
 await browser.close();
 writeFileSync(out, rows.join('\n') + '\n\nBAD\n' + bad.join('\n'));
 console.log(`rows ${rows.length}, bad ${bad.length}`); console.log(bad.slice(0, 40).join('\n'));
-process.exit(bad.length || !rows.length ? 1 : 0);
+// No page title has an ⓘ any more (Tim, 5 Nov, declutter): none found is the pass.
+if (!rows.length) console.log('PASS  no page title has an ⓘ (declutter, 5 Nov)');
+process.exit(bad.length || rows.length ? 1 : 0);

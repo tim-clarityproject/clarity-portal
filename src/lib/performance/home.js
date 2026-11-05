@@ -143,7 +143,8 @@ export function homeSuggestion(input) {
   // The check-in's turn: once the day is planned (or Plan my day's morning
   // has gone), in place of "How is today going?", or when nothing else is
   // suggested. A new coaching client's First check-in is already the card.
-  if (c && card?.key !== 'first-checkin' && (!card || card.key === 'today')) {
+  // Never in the night: the check-in waits for the day to start at 04:00 (REVIEW_EARLY_HOURS).
+  if (c && input.hour >= REVIEW_EARLY_HOURS && card?.key !== 'first-checkin' && (!card || card.key === 'today')) {
     return { key: c.key, question: c.question, lines: c.lines || [], time: c.time, action: c.action };
   }
   return card;

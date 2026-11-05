@@ -189,7 +189,9 @@ const body = (page) => page.locator('.ds-guide-body');
 async function next(page) {
   const before = await heading(page);
   for (let i = 0; i < 6; i += 1) {
-    await page.locator('.ds-guide-next').click();
+    // A one-answer screen has no Next (Tim, 5 Nov): tapping the chosen answer again moves on.
+    if (!(await page.locator('.ds-guide-next').count())) await page.locator('.ds-guide-body [role=radio][aria-checked=true], .ds-guide-body .ds-answer[aria-pressed=true]').first().click();
+    else await page.locator('.ds-guide-next').click();
     const moved = await until(async () => (await heading(page)) !== before, 1200);
     if (moved) return;
   }
@@ -262,10 +264,13 @@ async function checkScreen(page, tag, { eye = 'Only you' } = {}) {
       text,
       sideways: document.documentElement.scrollWidth - window.innerWidth,
       scrollSideways: (() => { const s = root.querySelector('.ds-guide-scroll'); return s ? s.scrollWidth - s.clientWidth : 0; })(),
-      eye: [...root.querySelectorAll('.ds-who')].filter(shown).map((e) => e.textContent.trim()),
+      // The eye alone (Tim, 5 Nov): its words are for screen readers and the pop-up.
+      eye: [...root.querySelectorAll('.ds-who')].filter(shown).map((e) => (e.getAttribute('aria-label') || e.querySelector('[aria-label]')?.getAttribute('aria-label') || e.textContent).trim()),
+      oneTap: !document.querySelector('.ds-guide-next') && Boolean(document.querySelector('.ds-guide-body [role=radio], .ds-guide-body .ds-answer')),
     };
   }, CORAL);
-  pass(`${tag}: one coral button`, facts.coral === 1, `${facts.coral}`);
+  if (facts.oneTap) pass(`${tag}: no coral button on a one-answer screen`, facts.coral === 0, `${facts.coral}`);
+  else pass(`${tag}: one coral button`, facts.coral === 1, `${facts.coral}`);
   pass(`${tag}: nothing coral is a label or a figure`, facts.coralText.length === 0, facts.coralText.join(' | '));
   pass(`${tag}: 44px tap areas`, facts.small.length === 0, JSON.stringify(facts.small));
   pass(`${tag}: no sideways scroll`, facts.sideways <= 0 && facts.scrollSideways <= 0, `${facts.sideways} ${facts.scrollSideways}`);
@@ -274,7 +279,7 @@ async function checkScreen(page, tag, { eye = 'Only you' } = {}) {
   pass(`${tag}: no banned words`, !/\bmissed\b|\bfail(ed)?\b|\bstep \d+ of\b|\babout \d+ minutes?\b|\btap\b|\bclick\b|\bpurpose\b|…|\bhrs?\b|\bwks\b/i.test(facts.text), facts.text.slice(0, 80));
   const bad = facts.lines.filter((l) => !/[.?!]$/.test(l));
   pass(`${tag}: every sentence ends with a full stop or a question mark`, bad.length === 0, bad.join(' | '));
-  if (eye) pass(`${tag}: the eye says ${eye}`, facts.eye.length > 0 && facts.eye.every((e) => e.endsWith(eye)), JSON.stringify(facts.eye));
+  if (eye) pass(`${tag}: the eye says ${eye}`, facts.eye.length > 0 && facts.eye.every((e) => e.includes(eye)), JSON.stringify(facts.eye));
 }
 
 // The streak's figure and its unit, as read: "3 weeks".
@@ -336,9 +341,10 @@ async function playThrough(page, tag, { deep = false } = {}) {
   // 2. Stress
   pass(`${tag}: Stress, the agreed question`, (await heading(page)) === 'This past week, how much did you feel tense, restless, nervous or anxious?', await heading(page));
   await checkScreen(page, `${tag} stress`);
-  await page.getByRole('radio', { name: 'A little', exact: true }).click();
   await shot(page, `${tag}-2-stress`);
-  await next(page);
+  // One tap moves on after about 300ms (Tim, 5 Nov).
+  await page.getByRole('radio', { name: 'A little', exact: true }).click();
+  await until(async () => (await heading(page)).startsWith('Where are your Outcome'), 4000);
 
   // 3. Objectives
   pass(`${tag}: Objectives`, (await heading(page)) === 'Where are your Outcome Objectives now?');

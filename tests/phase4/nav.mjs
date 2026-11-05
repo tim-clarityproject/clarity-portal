@@ -268,14 +268,8 @@ if (part(1) || part(2) || part(3)) {
         const text = (await page.locator('.ds-hub-page').innerText()).toLowerCase();
         const unbuilt = NOT_BUILT.filter((n) => text.includes(n.toLowerCase()));
         pass(`${hub}: no tile for a tool not built yet, and none for Points of leverage`, unbuilt.length === 0, unbuilt.join(', '));
-        // The ⓘ: one full sentence saying what the area is, first.
-        await page.locator('.ds-page-info-toggle').click();
-        const first = (await page.locator('.ds-infopop:visible .ds-infopop-line').first().innerText()).trim();
-        pass(`${hub}: the ⓘ starts "${HUB_TITLES[hub]} is where …", a full sentence`, new RegExp(`^${HUB_TITLES[hub]} is where [a-z].*\\.$`).test(first), first);
-        const allLines = await page.locator('.ds-infopop:visible .ds-infopop-line').allInnerTexts();
-        pass(`${hub}: every ⓘ line is one sentence`, allLines.every((l) => /^[A-Z].*\.$/.test(l.trim()) && (l.match(/\. /g) || []).length === 0), allLines.join(' | '));
-        await page.keyboard.press('Escape');
-        pass(`${hub}: Escape closes the ⓘ`, await until(async () => !(await page.locator('.ds-infopop:visible').count()), 3000));
+        // No ⓘ on hub pages (Tim, 5 Nov, declutter).
+        pass(`${hub}: no ⓘ beside the title`, (await page.locator('.ds-page-info-toggle').count()) === 0);
         pass(`${hub}: "Pin tools to my menu" ${hub === '/personal' ? 'is not on Personal' : 'is at the foot'}`, (await page.getByRole('button', { name: 'Pin tools to my menu' }).count()) === (hub === '/personal' ? 0 : 1));
         if (hub === '/personal/plan' || hub === '/personal') await shot(page, `hub${hub.replace(/\//g, '-')}-dark`);
         for (const [name, want] of tiles) {
