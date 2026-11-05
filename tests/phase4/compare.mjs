@@ -270,9 +270,9 @@ function measure({ side, frame, CORAL, MINT, BANNED, scope }) {
   // under pressure"), so they are rows of situations, not commands.
   for (const b of buttons) {
     if (b.matches('.ds-helplist-row, .hl button, .hl a')) continue;
-    // NAMED DIFFERENCE: Recovery's "I’m ready to go again" is M15's approved
-    // wording (Phase 2), shown on Home unchanged; listed for Tim against rule 13.
-    if (/^I’m ready to go again$/.test((b.textContent || '').trim())) continue;
+    // Recovery's "Ready to go again" (was M15's "I’m ready to go again";
+    // buttons never say "I", decisions part 4, Phase 4 reported) is checked
+    // like every other button.
     const t = (b.textContent || '').replace(/\s+/g, ' ').trim();
     if (/\b(I|me|Submit|OK|Go)\b/.test(t)) writing.push(`button words (writing rule 13): ${t}`);
   }
@@ -402,7 +402,7 @@ const ALLOWED = [
   { screen: /^home, last week/, side: 'app', re: /^let's start with this week\.$/, why: 'data: the last-week seed has nothing logged in the last 7 days, so Home also says the coming-back line (experience rule 18; Step 2 GAP_DAYS)' },
   { screen: /^home, recovery/, side: 'mock', re: /^(recovery week|suggested for now|ready for performance sprint #\?|this is your recovery week, so nothing is tracked\.|performance sprint # can start on <day> # <month>\.|plan performance sprint #)$/, why: 'RULE OVER MOCK-UP: Recovery started at any time shows M15’s basics (sleep, Breathe, What would help you recharge today?), the later approved design (Step 2)' },
   { screen: /^home, recovery/, side: 'app', re: /^(your chart starts after your second night\.|change my target range)$/, why: 'LATER APPROVED DESIGN: the Recovery sleep chart (Tim, 3 Nov, 14:26): the empty chart’s one line and the target range’s quiet link, under Sleep and Breathe' },
-  { screen: /^home, recovery/, side: 'app', re: /^(you're in recovery until <day> # <month>\.|# days left\.|what would help you recharge <day>\?|this is optional, like everything here\.|only you|sleep|how did you sleep last night\?|~# minutes?|breathe|slow your breathing to settle your body\.|# # or # minutes|add a few more days|i'm ready to go again)$/, why: 'RULE OVER MOCK-UP: Recovery started at any time shows M15’s basics (sleep, Breathe, What would help you recharge today?), the later approved design (Step 2)' },
+  { screen: /^home, recovery/, side: 'app', re: /^(you're in recovery until <day> # <month>\.|# days left\.|what would help you recharge <day>\?|this is optional, like everything here\.|only you|sleep|how did you sleep last night\?|~# minutes?|breathe|slow your breathing to settle your body\.|# # or # minutes|add a few more days|ready to go again)$/, why: 'RULE OVER MOCK-UP: Recovery started at any time shows M15’s basics (sleep, Breathe, What would help you recharge today?), the later approved design (Step 2)' },
   { screen: /^home, new/, side: 'mock', re: /^(ready to add your mission\?|add my mission)$/, why: 'data: the mission quiet line shows two weeks after joining with no mission (M2); the test account’s join date decides (home.mjs checks both)' },
   { screen: /^home, new coaching/, side: 'mock', re: /^(suggested for now|ready to finish your first check-in\?|you're about halfway through\.|it helps <name> get the most from your first session\.|it helps tim get the most from your first session\.|finish my first check-in|ready to sign your coaching agreement\?|read and sign my agreement|your first session with tim is on <day> # <month> at #\.?|done)$/, why: 'no data until Phase 6a: the First check-in, the agreement and the first session’s date (Step 2)' },
   { screen: /^home, wind down/, side: 'mock', re: /^(done at #|done|habit|to-do)$/, why: 'M19 draws Home’s 21:00 card on a short Home; the rest of Home follows M2 (Home’s own mock-up)' },
@@ -929,7 +929,7 @@ if (PARTS.includes('taps')) {
           await homeAt(page, day, time);
           // Recovery pauses the day's tracking (experience rule 29, M15: "nothing
           // is tracked"): Home shows the recovery basics, and these four aren't
-          // offered from Home until "I'm ready to go again".
+          // offered from Home until "Ready to go again".
           pass(`taps, Recovery, ${phone ? 'phone' : 'desktop'}: ${t.what} is paused (not offered from Home)`, n === null && (await page.locator('.home-recovery').count()) > 0, `${n}`);
         } else {
           pass(`taps, ${label}, ${phone ? 'phone' : 'desktop'}: ${t.what} is ${n === null ? 'more than two taps' : `${n} tap${n === 1 ? '' : 's'}`} from Home`, n !== null && n <= 2);

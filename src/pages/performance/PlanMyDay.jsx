@@ -34,6 +34,7 @@ import {
   GRATITUDE_EXAMPLE,
   MAX_DAY_STRATEGIES,
   MAX_DAY_TODOS,
+  RECOVERY_DAY_LINE,
   SLEEP_MAX_HOURS,
   SLEEP_QUALITY_OPTIONS,
   WAY_MAX,
@@ -561,7 +562,7 @@ function PlanFlow({ userId, date, today, loaded }) {
               <p className="day-quiet-line">Nothing is on this week’s list yet.</p>
             </>
           )}
-          {!view.running && <p className="day-quiet-line">No sprint is running, so today’s to-dos aren’t scored yet.</p>}
+          {!view.running && <p className="day-quiet-line">{view.inRecovery ? RECOVERY_DAY_LINE : 'No sprint is running, so today’s to-dos aren’t scored yet.'}</p>}
           {view.note && (
             <NotePanel className="day-note" label={view.note.label} after="If it needs doing, add it as a to-do.">{view.note.text}</NotePanel>
           )}

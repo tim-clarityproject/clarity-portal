@@ -1,7 +1,8 @@
 import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import pageText from '../../content/pageText';
-import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, keepsHappeningLine, useCoach } from '../design';
+import { noMatchLine, searchRows } from '../../lib/savedItems';
+import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, SearchField, keepsHappeningLine, useCoach } from '../design';
 
 // LIST ROW GUIDELINES (CLAUDE.md "List row guidelines"; a mock-up or a
 // newer decision wins where it shows a detail). Every row of every list:
@@ -44,6 +45,12 @@ import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, keepsH
 // Strategic; `subLabels` names it). `initialFilter` and
 // `initialSubFilter` open the list already filtered (a hub's "Open My
 // Plans" link, an old address).
+//
+// `search` (My Plans and My Reviews, Phase 5 step 4): { label,
+// placeholder } turns on a search box with the Filter button, which
+// keeps the rows whose name or tool hold every word typed, on top of the
+// filters, from the rows already on the device (so offline too).
+// `initialSearch` opens it already searched (?q=).
 const DEFAULT_VISIBLE = 50;
 
 function PencilIcon() {
@@ -100,6 +107,8 @@ export default function HistoryList({
   filterLabel = 'Which type?',
   initialFilter = 'all',
   initialSubFilter = 'all',
+  search,
+  initialSearch = '',
   newButton,
   emptyText = 'Nothing here yet.',
   error,
@@ -113,6 +122,7 @@ export default function HistoryList({
   const [activeSubFilter, setActiveSubFilter] = useState(() => (
     (subFilters[initialFilter] || []).some((f) => f.id === initialSubFilter) ? initialSubFilter : 'all'
   ));
+  const [searchText, setSearchText] = useState(() => (search ? initialSearch || '' : ''));
   const [sortOrder, setSortOrder] = useState('new'); // 'new' | 'old'
   const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE);
 
@@ -143,9 +153,10 @@ export default function HistoryList({
   const activeFilterDef = allFilters.find((f) => f.id === activeFilter) || allFilters[0];
   const activeSubFilterDef = allSubFilters?.find((f) => f.id === activeSubFilter) || allSubFilters?.[0];
 
-  const filtered = rows.filter((r) => (
+  const searching = Boolean(search && searchText.trim());
+  const filtered = searchRows(rows.filter((r) => (
     rowMatchesFilter(r, activeFilterDef) && (!activeSubFilterDef || rowMatchesFilter(r, activeSubFilterDef))
-  ));
+  )), searching ? searchText : '');
   const sorted = [...filtered].sort((a, b) => (sortOrder === 'new' ? rowTime(b) - rowTime(a) : rowTime(a) - rowTime(b)));
   const visible = sorted.slice(0, visibleCount);
   const hasMore = sorted.length > visible.length;
@@ -172,6 +183,16 @@ export default function HistoryList({
           </Button>
         )}
       </div>
+
+      {search && rows.length > 0 && (
+        <SearchField
+          className="hlist-search"
+          label={search.label}
+          placeholder={search.placeholder}
+          value={searchText}
+          onChange={(v) => { setSearchText(v); setVisibleCount(DEFAULT_VISIBLE); }}
+        />
+      )}
 
       {allFilters.length > 0 && (
         <FilterButton
@@ -210,7 +231,7 @@ export default function HistoryList({
 
       {filtered.length === 0 ? (
         <div className="hlist-empty">
-          <EmptyState as="p" question={rows.length === 0 ? emptyText : 'Nothing of this type yet.'} />
+          <EmptyState as="p" question={rows.length === 0 ? emptyText : searching ? noMatchLine(searchText) : 'Nothing of this type yet.'} />
         </div>
       ) : (
         <>
@@ -336,6 +357,11 @@ const HLIST_CSS = `
 @media (max-width: 768px) {
   .ui-root .hlist-head .hlist-new-desktop { display: none !important; }
   .hlist-new-phone-wrap { display: flex; }
+}
+
+/* The search box, with the Filter button under it (Phase 5 step 4). */
+.ui-root .hlist-search {
+  margin-bottom: var(--space-3);
 }
 
 .hlist-tools {

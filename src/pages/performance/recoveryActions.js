@@ -9,7 +9,7 @@ import { newId } from '../../lib/syncQueue';
 import { friendlyError } from '../../lib/friendlyError';
 
 // What every Recovery screen can do (M15), in one place: start it, add
-// days to it and end it ("I'm ready to go again"). Each change is sent
+// days to it and end it ("Ready to go again"). Each change is sent
 // through the offline queue and every page's copy on the device learns it
 // at once, so the sprint, the plan and the year show it straight away,
 // offline too. A second tap while one is under way does nothing.
@@ -66,7 +66,7 @@ export function useRecoveryActions({ setData } = {}) {
     });
   };
 
-  /** "I'm ready to go again" or "Pick up my sprint": back to the sprint, welcomed back. */
+  /** "Ready to go again" or "Pick up my sprint": back to the sprint, welcomed back. */
   const end = (open, today) => {
     const values = endValues(open, today);
     const row = { ...open, ...values };

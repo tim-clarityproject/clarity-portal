@@ -119,7 +119,7 @@ export function yearView(d, { today, showResults = false }) {
   });
 
   // Recovery days in each calendar week: from its start to the day before
-  // "I'm ready to go again", or to today while it is still running.
+  // "Ready to go again", or to today while it is still running.
   for (const r of recoveries) {
     const last = r.ended_at ? addDays(r.end_on, -1) : today;
     for (let key = r.start_on; key <= last; key = addDays(key, 1)) {

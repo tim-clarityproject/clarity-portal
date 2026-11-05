@@ -16,7 +16,7 @@ import './design.css';
 // right, wrapping under it on a narrow screen.
 //
 // RecoveryLinks (M15 .rlinks): the quiet text links that sit under them,
-// "Add a few more days" and "I'm ready to go again".
+// "Add a few more days" and "Ready to go again".
 
 export function RecoveryNotice({ lead, lines = [], action, className = '', children }) {
   return (

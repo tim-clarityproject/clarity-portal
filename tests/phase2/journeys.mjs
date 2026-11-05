@@ -737,7 +737,7 @@ try {
   pass('time shift: the Recovery started 2 days ago', !error, error?.message);
   await page.goto(`${APP}/recovery/check-in`);
   await page.waitForSelector('[role=radio]', { timeout: 20000 });
-  await page.getByRole('radio', { name: 'I’m ready to go again' }).click();
+  await page.getByRole('radio', { name: 'Ready to go again' }).click();
   await page.getByRole('button', { name: 'Pick up my sprint' }).click();
   const ended = await until(async () => (await q(db.from('recovery_periods').select('*').eq('id', rec.id)))[0]?.ended_at && (await q(db.from('recovery_periods').select('*').eq('id', rec.id)))[0]);
   pass('Recovery: ended today', ended?.end_on === today, JSON.stringify(ended));

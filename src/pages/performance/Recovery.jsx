@@ -63,7 +63,7 @@ import './performance.css';
 //   /recovery/today      The recovery day (M15 "Home in recovery", here
 //                        until Home is rebuilt in Phase 4): the banner,
 //                        "What would help you recharge today?", Sleep and
-//                        Breathe, Add a few more days, I'm ready to go again.
+//                        Breathe, Add a few more days, Ready to go again.
 //   /recovery/check-in   The end check-in, "How are you feeling?", which
 //                        shows once the chosen end has come; with ?add=1,
 //                        Add a few more days on the same counter.
@@ -218,7 +218,7 @@ export function RecoveryToday() {
 /**
  * The recovery day's basics (M15 "Home in recovery"): the banner, "What
  * would help you recharge today?", Sleep and Breathe, Add a few more days
- * and I'm ready to go again. All optional. On /recovery/today and on
+ * and Ready to go again. All optional. On /recovery/today and on
  * Home while a Recovery is open (Phase 4 step 2). `recovery` is
  * { view: recoveryView(), setData, today, userId } from useRecoveryPage,
  * with an open Recovery whose end hasn't come.
@@ -349,7 +349,7 @@ export function RecoveryDay({ recovery }) {
         className="rec-links"
         links={[
           { label: 'Add a few more days', onClick: () => navigate('/recovery/check-in?add=1') },
-          { label: 'I’m ready to go again', onClick: () => actions.end(open, today), disabled: actions.working },
+          { label: 'Ready to go again', onClick: () => actions.end(open, today), disabled: actions.working },
         ]}
       />
 
@@ -612,7 +612,7 @@ export function RecoveryCheckIn() {
       <div className="rec-feel">
         <Choice
           ariaLabel="How are you feeling?"
-          options={[{ value: 'ready', label: 'I’m ready to go again' }, { value: 'more', label: 'A few more days' }]}
+          options={[{ value: 'ready', label: 'Ready to go again' }, { value: 'more', label: 'A few more days' }]}
           value={feel}
           onChange={setFeel}
           form="rows"
@@ -628,7 +628,7 @@ export function RecoveryCheckIn() {
         <div className="ds-actions rec-actions">
           {feel === 'ready' ? (
             <Button variant="primary" disabled={actions.working} onClick={() => actions.end(open, today)}>
-              {sprint ? 'Pick up my sprint' : 'I’m ready to go again'}
+              {sprint ? 'Pick up my sprint' : 'Ready to go again'}
             </Button>
           ) : (
             <Button variant="primary" disabled={actions.working || max <= 0} onClick={() => actions.extend(open, count, today)}>Add the days</Button>

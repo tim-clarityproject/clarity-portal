@@ -531,3 +531,36 @@ export function healthCheckTeams(rows, today = getLocalDateKey()) {
         : `${t.count} versions, latest ${formatSavedDate(t.latestDate, today)}`,
     }));
 }
+
+// -------------------------------------------------------------- search
+
+/** Lower case, accents and curly quotes made plain, spaces squeezed: "Today’s Plan" and "todays plan" meet. */
+function plainWords(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[‘’ʼ']/g, '')
+    .replace(/[“”"]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * The rows whose name or tool hold every word typed (Phase 5 step 4: the
+ * search in My Plans and My Reviews). It works on the rows already on
+ * the device, so it works offline too. Nothing typed keeps every row.
+ */
+export function searchRows(rows, query) {
+  const words = plainWords(query).split(' ').filter(Boolean);
+  if (!words.length) return rows;
+  return rows.filter((r) => {
+    const hay = plainWords([r.title, r.typeLabel, r.team].filter(Boolean).join(' '));
+    return words.every((w) => hay.includes(w));
+  });
+}
+
+/** The line when nothing matches: "Nothing matches “sales”." */
+export function noMatchLine(query) {
+  return `Nothing matches “${String(query || '').trim()}”.`;
+}

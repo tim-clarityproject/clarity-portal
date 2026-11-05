@@ -154,6 +154,8 @@ export default function MyReviews() {
           filterLabel="Which area?"
           initialFilter={query.get('area') || 'all'}
           initialSubFilter={query.get('tool') || 'all'}
+          search={{ label: 'Search my reviews', placeholder: 'Search by name or tool' }}
+          initialSearch={query.get('q') || ''}
           newButton={{ label: 'New review', onClick: () => navigate('/personal/review') }}
           emptyText="Nothing here. When you finish a review or save a journal it will appear in this list."
           error={error}

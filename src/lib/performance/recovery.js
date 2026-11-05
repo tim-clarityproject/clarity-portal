@@ -3,7 +3,7 @@
 // no device clock (today is passed in), tested in tests/performance.
 //
 // The sprint clock is the methods' (M0.4: Recovery pauses sprint time
-// from its start until the day "I'm ready to go again" is said, and the
+// from its start until the day "Ready to go again" is said, and the
 // sprint end moves later by the days taken). What the methods leave open
 // is a screen choice made here and listed in progress.md as UNDEFINED:
 // the end shown while Recovery runs (rows.js sprintPause), and what
@@ -78,7 +78,7 @@ export function recoveryRow({ id, userId, sprintId = null, today, days, letCoach
 }
 
 /**
- * Ending it ("I'm ready to go again" or "Pick up my sprint"): today
+ * Ending it ("Ready to go again" or "Pick up my sprint"): today
  * counts again (M0.4). Never before its start, and never further from it
  * than the database allows.
  */

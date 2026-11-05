@@ -224,7 +224,7 @@ export function pendingAction(pending, sprints = [], now = Date.now()) {
 /**
  * A Recovery still open when a new sprint starts (Claude's call, M15):
  * starting a sprint means being ready to go again, so the Recovery ends
- * today first (as "I'm ready to go again"), and the sprint it paused is
+ * today first (as "Ready to go again"), and the sprint it paused is
  * finished as it stands then. Null when none is open.
  */
 export function recoveryToEnd(recoveries = [], today, now = new Date()) {

@@ -280,11 +280,11 @@ if (run('taps')) {
     await page.waitForTimeout(1500);
     recs = await recoveriesOf();
     pass('taps: three taps on Add the days add the days once', recs.length === 1 && recs[0].extended_days > 0 && (!more || recs[0].extended_days === more), `extended ${recs[0]?.extended_days}, counter ${more}, chosen ${chosen}`);
-    await page.getByRole('button', { name: 'I’m ready to go again' }).click({ clickCount: 3 });
+    await page.getByRole('button', { name: 'Ready to go again' }).click({ clickCount: 3 });
     await page.waitForURL(/\/performance-sprint/, { timeout: 20000 });
     await page.waitForTimeout(1500);
     recs = await recoveriesOf();
-    pass('taps: three taps on I’m ready to go again end it once, today', recs.length === 1 && recs[0].ended_at && recs[0].end_on === today, JSON.stringify(recs.map((r) => [r.start_on, r.end_on])));
+    pass('taps: three taps on Ready to go again end it once, today', recs.length === 1 && recs[0].ended_at && recs[0].end_on === today, JSON.stringify(recs.map((r) => [r.start_on, r.end_on])));
     noErrors(page, 'taps on Recovery');
   } catch (e) {
     pass('taps ran to the end', false, e.message.split('\n')[0]);
@@ -588,7 +588,7 @@ if (run('text')) {
     const rec = (await recoveriesOf())[0];
     await page.mouse.move(1, 1); // a resting mouse holds the toast open over the link
     await page.waitForTimeout(6000);
-    await page.getByRole('button', { name: 'I’m ready to go again' }).click();
+    await page.getByRole('button', { name: 'Ready to go again' }).click();
     await page.waitForURL(/\/performance-sprint/, { timeout: 20000 });
     pass('text: the Recovery ended', Boolean((await recoveriesOf()).find((x) => x.id === rec.id)?.ended_at));
 
@@ -820,7 +820,7 @@ if (run('refresh')) {
     await page.waitForTimeout(3000);
     const recs = await recoveriesOf();
     pass('refresh: Recovery refreshed mid-start makes one at most', recs.length <= 1, `${recs.length}`);
-    pass('refresh: the Recovery page still works', (await page.getByRole('button', { name: /Start my recovery|I’m ready to go again/ }).count()) >= 1 || /recovery/.test(page.url()));
+    pass('refresh: the Recovery page still works', (await page.getByRole('button', { name: /Start my recovery|Ready to go again/ }).count()) >= 1 || /recovery/.test(page.url()));
     // Recharge answer typed then refreshed straight away.
     if (!recs.length) {
       await page.goto(`${APP}/recovery`);

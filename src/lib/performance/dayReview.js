@@ -261,6 +261,7 @@ export function dayReviewView(d, { date, planLocal = {}, local = {} }) {
     date,
     hasPlan: plan.hasPlan,
     running,
+    inRecovery: plan.inRecovery,
     sprintId: plan.sprintId,
     week: plan.week,
     firstName: plan.firstName,

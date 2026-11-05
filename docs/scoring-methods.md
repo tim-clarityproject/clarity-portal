@@ -44,7 +44,7 @@ In plain words: everyone sets which days they work, and only those days count. A
 In plain words: a sprint is counted in sprint time, which stops during Recovery and starts again afterwards.
 - A sprint has a start day (any day; Tim, 23 Oct), a length of 2 to 16 weeks (12 suggested) and a performance standard (M7).
 - A sprint week is 7 days of sprint time from the start day. A sprint starting on a Thursday has Thursday to Wednesday weeks.
-- **Recovery pauses sprint time (Tim, 26 Oct, 12:25):** from the moment Recovery starts until "I'm ready to go again", no day counts. The sprint end moves later by the days taken. A week interrupted by Recovery carries on from where it stopped when Recovery ends, so it still has 7 days of sprint time (Claude).
+- **Recovery pauses sprint time (Tim, 26 Oct, 12:25):** from the moment Recovery starts until "Ready to go again", no day counts. The sprint end moves later by the days taken. A week interrupted by Recovery carries on from where it stopped when Recovery ends, so it still has 7 days of sprint time (Claude).
 - A week is **finished** when its last day has passed. Its score is final once the weekly debrief is done or the debrief window closes, 3 days after the week ends (Tim, 23 Oct), whichever comes first. Later edits still update it (M0.6).
 
 ### M0.5 Which weeks count for ranges and patterns

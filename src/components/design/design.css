@@ -3808,6 +3808,33 @@
   border-color: var(--coral-text);
 }
 
+/* ---------- A search box (SearchField): the field, with the 45 degree
+   crosshair at its right end to clear it ---------- */
+
+.ui-root .ds-search {
+  position: relative;
+  letter-spacing: normal;
+}
+
+.ui-root .ds-search .ds-search-input {
+  padding-right: calc(var(--tap-min) + var(--space-2)) !important;
+}
+
+/* The browser's own clear mark is hidden: the crosshair is the one way to clear. */
+.ui-root .ds-search .ds-search-input::-webkit-search-cancel-button,
+.ui-root .ds-search .ds-search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.ui-root .ds-search .ds-search-clear {
+  position: absolute;
+  top: 50%;
+  right: var(--space-1);
+  transform: translateY(-50%);
+}
+
 /* ---------- A quiet action for a single status change ---------- */
 
 .ui-root .ds-status-action {

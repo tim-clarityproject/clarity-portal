@@ -59,6 +59,7 @@ import {
   EmptyState,
   ErrorMessage,
   FilterButton,
+  SearchField,
   FloatingOrb,
   GoogleButton,
   HubCard,
@@ -537,7 +538,7 @@ function RecoveryDemo() {
         lines={[shown ? 'Your results show as normal for this visit.' : 'Your scores and standards are hidden until you’re back.']}
         action={shown ? null : { label: 'Show my results', onClick: () => setShown(true) }}
       />
-      <RecoveryLinks links={[{ label: 'Add a few more days', onClick: () => {} }, { label: 'I’m ready to go again', onClick: () => {} }]} />
+      <RecoveryLinks links={[{ label: 'Add a few more days', onClick: () => {} }, { label: 'Ready to go again', onClick: () => {} }]} />
     </div>
   );
 }
@@ -1025,6 +1026,7 @@ function CalendarDemo() {
 }
 
 function FilterDemo() {
+  const [search, setSearch] = useState('');
   const [type, setType] = useState('all');
   const [when, setWhen] = useState('any');
   const parts = [
@@ -1032,10 +1034,13 @@ function FilterDemo() {
     when !== 'any' && WHEN_OPTIONS.find((o) => o.value === when).label.toLowerCase(),
   ].filter(Boolean);
   return (
-    <FilterButton label="Filter" applied={parts.join(' from ')} onClear={() => { setType('all'); setWhen('any'); }}>
-      <Dropdown label="Which type?" options={TYPE_OPTIONS} value={type} onChange={setType} />
-      <Dropdown label="From when?" options={WHEN_OPTIONS} value={when} onChange={setWhen} />
-    </FilterButton>
+    <div className="dr-stack dr-stack--fill">
+      <SearchField label="Search my plans" placeholder="Search by name or tool" value={search} onChange={setSearch} />
+      <FilterButton label="Filter" applied={parts.join(' from ')} onClear={() => { setType('all'); setWhen('any'); }}>
+        <Dropdown label="Which type?" options={TYPE_OPTIONS} value={type} onChange={setType} />
+        <Dropdown label="From when?" options={WHEN_OPTIONS} value={when} onChange={setWhen} />
+      </FilterButton>
+    </div>
   );
 }
 
@@ -1526,6 +1531,7 @@ function Gallery() {
           <>
             <p>One Filter button opens the drop-downs; its arrow turns to point up while they are open.</p>
             <p>Underneath, one plain line says what is applied, with Clear.</p>
+            <p><New /><b>Search</b> (Phase 5): a list that can be searched has its search box with the Filter button, never at the top of the page. The 45 degree crosshair clears it, and both apply together.</p>
           </>
         )} />
 
@@ -1746,7 +1752,7 @@ function Gallery() {
             <p><New /><b>The day counter</b> (M15): minus and plus, one day at a time, from 1 to 30. Whole weeks read “1 week” and “2 weeks”, and the suggested length says “suggested” under it.</p>
             <p>The number keeps its width, so changing it never moves anything else, and only the number and the end date under it change.</p>
             <p><b>Calm panels</b> on the soft surface colour, with no border and no colour: the banner at the top of the recovery day, and the panel wherever scores are hidden, with one quiet “Show my results” for that visit only.</p>
-            <p>“Add a few more days” and “I’m ready to go again” are quiet text links, never coral.</p>
+            <p>“Add a few more days” and “Ready to go again” are quiet text links, never coral.</p>
             <p>The paused dial and the welcome-back dial are in The sprint dial.</p>
           </>
         )} />

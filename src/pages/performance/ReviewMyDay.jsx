@@ -49,6 +49,8 @@ import { useLatestWhenSuperseded } from '../../lib/performance/hooks';
 import {
   DIFFERENTLY_EXAMPLE,
   MAX_TOMORROW,
+  RECOVERY_DAY_LINE,
+  RECOVERY_NUMBERS_LINE,
   REVIEW_EARLY_HOURS,
   REVIEW_TEXT_MAX,
   TOMORROW_EXAMPLE,
@@ -540,7 +542,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
           ) : (
             <p className="day-quiet-line">{planned ? 'Nothing else is on this week’s list.' : 'Nothing is on this week’s list yet.'}</p>
           ))}
-          {!view.running && <p className="day-quiet-line">No sprint is running, so today’s to-dos aren’t scored yet.</p>}
+          {!view.running && <p className="day-quiet-line">{view.inRecovery ? RECOVERY_DAY_LINE : 'No sprint is running, so today’s to-dos aren’t scored yet.'}</p>}
         </div>
       )),
     },
@@ -598,7 +600,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
             </div>
           ) : (
             <p className="day-quiet-line">
-              {view.running ? 'None of this sprint’s habits are logged a day at a time.' : 'No sprint is running, so there are no numbers to log today.'}
+              {view.running ? 'None of this sprint’s habits are logged a day at a time.' : view.inRecovery ? RECOVERY_NUMBERS_LINE : 'No sprint is running, so there are no numbers to log today.'}
             </p>
           )}
           {view.weeklyLine && (

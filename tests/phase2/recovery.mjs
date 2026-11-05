@@ -14,7 +14,7 @@
 //     src/lib/performance on the database rows; "Show my results" for that
 //     visit only, on the sprint, the plan and the year.
 //  4. Across a week boundary: a Recovery from the last day of week 2
-//     ended early with "I'm ready to go again": Welcome back, week 2
+//     ended early with "Ready to go again": Welcome back, week 2
 //     carries on today, and the end moves later by the days taken.
 //  5. The chosen end passed: the end check-in shows; a few more days are
 //     counted from today; Add a few more days; Pick up my sprint.
@@ -312,11 +312,11 @@ seed('--reset', `--recovery=${taken},${taken + 4}`);
   const p = sprintPause(r.sprint, r.recoveries, today);
   pass('a Recovery from the last day of week 2 pauses at week 2', p.week === 2 && plain(await text(page, '.rec-sprint-lines')).includes(`paused at week 2 of ${r.sprint.length_weeks}`));
   pass('... not due yet: no check-in', page.url().endsWith('/performance-sprint'));
-  await page.getByRole('button', { name: 'I’m ready to go again' }).click();
+  await page.getByRole('button', { name: 'Ready to go again' }).click();
   await page.waitForSelector('.rec-welcome', { timeout: 15000 });
   r = await rowsNow();
   const ended = r.recoveries[r.recoveries.length - 1];
-  pass('I’m ready to go again ends it today', Boolean(ended.ended_at) && ended.end_on === today);
+  pass('Ready to go again ends it today', Boolean(ended.ended_at) && ended.end_on === today);
   const s = sprintStanding(r.sprint, r.recoveries, today);
   pass('Welcome back, with the first name', /^Welcome back/i.test(await text(page, 'h1')), await text(page, 'h1'));
   pass('Let’s start with this week.', (await text(page, '.rec-welcome')) === 'Let’s start with this week.');
@@ -362,7 +362,7 @@ await everyLayout('check-in', async (page) => {
   r = await rowsNow();
   pass('... 1 more day', recoveryEndOn(r.open) === addDays(today, 4), `${recoveryEndOn(r.open)}`);
   await go(page, '/recovery/check-in', '.rec-question');
-  await page.getByRole('radio', { name: 'I’m ready to go again' }).click();
+  await page.getByRole('radio', { name: 'Ready to go again' }).click();
   await page.getByRole('button', { name: 'Pick up my sprint' }).click();
   await page.waitForSelector('.rec-welcome', { timeout: 15000 });
   r = await rowsNow();

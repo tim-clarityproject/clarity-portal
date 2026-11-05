@@ -66,7 +66,7 @@ export function m0WorkingDaysOfWeek(history, weekDays) {
 // ---------------------------------------------------------------- M0.4
 /**
  * M0.4: a sprint's weeks in sprint time. Recovery pauses sprint time: every
- * day from a Recovery's start day up to the day before "I'm ready to go
+ * day from a Recovery's start day up to the day before "Ready to go
  * again" is skipped (Claude: the day someone says they're ready counts
  * again). An unfinished Recovery pauses every day from its start.
  *

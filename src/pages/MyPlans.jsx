@@ -103,6 +103,8 @@ export default function MyPlans() {
             filterLabel="Which area?"
             initialFilter={query.get('area') || 'all'}
             initialSubFilter={query.get('team') || query.get('tool') || 'all'}
+            search={{ label: 'Search my plans', placeholder: 'Search by name or tool' }}
+            initialSearch={query.get('q') || ''}
             newButton={{ label: 'New plan', onClick: () => navigate('/personal/plan') }}
             emptyText="No plans yet."
             error={error}

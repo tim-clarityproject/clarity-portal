@@ -352,6 +352,8 @@ const ALLOWED = [
   { screen: /start|build|edit/, side: 'app', re: /^(#%|other|# to #|pick any day\.|you can move it before it starts\.|from your plan|(high|medium|low) impact|starting it finishes performance sprint #\.?)$/, why: 'the % bar; "Other" length (2 to 16); one sentence per line; "From your plan"; impact as its own grey label (steps 2 and 3)' },
   // M15
   { screen: /recovery/, side: 'mock', re: /Home now shows only the basics|^Good morning|^Good afternoon|^Good evening/, why: 'Home is rebuilt in Phase 4' },
+  { screen: /paused|recovery/, side: 'mock', re: /^I'm ready to go again$/, why: 'LATER RULE: buttons never say "I" (writing rule 13; decisions part 4, Phase 4 reported), so M15’s words became “Ready to go again” (Phase 5 step 4)' },
+  { screen: /paused|recovery/, side: 'app', re: /^Ready to go again$/, why: 'LATER RULE: buttons never say "I" (writing rule 13; decisions part 4, Phase 4 reported), so M15’s words became “Ready to go again” (Phase 5 step 4)' },
   { screen: /paused|welcome|recovery/, side: 'mock', re: /^Let Tim know|^Tim /, why: 'the coach line names the person’s own coach and is left out with no coach (test client has none)' },
 ];
 
@@ -574,7 +576,7 @@ const GROUPS = [
     before: async () => {
       const { context, page } = await appContext(390, 'dark');
       await go(page, '/performance-sprint', '.ds-sdial--paused');
-      await button(page, 'I’m ready to go again').click();
+      await button(page, 'Ready to go again').click();
       await page.waitForSelector('.rec-welcome', { timeout: 15000 });
       await context.close();
     },

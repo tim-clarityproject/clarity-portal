@@ -64,7 +64,7 @@ import './performance.css';
 // (risk R3); nothing else writes week_scores yet.
 //
 // Recovery (M15) pauses this page: the paused dial, when it picks up and
-// its new end, Add a few more days and I'm ready to go again, with the
+// its new end, Add a few more days and Ready to go again, with the
 // scores hidden until "Show my results" (this visit only). Once the
 // chosen end has come, the end check-in shows instead. On the first day
 // back the top of the page says "Welcome back" (M15 "Welcome back. Let's
@@ -284,7 +284,7 @@ export default function PerformanceSprint() {
               className="rec-links"
               links={[
                 { label: 'Add a few more days', onClick: () => navigate('/recovery/check-in?add=1', { state: { back } }) },
-                { label: 'I’m ready to go again', onClick: () => recovery.end(view.recovery, today), disabled: recovery.working },
+                { label: 'Ready to go again', onClick: () => recovery.end(view.recovery, today), disabled: recovery.working },
                 { label: 'Open my recovery day', onClick: () => navigate('/recovery/today') },
               ]}
             />
@@ -699,7 +699,7 @@ function HabitPanel({ habit, view, typed, data, onClose, onType, onLeave, onLog,
 
 // Recovery pauses the sprint (M15 "Sprint, paused"): the paused dial,
 // the week it paused at, when it picks up and its new end, then Add a few
-// more days and I'm ready to go again. Scores and standards are hidden
+// more days and Ready to go again. Scores and standards are hidden
 // (no mint, no grey) until "Show my results", for this visit only: it is
 // never stored, so the next visit hides them again (M15 "Your results").
 function SprintPaused({ view, working, onMore, onReady, onToday }) {
@@ -747,7 +747,7 @@ function SprintPaused({ view, working, onMore, onReady, onToday }) {
         className="rec-links"
         links={[
           { label: 'Add a few more days', onClick: onMore },
-          { label: 'I’m ready to go again', onClick: onReady, disabled: working },
+          { label: 'Ready to go again', onClick: onReady, disabled: working },
           { label: 'Open my recovery day', onClick: onToday },
         ]}
       />

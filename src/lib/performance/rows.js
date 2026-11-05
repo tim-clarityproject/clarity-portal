@@ -139,7 +139,7 @@ export function openRecovery(rows = []) {
 /**
  * The day a Recovery ends: for one still running, its start plus the days
  * chosen and added (M15 "Your recovery ends on Mon 2 Nov."), the day the
- * sprint picks up; for one that has ended, its end_on ("I'm ready to go
+ * sprint picks up; for one that has ended, its end_on ("Ready to go
  * again").
  */
 export function recoveryEndOn(row) {
@@ -151,7 +151,7 @@ export function recoveryEndOn(row) {
 /**
  * Where a running sprint stands while a Recovery is open (M15 "Sprint 4
  * is paused at week 4 of 8."). The methods (M0.4) leave the end unknown
- * until "I'm ready to go again"; the screen shows the end it would have
+ * until "Ready to go again"; the screen shows the end it would have
  * if the Recovery ends as chosen (UNDEFINED in the methods, audit 4.6:
  * the open Recovery taken to end on start + chosen + added days, or today
  * once that has passed, as it stays paused until the person answers),

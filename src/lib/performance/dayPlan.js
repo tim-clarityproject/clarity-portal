@@ -11,7 +11,7 @@
 
 import { weekday } from '../scores/dates.js';
 import { m12IsOdd, SLEEP_QUALITY } from '../scores/index.js';
-import { settingForWeek, toMeasure } from './rows';
+import { openRecovery, settingForWeek, toMeasure } from './rows';
 import { sprintPageView } from './sprintPage';
 import { carriedOver, carriedSource, thingKey } from './windDown';
 
@@ -262,6 +262,9 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
     date,
     hasPlan: Boolean(d.plan),
     running,
+    // A Recovery open on this day (M15): the daily tools are paused, so
+    // the page says so calmly instead of "No sprint is running".
+    inRecovery: inRecoveryOn(d.recoveries, date),
     sprintId: running ? sprint.sprintId : null,
     week: running ? sprint.current : null,
     firstName: d.firstName || '',
@@ -281,6 +284,20 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
     // The score this week so far (M5), as the sprint shows it: mint at or above the standard.
     score: running && sprint.soFar ? { value: `${sprint.soFar.value}%`, good: sprint.soFar.good } : null,
   };
+}
+
+/**
+ * Recovery's calm lines in Plan my day and Review my day (M15 "Plan,
+ * review and logging reminders pause", "nothing counts against you";
+ * Claude's wording, Phase 5 step 4), in place of "No sprint is running".
+ */
+export const RECOVERY_DAY_LINE = 'Your daily tools are paused while you recharge, so nothing here counts against you.';
+export const RECOVERY_NUMBERS_LINE = 'You’re in recovery, so there are no numbers to log today.';
+
+/** Whether a Recovery is open on this day: one not yet ended, begun on or before it. */
+export function inRecoveryOn(recoveries = [], date) {
+  const open = openRecovery(recoveries || []);
+  return Boolean(open && open.start_on <= date);
 }
 
 /** The plan's own answers from its row, as the page keeps them. */
