@@ -326,7 +326,10 @@ function heroView(d, weeks, sprint, today) {
       value: w.raw == null ? null : m0Round(w.raw),
       state,
       best: isBest,
-      sprintLabel: sprintStart && w.number === 1 ? `Sprint ${w.sprintNumber}` : null,
+      // "Week 1" under the current sprint's first bar, an earlier sprint's
+      // name under its first, and "This week" under this week (Tim, 5 Nov).
+      sprintLabel: w.now ? 'This week'
+        : sprintStart && w.number === 1 ? (w.sprintId === sprint.id ? 'Week 1' : `Sprint ${w.sprintNumber}`) : null,
       tip: weekTip(w, w.raw, extra),
     };
   });

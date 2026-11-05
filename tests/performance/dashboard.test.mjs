@@ -146,8 +146,10 @@ test('the top: the sprint’s score (M6), its change since the last sprint, the 
   assert.equal(v.hero.usualLine, null); // the band says it once there is a range
   assert.equal(v.hero.chart.bars.length, 16);
   assert.equal(v.hero.chart.bars[0].sprintLabel, 'Sprint 1');
-  assert.equal(v.hero.chart.bars[8].sprintLabel, 'Sprint 2');
+  // Tim, 5 Nov: "Week 1" under this sprint's first bar, "This week" under this week.
+  assert.equal(v.hero.chart.bars[8].sprintLabel, 'Week 1');
   assert.equal(v.hero.chart.bars[12].state, 'now');
+  assert.equal(v.hero.chart.bars[12].sprintLabel, 'This week');
   assert.equal(v.hero.chart.bars[13].tip.value, 'To come');
   assert.equal(v.hero.chart.bars.filter((b) => b.best).length, 1);
 });

@@ -54,7 +54,7 @@ import { usePatterns } from './usePatterns';
 // fits together; the score this sprint with its glance figure, one line
 // against the standard and the one big chart (the weeks to the end of the
 // sprint, the usual range as a band, the standard labelled at its right
-// end, Best and So far on their bars, the sprint names along the bottom);
+// end, Best on its bar, Week 1 and This week along the bottom);
 // this week's logging line and the debrief when it's ready; then Current
 // sprint (What's improving, What's holding you back), Objectives and
 // Strategies (with the time switch, which changes only that section) and
@@ -213,13 +213,13 @@ function Hero({ hero, phone, navigate, state }) {
  * the standard, grey below, this week in the text colour, weeks to come a
  * faint stub. The usual range is a pale band with its own pop-up, the
  * standard a dashed line labelled at its right end ("85%" alone on a
- * phone), "Best" on the best week of this sprint and "So far" under this
- * week (laptop only, as M4), the sprint names along the bottom. No key.
+ * phone), "Best" on the best week of this sprint, "Week 1" under the
+ * sprint's first week and "This week" under this one (Tim, 5 Nov), and an
+ * earlier sprint's name under its first week. No key.
  */
 function HeroChart({ chart, phone }) {
   if (!chart.enough) return <p className="ds-chart-empty dash-empty">{chart.empty}</p>;
   const { standard, band, bars } = chart;
-  const nowAtStart = bars.some((b) => b.state === 'now' && b.sprintLabel);
   return (
     <ChartTips className="dash-hchart">
       <div className="dash-hchart-plot" role="group" aria-label={`Performance score week by week, against your standard of ${standard}%`}>
@@ -233,7 +233,6 @@ function HeroChart({ chart, phone }) {
             <div className="dash-hchart-col" key={b.key}>
               <i className={`dash-hchart-bar dash-hchart-bar--${b.state}`} style={{ height: has ? pct(b.value) : undefined }} {...tipProps(b.tip)}>
                 {!phone && b.best && <em className="dash-hchart-tag" aria-hidden="true">Best</em>}
-                {!phone && b.state === 'now' && nowAtStart && <em className="dash-hchart-tag" aria-hidden="true">So far</em>}
               </i>
             </div>
           );
@@ -242,7 +241,7 @@ function HeroChart({ chart, phone }) {
       <div className="dash-hchart-axis" aria-hidden="true">
         {bars.map((b) => (
           <span key={b.key} className={b.state === 'now' ? 'dash-hchart-now' : undefined}>
-            {b.sprintLabel || (!phone && b.state === 'now' && !nowAtStart ? 'So far' : '')}
+            {b.sprintLabel || ''}
           </span>
         ))}
       </div>

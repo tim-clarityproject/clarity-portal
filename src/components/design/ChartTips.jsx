@@ -56,6 +56,9 @@ function edgeOf(el) {
   return parseFloat(getComputedStyle(el).getPropertyValue('--tip-edge')) || 12;
 }
 
+/** Labels on a chart that a pop-up must never cover ("Best", "This week", the standard's label). */
+const CHART_LABELS = '[data-chart-label], .ds-wchart-tag, .dash-hchart-tag, .dash-hchart-std-label, .dash-hchart-axis span, .ds-wchart-std-label';
+
 export default function ChartTips({ children, className = '' }) {
   const scope = useThemeScope();
   const zoneRef = useRef(null);
@@ -94,8 +97,27 @@ export default function ChartTips({ children, className = '' }) {
     const h = Math.ceil(box.getBoundingClientRect().height);
     const centre = mark.left + mark.width / 2;
     const left = Math.max(edge, Math.min(viewW - edge - w, centre - w / 2));
+    // Never over a label (Tim, 5 Nov: the pop-up covered "Best"): a label
+    // the pop-up would sit on lifts it above that label; with no room
+    // above, it goes below the mark.
+    const labels = [...(zoneRef.current?.querySelectorAll(CHART_LABELS) || [])]
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0);
+    const hits = (t) => labels.find((r) => r.left < left + w && r.right > left && r.top < t + h && r.bottom > t);
     let top = mark.top - gap - h;
-    if (top < edge) top = mark.bottom + gap;
+    for (let k = 0; k < labels.length; k += 1) {
+      const hit = hits(top);
+      if (!hit) break;
+      top = hit.top - gap - h;
+    }
+    if (top < edge) {
+      top = mark.bottom + gap;
+      for (let k = 0; k < labels.length; k += 1) {
+        const hit = hits(top);
+        if (!hit) break;
+        top = hit.bottom + gap;
+      }
+    }
     // Never past the bottom of the screen either (a mark scrolled away).
     top = Math.max(edge, Math.min(window.innerHeight - edge - h, top));
     box.style.left = `${Math.floor(left)}px`;
