@@ -44,6 +44,7 @@ import {
   dayStrategyNames,
   homeGreeting,
   homePerson,
+  RECOVERY_NUMBERS_LINE,
   dayState,
   homeSuggestion,
   isComingBack,
@@ -366,6 +367,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
         }))}
       />
 
+      {/* Recovery leads with what's true today (Tim, 5 Nov, 11:09). */}
+      {person === 'recovery' && recovery && <p className="home-line home-recovery-line">{RECOVERY_NUMBERS_LINE}</p>}
       {person === 'recovery' && recovery && <RecoveryBasics userId={userId} today={today} />}
 
       {person === 'new' && (

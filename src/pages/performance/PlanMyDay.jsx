@@ -20,6 +20,7 @@ import {
   clearGuideDraft,
   useToast,
   LoadError,
+  PausedGate,
 } from '../../components/design';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -575,6 +576,7 @@ function PlanFlow({ userId, date, today, loaded }) {
       name: 'Priority',
       question: 'Which one is your highest priority?',
       nudges: ['It comes first on Home and in Review my day.'],
+      oneTap: view.picks.length > 0,
       render: (tool) => (view.picks.length ? (
         <div className="day-narrow">
           {eye}
@@ -584,6 +586,7 @@ function PlanFlow({ userId, date, today, loaded }) {
           options={view.ordered.map((o) => ({ value: o.value, label: o.label }))}
           value={view.top}
           onChange={chooseTop}
+          onChoose={() => tool.next()}
           />
         </div>
       ) : (
@@ -666,6 +669,7 @@ function PlanFlow({ userId, date, today, loaded }) {
   ];
 
   const backTo = location.state?.from || '/performance-sprint';
+  const [anyway, setAnyway] = useState(false);
 
   const finish = async () => {
     const ok = await sendAnswers({ status: 'finished', finished_at: new Date().toISOString() });
@@ -693,6 +697,32 @@ function PlanFlow({ userId, date, today, loaded }) {
     }
     navigate(backTo, { replace: true });
   };
+
+  // A paused tool is a gate (Tim, 5 Nov, 11:09): in Recovery, only the
+  // calm screen, until they choose to go on (this visit only).
+  if (view.inRecovery && !anyway && !view.finished) {
+    return (
+      <div className="ui-root plan-builder-wait">
+        <GuidedTool
+          name="Plan my day"
+          steps={[{
+            key: 'paused',
+            name: 'Paused',
+            plain: true,
+            render: (tool) => (
+              <PausedGate
+                toolName="Plan my day"
+                headingRef={tool.headingRef}
+                onBack={() => navigate(location.state?.from || '/recovery/today', { replace: true })}
+                onAnyway={() => setAnyway(true)}
+              />
+            ),
+          }]}
+          onClose={() => navigate(backTo, { replace: true })}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="ui-root plan-builder-wait">

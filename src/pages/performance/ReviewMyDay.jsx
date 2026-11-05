@@ -26,6 +26,7 @@ import {
   clearGuideDraft,
   useToast,
   LoadError,
+  PausedGate,
 } from '../../components/design';
 import { useCachedLoad } from '../../lib/pageCache';
 import { clearDraft, useDraft } from '../../lib/drafts';
@@ -787,6 +788,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
 
   // Close my day: saved as finished, then Work's done for today (M19).
   const [closed, setClosed] = useState(null);
+  const [anyway, setAnyway] = useState(false);
   const finish = async () => {
     const ok = await sendAnswers({ status: 'finished', finished_at: new Date().toISOString() });
     if (!ok) return false; // the tool lets Close my day be tapped again
@@ -811,6 +813,32 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     }
     navigate(backTo, { replace: true });
   };
+
+  // A paused tool is a gate (Tim, 5 Nov, 11:09): in Recovery, only the
+  // calm screen, until they choose to go on (this visit only).
+  if (view.inRecovery && !anyway && !view.finished) {
+    return (
+      <div className="ui-root plan-builder-wait">
+        <GuidedTool
+          name="Review my day"
+          steps={[{
+            key: 'paused',
+            name: 'Paused',
+            plain: true,
+            render: (tool) => (
+              <PausedGate
+                toolName="Review my day"
+                headingRef={tool.headingRef}
+                onBack={() => navigate(location.state?.from || '/recovery/today', { replace: true })}
+                onAnyway={() => setAnyway(true)}
+              />
+            ),
+          }]}
+          onClose={() => navigate(backTo, { replace: true })}
+        />
+      </div>
+    );
+  }
 
   const toolName = date === today ? 'Review my day' : `Review my day, ${dayName(date, today)}`;
   if (closed) {

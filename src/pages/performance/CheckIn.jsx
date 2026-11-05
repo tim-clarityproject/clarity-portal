@@ -127,7 +127,7 @@ import './performance.css';
 
 export const CHECKIN_CACHE = 'checkin-page';
 const SAVE_AFTER_MS = 600;
-const ADVANCE_MS = 380; // M12: a tap shows as chosen for a moment, then the next question
+const ADVANCE_MS = 300; // shown as chosen for a moment (Tim, 5 Nov: about 300ms) // M12: a tap shows as chosen for a moment, then the next question
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 
 /** A finished or changed check-in: the device's copies learn it at once, so Home and the lists show it offline too. */
@@ -466,6 +466,8 @@ function CheckinFlow({ userId, today, month, loaded }) {
     info: q.why ? whyLines(q.why, sharing ? coach : null) : undefined,
     question: q.question,
     nudges: q.trip ? [TRIP_NUDGE] : q.nudges,
+    // One answer moves on by itself, with no Next (Tim, 5 Nov, 10:23); the drinks keep Next.
+    oneTap: !q.drinks,
     render: (tool) => (
       q.drinks ? (
         <DrinksBody drinks={answers._drinks || null} saved={answers.H8 || null} onPatch={patchAnswers} onNext={() => tool.go(tool.index + 1)} eye={eyeLine} />

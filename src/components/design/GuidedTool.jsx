@@ -55,6 +55,10 @@ import './design.css';
 //   nudgeInfo: { label, text } an "i" at the end of the last nudge,
 //              opening its one line in place (M19's Close the day),
 //   required, nextLabel, skippable (for the last step), bare,
+//   oneTap:    a one-answer question (Tim, 5 Nov, 10:23): the chosen answer
+//              shows as selected for a moment (ONE_TAP_MS), then the step
+//              moves itself on with tool.next(); no Next button. Back keeps
+//              the answer. Several-answer, typed and slider steps keep Next.
 //   plain:     only the top bar (name, Saving and Saved, close) and the
 //              step's own content: no % bar, question or footer (M19's
 //              breathing, Sleep well and Work's done screens). Its
@@ -200,6 +204,9 @@ function StepHead({ step, headingRef, positionId, role }) {
   );
 }
 
+/** How long a one-tap answer shows as chosen before the tool moves on (Tim, 5 Nov: about 300ms). */
+export const ONE_TAP_MS = 300;
+
 export default function GuidedTool({
   open = true,
   layout = 'fullscreen',
@@ -245,6 +252,12 @@ export default function GuidedTool({
   }, [onClose]);
 
   const i = Math.min(index, steps.length - 1);
+  const oneTapTimer = useRef(null);
+  const indexRef = useRef(i);
+  indexRef.current = i;
+  const changingRef = useRef(false);
+  const backToSummaryRef = useRef(() => {});
+  useEffect(() => () => clearTimeout(oneTapTimer.current), []);
   const step = steps[i];
   const last = i === steps.length - 1;
   const shown = fullscreen ? open : true;
@@ -366,6 +379,8 @@ export default function GuidedTool({
   const previous = steps[i - 1];
   const showBack = i > 0 && !previous?.bare;
   const changing = returnTo != null && returnTo !== i;
+  changingRef.current = changing;
+  backToSummaryRef.current = backToSummary;
   // tool.go(to, { fromSummary: true }) opens one question from a summary
   // (GuidedSummary does this); a step moving itself on (a one-tap answer)
   // then goes back to that summary too.
@@ -381,6 +396,17 @@ export default function GuidedTool({
         return;
       }
       go(to, 'jump');
+    },
+    // A one-tap answer: shown as chosen for a moment, then on (or back to
+    // the summary it was changed from). Leaving the step first cancels it.
+    next: () => {
+      clearTimeout(oneTapTimer.current);
+      const from = i;
+      oneTapTimer.current = setTimeout(() => {
+        if (indexRef.current !== from) return;
+        if (changingRef.current) backToSummaryRef.current();
+        else go(from + 1, 'jump');
+      }, ONE_TAP_MS);
     },
     index: i,
     skipped,
@@ -467,9 +493,11 @@ export default function GuidedTool({
               {showSkip && (
                 <button type="button" className="ds-guide-skip" onClick={skip}>{skipLabel}</button>
               )}
-              <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
-                {changing ? 'Save my change' : (step.nextLabel || (last ? finishLabel : 'Next'))}
-              </button>
+              {!(step.oneTap && !last) && (
+                <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
+                  {changing ? 'Save my change' : (step.nextLabel || (last ? finishLabel : 'Next'))}
+                </button>
+              )}
             </div>
           </div>
         )}

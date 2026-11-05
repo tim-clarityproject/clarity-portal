@@ -8889,3 +8889,41 @@
     transition: none;
   }
 }
+
+/* A paused tool's one calm screen (PausedGate; Tim, 5 Nov). */
+.ui-root .ds-paused {
+  max-width: var(--suggest-line-max);
+  margin: var(--space-6) auto 0;
+  text-align: center;
+}
+
+.ui-root .ds-paused-title {
+  margin: 0 !important;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-question) !important;
+  line-height: var(--lh-question);
+  letter-spacing: normal;
+  text-transform: none;
+  text-wrap: balance;
+  color: var(--text);
+}
+
+.ui-root .ds-paused-title:focus {
+  outline: none;
+}
+
+.ui-root .ds-paused-line {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .ds-paused-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}

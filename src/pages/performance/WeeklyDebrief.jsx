@@ -678,10 +678,11 @@ function DebriefFlow({ userId, today, loaded, view }) {
       name: 'Stress',
       question: STRESS_QUESTION,
       nudges: ['Choose the answer closest to your week.'],
-      render: () => (
+      oneTap: true,
+      render: (tool) => (
         <div className="day-narrow">
           <div className="ds-label-row ds-label-row--solo">{eye('me')}</div>
-          <Choice ariaLabel={STRESS_QUESTION} options={STRESS_OPTIONS} value={answers.stress} onChange={(stress) => change({ stress })} form="rows" />
+          <Choice ariaLabel={STRESS_QUESTION} options={STRESS_OPTIONS} value={answers.stress} onChange={(stress) => change({ stress })} onChoose={() => tool.next()} form="rows" />
         </div>
       ),
     },
