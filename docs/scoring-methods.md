@@ -229,7 +229,7 @@ Each Outcome Objective is tracked one of three ways (Tim, 22 Oct): a number, a r
   - Rate so far = (current − start) ÷ months since it was set.
   - Rate needed = (target − current) ÷ months left to the by-when date.
   - **On pace** when the rate so far is at least the rate needed (for an objective that should go down, the same with the signs reversed).
-  - Sentences: "You're on pace to reach 38 by 30 Jun 2027." or "Reaching 9/10 by 30 Jun 2027 needs 0.3 points a month, and you've averaged 0.2." (Tim, 26 Oct, 14:36).
+  - Sentences: "You're on pace to reach 38 by 30 Jun 2027." or "Reaching 9/10 by 30 Jun 2027 needs 0.3 points a month, and you've averaged 0.2." (Tim, 26 Oct, 14:36). Money is written the way people say it: "Reaching £250k by 31 Dec 2027 needs £5.6k a month, and you've averaged £2.7k." (5 Nov).
   - Pace is only shown after 3 finished weeks since the objective was set, because results lag effort (Claude, 26 Oct).
   - Months are calendar months of 30.44 days.
 - Worked example (test case M9-1): start 20 on 1 Jan 2026, target 38 by 30 Jun 2027, current 31 on 26 Oct 2026. Rate so far 1.12 a month; rate needed 0.86 a month. **On pace.**

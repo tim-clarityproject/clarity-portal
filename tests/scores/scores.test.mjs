@@ -306,6 +306,10 @@ test('M9-1 sentences', () => {
   const rating = { kind: 'rating', start: 7, startOn: '2026-07-26', target: 9, byWhen: '2027-06-30', figures: [{ on: '2026-10-26', value: 7.3 }] };
   const rr = S.m9Objective(rating, { asOf: '2026-10-26' });
   assert.equal(S.m9PaceSentence(rating, rr, fmt), "Reaching 9/10 by 30 Jun 2027 needs 0.2 points a month, and you've averaged 0.1.");
+  // Money the way people say it (5 Nov): "£250k", "£5.6k a month".
+  const money = { kind: 'number', unit: '£k', start: 100, startOn: '2026-07-26', target: 250, byWhen: '2027-06-30', figures: [{ on: '2026-10-26', value: 110 }] };
+  const rm = S.m9Objective(money, { asOf: '2026-10-26' });
+  assert.match(S.m9PaceSentence(money, rm, fmt), /^Reaching £250k by 30 Jun 2027 needs £\d+(\.\d)?k a month, and you've averaged £\d+(\.\d)?k\.$/);
 });
 
 test('M9: missing dates don\'t crash', () => {

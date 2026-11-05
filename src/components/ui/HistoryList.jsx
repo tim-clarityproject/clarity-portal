@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { parseDbTimestamp, formatDayMonthTime } from '../../lib/dateFormatter';
 import pageText from '../../content/pageText';
 import { noMatchLine, searchRows } from '../../lib/savedItems';
-import { Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, SearchField, keepsHappeningLine, useCoach } from '../design';
+import { AddButton, Button, Chevron, Dropdown, EmptyState, FilterButton, PageHeader, SearchField, keepsHappeningLine, useCoach } from '../design';
 
 // LIST ROW GUIDELINES (CLAUDE.md "List row guidelines"; a mock-up or a
 // newer decision wins where it shows a detail). Every row of every list:
@@ -162,9 +162,7 @@ export default function HistoryList({
           {title && <PageHeader title={title} info={pageText[pageKey]} />}
         </div>
         {newButton && (
-          <Button icon={newButton.icon === undefined ? 'plus' : newButton.icon} className="hlist-new-desktop" onClick={newButton.onClick}>
-            {newButton.label}
-          </Button>
+          <NewButton newButton={newButton} className="hlist-new-desktop" />
         )}
       </div>
 
@@ -286,9 +284,7 @@ export default function HistoryList({
 
       {newButton && (
         <div className="hlist-new-phone-wrap">
-          <Button icon={newButton.icon === undefined ? 'plus' : newButton.icon} onClick={newButton.onClick}>
-            {newButton.label}
-          </Button>
+          <NewButton newButton={newButton} />
         </div>
       )}
     </div>
@@ -760,3 +756,10 @@ const HLIST_CSS = `
   }
 }
 `;
+
+// "New plan", "New review", "New journal": the one add button (CLAUDE.md 29),
+// its crosshair in the text colour; "Continue today" is a plain button.
+function NewButton({ newButton, className = '' }) {
+  if (newButton.icon === null) return <Button className={className} onClick={newButton.onClick}>{newButton.label}</Button>;
+  return <AddButton className={className} onClick={newButton.onClick}>{newButton.label}</AddButton>;
+}

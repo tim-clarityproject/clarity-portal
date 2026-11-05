@@ -156,13 +156,17 @@ export function m9Objective(objective, { asOf, sprintStart = null }) {
 export function m9PaceSentence(objective, result, formatDate) {
   if (objective.kind === 'milestone' || !result.paceShown || result.reached) return null;
   const rating = objective.kind === 'rating';
-  const goal = rating ? `${objective.target}/10` : `${objective.target}`;
+  // Money is written the way people say it: "£250k", "£5.6k a month" (Phase 5 UI tester, 5 Nov).
+  const u = (objective.unit || '').trim();
+  const money = !rating && /^[£$€]/.test(u) && u.length <= 3 && !/\s/.test(u);
+  const amount = (x) => (money ? `${u[0]}${x}${u.slice(1)}` : `${x}`);
+  const goal = rating ? `${objective.target}/10` : amount(objective.target);
   const when = formatDate(objective.byWhen);
   if (result.onPace) return `You're on pace to reach ${goal} by ${when}.`;
   const one = (x) => (Math.floor(Math.max(0, x) * 10 + 0.5 + 1e-9) / 10).toString();
-  const unit = rating ? ' points' : objective.unit ? ` ${objective.unit}` : '';
+  const unit = rating ? ' points' : money ? '' : u ? ` ${u}` : '';
   if (result.rateNeeded == null) return objective.byWhen === undefined || objective.byWhen < result.asOf ? `${goal} was due by ${when}.` : `${goal} is due today.`;
-  return `Reaching ${goal} by ${when} needs ${one(result.rateNeeded)}${unit} a month, and you've averaged ${one(result.rateSoFar ?? 0)}.`;
+  return `Reaching ${goal} by ${when} needs ${amount(one(result.rateNeeded))}${unit} a month, and you've averaged ${amount(one(result.rateSoFar ?? 0))}.`;
 }
 
 /**

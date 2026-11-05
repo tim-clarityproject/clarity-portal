@@ -37,7 +37,8 @@ export default function ObjectiveCard({ objective: o, onMarkDone, onEdit, as: He
           </div>
         ) : (
           <div className="ds-objective-milestone">
-            <p className={`ds-objective-status${o.reached ? ' ds-objective-status--done' : ''}`}>{o.reached ? 'Done' : 'Not yet'}</p>
+            {/* Never "Not yet" in the figure style (Tim, 5 Nov): the empty bar says it. */}
+            {o.reached && <p className="ds-objective-status ds-objective-status--done">Done</p>}
             <Bar value={o.reached ? 1 : 0} className="ds-objective-bar" />
           </div>
         )
