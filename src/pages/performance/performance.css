@@ -1359,6 +1359,13 @@
 }
 
 /* ---------------------------------------------------------------- the Hardware and Software check-in (M12 v14, Phase 5 step 1) */
+/* A question's area and topic, two labels (26 Oct rule 5: no dots). */
+.ui-root .ck-area {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 var(--icon-item-gap);
+}
+
 .ui-root .ck-quiet {
   margin: var(--space-4) 0 0;
   color: var(--text-2);

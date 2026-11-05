@@ -136,7 +136,10 @@ function measure({ side, frame, CORAL, MINT, BANNED, scope }) {
 
   // Lines people read.
   const style = document.createElement('style');
-  style.textContent = `${hide} { display: none !important; }`;
+  // A word kept whole (keepWords: .ds-keep, never wrapping) is read as part
+  // of its line: inside a flex button it would otherwise become its own
+  // piece ("Add a" + "to-do"), as innerText splits flex items.
+  style.textContent = `${hide} { display: none !important; } body .ui-root .ds-keep { display: contents !important; }`;
   document.head.appendChild(style);
   const lines = root.innerText.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
   style.remove();
@@ -390,7 +393,16 @@ const ALLOWED = [
   { side: 'both', re: /^[−–+]$/, why: 'the stepper’s minus and plus, drawn as icons in the mock-up' },
   { side: 'both', re: /^# <day>, no more than #$|^#( <name>)? today$/, why: 'each habit’s own measure line, from the seeded plan through src/lib (the mock-up’s habits differ)' },
   // Home (M2)
-  { screen: /^home/, side: 'mock', re: /^((coaching )?session with (<name>|tim) <day> at #\.?|what would make it useful\?|get ready for my session|ready for your monthly check-in\?|start my check-in|<name> has sent you a note\.|read my note|your agreement is ready to sign\.|read and sign)$/, why: 'quiet lines with no data until Phase 6a (the coach’s note, the coaching session, the monthly check-in, the agreement): left out (Step 2)' },
+  { screen: /^home/, side: 'mock', re: /^((coaching )?session with (<name>|tim) <day> at #\.?|what would make it useful\?|get ready for my session|ready for your monthly check-in\?|start my check-in|<name> has sent you a note\.|read my note|your agreement is ready to sign\.|read and sign)$/, why: 'quiet lines with no data until Phase 6a (the coach’s note, the coaching session, the agreement): left out (Step 2); the monthly check-in’s line (Phase 5 step 1) shows only while this month’s check-in is due' },
+  { screen: /^home, new coaching/, side: 'app', re: /^(ready for your first check-in\?|start my first check-in)$/, why: 'data: the new coaching client has not started the First check-in, so Home asks “Ready for your first check-in?” (Phase 5 step 1, M12 v14); M2 draws it half done (“Ready to finish your first check-in?”)' },
+  { screen: /^home/, side: 'app', re: /^(ready for your monthly check-in\?|start my check-in)$/, why: 'the monthly check-in’s quiet line (M2, built in Phase 5 step 1) shows while this month’s check-in is due; the mock-up’s state shows it only on some moments' },
+  { screen: /^home/, side: 'mock', re: /^week # of #$/, why: 'LATER RULE: the dial’s line names the sprint and is a quiet link into it (Tim, 3 Nov, Phase 2 preview fixes 7f5959e): “Sprint 1, week 4 of 8”' },
+  { screen: /^home/, side: 'app', re: /^sprint #,? week # of #$/, why: 'LATER RULE: the dial’s line names the sprint and is a quiet link into it (Tim, 3 Nov, Phase 2 preview fixes 7f5959e): “Sprint 1, week 4 of 8”' },
+  { screen: /^hub, plan$/, side: 'mock', re: /^week # of #$/, why: 'NAMED DIFFERENCE: the tiles’ live lines (“Sprint 4, week 4 of 8”) are not built; tiles show their fixed line and time (Step 1 left them for later)' },
+  { screen: /^menu open/, side: 'mock', re: /^(meeting planner|journal|get unstuck)$/, why: 'invented data: M3’s example pins; the app shows the test client’s own pins (person_settings.page_preferences.menu_pins, menuPins.js)' },
+  { screen: /^home, wind down/, side: 'mock', re: /^(sleep wind down|ready to wind down\?|write down what's on your mind for <day>, then breathe slowly\.|start my wind down|not tonight)$/, why: 'data: in this run the week’s debrief is still open on debrief day, so Home’s one suggestion is the debrief (homeSuggestion, the debrief from 12:00 until it is done); the wind-down card itself is checked in tests/phase4/wind-down.mjs' },
+  { screen: /^home, wind down/, side: 'app', re: /^(suggested for now|how did this week go\?|your debrief is open until <day> # <month>\.|start my debrief)$/, why: 'data: in this run the week’s debrief is still open on debrief day, so Home’s one suggestion is the debrief (homeSuggestion, the debrief from 12:00 until it is done); the wind-down card itself is checked in tests/phase4/wind-down.mjs' },
+  { screen: /^hub, review$/, side: 'app', re: /^(hardware and software check-in|check your body and mind are backing your performance\.|~# minutes)$/, why: 'Phase 5 step 1: the check-in is built, so it gets its tile; its line says how it helps (CLAUDE.md 16, one line on how it helps, as Life balance review’s “Check the rest of your life is backing your performance.”), for M3’s “Check in on your hardware and software each month.”' },
   { screen: /^home/, side: 'mock', re: /^your usual range is # to #%\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M2’s own rule)' },
   { screen: /^home/, side: 'app', re: /^your usual range appears after # weeks\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M2’s own rule)' },
   { screen: /^home/, side: 'app', re: /^(plan my day|review my day|add a to-do)$/, why: 'RULE OVER MOCK-UP: Plan my day, Review my day and Add a to-do on Today, for two taps from Home (experience rule 21; Step 2)' },

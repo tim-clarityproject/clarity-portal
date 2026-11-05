@@ -577,13 +577,16 @@ if (part(3)) {
     pass('new, no coach: My Mission is next', (await text(nn.page, '.ds-planstep--next .ds-planstep-name')) === 'My Mission');
     pass('new, no coach: the date, no dial', (await nn.page.locator('.ds-mdial').count()) === 0 && (await text(nn.page, '.ds-page-meta')) === 'Wed 21 Oct');
     pass('new, no coach: no Log today', (await nn.page.locator('#log-today').count()) === 0);
-    const q = await text(nn.page, '.ds-quiet');
+    // The quiet lines: the mission's, and (Phase 5) the monthly check-in's while this month's is due.
+    const quiets = await nn.page.locator('.ds-quiet').allInnerTexts();
+    const q = quiets.find((t) => t.includes('mission')) || '';
     // M2: it appears once two weeks after joining, so it depends on when the test account was made.
     const joinedDays = Math.floor((zoneInstant(LONDON, FIXED_TODAY, '10:00') - new Date(signIn.user.created_at)) / 86400000);
     pass(`new, no coach: "Ready to add your mission?" ${joinedDays >= 14 ? 'shows' : 'waits'} (${joinedDays} days after joining)`, joinedDays >= 14 ? q.includes('Ready to add your mission?') : !q, q);
+    pass('new, no coach: any other quiet line is the monthly check-in’s (Phase 5)', quiets.filter((t) => !t.includes('mission')).every((t) => t.includes('Ready for your monthly check-in?')), quiets.join(' | '));
     if (q) {
-      await nn.page.getByRole('button', { name: 'Not now' }).click();
-      pass('new, no coach: Not now hides it', Boolean(await until(async () => (await nn.page.locator('.ds-quiet').count()) === 0, 5000)));
+      await nn.page.locator('.ds-quiet', { hasText: 'mission' }).getByRole('button', { name: 'Not now' }).click();
+      pass('new, no coach: Not now hides it', Boolean(await until(async () => (await nn.page.locator('.ds-quiet', { hasText: 'mission' }).count()) === 0, 5000)));
     }
     await nn.page.locator('.home-help .ds-btn').click();
     await nn.page.waitForSelector('.ds-helplist-row', { timeout: 5000 });
@@ -597,10 +600,11 @@ if (part(3)) {
   }
   const nc = await signedIn({ day: FIXED_TODAY, time: '10:00', coach: 'Tim' });
   try {
-    pass('coaching client: no card until the First check-in exists (Phase 6a)', (await nc.page.locator('.ds-suggest').count()) === 0, await cardQuestion(nc.page));
+    // Phase 5 built the First check-in: a new coaching client's card is it (M2 sugCard newc).
+    pass('coaching client: the card is the First check-in (Phase 5)', (await cardQuestion(nc.page)) === 'Ready for your first check-in?', await cardQuestion(nc.page));
     pass('coaching client: "You’ll build your plan with your coach in your first session."', (await text(nc.page, '.home-section')).includes('You’ll build your plan with your coach in your first session.'));
     pass('coaching client: Start on my own', (await nc.page.locator('.home-links .ds-link', { hasText: 'Start on my own' }).count()) === 1);
-    pass('coaching client: no mission quiet line', (await nc.page.locator('.ds-quiet').count()) === 0);
+    pass('coaching client: no mission quiet line', (await nc.page.locator('.ds-quiet', { hasText: 'mission' }).count()) === 0);
     await nc.page.locator('.home-help .ds-btn').click();
     await nc.page.waitForSelector('.ds-helplist-row', { timeout: 5000 });
     pass('coaching client: "Something else? Chat to Tim"', (await nc.page.locator('.ds-helplist-row', { hasText: 'Something else?' }).innerText()).includes('Chat to Tim'));

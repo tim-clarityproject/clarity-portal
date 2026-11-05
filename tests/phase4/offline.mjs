@@ -25,6 +25,11 @@
 // 4. The outside Health Check is untouched: the same response with and
 //    without the portal's worker, nothing it loads comes from the worker,
 //    and the Health Check never registers one.
+// 5. The dashboard and the check-in (Phase 5): after one online visit in a
+//    fresh profile (neither page opened), offline both open as last seen
+//    from the device's warmed copies, the whole check-in is done and
+//    finished, nothing reaches the database, and back online it is sent
+//    exactly once: one finished row with every answer, no duplicate write.
 //
 // Offline is the browser's own offline mode in Chromium. WebKit's offline
 // mode in Playwright stops every navigation before a service worker can
@@ -43,6 +48,7 @@ import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { FIXED_TODAY, fixClock, fixedLabel, seedFixed, seedForReal } from '../phase2/fixed-day.mjs';
 import { proxyTo, serveBuild } from './serve-build.mjs';
+import { checkinMonth } from '../../src/lib/performance/checkin.js';
 
 const TEST_REF = 'gqtqljngeenqzxneucoc';
 const TEST_HOST = `${TEST_REF}.supabase.co`;
@@ -197,7 +203,7 @@ async function signInPage(page) {
 
 const controlled = (page) => page.evaluate(() => Boolean(navigator.serviceWorker?.controller));
 const cacheKey = (name) => `clarity-cache:${me}:${name}`;
-const WARMED = ['performance-plan', 'performance-plan-head', 'performance-sprint', `home-day:${today}`, `day-plan:${today}`, `day-review:${today}`, 'debrief:now', 'saved-plans', 'saved-reviews'];
+const WARMED = ['performance-plan', 'performance-plan-head', 'performance-sprint', `home-day:${today}`, `day-plan:${today}`, `day-review:${today}`, 'debrief:now', 'saved-plans', 'saved-reviews', 'checkins', 'checkin-page', 'performance-dashboard', 'performance-patterns'];
 const queued = (page) => page.evaluate((id) => {
   const q = JSON.parse(localStorage.getItem(`clarity-queue:${id}`) || '[]');
   const s = JSON.parse(localStorage.getItem(`clarity-sending:${id}`) || '[]');
@@ -308,7 +314,7 @@ for (const kind of BROWSERS) {
       return missing.length === 0 ? true : null;
     }, 45000, 500);
     const missing = await page.evaluate((want) => want.filter((k) => localStorage.getItem(k) == null), WARMED.map(cacheKey));
-    pass(`${tag}: after one visit the key pages' data is on the device (Home's day, the plan, the sprint, Plan and Review my day, the debrief, My Plans, My Reviews)`, Boolean(warmed), missing.join(', '));
+    pass(`${tag}: after one visit the key pages' data is on the device (Home's day, the plan, the sprint, Plan and Review my day, the debrief, My Plans, My Reviews, the check-in, the dashboard and its patterns)`, Boolean(warmed), missing.join(', '));
 
     if (part(1)) {
       await offline(true);
@@ -527,6 +533,85 @@ for (const kind of BROWSERS) {
     await used.browser.close();
   }
 }
+
+// ---------------------------------------------------------------- 5: the dashboard and the check-in
+// The fixed day's month (the browser's clock is the fixed day's).
+const CK_MONTH = checkinMonth(today);
+const { data: ckBefore } = await db.from('checkins').select('*').eq('user_id', me).eq('month', CK_MONTH);
+// The database keeps jsonb keys in its own order: compared key by key.
+const same = (a, b) => JSON.stringify(Object.entries(a || {}).sort()) === JSON.stringify(Object.entries(b || {}).sort());
+const ckRows = async () => (await db.from('checkins').select('id, status, answers, kind').eq('user_id', me).eq('month', CK_MONTH)).data || [];
+for (const kind of BROWSERS) {
+  if (!part(5)) break;
+  const tag = `${kind} dashboard and check-in`;
+  srv.setRoot(DIST_A);
+  await db.from('checkins').delete().eq('user_id', me).eq('month', CK_MONTH);
+  const { browser, page, state, offline } = await newContext(kind);
+  try {
+    await signInPage(page);
+    pass(`${tag}: the first visit is looked after by the service worker`, Boolean(await until(() => controlled(page), 20000)));
+    const want = ['performance-dashboard', 'performance-patterns', 'checkins', 'checkin-page'].map(cacheKey);
+    const warmed = await until(() => page.evaluate((w) => w.every((k) => localStorage.getItem(k) != null), want), 45000, 500);
+    pass(`${tag}: after one visit (neither page opened) the dashboard, its patterns and the check-in are on the device`, Boolean(warmed), (await page.evaluate((w) => w.filter((k) => localStorage.getItem(k) == null), want)).join(', '));
+
+    await offline(true);
+    await page.goto('about:blank');
+    const dash = await openPage(page, '/dashboard', '.dash-page .ds-page-title');
+    pass(`${tag}: offline, the dashboard opens`, dash);
+    pass(`${tag}: offline, the dashboard shows its parts as last seen`, Boolean(await until(async () => (await page.locator('.dash-sec').count()) > 0, 15000)) && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN), (await bodyText(page)).slice(0, 300));
+    pass(`${tag}: offline, the dashboard's chart shows`, (await page.locator('.dash-hchart-bar, .dash-big, .dash-hero-value').count()) > 0);
+
+    const ck = await openPage(page, '/check-in', '.ds-guide-question, .ds-guide-title');
+    pass(`${tag}: offline, the check-in opens`, ck && !(await bodyText(page)).includes(FIRST_OPEN), (await bodyText(page)).slice(0, 200));
+    const opening = await heading(page);
+    pass(`${tag}: offline, the check-in opens on its first screen`, /^Ready /.test(opening), opening);
+    await sleep(450);
+    await page.locator('.ds-guide-next').click();
+    // Every question, one tap each (the first answer; a travel Yes adds its pair).
+    let answered = 0;
+    for (let i = 0; i < 40; i += 1) {
+      if (/^(Your month|Your starting point)$/.test(await heading(page))) break;
+      const statement = () => page.evaluate(() => document.querySelector('.ds-statement')?.textContent || '');
+      const before = `${await heading(page)}|${await statement()}`;
+      const radio = page.locator('.ds-guide-body [role=radio]:not([aria-checked="true"])');
+      if (await radio.count()) { await radio.nth(Math.min(1, (await radio.count()) - 1)).click(); answered += 1; }
+      else { await sleep(450); await page.locator('.ds-guide-next').click(); }
+      await until(async () => `${await heading(page)}|${await statement()}` !== before, 4000, 150);
+    }
+    const resultsHeading = await heading(page);
+    pass(`${tag}: offline, every question answered and the results worked out on the device`, /^(Your month|Your starting point)$/.test(resultsHeading) && (await page.locator('.ck-scores .ds-stat').count()) === 2, `${resultsHeading} after ${answered} answers`);
+    await sleep(450);
+    await page.locator('.ds-guide-next').click();
+    pass(`${tag}: offline, Finish works`, Boolean(await until(async () => (await page.locator('.ds-toast-text', { hasText: /^Saved\./ }).count()) > 0, 10000)));
+    const waiting = await queued(page);
+    pass(`${tag}: offline, the check-in waits on the device`, waiting >= 1, String(waiting));
+    pass(`${tag}: nothing reached the database while offline`, (await ckRows()).length === 0);
+    const onDevice = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || 'null'), cacheKey('checkin-page'));
+    const deviceRow = onDevice?.v?.checkins?.find((c) => c.month === CK_MONTH);
+
+    state.mark();
+    await offline(false);
+    const landed = await until(async () => (await queued(page)) === 0, 150000, 1000);
+    pass(`${tag}: back online, the queue empties`, Boolean(landed), String(await queued(page)));
+    await sleep(3000);
+    const rows = await ckRows();
+    pass(`${tag}: back online, exactly one row, finished`, rows.length === 1 && rows[0].status === 'finished', JSON.stringify(rows.map((r) => r.status)));
+    pass(`${tag}: back online, every answer arrived as given`, rows.length === 1 && Object.keys(rows[0].answers || {}).length >= answered && (!deviceRow?.answers || same(rows[0].answers, deviceRow.answers)), `${Object.keys(rows[0]?.answers || {}).length} of ${answered}`);
+    const writes = state.requests.filter((r) => r.write && /\/rest\/v1\/checkins/.test(r.url));
+    const finishedSends = writes.filter((w) => /"status":"finished"/.test(w.body || '')).length;
+    pass(`${tag}: back online, Finish sent exactly once`, finishedSends === 1, `${finishedSends} of ${writes.length} writes`);
+    const seen = new Map();
+    for (const w of writes) seen.set(`${w.method} ${w.url} ${w.body}`, (seen.get(`${w.method} ${w.url} ${w.body}`) || 0) + 1);
+    pass(`${tag}: no write sent twice`, [...seen.values()].every((n) => n === 1), [...seen.entries()].filter(([, n]) => n > 1).map(([k]) => k.slice(0, 120)).join(' | '));
+    pass(`${tag}: still signed in after landing`, !/\/auth\//.test(new URL(page.url()).pathname));
+  } catch (e) {
+    pass(`${tag}: finished`, false, e.message.split('\n')[0]);
+  } finally {
+    await browser.close();
+    await db.from('checkins').delete().eq('user_id', me).eq('month', CK_MONTH);
+  }
+}
+if (ckBefore?.length) await db.from('checkins').insert(ckBefore.map(({ hardware_score: _h, software_score: _s, area_scores: _a, methods_version: _m, ...r }) => r));
 
 await srv.close();
 await dbProxy.close();

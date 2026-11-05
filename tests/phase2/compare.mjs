@@ -97,7 +97,10 @@ function measure({ side, frame, CORAL, MINT, BANNED, guided, scope }) {
 
   // Lines people read.
   const style = document.createElement('style');
-  style.textContent = `${hide} { display: none !important; }`;
+  // A word kept whole (keepWords: .ds-keep, never wrapping) is read as part
+  // of its line: inside a flex button it would otherwise become its own
+  // piece ("Add a" + "to-do"), as innerText splits flex items.
+  style.textContent = `${hide} { display: none !important; } body .ui-root .ds-keep { display: contents !important; }`;
   document.head.appendChild(style);
   const lines = root.innerText.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
   style.remove();

@@ -25,7 +25,10 @@
 //    action landing on the sprint; opening the debrief again introduces
 //    nothing more (at most one a week); Not useful hides it. Laptop and
 //    phone, dark and light: the writing rules, 44px taps, at most one coral
-//    button, no sideways scrolling.
+//    button, no sideways scrolling; and every one of tests/phase5/measure.mjs's
+//    rules on the dashboard with its card at 1280, 640, 390 and 360px, dark
+//    and light (pop-ups that never move the page included), on the
+//    debrief's card, at twice the text size and with reduced motion.
 import { chromium } from 'playwright';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -33,6 +36,7 @@ import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { addDays } from '../../src/lib/scores/dates.js';
 import { m14Rng } from '../../src/lib/scores/m14.js';
+import { BANNED, CORAL as CORALS, MINT, bigText, measure, motionRecorder, motionSeen, popups, ruleChecks } from './measure.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -184,10 +188,17 @@ function answer(tables, url) {
 // ---------------------------------------------------------------- the browser
 const browser = await chromium.launch();
 
-async function newContext({ width = 1280, mode = 'dark', tables }) {
+async function newContext({ width = 1280, mode = 'dark', tables, motion = 'no-preference', scale = 1 }) {
   const phone = width < 769;
-  const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode });
+  const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode, reducedMotion: motion });
   await context.addInitScript((m) => { try { localStorage.setItem('clarity-colour-mode', m); } catch { /* blocked */ } }, mode);
+  if (motion === 'reduce') await context.addInitScript(motionRecorder);
+  if (scale !== 1) {
+    await context.addInitScript((sc) => {
+      const add = () => { const st = document.createElement('style'); st.textContent = `html{font-size:${16 * sc}px !important}`; document.head.appendChild(st); };
+      if (document.head) add(); else document.addEventListener('DOMContentLoaded', add);
+    }, scale);
+  }
   await context.route('**/*', (route) => {
     const req = route.request();
     const url = req.url();
@@ -339,11 +350,12 @@ try {
     const dt = (await deb.innerText().catch(() => '')) || '';
     pass('P: the debrief card says "In weeks you kept"', /In weeks you kept “(Weekly strategic block|Client calls)”, “Grow through referrals” scored \d+ points? higher\./.test(dt), dt);
     await cardChecks(page, 'P debrief');
+    ruleChecks(pass, 'P debrief card (measured)', await page.evaluate(measure, { CORAL: CORALS, MINT, BANNED, scope: '.deb-pattern' }), 'atMost');
     await shot(page, 'P-debrief');
     const marked = await until(async () => { const s = await readPatterns(); return s?.introKey ? s : null; }, 15000);
     pass('P: the debrief marks it introduced', marked?.introKey === card?.key, JSON.stringify(marked?.intro));
 
-    for (const [width, mode] of [[1280, 'dark'], [1280, 'light'], [390, 'dark'], [360, 'light']]) {
+    for (const [width, mode] of [1280, 640, 390, 360].flatMap((w) => [[w, 'dark'], [w, 'light']])) {
       const c = width === 1280 && mode === 'dark' ? { context, page } : await newContext({ width, mode, tables });
       await dashboard(c.page);
       await until(async () => (await c.page.locator('.dash-fold-h', { hasText: 'Patterns in your numbers' }).count()) > 0, 20000);
@@ -363,8 +375,38 @@ try {
       pass(`${n}: How was this worked out? opens in place`, (await how.getAttribute('aria-expanded')) === 'true');
       const m = await cardChecks(c.page, n);
       pass(`${n}: ${width < 600 ? 'one column on a phone' : 'cards in the grid'}`, m.cols === 1, m.cols);
+      // Every measured rule on the whole dashboard with its card, and its pop-ups.
+      await c.page.mouse.move(0, 0);
+      const r = await c.page.evaluate(measure, { CORAL: CORALS, MINT, BANNED, exempt: '^The work behind it is ' });
+      ruleChecks(pass, `${n} (measured)`, r, 'atMost');
+      pass(`${n}: follows the mode`, r.theme === mode, r.theme);
+      await popups(c.page, width < 769, pass, `${n} (measured)`);
       await shot(c.page, n.replace(/[^a-z0-9]+/gi, '-'));
       if (c.page !== page) await c.context.close();
+    }
+
+    // Twice the text size (360px) and reduced motion (390px), with the card open.
+    {
+      const big = await newContext({ width: 360, mode: 'dark', tables, scale: 2 });
+      await dashboard(big.page);
+      await openPatternsFold(big.page);
+      await big.page.locator('.ds-pattern').getByRole('button', { name: 'How was this worked out?' }).click().catch(() => {});
+      await sleep(400);
+      const b = await big.page.evaluate(bigText);
+      pass('P 360px twice the text size: no sideways scroll', b.sideways <= 0, b.sideways);
+      pass('P 360px twice the text size: no text cut off in its box', !b.clipped.length, b.clipped.join('; '));
+      pass('P 360px twice the text size: spaced capitals never split inside a word', !b.split.length, b.split.join(', '));
+      pass('P 360px twice the text size: 44px taps in the cards', !(await cardChecks(big.page, 'P 360px twice the text size')).small.length);
+      await shot(big.page, 'P-360-big');
+      await big.context.close();
+      const still = await newContext({ width: 390, mode: 'dark', tables, motion: 'reduce' });
+      await dashboard(still.page);
+      await openPatternsFold(still.page);
+      await still.page.locator('.ds-pattern').getByRole('button', { name: 'How was this worked out?' }).click().catch(() => {});
+      await sleep(600);
+      const seen = await motionSeen(still.page);
+      pass('P 390px reduced motion: nothing animates as the row and the card open', !seen.length, seen.slice(0, 5).join('; '));
+      await still.context.close();
     }
 
     // One tap to act, worded as the action, landing where it is done.

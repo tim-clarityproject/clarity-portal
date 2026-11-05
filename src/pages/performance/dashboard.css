@@ -426,7 +426,9 @@
 
 .ui-root .dash-crow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--dash-bar-col) var(--dash-value-col);
+  /* The figure column keeps its width, and grows only when a figure at
+     twice the text size would otherwise split a word ("7 months"). */
+  grid-template-columns: minmax(0, 1fr) var(--dash-bar-col) minmax(var(--dash-value-col), max-content);
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-px14) 0;
@@ -482,6 +484,9 @@
 }
 
 .ui-root .dash-crow-v .dash-crow-lng { font-size: var(--fs-fold-figure); }
+
+/* Spaced figures wrap between words only, never inside one. */
+.ui-root .dash-crow-v strong { overflow-wrap: normal; word-break: normal; }
 
 .ui-root .dash-crow-of { white-space: nowrap; }
 
@@ -814,7 +819,7 @@
   .ui-root .dash-hero { grid-template-columns: minmax(0, 1fr); margin-top: var(--space-px18); }
   .ui-root .dash-sgrid { grid-template-columns: minmax(0, 1fr); }
   .ui-root .dash-crow {
-    grid-template-columns: minmax(0, 1fr) var(--dash-value-col-phone);
+    grid-template-columns: minmax(0, 1fr) minmax(var(--dash-value-col-phone), max-content);
     grid-template-areas: "n v" "c c";
     gap: var(--space-2) var(--space-px12);
   }

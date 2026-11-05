@@ -110,7 +110,10 @@ function measure({ side, frame, CORAL, MINT, BANNED, guided, scope }) {
 
   // Lines people read.
   const style = document.createElement('style');
-  style.textContent = `${hide} { display: none !important; }`;
+  // A word kept whole (keepWords: .ds-keep, never wrapping) is read as part
+  // of its line: inside a flex button it would otherwise become its own
+  // piece ("Add a" + "to-do"), as innerText splits flex items.
+  style.textContent = `${hide} { display: none !important; } body .ui-root .ds-keep { display: contents !important; }`;
   document.head.appendChild(style);
   const lines = root.innerText.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
   style.remove();
@@ -355,6 +358,9 @@ async function popups(page, width, touch) {
 // approved later rule wins (progress.md, steps 1 to 4). Each entry: the
 // screens it covers, a pattern on the neutral line, and why.
 const ALLOWED = [
+  // Phase 5 (patterns, M14; START-HERE 5d rule 22): with too little data the
+  // weekly debrief explains the logging gap once, in its own section.
+  { screen: /^debrief/, side: 'app', re: /^(patterns in your numbers|patterns in your numbers appear once there's enough data, usually after # to # weeks\.|weeks with fewer than # days logged are left out, so logging most days helps\.)$/i, why: 'LATER RULE: patterns, first version (Phase 5 step 3, START-HERE 5d rule 22): the debrief explains the logging gap once, until there is enough data' },
   // Everywhere
   { side: 'both', re: /^(Breathe|Skip|Back|Next|Close)$/, why: 'shared tool chrome (the Breathe orb and the guided tool foot) is measured, not compared word for word' },
   { side: 'mock', re: /^\d+%$|^#%$|^#$/, why: 'figures come from src/lib/scores on the seeded rows, not the mock-up’s' },

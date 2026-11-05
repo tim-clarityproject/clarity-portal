@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { themeProps, useThemeScope } from './themeScope';
+import { pushLayer } from './layers';
 import './design.css';
 
 // The chart pop-up (Tim, 26 Oct; M4 dashboard v46): one shared pop-up
@@ -120,14 +121,16 @@ export default function ChartTips({ children, className = '' }) {
     const onDown = (e) => {
       if (!zoneRef.current?.contains(e.target)) hide();
     };
-    window.addEventListener('keydown', onKey);
+    // Escape closes the pop-up first, never what it sits in (a guided
+    // tool, a panel): the shared Escape layers (layers.js), on top.
+    const removeLayer = pushLayer(() => onKey({ key: 'Escape' }));
     window.addEventListener('pointerdown', onDown, true);
     window.addEventListener('scroll', place, true);
     window.addEventListener('resize', hide);
     shown.el.setAttribute('aria-describedby', idRef);
     const el = shown.el;
     return () => {
-      window.removeEventListener('keydown', onKey);
+      removeLayer();
       window.removeEventListener('pointerdown', onDown, true);
       window.removeEventListener('scroll', place, true);
       window.removeEventListener('resize', hide);

@@ -2,7 +2,9 @@ import { readCache, writeCache } from './pageCache';
 import { isOnline, subscribeOnline } from './connection';
 import { changesMade, readQuietly, waitingToSend, whenSent } from './syncQueue';
 import { loadSavedPlans, loadSavedReviews, SAVED_PLANS_CACHE, SAVED_REVIEWS_CACHE } from './savedItemsApi';
-import { loadActivePlan, loadCheckinPage, loadCheckins, loadDayPlan, loadDayReview, loadDebrief, loadHomeDay, loadPlanPage, loadSprintPage } from './performance/api';
+import { loadActivePlan, loadCheckinPage, loadCheckins, loadDashboard, loadDayPlan, loadDayReview, loadDebrief, loadHomeDay, loadPatternRows, loadPlanPage, loadSprintPage } from './performance/api';
+import { DASHBOARD_CACHE } from './performance/dashboard';
+import { PATTERNS_CACHE } from './performance/patterns';
 import { PLAN_CACHE, SPRINT_CACHE } from './performance/hooks';
 import { localToday } from './performance/rows';
 import { addDayKey } from './performance/dayPlan';
@@ -10,7 +12,8 @@ import { REVIEW_EARLY_HOURS } from './performance/dayReview';
 
 // The key pages are on the device before they are needed (Phase 4 step 8,
 // "Works on a flight"): Today, the plan, the sprint, Plan my day, Review
-// my day, this week's debrief, My Plans and My Reviews show everything
+// my day, this week's debrief, My Plans, My Reviews, the check-in and the
+// dashboard (Phase 5) show everything
 // as last seen even if they weren't opened recently. Once per visit, a
 // few seconds after the app opens signed in (or after signing in), each
 // page's data is read with the page's own loader and kept as the page's
@@ -45,6 +48,10 @@ function pages(userId) {
     // check-in itself, so it can be done on a flight (CheckIn.jsx CHECKIN_CACHE).
     ['checkins', () => loadCheckins(userId)],
     ['checkin-page', () => loadCheckinPage(userId)],
+    // The dashboard (Phase 5) and its pattern cards, with the dashboard's own
+    // loaders (Dashboard.jsx, usePatterns.js).
+    [DASHBOARD_CACHE, () => loadDashboard(userId, today)],
+    [PATTERNS_CACHE, () => loadPatternRows(userId, today)],
   ];
   // Just after midnight, Review my day may be for the day before.
   if (now.getHours() < REVIEW_EARLY_HOURS) {

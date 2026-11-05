@@ -190,7 +190,10 @@ function measure({ CORAL, MINT, BANNED }) {
   };
   const label = (el) => `${String(el.className?.baseVal ?? el.className ?? el.tagName).split(' ')[0]} "${(el.textContent || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 28)}"`;
   const style = document.createElement('style');
-  style.textContent = '.ds-sr, [hidden], [inert], .ds-tip[hidden], table, caption { display: none !important; }';
+  // A word kept whole (keepWords: .ds-keep, never wrapping) is read as part
+  // of its line: inside a flex button it would otherwise become its own
+  // piece ("Add a" + "to-do"), as innerText splits flex items.
+  style.textContent = '.ds-sr, [hidden], [inert], .ds-tip[hidden], table, caption { display: none !important; } body .ui-root .ds-keep { display: contents !important; }';
   document.head.appendChild(style);
   const lines = root.innerText.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
   style.remove();

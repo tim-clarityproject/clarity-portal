@@ -346,6 +346,12 @@ function GroupHead({ id, title, right, summary, closed, toggle, first = false })
 
 // ---------------------------------------------------------------- Current sprint
 
+// M4's "Nothing has improved yet. Results often lag effort by a few
+// weeks." as one sentence a line (26 Oct rule 9).
+function Lines({ text }) {
+  return text.split(/(?<=\.) (?=[A-Z])/).map((l) => <span key={l} className="dash-ls">{l}</span>);
+}
+
 function SumItem({ item, holding, phone, go }) {
   let visual = null;
   if (item.strip) visual = <Strip cells={item.strip} small tips={!phone} />;
@@ -382,7 +388,7 @@ function CurrentSprint({ current, closed, toggle, phone, go }) {
           <h3 className="dash-sh">What’s holding you back</h3>
           {Array.from({ length: n }, (_, i) => (
             <div className="dash-spair" key={i}>
-              {i === 0 && !a.length ? <p className="dash-semp">{current.improvingEmpty}</p> : a[i] ? <SumItem item={a[i]} phone={phone} go={go} /> : <div />}
+              {i === 0 && !a.length ? <p className="dash-semp"><Lines text={current.improvingEmpty} /></p> : a[i] ? <SumItem item={a[i]} phone={phone} go={go} /> : <div />}
               {i === 0 && !b.length ? <p className="dash-semp">{current.holdingBackEmpty}</p> : b[i] ? <SumItem item={b[i]} holding phone={phone} go={go} /> : <div />}
             </div>
           ))}
@@ -392,7 +398,7 @@ function CurrentSprint({ current, closed, toggle, phone, go }) {
         <div className="dash-sumg">
           <div>
             <h3 className="dash-sh">What’s improving</h3>
-            {a.length ? a.map((x) => <SumItem key={x.key} item={x} phone={phone} go={go} />) : <p className="dash-semp">{current.improvingEmpty}</p>}
+            {a.length ? a.map((x) => <SumItem key={x.key} item={x} phone={phone} go={go} />) : <p className="dash-semp"><Lines text={current.improvingEmpty} /></p>}
           </div>
           <div>
             <h3 className="dash-sh">What’s holding you back</h3>

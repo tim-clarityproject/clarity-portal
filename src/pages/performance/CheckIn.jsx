@@ -441,8 +441,10 @@ function CheckinFlow({ userId, today, month, loaded }) {
 
   const questionSteps = questionsFor(answers).map((q) => ({
     key: q.code,
-    name: q.label,
-    label: q.label,
+    name: q.label.replace(' · ', ', '),
+    // M12 draws "Hardware · Sleep"; no dots between items (26 Oct rule 5),
+    // so the two are separate labels, 20px apart.
+    label: <AreaLabel label={q.label} />,
     info: q.why ? whyLines(q.why, sharing ? coach : null) : undefined,
     question: q.question,
     nudges: q.nudges,
@@ -716,6 +718,12 @@ function MyGoals({ goals }) {
       </div>
     </Section>
   );
+}
+
+/** A question's area and topic ("Hardware", "Sleep") as two labels, never with a dot. */
+function AreaLabel({ label }) {
+  const parts = label.split(' · ');
+  return <span className="ck-area">{parts.map((p) => <span key={p}>{p}</span>)}</span>;
 }
 
 // ------------------------------------------------------------------ one thing to work on, and Add to my sprint
