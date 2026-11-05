@@ -219,6 +219,8 @@
   gap: var(--space-px12);
   width: 100%;
   min-height: var(--tap-min);
+  /* !important over mobile.css's button padding (12px 16px) on phones. */
+  padding: 0 !important;
   font-family: var(--font-display);
   font-weight: 400;
   /* !important over the older global button size on phones (as design.css's section names). */
@@ -358,6 +360,7 @@
   align-items: center;
   min-width: var(--tap-min);
   min-height: var(--tap-min);
+  padding: 0 !important;
   border-radius: var(--radius-bar);
 }
 
@@ -567,7 +570,7 @@
   gap: var(--space-px10);
   width: 100%;
   min-height: var(--dash-fold-min-h);
-  padding: var(--space-px14) 0;
+  padding: var(--space-px14) 0 !important;
 }
 
 .ui-root .dash-fold-h:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
@@ -592,6 +595,7 @@
 
 .ui-root .dash-fold-mark {
   display: flex;
+  grid-column: 3;
   justify-content: center;
   color: var(--text-2);
 }
@@ -654,7 +658,7 @@
 
 .ui-root .dash-stick-w { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
 .ui-root .dash-stick-w small { font-size: var(--fs-meta); color: var(--text-2); }
-.ui-root .dash-stick-d { color: var(--label); font-size: var(--fs-meta); text-align: right; }
+.ui-root .dash-stick-d { color: var(--label); font-size: var(--fs-meta); text-align: right; white-space: nowrap; }
 
 .ui-root .dash-sleep-figs { margin-top: var(--space-2); }
 

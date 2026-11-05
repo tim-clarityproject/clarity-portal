@@ -24,6 +24,7 @@ import {
   SleepTargetLink,
   Stat,
   WhoSees,
+  keepWords,
   tipProps,
   useIsPhone,
   useSleepTarget,
@@ -535,7 +536,7 @@ function Fold({ row, phone, children }) {
     <div className="dash-fold">
       <button type="button" className="dash-fold-h" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>
         <span className="dash-fold-words">
-          <span className="dash-fold-t">{row.title}</span>
+          <span className="dash-fold-t">{keepWords(row.title)}</span>
           <small className="dash-fold-l">{row.line}</small>
         </span>
         {fig && (

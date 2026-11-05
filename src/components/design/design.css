@@ -4267,6 +4267,17 @@
   opacity: 1 !important;
 }
 
+/* The words around kept words, as one inline run (keepWords). */
+.ui-root .ds-keep-run {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font: inherit !important;
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
 /* The ⓘ pop-up (InfoPop; Tim, 3 Nov): what an ⓘ explains, floating over
    the page so nothing moves. The chart pop-up's look in its wider form
    (as the Health Check's ⓘ): one sentence per line, the first in the
@@ -8565,6 +8576,7 @@
 .ui-root .ds-ctable-fold {
   width: 100%;
   margin-top: var(--space-2);
+  container: ctable / inline-size;
 }
 
 .ui-root .ds-ctable {
@@ -8592,6 +8604,36 @@
 }
 
 @media (max-width: 600px) {
+  .ui-root .ds-ctable thead {
+    display: none;
+  }
+
+  .ui-root .ds-ctable tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-top: var(--line-w) solid var(--line);
+  }
+
+  .ui-root .ds-ctable td {
+    display: block;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .ui-root .ds-ctable td:first-child {
+    color: var(--text);
+  }
+
+  .ui-root .ds-ctable td:not(:first-child)::before {
+    content: attr(data-label) ": ";
+    color: var(--label);
+  }
+}
+
+/* A narrow place (the hero's chart column with large text) stacks the
+   same way, so a heading is never cut off (CLAUDE.md rule 20; UI tester,
+   5 Nov: "Performance s" at twice the text size). */
+@container ctable (max-width: 20em) {
   .ui-root .ds-ctable thead {
     display: none;
   }

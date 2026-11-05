@@ -723,7 +723,7 @@ function MyGoals({ goals }) {
 /** A question's area and topic ("Hardware", "Sleep") as two labels, never with a dot. */
 function AreaLabel({ label }) {
   const parts = label.split(' · ');
-  return <span className="ck-area">{parts.map((p) => <span key={p}>{p}</span>)}</span>;
+  return <span className="ck-topic">{parts.map((p) => <span key={p}>{p}</span>)}</span>;
 }
 
 // ------------------------------------------------------------------ one thing to work on, and Add to my sprint

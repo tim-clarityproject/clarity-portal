@@ -1359,8 +1359,9 @@
 }
 
 /* ---------------------------------------------------------------- the Hardware and Software check-in (M12 v14, Phase 5 step 1) */
-/* A question's area and topic, two labels (26 Oct rule 5: no dots). */
-.ui-root .ck-area {
+/* A question's area and topic, two labels (26 Oct rule 5: no dots). Its
+   own name: .ck-area is a results row (grid, bar column, line under it). */
+.ui-root .ck-topic {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0 var(--icon-item-gap);

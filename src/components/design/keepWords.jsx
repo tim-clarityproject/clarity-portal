@@ -23,9 +23,16 @@ function keepString(text, keyBase = '') {
   if (!text || !/-|\s\d/.test(text)) return text;
   const parts = text.split(KEPT);
   if (parts.length === 1) return text;
-  return parts.map((part, i) => (i % 2
-    ? <span key={`${keyBase}k${i}`} className="ds-keep">{part}</span>
-    : part));
+  // One run for the whole string, so in a flex part (a button, IconText)
+  // the words stay one item: without it the flex gap opened between "Start
+  // my" and "check-in" and dropped the space (UI tester, 5 Nov).
+  return (
+    <span key={`${keyBase}run`} className="ds-keep-run">
+      {parts.map((part, i) => (i % 2
+        ? <span key={`${keyBase}k${i}`} className="ds-keep">{part}</span>
+        : part))}
+    </span>
+  );
 }
 
 export default function keepWords(children) {
