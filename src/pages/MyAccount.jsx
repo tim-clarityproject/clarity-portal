@@ -10,6 +10,7 @@ import pageText from '../content/pageText';
 import PersonalGoalModal, { MAX_GOAL_LENGTH } from '../components/PersonalGoalModal';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import { useCoachName, Crosshair, PageHeader, Button, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget } from '../components/design';
+import { DashboardCustomise } from './performance/DashboardCustomise';
 import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart';
 import { useStartChat } from '../components/coach/startChat';
 
@@ -37,6 +38,7 @@ export default function MyAccount() {
   // The sleep target range (Tim, 3 Nov 2026): the same control as Recovery's Home.
   const [sleepTarget, changeSleepTarget] = useSleepTarget();
   const [sleepEditing, setSleepEditing] = useState(false);
+  const [customising, setCustomising] = useState(false);
   const [archivedMissionsCount, setArchivedMissionsCount] = useState(0);
   const [loadingArchivedMissions, setLoadingArchivedMissions] = useState(false);
 
@@ -483,6 +485,16 @@ export default function MyAccount() {
               <SleepTargetEditor id="account-sleep-target" target={sleepTarget} onChange={changeSleepTarget} />
             </div>
           )}
+          {/* The Individual Performance Dashboard's parts and order: the
+              same Customise panel as the dashboard's (Phase 5). */}
+          <div className="account-row">
+            <div className="account-row-text">
+              <div className="account-row-title">Dashboard</div>
+              <div className="account-row-desc">Choose which parts of your dashboard show, and in what order.</div>
+            </div>
+            <Button variant="outline" onClick={() => setCustomising(true)}>Customise my dashboard</Button>
+          </div>
+          <DashboardCustomise open={customising} onClose={() => setCustomising(false)} />
 
           {/* Portal */}
           <div className="account-section-label">Portal</div>

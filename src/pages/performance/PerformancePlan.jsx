@@ -178,6 +178,14 @@ export default function PerformancePlan() {
     if (!view.sprintRunning || s.score) return null;
     return 'This Strategy has no score yet this week.';
   };
+  // The dashboard's "Review its Strategies" lands on the Strategies (#strategies).
+  const strategiesShown = Boolean(view);
+  useEffect(() => {
+    if (location.hash !== '#strategies' || !strategiesShown) return undefined;
+    const frame = requestAnimationFrame(() => document.getElementById('strategies')?.scrollIntoView({ block: 'start' }));
+    return () => cancelAnimationFrame(frame);
+  }, [location.hash, strategiesShown]);
+
   const hideScores = view?.inRecovery && !showResults;
   const scoreLabel = view?.pausedWeek ? `Performance score in week ${view.pausedWeek}, before your recovery` : SCORE_LABEL;
 
@@ -258,6 +266,7 @@ export default function PerformancePlan() {
             </Section>
 
             <Section
+              id="strategies"
               title="Strategies"
               line="Strategies are medium to long-term approaches to achieving your objectives."
               className="ipp-section"

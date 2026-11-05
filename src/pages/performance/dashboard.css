@@ -1,0 +1,834 @@
+/* The Individual Performance Dashboard (mock-up M4 v47; Phase 5 step 2).
+   Every value comes from src/styles/tokens.css. Colours: mint (--good)
+   for good, grey (--below) below the standard, the text colour for this
+   week, faint (--to-come) for weeks to come. Coral is never a data colour. */
+
+.ui-root .dash-page {
+  max-width: var(--dash-max);
+}
+
+.ui-root .dash-eye {
+  margin-top: var(--space-2);
+}
+
+.ui-root .dash-recovery {
+  margin-top: var(--space-5);
+}
+
+/* ---------- the top: score this sprint and the big chart ---------- */
+.ui-root .dash-hero {
+  display: grid;
+  grid-template-columns: minmax(0, var(--dash-hero-l)) minmax(0, 1fr);
+  gap: var(--space-3) var(--space-5);
+  align-items: end;
+  margin-top: var(--space-5);
+}
+
+.ui-root .dash-hero-num {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ui-root .dash-hero-label,
+.ui-root .dash-hero-line {
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .dash-hero-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-px12);
+  margin: var(--space-px6) 0 var(--space-2);
+}
+
+.ui-root .dash-hero-value {
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-hero);
+  line-height: 1;
+  color: var(--text);
+}
+
+.ui-root .dash-hero-value--good { color: var(--good); }
+
+.ui-root .dash-glance-tips { display: inline-flex; }
+
+.ui-root .dash-glance {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-1);
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-glance);
+  line-height: 1;
+  color: var(--text-2);
+  cursor: default;
+  border-radius: var(--radius-bar);
+}
+
+.ui-root .dash-glance--up { color: var(--good); }
+
+.ui-root .dash-hero-chart { min-width: 0; }
+
+.ui-root .dash-hchart-plot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-1);
+  height: var(--dash-hero-chart-h);
+  margin-top: var(--space-px22);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .dash-hchart-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  outline: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .dash-hchart-std {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  border-top: var(--line-w) dashed var(--text-2);
+  pointer-events: none;
+}
+
+.ui-root .dash-hchart-std-label {
+  position: absolute;
+  right: 0;
+  bottom: var(--space-px3);
+  padding-left: var(--space-1);
+  background: var(--bg);
+  font-size: var(--fs-chart);
+  line-height: 1.2;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.ui-root .dash-hchart-col {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.ui-root .dash-hchart-bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: var(--chart-bar-max);
+  min-height: var(--chart-stub);
+  border-radius: var(--radius-bar) var(--radius-bar) 0 0;
+  background: var(--to-come);
+}
+
+.ui-root .dash-hchart-bar--good { background: var(--good); }
+.ui-root .dash-hchart-bar--below { background: var(--below); }
+.ui-root .dash-hchart-bar--now { background: var(--text); }
+.ui-root .dash-hchart-bar--none { background: var(--to-come); height: var(--chart-stub); }
+.ui-root .dash-hchart-bar--next { height: var(--chart-stub); }
+
+.ui-root .dash-hchart-tag {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: var(--space-px3);
+  font-style: normal;
+  font-size: var(--fs-chart);
+  line-height: 1.2;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.ui-root .dash-hchart-axis {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-px6);
+  min-height: calc(var(--fs-chart) * 1.3);
+}
+
+.ui-root .dash-hchart-axis span {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-chart);
+  line-height: 1.3;
+  color: var(--label);
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.ui-root .dash-hchart-axis .dash-hchart-now {
+  color: var(--text);
+  text-align: center;
+}
+
+.ui-root .dash-logl {
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .dash-debrief {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-px14);
+  padding: var(--space-px12) var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  font-size: var(--fs-secondary);
+  color: var(--text);
+}
+
+.ui-root .dash-empty { margin-top: var(--space-3); }
+
+/* ---------- sections ---------- */
+.ui-root .dash-sec {
+  margin-top: var(--space-6);
+  padding-top: var(--space-px30);
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .dash-sec-h { margin: 0; }
+
+.ui-root .dash-colb {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-px12);
+  width: 100%;
+  min-height: var(--tap-min);
+  font-family: var(--font-display);
+  font-weight: 400;
+  /* !important over the older global button size on phones (as design.css's section names). */
+  font-size: var(--fs-section-title) !important;
+  letter-spacing: var(--ls-section-title);
+  text-transform: uppercase;
+  line-height: var(--lh-title);
+  color: var(--text);
+}
+
+.ui-root .dash-colb:hover,
+.ui-root .dash-colb:focus-visible { color: var(--coral-text); }
+.ui-root .dash-colb:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); border-radius: var(--radius-bar); }
+
+.ui-root .dash-colb--group {
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--fs-text) !important;
+}
+
+.ui-root .dash-colb-rt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px14);
+}
+
+.ui-root .dash-colb-rtl {
+  font-family: var(--font-body);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .dash-lead {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  max-width: var(--dash-lead-max);
+}
+
+.ui-root .dash-lead:empty { display: none; }
+.ui-root .dash-ls { display: block; }
+.ui-root .dash-ls + .dash-ls { margin-top: var(--space-1); }
+
+.ui-root .dash-csum {
+  margin: var(--space-px6) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* ---------- Current sprint: the two lists ---------- */
+.ui-root .dash-sgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-6);
+  margin-top: var(--space-px22);
+}
+
+.ui-root .dash-spair { display: contents; }
+
+.ui-root .dash-sumg {
+  display: grid;
+  gap: var(--space-px28);
+  margin-top: var(--space-px22);
+}
+
+.ui-root .dash-sh {
+  margin: 0;
+  padding-bottom: var(--space-px12);
+  border-bottom: var(--line-w) solid var(--line);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-text);
+  line-height: var(--lh-title);
+  color: var(--text);
+}
+
+.ui-root .dash-si {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-px12);
+  align-items: start;
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .dash-sit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-px3);
+  min-width: 0;
+}
+
+.ui-root .dash-sit b {
+  font-weight: 400;
+  font-size: var(--fs-text);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .dash-si-line {
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .dash-fix { align-self: flex-start; }
+
+.ui-root .dash-siv { padding-top: var(--space-px2); }
+
+.ui-root .dash-semp {
+  margin: var(--space-px14) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .dash-big {
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-glance);
+  line-height: 1;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.ui-root .dash-big--good { color: var(--good); }
+
+/* A small chart that opens its line on a phone (26 Oct rule 10). */
+.ui-root .dash-tapvis {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  border-radius: var(--radius-bar);
+}
+
+.ui-root .dash-tapvis:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
+
+/* Week squares (M4 .sq) */
+.ui-root .dash-sq-tips { display: block; }
+
+.ui-root .dash-sq {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--dash-strip-gap);
+  height: var(--dash-strip-h);
+  width: 100%;
+}
+
+.ui-root .dash-sq--small {
+  width: var(--dash-strip-w);
+  height: var(--dash-strip-sm-h);
+}
+
+.ui-root .dash-sq-i {
+  display: block;
+  border-radius: var(--radius-bar);
+  background: var(--to-come);
+}
+
+.ui-root .dash-sq-i--good { background: var(--good); }
+.ui-root .dash-sq-i--below { background: var(--below); }
+.ui-root .dash-sq-i--now { background: var(--text); }
+
+/* Mini charts beside a figure (M4 miniBars) */
+.ui-root .dash-mini {
+  display: block;
+  width: var(--dash-mini-w);
+  height: var(--dash-mini-h);
+  flex: none;
+}
+
+.ui-root .dash-mini-good { fill: var(--good); }
+.ui-root .dash-mini-below { fill: var(--below); }
+.ui-root .dash-mini-stub { fill: var(--to-come); }
+
+/* ---------- Objectives and Strategies ---------- */
+.ui-root .dash-span {
+  margin-top: var(--space-px20);
+  max-width: var(--dash-span-w);
+}
+
+.ui-root .dash-span--phone { max-width: none; }
+
+.ui-root .dash-grph {
+  margin: var(--space-6) 0 var(--space-1);
+  padding-top: var(--space-4);
+  border-top: var(--line-w) solid var(--line);
+}
+
+.ui-root .dash-grph--first {
+  margin-top: var(--space-px26);
+  padding-top: 0;
+  border-top: 0;
+}
+
+.ui-root .dash-grph-h { margin: 0; }
+
+.ui-root .dash-crow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--dash-bar-col) var(--dash-value-col);
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .dash-crow-n { min-width: 0; }
+
+.ui-root .dash-crow-n b {
+  display: block;
+  font-weight: 400;
+  font-size: var(--fs-body);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .dash-crow-nb {
+  display: flex !important;
+  align-items: center;
+  gap: var(--space-px10);
+}
+
+.ui-root .dash-crow-ind {
+  display: block;
+  padding-left: var(--space-px30);
+  margin-top: var(--space-px2);
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--label);
+}
+
+.ui-root .dash-crow-sub {
+  font-size: var(--fs-chart);
+  color: var(--label);
+}
+
+.ui-root .dash-serves { margin-top: var(--space-px2); }
+
+.ui-root .dash-crow-c { min-width: 0; }
+
+.ui-root .dash-crow-v {
+  text-align: right;
+  font-size: var(--fs-meta);
+  color: var(--label);
+}
+
+.ui-root .dash-crow-v strong {
+  display: inline;
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-glance);
+  color: var(--text);
+}
+
+.ui-root .dash-crow-v .dash-crow-lng { font-size: var(--fs-fold-figure); }
+
+.ui-root .dash-crow-of { white-space: nowrap; }
+
+.ui-root .dash-crow-dl,
+.ui-root .dash-crow-cvl {
+  display: block;
+  margin-top: var(--space-px2);
+  font-size: var(--fs-chart);
+  color: var(--label);
+}
+
+.ui-root .dash-crow-cvl { margin: 0 0 var(--space-px2); }
+
+/* An Outcome Objective's bar: zero to the target (M9.1), mint on pace, grey behind it. */
+.ui-root .dash-goal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-px6);
+  width: 100%;
+  padding: var(--space-1) 0;
+}
+
+.ui-root .dash-goal-track {
+  position: relative;
+  display: block;
+  height: var(--dash-goal-h);
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+
+.ui-root .dash-goal-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--below);
+}
+
+.ui-root .dash-goal-fill--good { background: var(--good); }
+.ui-root .dash-goal-fill--time { background: var(--text-2); }
+
+.ui-root .dash-goal-now {
+  position: absolute;
+  top: 50%;
+  width: var(--space-px10);
+  height: var(--space-px10);
+  margin: calc(var(--space-px10) / -2) 0 0 calc(var(--space-px10) / -2);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 var(--space-px2) var(--bg);
+}
+
+.ui-root .dash-goal-labels {
+  position: relative;
+  display: block;
+  height: calc(var(--fs-chart) * 1.3);
+  font-size: var(--fs-chart);
+  line-height: 1.3;
+  color: var(--text-2);
+}
+
+.ui-root .dash-goal-labels span { position: absolute; right: 0; white-space: nowrap; }
+.ui-root .dash-goal-labels span:first-child { right: auto; transform: translateX(-50%); }
+
+/* ---------- What's behind your performance ---------- */
+.ui-root .dash-folds { margin-top: var(--space-px18); }
+
+.ui-root .dash-fold { border-top: var(--line-w) solid var(--line-soft); }
+.ui-root .dash-fold:first-child { border-top-color: var(--line); }
+.ui-root .dash-fold:last-child { border-bottom: var(--line-w) solid var(--line-soft); }
+
+.ui-root .dash-fold-h {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto var(--tap-min);
+  align-items: center;
+  gap: var(--space-px10);
+  width: 100%;
+  min-height: var(--dash-fold-min-h);
+  padding: var(--space-px14) 0;
+}
+
+.ui-root .dash-fold-h:focus-visible { outline: var(--focus-w) solid var(--coral); outline-offset: var(--space-px2); }
+
+.ui-root .dash-fold-words { display: flex; flex-direction: column; gap: var(--space-px3); min-width: 0; }
+
+.ui-root .dash-fold-t {
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .dash-fold-h:hover .dash-fold-t,
+.ui-root .dash-fold-h:focus-visible .dash-fold-t { color: var(--coral-text); }
+
+.ui-root .dash-fold-l {
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .dash-fold-mark {
+  display: flex;
+  justify-content: center;
+  color: var(--text-2);
+}
+
+.ui-root .dash-fv {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px12);
+  justify-self: end;
+}
+
+.ui-root .dash-fv b {
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-fold-figure);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ui-root .dash-fv b.dash-fv-good { color: var(--good); }
+
+.ui-root .dash-fold-b {
+  padding: var(--space-1) 0 var(--space-px22);
+}
+
+.ui-root .dash-lab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-px12);
+  font-size: var(--fs-note);
+  color: var(--text-2);
+}
+
+.ui-root .dash-fp {
+  margin: var(--space-px10) 0 0;
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .dash-fp + .dash-fp { margin-top: var(--space-px2); }
+
+.ui-root .dash-stick {
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-root .dash-stick li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-px12);
+  padding: var(--space-px10) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+}
+
+.ui-root .dash-stick-w { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.ui-root .dash-stick-w small { font-size: var(--fs-meta); color: var(--text-2); }
+.ui-root .dash-stick-d { color: var(--label); font-size: var(--fs-meta); text-align: right; }
+
+.ui-root .dash-sleep-figs { margin-top: var(--space-2); }
+
+.ui-root .dash-act { margin-top: var(--space-2); }
+.ui-root .dash-links { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-px28); }
+
+/* Weekly bars in a fold (M4 weekBars) */
+.ui-root .dash-tbars-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-1);
+  height: var(--dash-trend-h);
+  margin-top: var(--space-px10);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.ui-root .dash-tbars-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.ui-root .dash-tbars-bar {
+  display: block;
+  width: 100%;
+  max-width: var(--chart-bar-max);
+  min-height: var(--chart-stub);
+  border-radius: var(--radius-bar) var(--radius-bar) 0 0;
+  background: var(--to-come);
+}
+
+.ui-root .dash-tbars-bar--good { background: var(--good); }
+.ui-root .dash-tbars-bar--below { background: var(--below); }
+.ui-root .dash-tbars-bar--none,
+.ui-root .dash-tbars-bar--next { height: var(--chart-stub); }
+
+.ui-root .dash-tbars-axis,
+.ui-root .dash-stress-axis div {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-px6);
+}
+
+.ui-root .dash-tbars-axis span,
+.ui-root .dash-stress-axis div span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--fs-chart);
+  color: var(--label);
+}
+
+/* Stress, week by week (M4): the five answers down the side. */
+.ui-root .dash-stress-grid,
+.ui-root .dash-stress-axis {
+  display: grid;
+  grid-template-columns: var(--dash-stress-label-w) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.ui-root .dash-stress-grid { margin-top: var(--space-px10); }
+
+.ui-root .dash-stress-levels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: var(--fs-chart);
+  line-height: 1.2;
+  color: var(--label);
+  text-align: right;
+}
+
+.ui-root .dash-stress-plot {
+  position: relative;
+  min-height: calc(var(--fs-chart) * 1.2 * 5 + var(--space-2) * 4);
+}
+
+/* The lines and dots sit between the middles of the first and last answers. */
+.ui-root .dash-stress-inner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--fs-chart) * 0.6);
+  bottom: calc(var(--fs-chart) * 0.6);
+}
+
+.ui-root .dash-stress-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .dash-stress-dot {
+  position: absolute;
+  width: var(--dash-dot);
+  height: var(--dash-dot);
+  margin: calc(var(--dash-dot) / -2) 0 0 calc(var(--dash-dot) / -2);
+  border-radius: 50%;
+  background: var(--below);
+}
+
+.ui-root .dash-stress-dot--good { background: var(--good); }
+
+.ui-root .dash-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-px28);
+  margin-top: var(--space-px28);
+}
+
+/* ---------- Customise ---------- */
+.ui-root .dash-cus-q {
+  margin: var(--space-px6) 0 var(--space-px10);
+  font-size: var(--fs-mission-panel);
+  line-height: 1.35;
+}
+
+.ui-root .dash-cus-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: var(--space-px6);
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: var(--space-px10) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .dash-cus-row > .dash-cus-name { grid-column: 1; }
+.ui-root .dash-cus-row > .ds-switch { grid-column: 4; }
+
+.ui-root .dash-cus-move {
+  all: unset;
+  cursor: pointer;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text-2);
+}
+
+.ui-root .dash-cus-move:hover,
+.ui-root .dash-cus-move:focus-visible { color: var(--coral-text); }
+.ui-root .dash-cus-move:focus-visible { outline: var(--focus-w) solid var(--coral); }
+.ui-root .dash-cus-move[disabled] { opacity: var(--disabled-opacity); cursor: default; color: var(--text-2); }
+
+.ui-root .dash-cus-note {
+  margin: var(--space-px6) 0 var(--space-px10);
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+/* ---------- phone ---------- */
+@media (max-width: 600px) {
+  .ui-root .dash-hero { grid-template-columns: minmax(0, 1fr); margin-top: var(--space-px18); }
+  .ui-root .dash-sgrid { grid-template-columns: minmax(0, 1fr); }
+  .ui-root .dash-crow {
+    grid-template-columns: minmax(0, 1fr) var(--dash-value-col-phone);
+    grid-template-areas: "n v" "c c";
+    gap: var(--space-2) var(--space-px12);
+  }
+  .ui-root .dash-crow-n { grid-area: n; }
+  .ui-root .dash-crow-v { grid-area: v; }
+  .ui-root .dash-crow-c { grid-area: c; }
+  .ui-root .dash-fold-h { grid-template-columns: minmax(0, 1fr) auto var(--tap-min); }
+  .ui-root .dash-hchart-plot,
+  .ui-root .dash-hchart-axis { gap: var(--space-px3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root .dash-page * { transition: none !important; animation: none !important; }
+}
+
+/* An Outcome Objective's bar stays full width when it is the tap on a phone. */
+.ui-root .dash-crow-c .dash-tapvis { display: block; width: 100%; }

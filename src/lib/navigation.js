@@ -7,8 +7,8 @@ import pageText from '../content/pageText';
 //
 // Only tools that exist get a tile (brief, step 1). A tool not rebuilt yet
 // opens its current page under its new name and its new address (step 5;
-// the old addresses redirect, RENAMED below). Not built yet, so no tile: the
-// Dashboard (Phase 5), Find my sweet spot, Deliberate vs default, Travel
+// the old addresses redirect, RENAMED below). The Dashboard joined Personal
+// in Phase 5 step 2, as its first big tile. Not built yet, so no tile: Find my sweet spot, Deliberate vs default, Travel
 // and jet lag plan, Delegation audit, Emotional wash, Identity beyond the
 // role, Stay deliberate under pressure,
 // Performance Evidence, Prepare for a difficult conversation, Prepare for
@@ -27,6 +27,15 @@ import pageText from '../content/pageText';
  * so the menu can mark the area someone is in.
  */
 export const TOOLS = {
+  // The Individual Performance Dashboard (Phase 5 step 2): Personal's
+  // first big tile, "Dashboard" (writing rule 38; M3 AREA.dash).
+  dash: {
+    name: 'Individual Performance Dashboard',
+    short: 'Dashboard',
+    line: 'See what’s working, week by week.',
+    to: '/dashboard',
+    routes: ['/dashboard'],
+  },
   ipp: {
     name: 'Individual Performance Plan',
     line: 'Say what you’re aiming for and how you’ll get there.',
@@ -172,6 +181,8 @@ export const HUBS = {
     path: '/personal',
     area: 'personal',
     info: pageText.hubPersonal,
+    // The Dashboard first (M3 H.personal.big), then the three hubs.
+    tool: 'dash',
     areas: ['plan', 'reset', 'review'],
   },
   plan: {
@@ -240,13 +251,13 @@ export function toolCount(hubKey) {
 /**
  * The menu's areas (M3). Home is in the desktop menu only; the phone has
  * Home on its bar. The Strategic line leaves out "leverage" (removed, Tim,
- * 2 Nov) and Personal names only what is built (no Dashboard until
- * Phase 5).
+ * 2 Nov). Personal names the Dashboard since Phase 5 (M3: "Dashboard,
+ * plan, reset, review").
  */
 export function menuAreas(coachName) {
   return [
     { key: 'home', name: 'Home', line: 'Today', to: '/welcome', desktopOnly: true },
-    { key: 'personal', name: 'Personal', line: 'Plan, reset, review', to: '/personal' },
+    { key: 'personal', name: 'Personal', line: 'Dashboard, plan, reset, review', to: '/personal' },
     { key: 'interpersonal', name: 'Interpersonal', line: 'Meetings and conversations', to: '/interpersonal' },
     { key: 'strategic', name: 'Strategic', line: 'Health Check and strategy', to: '/strategic' },
     {
@@ -260,6 +271,7 @@ export function menuAreas(coachName) {
 
 const AREA_ROUTES = {
   home: ['/welcome'],
+  personal: ['/dashboard'],
   account: ['/my-account', '/edit-profile', '/about'],
 };
 

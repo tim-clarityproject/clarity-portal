@@ -100,6 +100,7 @@ export default function HubPage({ hub: hubKey }) {
 
         {hub.areas && (
           <HubGrid>
+            {hub.tool && <HubTile key={hub.tool} big name={TOOLS[hub.tool].short || TOOLS[hub.tool].name} line={TOOLS[hub.tool].line} href={TOOLS[hub.tool].to} onClick={open(TOOLS[hub.tool].to)} />}
             {hub.areas.map((k) => (
               <HubTile key={k} big name={HUBS[k].title} line={HUBS[k].line} time={toolCount(k)} href={HUBS[k].path} onClick={open(HUBS[k].path)} />
             ))}

@@ -109,6 +109,25 @@ export default function PerformanceSprint() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The dashboard's fixes (M4 What's holding you back): "Plan it into this
+  // week" opens Add a to-do for that Strategy, this week; "Make it easier
+  // this week" opens that habit. Once, when the running sprint shows.
+  const handed = useRef(false);
+  useEffect(() => {
+    const st = location.state;
+    if (handed.current || view?.state !== 'running' || !(st?.addTodoFor || st?.openHabit)) return;
+    handed.current = true;
+    if (st.addTodoFor && (data?.strategies || []).some((s) => s.id === st.addTodoFor)) {
+      setTodoForm({ ...emptyTodo(view.current), strategyId: st.addTodoFor });
+      setPanel('todo');
+    } else if (st.openHabit && view.habits.some((h) => h.id === st.openHabit)) {
+      setHabitId(st.openHabit);
+    }
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
+    // Once, when the sprint has loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view?.state]);
+
   // Finished weeks into week_scores for the coach (R3): online, once
   // everything waiting has been sent, so the frozen score has every log.
   useEffect(() => {

@@ -79,6 +79,7 @@ import PlanMyDay from './pages/performance/PlanMyDay';
 import ReviewMyDay from './pages/performance/ReviewMyDay';
 import SleepWindDown from './pages/performance/SleepWindDown';
 import CheckIn from './pages/performance/CheckIn';
+import Dashboard from './pages/performance/Dashboard';
 import PersonalOperatingPlanArchived from './pages/PersonalOperatingPlanArchived';
 import PersonalOperatingPlanArchivedOne from './pages/PersonalOperatingPlanArchivedOne';
 import MissionProgressReviewDetail from './pages/MissionProgressReviewDetail';
@@ -398,6 +399,7 @@ function AppContent() {
           <Route path="/my-day/review" element={<ReviewMyDay />} />
           <Route path="/my-day/review/:date" element={<ReviewMyDay />} />
           <Route path="/sleep-wind-down" element={<SleepWindDown />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/check-in" element={<CheckIn />} />
           <Route path="/check-in/:month" element={<CheckIn />} />
           <Route path="/check-in/:month/answers" element={<CheckIn />} />

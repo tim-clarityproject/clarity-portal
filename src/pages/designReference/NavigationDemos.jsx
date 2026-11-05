@@ -20,7 +20,7 @@ import {
 
 const AREAS = [
   { key: 'home', name: 'Home', line: 'Today', to: '#home' },
-  { key: 'personal', name: 'Personal', line: 'Plan, reset, review', to: '#personal', current: true },
+  { key: 'personal', name: 'Personal', line: 'Dashboard, plan, reset, review', to: '#personal', current: true },
   { key: 'interpersonal', name: 'Interpersonal', line: 'Meetings and conversations', to: '#interpersonal' },
   { key: 'strategic', name: 'Strategic', line: 'Health Check and strategy', to: '#strategic' },
   { key: 'account', name: 'My Account', line: 'Settings, coaching, chat to Tim', to: '#account' },

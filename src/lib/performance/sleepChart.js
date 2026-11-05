@@ -155,17 +155,21 @@ export function recoverySleepView({ recovery, nights = [], today, target = SLEEP
   // One sentence per line, never repeating a figure or label the chart
   // already shows (Tim, 3 Nov, 15:06): the hours are the big figure and
   // the range is labelled on its band.
-  let action = null;
-  if (last?.hours != null) {
-    if (last.hours < target.from) {
-      action = { state: 'below', lines: ['Last night was under your target range.', 'Tonight, Sleep wind down could help.'], windDown: true };
-    } else if (last.hours > target.to) {
-      action = { state: 'above', lines: ['Last night was above your target range.', 'Keep doing what’s working.'], windDown: false };
-    } else {
-      action = { state: 'inside', lines: ['Last night was inside your target range.', 'Keep doing what’s working.'], windDown: false };
-    }
-  }
+  const action = last?.hours != null ? sleepAction(last.hours, target) : null;
   return { slots, last, enough: answered.length >= 2, average, action };
+}
+
+/**
+ * The one action under a sleep chart (Recovery's and the dashboard's):
+ * after a night under the target range, Sleep wind down; inside or above
+ * it, "Keep doing what's working." with nothing to do. `night` names the
+ * night ("Last night", or "Your latest night" when last night isn't
+ * answered yet).
+ */
+export function sleepAction(hours, target, night = 'Last night') {
+  if (hours < target.from) return { state: 'below', lines: [`${night} was under your target range.`, 'Tonight, Sleep wind down could help.'], windDown: true };
+  if (hours > target.to) return { state: 'above', lines: [`${night} was above your target range.`, 'Keep doing what’s working.'], windDown: false };
+  return { state: 'inside', lines: [`${night} was inside your target range.`, 'Keep doing what’s working.'], windDown: false };
 }
 
 /** The top of the chart's scale: room above the tallest bar and the range, in whole hours. */

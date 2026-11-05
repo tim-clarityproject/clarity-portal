@@ -292,6 +292,29 @@
   --ck-value-w: 70px;        /* "45/100" beside each area (M12 .ar) */
   --ck-area-h: 46px;         /* one area's row (M12 .ar) */
   --band-mix: 14%;           /* the target range's faint mint band: this much mint, flat */
+  /* The Individual Performance Dashboard (M4 v47) */
+  --fs-hero: calc(64 * var(--u-big));       /* "Performance score this sprint", Nekst Light (M4 .hxb 64px) */
+  --fs-glance: calc(24 * var(--u-big));     /* "+5" beside it, and the big figures in the two lists (M4 .hxd, .big) */
+  --fs-fold-figure: calc(20 * var(--u-big)); /* a fold row's figure (M4 .fv b 20px) */
+  --dash-max: 760px;         /* the page (M4 .page.dash) */
+  --dash-hero-l: 300px;      /* the score's column beside the chart (M4 .hero) */
+  --dash-hero-chart-h: 130px; /* the big chart (M4 herochart 130 high) */
+  --dash-strip-h: 14px;      /* a Strategy's week squares (M4 .sq 14px) */
+  --dash-strip-sm-h: 12px;   /* the squares beside an item in the two lists (M4 .siv .sq 12px) */
+  --dash-strip-w: 96px;      /* those squares' width (M4 .siv .sq 96px) */
+  --dash-strip-gap: 3px;     /* between week squares (M4 .sq gap 3px) */
+  --dash-mini-w: 72px;       /* a mini chart beside its figure (M4 svg.mini 72 by 24) */
+  --dash-mini-h: 24px;
+  --dash-bar-col: 168px;     /* the progress or week column of an Objective or Strategy row (M4 .crow) */
+  --dash-value-col: 104px;   /* its figure column (M4 .crow) */
+  --dash-value-col-phone: 92px;
+  --dash-goal-h: 6px;        /* an Outcome Objective's progress bar (M4 goalBar 6 high) */
+  --dash-trend-h: 96px;      /* the small weekly bars inside a fold (M4 weekBars 96 high) */
+  --dash-dot: 8px;           /* a stress week's dot (M4 r 4) */
+  --dash-stress-label-w: 96px; /* the five answers down the side of the stress chart (M4 PL 96) */
+  --dash-fold-min-h: 76px;   /* a fold row (M4 .mt .fold) */
+  --dash-span-w: 440px;      /* the time switch on a laptop (M4 .d .segw) */
+  --dash-lead-max: 54ch;     /* a section's lead lines (M4 .sec2 .lead) */
   --dial-size: 120px;
   --dial-w: 10px;
   --fs-chart: calc(12 * var(--u));          /* labels inside a chart (the mock-ups use 11px; 12px keeps the "nothing below 12px" rule) */

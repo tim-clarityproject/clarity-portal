@@ -39,6 +39,7 @@ export const pageText = {
   // area is (Tim, 2 Nov).
   hubPersonal: [
     'Personal is where you work on your own performance.',
+    'The Dashboard shows what’s working, week by week.',
     'Plan sets your direction.',
     'Reset gets you back to your best under pressure.',
     'Review turns what happened into learning.',
@@ -59,6 +60,13 @@ export const pageText = {
     'Hardware is your body’s physiology.',
     'Software is your decision-making, emotional control and communication.',
     'Software relies on hardware being maintained, so we look after both.',
+  ],
+  // The Individual Performance Dashboard (M4; Phase 5 step 2): first what
+  // it is, in one full sentence (Tim, 2 Nov), then one sentence per line.
+  dashboard: [
+    'The Individual Performance Dashboard is the mirror of your performance, showing what’s improving and what’s holding you back.',
+    'Each thing holding you back has one small step to fix it.',
+    'Every figure comes from your own plan, sprint, daily tools and check-ins.',
   ],
   hubReview: [
     'Review is where you turn what happened into better performance.',

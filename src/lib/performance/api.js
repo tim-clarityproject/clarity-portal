@@ -1155,6 +1155,61 @@ export async function loadCheckinPage(userId) {
   };
 }
 
+// ---------------------------------------------------------------- the dashboard
+
+/**
+ * Everything the Individual Performance Dashboard shows (mock-up M4;
+ * Phase 5 step 2), as rows: the running sprint's rows as the sprint page
+ * loads them (its weeks are scored the same way), every sprint and every
+ * frozen week with its Strategy scores (the chart and the time switch run
+ * across sprints), the plan's live objectives and their figures, the last
+ * 16 weeks of sleep, the way of being and its ratings, every debrief (the
+ * streak, stress), the finished check-ins, Breathe sessions, emotional
+ * control checks, life balance check-ins, the coach and the check-in's
+ * sharing switch. Reads only: nothing here writes.
+ */
+export async function loadDashboard(userId, today) {
+  const page = await loadSprintPage(userId);
+  const planId = page.sprint?.plan_id || page.plan?.id || null;
+  const since = dayBefore(today, 16 * 7);
+  const [sprints, weekScores, planObjectives, figures, dayPlans, dayReviews, allDebriefs, checkins, breathing, controlChecks, lifeChecks, coach, sharing] = await Promise.all([
+    rows(supabase.from('sprints').select(SPRINT_COLS).eq('user_id', userId).order('number')),
+    rows(supabase.from('week_scores').select('sprint_id, sprint_week, week_end, score, strategy_scores, eligible, final')
+      .eq('user_id', userId).order('week_end')),
+    planId ? rows(supabase.from('outcome_objectives').select(OBJECTIVE_COLS).eq('plan_id', planId).is('archived_at', null).order('sort_order')) : [],
+    rows(supabase.from('objective_figures').select('id, objective_id, value, recorded_on, created_at').eq('user_id', userId).order('recorded_on')),
+    rows(supabase.from('day_plans').select('local_date, sleep_hours, sleep_quality, sleep_to_confirm, way_of_being')
+      .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
+    rows(supabase.from('day_reviews').select('local_date, way_of_being_rating, status')
+      .eq('user_id', userId).gte('local_date', since).order('local_date').limit(400)),
+    rows(supabase.from('weekly_debriefs').select('sprint_id, sprint_week, stress, unusual, status').eq('user_id', userId)),
+    rows(supabase.from('checkins').select('id, kind, month, status, answers, hardware_score, software_score, area_scores, finished_at')
+      .eq('user_id', userId).eq('status', 'finished').order('month')),
+    rows(supabase.from('breathing_sessions').select('date').eq('user_id', userId).gte('date', `${since}T00:00:00Z`).limit(1000)).catch(() => []),
+    rows(supabase.from('emotional_control_checks').select('local_date, line').eq('user_id', userId).gte('local_date', since).limit(1000)).catch(() => []),
+    rows(supabase.from('wheel_of_life_checkins').select('id, checkin_at, checkin_date, scores, areas').eq('user_id', userId).order('checkin_at')).catch(() => []),
+    loadMyCoach().catch(() => null),
+    rows(supabase.from('sharing_switches').select('part, is_on').eq('user_id', userId).eq('part', 'checkin')).catch(() => []),
+  ]);
+  return {
+    ...page,
+    // The frozen weeks with their Strategy scores (the sprint page reads them without).
+    weekScores,
+    sprints,
+    planObjectives,
+    figures,
+    dayPlans,
+    dayReviews,
+    allDebriefs,
+    checkins,
+    breathingDays: breathing.map((b) => b.date).filter(Boolean),
+    controlChecks,
+    lifeChecks,
+    coach,
+    checkinShared: sharing[0] ? Boolean(sharing[0].is_on) : true,
+  };
+}
+
 /** Only the check-ins, for Home's line and the saved lists. */
 export async function loadCheckins(userId) {
   return rows(supabase.from('checkins').select('id, kind, month, status, answers, finished_at, updated_at').eq('user_id', userId).order('month', { ascending: false }));
