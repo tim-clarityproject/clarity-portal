@@ -204,6 +204,8 @@ export default function HistoryList({
         </FilterButton>
       )}
 
+      {/* Nothing matches: the one calm line says it, with no "0 entries" or sort beside it (Tim, 5 Nov). */}
+      {filtered.length > 0 && (
       <div className="hlist-tools">
         <span>{filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}</span>
         <button type="button" className="hlist-sort-link" onClick={() => setSortOrder((o) => (o === 'new' ? 'old' : 'new'))}>
@@ -212,6 +214,7 @@ export default function HistoryList({
           <Chevron direction={sortOrder === 'new' ? 'down' : 'up'} size="sm" />
         </button>
       </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="hlist-empty">

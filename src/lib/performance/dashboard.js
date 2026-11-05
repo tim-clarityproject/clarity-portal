@@ -281,10 +281,10 @@ function previousSprintAverage(weeks, sprint) {
 function heroView(d, weeks, sprint, today) {
   const label = 'Performance score this sprint';
   if (!sprint) {
-    return { label, value: 'Not yet', good: false, change: null, lines: ['Your score starts with your first Performance Sprint.'], usualLine: null, chart: null };
+    return { label, value: 'Not yet', good: false, change: null, lines: ['Your dashboard fills in once your first Performance Sprint starts.'], usualLine: null, chart: null, empty: true };
   }
   if (today < sprint.start_on) {
-    return { label, value: 'Not yet', good: false, change: null, lines: [`Your sprint starts on ${dayName(sprint.start_on, today)}.`], usualLine: null, chart: null };
+    return { label, value: 'Not yet', good: false, change: null, lines: [`Your dashboard fills in once your sprint starts on ${dayName(sprint.start_on, today)}.`], usualLine: null, chart: null, empty: true };
   }
   const standard = sprint.standard;
   const mine = weeks.filter((w) => w.sprintId === sprint.id);

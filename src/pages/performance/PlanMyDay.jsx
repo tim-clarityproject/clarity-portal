@@ -447,7 +447,9 @@ function PlanFlow({ userId, date, today, loaded }) {
 
   // ------------------------------------------------------------ the steps
 
-  const eye = <div className="ds-label-row ds-label-row--solo"><WhoSees audience="me" /></div>;
+  // The eye sits beside each screen's question (GuidedTool's eye), not in its body.
+  const eye = null;
+  const screenEye = <WhoSees audience="me" />;
   // An odd night (outside 2 to 14 hours, M12) is asked about once.
   const odd = sleepToConfirm(answers.hours, confirmed !== answers.hours);
   const noPlan = (
@@ -541,6 +543,7 @@ function PlanFlow({ userId, date, today, loaded }) {
     {
       key: 'do',
       name: 'Do',
+      eye: screenEye,
       question: 'What will you do today?',
       nudges: ['Choose up to 3.'],
       render: () => (!view.hasPlan ? noPlan : (
@@ -574,6 +577,7 @@ function PlanFlow({ userId, date, today, loaded }) {
     {
       key: 'priority',
       name: 'Priority',
+      eye: screenEye,
       question: 'Which one is your highest priority?',
       nudges: ['It comes first on Home and in Review my day.'],
       oneTap: view.picks.length > 0,

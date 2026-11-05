@@ -481,8 +481,9 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
             label="Performance score this week"
             figure={view.soFar ? `${view.soFar.value}%` : null}
             good={Boolean(view.soFar?.good)}
+            // Only a fact the figure can't show: the usual range once there is one (Tim, 5 Nov).
             line={view.soFar
-              ? `${view.usualLine.lead}${view.usualLine.figure}${view.usualLine.end}`
+              ? (view.usualLine.ready ? `${view.usualLine.lead}${view.usualLine.figure}${view.usualLine.end}` : null)
               : 'Nothing is scored yet this week.'}
             onClick={() => go('/performance-sprint')}
           />

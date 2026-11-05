@@ -503,7 +503,9 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
 
   // ------------------------------------------------------------ the steps
 
-  const eye = <div className="ds-label-row ds-label-row--solo"><WhoSees audience="me" /></div>;
+  // The eye sits beside each screen's question (GuidedTool's eye), not in its body.
+  const eye = null;
+  const screenEye = <WhoSees audience="me" />;
   const noPlan = (
     <div className="day-quiet">
       <p>Your to-dos and Strategies come from your plan.</p>
@@ -534,6 +536,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'do',
       name: 'Do',
+      eye: screenEye,
       label: '~5 minutes',
       question: planned ? 'Which of today’s to‑dos did you do?' : 'Which of this week’s to‑dos did you do today?',
       nudges: view.running ? ['Tick each one you did.', 'Each tick also updates your sprint.'] : ['Tick each one you did.'],
@@ -561,6 +564,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'be',
       name: 'Be',
+      eye: screenEye,
       // Named in both questions (Tim, 5 Nov, 10:39; rule 64). With no way of
       // being from this morning, it first asks how they wanted to be today;
       // Skip skips both. Never a rating of nothing in particular.
@@ -601,6 +605,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'numbers',
       name: 'Numbers',
+      eye: screenEye,
       // "Log today", as Home's Log today section (Tim, 5 Nov, 10:37).
       title: 'Log today',
       nudges: ['Anything you logged earlier is already here.'],
@@ -700,6 +705,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'tomorrow',
       name: 'Tomorrow',
+      eye: screenEye,
       question: 'What are the most important things to do tomorrow?',
       nudges: ['They’ll be waiting in tomorrow’s Plan my day, in this order.'],
       example: TOMORROW_EXAMPLE,

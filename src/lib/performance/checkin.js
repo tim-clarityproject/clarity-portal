@@ -453,6 +453,20 @@ export const SCORE_LINES = Object.freeze({
   software: 'Your decision-making, emotional control and communication.',
 });
 
+/** What each combined score is and how it's worked out, behind its "i" (Tim, 5 Nov; methods M13). */
+export const SCORE_INFO = Object.freeze({
+  hardware: [
+    'Hardware is your body’s physiology.',
+    'Your Hardware score is the average of six areas: sleep, stress, movement, fuel and alcohol, mood and energy, and health.',
+    'Each area is scored out of 100 from your answers.',
+  ],
+  software: [
+    'Software is your decision-making, emotional control and communication.',
+    'Your Software score is the average of six areas: bouncing back, emotions, focus, decisions, communication and conflict.',
+    'Each area is scored out of 100 from how often each statement was true.',
+  ],
+});
+
 /** The "What are hardware and software?" pop-up (writing rule 40, verbatim). */
 export const HARDWARE_SOFTWARE = Object.freeze([
   'Hardware is your body’s physiology.',

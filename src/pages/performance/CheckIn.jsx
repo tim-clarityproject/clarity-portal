@@ -21,6 +21,7 @@ import {
   Stat,
   StatGroup,
   StatementPanel,
+  TermInfo,
   PriorityRows,
   Stepper,
   NumberField,
@@ -51,6 +52,7 @@ import {
   LATER_TOAST,
   NAME_MAX,
   DRINKS,
+  SCORE_INFO,
   DRINK_MAX,
   TRIP_NUDGE,
   TRIP_OPTIONS,
@@ -468,19 +470,21 @@ function CheckinFlow({ userId, today, month, loaded }) {
     nudges: q.trip ? [TRIP_NUDGE] : q.nudges,
     // One answer moves on by itself, with no Next (Tim, 5 Nov, 10:23); the drinks keep Next.
     oneTap: !q.drinks,
+    // The eye beside the question (Tim, 5 Nov, 11:09).
+    eye,
     render: (tool) => (
       q.drinks ? (
-        <DrinksBody drinks={answers._drinks || null} saved={answers.H8 || null} onPatch={patchAnswers} onNext={() => tool.go(tool.index + 1)} eye={eyeLine} />
+        <DrinksBody drinks={answers._drinks || null} saved={answers.H8 || null} onPatch={patchAnswers} onNext={() => tool.go(tool.index + 1)} eye={null} />
       ) : q.trip ? (
         <QuestionBody
           q={{ ...q, options: TRIP_OPTIONS }}
           value={tripKind(answers)}
           onAnswer={(v) => patchAnswers((a) => tripAnswers(a, v))}
           onNext={() => tool.go(tool.index + 1)}
-          eye={eyeLine}
+          eye={null}
         />
       ) : (
-        <QuestionBody q={q} value={answers[q.code] ?? null} onAnswer={(v) => answer(q.code, v)} onNext={() => tool.go(tool.index + 1)} eye={eyeLine} />
+        <QuestionBody q={q} value={answers[q.code] ?? null} onAnswer={(v) => answer(q.code, v)} onNext={() => tool.go(tool.index + 1)} eye={null} />
       )
     ),
   }));
@@ -693,10 +697,10 @@ function Results({ userId, today, kind, coach, results, points, goals, note, spr
       {note && coach && <NotePanel label={`From ${coach}`} className="ck-note">{note}</NotePanel>}
       <StatGroup className="ck-scores">
         {r.hardware && (
-          <Stat panel label="Hardware score" value={String(r.hardware.value)} unit="/100" note={r.compared ? <ChangeNote change={r.hardware.change} /> : undefined} />
+          <Stat panel label={<TermInfo lines={SCORE_INFO.hardware} label="About the Hardware score">Hardware score</TermInfo>} value={String(r.hardware.value)} unit="/100" note={r.compared ? <ChangeNote change={r.hardware.change} /> : undefined} />
         )}
         {r.software && (
-          <Stat panel label="Software score" value={String(r.software.value)} unit="/100" note={r.compared ? <ChangeNote change={r.software.change} /> : undefined} />
+          <Stat panel label={<TermInfo lines={SCORE_INFO.software} label="About the Software score">Software score</TermInfo>} value={String(r.software.value)} unit="/100" note={r.compared ? <ChangeNote change={r.software.change} /> : undefined} />
         )}
       </StatGroup>
 
@@ -994,7 +998,7 @@ function CheckinRead({ userId, today, loaded, row }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page ck-page">
-        <PageHeader title={checkinTitle(row)} meta={['Hardware and Software check-in', when]} info={pageText.checkIn} />
+        <PageHeader title={checkinTitle(row)} meta={['Hardware and Software check-in', when]} aside={eye} />
         <Results
           userId={userId}
           today={today}
@@ -1008,7 +1012,7 @@ function CheckinRead({ userId, today, loaded, row }) {
           checkinId={checkinId}
           ensureCheckin={() => Promise.resolve(row.id)}
           month={row.month}
-          eye={<div className="ck-eye">{eye}</div>}
+          eye={null}
         />
         <div className="ck-change">
           <Button onClick={() => navigate(`${checkinPath(row.month)}/answers`, { state: { from: checkinPath(row.month) } })}>Change my answers</Button>

@@ -338,8 +338,8 @@ export function sprintPageView(d, { today }) {
     .map((w) => Number(w.score));
   const usual = m8UsualRange([...earlier, ...weeks.filter((w) => w.eligible).map((w) => w.raw)]);
   const usualLine = usual
-    ? { lead: 'Your usual range is ', figure: `${usual.low} to ${usual.high}%`, end: '.' }
-    : { lead: `Your usual range appears after ${USUAL_RANGE_MIN_WEEKS} weeks.`, figure: '', end: '' };
+    ? { lead: 'Your usual range is ', figure: `${usual.low} to ${usual.high}%`, end: '.', ready: true }
+    : { lead: `Your usual range appears after ${USUAL_RANGE_MIN_WEEKS} weeks.`, figure: '', end: '', ready: false };
 
   const figures = m6SprintFigures(weeks.map((w) => ({ number: w.number, score: w.raw, finished: w.finished })), standard);
   const finishedNumbers = weeks.filter((w) => w.finished && w.raw != null).map((w) => w.number);

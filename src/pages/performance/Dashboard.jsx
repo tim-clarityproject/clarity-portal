@@ -28,8 +28,8 @@ import {
   tipProps,
   useIsPhone,
   useSleepTarget,
+  EmptyState,
 } from '../../components/design';
-import pageText from '../../content/pageText';
 import { useCachedLoad } from '../../lib/pageCache';
 import { loadDashboard, saveSharing } from '../../lib/performance/api';
 import { DASHBOARD_CACHE, DASHBOARD_TITLE, SLEEP_EMPTY, SLEEP_LABEL, SPANS, dashboardView } from '../../lib/performance/dashboard';
@@ -132,7 +132,6 @@ export default function Dashboard() {
         {!view.hidden && (
           <>
             {!settings.hidden.hero && <Hero hero={view.hero} phone={phone} navigate={navigate} state={view.state} />}
-            {view.logging && <p className="dash-logl">{view.logging}</p>}
             {view.debrief && (
               <div className="dash-debrief">
                 <span>Your weekly debrief is ready.</span>
@@ -156,12 +155,11 @@ export default function Dashboard() {
       <DesignHeader />
       <main className="plan-page dash-page">
         {phone && <div className="plan-back-row"><BackLink onClick={() => navigate('/personal')} label="Personal" /></div>}
-        <PageHeader title={DASHBOARD_TITLE} info={pageText.dashboard} onSystemLink={() => setSystem(true)} />
-        {view && (
-          <div className="dash-eye">
-            {coach ? <CoachSees parts={parts} coachName={coach} onToggle={(_k, on) => setShared(on)} /> : <WhoSees audience="me" />}
-          </div>
-        )}
+        {/* The eye once, beside the title (Tim, 5 Nov, 11:09). */}
+        <PageHeader
+          title={DASHBOARD_TITLE}
+          aside={view ? (coach ? <CoachSees parts={parts} coachName={coach} onToggle={(_k, on) => setShared(on)} /> : <WhoSees audience="me" />) : null}
+        />
         {body}
       </main>
       <PerformanceSystem open={system} onClose={() => setSystem(false)} />
@@ -173,12 +171,23 @@ export default function Dashboard() {
 // ---------------------------------------------------------------- the top
 
 function Hero({ hero, phone, navigate, state }) {
+  // Before there's data: one calm card, one line and one action, never
+  // "Not yet" in the big figure style (Tim, 5 Nov, 11:04).
+  if (hero.empty) {
+    return (
+      <EmptyState
+        question={hero.lines[0]}
+        action={state === 'none' ? { label: 'Start my first sprint', onClick: () => navigate('/performance-sprint/start') } : null}
+      />
+    );
+  }
+  const noFigure = hero.value === 'Not yet';
   return (
     <section className="dash-hero" aria-label={hero.label}>
       <div className="dash-hero-num">
         <span className="dash-hero-label">{hero.label}</span>
         <span className="dash-hero-row">
-          <strong className={`dash-hero-value${hero.good ? ' dash-hero-value--good' : ''}`}>{hero.value}</strong>
+          {!noFigure && <strong className={`dash-hero-value${hero.good ? ' dash-hero-value--good' : ''}`}>{hero.value}</strong>}
           {hero.change && (
             <ChartTips className="dash-glance-tips">
               <span className={`dash-glance${hero.change.up ? ' dash-glance--up' : ''}`} {...tipProps({ value: hero.change.words, when: 'Since last sprint' })}>
@@ -188,8 +197,6 @@ function Hero({ hero, phone, navigate, state }) {
           )}
         </span>
         {hero.lines.map((l) => <span key={l} className="dash-hero-line">{l}</span>)}
-        {hero.usualLine && <span className="dash-hero-line">{hero.usualLine}</span>}
-        {state === 'none' && <Button variant="text" onClick={() => navigate('/performance-sprint')}>Open the Performance Sprint</Button>}
       </div>
       {hero.chart && (
         <div className="dash-hero-chart">
@@ -378,10 +385,8 @@ function CurrentSprint({ current, closed, toggle, phone, go }) {
   return (
     <section className="dash-sec" aria-labelledby={undefined}>
       <SectionHead id="sum" title="Current sprint" closed={closed} toggle={toggle} />
-      <p className="dash-lead">
-        <span className="dash-ls">{current.lead}</span>
-        {shut && <span className="dash-ls">{current.closedLine}</span>}
-      </p>
+      {/* Declutter (Tim, 5 Nov): no line saying what the section shows; closed, its one-line summary. */}
+      {shut && <p className="dash-lead"><span className="dash-ls">{current.closedLine}</span></p>}
       {!shut && !phone && (
         <div className="dash-sgrid">
           <h3 className="dash-sh">What’s improving</h3>
@@ -481,8 +486,9 @@ function StrategyRow({ row, phone }) {
       </div>
       <div className="dash-crow-c"><Strip cells={row.strip} /></div>
       <div className="dash-crow-v">
-        {!phone && <span className="dash-crow-cvl">{row.latestLabel}</span>}
-        <strong>{row.latest ? `${row.latest.value}%` : 'Not yet'}</strong>
+        {/* No figure yet: nothing in the figure style (Tim, 5 Nov). */}
+        {row.latest && !phone && <span className="dash-crow-cvl">{row.latestLabel}</span>}
+        {row.latest && <strong>{`${row.latest.value}%`}</strong>}
       </div>
     </div>
   );
@@ -498,7 +504,6 @@ function ChainSection({ view, closed, toggle, span, setSpan, phone }) {
         <p className="dash-lead">{chain.closedLine}</p>
       ) : (
         <>
-          <p className="dash-lead">{chain.lead.map((l) => <span key={l} className="dash-ls">{l}</span>)}</p>
           <SpanSwitch span={span} setSpan={setSpan} phone={phone} />
           <GroupHead id="obj" title="Outcome Objectives" summary={chain.objectives.summary} closed={closed} toggle={toggle} first />
           {!closed.obj && (chain.objectives.rows.length
@@ -739,7 +744,7 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
   return (
     <section className="dash-sec dash-mt">
       <SectionHead id="more" title="What’s behind your performance" closed={closed} toggle={toggle} />
-      <p className="dash-lead">{shut ? behind.closedLine : !phone ? behind.lead : null}</p>
+      {shut && <p className="dash-lead">{behind.closedLine}</p>}
       {!shut && (
         <div className="dash-folds">
           {behind.rows.map((row) => (

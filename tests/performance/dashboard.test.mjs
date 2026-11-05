@@ -266,7 +266,8 @@ test('a new person with no sprint: empty frames, each with its start line', () =
   const v = dashboardView({ plan: null, sprint: null, sprints: [], recoveries: [], weekScores: [], planObjectives: [], strategies: [], links: [] }, { today: TODAY, target });
   assert.equal(v.state, 'none');
   assert.equal(v.hero.value, 'Not yet');
-  assert.deepEqual(v.hero.lines, ['Your score starts with your first Performance Sprint.']);
+  assert.deepEqual(v.hero.lines, ['Your dashboard fills in once your first Performance Sprint starts.']);
+  assert.equal(v.hero.empty, true);
   assert.equal(v.current, null);
   assert.deepEqual(v.behind.rows.map((r) => r.line), [
     'You haven’t added an unplanned win this sprint.',

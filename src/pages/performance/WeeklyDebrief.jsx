@@ -662,7 +662,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
               <div className="deb-habits">{g.habits.map(habitRow)}</div>
             </div>
           )) : <p className="day-quiet-line">This sprint has no habits to log.</p>}
-          <Section title="Unplanned wins" line="Anything you did that wasn’t planned but moved the needle." as="h3" className="deb-wins">
+          <Section title="Unplanned wins" as="h3" className="deb-wins">
             {view.wins.length > 0 && (
               <TodoList label="Unplanned wins" className="rev-list">
                 {view.wins.map((w) => <TodoRow key={w.id} win text={w.text} strategyName={w.strategyName} winTag={`Unplanned win, ${w.day}`} />)}

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useCoachName, whoSeesText } from './coachContext';
-import { EyeIcon, IconText } from './IconText';
+import { EyeIcon } from './IconText';
+import InfoPop from './InfoPop';
+import useInfoToggle from './useInfoToggle';
 import { Sheet } from './Dialogs';
 import { useToast, ERROR_MESSAGE } from './toastContext';
 import './design.css';
@@ -26,24 +28,64 @@ import './design.css';
 // It uses the same settings as My Account's "What your coach sees".
 export const MY_ACCOUNT_LINE = 'You can also change this in My Account, under What your coach sees.';
 
+/** "Only you can see this.", "You and Tim can see this.", "Your team can see this." */
+export function whoSeesSentence(audience, coach) {
+  return `${whoSeesText(audience, coach)} can see this.`;
+}
+
+// The eye alone (Tim, 5 Nov, 11:08): no "Only you" words on screen. Pointing
+// at it or tapping it opens the standard pop-up ("Only you can see this."),
+// and screen readers hear the same words. When a coach or team can see it,
+// the eye carries a small dot, so the change shows without words (Claude's
+// call). A changeable eye (onChange) opens "Who can see this?" on a click
+// or tap, and previews its sentence when pointed at.
 export default function WhoSees({ audience = 'me', coachName, name, onChange }) {
   const coach = useCoachName(coachName);
   const [open, setOpen] = useState(false);
-  const words = whoSeesText(audience, coach);
+  const sentence = whoSeesSentence(audience, coach);
+  const popId = useId();
+  const { open: tipOpen, buttonRef, panelRef, buttonProps } = useInfoToggle();
+  const [hover, setHover] = useState(false);
+  const shared = audience !== 'me';
+  const icon = (
+    <span className={`ds-who-eye${shared ? ' ds-who-eye--shared' : ''}`} aria-hidden="true">
+      <EyeIcon />
+    </span>
+  );
   if (!onChange) {
     return (
-      <IconText icon={<EyeIcon />} className="ds-who" aria-live="polite">
-        <span className="ds-sr">Who can see this: </span>
-        {words}
-      </IconText>
+      <>
+        <button
+          type="button"
+          ref={buttonRef}
+          className="ds-who ds-who--eye"
+          aria-label={sentence}
+          aria-expanded={tipOpen}
+          aria-controls={popId}
+          aria-live="polite"
+          {...buttonProps}
+        >
+          {icon}
+        </button>
+        <InfoPop id={popId} open={tipOpen} anchorRef={buttonRef} panelRef={panelRef} lines={[sentence]} />
+      </>
     );
   }
   return (
     <>
-      <IconText icon={<EyeIcon />} className="ds-who" onClick={() => setOpen(true)} aria-haspopup="dialog">
-        <span className="ds-sr">Who can see this: </span>
-        {words}
-      </IconText>
+      <button
+        type="button"
+        ref={buttonRef}
+        className="ds-who ds-who--eye"
+        aria-label={`${sentence} Change who can see this.`}
+        aria-haspopup="dialog"
+        onClick={() => { setHover(false); setOpen(true); }}
+        onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHover(true); }}
+        onPointerLeave={() => setHover(false)}
+      >
+        {icon}
+      </button>
+      <InfoPop id={popId} open={hover && !open} anchorRef={buttonRef} panelRef={panelRef} lines={[sentence]} />
       <WhoSeesSheet
         open={open}
         onClose={() => setOpen(false)}
@@ -107,17 +149,31 @@ function WhoSeesSheet({ open, onClose, name, audience, coach, onChange }) {
 export function CoachSees({ parts, onToggle, coachName }) {
   const coach = useCoachName(coachName);
   const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+  const buttonRef = useRef(null);
+  const panelRef = useRef(null);
+  const popId = useId();
   const shared = parts.filter((p) => p.shared).length;
   const who = coach || 'Your coach';
-  const words = shared
-    ? `${who} sees ${shared} ${shared === 1 ? 'part' : 'parts'}`
-    : 'Only you';
+  // The eye alone (Tim, 5 Nov), with its sentence on pointing and for screen readers.
+  const sentence = shared
+    ? `${who} can see ${shared} ${shared === 1 ? 'part' : 'parts'} of this page.`
+    : 'Only you can see this.';
   return (
     <>
-      <IconText icon={<EyeIcon />} className="ds-who" onClick={() => setOpen(true)} aria-haspopup="dialog">
-        <span className="ds-sr">Who can see this page: </span>
-        {words}
-      </IconText>
+      <button
+        type="button"
+        ref={buttonRef}
+        className="ds-who ds-who--eye"
+        aria-label={`${sentence} Change what ${who === 'Your coach' ? 'your coach sees' : `${who} sees`}.`}
+        aria-haspopup="dialog"
+        onClick={() => { setHover(false); setOpen(true); }}
+        onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHover(true); }}
+        onPointerLeave={() => setHover(false)}
+      >
+        <span className={`ds-who-eye${shared ? ' ds-who-eye--shared' : ''}`} aria-hidden="true"><EyeIcon /></span>
+      </button>
+      <InfoPop id={popId} open={hover && !open} anchorRef={buttonRef} panelRef={panelRef} lines={[sentence]} />
       <CoachSeesSheet open={open} onClose={() => setOpen(false)} parts={parts} onToggle={onToggle} coach={coach} />
     </>
   );

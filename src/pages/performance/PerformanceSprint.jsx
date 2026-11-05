@@ -499,7 +499,7 @@ function SprintBody({
         />
         <div className="sprint-side">
           <div className="sprint-usual">
-            <p>{view.usualLine.lead}{view.usualLine.figure && <span className="sprint-figure">{view.usualLine.figure}</span>}{view.usualLine.end}</p>
+            {view.usualLine.ready && <p>{view.usualLine.lead}<span className="sprint-figure">{view.usualLine.figure}</span>{view.usualLine.end}</p>}
             <p>Your standard is <span className="sprint-figure">{`${view.standard}%`}</span>.</p>
           </div>
           {view.soFar?.good && (
@@ -533,7 +533,6 @@ function SprintBody({
                 <div>
                   <dt>
                     Performance standard
-                    <span className="sprint-dd-note">The weekly score that counts as a good week</span>
                   </dt>
                   <dd><span className="sprint-figure">{`${view.standard}%`}</span></dd>
                 </div>
@@ -582,6 +581,8 @@ function SprintBody({
         <Section
           title="To-dos this week"
           line="Anything not done by Sunday rolls into next week."
+          // A first-visit tip: shown once, then never again (Tim, 5 Nov).
+          helpKey="sprint-todos-roll"
           className="ipp-section sprint-section"
           aside={<WhoSees audience="me" />}
         >

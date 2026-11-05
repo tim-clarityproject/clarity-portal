@@ -55,6 +55,7 @@ import './design.css';
 //   nudgeInfo: { label, text } an "i" at the end of the last nudge,
 //              opening its one line in place (M19's Close the day),
 //   required, nextLabel, skippable (for the last step), bare,
+//   eye:       the screen's eye (WhoSees), shown beside the question.
 //   oneTap:    a one-answer question (Tim, 5 Nov, 10:23): the chosen answer
 //              shows as selected for a moment (ONE_TAP_MS), then the step
 //              moves itself on with tool.next(); no Next button. Back keeps
@@ -165,6 +166,8 @@ function StepHead({ step, headingRef, positionId, role }) {
         aria-describedby={positionId}
       >
         {step.title || step.question}
+        {/* The eye beside the question it belongs to, never on its own line (Tim, 5 Nov, 11:09). */}
+        {step.eye && <span className="ds-page-aside ds-guide-eye">{step.eye}</span>}
       </Heading>
       {step.nudges?.map((line, n) => (
         <p key={line} className="ds-guide-nudge ds-guide-rv ds-guide-rv--2">

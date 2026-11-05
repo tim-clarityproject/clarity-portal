@@ -8927,3 +8927,84 @@
   gap: var(--space-3);
   margin-top: var(--space-5);
 }
+
+/* The eye alone (WhoSees, CoachSees; Tim, 5 Nov, 11:08): a 16px eye in the
+   secondary grey inside a 44px tap area, coral on hover or focus. A small
+   dot when a coach or team can see it. */
+.ui-root .ds-who--eye {
+  all: unset;
+  box-sizing: border-box;
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--who-icon);
+  height: var(--who-icon);
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  vertical-align: middle;
+  cursor: pointer;
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-who--eye::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--who-icon) - var(--tap-min)) / 2);
+}
+
+.ui-root .ds-who--eye:hover,
+.ui-root .ds-who--eye:focus-visible {
+  color: var(--coral-text);
+}
+
+.ui-root .ds-who--eye:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px3);
+}
+
+.ui-root .ds-who-eye {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--who-icon);
+  height: var(--who-icon);
+}
+
+.ui-root .ds-who-eye .ds-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ui-root .ds-who-eye--shared::after {
+  content: '';
+  position: absolute;
+  top: calc(-1 * var(--space-px2));
+  right: calc(-1 * var(--space-px2));
+  width: var(--space-px6);
+  height: var(--space-px6);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* The page's eye beside its title, aligned with the title's middle (Tim, 5 Nov, 11:09). */
+.ui-root .ds-page-aside {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--info-gap);
+  vertical-align: middle;
+  font-size: var(--fs-body);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* A term with its "i" (TermInfo): the "i" 6px after the last word, on the text's middle. */
+.ui-root .ds-term {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--info-gap);
+}

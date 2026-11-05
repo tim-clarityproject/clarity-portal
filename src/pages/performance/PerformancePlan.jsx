@@ -245,8 +245,6 @@ export default function PerformancePlan() {
               {view.mission
                 ? <p className="ds-mission-card-text">{keepWords(view.mission)}</p>
                 : <p className="ds-mission-card-text ipp-muted">Your mission isn’t written yet.</p>}
-              <p className="ds-mission-card-note">This is the big aim that drives your daily performance.</p>
-              <p className="ds-mission-card-note">Progress on your mission is measured by your Outcome Objectives.</p>
               <Button variant="text" className="ds-part-edit" onClick={() => openPart({ kind: 'mission', id: null })}>Edit my mission</Button>
             </section>
 
@@ -254,7 +252,6 @@ export default function PerformancePlan() {
 
             <Section
               title="Outcome Objectives"
-              line="Outcome Objectives are the results by which progress on your mission is measured."
               aside={<WhoSees {...who('progress', 'Your Outcome Objective figures and scores')} />}
               className="ipp-section"
             >
@@ -270,14 +267,15 @@ export default function PerformancePlan() {
                   ))}
                 </ObjectiveGrid>
               ) : (
-                <p className="ipp-muted">Your plan has no Outcome Objectives yet.</p>
+                <EmptyState question="Set your first Outcome Objective." action={{ label: 'Set my first objective', onClick: () => navigate('/performance-plan/build') }} />
               )}
             </Section>
 
+            {/* Only the first missing step shows; the rest wait (Tim, 5 Nov, 11:06). */}
+            {view.objectives.length > 0 && (
             <Section
               id="strategies"
               title="Strategies"
-              line="Strategies are medium to long-term approaches to achieving your objectives."
               className="ipp-section"
             >
               {view.strategies.length ? (
@@ -295,7 +293,7 @@ export default function PerformancePlan() {
                   ))}
                 </StrategyTiles>
               ) : (
-                <p className="ipp-muted">Your plan has no Strategies yet.</p>
+                <EmptyState question="Set your first Strategy." action={{ label: 'Set my first Strategy', onClick: () => navigate('/performance-plan/build') }} />
               )}
               {open && !isPhone && (
                 <StrategyDetail
@@ -308,6 +306,7 @@ export default function PerformancePlan() {
                 />
               )}
             </Section>
+            )}
 
             <div className="ds-actions ipp-actions">
               <Button onClick={() => navigate('/performance-plan/edit')}>Edit my plan</Button>
