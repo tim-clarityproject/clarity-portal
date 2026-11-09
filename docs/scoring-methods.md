@@ -262,7 +262,7 @@ Always about the current sprint (Tim, 26 Oct). Most important first.
 4. Sleep hours or quality up on the previous 4 weeks (M12).
 
 **What's holding you back (in this order, up to 3, each with a one-tap fix):**
-1. A Strategy below the standard in each of the last 2 finished weeks ("Plan it into this week").
+1. A Strategy below the standard in each of the last 2 finished weeks ("Plan it into this week"). The screen names it once in one sentence with the real number of finished weeks running below the standard: “[Strategy name]” has been below your standard for 3 weeks. (Tim, 9 Nov.)
 2. An Outcome Objective not moving (M9.1) while its effort is on track ("Review this Strategy").
 3. The habits with the lowest average score this sprint, if under 50% (Claude).
 4. Recovery signals going the wrong way (Claude): average sleep down by half an hour or more on the previous 4 weeks, or weekly stress at "Quite a lot" or "Very much" in 2 weeks running.

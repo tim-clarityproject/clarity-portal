@@ -354,6 +354,10 @@ test('M10: improving and holding back, in order, at most 3 each', () => {
   });
   assert.deepEqual(r.improving.map((x) => x.kind), ['objective_reached', 'objective_improving', 'strategy_at_standard']);
   assert.deepEqual(r.holdingBack.map((x) => x.kind), ['strategy_below', 'objective_not_moving', 'habit_low']);
+  assert.equal(r.holdingBack[0].weeksBelow, 2, 'below in the last 2 finished weeks');
+  // The real number of finished weeks running below the standard (Tim, 9 Nov).
+  const longer = S.m10ImprovingAndHoldingBack({ standard: 85, strategies: [{ id: 'x', name: 'x', weeks: [{ score: 90 }, { score: 60 }, { score: 70 }, { score: 84.4 }] }] });
+  assert.equal(longer.holdingBack[0].weeksBelow, 3);
   const empty = S.m10ImprovingAndHoldingBack({ standard: 85 });
   assert.deepEqual(empty, { improving: [], holdingBack: [] });
   const recovery = S.m10ImprovingAndHoldingBack({ standard: 85, sleep: { hoursNow: 6.5, hoursBefore: 7 }, stress: [] });

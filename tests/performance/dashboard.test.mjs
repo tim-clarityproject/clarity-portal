@@ -168,7 +168,12 @@ test('what’s improving and what’s holding you back come from M10, in its ord
   assert.deepEqual(kinds(v.current.improving), ['objective_improving', 'strategy_at_standard', 'habit_kept_up']);
   assert.equal(v.current.improving[0].big.text, '+9');
   assert.equal(v.current.holdingBack[0].kind, 'strategy_below');
-  assert.equal(v.current.holdingBack[0].title, 'Sustain my energy');
+  // Named once, in one full sentence with the real number of weeks, and no
+  // second line repeating what the grey week bars show (follow-up 2).
+  assert.match(v.current.holdingBack[0].title, /^“Sustain my energy” has been below your standard for \d+ weeks\.$/);
+  assert.equal(v.current.holdingBack[0].line, null);
+  assert.ok(v.current.holdingBack[0].strip?.length, 'the grey week bars stay');
+  assert.ok(v.current.holdingBack.length <= 3, 'never more than 3');
   assert.deepEqual(v.current.holdingBack[0].fix, { label: 'Plan it into this week', to: '/performance-sprint', state: { addTodoFor: 'b' } });
   const notMoving = v.current.holdingBack.find((x) => x.kind === 'objective_not_moving');
   assert.equal(notMoving.line, 'Your rating is still 7/10 this sprint, while the work behind it is on track.');
@@ -184,6 +189,7 @@ test('what’s improving and what’s holding you back come from M10, in its ord
     habits: [],
   });
   assert.deepEqual(direct.holdingBack.map((x) => x.id), ['b']);
+  assert.equal(v.current.holdingBack[0].title, `“Sustain my energy” has been below your standard for ${direct.holdingBack[0].weeksBelow} weeks.`);
 });
 
 test('empty lists say so plainly', () => {

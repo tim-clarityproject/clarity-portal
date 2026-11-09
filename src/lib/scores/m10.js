@@ -46,11 +46,15 @@ export function m10ImprovingAndHoldingBack(input) {
   }
 
   const holdingBack = [];
-  // 1. A Strategy below the standard in each of the last 2 finished weeks.
+  // 1. A Strategy below the standard in each of the last 2 finished weeks,
+  // with how many finished weeks running it has been below (2 or more).
+  const below = (w) => w.score != null && !m0AtStandard(w.score, standard);
   for (const s of input.strategies || []) {
     const last = s.weeks.slice(-2);
-    if (last.length === 2 && last.every((w) => w.score != null && !m0AtStandard(w.score, standard))) {
-      holdingBack.push({ kind: 'strategy_below', id: s.id, name: s.name, fix: 'Plan it into this week' });
+    if (last.length === 2 && last.every(below)) {
+      let weeksBelow = 0;
+      for (let i = s.weeks.length - 1; i >= 0 && below(s.weeks[i]); i -= 1) weeksBelow += 1;
+      holdingBack.push({ kind: 'strategy_below', id: s.id, name: s.name, weeksBelow, fix: 'Plan it into this week' });
     }
   }
   // 2. An objective not moving while its effort is on track.

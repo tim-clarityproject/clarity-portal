@@ -531,7 +531,10 @@ function improvingAndHoldingBack(d, weeks, sprint, objectives, signals) {
   const holdingBack = lists.holdingBack.map((x) => {
     switch (x.kind) {
       case 'strategy_below':
-        return { key: `s:${x.id}`, kind: x.kind, title: x.name, line: 'It’s been below your standard for the last 2 weeks.', repeats: true, strip: strategyStrip(x.id), fix: { label: 'Plan it into this week', to: '/performance-sprint', state: { addTodoFor: x.id } } };
+        // Named once, as one full sentence with its one action (Phase 5
+        // follow-up 2; 5e rules 1 and 9): no second line under it, as the
+        // grey week bars already show the weeks below.
+        return { key: `s:${x.id}`, kind: x.kind, title: `“${x.name}” has been below your standard for ${x.weeksBelow || 2} weeks.`, label: x.name, line: null, strip: strategyStrip(x.id), fix: { label: 'Plan it into this week', to: '/performance-sprint', state: { addTodoFor: x.id } } };
       case 'objective_not_moving': {
         const o = byId.get(x.id);
         return { key: `o:${x.id}`, kind: x.kind, title: x.name, line: o.stillWords, big: { text: '±0' }, fix: { label: 'Review its Strategies', to: '/performance-plan', hash: '#strategies' } };

@@ -365,7 +365,7 @@ function SumItem({ item, holding, phone, go }) {
   if (item.strip) visual = <Strip cells={item.strip} small tips={!phone} />;
   else if (item.mini) visual = <Mini bars={item.mini} />;
   else if (item.big) visual = <Big big={item.big} holding={holding} />;
-  const tap = useTapLine({ phone: phone && item.repeats && (item.strip || item.mini), line: item.line, label: `About ${item.title}`, visual });
+  const tap = useTapLine({ phone: phone && item.repeats && (item.strip || item.mini), line: item.line, label: `About ${item.label || item.title}`, visual });
   return (
     <div className="dash-si">
       <div className="dash-sit">
