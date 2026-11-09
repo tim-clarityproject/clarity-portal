@@ -133,6 +133,64 @@ test('after 039: a read that left before this device\'s own save never writes ov
   assert.deepEqual(habits.readDayChoices(ME, '2026-10-19').habits, [H1], 'the habit stays chosen');
 });
 
+// A gate for the fake database's answers (db.hold): the server does the
+// work at once, the answer waits until let go.
+function gate() {
+  let open;
+  const p = new Promise((r) => { open = r; });
+  return { p, open };
+}
+const until = async (fn) => { for (let i = 0; i < 200 && !fn(); i += 1) await new Promise((r) => { setTimeout(r, 1); }); };
+const H3 = '44444444-4444-4444-8444-444444444444';
+
+test('the newest choice wins: a save refused for another device\'s goes on top of the newest choice, not the one it started with (follow-up 2)', async () => {
+  const day = '2026-10-18';
+  await habits.saveDayChoices(ME, day, { habits: [H1], order: [`habit:${H1}`], top: `habit:${H1}` });
+  fake.changeElsewhere('day_plan_habits', { local_date: day }, { habit_ids: [H2], pick_order: [`habit:${H2}`], top_pick: `habit:${H2}` });
+  // The first choice's save is refused (the phone saved since); the read of
+  // the phone's row answers late. Meanwhile a newer choice is made here.
+  const g = gate();
+  let selects = 0;
+  fake.db.hold = (c) => (c.table === 'day_plan_habits' && c.kind === 'select' && ++selects === 2 ? g.p : null);
+  const first = habits.saveDayChoices(ME, day, { habits: [H1, H3], order: [`habit:${H1}`, `habit:${H3}`], top: `habit:${H1}` });
+  await until(() => selects >= 2);
+  const newest = { habits: [H3], order: [`habit:${H3}`], top: `habit:${H3}` };
+  await habits.saveDayChoices(ME, day, newest);
+  g.open();
+  await first;
+  assert.deepEqual(habits.readDayChoices(ME, day), newest, 'the device keeps the newest choice');
+  assert.deepEqual(rows('day_plan_habits')[0].habit_ids, [H3], 'and so does the table');
+});
+
+test('the newest choice wins: a read that left before a choice never undoes it, wherever its answer lands (20 orders)', async () => {
+  for (let i = 0; i < 20; i += 1) {
+    fake.reset();
+    store.clear();
+    // A day of its own each time (the queue's book of versions outlives the reset).
+    const day = `2026-09-${String(i + 1).padStart(2, '0')}`;
+    await habits.saveDayChoices(ME, day, { habits: [H1], order: [`habit:${H1}`], top: `habit:${H1}` });
+    // Sometimes another device saved first, sometimes not.
+    if (i % 2) fake.changeElsewhere('day_plan_habits', { local_date: day }, { habit_ids: [H2], pick_order: [`habit:${H2}`], top_pick: `habit:${H2}` });
+    const g = gate();
+    let held = false;
+    fake.db.hold = (c) => (!held && c.table === 'day_plan_habits' && c.kind === 'select' ? (held = true, g.p) : null);
+    const read = habits.refreshDayChoices(ME, day);
+    await until(() => held);
+    const newest = { habits: [H3, H1].slice(0, 1 + (i % 3 === 0)), order: [`habit:${H3}`], top: `habit:${H3}` };
+    const save = habits.saveDayChoices(ME, day, newest);
+    // The read's answer lands before, while, or after the choice is saved.
+    if (i % 4 === 0) g.open();
+    if (i % 4 === 1) await new Promise((r) => { setImmediate(r); g.open(); });
+    await save;
+    g.open();
+    await read;
+    assert.deepEqual(habits.readDayChoices(ME, day).habits, newest.habits, `order ${i}: the device keeps the newest choice`);
+    assert.deepEqual(rows('day_plan_habits')[0].habit_ids, newest.habits, `order ${i}: the table holds the newest choice`);
+    // And a read made afterwards changes nothing.
+    assert.equal(await habits.refreshDayChoices(ME, day), false, `order ${i}: nothing older comes back`);
+  }
+});
+
 test('after 039: a save based on an older version is never written over another device\'s, and no thought is lost', async () => {
   await nights.saveWindDownThoughts(ME, '2026-10-24', ['Call Evan']);
   fake.changeElsewhere('wind_down_nights', { night: '2026-10-24' }, { thoughts: ['Call Evan', 'From the phone'] });

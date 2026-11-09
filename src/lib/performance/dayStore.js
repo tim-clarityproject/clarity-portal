@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { noteVersions, saveOrQueue, waitingToSend, whenSent } from '../syncQueue';
+import { changesMade, noteVersions, saveOrQueue, waitingToSend, whenSent } from '../syncQueue';
 import { tableReady } from './tableReady';
 import { parseDbTimestamp } from '../dateFormatter';
 
@@ -40,6 +40,11 @@ export function dayStore({ table, dayCol, device, toRow, fromRow, onTop = (saved
   const onConflict = `user_id,${dayCol}`;
   const listeners = new Set();
   const notify = () => listeners.forEach((fn) => fn());
+  // Choices made on this device: a count that moves on with each, and
+  // when each day last changed. A read that left before a day's newest
+  // choice never writes over it (the newest choice wins, 9 Nov).
+  let edits = 0;
+  const editedAt = new Map();
 
   const same = (x, y) => JSON.stringify(toRow(x)) === JSON.stringify(toRow(y));
   const values = (userId, day, value) => ({ user_id: userId, [dayCol]: day, ...toRow(value) });
@@ -82,7 +87,11 @@ export function dayStore({ table, dayCol, device, toRow, fromRow, onTop = (saved
     let r = await saveOrQueue(userId, upsert(userId, day, mine));
     if (r?.status === 'superseded') {
       const saved = await readDay(userId, day);
-      if (saved) mine = { ...onTop(fromRow(saved), mine), at: saved.updated_at };
+      // The newest choice on this device goes on top, never the one this
+      // send started with: a choice made while the newer row was being
+      // read must not be undone, on the device or in the table.
+      const latest = device.get(userId, day) || mine;
+      mine = saved ? { ...onTop(fromRow(saved), latest), at: saved.updated_at } : latest;
       keep(userId, day, { ...mine, sent: false });
       r = await saveOrQueue(userId, upsert(userId, day, mine));
     }
@@ -104,6 +113,8 @@ export function dayStore({ table, dayCol, device, toRow, fromRow, onTop = (saved
   async function write(userId, day, value) {
     if (!userId) return { status: 'device' };
     const had = device.get(userId, day);
+    edits += 1;
+    editedAt.set(`${userId}:${day}`, edits);
     if (!keep(userId, day, { ...value, sent: false, ...(had?.at ? { at: had.at } : {}) })) {
       throw new Error('The device has no room to keep this.');
     }
@@ -158,11 +169,18 @@ export function dayStore({ table, dayCol, device, toRow, fromRow, onTop = (saved
     try {
       await move(userId);
       await whenSent();
+      // Where this window was when the read left: any choice or save made
+      // (or still waiting) since may be newer than what the read brings.
+      const editsBefore = edits;
+      const savesBefore = changesMade();
+      const waitingBefore = waitingToSend(userId);
       const rows = await readRows(userId, (q) => (day ? q.eq(dayCol, day) : since ? q.gte(dayCol, since) : q));
-      if (waitingToSend(userId)) return false;
+      if (waitingBefore || waitingToSend(userId) || changesMade() !== savesBefore) return false;
       let changed = false;
       for (const row of rows) {
         const d = row[dayCol];
+        // Chosen on this device after the read left: the choice wins.
+        if ((editedAt.get(`${userId}:${d}`) || 0) > editsBefore) continue;
         const had = device.get(userId, d);
         if (had && had.sent !== true) continue;
         if (had && had.at === row.updated_at) continue;

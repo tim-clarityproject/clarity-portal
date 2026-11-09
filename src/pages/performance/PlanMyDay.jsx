@@ -337,6 +337,15 @@ function PlanFlow({ userId, date, today, loaded }) {
     dbTodos.current = { todos: (data.dayTodos || []).map((t) => t.todo_id), top: (data.dayTodos || []).find((t) => t.is_top)?.todo_id || null };
   }, [data.dayTodos]);
 
+  // A choice's saves join the queue together, at once, so the database
+  // takes every choice in the order it was made and the newest one is
+  // always the last to land (never one of an earlier choice's saves after
+  // it). Resolves with the last save's answer.
+  const sendInOrder = async (ops) => {
+    const answers = await Promise.all(ops.map((op) => saveOrQueue(userId, op)));
+    return answers[answers.length - 1] ?? null;
+  };
+
   const applyPicks = async (keys, top) => {
     const todos = keys.filter((k) => k.startsWith('todo:')).map((k) => k.slice(5));
     const topTodo = top && top.startsWith('todo:') ? top.slice(5) : null;
@@ -349,9 +358,7 @@ function PlanFlow({ userId, date, today, loaded }) {
     if (before.todos.join() === after.todos.join() && before.top === after.top) return true;
     return sent(async () => {
       await ensurePlan();
-      let last = null;
-      for (const op of ops()) last = await saveOrQueue(userId, op);
-      return last;
+      return sendInOrder(ops());
     });
   };
 
@@ -427,9 +434,7 @@ function PlanFlow({ userId, date, today, loaded }) {
     setData((d) => ({ ...d, dayStrategies: ids.map((strategy_id) => ({ strategy_id })) }));
     sent(async () => {
       await ensurePlan();
-      let last = null;
-      for (const op of dayStrategyOps(userId, planId.current, before, ids)) last = await saveOrQueue(userId, op);
-      return last;
+      return sendInOrder(dayStrategyOps(userId, planId.current, before, ids));
     });
   };
 

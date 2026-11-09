@@ -426,6 +426,11 @@ async function planRuns() {
   }
   await db.from('day_reviews').delete().eq('user_id', me);
   await db.from('day_plans').delete().eq('user_id', me);
+  // Nor in day_plan_habits: Review my day's runs above moved their device
+  // copy of the morning's choices (Training sessions chosen) across, so it
+  // showed here as already chosen and the third tap unchose it. That was
+  // open fault 1 (Phase 5 follow-up 2): the test's leftover, not the app.
+  await db.from('day_plan_habits').delete().eq('user_id', me);
   // Nothing chosen on the device yet (the morning's habit is chosen here).
   const w = await signedIn(tag, { withPlanLocal: false });
   try {
@@ -454,6 +459,8 @@ async function planRuns() {
     }
     const rows = await until(async () => { const t = await planTodos(); return t.includes(ids[DRAFT]) && t.includes(ids[SHORT]) ? t : null; });
     pass(`${tag}: both to-dos are in the day's plan in the database`, Boolean(rows), JSON.stringify(await planTodos()));
+    const dayHabits = async () => (await db.from('day_plan_habits').select('habit_ids').eq('user_id', me).eq('local_date', today)).data?.[0]?.habit_ids || [];
+    pass(`${tag}: the habit is in day_plan_habits in the database`, Boolean(await until(async () => (await dayHabits()).includes(hid(TRAIN)))), JSON.stringify(await dayHabits()));
     pass(`${tag}: nothing refused`, w.refused === 0, `${w.refused}`);
   } catch (e) {
     pass(`${tag} ran to the end`, false, e.message.split('\n')[0]);
@@ -475,6 +482,7 @@ await db.from('day_reviews').delete().eq('user_id', me);
     await db.from('day_plan_strategies').delete().in('day_plan_id', old);
   }
   await db.from('day_plans').delete().eq('user_id', me);
+  await db.from('day_plan_habits').delete().eq('user_id', me);
 }
 seedForReal('--reset');
 

@@ -2,7 +2,7 @@
 // tests (tests/performance/save-version.test.mjs): tables in memory, the
 // few query calls syncQueue.js makes, and updated_at moved on by every
 // write, as the database's p1_touch trigger does.
-export const db = { tables: {}, clock: 0, calls: [], missing: new Set(), down: null };
+export const db = { tables: {}, clock: 0, calls: [], missing: new Set(), down: null, hold: null };
 
 const stamp = () => {
   db.clock += 1;
@@ -15,6 +15,7 @@ export function reset() {
   db.calls = [];
   db.missing = new Set();
   db.down = null;
+  db.hold = null;
 }
 
 export function put(table, row) {
@@ -73,7 +74,11 @@ function query(table) {
           else if (hit) data = [{ ...Object.assign(hit, action.values, { updated_at: stamp() }) }];
           else data = [put(table, { ...action.values, updated_at: undefined })];
         }
-        resolve({ data, error: null });
+        // A slow connection (db.hold): the server has done the work now, and
+        // the answer arrives when the promise db.hold returns resolves.
+        const late = db.hold?.({ table, kind: action.kind, filters: [...filters] });
+        if (late) late.then(() => resolve({ data, error: null }));
+        else resolve({ data, error: null });
       } catch (error) {
         reject(error);
       }
