@@ -963,7 +963,7 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
             {habitFrom && chosen?.key === 'other' && (
               <Choice
                 label="How do you want to add it?"
-                options={[{ value: 'habit', label: 'As a habit' }, { value: 'todo', label: 'As a to-do' }]}
+                options={[{ value: 'habit', label: 'Add it as a habit' }, { value: 'todo', label: 'Add it as a to-do' }]}
                 value={form.as}
                 onChange={(as) => setForm((f) => ({ ...f, as }))}
                 form="pills"

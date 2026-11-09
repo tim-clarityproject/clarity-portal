@@ -211,7 +211,7 @@ try {
   await pickDate(1, '20 January 2027', 3);
   await page.getByRole('button', { name: 'Add an objective' }).click();
   await card(2).locator('textarea').fill('Confidence leading group workshops');
-  await card(2).getByRole('radio', { name: 'Rating /10' }).click();
+  await card(2).getByRole('radio', { name: 'I’ll rate it out of 10' }).click();
   await card(2).getByLabel('Where are you now?').fill('6');
   await card(2).getByLabel('What’s your target?').fill('12');
   pass('build: a rating over 10 says what to type', (await card(2).textContent()).includes('Any figure from 0 to 10.'));
@@ -262,13 +262,13 @@ try {
   await habit(0).getByRole('radio', { name: 'High' }).click();
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(1).locator('textarea').first().fill('Steps');
-  await measure(1, 'Amount with a unit');
+  await measure(1, 'I’ll measure an amount each day');
   await habit(1).getByLabel('What’s the unit?').fill('steps');
   await habit(1).getByLabel('What’s the target?').fill('10000');
   pass('build: an amount counts a day', (await habit(1).textContent()).includes('a day'));
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(2).locator('textarea').fill('Focus');
-  await measure(2, 'Rating 1 to 5');
+  await measure(2, 'I’ll rate it from 1 to 5 each day');
   await habit(2).getByRole('radio', { name: 'Lower is better' }).click();
   await habit(2).getByLabel('What’s the target?').fill('5');
   pass('build: a rating target out of range says what to type', (await habit(2).textContent()).includes('Any figure from 1 to 4.'));
@@ -280,7 +280,7 @@ try {
   await page.waitForTimeout(200);
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(0).locator('textarea').fill('Late finishes');
-  await measure(0, 'Yes or no each day, under a limit');
+  await measure(0, 'I’ll say yes or no each day, under a limit');
   await habit(0).getByLabel('What’s the target?').fill('2');
   pass('build: a limit says days at most', (await habit(0).textContent()).includes('days at most'));
   await page.waitForTimeout(1200);

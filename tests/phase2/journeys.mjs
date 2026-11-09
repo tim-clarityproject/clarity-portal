@@ -364,7 +364,7 @@ try {
   await pickDate(0, '15 June 2027', 8);
   await page.getByRole('button', { name: 'Add an objective' }).click();
   await card(1).locator('textarea').fill(O2);
-  await card(1).getByRole('radio', { name: 'Rating /10' }).click();
+  await card(1).getByRole('radio', { name: 'I’ll rate it out of 10' }).click();
   await card(1).getByLabel('Where are you now?').fill('5');
   await card(1).getByLabel('What’s your target?').fill('8');
   await pickDate(1, '30 April 2027', 6);
@@ -409,11 +409,11 @@ try {
   await forStrategy(S1);
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(0).locator('textarea').fill('Thank-you notes sent');
-  await measure(0, 'Yes or no each day');
+  await measure(0, 'I’ll say yes or no each day');
   await habit(0).getByLabel('What’s the target?').fill('4');
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(1).locator('textarea').fill('Weekly referral review');
-  await measure(1, 'Once a week');
+  await measure(1, 'I’ll say yes or no once a week');
   const habitsSaved = (want) => until(async () => {
     const h = await q(db.from('habits').select('name, measure, target').eq('user_id', me));
     return want.every(([n, m, t]) => h.some((x) => x.name === n && (m == null || x.measure === m) && (t == null || Number(x.target) === t)));
@@ -425,7 +425,7 @@ try {
   await habit(0).getByLabel('What’s the target?').fill('3');
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(1).locator('textarea').fill('Energy');
-  await measure(1, 'Rating 1 to 5');
+  await measure(1, 'I’ll rate it from 1 to 5 each day');
   await habit(1).getByLabel('What’s the target?').fill('4');
   await habitsSaved([['Thank-you notes sent', 'yes_no_days_target', 4], ['Weekly referral review', 'yes_no_weekly', null], ['Practice runs', null, 3], ['Energy', 'rating', 4]]);
   await savedShown(page);
@@ -776,7 +776,7 @@ try {
   await next(page);
   const objRow = (name) => page.locator('.ds-carry-row').filter({ has: page.locator('.ds-carry-name', { hasText: new RegExp(`^${name}$`) }) });
   at = 'review objectives';
-  await objRow(O1).getByRole('radio', { name: 'Change' }).click();
+  await objRow(O1).getByRole('radio', { name: 'Change it', exact: true }).click();
   await objRow(O1).getByLabel('What’s your target?').waitFor({ timeout: 10000 });
   await objRow(O1).getByLabel('What’s your target?').fill('25');
   await next(page);
@@ -811,9 +811,9 @@ try {
   await next(page);
   at = 'start habits';
   const carry = (name) => page.locator('.ds-carry-row').filter({ has: page.locator('.ds-carry-name', { hasText: new RegExp(`^${name}$`) }) });
-  await carry('Practice runs').getByRole('radio', { name: 'Change' }).click();
+  await carry('Practice runs').getByRole('radio', { name: 'Change it', exact: true }).click();
   await carry('Practice runs').locator('.ds-habed').getByLabel('What’s the target?').fill('2');
-  await carry('Energy').getByRole('radio', { name: 'Remove' }).click();
+  await carry('Energy').getByRole('radio', { name: 'Remove it', exact: true }).click();
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await page.locator('.sprint-start-new textarea').first().fill('Workshop invitations');
   await page.locator('.sprint-start-new').getByLabel('What’s the target?').fill('5');

@@ -114,9 +114,9 @@ export function questionsFor(answers = {}) {
 
 /** "Did you travel this month?" (Tim, 5 Nov, 10:27; long drives count as long journeys). */
 export const TRIP_OPTIONS = Object.freeze([
-  { value: 'no', label: 'No' },
-  { value: 'short', label: 'Short trips' },
-  { value: 'long', label: 'Long journeys or time zones' },
+  { value: 'no', label: 'I didn’t travel' },
+  { value: 'short', label: 'I took short trips' },
+  { value: 'long', label: 'I made long journeys or crossed time zones' },
 ]);
 export const TRIP_NUDGE = 'Long drives count as long journeys.';
 

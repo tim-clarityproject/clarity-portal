@@ -335,7 +335,7 @@ await everyLayout('welcome', async (page) => go(page, '/performance-sprint', '.r
 seed('--reset', '--recovery=10,7');
 await everyLayout('check-in', async (page) => {
   await go(page, '/recovery/check-in', '.rec-question');
-  await page.getByRole('radio', { name: 'A few more days' }).click();
+  await page.getByRole('radio', { name: 'I need a few more days' }).click();
   await page.waitForTimeout(300);
 });
 {
@@ -345,7 +345,7 @@ await everyLayout('check-in', async (page) => {
   await page.waitForSelector('.rec-question');
   pass('How are you feeling?', (await text(page, '.rec-question')) === 'How are you feeling?');
   await layoutChecks(page, '700px light check-in', 'light');
-  await page.getByRole('radio', { name: 'A few more days' }).click();
+  await page.getByRole('radio', { name: 'I need a few more days' }).click();
   pass('3 more days to start, counted from today', plain(await text(page, '.rec-note')) === `Your recovery would now end on ${dayName(addDays(today, 3), today)}.`);
   await page.getByRole('button', { name: 'Add the days' }).click();
   await page.waitForSelector('.rec-banner', { timeout: 15000 });
@@ -380,7 +380,7 @@ seed('--ended');
     await page.locator('.ds-guide .ds-btn--primary').last().click();
     await page.waitForTimeout(700);
   }
-  await page.getByRole('radio', { name: 'Recovery first' }).click();
+  await page.getByRole('radio', { name: 'I’ll take a recovery week first' }).click();
   await page.locator('.ds-guide .ds-btn--primary').last().click();
   await page.waitForSelector('.rec-question', { timeout: 20000 });
   pass('Recovery first opens Take a recovery week', page.url().endsWith('/recovery'));

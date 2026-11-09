@@ -13,7 +13,10 @@ import NameDialog from '../components/ui/NameDialog';
 import pageText from '../content/pageText';
 import { Crosshair, Loading, PageHeader, TextBox, AddButton, Button, Choice, useToast } from '../components/design';
 
+// The saved values stay as they were; the answers people tap are full
+// sentences in their own voice (rule 29aa, Tim, 9 Nov).
 const ACTIONS = ['Stop', 'Automate', 'Delegate', 'Defer'];
+const ACTION_WORDS = { Stop: 'Stop doing it', Automate: 'Automate it', Delegate: 'Hand it to someone else', Defer: 'Do it later' };
 const MAX_ACTIVITY = 80;
 const MAX_LONG = 2000;
 
@@ -323,7 +326,7 @@ export default function StopDoingAudit() {
                 <p className="tsa-activity-name">{item.activity}</p>
                 <Choice
                   ariaLabel={`Action for ${item.activity}`}
-                  options={ACTIONS.map((action) => ({ value: action, label: action }))}
+                  options={ACTIONS.map((action) => ({ value: action, label: ACTION_WORDS[action] }))}
                   value={item.action}
                   onChange={(action) => updateItem(item.id, 'action', action)}
                 />
@@ -335,7 +338,7 @@ export default function StopDoingAudit() {
                 form="dropdown"
                 label="Which one will you take action on first?"
                 placeholder="Choose an activity..."
-                options={namedItems.map((item) => ({ value: String(item.id), label: `${item.activity} (${item.action || 'no action selected'})` }))}
+                options={namedItems.map((item) => ({ value: String(item.id), label: `${item.activity} (${ACTION_WORDS[item.action] || item.action || 'no action selected'})` }))}
                 value={firstAction === '' ? null : String(firstAction)}
                 onChange={(value) => { setFirstAction(namedItems.find((item) => String(item.id) === value)?.id ?? ''); setFirstActionError(''); }}
               />

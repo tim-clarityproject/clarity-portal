@@ -237,10 +237,10 @@ for (const mode of ['dark', 'light']) {
         await stepChecks(page, tag);
         if (i === 3) {
           // Open one editor, so its layout is checked too.
-          await page.locator('.ds-carry-row').first().getByRole('radio', { name: 'Change' }).click();
+          await page.locator('.ds-carry-row').first().getByRole('radio', { name: 'Change it', exact: true }).click();
           await page.waitForTimeout(300);
           await stepChecks(page, `${tag} with Change open`);
-          await page.locator('.ds-carry-row').first().getByRole('radio', { name: 'Keep' }).click();
+          await page.locator('.ds-carry-row').first().getByRole('radio', { name: 'Keep it', exact: true }).click();
         }
         await shot(page, `steps-${width}-${mode}-${i}`);
         if (i < 4) await next(page);
@@ -277,9 +277,9 @@ try {
   pass('steps: Which habits are you bringing across?', /Which habits are you bringing across\?/.test(await heading(page)));
   const rows = page.locator('.ds-carry-row');
   pass('steps: one row per plan habit', (await rows.count()) === planHabits.length);
-  await rows.nth(1).getByRole('radio', { name: 'Remove' }).click();
+  await rows.nth(1).getByRole('radio', { name: 'Remove it', exact: true }).click();
   pass('steps: a removed habit is struck through', (await rows.nth(1).getAttribute('class')).includes('ds-carry-row--removed'));
-  await rows.nth(0).getByRole('radio', { name: 'Change' }).click();
+  await rows.nth(0).getByRole('radio', { name: 'Change it', exact: true }).click();
   await rows.nth(0).locator('.ds-habed').getByLabel('What’s the target?').fill('3');
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await page.locator('.sprint-start-new textarea').first().fill('Walk between meetings');

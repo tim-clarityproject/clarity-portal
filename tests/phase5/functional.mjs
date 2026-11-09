@@ -127,7 +127,8 @@ if (part('C')) {
       const st = ((await page.locator('.ds-statement').count()) ? await page.locator('.ds-statement').first().innerText() : '').trim().replace(/^“|”$/g, '');
       const q = QUESTIONS.find((x) => x.question === h && (!x.statement || x.statement === st));
       if (!q) { pass(`C: knows the question "${h}"`, false); break; }
-      const words = W[q.code];
+      // The travel question shows its own full sentences (rule 29aa, Tim, 9 Nov): a No is "I didn’t travel".
+      const words = q.code === 'H14' && W.H14 === 'No' ? 'I didn’t travel' : W[q.code];
       // The drinks question counts drinks (Tim, 5 Nov): 2 pints is about 5 units, so "1 to 7 units".
       if (await page.locator('.ck-drinks').count()) {
         for (let i = 0; i < 2; i += 1) await page.getByRole('button', { name: 'One more: pint of beer or cider' }).click();

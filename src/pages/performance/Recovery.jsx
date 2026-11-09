@@ -612,7 +612,7 @@ export function RecoveryCheckIn() {
       <div className="rec-feel">
         <Choice
           ariaLabel="How are you feeling?"
-          options={[{ value: 'ready', label: 'Ready to go again' }, { value: 'more', label: 'A few more days' }]}
+          options={[{ value: 'ready', label: 'I’m ready to go again' }, { value: 'more', label: 'I need a few more days' }]}
           value={feel}
           onChange={setFeel}
           form="rows"

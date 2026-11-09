@@ -568,7 +568,7 @@ const GROUPS = [
       { id: 'sprint paused, results shown', mock: null, open: async (p) => { await go(p, '/performance-sprint', '.ds-sdial--paused'); await button(p, 'Show my results').click(); await p.waitForTimeout(700); } },
       { id: 'recovery day', mock: [M15, 'home', []], open: (p) => go(p, '/recovery/today', '.rec-banner') },
       { id: 'recovery check-in', mock: [M15, 'end', []], open: (p) => go(p, '/recovery/check-in', '.rec-question') },
-      { id: 'recovery check-in, a few more days', mock: [M15, 'end', ['feel:more']], open: async (p) => { await go(p, '/recovery/check-in', '.rec-question'); await p.getByRole('radio', { name: 'A few more days' }).click(); await p.waitForTimeout(500); } },
+      { id: 'recovery check-in, a few more days', mock: [M15, 'end', ['feel:more']], open: async (p) => { await go(p, '/recovery/check-in', '.rec-question'); await p.getByRole('radio', { name: 'I need a few more days' }).click(); await p.waitForTimeout(500); } },
       { id: 'recovery add a few more days', mock: null, open: (p) => go(p, '/recovery/check-in?add=1', '.rec-question') },
       { id: 'plan in recovery', mock: null, open: (p) => go(p, '/performance-plan', '.ds-rec-notice') },
       { id: 'year in recovery', mock: null, open: (p) => go(p, '/performance-sprint/year', '.ds-ychart-col') },

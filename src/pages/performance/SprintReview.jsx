@@ -88,9 +88,9 @@ const ANSWER_MAX = 4000; // as the weekly debrief's answers
 const FINISH_ERROR = 'Your review didn’t save. Check your connection and try again.';
 
 const RETIRE = [
-  { value: 'keep', label: 'Keep' },
-  { value: 'change', label: 'Change' },
-  { value: 'retire', label: 'Retire' },
+  { value: 'keep', label: 'Keep it as it is' },
+  { value: 'change', label: 'Change it' },
+  { value: 'retire', label: 'Retire it' },
 ];
 
 export default function SprintReview() {
@@ -513,7 +513,7 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
             ariaLabel="What’s next?"
             options={[
               { value: 'sprint', label: `Straight into Performance Sprint ${view.nextNumber}` },
-              { value: 'recovery', label: 'Recovery first' },
+              { value: 'recovery', label: 'I’ll take a recovery week first' },
             ]}
             value={draft.choice}
             onChange={(choice) => set({ choice })}

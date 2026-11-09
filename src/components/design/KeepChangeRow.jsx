@@ -2,9 +2,9 @@ import { Choice } from './Choice';
 import './design.css';
 
 // One thing carried into what comes next, with a choice for each (M6
-// "Start a sprint": "Which habits are you bringing across?" Keep, Change
-// or Remove; the end-of-sprint review's objectives use Keep, Change or
-// Retire). The name, then its lines in grey (each a label, no dots
+// "Start a sprint": "Which habits are you bringing across?" Keep it,
+// Change it or Remove it; the end-of-sprint review's use Keep it as it
+// is, Change it or Retire it: full sentences, rule 29aa, Tim, 9 Nov). The name, then its lines in grey (each a label, no dots
 // between), then the choice as 44px pills (the approved size over M6's
 // 36px tiny segments). A removed one keeps its row, its name struck
 // through in grey, so it can be brought back. With Change, the editor
@@ -16,9 +16,9 @@ import './design.css';
 //         end-of-sprint review's habits that stuck: "Add to my plan", or
 //         "In your plan" with a mint tick, M6).
 const KEEP_CHANGE_REMOVE = Object.freeze([
-  { value: 'keep', label: 'Keep' },
-  { value: 'change', label: 'Change' },
-  { value: 'remove', label: 'Remove' },
+  { value: 'keep', label: 'Keep it' },
+  { value: 'change', label: 'Change it' },
+  { value: 'remove', label: 'Remove it' },
 ]);
 
 export default function KeepChangeRow({

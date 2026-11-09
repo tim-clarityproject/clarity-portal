@@ -263,17 +263,17 @@ for (const width of [1280, 700, 390, 360]) {
   const first = before.planObjectives[0];
   const milestone = before.planObjectives.find((o) => o.kind === 'milestone');
   const objRow = (name) => page.locator('.ds-carry-row').filter({ has: page.locator('.ds-carry-name', { hasText: new RegExp(`^${name.replace(/[?]/g, '\\?')}$`) }) });
-  await objRow(first.name).getByRole('radio', { name: 'Change' }).click();
+  await objRow(first.name).getByRole('radio', { name: 'Change it', exact: true }).click();
   await page.waitForTimeout(300);
   await objRow(first.name).getByLabel('What’s your target?').fill('45');
-  await objRow(milestone.name).getByRole('radio', { name: 'Retire' }).click();
+  await objRow(milestone.name).getByRole('radio', { name: 'Retire it', exact: true }).click();
   await page.waitForTimeout(300);
   pass('a retired objective is struck through', await objRow(milestone.name).evaluate((e) => e.classList.contains('ds-carry-row--removed')));
   await page.getByRole('button', { name: 'Add an objective' }).click();
   await page.waitForTimeout(400);
   const card = page.locator('.review-added .ds-objed').first();
   await card.locator('textarea').fill('Confidence leading group workshops');
-  await card.getByRole('radio', { name: 'Rating /10' }).click();
+  await card.getByRole('radio', { name: 'I’ll rate it out of 10' }).click();
   await card.getByLabel('Where are you now?').fill('6');
   await card.getByLabel('What’s your target?').fill('8');
   await card.locator('.ds-date').click();
@@ -290,7 +290,7 @@ for (const width of [1280, 700, 390, 360]) {
   await next(page);
 
   // What's next: Recovery changes the button, then back to the sprint.
-  await page.getByRole('radio', { name: 'Recovery first' }).click();
+  await page.getByRole('radio', { name: 'I’ll take a recovery week first' }).click();
   pass('Recovery first: the button says Start my Recovery', (await primary(page).textContent()).trim().toLowerCase() === 'start my recovery');
   await page.getByRole('radio', { name: /Straight into Performance Sprint/ }).click();
   const label = (await primary(page).textContent()).trim();
@@ -347,7 +347,7 @@ seed('--ended');
   const { context, page } = await signedIn({ width: 390, mode: 'dark' });
   await openReview(page);
   for (let i = 0; i < 5; i += 1) await next(page);
-  await page.getByRole('radio', { name: 'Recovery first' }).click();
+  await page.getByRole('radio', { name: 'I’ll take a recovery week first' }).click();
   await layoutChecks(page, '390px dark Recovery first', 'dark');
   await primary(page).click();
   pass('Recovery first opens /recovery', Boolean(await until(async () => page.url().endsWith('/recovery'), 20000)), page.url());

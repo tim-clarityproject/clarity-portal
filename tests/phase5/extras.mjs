@@ -171,7 +171,7 @@ try {
         await until(async () => (await heading(a.page)) + (await text(a.page, '.ds-statement')) !== before, 4000);
       }
       pass('C device A reaches the travel question', (await heading(a.page)) === TRAVEL_Q, await heading(a.page));
-      await a.page.locator('.ds-guide-body [role=radio]', { hasText: 'Long journeys or time zones' }).click();
+      await a.page.locator('.ds-guide-body [role=radio]', { hasText: 'I made long journeys or crossed time zones' }).click();
       await sleep(2500); // the answers' save
       pass('C device A: no error shown', !(await errorShown(a.page)));
       const row = async () => (await org.db.from('checkins').select(ready ? 'answers, drinks, trip' : 'answers').eq('user_id', org.me).eq('month', CUR).limit(1)).data?.[0];

@@ -391,7 +391,7 @@ function KeepChangeDemo() {
         ))}
       </div>
       <div className="ds-carry">
-        <KeepChangeRow name="Coaching clients" lines={['34 of 40', 'Up 3 this sprint', 'By 31 Dec 2027']} options={[{ value: 'keep', label: 'Keep' }, { value: 'change', label: 'Change' }, { value: 'retire', label: 'Retire' }]} removeValue="retire" value={carry.o1} onChange={(v) => setCarry((c) => ({ ...c, o1: v }))} />
+        <KeepChangeRow name="Coaching clients" lines={['34 of 40', 'Up 3 this sprint', 'By 31 Dec 2027']} options={[{ value: 'keep', label: 'Keep it as it is' }, { value: 'change', label: 'Change it' }, { value: 'retire', label: 'Retire it' }]} removeValue="retire" value={carry.o1} onChange={(v) => setCarry((c) => ({ ...c, o1: v }))} />
         <KeepChangeRow name="Mobility sessions" lines={['3 sessions a week', 'Kept up in 8 of 8 weeks']} action={carry.stuck ? <InPlan /> : <Button onClick={() => setCarry((c) => ({ ...c, stuck: true }))}>Add to my plan</Button>} />
         <KeepChangeRow name="Training sessions" lines={['4 times a week', 'Kept up in 7 of 8 weeks']} action={<InPlan />} />
       </div>

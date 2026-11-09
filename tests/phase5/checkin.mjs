@@ -171,8 +171,10 @@ async function tapAnswer(page, words) {
     await nextStep(page);
     return until(async () => (await heading(page)) + (await text(page, '.ds-statement')) !== before, 4000);
   }
-  // "Did you travel this month?" (Tim, 5 Nov): a Yes is "Long journeys or time zones" (then the time-zone questions).
-  if (words === 'Yes' && (await page.locator('.ds-guide-body [role=radio]', { hasText: 'Long journeys or time zones' }).count())) words = 'Long journeys or time zones';
+  // "Did you travel this month?" (Tim, 5 Nov): a Yes is the long journeys (then the time-zone
+  // questions), a No "I didn’t travel" (full sentences, rule 29aa, Tim, 9 Nov).
+  const LONG = 'I made long journeys or crossed time zones';
+  if ((words === 'Yes' || words === 'No') && (await page.locator('.ds-guide-body [role=radio]', { hasText: LONG }).count())) words = words === 'Yes' ? LONG : 'I didn’t travel';
   await page.locator('.ds-guide-body [role=radio]', { hasText: new RegExp(`^${words.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).first().click();
   // One tap moves on (M12: 380ms).
   return until(async () => (await heading(page)) + (await text(page, '.ds-statement')) !== before, 4000);
