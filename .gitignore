@@ -35,3 +35,6 @@ dist-ssr
 .clarity-*
 *clarity-test-accounts*
 tests/scratch/
+
+# Leftovers from the Phase 5 break-it run (never commit)
+tmp-phase5-breakit*
