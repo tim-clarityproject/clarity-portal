@@ -443,7 +443,15 @@ async function planRuns() {
     await w.page.waitForSelector('.ds-answer--pick', { timeout: 30000 });
     for (const name of [DRAFT, SHORT, TRAIN]) await pick(w.page, name).click();
     pass(`${tag}: the refresh landed`, await heldLanded(w, cache, before));
-    for (const name of [DRAFT, SHORT, TRAIN]) pass(`${tag}: "${name}" still chosen on screen`, await pressed(w.page, name));
+    for (const name of [DRAFT, SHORT, TRAIN]) {
+      const on = await pressed(w.page, name);
+      const state = on ? '' : JSON.stringify(await w.page.evaluate(() => ({
+        picks: [...document.querySelectorAll('.ds-answer--pick')].map((e) => `${e.textContent.trim().slice(0, 30)}=${e.getAttribute('aria-pressed')}`),
+        count: document.querySelector('.ds-pick-count')?.textContent,
+        device: Object.keys(localStorage).filter((k) => /day-plan-local|day-choices|day_plan/.test(k)).map((k) => `${k.slice(0, 40)}: ${localStorage.getItem(k).slice(0, 200)}`),
+      })));
+      pass(`${tag}: "${name}" still chosen on screen`, on, state);
+    }
     const rows = await until(async () => { const t = await planTodos(); return t.includes(ids[DRAFT]) && t.includes(ids[SHORT]) ? t : null; });
     pass(`${tag}: both to-dos are in the day's plan in the database`, Boolean(rows), JSON.stringify(await planTodos()));
     pass(`${tag}: nothing refused`, w.refused === 0, `${w.refused}`);

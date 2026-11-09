@@ -62,7 +62,12 @@ export class NoRoomError extends Error {
 // refreshing first (an expired session sends the anonymous key, which the
 // database refuses). Anything else is the server really saying no.
 function retryable(error) {
-  if (isNetworkError(error) || notAnswering(error)) return true;
+  return isNetworkError(error) || notAnswering(error) || needsSignIn(error);
+}
+
+// Refused only for want of a fresh sign-in (an expired session sends the
+// anonymous key): a refreshed sign-in tries again at once.
+function needsSignIn(error) {
   if (error?.status === 401 || error?.code === 'PGRST301') return true;
   return /jwt|token is expired|invalid claim/i.test(`${error?.message || ''}`);
 }
@@ -106,6 +111,8 @@ export const BACKOFF_MAX_MS = 5 * 60 * 1000;
 let backoffTries = 0;
 let backoffUntil = 0;
 let backoffTimer = null;
+// The last failure wanted a fresh sign-in, not a database that answers.
+let waitingForSignIn = false;
 
 /** The wait before retry number `tries` (0 first): doubling, capped, with ±20% randomness. */
 export function backoffDelay(tries, random = Math.random) {
@@ -122,14 +129,16 @@ function backingOff() {
 }
 
 function clearBackoff() {
+  waitingForSignIn = false;
   backoffTries = 0;
   backoffUntil = 0;
   if (backoffTimer && typeof window !== 'undefined') window.clearTimeout(backoffTimer);
   backoffTimer = null;
 }
 
-function retryLater(userId) {
+function retryLater(userId, error) {
   if (typeof window === 'undefined') return;
+  waitingForSignIn = needsSignIn(error);
   const wait = backoffDelay(backoffTries);
   backoffTries += 1;
   backoffUntil = Date.now() + wait;
@@ -477,7 +486,7 @@ async function sendOrKeep(userId, op) {
     }
     if (retryable(error)) {
       keep(userId, item);
-      if (!backoffTimer) retryLater(userId);
+      if (!backoffTimer) retryLater(userId, error);
       return { status: 'queued', qid: item.qid };
     }
     throw error;
@@ -557,7 +566,7 @@ export function flush(userId = currentUser, { now = false } = {}) {
           continue;
         }
         if (retryable(error)) {
-          retryLater(userId);
+          retryLater(userId, error);
           break;
         }
         write(userId, read(userId).map((x) => (x.qid === item.qid ? { ...x, failed: true } : x)));
@@ -638,8 +647,11 @@ export function dropQueued(userId, table, id) {
 }
 
 /** After a refreshed sign-in, try again whatever waited for it. */
+// Only a wait for the sign-in is cut short: the sign-in library also
+// says SIGNED_IN whenever a tab is shown again, and a database that isn't
+// answering keeps its back-off (the tab shown again has its own one try).
 export function retrySyncQueue() {
-  if (currentUser) flush(currentUser, { now: true });
+  if (currentUser) flush(currentUser, { now: waitingForSignIn });
 }
 
 // The connection noticed again (any answer at all): sent, unless a

@@ -121,6 +121,18 @@ test('after 039: another device\'s choice shows here', async () => {
   assert.equal(await nights.refreshWindDown(ME, { night: '2026-10-23' }), false, 'nothing new the second time');
 });
 
+test('after 039: a read that left before this device\'s own save never writes over it (quick-ticks, 9 Nov)', async () => {
+  // A habit chosen while the page's quiet refresh was on its way: the
+  // save lands first, then the older read arrives. It must not un-choose it.
+  await habits.saveDayChoices(ME, '2026-10-19', { habits: [H1], order: [`habit:${H1}`], top: `habit:${H1}` });
+  const saved = rows('day_plan_habits')[0];
+  // What the read saw, from before the save: no habit, an older version.
+  const stale = { ...saved, habit_ids: [], pick_order: [], top_pick: null, updated_at: '2026-10-30T08:00:00.000001+00:00' };
+  fake.db.tables.day_plan_habits[0] = stale;
+  assert.equal(await habits.refreshDayChoices(ME, '2026-10-19'), false, 'nothing changes here');
+  assert.deepEqual(habits.readDayChoices(ME, '2026-10-19').habits, [H1], 'the habit stays chosen');
+});
+
 test('after 039: a save based on an older version is never written over another device\'s, and no thought is lost', async () => {
   await nights.saveWindDownThoughts(ME, '2026-10-24', ['Call Evan']);
   fake.changeElsewhere('wind_down_nights', { night: '2026-10-24' }, { thoughts: ['Call Evan', 'From the phone'] });

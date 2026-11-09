@@ -10,7 +10,7 @@ import pageText from '../content/pageText';
 import PersonalGoalModal from '../components/PersonalGoalModal';
 import { SignOutLink, useSignOut } from '../components/SignOut';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
-import { useCoachName, Crosshair, PageHeader, Button, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget } from '../components/design';
+import { useCoachName, Crosshair, PageHeader, Button, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget, keepWords } from '../components/design';
 import { DashboardCustomise } from './performance/DashboardCustomise';
 import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart';
 import { useStartChat } from '../components/coach/startChat';
@@ -415,7 +415,7 @@ export default function MyAccount() {
           <div className="account-row">
             <div className="account-row-text">
               <div className="account-row-title">Statement</div>
-              <div className="account-row-desc">{personalGoal || 'No mission set yet'}</div>
+              <div className="account-row-desc">{keepWords(personalGoal || 'No mission set yet')}</div>
             </div>
             {/* One Mission (Tim, 5 Nov): with a plan, it is changed only on
                 the plan, in Edit my mission, so it reads the same everywhere. */}

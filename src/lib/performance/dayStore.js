@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import { noteVersions, saveOrQueue, waitingToSend, whenSent } from '../syncQueue';
 import { tableReady } from './tableReady';
+import { parseDbTimestamp } from '../dateFormatter';
 
 // What migration 039 gives a table to (Phase 4 step 7): things kept per
 // person and day, until now on the device only. The habits chosen in Plan
@@ -165,6 +166,10 @@ export function dayStore({ table, dayCol, device, toRow, fromRow, onTop = (saved
         const had = device.get(userId, d);
         if (had && had.sent !== true) continue;
         if (had && had.at === row.updated_at) continue;
+        // A read that left before this device's own save landed (a choice
+        // made while the page's quiet refresh was on its way): older than
+        // what the device holds, so never written over it (9 Nov).
+        if (had?.at && parseDbTimestamp(row.updated_at) < parseDbTimestamp(had.at)) continue;
         const next = { ...fromRow(row), sent: true, at: row.updated_at };
         if (!had || !same(had, next)) changed = true;
         keep(userId, d, { ...(had || {}), ...next });
