@@ -152,11 +152,12 @@ html:has(.ui-root) {
   flex-shrink: 0;
 }
 
-/* The 26px track reaches the full 44px tap area invisibly (CLAUDE.md 9; the knob is ::after). */
+/* The 26px track reaches the full 44px tap area invisibly (CLAUDE.md 9; the knob is ::after).
+   Placed from inside the track's 1px border, so 1px more each way (measured 9 Nov: 42px before). */
 .ui-root .ui-switch::before {
   content: '';
   position: absolute;
-  inset: calc((26px - var(--tap-min)) / 2) 0;
+  inset: calc((26px - var(--tap-min)) / 2 - 1px) -1px;
 }
 
 .ui-root .ui-switch--on {
