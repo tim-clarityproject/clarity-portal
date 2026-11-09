@@ -11,6 +11,7 @@ import { STEP_PREFIX } from './guideDraft';
 import useKeepScroll from './useKeepScroll';
 import useViewportFit from './useViewportFit';
 import Chevron from './Chevron';
+import keepWords from './keepWords';
 import useInfoToggle from './useInfoToggle';
 import './design.css';
 
@@ -165,7 +166,7 @@ function StepHead({ step, headingRef, positionId, role }) {
         className={`${step.title ? 'ds-guide-title' : 'ds-guide-question'} ds-guide-rv ds-guide-rv--1`}
         aria-describedby={positionId}
       >
-        {step.title || step.question}
+        {keepWords(step.title || step.question)}
         {/* The eye beside the question it belongs to, never on its own line (Tim, 5 Nov, 11:09). */}
         {step.eye && <span className="ds-page-aside ds-guide-eye">{step.eye}</span>}
       </Heading>
@@ -479,7 +480,8 @@ export default function GuidedTool({
                 {ARROW}
               </button>
             )}
-            <b className="ds-guide-name">{name}</b>
+            {/* "CHECK-IN" never splits at its hyphen, even at twice the text size (rule 29x). */}
+            <b className="ds-guide-name">{keepWords(name)}</b>
             {!step.plain && <SaveStatus state={saveState} />}
             <IconButton label="Close" className="ds-guide-close" onClick={() => onCloseRef.current?.()} />
           </div>
