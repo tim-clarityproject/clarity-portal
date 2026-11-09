@@ -406,8 +406,6 @@ const ALLOWED = [
   { screen: /^home/, side: 'app', re: /^sprint #,? week # of #$/, why: 'LATER RULE: the dial’s line names the sprint and is a quiet link into it (Tim, 3 Nov, Phase 2 preview fixes 7f5959e): “Sprint 1, week 4 of 8”' },
   { screen: /^hub, plan$/, side: 'mock', re: /^week # of #$/, why: 'NAMED DIFFERENCE: the tiles’ live lines (“Sprint 4, week 4 of 8”) are not built; tiles show their fixed line and time (Step 1 left them for later)' },
   { screen: /^menu open/, side: 'mock', re: /^(meeting planner|journal|get unstuck)$/, why: 'invented data: M3’s example pins; the app shows the test client’s own pins (person_settings.page_preferences.menu_pins, menuPins.js)' },
-  { screen: /^home, wind down/, side: 'mock', re: /^(sleep wind down|ready to wind down\?|write down what's on your mind for <day>, then breathe slowly\.|start my wind down|not tonight)$/, why: 'data: in this run the week’s debrief is still open on debrief day, so Home’s one suggestion is the debrief (homeSuggestion, the debrief from 12:00 until it is done); the wind-down card itself is checked in tests/phase4/wind-down.mjs' },
-  { screen: /^home, wind down/, side: 'app', re: /^(suggested for now|how did this week go\?|your debrief is open until <day> # <month>\.|start my debrief)$/, why: 'data: in this run the week’s debrief is still open on debrief day, so Home’s one suggestion is the debrief (homeSuggestion, the debrief from 12:00 until it is done); the wind-down card itself is checked in tests/phase4/wind-down.mjs' },
   { screen: /^hub, review$/, side: 'app', re: /^(hardware and software check-in|check your body and mind are backing your performance\.|~# minutes)$/, why: 'Phase 5 step 1: the check-in is built, so it gets its tile; its line says how it helps (CLAUDE.md 16, one line on how it helps, as Life balance review’s “Check the rest of your life is backing your performance.”), for M3’s “Check in on your hardware and software each month.”' },
   { screen: /^home/, side: 'mock', re: /^your usual range is # to #%\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M2’s own rule)' },
   { screen: /^home/, side: 'app', re: /^your usual range appears after # weeks\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M2’s own rule)' },
@@ -659,6 +657,14 @@ async function restoreWedReview() {
 async function cleanMorning() {
   await db.from('todos').delete().eq('user_id', me).in('source', ['review_my_day', 'other_tool', 'plan_my_day']).eq('created_on', THU);
   await db.from('day_plans').delete().eq('user_id', me).eq('local_date', THU);
+  // Wednesday night's finished wind-down goes too, before the next device
+  // opens anything (Phase 5 follow-up 2, open fault 2). Deleting it only
+  // when that device reached the 21:15 Home screen was too late: its
+  // earlier screens had already read the finished night (as the app should,
+  // so a wind-down done on one device counts on all of them) and kept it
+  // on the device, so Home rightly hid the card there. A person can't
+  // un-finish a night, so the app was right; the test cleared it too late.
+  await db.from('wind_down_nights').delete().eq('user_id', me).eq('night', WED);
 }
 // Wednesday evening: a plan with one to-do left open, and a finished review
 // with three things for tomorrow (as tests/phase4/wind-down.mjs seeds it).
@@ -720,7 +726,8 @@ const GROUPS = [
       { id: 'My Plans, filter open', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-plans', '.hlist-wrap'); await p.locator('.ds-filter > button').click(); await p.waitForSelector('.ds-filter-panel:not([hidden])', { timeout: 5000 }); await settle(p); } },
       { id: 'My Reviews', mock: null, coral: 'atMost', open: async (p) => { await go(p, '/my-reviews', '.hlist-wrap'); await until(async () => (await p.locator('.hlist-row, .hlist-empty').count()) > 0, 20000); } },
       // Wednesday night, then Thursday morning: in this order, on one device.
-      // Each width is a new device: last width's finished night is cleared first.
+      // Each width is a new device: last width's finished night is cleared
+      // after it closes (cleanMorning), before the next device opens anything.
       { id: 'home, wind down from 21:00', mock: m19('home'), coral: 'one', open: async (p) => { await restoreWedReview(); await db.from('wind_down_nights').delete().eq('user_id', me).eq('night', WED); await homeAt(p, WED, '21:15'); } },
       { id: 'sleep wind down, tomorrow', mock: m19('think'), coral: 'one', scope: GUIDE, open: async (p) => { await at(p, WED, '22:30'); await go(p, '/sleep-wind-down', '.ds-guide-question'); await p.getByRole('textbox', { name: 'Thought 1' }).fill('Book a day off for the half term'); await until(async () => (await p.locator('.ds-guide-bar').innerText()).includes('Saved'), 8000); } },
       { id: 'sleep wind down, breathe', mock: m19('breathe'), coral: 'none', scope: GUIDE, open: async (p) => { await p.locator('.ds-guide-next').click(); await p.locator('.ds-night-breathe .ds-borb').waitFor({ timeout: 8000 }); await settle(p); } },
