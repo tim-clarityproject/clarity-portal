@@ -32,7 +32,8 @@ mkdirSync(out, { recursive: true });
 
 const results = [];
 let failures = 0;
-const pass = (name, ok, detail = '') => { if (!ok) failures += 1; results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail && !ok ? `: ${String(detail).slice(0, 300)}` : ''}`); };
+const t0 = Date.now();
+const pass = (name, ok, detail = '') => { console.error(`${Math.round((Date.now() - t0) / 1000)}s ${ok ? 'PASS' : 'FAIL'} ${name}`); if (!ok) failures += 1; results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail && !ok ? `: ${String(detail).slice(0, 300)}` : ''}`); };
 const note = (s) => results.push(`NOTE  ${s}`);
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 async function until(fn, ms = 15000) { const end = Date.now() + ms; let v; while (Date.now() < end) { v = await fn().catch(() => null); if (v) return v; await sleep(250); } return v; }
@@ -60,6 +61,8 @@ async function device(email, password) {
   });
   const page = await context.newPage();
   page.on('pageerror', (e) => pass('no page errors', false, e.message));
+  page.on('crash', () => console.error('page crashed'));
+  page.on('close', () => console.error(`${Math.round((Date.now() - t0) / 1000)}s page closed`));
   await signIn(page, email, password);
   return { context, page };
 }
@@ -68,11 +71,28 @@ async function signIn(page, email, password) {
   await page.fill('input[type=email]', email);
   await page.fill('input[type=password]', password);
   await page.keyboard.press('Enter');
-  await page.waitForURL(/welcome/, { timeout: 30000 });
+  // A sign-in goes to "Welcome back" first, which waits for Continue.
+  await page.waitForURL((u) => ['/welcome', '/auth/welcome-back'].includes(new URL(u).pathname), { timeout: 30000 });
+  if (new URL(page.url()).pathname === '/auth/welcome-back') await page.getByRole('button', { name: 'Continue' }).click({ timeout: 15000 });
+  await page.waitForURL((u) => new URL(u).pathname === '/welcome', { timeout: 30000 });
   await sleep(2500);
 }
-const heading = async (page) => ((await page.locator('.ds-guide-question, .ds-guide-title').first().textContent().catch(() => '')) || '').trim();
-const text = async (page, sel) => ((await page.locator(sel).first().innerText().catch(() => '')) || '').trim();
+// Signing out from My Account; on a miss, a screenshot and the page's words.
+async function signOut(page) {
+  await page.goto(`${APP}/my-account`);
+  const button = page.getByRole('button', { name: 'Sign out', exact: true }).first();
+  try {
+    await button.waitFor({ state: 'visible', timeout: 20000 });
+    await button.click({ timeout: 10000 });
+  } catch (e) {
+    await page.screenshot({ path: join(out, 'sign-out-miss.png'), fullPage: true }).catch(() => {});
+    console.error('sign out missed at', page.url(), (await page.locator('body').innerText().catch(() => '')).slice(0, 600).replace(/\n+/g, ' | '));
+    throw e;
+  }
+}
+const heading = async (page) => { const l = page.locator('.ds-guide-question, .ds-guide-title').first(); if (!(await l.count().catch(() => 0))) return ''; return ((await l.textContent({ timeout: 2000 }).catch(() => '')) || '').trim(); };
+// Never waits for a part that isn't on the screen (innerText would wait 30 seconds).
+const text = async (page, sel) => { const l = page.locator(sel).first(); if (!(await l.count().catch(() => 0))) return ''; return ((await l.innerText({ timeout: 2000 }).catch(() => '')) || '').trim(); };
 const errorShown = async (page) => (await page.locator('.ds-toast--error, [role=alert]').count()) > 0;
 
 const DRINKS_Q = 'On average, what do you drink in a week?';
@@ -86,6 +106,19 @@ async function toDrinks(page) {
   await page.goto(`${APP}/check-in`);
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
   await sleep(800);
+  // The check-in reopens where this device left off, which may be past the
+  // drinks question: back first (the chevron at the top), to the drinks or
+  // the opening, then forward.
+  for (let i = 0; i < 20; i += 1) {
+    const h = await heading(page);
+    if (h === DRINKS_Q) return true;
+    const back = page.locator('.ds-guide-back');
+    if (!(await back.count()) || !(await back.first().isVisible())) break;
+    const before = h + (await text(page, '.ds-statement'));
+    await back.first().click({ timeout: 8000 });
+    await until(async () => (await heading(page)) + (await text(page, '.ds-statement')) !== before, 4000);
+    await sleep(250);
+  }
   for (let i = 0; i < 20; i += 1) {
     const h = await heading(page);
     if (h === DRINKS_Q) return true;
@@ -93,7 +126,13 @@ async function toDrinks(page) {
     if (await page.locator('.ds-guide-next').count()) await page.locator('.ds-guide-next').click();
     else {
       const chosen = page.locator('.ds-guide-body [role=radio][aria-checked=true]');
-      await ((await chosen.count()) ? chosen.first() : page.locator('.ds-guide-body [role=radio]').first()).click();
+      try {
+        await ((await chosen.count()) ? chosen.first() : page.locator('.ds-guide-body [role=radio]').first()).click({ timeout: 8000 });
+      } catch (e) {
+        await page.screenshot({ path: join(out, 'to-drinks-miss.png'), fullPage: true }).catch(() => {});
+        console.error('toDrinks stuck at', page.url(), (await page.locator('body').innerText().catch(() => '')).slice(0, 700).replace(/\n+/g, ' | '));
+        throw e;
+      }
     }
     await until(async () => (await heading(page)) + (await text(page, '.ds-statement')) !== before, 4000);
     await sleep(250);
@@ -160,8 +199,7 @@ try {
       }
 
       // Signing out and back in, on device A.
-      await a.page.goto(`${APP}/my-account`);
-      await a.page.getByRole('button', { name: 'Sign out' }).first().click();
+      await signOut(a.page);
       await until(async () => !/my-account/.test(a.page.url()), 15000);
       await signIn(a.page, env.TEST_ORG_CLIENT_EMAIL, env.TEST_ORG_CLIENT_PASSWORD);
       pass('C after signing in again, back at the drinks question', await toDrinks(a.page), await heading(a.page));
@@ -230,12 +268,29 @@ try {
         pass('W the way of being is saved with the review', Boolean(saved), JSON.stringify(await row()));
         const b = await device(env.TEST_CLIENT_EMAIL, env.TEST_CLIENT_PASSWORD);
         try {
-          await b.page.goto(`${APP}/my-day/review/${day}`);
-          await b.page.waitForSelector('.ds-guide-summary', { timeout: 30000 });
-          pass('W device B sees the same way of being', (await b.page.locator('.ds-guide-summary').innerText()).includes(WAY));
+          // The rating's question names the way of being (the summary shows it only with a rating).
+          pass('W device B sees the same way of being', /calm under pressure/i.test(await toBe(b.page)), await heading(b.page));
         } finally {
           await b.context.close();
         }
+        // An offline change syncs later.
+        const WAY2 = 'Clear and focused';
+        await toBe(a.page);
+        await a.page.getByRole('button', { name: 'Choose another way of being' }).click({ timeout: 10000 });
+        await sleep(2500);
+        await a.context.setOffline(true);
+        await a.page.getByRole('textbox', { name: 'In your own words' }).fill(WAY2);
+        await a.page.getByRole('button', { name: 'Use these words' }).click();
+        await sleep(2500);
+        pass('W offline: no error shown', !(await errorShown(a.page)));
+        await a.context.setOffline(false);
+        const synced = await until(async () => ((await row())?.way_of_being === WAY2 ? true : null), 40000);
+        pass('W back online: the offline change reaches the review', Boolean(synced), JSON.stringify(await row()));
+        // Signing out and back in keeps it.
+        await signOut(a.page);
+        await until(async () => !/my-account/.test(a.page.url()), 15000);
+        await signIn(a.page, env.TEST_CLIENT_EMAIL, env.TEST_CLIENT_PASSWORD);
+        pass('W signing out and in keeps the way of being', /clear and focused/i.test(await toBe(a.page)), await heading(a.page));
       } else {
         const kept = JSON.parse(await a.page.evaluate((k) => localStorage.getItem(k), `clarity-day-review-local:${sam.me}:${day}`) || 'null');
         pass('W (before 040) the device keeps the way of being', kept?.way === WAY, JSON.stringify(kept));
@@ -245,10 +300,83 @@ try {
       await a.context.close();
     }
   }
+  // ---------------------------------------------- what a device still holds moves across once
+  // A device that kept the answers before 040 ran: its copy is saved with
+  // the row the first time the portal opens (startWarming), then cleared;
+  // opening again writes nothing, and a value already saved (another
+  // device's) is never written over.
+  if (ready) {
+    const reviewDay = day;
+    const checkRow = async () => (madeCheckin ? (await org.db.from('checkins').select('id, drinks, trip').eq('user_id', org.me).eq('month', CUR).limit(1)).data?.[0] : null);
+    const reviewRow = async () => (reviewDay ? (await sam.db.from('day_reviews').select('id, way_of_being').eq('user_id', sam.me).eq('local_date', reviewDay).limit(1)).data?.[0] : null);
+    let lastLeft = null;
+    // Opens the portal on a device holding `kept` under `key`, then waits for the key to go.
+    const openWith = async (who, key, kept) => {
+      const d = await device(who.email, who.password);
+      try {
+        await d.page.evaluate(([k, v]) => localStorage.setItem(k, JSON.stringify(v)), [key, kept]);
+        await d.page.goto(`${APP}/welcome`);
+        const gone = await until(async () => {
+          const v = JSON.parse(await d.page.evaluate((k) => localStorage.getItem(k), key) || 'null');
+          return v === null || (v && v.way === undefined && v._drinks === undefined) ? true : null;
+        }, 25000);
+        await sleep(1500);
+        lastLeft = JSON.parse(await d.page.evaluate((k) => localStorage.getItem(k), key) || 'null');
+        return Boolean(gone);
+      } finally {
+        await d.context.close();
+      }
+    };
+    const orgWho = { email: env.TEST_ORG_CLIENT_EMAIL, password: env.TEST_ORG_CLIENT_PASSWORD };
+    const samWho = { email: env.TEST_CLIENT_EMAIL, password: env.TEST_CLIENT_PASSWORD };
+    const cRow = await checkRow();
+    if (!cRow) note('M check-in skipped: no check-in of this run’s to move into');
+    else {
+      const key = `clarity-checkin-extras:${org.me}:${CUR}`;
+      await org.db.from('checkins').update({ drinks: null, trip: null }).eq('id', cRow.id);
+      const cleared = await openWith(orgWho, key, { _drinks: { pint: 2 }, _trip: 'short' });
+      const after = await checkRow();
+      pass('M check-in: the device’s copy is cleared once moved', cleared);
+      pass('M check-in: the device’s drinks and trip reach the row', after?.drinks?.pint === 2 && after?.trip === 'short', JSON.stringify(after));
+      // Another device saves a newer value; opening again writes nothing.
+      await org.db.from('checkins').update({ drinks: { pint: 7 }, trip: 'no' }).eq('id', cRow.id);
+      const cleared2 = await openWith(orgWho, `clarity-unrelated-${Date.now()}`, {});
+      const again = await checkRow();
+      pass('M check-in: opening again moves nothing twice', cleared2 && again?.drinks?.pint === 7 && again?.trip === 'no', JSON.stringify(again));
+      // An old copy found later never writes over a saved value, and still goes.
+      const cleared3 = await openWith(orgWho, key, { _drinks: { pint: 2 }, _trip: 'short' });
+      const kept = await checkRow();
+      pass('M check-in: a saved value is never written over, and the old copy goes', cleared3 && kept?.drinks?.pint === 7 && kept?.trip === 'no', JSON.stringify(kept));
+    }
+    const rRow = await reviewRow();
+    if (!rRow) note('M review skipped: no review of this run’s to move into');
+    else {
+      const key = `clarity-day-review-local:${sam.me}:${reviewDay}`;
+      await sam.db.from('day_reviews').update({ way_of_being: null }).eq('id', rRow.id);
+      const cleared = await openWith(samWho, key, { way: 'Steady and kind', ticked: { x: true } });
+      const after = await reviewRow();
+      pass('M review: the device’s way of being reaches the row', after?.way_of_being === 'Steady and kind', JSON.stringify(after));
+      pass('M review: the way of being is cleared from the device once moved', cleared);
+      pass('M review: the rest of the day’s device copy (its ticks) stays', lastLeft?.ticked?.x === true, JSON.stringify(lastLeft));
+      await sam.db.from('day_reviews').update({ way_of_being: 'Patient' }).eq('id', rRow.id);
+      const cleared3 = await openWith(samWho, key, { way: 'Steady and kind' });
+      const kept = await reviewRow();
+      pass('M review: a saved way of being is never written over, and the old copy goes', cleared3 && kept?.way_of_being === 'Patient', JSON.stringify(kept));
+    }
+  }
 } catch (e) {
+  console.error((e.stack || '').split('\n').filter((l) => l.includes('extras.mjs')).join('\n'));
+  let i = 0;
+  for (const ctx of browser.contexts()) {
+    for (const pg of ctx.pages()) {
+      i += 1;
+      await pg.screenshot({ path: join(out, `at-failure-${i}.png`), fullPage: true }).catch(() => {});
+      console.error(`open page ${i}`, pg.url(), (await pg.locator('body').innerText().catch(() => '')).slice(0, 500).replace(/\n+/g, ' | '));
+    }
+  }
   pass('the run finished', false, e.message.split('\n')[0]);
 } finally {
-  for (const fn of cleanUps) await fn().catch(() => {});
+  for (const fn of cleanUps) { try { await fn(); } catch { /* best effort */ } }
   await browser.close();
 }
 console.log(results.join('\n'));

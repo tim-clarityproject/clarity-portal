@@ -22,7 +22,28 @@ import { drinksToRow } from './checkin';
 export const CHECKIN_EXTRA_COLS = ', drinks, trip';
 export const REVIEW_EXTRA_COLS = ', way_of_being';
 
-let known = false; // true once both columns have answered
+// Once seen, the columns are remembered on the device too (a migration is
+// never undone), so a visit opened offline from the device's copies still
+// sends the drinks, the trip and the way of being with their rows, through
+// the offline queue, instead of keeping them back on the device. Nothing
+// personal: it says only that the database has the columns.
+const SEEN_KEY = 'clarity-extras-040';
+const seenOnDevice = () => {
+  try {
+    return typeof window !== 'undefined' && window.localStorage.getItem(SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+const rememberSeen = () => {
+  try {
+    window.localStorage.setItem(SEEN_KEY, '1');
+  } catch {
+    // Storage blocked: asked again next visit.
+  }
+};
+
+let known = seenOnDevice(); // true once both columns have answered
 let asking = null;
 
 /** The database's answer for a column it doesn't have (PostgREST, or Postgres itself). */
@@ -49,6 +70,7 @@ export async function extrasReady() {
         const error = c.error || r.error;
         if (!error) {
           known = true;
+          rememberSeen();
           return true;
         }
         if (isMissingColumn(error)) return false;
@@ -70,6 +92,11 @@ export function extrasKnown() {
 /** For tests: forget what was seen. */
 export function forgetExtras() {
   known = false;
+  try {
+    window.localStorage.removeItem(SEEN_KEY);
+  } catch {
+    // Nothing kept.
+  }
 }
 
 // ---------------------------------------------------------------- the device's copies
