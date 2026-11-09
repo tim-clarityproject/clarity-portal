@@ -33,6 +33,8 @@ function startProbe() {
   if (probeTimer || !probeUrl || typeof window === 'undefined') return;
   probeTimer = window.setInterval(async () => {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+    // A hidden tab never asks (Tim, 5 Nov); once shown, the next tick does.
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
     try {
       // Any answer at all, even "not allowed", means the network is back.
       await fetch(probeUrl, { method: 'HEAD', cache: 'no-store' });

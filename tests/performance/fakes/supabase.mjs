@@ -2,7 +2,7 @@
 // tests (tests/performance/save-version.test.mjs): tables in memory, the
 // few query calls syncQueue.js makes, and updated_at moved on by every
 // write, as the database's p1_touch trigger does.
-export const db = { tables: {}, clock: 0, calls: [], missing: new Set() };
+export const db = { tables: {}, clock: 0, calls: [], missing: new Set(), down: null };
 
 const stamp = () => {
   db.clock += 1;
@@ -14,6 +14,7 @@ export function reset() {
   db.clock = 0;
   db.calls = [];
   db.missing = new Set();
+  db.down = null;
 }
 
 export function put(table, row) {
@@ -47,6 +48,12 @@ function query(table) {
     then(resolve, reject) {
       try {
         db.calls.push({ table, kind: action.kind, filters: [...filters] });
+        // The database not answering (sync back-off tests): the gateway's
+        // answer, e.g. { status: 503 } or { status: 504, code: 'PGRST003' }.
+        if (db.down) {
+          resolve({ data: null, error: { code: db.down.code || '', message: db.down.message || 'Service Unavailable' }, status: db.down.status || 503 });
+          return;
+        }
         // A table a migration hasn't made yet, as PostgREST answers.
         if (db.missing.has(table)) {
           resolve({ data: null, error: { code: 'PGRST205', message: `Could not find the table 'public.${table}' in the schema cache` } });

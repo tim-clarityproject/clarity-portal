@@ -19,7 +19,9 @@ globalThis.window = {
     setItem: (k, v) => store.set(k, String(v)),
     removeItem: (k) => store.delete(k),
   },
-  addEventListener: (name, fn) => { events[name] = fn; },
+  addEventListener: (name, fn) => { (events[name] = events[name] || []).push(fn); },
+  setTimeout,
+  clearTimeout,
   setInterval,
   clearInterval,
 };
@@ -27,7 +29,7 @@ globalThis.window = {
 const fake = await import('./fakes/supabase.mjs');
 const q = await import('../../src/lib/syncQueue.js');
 // The browser's online and offline events, as the connection module hears them.
-const setOnline = (on) => events[on ? 'online' : 'offline']?.();
+const setOnline = (on) => (events[on ? 'online' : 'offline'] || []).forEach((fn) => fn());
 
 const ME = 'me';
 let heard = [];

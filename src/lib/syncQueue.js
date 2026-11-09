@@ -62,9 +62,89 @@ export class NoRoomError extends Error {
 // refreshing first (an expired session sends the anonymous key, which the
 // database refuses). Anything else is the server really saying no.
 function retryable(error) {
-  if (isNetworkError(error)) return true;
+  if (isNetworkError(error) || notAnswering(error)) return true;
   if (error?.status === 401 || error?.code === 'PGRST301') return true;
   return /jwt|token is expired|invalid claim/i.test(`${error?.message || ''}`);
+}
+
+// The database not answering, as opposed to refusing (Tim, 5 Nov): the
+// gateway's "unavailable" or "timed out" (502, 503, 504, and the 52x of a
+// server that can't be reached), PostgREST unable to reach or wait for
+// the database (PGRST000 to PGRST003), or a statement cut off by its time
+// limit. Kept and tried again later, with the back-off below, never set
+// aside as refused.
+export function notAnswering(error) {
+  const status = Number(error?.status);
+  if (status === 502 || status === 503 || status === 504 || (status >= 520 && status <= 599)) return true;
+  return /^PGRST00[0-3]$/.test(`${error?.code || ''}`) || `${error?.code || ''}` === '57014';
+}
+
+// The answer's HTTP status goes with its error, so notAnswering can see it.
+function withStatus(error, status) {
+  if (error && typeof error === 'object' && error.status == null && status) {
+    try {
+      error.status = status;
+    } catch {
+      // A frozen error: judged by its code and words alone.
+    }
+  }
+  return error;
+}
+
+// ---------------------------------------------------------------- back-off
+// When the database doesn't answer (Tim, 5 Nov, 22:28), an open tab must
+// never flood it: each retry waits longer than the last (about 2, 4, 8, 16
+// seconds and so on, up to about 5 minutes), with a little randomness so
+// many tabs never retry together. While a retry waits, new saves join the
+// queue on the device ("Will sync") instead of being sent. Nothing is
+// retried while the tab is hidden; showing the tab again, or the browser
+// saying the connection is back, tries once at once (and, if that fails
+// too, the waits carry on from where they were). A send that gets through
+// starts the waits again from 2 seconds.
+export const BACKOFF_FIRST_MS = 2000;
+export const BACKOFF_MAX_MS = 5 * 60 * 1000;
+let backoffTries = 0;
+let backoffUntil = 0;
+let backoffTimer = null;
+
+/** The wait before retry number `tries` (0 first): doubling, capped, with ±20% randomness. */
+export function backoffDelay(tries, random = Math.random) {
+  const base = Math.min(BACKOFF_FIRST_MS * 2 ** Math.max(0, tries), BACKOFF_MAX_MS);
+  return Math.round(base * (0.8 + 0.4 * random()));
+}
+
+function tabHidden() {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden';
+}
+
+function backingOff() {
+  return backoffTries > 0 && (Date.now() < backoffUntil || tabHidden());
+}
+
+function clearBackoff() {
+  backoffTries = 0;
+  backoffUntil = 0;
+  if (backoffTimer && typeof window !== 'undefined') window.clearTimeout(backoffTimer);
+  backoffTimer = null;
+}
+
+function retryLater(userId) {
+  if (typeof window === 'undefined') return;
+  const wait = backoffDelay(backoffTries);
+  backoffTries += 1;
+  backoffUntil = Date.now() + wait;
+  if (backoffTimer) window.clearTimeout(backoffTimer);
+  backoffTimer = window.setTimeout(() => {
+    backoffTimer = null;
+    // Hidden: nothing now; showing the tab again tries once.
+    if (tabHidden()) return;
+    if (userId === currentUser && waitingToSend(userId)) flush(userId, { now: true });
+  }, wait);
+}
+
+/** For tests and the design gallery: where the back-off stands. */
+export function backoffState() {
+  return { tries: backoffTries, waitMs: Math.max(0, backoffUntil - Date.now()), hidden: tabHidden() };
 }
 
 // A save sent straight away is noted on the device until the server
@@ -265,13 +345,13 @@ async function performBased(op, retried = false) {
   const match = op.kind === 'update' ? { ...(op.match || {}) } : Object.fromEntries(cols.map((c) => [c, fields[c]]));
   let query = supabase.from(op.table).update(op.values);
   Object.entries(match).forEach(([k, v]) => { query = query.eq(k, v); });
-  const { data, error } = await query.eq('updated_at', op.basedOn).select();
-  if (error) throw error;
+  const { data, error, status } = await query.eq('updated_at', op.basedOn).select();
+  if (error) throw withStatus(error, status);
   if (data?.length) return data;
   let now = supabase.from(op.table).select('*');
   Object.entries(match).forEach(([k, v]) => { now = now.eq(k, v); });
-  const { data: rows, error: readError } = await now.limit(1);
-  if (readError) throw readError;
+  const { data: rows, error: readError, status: readStatus } = await now.limit(1);
+  if (readError) throw withStatus(readError, readStatus);
   const row = rows?.[0];
   if (!row) {
     if (op.kind === 'update') throw Object.assign(new Error('Nothing was found to update.'), { code: 'NOT_FOUND' });
@@ -302,8 +382,8 @@ async function perform(op) {
   } else {
     throw new Error(`Unknown save kind: ${op.kind}`);
   }
-  const { data, error } = await query.select();
-  if (error) throw error;
+  const { data, error, status } = await query.select();
+  if (error) throw withStatus(error, status);
   if (op.kind === 'update' && (!data || data.length === 0)) {
     throw Object.assign(new Error('Nothing was found to update.'), { code: 'NOT_FOUND' });
   }
@@ -380,7 +460,7 @@ async function sendOrKeep(userId, op) {
   const item = { ...withVersion(op), qid: newId(), at: Date.now() };
   // Anything still waiting goes first, so saves never arrive out of order
   // (refused ones are set aside and don't hold the rest up).
-  if (!isOnline() || read(userId).some((x) => !x.failed)) {
+  if (!isOnline() || backingOff() || read(userId).some((x) => !x.failed)) {
     keep(userId, item);
     if (isOnline()) flush(userId);
     return { status: 'queued', qid: item.qid };
@@ -397,6 +477,7 @@ async function sendOrKeep(userId, op) {
     }
     if (retryable(error)) {
       keep(userId, item);
+      if (!backoffTimer) retryLater(userId);
       return { status: 'queued', qid: item.qid };
     }
     throw error;
@@ -430,8 +511,11 @@ export function keepForLater(userId, op) {
  * a lost connection) is kept aside under failed, so it is never retried
  * for ever and never silently dropped.
  */
-export function flush(userId = currentUser) {
+export function flush(userId = currentUser, { now = false } = {}) {
   if (!userId || !isOnline()) return Promise.resolve();
+  // Waiting out a back-off (or hidden while one waits): nothing is sent,
+  // unless this is the one try for the tab shown or the connection back.
+  if (!now && backingOff()) return Promise.resolve();
   // One send at a time; a second call waits for the one under way.
   if (flushPromise) return flushPromise;
   const mine = epoch;
@@ -458,6 +542,7 @@ export function flush(userId = currentUser) {
       try {
         const data = await perform(item);
         if (mine !== epoch) break;
+        clearBackoff();
         write(userId, read(userId).filter((x) => x.qid !== item.qid));
         rebase(userId, item, data);
       } catch (error) {
@@ -471,7 +556,10 @@ export function flush(userId = currentUser) {
           announceSuperseded(error);
           continue;
         }
-        if (retryable(error)) break;
+        if (retryable(error)) {
+          retryLater(userId);
+          break;
+        }
         write(userId, read(userId).map((x) => (x.qid === item.qid ? { ...x, failed: true } : x)));
       }
     }
@@ -496,7 +584,8 @@ function sessionLater(userId) {
   sessionTries += 1;
   sessionTimer = window.setTimeout(() => {
     sessionTimer = null;
-    if (userId === currentUser && isOnline() && waitingToSend(userId)) flush(userId);
+    // Hidden: showing the tab again tries once.
+    if (userId === currentUser && isOnline() && !tabHidden() && waitingToSend(userId)) flush(userId);
   }, wait);
 }
 
@@ -521,6 +610,7 @@ export function stopSyncQueue() {
   if (sessionTimer) window.clearTimeout(sessionTimer);
   sessionTimer = null;
   sessionTries = 0;
+  clearBackoff();
 }
 
 /**
@@ -549,12 +639,28 @@ export function dropQueued(userId, table, id) {
 
 /** After a refreshed sign-in, try again whatever waited for it. */
 export function retrySyncQueue() {
-  if (currentUser) flush(currentUser);
+  if (currentUser) flush(currentUser, { now: true });
 }
 
+// The connection noticed again (any answer at all): sent, unless a
+// back-off is waiting, so a database that answers slowly, and so keeps
+// marking the connection lost and found, is never retried faster.
 subscribeOnline((on) => {
   if (on && currentUser) flush(currentUser);
 });
+
+// The one try at once: the browser saying the connection is back, or the
+// tab shown again.
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('online', () => {
+    if (currentUser && waitingToSend(currentUser)) flush(currentUser, { now: true });
+  });
+}
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('visibilitychange', () => {
+    if (!tabHidden() && currentUser && waitingToSend(currentUser)) flush(currentUser, { now: true });
+  });
+}
 
 /** How many saves are waiting, and how many the server refused. */
 export function queueState(userId = currentUser) {
