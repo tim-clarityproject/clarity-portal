@@ -136,7 +136,8 @@ await page.waitForTimeout(500);
 const details = (await page.locator('.ds-collapse-body').first().textContent()).replace(/\s+/g, ' ');
 pass('sprint page: the average is 68%, from week 1', /68%/.test(details) && /Week 1\./.test(details) && v.average.value === '68%', details.slice(0, 160));
 const usual = await page.locator('body').textContent();
-pass('sprint page (M8): fewer than 6 weeks, so the usual range waits', usual.includes('Your usual range appears after 6 weeks.'));
+// The usual-range line waits until it's ready, with nothing said before (Tim, 5 Nov).
+pass('sprint page (M8): fewer than 6 weeks, so the usual range waits, unsaid', !usual.includes('Your usual range'));
 const centre = (await page.locator('.ds-sdial-big').first().textContent()).trim();
 const soFar = sprintWeekSoFar(d, today);
 pass('sprint page: this week so far equals src/lib/scores', soFar?.result?.score == null ? !/\d+%/.test(centre) : centre === `${m0Round(soFar.result.score)}%`, `${centre} vs ${soFar?.result?.score}`);

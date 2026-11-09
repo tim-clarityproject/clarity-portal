@@ -35,7 +35,7 @@ import { FIXED_TODAY, seedFixed, seedForReal, londonInstant } from '../phase2/fi
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
 const TEST_HOST = `${TEST_REF}.supabase.co`;
-const MOCK = process.env.M19 || '/private/tmp/claude-501/-Users-timdutton-code-clarity-portal/ae3016f0-cf9a-4766-9daa-a8e0ef2066dc/scratchpad/phase4/mock/m19-sleep-wind-down.html';
+const MOCK = process.env.M19 || join(homedir(), 'Downloads', 'clarity-phase-4', 'm19-sleep-wind-down.html');
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
 const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
@@ -232,7 +232,7 @@ if (part(1)) {
   try {
     await page.goto(`${APP}/my-day/review`);
     // A finished review opens on its summary; Next goes on to closing the day.
-    await until(async () => /^Here’s your day/.test(await heading(page)), 20000);
+    await until(async () => /^This was your day/.test(await heading(page)), 20000);
     pass('review: the summary has no Skip now it isn’t the last step', (await page.locator('.ds-guide-skip').count()) === 0);
     await sleep(600); // the tool ignores a tap in its first moment
     await page.locator('.ds-guide-next').click();
@@ -280,7 +280,8 @@ if (part(2)) {
     pass('wind-down: Home’s button opens /sleep-wind-down', new URL(page.url()).pathname === '/sleep-wind-down');
     pass('wind-down: the nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).join('|') === 'Write a few quick lines, then let them go.|They’ll wait for you in tomorrow’s Plan my day.');
     pass('wind-down: the % bar starts at 0%', (await page.locator('.ds-guide-pct-text').innerText()).trim() === '0%');
-    pass('wind-down: the eye says Only you', (await page.locator('.ds-guide-body .ds-who').innerText()).includes('Only you'));
+    // The eye alone, its words for screen readers (rules of 5 Nov).
+    pass('wind-down: the eye says Only you', ((await page.locator('.ds-guide .ds-who').first().getAttribute('aria-label')) || '').includes('Only you'), await page.locator('.ds-guide .ds-who').first().getAttribute('aria-label').catch(() => 'no eye'));
     await page.getByRole('button', { name: 'Why write it down' }).click();
     pass('wind-down: Why write it down opens its reason', (await page.locator('.ds-infopop:visible').innerText()).includes('fell asleep faster'));
     await page.keyboard.press('Escape');
@@ -361,7 +362,10 @@ if (part(2)) {
       const carried = await groupRows(page, 0);
       pass('morning: Review my day’s things first, then last night’s thoughts, duplicates merged',
         JSON.stringify(carried.map((r) => r.name)) === JSON.stringify(CARRIED.map((c) => c[0])), carried.map((r) => r.name).join(' | '));
-      pass('morning: each says where it came from', JSON.stringify(carried.map((r) => r.line)) === JSON.stringify(CARRIED.map((c) => c[1])), carried.map((r) => r.line).join(' | '));
+      // Tomorrow's priorities are numbered (Tim, 5 Nov): "Priority 1" comes before the source line.
+      const source = (line) => String(line || '').replace(/^Priority \d+\s*/, '');
+      pass('morning: the priorities from Review my day are numbered', carried.slice(0, 3).every((r, i) => String(r.line).startsWith(`Priority ${i + 1}`)), carried.map((r) => r.line).join(' | '));
+      pass('morning: each says where it came from', JSON.stringify(carried.map((r) => source(r.line))) === JSON.stringify(CARRIED.map((c) => c[1])), carried.map((r) => r.line).join(' | '));
       pass('morning: "You’ve chosen 0 of 3."', (await page.locator('.ds-pick-count').innerText()).trim() === 'You’ve chosen 0 of 3.');
       await shot(page, 'morning-carried');
       // Pick three carried things; a fourth is refused.
@@ -387,7 +391,7 @@ if (part(2)) {
       pass('morning: a wind-down thought became a to-do from Sleep wind down', ['sleep_wind_down', 'other_tool'].includes(by(CARRIED[3][0])?.source) && by(CARRIED[3][0])?.source_id === null, JSON.stringify(made));
       pass('morning: each made once', made.length === 3, String(made.length));
       const after = await groupRows(page, 0);
-      pass('morning: chosen things stay carried over, with their source', JSON.stringify(after.map((r) => r.line)) === JSON.stringify(CARRIED.map((c) => c[1])), after.map((r) => `${r.name}: ${r.line}`).join(' | '));
+      pass('morning: chosen things stay carried over, with their source', JSON.stringify(after.map((r) => source(r.line))) === JSON.stringify(CARRIED.map((c) => c[1])), after.map((r) => `${r.name}: ${r.line}`).join(' | '));
       // Unchosen the same morning: the to-do goes again.
       await row(CARRIED[3][0]).click();
       const gone = await until(async () => {
@@ -629,7 +633,7 @@ if (part(8)) {
           // Work's done: the review, closed again.
           await at(page, WED, '21:00');
           await page.goto(`${APP}/my-day/review`);
-          await until(async () => /^Here’s your day/.test(await heading(page)), 20000);
+          await until(async () => /^This was your day/.test(await heading(page)), 20000);
           await sleep(600);
           await page.locator('.ds-guide-next').click();
           await until(async () => (await heading(page)) === 'Ready to close the day?', 8000);

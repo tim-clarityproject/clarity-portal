@@ -284,7 +284,7 @@ async function reviewMyDay(page) {
     } else if (h === 'What would you do differently next time?') {
       await body.locator('textarea').first().fill('Download the papers before boarding.');
     } else if (h === 'What are the most important things to do tomorrow?') {
-      await page.getByRole('textbox', { name: 'Important thing 1 for tomorrow' }).fill('Send the board pack');
+      await page.getByRole('textbox', { name: 'Priority 1 for tomorrow' }).fill('Send the board pack');
     }
     await next(page);
   }

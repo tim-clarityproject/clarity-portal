@@ -217,6 +217,12 @@ if (part('info')) {
     // Flips below: the page title's ⓘ scrolled to the very top.
     await go(page, '/performance-plan', '.ds-page-info-toggle');
     const t = page.locator('.ds-page-info-toggle').first();
+    // No ⓘ beside page titles any more (Tim's rules of 5 Nov).
+    if (!(await t.count())) {
+      note(`${w}: the plan's title has no ⓘ (rules of 5 Nov), so the flip below isn't measured here`);
+      await ctx.close();
+      continue;
+    }
     await page.evaluate(() => { const el = document.querySelector('.ds-page-info-toggle'); scrollTo(0, scrollY + el.getBoundingClientRect().top - 14); });
     await still(page);
     if (phone) await t.tap(); else await t.hover();
@@ -334,13 +340,13 @@ if (part('greeting')) {
     for (const t of r) {
       const greeting = /^(Welcome back|Good to see you|Good (morning|afternoon|evening))/i.test(t.title);
       if (greeting) pass(`greeting ${path} "${t.title}": no ⓘ`, !t.i);
-      else if (path === '/performance-sprint') pass(`greeting ${path} "${t.title}": the sprint's own title keeps its ⓘ`, t.i);
+      else if (path === '/performance-sprint') pass(`greeting ${path} "${t.title}": no ⓘ beside the title (rules of 5 Nov)`, !t.i);
       else note(`greeting ${path} "${t.title}" is not a greeting (ⓘ ${t.i ? 'shown' : 'none'})`);
     }
   }
   for (const path of ['/performance-plan', '/personal']) {
     await go(page, path, '.ds-page-title');
-    pass(`greeting: ${path} keeps its ⓘ`, (await page.locator('.ds-page-info-toggle').count()) > 0);
+    pass(`greeting: ${path} has no ⓘ beside its title (rules of 5 Nov)`, (await page.locator('.ds-page-info-toggle').count()) === 0);
   }
   await ctx.close();
 }

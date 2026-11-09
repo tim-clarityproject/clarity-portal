@@ -230,8 +230,9 @@ const chartFacts = (page) => page.evaluate(() => {
   const plot = sec.querySelector('.ds-schart-plot');
   return {
     title: sec.querySelector('.ds-section-title')?.textContent,
-    who: who?.textContent || null,
-    whoRight: who && head ? head.getBoundingClientRect().right - who.getBoundingClientRect().right : null,
+    // The eye alone, its words for screen readers (5 Nov); its drawn icon, not its 44px tap area, lines up on the right.
+    who: who ? (who.getAttribute('aria-label') || who.textContent) : null,
+    whoRight: who && head ? head.getBoundingClientRect().right - (who.querySelector('svg, .ds-icon') || who).getBoundingClientRect().right : null,
     last: stat('Last night'),
     average: stat('Average quality'),
     bars,
@@ -366,7 +367,7 @@ if (part('chart')) {
       const f = await chartFacts(page);
       if (!f) { pass(`${tag}: the Sleep section shows`, false); await ctx.close(); continue; }
       pass(`${tag}: headed "Sleep"`, /^sleep$/i.test(f.title), f.title);
-      pass(`${tag}: "Only you" on the right`, /Only you/.test(f.who || '') && f.whoRight != null && f.whoRight < 2, `${f.who} ${f.whoRight}`);
+      pass(`${tag}: "Only you" on the right`, /Only you/.test(f.who || '') && f.whoRight != null && Math.abs(f.whoRight) < 2, `${f.who} ${f.whoRight}`);
       pass(`${tag}: "Last night" 6.5 in Nekst Light`, f.last?.value === '6.5' && /nekst/i.test(f.last.font) && Number(f.last.weight) <= 300, JSON.stringify(f.last));
       pass(`${tag}: "hours" small and grey beside it`, f.last?.unit === 'hours' && f.last.unitSize < f.last.valueSize && f.last.unitColour !== 'rgb(255, 255, 255)' && f.last.unitColour !== 'rgb(0, 0, 0)', JSON.stringify(f.last));
       pass(`${tag}: "Average quality Good" (most common)`, f.average?.value === 'Good', f.average?.value);

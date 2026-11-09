@@ -234,7 +234,8 @@ await everyLayout('running-with-link', async (page) => go(page, '/performance-sp
   pass('the banner says until when', plain(await text(page, '.ds-rec-banner-lead')) === `You're in recovery until ${dayName(recoveryEndOn(r.open), today)}.`);
   pass('... and the days left', (await text(page, '.ds-rec-banner-left')) === '7 days left.');
   pass('the daily question', (await text(page, '.rec-qh')) === 'What would help you recharge today?');
-  pass('it is Only you', (await text(page, '.rec-qfoot .ds-who')).includes('Only you'));
+  // The eye alone, its words for screen readers (rules of 5 Nov).
+  pass('it is Only you', ((await page.locator('.rec-qfoot .ds-who').first().getAttribute('aria-label')) || (await text(page, '.rec-qfoot .ds-who'))).includes('Only you'));
   pass('... and optional', (await text(page, '.rec-hint')) === 'This is optional, like everything here.');
   await page.locator('.rec-q textarea').first().fill('A long walk by the river, no phone');
   const saved = await until(async () => (await db.from('recovery_recharge_answers').select('*').eq('user_id', me)).data?.[0], 15000);

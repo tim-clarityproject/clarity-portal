@@ -38,7 +38,7 @@ import {
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
 const TEST_HOST = `${TEST_REF}.supabase.co`;
-const MOCK = process.env.M12 || '/private/tmp/claude-501/-Users-timdutton-code-clarity-portal/bce8960b-2199-451f-aa9d-71dcc5d6bbcb/scratchpad/mock/m12-check-in.html';
+const MOCK = process.env.M12 || join(homedir(), 'Downloads', 'clarity-phase-5', 'm12-check-in.html');
 const MOCK_FULL = join(homedir(), 'Downloads', 'clarity-phase-5', 'm12-check-in.html');
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
 const out = process.argv[2] || join(process.cwd(), 'tmp-phase5-checkin');
@@ -593,7 +593,11 @@ if (part('C') && !others?.length) {
   try {
     await home(page);
     const homeText = await text(page, '.home-page');
-    pass('Home: the First check-in is offered', /Ready for your first check-in\?/.test(homeText));
+    // Timed, so it waits its turn while another timed card (Review my day from 17:00, the debrief) holds Home's one card (Tim, 5 Nov).
+    const held = async () => { const q = await text(page, '.ds-suggest-question'); return q && !/first check-in/i.test(q) ? q : null; };
+    const heldBy = await held();
+    if (heldBy) results.push(`NOTE  Home: the card holds "${heldBy}", so the First check-in waits its turn`);
+    else pass('Home: the First check-in is offered', /Ready for your first check-in\?/.test(homeText));
     await page.goto(`${APP}/check-in`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('first: "What would make coaching useful for you?"', (await heading(page)) === 'What would make coaching useful for you?');
@@ -628,8 +632,11 @@ if (part('C') && !others?.length) {
     pass('Do this later: "Saved. Home will ask you to finish before your first session."', Boolean(await toastSeen(page, 'Saved. Home will ask you to finish before your first session.')));
     await until(async () => path(page) === '/welcome');
     await home(page);
-    pass('Home: "Ready to finish your first check-in?"', /Ready to finish your first check-in\?/.test(await text(page, '.home-page')));
-    await page.locator('button', { hasText: 'Finish my first check-in' }).first().click();
+    const heldBy2 = await held();
+    if (heldBy2) results.push(`NOTE  Home: the card holds "${heldBy2}", so finishing the First check-in waits its turn`);
+    else pass('Home: "Ready to finish your first check-in?"', /Ready to finish your first check-in\?/.test(await text(page, '.home-page')));
+    if (heldBy2) await page.goto(`${APP}/check-in`);
+    else await page.locator('button', { hasText: 'Finish my first check-in' }).first().click();
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('carries on where it was left', (await heading(page)) === 'What has got in the way of progress before?', await heading(page));
     await page.locator('.ds-guide-body textarea').first().fill('I say yes to everything.');

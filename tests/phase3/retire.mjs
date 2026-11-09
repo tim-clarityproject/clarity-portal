@@ -267,7 +267,8 @@ async function checkOldItems(page, tag) {
   const w = row(page, WEEKLY.title);
   pass(`${tag}: the old weekly check-in is listed`, (await w.count()) === 1);
   pass(`${tag}: its type label`, (await w.locator('.hlist-row-tags b').textContent()).trim() === 'Weekly check-in');
-  pass(`${tag}: the finished weekly check-in has a pencil`, (await w.locator('.hlist-icon-btn:not(.hlist-icon-btn--del)').count()) === 1);
+  // No icons in list rows (Tim, 5 Nov): edit and delete sit inside the item once opened.
+  pass(`${tag}: the finished weekly check-in has no icons in its row`, (await w.locator('.hlist-icon-btn').count()) === 0);
   await w.locator('.hlist-row-main').click();
   pass(`${tag}: it opens its summary`, await landsOn(page, '/review-summary'), path(page));
   await until(async () => has(await textOf(page), WEEKLY.q1));
@@ -307,7 +308,7 @@ async function checkOldItems(page, tag) {
   })));
   pass(`${tag}: both POP reviews are listed`, popRows.length === 2 && popRows.some((r) => r.draft) && popRows.some((r) => !r.draft), JSON.stringify(popRows));
   pass(`${tag}: POP reviews have no pencil and no Continue`, popRows.every((r) => r.pencil === 0 && !r.cont), JSON.stringify(popRows));
-  pass(`${tag}: POP reviews keep their bin`, popRows.every((r) => r.bin === 1));
+  pass(`${tag}: POP reviews have no bin in the row (delete is inside the item, Tim 5 Nov)`, popRows.every((r) => r.bin === 0), JSON.stringify(popRows));
   await shot(page, `${tag}-my-reviews`);
 
   for (const kind of ['final', 'draft']) {

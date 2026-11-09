@@ -55,7 +55,7 @@ import { FIXED_TODAY, seedFixed, seedForReal, londonInstant } from '../phase2/fi
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
 const TEST_HOST = `${TEST_REF}.supabase.co`;
-const MOCKS = process.env.MOCKUPS || '/private/tmp/claude-501/-Users-timdutton-code-clarity-portal/ae3016f0-cf9a-4766-9daa-a8e0ef2066dc/scratchpad/phase4/mock';
+const MOCKS = process.env.MOCKUPS || join(homedir(), 'Downloads', 'clarity-phase-4');
 const FONTS = join(process.cwd(), 'node_modules', '@fontsource', 'dm-sans', 'files');
 const out = process.argv[2] || join(process.cwd(), 'tmp-compare4');
 const SHOTS = process.env.SHOTS !== '0';

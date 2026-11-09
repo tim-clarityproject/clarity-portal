@@ -221,8 +221,10 @@ const centreScore = async () => (await page.locator('.ds-sdial-big--score').text
     const row = (frozen || []).find((f) => f.sprint_week === w.number);
     pass(`week ${w.number}: the database's frozen score matches the page`, row && Math.round(Number(row.score)) === w.score, `${row?.score} vs ${w.score}`);
   }
-  const usual = await page.locator('.sprint-usual').textContent();
-  pass('the usual range is a full sentence', /Your usual range appears after 6 weeks\.|Your usual range is \d+ to \d+%\./.test(usual), usual);
+  // Shown only once it's ready (Tim, 5 Nov); then a full sentence.
+  const usual = (await page.locator('.sprint-usual').count()) ? await page.locator('.sprint-usual').textContent() : '';
+  const range = (usual.match(/Your usual range[^.]*\./) || [''])[0];
+  pass('the usual range is a full sentence, or waits unsaid', range === '' || /^Your usual range is \d+ to \d+%\.$/.test(range), usual);
 }
 
 // 3. Logging every way to measure, today.

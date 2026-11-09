@@ -113,6 +113,9 @@ async function cleanUp() {
   await del('day_plans', made.dayPlans);
   await del('day_reviews', made.dayReviews);
   await del('weekly_debriefs', made.debriefs);
+  // The review's answers this test puts on the device move across to
+  // sprint_reviews once 038 is there (the app's own one-time move).
+  await db.from('sprint_reviews').delete().eq('user_id', me).like('worked_best', `${STAMP}%`);
 }
 
 process.on('uncaughtException', async (e) => {

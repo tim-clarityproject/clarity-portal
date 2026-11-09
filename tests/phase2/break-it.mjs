@@ -479,6 +479,8 @@ if (run('back')) {
     pass('back: Recovery start keeps the days chosen', words2 === words, `${words} then ${words2}`);
     noErrors(r.page, 'back in Recovery');
   } catch (e) {
+    if (out) await r.page.screenshot({ path: `${out}/back-edit-start-error.png` }).catch(() => {});
+    console.error('back in Edit/Start/Recovery stopped at', r.page.url(), e.stack?.split('\n').filter((l) => l.includes('break-it.mjs')).join(' | '));
     pass('back in Edit, Start and Recovery ran to the end', false, e.message.split('\n')[0]);
   }
   await r.context.close();

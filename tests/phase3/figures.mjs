@@ -153,7 +153,12 @@ const heading = async () => ((await page.locator('.ds-guide-question, .ds-guide-
 async function nextOnce() {
   const before = await heading();
   for (let i = 0; i < 8; i += 1) {
-    await page.locator('.ds-guide-next').click();
+    // A one-answer screen has no Next and moves on when tapped (rule 21, 5 Nov).
+    if (await page.locator('.ds-guide-next').count()) await page.locator('.ds-guide-next').click({ timeout: 8000 });
+    else {
+      const chosen = page.locator('.ds-guide-body [role=radio][aria-checked=true]');
+      await ((await chosen.count()) ? chosen.first() : page.locator('.ds-guide-body [role=radio]').first()).click({ timeout: 8000 });
+    }
     if (await until(async () => (await heading()) !== before, 1200)) return;
   }
   throw new Error(`Next didn't move on from "${before}"`);
@@ -169,7 +174,7 @@ async function toLastStep() {
 // "Ready to close the day?" after it), so step to the summary by its heading.
 async function toSummaryStep() {
   for (let n = 0; n < 12; n += 1) {
-    if ((await heading()).startsWith('Here’s your day')) return;
+    if (/^(This was your day|Here’s your day)/.test(await heading())) return; // Review my day's summary is "This was your day" (5 Nov)
     await nextOnce();
   }
 }

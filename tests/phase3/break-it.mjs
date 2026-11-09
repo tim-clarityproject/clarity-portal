@@ -244,7 +244,13 @@ async function open(page, path) {
 async function next(page) {
   const before = await heading(page);
   for (let i = 0; i < 6; i += 1) {
-    await page.locator('.ds-guide-next').click();
+    // A one-answer screen has no Next and moves on when an answer is
+    // tapped (rule 21, 5 Nov): its chosen answer, or the first one.
+    if (await page.locator('.ds-guide-next').count()) await page.locator('.ds-guide-next').click({ timeout: 8000 });
+    else {
+      const chosen = page.locator('.ds-guide-body [role=radio][aria-checked=true]');
+      await ((await chosen.count()) ? chosen.first() : page.locator('.ds-guide-body [role=radio]').first()).click({ timeout: 8000 });
+    }
     const moved = await until(async () => (await heading(page)) !== before, 1200);
     if (moved) return;
   }
@@ -261,6 +267,16 @@ async function backUntil(page, question) {
     }
   }
   if (!(await there())) throw new Error(`Never got back to "${question || 'the first step'}"`);
+}
+// With no way of being from the morning, Review my day first asks how they
+// wanted to be (Tim, 5 Nov); then the rating.
+async function rate(page, n) {
+  if ((await heading(page)) === 'How did you want to be today?') {
+    await page.getByRole('textbox', { name: 'In your own words' }).fill('Calm');
+    await page.getByRole('button', { name: 'Use these words' }).click();
+    await until(async () => (await page.getByRole('radio', { name: String(n), exact: true }).count()) > 0, 8000);
+  }
+  await page.getByRole('radio', { name: String(n), exact: true }).click();
 }
 async function nextUntil(page, question) {
   for (let i = 0; i < 10 && (await heading(page)) !== question; i += 1) await next(page);
@@ -308,7 +324,7 @@ const PLAN_Q = {
 };
 const REVIEW_Q = {
   do: 'Which of today’s to‑dos did you do?',
-  numbers: 'What are today’s numbers?',
+  numbers: 'Log today', // as Home (Tim, 5 Nov)
   well: 'What went well today?',
   differently: 'What would you do differently next time?',
   tomorrow: 'What are the most important things to do tomorrow?',
@@ -438,12 +454,13 @@ if (run('taps')) {
     const ev = wins.length ? await q(db.from('performance_evidence').select('id').eq('win_id', wins[0].id)) : [];
     pass('taps: ... with one Performance Evidence row', ev.length === 1, `${ev.length}`);
     await nextUntil(page, REVIEW_Q.tomorrow);
-    await page.getByRole('button', { name: 'Add another' }).click({ clickCount: 3 });
-    const rowsShown = await body(page).getByRole('textbox', { name: /^Important thing \d for tomorrow$/ }).count();
+    // Three numbered rows from the start (Tim, 5 Nov): Add another, if shown, is tapped three times.
+    if (await page.getByRole('button', { name: 'Add another' }).count()) await page.getByRole('button', { name: 'Add another' }).click({ clickCount: 3 });
+    const rowsShown = await body(page).getByRole('textbox', { name: /^Priority \d for tomorrow$/ }).count();
     pass('taps: Add another triple tapped stops at three rows', rowsShown <= 3, `${rowsShown}`);
-    await body(page).getByRole('textbox', { name: 'Important thing 1 for tomorrow' }).fill(`${TAG}: first thing`);
-    await next(page);
-    await next(page); // the summary, then Close the day (Phase 4, M19)
+    await body(page).getByRole('textbox', { name: 'Priority 1 for tomorrow' }).fill(`${TAG}: first thing`);
+    // On to "Ready to close the day?" (the summary first; Phase 4, M19).
+    await nextUntil(page, 'Ready to close the day?');
     const finishReview = (await page.locator('.ds-guide-next').textContent()).trim();
     await tripleFinish(page);
     await page.waitForTimeout(1500);
@@ -669,9 +686,9 @@ if (run('text')) {
     pass('text: a win with tags is saved as typed', (await myWins(WT)).length === 1);
     pass('text: ... and shown as text', (await body(page).innerText()).includes('<img src=x') && !(await injected()), `${await injected()} ${(await body(page).innerText()).slice(0, 120)}`);
     await nextUntil(page, REVIEW_Q.tomorrow);
-    const thing = (n) => page.getByRole('textbox', { name: `Important thing ${n} for tomorrow` });
+    const thing = (n) => page.getByRole('textbox', { name: `Priority ${n} for tomorrow` });
     await thing(1).fill('    ');
-    await page.getByRole('button', { name: 'Add another' }).click();
+    if (!(await thing(2).count())) await page.getByRole('button', { name: 'Add another' }).click();
     await thing(2).fill(`${TAG} ‮reversed‬ thing`);
     await shot(page, 'text-review-tomorrow');
     await next(page);
@@ -1011,9 +1028,10 @@ if (run('midnight')) {
       const name = await toolName(page);
       pass(`midnight: at ${time} the review is for ${wantDay}`, wantDay === yesterday ? name === yName : name === 'Review my day', name);
       await next(page);
-      await page.getByRole('radio', { name: '6', exact: true }).click();
+      await rate(page, 6);
       await settled(page);
-      await until(async () => (await dayReviews()).length > 0, 10000);
+      // The way of being may make the row first (no plan that day); then the rating lands.
+      await until(async () => (await dayReviews()).some((x) => x.way_of_being_rating === 6), 10000);
       const r = await dayReviews();
       pass(`midnight: at ${time} the answer is saved on ${wantDay} only`, r.length === 1 && r[0].local_date === wantDay && r[0].way_of_being_rating === 6, JSON.stringify(r.map((x) => [x.local_date, x.way_of_being_rating])));
       await clean(page, `midnight ${time}`);
@@ -1037,7 +1055,7 @@ if (run('midnight')) {
     await page.waitForTimeout(1500);
     pass('midnight: a review carried past midnight keeps its day in the top bar', (await toolName(page)) === 'Review my day' || /Wed 21 Oct/.test(await toolName(page)), await toolName(page));
     pass('midnight: ... and its step', /how calm under pressure were you today\?$/.test(await heading(page)), await heading(page));
-    await page.getByRole('radio', { name: '8', exact: true }).click();
+    await rate(page, 8);
     await settled(page);
     await until(async () => (await dayReviews()).length > 0, 10000);
     const r = await dayReviews();
@@ -1155,6 +1173,12 @@ if (run('zones')) {
       await open(page, '/my-day/review');
       const early = Number(new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', hourCycle: 'h23' }).format(instant)) < 4;
       await next(page);
+      // With no way of being from the morning, it first asks how they wanted to be (Tim, 5 Nov).
+      if ((await heading(page)) === 'How did you want to be today?') {
+        await page.getByRole('textbox', { name: 'In your own words' }).fill('Calm');
+        await page.getByRole('button', { name: 'Use these words' }).click();
+        await until(async () => (await page.getByRole('radio', { name: '5', exact: true }).count()) > 0, 8000);
+      }
       await page.getByRole('radio', { name: '5', exact: true }).click();
       await settled(page);
       await until(async () => (await dayReviews()).length > 0, 10000);

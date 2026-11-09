@@ -304,7 +304,7 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   pass(`${tag}: Be`, (await heading()) === 'On a scale of 1 to 10, how decisive were you today?', await heading());
   await page.getByRole('radio', { name: '7', exact: true }).click();
   await next();
-  pass(`${tag}: Numbers`, (await heading()) === 'What are today’s numbers?', await heading());
+  pass(`${tag}: Numbers`, (await heading()) === 'Log today', await heading()); // "Log today", as Home (Tim, 5 Nov)
   const typed = {};
   for (const [name, value] of [['Steps', String(9000 + i * 100)], ['Water', '1.5']]) {
     const box = page.getByRole('textbox', { name: `${name} today` });
@@ -345,11 +345,12 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   await next();
   pass(`${tag}: Tomorrow`, (await heading()) === 'What are the most important things to do tomorrow?', await heading());
   for (let n = 0; n < tomorrow.length; n += 1) {
-    if (n) await page.getByRole('button', { name: 'Add another' }).click();
-    await page.getByRole('textbox', { name: `Important thing ${n + 1} for tomorrow` }).fill(tomorrow[n]);
+    // Three numbered rows from the start (Tim, 5 Nov); Add another only if a row is missing.
+    if (n && !(await page.getByRole('textbox', { name: `Priority ${n + 1} for tomorrow` }).count())) await page.getByRole('button', { name: 'Add another' }).click();
+    await page.getByRole('textbox', { name: `Priority ${n + 1} for tomorrow` }).fill(tomorrow[n]);
   }
   await next();
-  pass(`${tag}: the summary`, /^Here’s your day, \S+\.$/.test(await heading()), await heading());
+  pass(`${tag}: the summary`, (await heading()) === 'This was your day', await heading());
   const summary = await page.locator('.ds-guide-summary').innerText();
   pass(`${tag}: the summary counts the ticks`, summary.includes(`${ticks.length} of ${ticks.length} done`), summary.slice(0, 200));
   await shot(`${day}-review-summary`);

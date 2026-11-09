@@ -853,13 +853,13 @@ async function setEye(label, choice) {
   await visit(page, '/performance-plan', 'performance-plan');
   await page.waitForSelector('.ds-who', { timeout: 30000 });
   const eye = page.locator('.ds-who').nth(label === 'mission' ? 0 : 1);
-  if ((await eye.textContent()).includes(choice)) return;
+  if (((await eye.getAttribute('aria-label')) || '').includes(choice)) return;
   await eye.click();
   await page.waitForSelector('[role=dialog] [role=option]');
   await page.getByRole('option', { name: choice }).click();
   const part = label === 'mission' ? 'mission' : 'progress';
   await until(async () => (await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me))).some((x) => x.part === part && x.is_on === (choice !== 'Only you')));
-  await until(async () => (await eye.textContent()).includes(choice), 10000);
+  await until(async () => ((await eye.getAttribute('aria-label')) || '').includes(choice), 10000);
   await page.keyboard.press('Escape');
   await page.locator('[role=dialog] [role=option]').first().waitFor({ state: 'hidden' }).catch(() => null);
   await calm(page);
@@ -867,13 +867,13 @@ async function setEye(label, choice) {
 try {
   await page.goto(`${APP}/performance-plan`);
   await page.waitForSelector('.ds-who', { timeout: 30000 });
-  const eyes0 = await page.locator('.ds-who').allTextContents();
+  const eyes0 = await page.locator('.ds-who').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || e.textContent));
   const sw0 = await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me));
   const on0 = (part) => sw0.find((x) => x.part === part)?.is_on ?? part === 'mission'; // mission is on by default
   pass('eyes: each says what its switch is', eyes0.length >= 2 && eyes0[0].includes(on0('mission') ? 'You and Alex' : 'Only you') && eyes0[1].includes(on0('progress') ? 'You and Alex' : 'Only you'), `${eyes0.join(' | ')} vs ${JSON.stringify(sw0)}`);
   await setEye('mission', 'You and Alex');
   await setEye('progress', 'You and Alex');
-  const eyes1 = await page.locator('.ds-who').allTextContents();
+  const eyes1 = await page.locator('.ds-who').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || e.textContent));
   const sw1 = await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me));
   pass('eyes: both now say You and Alex', eyes1.slice(0, 2).every((t) => t.includes('You and Alex')), eyes1.join(' | '));
   pass('eyes: the switches saved on', on0 && sw1.some((x) => x.part === 'progress' && x.is_on) && (sw1.find((x) => x.part === 'mission')?.is_on ?? true), JSON.stringify(sw1));
@@ -881,7 +881,7 @@ try {
   await page.reload();
   await page.waitForSelector('.ds-who', { timeout: 30000 });
   await fresh(page, 'performance-plan', eyesReloaded);
-  pass('eyes: the same after a reload', (await page.locator('.ds-who').allTextContents()).slice(0, 2).every((t) => t.includes('You and Alex')));
+  pass('eyes: the same after a reload', (await page.locator('.ds-who').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || e.textContent))).slice(0, 2).every((t) => t.includes('You and Alex')));
   await page.locator('.ds-who').first().click();
   const sheet = (await page.locator('[role=dialog]').last().innerText()).replace(/\s+/g, ' ');
   pass('eyes: the sheet names the thing and says where else to change it', sheet.includes('Who can see this?') && sheet.includes('Your mission') && sheet.includes('What your coach sees'), sheet);
@@ -900,7 +900,7 @@ try {
 
   await setEye('mission', 'Only you');
   await setEye('progress', 'Only you');
-  const eyes2 = await page.locator('.ds-who').allTextContents();
+  const eyes2 = await page.locator('.ds-who').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || e.textContent));
   pass('eyes: set back to Only you', eyes2.slice(0, 2).every((t) => t.includes('Only you')), eyes2.join(' | '));
   const off = coachRead();
   if (off.owner) {
@@ -924,7 +924,8 @@ console.log(seedForReal('--reset'));
 const left = await q(db.from('sharing_switches').select('part, is_on').eq('user_id', me));
 const back = await activePlan();
 pass('tidy: the seeded plan v3.2 is back, with Sprint 1 running and the default sharing', back?.major === 3 && back.minor === 2 && (await runningSprint())?.number === 1
-  && left.every((x) => x.is_on === (x.part === 'mission')), JSON.stringify({ back, left }));
+  // The defaults (026): the mission and the check-in on, progress off.
+  && left.every((x) => x.is_on === (x.part === 'mission' || x.part === 'checkin')), JSON.stringify({ back, left }));
 
 console.log(results.join('\n'));
 console.log(`\n${results.length - failures} passed, ${failures} failed.`);
