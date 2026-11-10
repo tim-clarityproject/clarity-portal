@@ -236,11 +236,11 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
   const chooseWay = (w) => {
     const next = (w || '').trim().slice(0, 120);
     if (!extrasKnown()) {
-      setLocal((l) => ({ ...l, way: next }));
+      setLocal(({ wayTyped: _typed, ...l }) => ({ ...l, way: next }));
       return;
     }
     setData((d) => ({ ...d, dayReview: { ...(d.dayReview || {}), way_of_being: next || null } }));
-    if (local.way !== undefined) setLocal(({ way: _old, ...rest }) => rest);
+    if (local.way !== undefined || local.wayTyped !== undefined) setLocal(({ way: _old, wayTyped: _typed, ...rest }) => rest);
     sent(async () => {
       await ensureReview();
       return saveOrQueue(userId, dayReviewAnswersOp(userId, date, { way_of_being: next || null }));
@@ -612,7 +612,8 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
               form="rows"
             />
           )}
-          <WayOwnWords onDone={chooseWay} />
+          {/* Half-typed words are kept on the device, so a refresh never loses them (experience rule 2). */}
+          <WayOwnWords value={local.wayTyped || ''} onChange={(wayTyped) => setLocal((l) => ({ ...l, wayTyped }))} onDone={chooseWay} />
           {eye}
         </div>
       ) : (
@@ -933,8 +934,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
 }
 
 /** "How did you want to be today?" in their own words (Tim, 5 Nov, 10:39). */
-function WayOwnWords({ onDone }) {
-  const [text, setText] = useState('');
+function WayOwnWords({ value: text, onChange: setText, onDone }) {
   return (
     <div className="rev-way-own">
       <TextBox label="In your own words" lines="one" maxLength={120} value={text} onChange={setText} placeholder="e.g. Calm under pressure" />
