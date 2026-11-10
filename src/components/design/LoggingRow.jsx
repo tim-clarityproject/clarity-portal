@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import keepWords from './keepWords';
-import Crosshair from './Crosshair';
+import StepIcon from './StepIcon';
 import Chevron from './Chevron';
 import { Bar } from './Stat';
 import './design.css';
@@ -77,7 +77,7 @@ export function Stepper({ value, onChange, min = 0, max = Infinity, label, step:
         aria-disabled={!empty && value <= min}
         onClick={() => step(-1)}
       >
-        −
+        <StepIcon />
       </button>
       <output id={outputId} className={`ds-stepper-value${by % 1 ? ' ds-stepper-value--wide' : ''}`} aria-live="polite">{empty ? '–' : format(value)}</output>
       <button
@@ -88,7 +88,7 @@ export function Stepper({ value, onChange, min = 0, max = Infinity, label, step:
         aria-disabled={!empty && value >= max}
         onClick={() => step(1)}
       >
-        <Crosshair />
+        <StepIcon plus />
       </button>
     </span>
   );

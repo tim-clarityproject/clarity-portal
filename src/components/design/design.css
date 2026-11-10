@@ -9097,3 +9097,28 @@
 .ui-root .ds-term-info {
   margin: calc((var(--info-size) - var(--tap-min)) / 2);
 }
+
+/* A stepper's plain minus and plus (5e rule 29g; design reference: Logging
+   rows): 16px, 1.5px lines with round ends, in the button's own colour. */
+.ui-root .ds-step-icon {
+  display: block;
+  flex: none;
+  width: var(--who-icon);
+  height: var(--who-icon);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icon-line);
+  stroke-linecap: round;
+}
+
+@media (hover: hover) {
+  .ui-root .ds-stepper-btn:not([aria-disabled='true']):hover,
+  .ui-root .ds-daycount-btn:not([aria-disabled='true']):hover {
+    color: var(--coral-text);
+  }
+}
+
+.ui-root .ds-stepper-btn:focus-visible,
+.ui-root .ds-daycount-btn:focus-visible {
+  color: var(--coral-text);
+}

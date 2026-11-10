@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import Crosshair from './Crosshair';
+import StepIcon from './StepIcon';
 import './design.css';
 
 // The day counter (M15 dstep; Tim, 26 Oct, 16:24 to 16:26): minus and
@@ -31,7 +31,7 @@ export default function DayCounter({ value, onChange, min = 1, max = 30, words =
         aria-disabled={value <= min}
         onClick={() => step(-1)}
       >
-        <span className="ds-daycount-minus" aria-hidden="true" />
+        <StepIcon />
       </button>
       <output id={outputId} className="ds-daycount-value" aria-live="polite">
         <span>{words(value)}</span>
@@ -45,7 +45,7 @@ export default function DayCounter({ value, onChange, min = 1, max = 30, words =
         aria-disabled={value >= max}
         onClick={() => step(1)}
       >
-        <Crosshair />
+        <StepIcon plus />
       </button>
     </div>
   );

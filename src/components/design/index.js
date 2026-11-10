@@ -6,6 +6,7 @@ export { default as Crosshair } from './Crosshair';
 export { default as BoldCrosshair } from './BoldCrosshair';
 export { default as DisclosureArrow } from './DisclosureArrow';
 export { default as Chevron } from './Chevron';
+export { default as StepIcon } from './StepIcon';
 export { IconText, IconTextRow, EyeIcon } from './IconText';
 export { default as ChartTips, tipProps } from './ChartTips';
 export { Dial, WeekChart } from './Charts';

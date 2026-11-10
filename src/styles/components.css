@@ -3435,8 +3435,9 @@ span.tc-editable:focus-visible {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
-  width: 36px;
-  height: 36px;
+  /* Every tap area is 44px, the plan editor's stepper included (rule 29g; Tim, 10 Nov). */
+  width: var(--tap-min);
+  height: var(--tap-min);
   flex-shrink: 0;
   display: flex;
   align-items: center;

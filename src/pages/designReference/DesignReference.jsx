@@ -1409,7 +1409,7 @@ function Gallery() {
           <>
             <p><b>One coral button per screen</b>, the same coral with black text in both modes.</p>
             <p>Outlined buttons for everything else; a text link for minor actions.</p>
-            <p><New /><b>One add button everywhere</b> (Tim, 26 Oct): an outlined pill, the crosshair in the text colour, words that say what it adds (“Add objective”, “Add agenda item”, “Add a to-do”, “Add another”), coral only on hover or keyboard focus, and full width on a phone.</p>
+            <p><New /><b>One add button everywhere</b> (Tim, 26 Oct): an outlined pill with words only (no icon, 5 Nov), words that say what it adds (“Add objective”, “Add agenda item”, “Add a to-do”, “Add another”), coral only on hover or keyboard focus, and full width on a phone.</p>
             <p><New /><b>Hover never looks disabled</b> (23 Oct): a slightly brighter coral in dark and a slightly deeper coral in light, with black text in both.</p>
             <p>A disabled coral button is the coral at 35% opacity.</p>
             <p><b>“My” where it’s theirs</b> (Save my mission, Add my win, Add my to-do), otherwise verb and thing (Add a to-do, See it full screen).</p>

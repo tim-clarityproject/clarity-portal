@@ -11,7 +11,7 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import NameDialog from '../components/ui/NameDialog';
 import pageText from '../content/pageText';
-import { Crosshair, Loading, PageHeader, TextBox, AddButton, Button, Choice, useToast } from '../components/design';
+import { StepIcon, Loading, PageHeader, TextBox, AddButton, Button, Choice, useToast } from '../components/design';
 
 // The saved values stay as they were; the answers people tap are full
 // sentences in their own voice (rule 29aa, Tim, 9 Nov).
@@ -287,7 +287,7 @@ export default function StopDoingAudit() {
               maxLength={MAX_ACTIVITY}
             />
             <div className="tsa-stepper">
-              <button type="button" className="tsa-stepper-btn" aria-label="Fewer hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.max(0, (parseInt(item.timePerWeek, 10) || 0) - 1)))}>−</button>
+              <button type="button" className="tsa-stepper-btn" aria-label="Fewer hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.max(0, (parseInt(item.timePerWeek, 10) || 0) - 1)))}><StepIcon /></button>
               <input
                 type="number"
                 min="0"
@@ -297,7 +297,7 @@ export default function StopDoingAudit() {
                 value={item.timePerWeek}
                 onChange={(e) => updateItem(item.id, 'timePerWeek', e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
               />
-              <button type="button" className="tsa-stepper-btn" aria-label="More hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.min(999, (parseInt(item.timePerWeek, 10) || 0) + 1)))}><Crosshair size="sm" /></button>
+              <button type="button" className="tsa-stepper-btn" aria-label="More hours" onClick={() => updateItem(item.id, 'timePerWeek', String(Math.min(999, (parseInt(item.timePerWeek, 10) || 0) + 1)))}><StepIcon plus /></button>
               <span className="tsa-hrs-label">hrs/wk</span>
             </div>
             <button type="button" className="plan-bin-btn" aria-label={`Remove activity ${index + 1}`} disabled={items.length <= 1} onClick={() => removeItem(item.id)}>

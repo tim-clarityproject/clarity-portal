@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import DesignHeader from '../../components/DesignHeader';
 import pageText from '../../content/pageText';
 import DiscardDialog from '../../components/ui/DiscardDialog';
-import { Crosshair, PageHeader, useToast } from '../../components/design';
+import { StepIcon, PageHeader, useToast } from '../../components/design';
 import {
   activeAreas, areaName, newestCheckin, scoreOf, stepTarget, targetStatus,
 } from '../../lib/wheelOfLife';
@@ -95,9 +95,9 @@ function Targets({ areas, latest }) {
                   </small>
                 </div>
                 <div className="wol-stp" role="group" aria-label={`Target for ${name}`}>
-                  <button type="button" aria-label="Lower target" disabled={t === 0} onClick={() => step(a, -1)}>−</button>
+                  <button type="button" aria-label="Lower target" disabled={t === 0} onClick={() => step(a, -1)}><StepIcon /></button>
                   <b className={t == null ? 'wol-none' : undefined}>{t == null ? 'None' : t}</b>
-                  <button type="button" aria-label="Raise target" disabled={t === 10} onClick={() => step(a, 1)}><Crosshair size="sm" /></button>
+                  <button type="button" aria-label="Raise target" disabled={t === 10} onClick={() => step(a, 1)}><StepIcon plus /></button>
                 </div>
                 <button type="button" className="wol-clr" disabled={t == null} onClick={() => clear(a)}>Clear</button>
               </div>

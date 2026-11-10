@@ -13,32 +13,31 @@ import './design.css';
 //                    people come to do.
 // variant 'outline': everything else (brand grey #3C3C3B outline).
 // variant 'text':    a text link, for minor actions.
-// icon 'plus':       the crosshair before the label ("Add a to-do").
 export const Button = forwardRef(function Button(
+  // eslint-disable-next-line no-unused-vars
   { variant = 'outline', icon, children, className = '', type = 'button', ...rest },
   ref,
 ) {
   const base = variant === 'text' ? 'ds-link' : `ds-btn ds-btn--${variant}`;
   return (
     <button ref={ref} type={type} className={`${base} ${className}`.trim()} {...rest}>
-      {icon === 'plus' && <Crosshair tone={variant === 'primary' ? 'dark' : undefined} />}
       {keepWords(children)}
     </button>
   );
 });
 
-// The one add button (Tim, 26 Oct, 16:54): every button that adds
-// something looks the same. An outlined pill, the brand crosshair in the
-// text colour (not coral), words that say what it adds ("Add objective",
-// "Add agenda item", "Add a to-do", "Add another"), coral only on hover
-// or keyboard focus, and full width on a phone.
+// The one add button (Tim, 26 Oct, 16:54; words only since 5 Nov, 5e rule
+// 29e, swept on 10 Nov): every button that adds something looks the same.
+// An outlined pill with words that say what it adds ("Add objective",
+// "Add agenda item", "Add a to-do", "Add another") and no icon, coral only
+// on hover or keyboard focus, and full width on a phone. The crosshair is
+// only ever the close (turned 45 degrees), and half of it every chevron.
 export const AddButton = forwardRef(function AddButton(
   { children, className = '', type = 'button', ...rest },
   ref,
 ) {
   return (
     <button ref={ref} type={type} className={`ds-btn ds-btn--outline ds-add ${className}`.trim()} {...rest}>
-      <Crosshair />
       {keepWords(children)}
     </button>
   );
