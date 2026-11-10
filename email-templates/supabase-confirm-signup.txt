@@ -1,0 +1,14 @@
+The Clarity Portal
+
+Confirm your email address.
+
+It’s the last step before you open The Clarity Portal.
+
+Confirm my email:
+{{ .ConfirmationURL }}
+
+If you didn’t sign up, you can ignore this email.
+
+----
+You get this because this email address was used to sign up for The Clarity Portal.
+The Clarity Project LTD, founded by Dr. Tim Dutton

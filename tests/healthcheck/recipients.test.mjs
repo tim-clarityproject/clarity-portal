@@ -82,7 +82,7 @@ async function finish() {
     body: { token: 'test-token-not-real', email: GUEST, code: 'ABCDEF', kind: 'complete' },
   }, res);
   const sent = calls.filter((c) => c.url === 'https://api.resend.com/emails').map((c) => c.body);
-  return { res, sent, answers: sent.find((m) => m.subject.includes('completed')), notice: sent.find((m) => m.subject.includes('finished')) };
+  return { res, sent, answers: sent.find((m) => m.subject.includes('finished their Health Check')), notice: sent.find((m) => m.subject.includes('finished a Health Check')) };
 }
 
 const holdsAnswers = (m) => [ANSWERS.objective, 'Enterprise sales team', 'Win enterprise customers', 'Questions to start with', 'At a glance', GUEST, 'test-token-not-real']
@@ -97,9 +97,9 @@ test('a second coach\'s link: the answers go only to that coach, the owner list 
   assert.ok(holdsAnswers(answers), 'the coach\'s email holds the answers');
   assert.deepEqual(who(notice.to), ['the owner', 'the owner list\'s second address']);
   assert.equal(holdsAnswers(notice), false, 'the owner\'s notice holds no answers, no respondent and no link');
-  assert.equal(notice.subject, 'Strategic Alignment Health Check finished: Northfield Logistics');
-  assert.ok(notice.text.includes('Northfield Logistics has finished a Strategic Alignment Health Check.'));
-  assert.ok(notice.text.includes('Finished: 29 October 2026'));
+  assert.equal(notice.subject, 'Northfield Logistics finished a Health Check');
+  assert.ok(notice.text.includes('Northfield Logistics finished a Health Check.'));
+  assert.ok(notice.text.includes('They finished on Thu 29 Oct 2026.'));
   assert.ok(notice.attachments.every((a) => a.content_type === 'image/png' && a.disposition === 'inline'), 'no PDF, only the logo');
   // the coach's address was asked for with the server's key, never the public one
   const asked = calls.find((c) => c.url.endsWith('/alignment_recipients'));
@@ -145,15 +145,15 @@ test('a coach\'s link whose coach can\'t be found sends nothing, and can be trie
 });
 
 test('if the coach\'s email doesn\'t go, the owner gets no notice and it can be tried again', async () => {
-  standIn({ hasCoach: true, coachEmail: COACH, sendFails: (m) => m.subject.includes('completed') });
+  standIn({ hasCoach: true, coachEmail: COACH, sendFails: (m) => m.subject.includes('finished their Health Check') });
   const { res, sent } = await finish();
   assert.equal(res.statusCode, 502);
-  assert.equal(sent.filter((m) => m.subject.includes('finished')).length, 0);
+  assert.equal(sent.filter((m) => m.subject.includes('finished a Health Check')).length, 0);
   assert.ok(calls.some((c) => c.url.endsWith('/alignment_email_failed')));
 });
 
 test('if only the owner\'s notice doesn\'t go, the coach\'s email still counts as sent', async () => {
-  standIn({ hasCoach: true, coachEmail: COACH, sendFails: (m) => m.subject.includes('finished') });
+  standIn({ hasCoach: true, coachEmail: COACH, sendFails: (m) => m.subject.includes('finished a Health Check') });
   const { res } = await finish();
   assert.equal(res.statusCode, 200);
   assert.equal(calls.some((c) => c.url.endsWith('/alignment_email_failed')), false);
@@ -165,6 +165,6 @@ test('the recipient rules on their own', () => {
   assert.deepEqual(completionRecipients({ coachEmail: ' ', owners: [OWNER] }), { answersTo: [OWNER], noticeTo: [] });
   assert.deepEqual(completionRecipients({ coachEmail: COACH, owners: [] }), { answersTo: [COACH], noticeTo: [] });
   const m = finishedEmail({ clientLabel: 'A & B\nLtd', dateText: '29 October 2026' });
-  assert.equal(m.subject, 'Strategic Alignment Health Check finished: A & B Ltd');
+  assert.equal(m.subject, 'A & B Ltd finished a Health Check');
   assert.ok(m.html.includes('A &amp; B Ltd'));
 });

@@ -10,7 +10,9 @@
 //                 the owner list, as before (completionRecipients).
 // Every request is first checked in the database (alignment_email_check: link,
 // email and access code, with the same lockout, plus the send limits). Errors
-// are generic. Nothing is logged: no address, access code or token.
+// are generic. Nothing is logged: no address, access code or token. The access
+// code goes only into the person's own email and the answers email (to the
+// coach who made the link, who set it); never into the owner's notice.
 //
 // Environment variables (Vercel): RESEND_API_KEY, ALIGNMENT_EMAIL_FROM,
 // ALIGNMENT_NOTIFY_TO, SUPABASE_SERVICE_ROLE_KEY (only to ask who made the
@@ -99,14 +101,16 @@ export default async function handler(req, res) {
 
   try {
     if (kind === 'link') {
-      await sendWithResend({ to: [check.respondent_email], ...linkEmail({ origin, token, dateText: ukDate(new Date()) }) });
+      // The person's own email and the access code they just proved they hold (Tim, 10 Nov, 13:31).
+      await sendWithResend({ to: [check.respondent_email], ...linkEmail({ origin, token, dateText: ukDate(new Date()), clientLabel: check.client_label, email: check.respondent_email, code }) });
       return reply(res, 200, { ok: true });
     }
 
     const data = check.data || {};
     const completed = check.completed_at || data.completedAt || new Date().toISOString();
+    const coachEmail = await coachEmailFor(check, token);
     const { answersTo, noticeTo } = completionRecipients({
-      coachEmail: await coachEmailFor(check, token),
+      coachEmail,
       owners: ownerList(process.env.ALIGNMENT_NOTIFY_TO),
     });
     await sendWithResend({
@@ -116,6 +120,9 @@ export default async function handler(req, res) {
         token,
         clientLabel: check.client_label,
         respondentEmail: check.respondent_email,
+        // Under "Open the results": the access code this request was checked with (Tim, 10 Nov, 13:31).
+        code,
+        madeTheLink: Boolean(coachEmail),
         completedText: ukDateTime(completed),
         objective: data.objective || '',
         // the same headline and questions as the results page and the PDF

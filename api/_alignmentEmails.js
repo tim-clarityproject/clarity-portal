@@ -1,53 +1,31 @@
-// Strategic Alignment Health Check: email content (plain, well-spaced HTML plus a
-// plain-text version). Black page, white text, the logo mark only (the NEGATIVE
-// emblem, with its crosshair, because the background is dark). The logo travels
-// inside the email as an inline attachment (content ID), so it shows in every
-// inbox whichever deployment sent the email. The file name
-// starts with an underscore so Vercel does not publish it as a route.
+// Strategic Alignment Health Check: what its three emails say. Each is a
+// document for the one shared email template (src/lib/email: light, the
+// bold crosshair and "The Clarity Portal" at the top, one coral button, the
+// sign-in box, "The Clarity Project LTD, founded by Dr. Tim Dutton" at the
+// foot), which also makes the plain-text version from the same words. The
+// template's image travels inside the email as an inline attachment
+// (content ID), so it shows in every inbox whichever deployment sent the
+// email. The file name starts with an underscore so Vercel does not
+// publish it as a route.
 
-import { LOGO_NEGATIVE_BASE64 } from './_alignmentLogo.js';
+import { EMAIL_IMAGE_BASE64 } from './_emailImages.js';
 import { draftFromData } from '../src/pages/alignment/alignmentFlow.js';
 import { headlineSentence, resultsModel } from '../src/health-check/words.js';
 import { parseDbTimestamp } from '../src/lib/dateFormatter.js';
+import { renderEmail, imagesFor } from '../src/lib/email/template.js';
+import { healthCheckResultsEmail, healthCheckFinishedForCoachEmail, healthCheckFinishedNoteEmail } from '../src/lib/email/emails.js';
+import { dayWords, whenWords } from '../src/lib/time/index.js';
 
-const LOGO_CID = 'clarity-logomark';
+// The coach's and the person's own time zones aren't known to this
+// function, so its dates and times are the UK's, and say so ("14:05 UK
+// time"); the day alone is written in words ("Tue 10 Nov 2026").
+const UK = 'Europe/London';
 
-/** The inline logo attachment, referenced in the HTML as cid:clarity-logomark. */
-export const logoAttachment = () => ({
-  filename: 'the-clarity-project.png',
-  content: LOGO_NEGATIVE_BASE64,
-  content_id: LOGO_CID,
-  content_type: 'image/png',
-  disposition: 'inline',
-});
-
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const oneLine = (s) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
-
-const COLOURS = { bg: '#000000', text: '#FFFFFF', muted: '#A3A3A0', line: '#262626', coral: '#FF6F5C' };
-
-function shell({ heading, bodyHtml }) {
-  return `<!doctype html>
-<html lang="en-GB">
-<body style="margin:0;padding:0;background:${COLOURS.bg};">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${COLOURS.bg};">
-<tr><td align="center" style="padding:40px 20px;">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;">
-<tr><td style="padding-bottom:32px;"><img src="cid:${LOGO_CID}" width="40" height="40" alt="The Clarity Project" style="display:block;border:0;width:40px;height:40px;"></td></tr>
-<tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:20px;line-height:1.3;letter-spacing:2px;text-transform:uppercase;color:${COLOURS.text};padding-bottom:12px;">${esc(heading)}</td></tr>
-<tr><td style="padding-bottom:24px;"><div style="width:56px;height:1px;background:${COLOURS.coral};"></div></td></tr>
-${bodyHtml}
-<tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:${COLOURS.muted};padding-top:32px;border-top:1px solid ${COLOURS.line};">The Clarity Project &middot; theclarityproject.co.uk</td></tr>
-</table>
-</td></tr>
-</table>
-</body>
-</html>`;
+/** What Resend is given: the subject, both versions and the inline image. */
+function ready(doc) {
+  const { subject, html, text, images } = renderEmail(doc);
+  return { subject, html, text, attachments: imagesFor(images, EMAIL_IMAGE_BASE64) };
 }
-
-const para = (html) => `<tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:${COLOURS.text};padding-bottom:20px;">${html}</td></tr>`;
-const small = (html) => `<tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${COLOURS.muted};padding-bottom:20px;">${html}</td></tr>`;
-const button = (href, label) => `<tr><td style="padding-bottom:28px;"><a href="${esc(href)}" style="display:inline-block;background:${COLOURS.coral};color:#000000;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;padding:16px 32px;border-radius:999px;">${esc(label)}</a></td></tr>`;
 
 /** "2026-10-26": the day in the UK, the same clock as the email's dates. */
 function ukDateKey(date) {
@@ -74,43 +52,24 @@ export function completionSummary(data, completedAt) {
   };
 }
 
+/** "Tue 10 Nov 2026": the day in the UK, in words. */
 export function ukDate(value) {
-  return new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' });
+  return dayWords(value instanceof Date ? value : parseDbTimestamp(value), UK, { year: true });
 }
 
+/** "Tue 10 Nov 2026, 14:05 UK time". */
 export function ukDateTime(value) {
-  const d = parseDbTimestamp(value);
-  const date = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' });
-  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/London' });
-  return `${date}, ${time}`;
+  return whenWords(parseDbTimestamp(value), UK, { year: true });
 }
 
-/** The email to the respondent: a link to their results. Never contains the access code. */
-export function linkEmail({ origin, token, dateText }) {
-  const link = `${origin}/health-check/${token}`;
-  const subject = 'Your Strategic Alignment Health Check';
-  const html = shell({
-    heading: 'Your Strategic Alignment Health Check',
-    bodyHtml: [
-      para('Here is the link to your Strategic Alignment Health Check results, so you can find them again at any time.'),
-      button(link, 'Open your results'),
-      small('To open it you will need the same email address and the access code you were given.'),
-      small(esc(dateText)),
-    ].join('\n'),
-  });
-  const text = [
-    'Your Strategic Alignment Health Check',
-    '',
-    'Here is the link to your Strategic Alignment Health Check results, so you can find them again at any time:',
-    link,
-    '',
-    'To open it you will need the same email address and the access code you were given.',
-    '',
-    dateText,
-    '',
-    'The Clarity Project - theclarityproject.co.uk',
-  ].join('\n');
-  return { subject, html, text, attachments: [logoAttachment()] };
+/**
+ * The email to the person who did the Health Check: their results, with
+ * the email address and access code that open them under the button (Tim,
+ * 10 Nov, 13:31; this replaces the 28 Oct rule that the code is never in
+ * it). It only ever goes to the address that did the Health Check.
+ */
+export function linkEmail({ origin, token, dateText, clientLabel, email, code }) {
+  return ready(healthCheckResultsEmail({ link: `${origin}/health-check/${token}`, organisation: clientLabel, dateText, email, code }));
 }
 
 /**
@@ -135,75 +94,29 @@ export const ownerList = (value) => String(value || '').split(',').map((a) => a.
 
 /**
  * The notice to the owner when someone else's Health Check link is finished:
- * only the organisation and the date. No answers, no PDF and no link.
+ * only the organisation and the date. No answers, no PDF, no link, and
+ * never the person's email or access code.
  */
 export function finishedEmail({ clientLabel, dateText }) {
-  const label = oneLine(clientLabel);
-  const subject = `Strategic Alignment Health Check finished: ${label}`;
-  const html = shell({
-    heading: 'Strategic Alignment Health Check finished',
-    bodyHtml: [
-      para(`<strong>${esc(label)}</strong> has finished a Strategic Alignment Health Check.`),
-      small(`Finished: ${esc(dateText)}`),
-      small('The answers went only to the coach who sent the link.'),
-    ].join('\n'),
-  });
-  const text = [
-    `${label} has finished a Strategic Alignment Health Check.`,
-    '',
-    `Finished: ${dateText}`,
-    'The answers went only to the coach who sent the link.',
-    '',
-    'The Clarity Project - theclarityproject.co.uk',
-  ].join('\n');
-  return { subject, html, text, attachments: [logoAttachment()] };
+  return ready(healthCheckFinishedNoteEmail({ organisation: clientLabel, dateText }));
 }
 
 /**
  * The email to the coach who made the link (or the owner, for an older link)
- * when a Strategic Alignment Health Check is completed. Its summary is
- * completionSummary's: the headline, then the questions to start with, each
- * with its reason.
+ * when a Strategic Alignment Health Check is completed: the person's email
+ * and access code under "Open the results" (Tim, 10 Nov, 13:31), then
+ * completionSummary's headline and questions to start with, each with its
+ * reason.
  */
-export function completeEmail({ origin, token, clientLabel, respondentEmail, completedText, objective, summary }) {
-  const link = `${origin}/health-check/${token}`;
-  const label = oneLine(clientLabel);
-  const subject = `Strategic Alignment Health Check completed: ${label}`;
-  const heading = (words) => `<span style="color:${COLOURS.muted};font-size:12px;letter-spacing:2px;text-transform:uppercase;">${words}</span>`;
-  const questionsHtml = summary.questions.map((q) => (
-    `<p style="margin:0 0 14px 0;"><span style="color:${COLOURS.muted};font-size:14px;">${esc(q.label)}</span><br>${esc(q.question)}<br><span style="color:${COLOURS.muted};font-size:14px;">${esc(q.reason)}</span></p>`
-  )).join('');
-  const html = shell({
-    heading: 'Strategic Alignment Health Check completed',
-    bodyHtml: [
-      para(`<strong>${esc(label)}</strong> has completed the Strategic Alignment Health Check.`),
-      small(`Respondent: ${esc(respondentEmail)}<br>Completed: ${esc(completedText)}`),
-      para(`${heading('Objective')}<br>${esc(objective)}`),
-      para(`${heading('At a glance')}<br>${esc(summary.headline)}<br><span style="color:${COLOURS.muted};font-size:14px;">Important means above ${summary.line}%.</span>`),
-      para(`${heading('Questions to start with')}<br>${questionsHtml}`),
-      button(link, 'Open the one-pager'),
-      small('Opening it needs the respondent’s email address and the access code you sent them.'),
-    ].join('\n'),
-  });
-  const text = [
-    `${label} has completed the Strategic Alignment Health Check.`,
-    '',
-    `Respondent: ${respondentEmail}`,
-    `Completed: ${completedText}`,
-    '',
-    'Objective:',
+export function completeEmail({ origin, token, clientLabel, respondentEmail, code, completedText, objective, summary, madeTheLink = true }) {
+  return ready(healthCheckFinishedForCoachEmail({
+    link: `${origin}/health-check/${token}`,
+    organisation: clientLabel,
+    email: respondentEmail,
+    code,
+    finishedText: completedText,
     objective,
-    '',
-    'At a glance:',
-    summary.headline,
-    `Important means above ${summary.line}%.`,
-    '',
-    'Questions to start with:',
-    ...summary.questions.flatMap((q) => [`${q.label}. ${q.question}`, q.reason, '']),
-    `One-pager: ${link}`,
-    'Opening it needs the respondent’s email address and the access code you sent them.',
-    '',
-    'The Clarity Project - theclarityproject.co.uk',
-  ].join('\n');
-  return { subject, html, text, attachments: [logoAttachment()] };
+    summary,
+    madeTheLink,
+  }));
 }

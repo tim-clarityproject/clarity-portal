@@ -53,6 +53,7 @@ const NETWORK_ONLY = [
   /^\/api\//,
   /^\/health-check(\/|\.html$|$)/,
   /^\/design-reference(\/|$)/,
+  /^\/email-preview(\/|$)/,
   /^\/auth\/callback(\/|$)/,
   /^\/auth\/reset-password(\/|$)/,
   /^\/email-confirmation(\/|$)/,

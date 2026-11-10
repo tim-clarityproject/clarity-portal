@@ -74,6 +74,37 @@ async function readSettings(userId, cols) {
 }
 
 /**
+ * Before the server is asked to judge a day (freeze_week and
+ * make_sprint_summary read the database's own today, person_today(), from
+ * the saved zone, or UTC when none is saved): the device's zone is on the
+ * person's row first, sent directly and waited for, so the server's "today"
+ * is the client's own day even on a first visit or just after travelling
+ * (time-zone-safeguards.md rule 12; readSettings' own save goes through the
+ * queue and may still be waiting). Once per visit and zone; if it can't be
+ * saved the call goes ahead as before.
+ */
+const zoneSent = { userId: null, zone: null };
+async function zoneInStep() {
+  try {
+    const zone = deviceTimeZone();
+    if (!zone || zone.length > 64) return;
+    const { data: auth } = await supabase.auth.getSession();
+    const userId = auth?.session?.user?.id;
+    if (!userId || (zoneSent.userId === userId && zoneSent.zone === zone)) return;
+    const { data, error } = await supabase.from('person_settings').select('time_zone').eq('user_id', userId).limit(1);
+    if (error) return;
+    if (data?.[0]?.time_zone !== zone) {
+      const saved = await supabase.from('person_settings').upsert({ user_id: userId, time_zone: zone }, { onConflict: 'user_id' });
+      if (saved.error) return;
+    }
+    zoneSent.userId = userId;
+    zoneSent.zone = zone;
+  } catch {
+    // Offline or refused: the call that follows says so itself.
+  }
+}
+
+/**
  * The person's own coach (my_coach), or null. Online only. contactWays
  * are the coach's allowed ways to be reached ('email', 'whatsapp',
  * 'imessage'; coaches.contact_ways), with the mobile they use.
@@ -525,6 +556,7 @@ export async function startSprint(userId, p) {
  * sprint without one can have it made later.
  */
 export async function makeSprintSummary(sprintId) {
+  await zoneInStep();
   const { error } = await supabase.rpc('make_sprint_summary', { p_sprint: sprintId });
   if (error) throw error;
 }
@@ -684,6 +716,7 @@ export function linkSprintHabit(userId, sprintHabitId, habitId) {
  * week that isn't frozen now is frozen on the next visit.
  */
 export async function freezeWeek(sprintId, week) {
+  await zoneInStep();
   const { error } = await supabase.rpc('freeze_week', { p_sprint: sprintId, p_week: week });
   if (error) throw error;
 }

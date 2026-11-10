@@ -1,0 +1,75 @@
+/* The hidden email test page: the portal's own tokens around the email;
+   the email inside the frame is always light, as it is sent. */
+.ui-root.emailp-page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding: var(--space-5) var(--space-3) var(--space-7);
+}
+
+.ui-root .emailp-in {
+  max-width: calc(var(--space-7) * 9);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ui-root .emailp-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ui-root .emailp-meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-root .emailp-meta dt {
+  font-size: var(--fs-meta);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .emailp-meta dd {
+  margin: 0;
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  overflow-wrap: anywhere;
+}
+
+.ui-root .emailp-frame {
+  display: block;
+  max-width: 100%;
+  min-height: var(--space-7);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--space-px12);
+  background: var(--bg);
+  align-self: flex-start;
+}
+
+.ui-root .emailp-label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-section);
+  line-height: var(--lh-text);
+  letter-spacing: var(--ls-section);
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+.ui-root .emailp-text {
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--space-px12);
+  font-family: var(--font-body);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

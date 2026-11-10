@@ -4,7 +4,7 @@
 // Run with npm run test:healthcheck.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { completeEmail, completionSummary } from '../../api/_alignmentEmails.js';
+import { completeEmail, completionSummary, finishedEmail, linkEmail, ukDate, ukDateTime } from '../../api/_alignmentEmails.js';
 import { draftFromData } from '../../src/pages/alignment/alignmentFlow.js';
 import { headlineSentence, resultsModel } from '../../src/health-check/words.js';
 
@@ -37,7 +37,8 @@ const render = (data) => completeEmail({
   token: 'test-token-not-real',
   clientLabel: 'Quillmark',
   respondentEmail: 'someone@example.invalid',
-  completedText: '26 October 2026, 09:30',
+  code: '482913',
+  completedText: 'Mon 26 Oct 2026, 08:30 UK time',
   objective: data.objective,
   summary: completionSummary(data, COMPLETED),
 });
@@ -58,7 +59,7 @@ test('the email body holds the headline, the line and every question with its re
   const data = saved();
   const s = completionSummary(data, COMPLETED);
   const { html, text, subject } = render(data);
-  assert.equal(subject, 'Strategic Alignment Health Check completed: Quillmark');
+  assert.equal(subject, 'Quillmark finished their Health Check');
   for (const words of [s.headline, 'Important means above 50%.', 'Questions to start with', ...s.questions.flatMap((q) => [q.label, q.reason])]) {
     assert.ok(html.includes(words), `the HTML is missing "${words}"`);
     assert.ok(text.includes(words), `the text is missing "${words}"`);
@@ -98,4 +99,61 @@ test('without dates there is no Timing question; the date counts in the UK', () 
   // 23:30 UTC on 30 Sep is 00:30 on 1 Oct in the UK (summer time): 2 months, not 3, to Dec
   const late = completionSummary(saved(), '2026-09-30T23:30:00');
   assert.match(late.questions[0].reason, /due to finish in 2 months/);
+});
+
+// ---------------------------------------------------------------- the shared template (Tim, 10 Nov)
+test('the coach’s email and the person’s email show the email address and the access code in the sign-in box', () => {
+  const coach = render(saved());
+  const person = linkEmail({ origin: 'https://example.invalid', token: 'test-token-not-real', dateText: 'Tue 10 Nov 2026', clientLabel: 'Quillmark', email: 'someone@example.invalid', code: '482913' });
+  for (const e of [coach, person]) {
+    for (const words of ['Email', 'someone@example.invalid', 'Access code', '482913']) {
+      assert.ok(e.html.includes(words), `the HTML is missing "${words}"`);
+      assert.ok(e.text.includes(words), `the text is missing "${words}"`);
+    }
+    assert.ok(e.text.includes('Access code: 482913'));
+    assert.ok(e.html.includes('https://example.invalid/health-check/test-token-not-real'));
+    assert.ok(e.text.includes('https://example.invalid/health-check/test-token-not-real'));
+  }
+  assert.equal(person.subject, 'Your Health Check results for Quillmark');
+  assert.ok(person.text.includes('Your Health Check results are ready.'));
+  assert.ok(person.text.includes('Quillmark, Tue 10 Nov 2026.'));
+  assert.ok(person.text.includes('Open my results'));
+  assert.ok(coach.text.includes('Open the results'));
+  assert.ok(coach.text.includes('You made this Health Check link.'));
+});
+
+test('the owner’s note never holds the answers, the link, the email address or the access code', () => {
+  const note = finishedEmail({ clientLabel: 'Quillmark', dateText: 'Tue 10 Nov 2026' });
+  assert.equal(note.subject, 'Quillmark finished a Health Check');
+  for (const part of [note.html, note.text]) {
+    assert.ok(part.includes('The answers went only to the coach who sent the link.'));
+    assert.ok(!/482913|Access code|someone@|health-check\/|Questions to start with/.test(part));
+  }
+});
+
+test('every Health Check email is the shared template: light, signed off, with a plain-text version and its image inside', () => {
+  const emails = [
+    render(saved()),
+    linkEmail({ origin: 'https://example.invalid', token: 't', dateText: 'Tue 10 Nov 2026', clientLabel: 'Quillmark', email: 'a@example.invalid', code: '1' }),
+    finishedEmail({ clientLabel: 'Quillmark', dateText: 'Tue 10 Nov 2026' }),
+  ];
+  for (const e of emails) {
+    assert.ok(e.html.includes('The Clarity Project LTD, founded by Dr. Tim Dutton'));
+    assert.ok(e.text.includes('The Clarity Project LTD, founded by Dr. Tim Dutton'));
+    assert.ok(e.html.includes('background:#F9F8F5'), 'light');
+    assert.ok(!/#000000;[^"]*color:#FFFFFF/i.test(e.html), 'never the old dark email');
+    assert.ok(e.html.includes('cid:clarity-crosshair'));
+    assert.equal(e.attachments.length, 1);
+    assert.equal(e.attachments[0].content_id, 'clarity-crosshair');
+    assert.equal(e.attachments[0].disposition, 'inline');
+    assert.ok(e.attachments[0].content.length > 100);
+    assert.ok(e.text.startsWith('The Clarity Portal'));
+    assert.ok(!/<[a-z]/i.test(e.text), 'no HTML in the plain text');
+  }
+});
+
+test('dates in the emails are in words, and a time says whose time it is', () => {
+  assert.equal(ukDate(new Date('2026-11-10T12:00:00Z')), 'Tue 10 Nov 2026');
+  assert.equal(ukDateTime('2026-10-26T08:30:00'), 'Mon 26 Oct 2026, 08:30 UK time');
+  assert.equal(ukDateTime('2026-07-01T08:30:00'), 'Wed 1 Jul 2026, 09:30 UK time');
 });
