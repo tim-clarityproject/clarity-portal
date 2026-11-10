@@ -239,7 +239,18 @@ export default function GuidedTool({
   const saved = draftKey ? readJson(STEP_PREFIX + draftKey, null) : null;
   // initialStep (a step's key) opens the tool on that step, e.g. "Edit
   // this Strategy"; otherwise it carries on where it was left.
+  // A change from a summary that was still open when the page went (a
+  // refresh, or the tab closed): that same step opens again, with "Save
+  // my change" still going straight back to the summary (Tim, 10 Nov,
+  // 09:15: nothing is ever lost). It wins over initialStep, which a
+  // finished tool uses to open on its summary.
+  const [changeLeft] = useState(() => {
+    const at = steps.findIndex((s) => s.key === saved?.changing?.step);
+    const from = steps.findIndex((s) => s.key === saved?.changing?.from);
+    return at >= 0 && from >= 0 && at !== from ? { at, from } : null;
+  });
   const [index, setIndex] = useState(() => {
+    if (changeLeft) return changeLeft.at;
     const asked = initialStep ? steps.findIndex((s) => s.key === initialStep) : -1;
     return asked >= 0 ? asked : Math.min(saved?.index ?? 0, steps.length - 1);
   });
@@ -247,7 +258,7 @@ export default function GuidedTool({
   // "Change" on a summary (Tim, 5 Nov, 10:41): only that question opens,
   // and moving on from it goes straight back to the summary, with the
   // change shown. The steps in between are never shown again.
-  const [returnTo, setReturnTo] = useState(null);
+  const [returnTo, setReturnTo] = useState(() => (changeLeft ? changeLeft.from : null));
   const [direction, setDirection] = useState('none');
   const rootRef = useRef(null);
   const scrollRef = useRef(null);
@@ -277,10 +288,14 @@ export default function GuidedTool({
     if (shown) lastMove.current = Date.now();
   }, [shown]);
 
-  // Remember where they are (and what they skipped) on the device.
+  // Remember where they are (and what they skipped) on the device, and a
+  // change from a summary while it is open, by the steps' keys.
+  const changingKey = returnTo != null && returnTo !== i && steps[returnTo] ? `${step.key}\n${steps[returnTo].key}` : '';
   useEffect(() => {
-    if (draftKey) writeJson(STEP_PREFIX + draftKey, { index: i, skipped: [...skipped] });
-  }, [draftKey, i, skipped]);
+    if (!draftKey) return;
+    const [at, from] = changingKey.split('\n');
+    writeJson(STEP_PREFIX + draftKey, { index: i, skipped: [...skipped], ...(changingKey ? { changing: { step: at, from } } : {}) });
+  }, [draftKey, i, skipped, changingKey]);
 
   // Full screen: the page steps back (pinned, inert), Escape closes the
   // tool once nothing above it is open, and focus returns afterwards.
@@ -386,10 +401,12 @@ export default function GuidedTool({
 
   const showSkip = !(step.required || (step.title && !last) || (last && !step.skippable));
   const previous = steps[i - 1];
-  const showBack = i > 0 && !previous?.bare;
+  const changing = returnTo != null && returnTo !== i;
+  // Back shows on a change from a summary too, even on the first question:
+  // it goes back to the summary.
+  const showBack = changing || (i > 0 && !previous?.bare);
   // A one-answer screen moves on by itself, so it has no Next (rule 21).
   const hasNext = !(step.oneTap && !last);
-  const changing = returnTo != null && returnTo !== i;
   changingRef.current = changing;
   backToSummaryRef.current = backToSummary;
   // tool.go(to, { fromSummary: true }) opens one question from a summary
