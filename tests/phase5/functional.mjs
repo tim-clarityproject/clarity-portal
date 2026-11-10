@@ -1,7 +1,7 @@
 // Phase 5 end-to-end functionality checks (step 5c), TEST database only.
 //   node --import ./tests/scores/register.mjs tests/phase5/functional.mjs   (ONLY=N,C,D,H,R)
 // N  a new person (the org client, no sprint): dashboard, check-in opening, My Plans/Reviews search
-// C  a monthly check-in with Health lowest: results against src/lib/scores/m13.js directly,
+// C  a monthly review with Health lowest: results against src/lib/scores/m13.js directly,
 //    Add to my sprint as a to-do (source other_tool), saved, My Reviews row, saved results page
 // D  closing a dashboard section is remembered on a second device (page_preferences.dashboard)
 // H  where Review its Strategies and Make it easier this week land
@@ -67,6 +67,9 @@ const PREV = `${prevDate.toISOString().slice(0, 7)}-01`;
 
 // ------------------------------------------------ N: a new person (org client, checked to have no plan)
 if (part('N')) {
+  // Since 10 Nov this account is also the second invented person (Jordan
+  // Lee, seed --second): emptied for this part, then seeded again after it.
+  execFileSync('node', ['scripts/seed-test-plan.mjs', '--second', '--empty'], { stdio: 'pipe' });
   const { db, me } = await client(env.TEST_ORG_CLIENT_EMAIL, env.TEST_ORG_CLIENT_PASSWORD);
   const { data: plans } = await db.from('sprints').select('id').eq('user_id', me);
   const { data: cks } = await db.from('checkins').select('id, status').eq('user_id', me);
@@ -78,7 +81,7 @@ if (part('N')) {
     note(`N dashboard: ${t.replace(/\s+/g, ' ').slice(0, 700)}`);
     pass('N dashboard: no junk values', !junk(t), t.match(/NaN|undefined|null|Infinity/)?.[0]);
     pass('N dashboard: no invented score (/100 or %)', !/\d+\/100|\d+%/.test(t), t.match(/\d+\/100|\d+%/)?.[0]);
-    await open(page, '/check-in', '.ds-guide-question');
+    await open(page, '/monthly-review', '.ds-guide-question');
     const c = await bodyText(page);
     note(`N check-in ${path(page)}: ${c.replace(/\s+/g, ' ').slice(0, 300)}`);
     pass('N check-in opens on its opening screen', /Ready/.test(c) && !junk(c));
@@ -91,7 +94,10 @@ if (part('N')) {
       await open(page, `${url}?q=zzzz`);
       pass(`N ${url}?q=: no error`, !junk(await bodyText(page)));
     }
-  } finally { await context.close(); }
+  } finally {
+    await context.close();
+    execFileSync('node', ['scripts/seed-test-plan.mjs', '--second', '--reset'], { stdio: 'pipe' });
+  }
 }
 
 // ------------------------------------------------ the test client
@@ -100,7 +106,7 @@ const { data: running } = await db.from('sprints').select('id, number, plan_id')
 const sprint = running?.[0] || null;
 note(`test client: running sprint ${sprint ? sprint.number : 'none'}; months ${PREV}, ${CUR}`);
 
-// ------------------------------------------------ C: monthly check-in with Health lowest, to-do added
+// ------------------------------------------------ C: monthly review with Health lowest, to-do added
 const W = { H1: '7 to 8 hours', H2: 'Very good', H3: 'Rarely', H4: '2½ to 5 hours', H5: '2 days or more', H6: '4 to 6 hours', H7: 'Good', H8: '1 to 7 units', H9: 'Never', H10: 'High', H11: 'High', H12: 'Poor', H13: 'Quite a lot', H14: 'No', S1: 'Often', S2: 'Often', S3: 'Sometimes', S4: 'Often', S5: 'Always', S6: 'Rarely' };
 const PREV_ANS = { H1: 'h6_7', H2: 'ok', H3: 'often', H4: 'under_1', H5: 'd1', H6: 'h8_10', H7: 'ok', H8: 'u8_14', H9: 'monthly', H10: 'ok', H11: 'low', H12: 'poor', H13: 'a_little', H14: 'no', S1: 'sometimes', S2: 'sometimes', S3: 'rarely', S4: 'often', S5: 'often', S6: 'sometimes' };
 const val = (k, w) => QUESTIONS.find((q) => q.code === k).options.find((o) => o.label === w).value;
@@ -118,7 +124,7 @@ if (part('C')) {
   try {
     // any half-done draft on the device: none in a fresh context; clear any device keys anyway
     await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/check-?in/i.test(k)) localStorage.removeItem(k); });
-    await open(page, '/check-in', '.ds-guide-question');
+    await open(page, '/monthly-review', '.ds-guide-question');
     await page.locator('.ds-guide-next').click();
     for (let g = 0; g < 30; g += 1) {
       await sleep(450);
@@ -150,19 +156,19 @@ if (part('C')) {
     pass(`C Software change ${exp.swc} matches m13`, stats[1]?.includes(exp.swc > 0 ? `up ${exp.swc}` : exp.swc < 0 ? `down ${-exp.swc}` : 'same'), stats[1]);
     const improved = await page.locator('.ck-improved li').allInnerTexts();
     pass('C what improved matches m13 (names, order)', JSON.stringify(improved.map((l) => exp.improved.find((n) => l.startsWith(n)))) === JSON.stringify(exp.improved), `${improved} vs ${exp.improved}`);
-    // One thing to work on is a short choice (Tim, 5 Nov): "What could help with health?".
+    // One next step is a short choice (Tim, 5 Nov): "What could help with health?".
     const one = (await page.locator('.ck-one-question').innerText().catch(() => '')).trim();
     pass(`C one thing to work on is ${exp.workOn}`, one === `What could help with ${exp.workOn.toLowerCase()}?`, one);
     if (sprint) {
       // A one-off is added only as a to-do.
-      await page.locator('.ck-option', { hasText: 'The check-up you’ve been putting off' }).getByRole('button', { name: 'Add as a to-do' }).click();
+      await page.locator('.ck-option', { hasText: 'The check-up you’ve been putting off' }).getByRole('button', { name: 'Add it as a to-do' }).click();
       await page.waitForSelector('.ds-dialog', { timeout: 5000 });
       const dlg = (await page.locator('.ds-dialog').innerText()).replace(/\s+/g, ' ');
       note(`C add panel: ${dlg.slice(0, 300)}`);
       if (await page.locator('.ds-dialog .ds-choice [role=radio]').count()) await page.locator('.ds-dialog .ds-choice').last().locator('[role=radio]').first().click();
       await page.locator('.ds-dialog .ds-btn--primary').click();
       const line = await until(async () => (await page.locator('.ck-one-added').innerText()).trim(), 8000);
-      pass('C Add to my sprint says a to-do', line === `It’s in Performance Sprint ${sprint.number} as a to-do.`, line);
+      pass('C Add to my sprint says a to-do', line === 'It’s in your Performance Sprint as a to-do.', line);
       const rows = await until(async () => { const { data } = await db.from('todos').select('id, text, source, planned_week, sprint_id, strategy_id').eq('user_id', me).ilike('text', '%check-up%').order('created_at', { ascending: false }).limit(3); return data?.length ? data : null; }, 10000);
       rows?.forEach((x) => addedTodos.push(x.id));
       note(`C to-do rows: ${JSON.stringify(rows?.map(({ id: _i, ...x }) => x))}`);
@@ -174,7 +180,7 @@ if (part('C')) {
     const { data: done } = await db.from('checkins').select('status, hardware_score, software_score').eq('user_id', me).eq('month', CUR).limit(1);
     pass('C saved finished with m13 scores', done?.[0]?.status === 'finished' && Math.round(done[0].hardware_score) === exp.hw && Math.round(done[0].software_score) === exp.sw, JSON.stringify(done));
     await open(page, '/my-reviews');
-    const name = `${monthName(CUR)} check-in`;
+    const name = `${monthName(CUR)} review`;
     const row = page.locator('.hlist-row', { hasText: name });
     pass(`C My Reviews has "${name}"`, Boolean(await until(async () => (await row.count()) === 1, 15000)));
     await row.locator('a, button').first().click();
@@ -264,7 +270,7 @@ if (part('R')) {
   const LINE = 'You’re in recovery, so there are no numbers to log today.';
   const c = await signedIn(env.TEST_CLIENT_EMAIL, env.TEST_CLIENT_PASSWORD);
   try {
-    for (const [url, sel] of [['/welcome', '.home-page .ds-page-title'], ['/my-day/plan', '.ui-root h1, .ui-root h2'], ['/my-day/review', '.ui-root h1, .ui-root h2']]) {
+    for (const [url, sel] of [['/welcome', '.home-page .ds-page-title'], ['/daily-plan', '.ui-root h1, .ui-root h2'], ['/daily-review', '.ui-root h1, .ui-root h2']]) {
       await open(c.page, url, sel);
       await sleep(1500);
       let t = await bodyText(c.page);

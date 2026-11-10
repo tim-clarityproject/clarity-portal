@@ -1,4 +1,4 @@
-// Phase 3 step 2 checks in the running app: Review my day (mock-up M5),
+// Phase 3 step 2 checks in the running app: Daily review (mock-up M5),
 // signed in as the invented test client on the TEST database only (every
 // other host and every email call is blocked).
 //
@@ -9,7 +9,7 @@
 // the test runs (TEST_TODAY and TEST_TIME pick another). The morning's
 // plan is written as the client: the way of being, two to-dos (one the
 // highest priority) and two Strategies of the day; the habit chosen for
-// the day is put on the device, where Plan my day keeps it.
+// the day is put on the device, where Daily plan keeps it.
 //
 // A full play-through from the first screen to Close my day (Work's done, Phase 4) at
 // 1280px, 700px, 390px and 360px, in dark and light. On every screen: one
@@ -88,7 +88,7 @@ const ids = { draft: await todoId(DRAFT), short: await todoId(SHORT), physio: aw
 const sprintHabits = (await db.from('sprint_habits').select('id, name').eq('sprint_id', sprint.id)).data;
 const hid = (name) => sprintHabits.find((h) => h.name === name).id;
 
-// The morning's plan, as Plan my day saves it.
+// The morning's plan, as Daily plan saves it.
 const dayPlanId = (await db.from('day_plans').insert({ user_id: me, local_date: today, way_of_being: 'Calm under pressure', status: 'finished', finished_at: `${today}T08:00:00Z` }).select('id').single()).data.id;
 await db.from('day_plan_todos').insert([
   { day_plan_id: dayPlanId, todo_id: ids.draft, user_id: me, is_top: true },
@@ -279,11 +279,11 @@ async function tickAndWait(page, name) {
 
 // The whole tool, first screen to Close my day.
 async function playThrough(page, tag, { deep = false } = {}) {
-  await open(page, '/my-day/review');
+  await open(page, '/daily-review');
   // 1. Do
-  pass(`${tag}: opens on today's to-dos with ~5 minutes`, (await heading(page)) === 'Which of today’s to‑dos did you do?' && (await page.locator('.ds-guide-label').first().textContent()).trim() === '~5 minutes', await heading(page));
+  pass(`${tag}: opens on today's to-dos, with no time on the first screen (10 Nov)`, (await heading(page)) === 'Which of today’s to‑dos did you do?' && !/~\d+ minutes/.test(await page.locator('.ds-guide').innerText()), await heading(page));
   pass(`${tag}: the % complete bar, never a step count`, await page.locator('.ds-guide-pct').isVisible());
-  pass(`${tag}: the top bar has the tool's name only for today`, (await page.locator('.ds-guide-name').textContent()).trim() === 'Review my day');
+  pass(`${tag}: the top bar has the tool's name only for today`, (await page.locator('.ds-guide-name').textContent()).trim() === 'Daily review');
   const first = (await page.locator('.ds-todo').first().innerText()).replace(/\s+/g, ' ');
   pass(`${tag}: the highest priority comes first, tagged`, first.includes(DRAFT) && first.includes('Highest priority'), first);
   pass(`${tag}: the habit chosen in the morning is on today's list`, (await page.locator('.ds-todo', { hasText: 'Training sessions' }).count()) === 1);
@@ -316,7 +316,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await page.getByRole('textbox', { name: 'Steps today' }).fill('9800');
   await page.getByRole('textbox', { name: 'Water today' }).fill('1.5');
   await page.getByRole('textbox', { name: 'Water today' }).blur();
-  await page.getByRole('group', { name: 'Focus today' }).getByRole('button', { name: '4', exact: true }).click();
+  await page.getByRole('group', { name: 'Focus today' }).getByRole('button', { name: 'Very good', exact: true }).click();
   await page.getByRole('group', { name: 'Late finishes today' }).getByRole('button', { name: 'No', exact: true }).click();
   await shot(page, `${tag}-3-numbers`);
   await next(page);
@@ -456,7 +456,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       pass('the sprint page shows the to-do ticked in the review as done', (await page.getByRole('checkbox', { name: DRAFT }).first().getAttribute('aria-checked')) === 'true', listed.slice(0, 120));
 
       // A finished review opens on its summary, still changeable.
-      await open(page, '/my-day/review');
+      await open(page, '/daily-review');
       pass('a finished review opens on its summary', (await heading(page)) === 'This was your day', await heading(page));
       pass('its answers can still be changed', (await page.getByRole('button', { name: /^Change (Differently|What you’d do differently)/ }).count()) === 1);
     }
@@ -467,22 +467,22 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
   await context.close();
 
   if (deep) {
-    // ---------------------------------------- the next day's Plan my day (the clock moved on a day)
+    // ---------------------------------------- the next day's Daily plan (the clock moved on a day)
     const tomorrow = dayKey(1);
     const next1 = await signedIn({ width: 1280, mode: 'dark', clock: londonInstant(tomorrow, '08:30'), withPlanLocal: false });
     try {
-      await open(next1.page, '/my-day/plan');
+      await open(next1.page, '/daily-plan');
       for (let i = 0; i < 3; i += 1) await next(next1.page);
-      pass('the next day: Plan my day is on What will you do today?', (await heading(next1.page)) === 'What will you do today?', await heading(next1.page));
+      pass('the next day: Daily plan is on What will you do today?', (await heading(next1.page)) === 'What will you do today?', await heading(next1.page));
       const picks = await next1.page.locator('.ds-answer--pick').allInnerTexts();
       for (let i = 0; i < 3; i += 1) {
         const at = picks.findIndex((p) => p.includes(THINGS[i]));
-        pass(`the next day: "${THINGS[i]}" is carried over from Review my day`, at === i && picks[i].includes('From Review my day'), picks.slice(0, 4).join(' | '));
+        pass(`the next day: "${THINGS[i]}" is carried over from Daily review`, at === i && picks[i].includes('From Daily review'), picks.slice(0, 4).join(' | '));
       }
       pass('the next day: last night\'s note is a note', (await next1.page.locator('.ds-note').innerText()).includes(NOTE));
       await shot(next1.page, 'next-day-plan');
     } catch (e) {
-      pass('the next day\'s Plan my day', false, e.message);
+      pass('the next day\'s Daily plan', false, e.message);
     }
     await next1.context.close();
 
@@ -493,9 +493,9 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
     await db.from('day_plans').insert({ user_id: me, local_date: thursday, way_of_being: 'Patient', status: 'finished' });
     const late = await signedIn({ width: 390, mode: 'dark', clock: londonInstant(friday, '00:30'), withPlanLocal: false });
     try {
-      await open(late.page, '/my-day/review');
+      await open(late.page, '/daily-review');
       const name = (await late.page.locator('.ds-guide-name').textContent()).trim();
-      pass('just after midnight: the review is the day before\'s, its date in the top bar', /^Review my day, Thu \d+ \w+$/.test(name), name);
+      pass('just after midnight: the review is the day before\'s, its date in the top bar', /^Daily review, Thu \d+ \w+$/.test(name), name);
       await next(late.page);
       pass('just after midnight: it asks about the day before\'s way of being', (await heading(late.page)) === 'On a scale of 1 to 10, how patient were you today?', await heading(late.page));
       await late.page.getByRole('radio', { name: '6', exact: true }).click();
@@ -506,8 +506,8 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       // Once the day before is reviewed, just after midnight is the new day.
       await db.from('day_reviews').update({ status: 'finished', finished_at: `${thursday}T23:50:00Z` }).eq('user_id', me).eq('local_date', thursday);
       await late.page.evaluate(() => Object.keys(localStorage).filter((k) => k.includes('day-review-which')).forEach((k) => localStorage.removeItem(k)));
-      await open(late.page, '/my-day/review');
-      pass('just after midnight, with the day before reviewed: the review is the new day\'s', (await late.page.locator('.ds-guide-name').textContent()).trim() === 'Review my day');
+      await open(late.page, '/daily-review');
+      pass('just after midnight, with the day before reviewed: the review is the new day\'s', (await late.page.locator('.ds-guide-name').textContent()).trim() === 'Daily review');
       await shot(late.page, 'after-midnight');
     } catch (e) {
       pass('a review just after midnight', false, e.message);

@@ -1,4 +1,4 @@
-// Phase 5 step 2: the Individual Performance Dashboard (mock-up M4 v47) in
+// Phase 5 step 2: the Dashboard (mock-up M4 v47) in
 // the running app, signed in as the invented test client on the TEST
 // database only (every other host, /functions/v1/ and every email call is
 // blocked).
@@ -374,7 +374,7 @@ const appSizes = (page) => page.evaluate(() => {
   return {
     hero: fs('.dash-hero-value'), glance: fs('.dash-glance'), section: fs('.dash-sec-h .dash-colb'), sectionLs: q('.dash-sec-h .dash-colb') ? getComputedStyle(q('.dash-sec-h .dash-colb')).letterSpacing : null,
     group: fs('.dash-colb--group'), item: fs('.dash-sit b'), itemLine: fs('.dash-si-line'), big: fs('.dash-big'), foldTitle: fs('.dash-fold-t'), foldLine: fs('.dash-fold-l'),
-    foldH: Math.min(...[...document.querySelectorAll('.dash-fold-h')].map((x) => Math.round(x.getBoundingClientRect().height))), foldFigure: fs('.dash-fv b'), crowValue: fs('.dash-crow-v strong:not(.dash-crow-lng)'), crowName: fs('.dash-crow-n b'), sq: h('.dash-crow-c .dash-sq'), sqSmallH: h('.dash-sq--small'), sqSmallW: w('.dash-sq--small'),
+    foldH: Math.min(...[...document.querySelectorAll('.dash-fold-h:has(.dash-fold-l)')].map((x) => Math.round(x.getBoundingClientRect().height))), foldFigure: fs('.dash-fv b'), crowValue: fs('.dash-crow-v strong:not(.dash-crow-lng)'), crowName: fs('.dash-crow-n b'), sq: h('.dash-crow-c .dash-sq'), sqSmallH: h('.dash-sq--small'), sqSmallW: w('.dash-sq--small'),
     mini: [w('.dash-fv .dash-mini'), h('.dash-fv .dash-mini')], lead: fs('.dash-lead'),
   };
 });
@@ -456,7 +456,7 @@ for (const mode of ['dark', 'light']) {
           }
           for (const r of v.chain.objectives.rows) { has(r.value, `${r.name}'s figure (M9)`); if (r.line) has(r.line, 'its pace or milestone line (M9)'); }
           for (const r of v.chain.strategies.rows) if (r.latest) has(`${r.latest.value}%`, `${r.name}'s latest week (M4)`);
-          for (const r of v.behind.rows) has(r.line, `${r.title}'s line`);
+          for (const r of v.behind.rows) if (r.line) has(r.line, `${r.title}'s line`);
           const sleepRow = v.behind.rows.find((r) => r.key === 'sleep');
           if (sleepRow?.action) sleepRow.action.lines.forEach((l) => has(l, 'the sleep action (Recovery’s rule)'));
           const hb = v.current?.holdingBack.find((x) => x.kind === 'recovery_signals');
@@ -482,15 +482,17 @@ if (part('S')) {
       pass('new person: no "Not yet" in the figure style (declutter, 5 Nov)', !t.includes('Not yet'));
       pass('new person: one calm card with one action', t.includes('Your dashboard fills in once your first Performance Sprint starts.') && /start my first sprint/i.test(t));
       pass('new person: no Objectives and Strategies section until there is something in it', !/objectives and strategies/i.test(t));
-      for (const words of ['You haven’t added an unplanned win this sprint.', 'You haven’t done a check-in yet.', 'You haven’t logged sleep yet.', 'This starts after your first weekly debrief.', 'Customise my dashboard']) {
-        pass(`new person: "${words}"`, t.includes(words));
+      // Sections with nothing to show stay hidden (part 5, 10 Nov; 5e rule 6).
+      for (const words of ['You haven’t added an unplanned win this sprint.', 'You haven’t done a check-in yet.', 'You haven’t logged sleep yet.', 'This starts after your first weekly debrief.']) {
+        pass(`new person: no empty section, "${words}"`, !t.includes(words));
       }
+      pass('new person: "Customise my dashboard"', t.includes('Customise my dashboard'));
       pass('new person: no Current sprint until a sprint runs', !(await page.locator('.dash-sec-h .dash-colb').allInnerTexts()).some((x) => /current sprint/i.test(x)));
       pass('new person: no Patterns row before the first pattern', !t.includes('Patterns in your numbers'));
       await openFolds(page);
       const t2 = (await page.locator('.dash-page').innerText()).replace(/\s+/g, ' ');
-      for (const words of ['Your graph starts here after your second check-in.', 'Your chart starts after your second night.', 'Your first weekly debrief adds the first week here.', 'Start my check-in', 'Start my life balance review']) {
-        pass(`new person, rows open: "${words}"`, t2.includes(words));
+      for (const words of ['Your graph starts here after your second check-in.', 'Your chart starts after your second night.', 'Your first weekly debrief adds the first week here.']) {
+        pass(`new person, rows open: no empty section, "${words}"`, !t2.includes(words));
       }
       await checkScreen(page, 'new person 390px light');
     } finally {

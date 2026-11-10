@@ -1,4 +1,4 @@
-// Phase 3 step 1 checks in the running app: Plan my day (mock-up M5),
+// Phase 3 step 1 checks in the running app: Daily plan (mock-up M5),
 // signed in as the invented test client on the TEST database only (every
 // other host and every email call is blocked).
 //
@@ -7,7 +7,7 @@
 // The seed is built around one fixed day and every browser's clock starts
 // on it (tests/phase2/fixed-day.mjs), so nothing depends on the day or time
 // the test runs (TEST_TODAY and TEST_TIME pick another). Last night's
-// Review my day is written as the client (its list and its note), and an
+// Daily review is written as the client (its list and its note), and an
 // earlier plan's way of being, so "recently" has something.
 //
 // A full play-through from the first screen to Set my day at 1280px,
@@ -161,7 +161,7 @@ async function next(page) {
   throw new Error(`Next didn't move on from "${before}"`);
 }
 
-async function openPlan(page, path = '/my-day/plan') {
+async function openPlan(page, path = '/daily-plan') {
   await page.goto(`${APP}${path}`);
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
 }
@@ -230,7 +230,8 @@ async function checkScreen(page, tag, { eye = true, oneTap = false } = {}) {
   const text = facts.text.replace(/\d{1,2}:\d{2}/g, '');
   pass(`${tag}: no colons or brackets in its words`, !/[:()[\]]/.test(text), (text.match(/.{0,20}[:()[\]].{0,20}/) || [''])[0]);
   pass(`${tag}: no banned words`, !/\bmissed\b|\bfail(ed)?\b|\bstep \d+ of\b|\babout \d+ minutes?\b|\btap\b|\bclick\b|\bpurpose\b|…/i.test(facts.text), facts.text.slice(0, 80));
-  const bad = facts.lines.filter((l) => !/[.?!]$/.test(l));
+  // "This was your plan" is the summary's heading, as the review's "This was your day" (part 5, 10 Nov).
+  const bad = facts.lines.filter((l) => !/[.?!]$/.test(l) && l !== 'This was your plan');
   pass(`${tag}: every sentence ends with a full stop or a question mark`, bad.length === 0, bad.join(' | '));
   if (eye) pass(`${tag}: the eye says Only you`, facts.eye.some((e) => /Only you/.test(e)), JSON.stringify(facts.eye));
 }
@@ -241,7 +242,7 @@ const shot = async (page, name) => { if (out) await page.screenshot({ path: `${o
 async function playThrough(page, tag, { deep = false } = {}) {
   await openPlan(page);
   // 1. Sleep
-  pass(`${tag}: opens on Sleep with ~4 minutes`, (await heading(page)) === 'How did you sleep last night?' && (await page.locator('.ds-guide-label').first().textContent()).trim() === '~4 minutes');
+  pass(`${tag}: opens on Sleep, with no time on the first screen (10 Nov)`, (await heading(page)) === 'How did you sleep last night?' && !/~\d+ minutes/.test(await page.locator('.ds-guide').innerText()));
   pass(`${tag}: the % complete bar, never a step count`, await page.locator('.ds-guide-pct').isVisible());
   await checkScreen(page, `${tag} sleep`);
   await shot(page, `${tag}-1-sleep`);
@@ -275,7 +276,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
 
   // 4. Do
   pass(`${tag}: Do`, (await heading(page)) === 'What will you do today?');
-  pass(`${tag}: last night's thing is first, carried over from Review my day`, ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes(NIGHT) && ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes('From Review my day'));
+  pass(`${tag}: last night's thing is first, carried over from Daily review`, ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes(NIGHT) && ((await page.locator('.ds-answer--pick').first().textContent()) || '').includes('From Daily review'));
   pass(`${tag}: last night's note is a note, not a task`, (await page.locator('.ds-note').textContent()).includes(NOTE) && (await page.locator('.ds-note button, .ds-note [role=checkbox]').count()) === 0);
   await checkScreen(page, `${tag} do`);
   const pick = (name) => page.locator('.ds-answer--pick', { hasText: name }).first();
@@ -318,7 +319,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await next(page);
 
   // 8. The summary
-  pass(`${tag}: the summary greets by first name`, /^Here’s your day, \S+\.$/.test(await heading(page)), await heading(page));
+  pass(`${tag}: the summary is headed "This was your plan" (10 Nov)`, (await heading(page)) === 'This was your plan', await heading(page));
   await checkScreen(page, `${tag} summary`, { eye: false });
   await shot(page, `${tag}-8-summary`);
   const summary = await page.locator('.ds-guide-summary').innerText();
@@ -400,7 +401,7 @@ for (const [width, mode] of sizes) {
 
       // A set plan opens on its summary, still changeable.
       await openPlan(page);
-      pass('a set plan opens on its summary', /^Here’s your day/.test(await heading(page)), await heading(page));
+      pass('a set plan opens on its summary', (await heading(page)) === 'This was your plan', await heading(page));
       pass('its answers can still be changed', (await page.getByRole('button', { name: 'Change Gratitude' }).count()) === 1);
     }
   } catch (e) {

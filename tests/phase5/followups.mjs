@@ -4,7 +4,7 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/followups.mjs [folder for screenshots]
 //
-// 1. During Recovery, Review my day and Plan my day say Recovery's calm
+// 1. During Recovery, Daily review and Daily plan say Recovery's calm
 //    line, never "No sprint is running".
 // 2. The search in My Plans and My Reviews: it sits with the Filter button
 //    (not at the top of the page), finds by name and by tool, works with
@@ -272,15 +272,15 @@ async function throughGate(page, tag, tool) {
 }
 
 async function checkRecovery(page, tag) {
-  // Review my day: the to-dos screen.
-  await page.goto(`${APP}/my-day/review`);
+  // Daily review: the to-dos screen.
+  await page.goto(`${APP}/daily-review`);
   await page.waitForSelector('.ui-root h1, .ui-root h2', { timeout: 30000 });
-  await throughGate(page, tag, 'Review my day');
+  await throughGate(page, tag, 'Daily review');
   const line = await until(async () => (await bodyText(page)).includes(RECOVERY_DAY_LINE), 20000);
   const text = await bodyText(page);
-  pass(`${tag}: Review my day says Recovery's calm line`, Boolean(line), text.slice(0, 400));
+  pass(`${tag}: Daily review says Recovery's calm line`, Boolean(line), text.slice(0, 400));
   pass(`${tag}: …and never "No sprint is running"`, !NO_SPRINT.test(text));
-  pass(`${tag}: Review my day has no sideways scroll`, await noSideways(page));
+  pass(`${tag}: Daily review has no sideways scroll`, await noSideways(page));
   await shot(page, `${tag}-review-my-day`);
   // On to the numbers screen.
   let numbers = false;
@@ -294,20 +294,20 @@ async function checkRecovery(page, tag) {
   pass(`${tag}: …and never "No sprint is running"`, !NO_SPRINT.test(await bodyText(page)));
   await shot(page, `${tag}-review-numbers`);
 
-  // Plan my day: the to-dos screen.
-  await page.goto(`${APP}/my-day/plan`);
+  // Daily plan: the to-dos screen.
+  await page.goto(`${APP}/daily-plan`);
   await page.waitForSelector('.ui-root h1, .ui-root h2', { timeout: 30000 });
-  await throughGate(page, tag, 'Plan my day');
+  await throughGate(page, tag, 'Daily plan');
   let planLine = false;
   for (let i = 0; i < 6 && !planLine; i += 1) {
     planLine = Boolean(await until(async () => (await bodyText(page)).includes(RECOVERY_DAY_LINE), i ? 3000 : 15000));
     if (planLine) break;
-    pass(`${tag}: Plan my day, screen ${i + 1}, never "No sprint is running"`, !NO_SPRINT.test(await bodyText(page)));
+    pass(`${tag}: Daily plan, screen ${i + 1}, never "No sprint is running"`, !NO_SPRINT.test(await bodyText(page)));
     const next = page.getByRole('button', { name: /^(Next|Skip|Start)/ }).first();
     if (!(await next.count())) break;
     await next.click();
   }
-  pass(`${tag}: Plan my day's to-dos screen says Recovery's calm line`, planLine);
+  pass(`${tag}: Daily plan's to-dos screen says Recovery's calm line`, planLine);
   pass(`${tag}: …and never "No sprint is running"`, !NO_SPRINT.test(await bodyText(page)));
   await shot(page, `${tag}-plan-my-day`);
 

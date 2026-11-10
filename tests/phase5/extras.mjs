@@ -1,7 +1,7 @@
 // Phase 5 follow-up, step 1: the answers once kept on the device only, now
 // kept with their rows once migration 040 is there (answerExtras.js):
 // the drinks counted and the trip on the check-in, and the way of being
-// chosen in Review my day when the day had no plan. TEST database only.
+// chosen in Daily review when the day had no plan. TEST database only.
 //   node --import ./tests/scores/register.mjs tests/phase5/extras.mjs [folder]
 //
 // With 040's columns there, it checks:
@@ -103,7 +103,7 @@ const pints = (page) => text(page, `.ds-stepper[aria-label="Pint of beer or cide
 // To the drinks question: the opening's Next, then each chosen answer again
 // (one tap moves on), or the first answer where none is chosen yet.
 async function toDrinks(page) {
-  await page.goto(`${APP}/check-in`);
+  await page.goto(`${APP}/monthly-review`);
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
   await sleep(800);
   // The check-in reopens where this device left off, which may be past the
@@ -228,7 +228,7 @@ try {
     }
   }
 
-  // ---------------------------------------------- Review my day's way of being
+  // ---------------------------------------------- Daily review's way of being
   const sam = await client(env.TEST_CLIENT_EMAIL, env.TEST_CLIENT_PASSWORD);
   let day = null;
   for (let i = 3; i < 12 && !day; i += 1) {
@@ -244,7 +244,7 @@ try {
     cleanUps.push(() => sam.db.from('day_reviews').delete().eq('user_id', sam.me).eq('local_date', day));
     const WAY = 'Calm under pressure';
     const toBe = async (page) => {
-      await page.goto(`${APP}/my-day/review/${day}`);
+      await page.goto(`${APP}/daily-review/${day}`);
       await page.waitForSelector('.ds-guide-question, .ds-guide-title', { timeout: 30000 });
       await sleep(1000);
       const change = page.getByRole('button', { name: /^(Change|Add) How you showed up/ });

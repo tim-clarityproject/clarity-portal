@@ -197,13 +197,13 @@ try {
   }, [me, nextMonday]);
   await page.goto(`${APP}/performance-sprint/start`);
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
-  await page.waitForFunction(() => /Performance Sprint 1 starts on/.test(document.body.textContent), null, { timeout: 15000 }).catch(() => {});
+  await page.waitForFunction(() => /Your Performance Sprint starts on/.test(document.body.textContent), null, { timeout: 15000 }).catch(() => {});
   // The toast itself, as it shows (not a read of the page at one moment).
-  const toastSaid = await page.locator('.ds-toast').filter({ hasText: /Saved\. Performance Sprint 1 starts/ }).first()
+  const toastSaid = await page.locator('.ds-toast').filter({ hasText: /Saved\. Your Performance Sprint starts/ }).first()
     .waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
   const body = await page.locator('body').textContent();
   pass('hand-over: the toast says the sprint starts', toastSaid);
-  pass('hand-over: the sprint page stand-in says when it starts', /Performance Sprint 1 starts on/.test(body));
+  pass('hand-over: the sprint page stand-in says when it starts', /Your Performance Sprint starts on/.test(body));
   await shot(page, 'handover-sprint-page');
   const list = await sprints();
   pass('hand-over: one sprint, Sprint 1, as chosen', list.length === 1 && list[0].number === 1 && list[0].length_weeks === 8 && list[0].standard === 80 && list[0].start_on === nextMonday, JSON.stringify(list));
@@ -227,7 +227,7 @@ for (const mode of ['dark', 'light']) {
       await page.waitForSelector('.sprint-start-running', { timeout: 30000 });
       const r = await pageChecks(page, `${tag} running notice`);
       if (width === 1280 && mode === 'dark') {
-        pass('running: says Sprint 1 hasn’t started and that a new one finishes it', /Performance Sprint 1 hasn’t started yet\./.test(r.text) && /Starting a new sprint finishes Performance Sprint 1\./.test(r.text), r.text.slice(0, 200));
+        pass('running: says Sprint 1 hasn’t started and that a new one finishes it', /Your Performance Sprint hasn’t started yet\./.test(r.text) && /Starting a new sprint finishes this one\./.test(r.text), r.text.slice(0, 200));
       }
       await shot(page, `running-${width}-${mode}`);
       await page.getByRole('button', { name: 'Start a new sprint' }).click();
@@ -263,7 +263,7 @@ try {
   await page.getByRole('button', { name: 'Start a new sprint' }).click();
   await page.waitForSelector('.ds-guide');
   await page.waitForTimeout(600);
-  pass('steps: the label above is the new sprint', (await page.locator('.ds-guide').textContent()).includes('Performance Sprint 2'));
+  pass('steps: the label above is the new sprint', (await page.locator('.ds-guide').textContent()).includes('Performance Sprint'));
   pass('steps: How long is this sprint?', /How long is this sprint\?/.test(await heading(page)));
   await page.getByRole('radio', { name: '6 weeks', exact: true }).click();
   await page.getByLabel('What would you like to call it?').fill('Autumn push');
@@ -287,15 +287,15 @@ try {
   await shot(page, 'flow-habits');
   await next(page);
   const ready = await page.locator('.ds-guide-body').textContent();
-  pass('Ready: title Performance Sprint 2', /Performance Sprint 2/.test(await heading(page)));
+  pass('Ready: title Performance Sprint, with no number (10 Nov)', /^Performance Sprint$/i.test((await heading(page)).trim()), await heading(page));
   pass('Ready: the summary rows', ready.includes('6 weeks') && ready.includes('Autumn push') && ready.includes('Today, ') && ready.includes('80%') && ready.includes(`${planHabits.length} habits`), ready.slice(0, 300));
   pass('Ready: the added habit is for this sprint only', ready.includes('Walk between meetings is for this sprint only.'));
-  pass('Ready: says it finishes Sprint 1', ready.includes('Starting it finishes Performance Sprint 1.'));
+  pass('Ready: says it finishes Sprint 1', ready.includes('Starting it finishes your current sprint.'));
   await shot(page, 'flow-ready');
-  await page.getByRole('button', { name: 'Start Performance Sprint 2' }).dblclick();
+  await page.getByRole('button', { name: 'Start my sprint' }).dblclick();
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
   await page.waitForTimeout(800);
-  pass('start: the toast', /Saved\. Performance Sprint 2 starts/.test(await page.locator('body').textContent()));
+  pass('start: the toast', /Saved\. Your Performance Sprint starts/.test(await page.locator('body').textContent()));
   const list = await sprints();
   sprint2 = list.find((s) => s.number === 2);
   pass('start: a double tap makes one sprint', list.length === 2, JSON.stringify(list.map((s) => s.number)));
@@ -332,9 +332,9 @@ try {
     return route.fallback();
   });
   await page.waitForTimeout(500);
-  for (let i = 0; i < 6 && !/Performance Sprint 3/.test(await heading(page)); i += 1) await next(page);
-  await page.getByRole('button', { name: 'Start Performance Sprint 3' }).click();
-  await page.waitForFunction(() => /Starting Performance Sprint 3/.test(document.body.textContent), null, { timeout: 15000 });
+  for (let i = 0; i < 6 && !/^\s*Performance Sprint\s*$/i.test(await heading(page)); i += 1) await next(page);
+  await page.getByRole('button', { name: 'Start my sprint' }).click();
+  await page.waitForFunction(() => /Starting your Performance Sprint/.test(document.body.textContent), null, { timeout: 15000 });
   // Wait for Sprint 3's own row to land (saves go one at a time), up to 15
   // seconds; the held habit settings never do.
   let midway = await sprints();

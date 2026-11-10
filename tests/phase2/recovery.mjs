@@ -246,7 +246,7 @@ await everyLayout('running-with-link', async (page) => go(page, '/performance-sp
   pass('... and kept after a refresh', (await page.locator('.rec-q textarea').first().inputValue()) === 'A long walk by the river, no phone');
   await page.getByRole('button', { name: /^Sleep/ }).click();
   await page.waitForSelector('.rec-sleep');
-  // Total hours is the stepper now, as Plan my day's (Tim, 3 Nov): 7.5 is one press on from 7.
+  // Total hours is the stepper now, as Daily plan's (Tim, 3 Nov): 7.5 is one press on from 7.
   await page.getByRole('button', { name: 'Half an hour more' }).click();
   await page.getByRole('radio', { name: 'Good', exact: true }).click();
   await layoutChecks(page, '390px light sleep panel', 'light');
@@ -275,7 +275,7 @@ await everyLayout('today', async (page) => go(page, '/recovery/today', '.rec-ban
   await page.getByRole('button', { name: 'Show my results' }).click();
   const goods = await page.locator('.ds-sdial-seg--good').evaluateAll((els) => els.map((el) => getComputedStyle(el).fill));
   pass('Show my results: weeks at the standard are mint', goods.length > 0 && goods.every((f) => f === MINT.dark), goods.join(','));
-  pass('... with the average and the standard', /Your average performance score so far is \d+%\./.test(await text(page, '.rec-results')) && (await text(page, '.rec-results')).includes(`Your standard is ${r.sprint.standard}%.`));
+  pass('... with the average and the standard', /Your average performance score so far is \d+%\./.test(await text(page, '.rec-results')) && !(await text(page, '.rec-results')).includes('Your standard is'));
   await shot(page, 'paused-results-1280-dark');
   await page.reload();
   await page.waitForSelector('.ds-sdial--paused');
@@ -325,7 +325,7 @@ seed('--reset', `--recovery=${taken},${taken + 4}`);
   pass('week 2 carries on today', w.includes(`Sprint ${r.sprint.number} picks up today, at week 2 of ${r.sprint.length_weeks}.`), w);
   const planned = addDays(r.sprint.start_on, r.sprint.length_weeks * 7 - 1);
   pass(`... and the end has moved later by the ${taken} days taken`, s.endOn === addDays(planned, taken) && w.includes(`It ends on ${dayName(s.endOn, today)}.`), `${s.endOn}`);
-  pass('Log today is the one coral button, with Plan my day', (await text(page, '.sprint-welcome-actions')).toLowerCase().includes('plan my day'));
+  pass('Log today is the one coral button, with Daily plan', (await text(page, '.sprint-welcome-actions')).toLowerCase().includes('daily plan'));
   await shot(page, 'welcome-390-dark');
   await context.close();
 }
@@ -396,12 +396,12 @@ seed('--ended');
   // Start a sprint while it is open: it ends the Recovery first.
   await go(page, '/performance-sprint/start', '.ds-guide');
   const heading = () => page.locator('.ds-guide-question, .ds-guide-title').first().textContent();
-  for (let i = 0; i < 6 && !/Performance Sprint 3/.test(await heading()); i += 1) {
+  for (let i = 0; i < 6 && !/^\s*Performance Sprint\s*$/i.test(await heading()); i += 1) {
     await page.locator('.ds-guide .ds-btn--primary').last().click();
     await page.waitForTimeout(700);
   }
   pass('Ready says starting ends the recovery', (await text(page, '.ds-guide')).includes('Starting it ends your recovery today.'));
-  await page.getByRole('button', { name: 'Start Performance Sprint 3' }).click();
+  await page.getByRole('button', { name: 'Start my sprint' }).click();
   await until(async () => page.url().endsWith('/performance-sprint'), 20000);
   r = await rowsNow();
   pass('Start a sprint ended the Recovery today', !r.open && r.recoveries.some((x) => x.end_on === today && x.sprint_id === null));

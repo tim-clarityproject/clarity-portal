@@ -302,7 +302,7 @@ if (part('question')) {
       const minus = page.locator('.rec-sleep .ds-stepper-btn').nth(0);
       const value = () => page.locator('.rec-sleep .ds-stepper-value').textContent();
       await plus.click({ force: true });
-      // As Plan my day's stepper: the first press goes on from 7 hours.
+      // As Daily plan's stepper: the first press goes on from 7 hours.
       pass(`${tag}: hours start from 7, in steps of 0.5`, (await value()) === '7.5', await value());
       await plus.click({ force: true });
       pass(`${tag}: in steps of 0.5`, (await value()) === '8', await value());

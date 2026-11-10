@@ -5,12 +5,12 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase4/wind-down.mjs [folder for screenshots]
 //
-// 1. Review my day ends with Close the day, then Work's done for today.
+// 1. Daily review ends with Close the day, then Work's done for today.
 // 2. Sleep wind down from start to finish: the thoughts (rows, 300
 //    characters at most), the breathing (the orb alone, 4 in and 6 out,
 //    measured from the clock, no words), Sleep well (exactly three lines and
 //    Back to Home, no list), and Home stops offering it that night.
-// 3. The next morning's Carried over list: Review my day's things first,
+// 3. The next morning's Carried over list: Daily review's things first,
 //    then last night's thoughts, the source lines, duplicates merged;
 //    picking three works and a fourth is refused; the to-dos made.
 // 4. After midnight and before 04:00 the wind-down is for the night before;
@@ -81,9 +81,9 @@ async function until(fn, ms = 15000) {
 const REVIEW = ['Call Evan before 09:00 about the referral', 'Finish the Harbour case study', 'Reply to Max about the workshop'];
 const THOUGHTS = ['call evan before 09:00 about the referral', 'Finish the Harbour case study!', 'Book a day off for the half term'];
 const CARRIED = [
-  ['Call Evan before 09:00 about the referral', 'From Review my day and last night’s sleep wind down'],
-  ['Finish the Harbour case study', 'From Review my day and last night’s sleep wind down'],
-  ['Reply to Max about the workshop', 'From Review my day'],
+  ['Call Evan before 09:00 about the referral', 'From Daily review and last night’s sleep wind down'],
+  ['Finish the Harbour case study', 'From Daily review and last night’s sleep wind down'],
+  ['Reply to Max about the workshop', 'From Daily review'],
   ['Book a day off for the half term', 'From last night’s sleep wind down'],
 ];
 
@@ -207,7 +207,7 @@ const orbR = (page) => page.evaluate(() => {
 });
 
 async function toDoStep(page) {
-  await page.goto(`${APP}/my-day/plan`);
+  await page.goto(`${APP}/daily-plan`);
   await page.locator('.ds-guide-question').waitFor({ timeout: 20000 });
   for (let i = 0; i < 6 && (await heading(page)) !== 'What will you do today?'; i += 1) {
     const before = await heading(page);
@@ -230,7 +230,7 @@ const groupRows = (page, n) => page.evaluate((i) => [...document.querySelectorAl
 if (part(1)) {
   const { context, page } = await signedIn({ time: '20:00' });
   try {
-    await page.goto(`${APP}/my-day/review`);
+    await page.goto(`${APP}/daily-review`);
     // A finished review opens on its summary; Next goes on to closing the day.
     await until(async () => /^This was your day/.test(await heading(page)), 20000);
     pass('review: the summary has no Skip now it isn’t the last step', (await page.locator('.ds-guide-skip').count()) === 0);
@@ -278,7 +278,7 @@ if (part(2)) {
     await page.locator('.ds-suggest .ds-btn--primary').click();
     await page.getByRole('heading', { name: 'What’s on your mind for tomorrow?' }).waitFor({ timeout: 20000 });
     pass('wind-down: Home’s button opens /sleep-wind-down', new URL(page.url()).pathname === '/sleep-wind-down');
-    pass('wind-down: the nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).join('|') === 'Write a few quick lines, then let them go.|They’ll wait for you in tomorrow’s Plan my day.');
+    pass('wind-down: the nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).join('|') === 'Write a few quick lines, then let them go.|They’ll wait for you in tomorrow’s Daily plan.');
     pass('wind-down: the % bar starts at 0%', (await page.locator('.ds-guide-pct-text').innerText()).trim() === '0%');
     // The eye alone, its words for screen readers (rules of 5 Nov).
     pass('wind-down: the eye says Only you', ((await page.locator('.ds-guide .ds-who').first().getAttribute('aria-label')) || '').includes('Only you'), await page.locator('.ds-guide .ds-who').first().getAttribute('aria-label').catch(() => 'no eye'));
@@ -339,7 +339,7 @@ if (part(2)) {
     pass('wind-down: the breathing ends by itself after 5 minutes', Boolean(await until(async () => (await heading(page)) === 'Sleep well', 10000)), await heading(page));
     pass('wind-down: Sleep well uses the night colours', await page.locator('.ds-guide').evaluate((e) => e.classList.contains('ds-night')));
     const end = await seen(page, '.ds-guide-scroll');
-    pass('wind-down: Sleep well shows exactly its three lines and Back to Home', end === 'Sleep well Your thoughts are saved for the morning. Plan my day will have them ready. Back to Home', end);
+    pass('wind-down: Sleep well shows exactly its three lines and Back to Home', end === 'Sleep well Your thoughts are saved for the morning. Your Daily plan will have them ready. Back to Home', end);
     pass('wind-down: no list and nothing to act on', (await page.locator('.ds-guide-scroll :is(ul, ol, li, input, textarea, [role=checkbox], a)').count()) === 0
       && (await page.locator('.ds-guide-scroll button').count()) === 1);
     const back = page.locator('.ds-end-action button');
@@ -360,11 +360,11 @@ if (part(2)) {
       const titles = await page.locator('.ds-pick-group-title').allInnerTexts();
       pass('morning: one Carried over list, then This week', titles.join('|') === 'Carried over|This week', titles.join('|'));
       const carried = await groupRows(page, 0);
-      pass('morning: Review my day’s things first, then last night’s thoughts, duplicates merged',
+      pass('morning: Daily review’s things first, then last night’s thoughts, duplicates merged',
         JSON.stringify(carried.map((r) => r.name)) === JSON.stringify(CARRIED.map((c) => c[0])), carried.map((r) => r.name).join(' | '));
       // Tomorrow's priorities are numbered (Tim, 5 Nov): "Priority 1" comes before the source line.
       const source = (line) => String(line || '').replace(/^Priority \d+\s*/, '');
-      pass('morning: the priorities from Review my day are numbered', carried.slice(0, 3).every((r, i) => String(r.line).startsWith(`Priority ${i + 1}`)), carried.map((r) => r.line).join(' | '));
+      pass('morning: the priorities from Daily review are numbered', carried.slice(0, 3).every((r, i) => String(r.line).startsWith(`Priority ${i + 1}`)), carried.map((r) => r.line).join(' | '));
       pass('morning: each says where it came from', JSON.stringify(carried.map((r) => source(r.line))) === JSON.stringify(CARRIED.map((c) => c[1])), carried.map((r) => r.line).join(' | '));
       pass('morning: "You’ve chosen 0 of 3."', (await page.locator('.ds-pick-count').innerText()).trim() === 'You’ve chosen 0 of 3.');
       await shot(page, 'morning-carried');
@@ -385,8 +385,8 @@ if (part(2)) {
         return r.length === 3 ? r : null;
       }, 15000) || [];
       const by = (t) => made.find((m) => m.text === t);
-      pass('morning: a merged thing became a to-do from Review my day', by(CARRIED[0][0])?.source === 'review_my_day' && by(CARRIED[0][0])?.source_id === reviewId, JSON.stringify(made));
-      pass('morning: a review thing became a to-do from Review my day', by(CARRIED[2][0])?.source === 'review_my_day', JSON.stringify(made));
+      pass('morning: a merged thing became a to-do from Daily review', by(CARRIED[0][0])?.source === 'review_my_day' && by(CARRIED[0][0])?.source_id === reviewId, JSON.stringify(made));
+      pass('morning: a review thing became a to-do from Daily review', by(CARRIED[2][0])?.source === 'review_my_day', JSON.stringify(made));
       // sleep_wind_down once 039 has run (it has on the test project since 3 Nov), other_tool before.
       pass('morning: a wind-down thought became a to-do from Sleep wind down', ['sleep_wind_down', 'other_tool'].includes(by(CARRIED[3][0])?.source) && by(CARRIED[3][0])?.source_id === null, JSON.stringify(made));
       pass('morning: each made once', made.length === 3, String(made.length));
@@ -632,7 +632,7 @@ if (part(8)) {
           await shot(page, `m19-${view}-${mode}-sleep-well`);
           // Work's done: the review, closed again.
           await at(page, WED, '21:00');
-          await page.goto(`${APP}/my-day/review`);
+          await page.goto(`${APP}/daily-review`);
           await until(async () => /^This was your day/.test(await heading(page)), 20000);
           await sleep(600);
           await page.locator('.ds-guide-next').click();

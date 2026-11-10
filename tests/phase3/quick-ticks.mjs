@@ -20,7 +20,7 @@
 //                slowed and a stale load in the middle: it ends ticked,
 //                and nothing is refused.
 //
-// On Review my day, the Performance Sprint page and Plan my day. After each,
+// On Daily review, the Performance Sprint page and Daily plan. After each,
 // the screen and the database rows are both checked, and "This was changed
 // in another window" must never show (one window only).
 //
@@ -95,7 +95,7 @@ async function cleanTicks() {
   if (logsBefore.length) await db.from('habit_logs').insert(logsBefore.map((l) => ({ ...l, user_id: me })));
 }
 
-// The morning's plan, as Plan my day saves it (for Review my day).
+// The morning's plan, as Daily plan saves it (for Daily review).
 async function morningPlan() {
   await db.from('day_reviews').delete().eq('user_id', me);
   const old = (await db.from('day_plans').select('id').eq('user_id', me)).data.map((p) => p.id);
@@ -209,12 +209,12 @@ async function heldLanded(w, name, before) {
 const checkbox = (page, name) => page.getByRole('checkbox', { name, exact: true }).first();
 const checked = async (page, name) => (await checkbox(page, name).getAttribute('aria-checked')) === 'true';
 
-// ---------------------------------------------------------------- Review my day
+// ---------------------------------------------------------------- Daily review
 async function reviewRuns() {
   const tag = 'review';
   const cache = `day-review:${today}`;
   const openReview = async (page) => {
-    await page.goto(`${APP}/my-day/review`);
+    await page.goto(`${APP}/daily-review`);
     await page.waitForSelector('.ds-todo', { timeout: 30000 });
   };
 
@@ -233,7 +233,8 @@ async function reviewRuns() {
     w.delay('POST', /\/rest\/v1\/habit_logs/, 1000);
     await openReview(w.page);
     for (const name of [DRAFT, SHORT, TRAIN]) await checkbox(w.page, name).click();
-    pass(`${tag} stale load: the refresh was held back`, w.held.length > 0);
+    // The quiet refresh may start a moment after the ticks.
+    pass(`${tag} stale load: the refresh was held back`, Boolean(await until(() => w.held.length > 0, 4000)));
     pass(`${tag} stale load: the refresh landed`, await heldLanded(w, cache, before));
     for (const name of [DRAFT, SHORT, TRAIN]) pass(`${tag} stale load: "${name}" still ticked on screen`, await checked(w.page, name));
     pass(`${tag} stale load: both to-dos done in the database`, (await doneOn(DRAFT)) === today && (await doneOn(SHORT)) === today, `${await doneOn(DRAFT)} ${await doneOn(SHORT)}`);
@@ -398,7 +399,7 @@ async function sprintRuns() {
   await w.context.close();
 }
 
-// ---------------------------------------------------------------- Plan my day
+// ---------------------------------------------------------------- Daily plan
 async function planRuns() {
   const tag = 'plan';
   const cache = `day-plan:${today}`;
@@ -426,7 +427,7 @@ async function planRuns() {
   }
   await db.from('day_reviews').delete().eq('user_id', me);
   await db.from('day_plans').delete().eq('user_id', me);
-  // Nor in day_plan_habits: Review my day's runs above moved their device
+  // Nor in day_plan_habits: Daily review's runs above moved their device
   // copy of the morning's choices (Training sessions chosen) across, so it
   // showed here as already chosen and the third tap unchose it. That was
   // open fault 1 (Phase 5 follow-up 2): the test's leftover, not the app.
@@ -434,7 +435,7 @@ async function planRuns() {
   // Nothing chosen on the device yet (the morning's habit is chosen here).
   const w = await signedIn(tag, { withPlanLocal: false });
   try {
-    await w.page.goto(`${APP}/my-day/plan`);
+    await w.page.goto(`${APP}/daily-plan`);
     await w.page.waitForSelector('.ds-guide-question', { timeout: 30000 });
     for (let i = 0; i < 3; i += 1) await next(w.page);
     pass(`${tag}: on What will you do today?`, (await heading(w.page)) === 'What will you do today?', await heading(w.page));

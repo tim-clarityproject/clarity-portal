@@ -234,7 +234,7 @@ await row('Water').locator('input').fill('1.5');
 await row('Water').locator('input').blur();
 await row('Training sessions').getByRole('button', { name: /One more/ }).click();
 await row('Late finishes').getByRole('button', { name: 'Yes' }).click();
-await row('Focus').getByRole('button', { name: '4', exact: true }).click();
+await row('Focus').getByRole('button', { name: 'Very good', exact: true }).click();
 await row('Weekly strategic block').getByRole('checkbox').click();
 await row('No screens after 21:00').getByRole('button', { name: 'Yes' }).click();
 await row('Coffees').getByRole('button', { name: /One more/ }).click();
@@ -310,7 +310,7 @@ await page.waitForTimeout(500);
 // 4. To-dos.
 await page.getByRole('button', { name: 'Today', exact: true }).click();
 const todoRow = (text) => page.locator('.ds-todo').filter({ hasText: text });
-pass('roll-over: tagged with the week it came from', (await todoRow('Book a physio assessment').textContent()).includes('rolled over from week 3'));
+pass('roll-over: tagged with the week it came from', (await todoRow('Book a physio assessment').textContent()).includes('Rolled over from week 3'));
 await todoRow('Draft the Harbour case study').getByRole('checkbox').click();
 const toastText = await page.locator('.ds-toast, [role=status]').filter({ hasText: /Done\./ }).first().textContent({ timeout: 5000 }).catch(() => '');
 pass('tick: "Done. 2 of 4 this week."', toastText.includes('Done. 2 of 4 this week.'), toastText);

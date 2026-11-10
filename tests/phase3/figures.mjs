@@ -27,8 +27,8 @@
 //      Week: (2 × 100 + 1 × 73.3 + 1 × 50) ÷ 4 = 80.8, shown as 81%, grey.
 //    Then a second training session on Tuesday: Sustain 100, the week
 //    (200 + 100 + 50) ÷ 4 = 87.5, shown as 88% (halves round up), mint.
-//    Each time: src/lib/scores on the database rows, Plan my day's and
-//    Review my day's summaries and the sprint page all agree.
+//    Each time: src/lib/scores on the database rows, Daily plan's and
+//    Daily review's summaries and the sprint page all agree.
 // 3. M11: the debrief streak (seed --reset, week 3's window open): weeks 1
 //    and 2 done = 3 including this one; week 2 missed = 1 ("This week
 //    starts your streak."); week 1 missed = 2. Logging: week 1 of M5-1 has
@@ -36,7 +36,7 @@
 //    your 5 working days this week."). Kept up: Training sessions in 1 of
 //    1 finished weeks, Referral conversations in 0 of 1.
 // 4. M12: nights of 7, 6.5, 7.5 and 20 hours saved by the client: the
-//    database asks about the 20 once (sleep_to_confirm, and Plan my day asks
+//    database asks about the 20 once (sleep_to_confirm, and Daily plan asks
 //    "Is 20 hours right?"), so the average is 7.0 over 3 nights, 2 of them
 //    green; quality Poor, Good, Fair is a three-way tie, so Fair (not
 //    green); ways of being 6, 7, 7 average 7, green; the debrief's stress
@@ -170,11 +170,11 @@ async function toLastStep() {
     await nextOnce();
   }
 }
-// Review my day's summary is no longer its last step (Phase 4 step 6 adds
+// Daily review's summary is no longer its last step (Phase 4 step 6 adds
 // "Ready to close the day?" after it), so step to the summary by its heading.
 async function toSummaryStep() {
   for (let n = 0; n < 12; n += 1) {
-    if (/^(This was your day|Here’s your day)/.test(await heading())) return; // Review my day's summary is "This was your day" (5 Nov)
+    if (/^(This was your day|This was your plan)/.test(await heading())) return; // Daily review's summary is "This was your day" (5 Nov)
     await nextOnce();
   }
 }
@@ -270,8 +270,8 @@ await check('to-dos', db.from('todos').insert([
   { user_id: me, sprint_id: sprint.id, strategy_id: S.craft, text: 'Book a supervision session', impact: 3, planned_week: 2, created_on: mon, source: 'manual' },
   { user_id: me, sprint_id: sprint.id, strategy_id: S.energy, text: 'Book the physio', impact: 2, planned_week: 2, created_on: mon, done_on: thu, source: 'manual' },
 ]));
-// Plan my day and Review my day show the score on their summaries; a
-// finished plan for today lets Review my day open on its own list.
+// Daily plan and Daily review show the score on their summaries; a
+// finished plan for today lets Daily review open on its own list.
 await db.from('day_plans').delete().eq('user_id', me);
 await db.from('day_reviews').delete().eq('user_id', me);
 
@@ -281,16 +281,16 @@ async function soFarEverywhere(tag, hand, handShown, good) {
   pass(`${tag} (src/lib on the rows): ${hand.toFixed(1)}%, by hand`, lib && near(lib.score, hand, 0.05), `${lib?.score}`);
   pass(`${tag}: shown as ${handShown}%, ${good ? 'at' : 'below'} the standard`, lib && m0Round(lib.score) === handShown && m0AtStandard(lib.score, 85) === good);
   await freshDevice();
-  await page.goto(`${APP}/my-day/plan`);
+  await page.goto(`${APP}/daily-plan`);
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
   await toLastStep();
   const p = await stat('Performance score this week so far');
-  pass(`${tag}: Plan my day's summary says ${handShown}%, ${good ? 'mint' : 'not mint'}, labelled so far`, statOk(p, handShown, good), JSON.stringify(p));
-  await page.goto(`${APP}/my-day/review`);
+  pass(`${tag}: Daily plan's summary says ${handShown}%, ${good ? 'mint' : 'not mint'}, labelled so far`, statOk(p, handShown, good), JSON.stringify(p));
+  await page.goto(`${APP}/daily-review`);
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
   await toSummaryStep();
   const r = await stat('Performance score this week so far');
-  pass(`${tag}: Review my day's summary says ${handShown}%, ${good ? 'mint' : 'not mint'}, labelled so far`, statOk(r, handShown, good), JSON.stringify(r));
+  pass(`${tag}: Daily review's summary says ${handShown}%, ${good ? 'mint' : 'not mint'}, labelled so far`, statOk(r, handShown, good), JSON.stringify(r));
   await page.goto(`${APP}/performance-sprint`);
   await page.waitForSelector('.ds-sdial--running', { timeout: 30000 });
   const centre = await until(async () => {
@@ -338,9 +338,9 @@ pass('M12 sleep hours: 7.0 a night over 3 nights, 2 green (the 20 left out until
 const quality = m12SleepQuality(plans.map((p) => ({ value: p.sleep_quality, toConfirm: p.sleep_to_confirm })));
 pass('M12 sleep quality: Poor, Good, Fair tie, so Fair, not green', quality?.answer === 'fair' && quality.green === false, JSON.stringify(quality));
 await freshDevice();
-await page.goto(`${APP}/my-day/plan`);
+await page.goto(`${APP}/daily-plan`);
 await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
-pass('M12: Plan my day asks about the odd night once ("Is 20 hours right?")', Boolean(await until(async () => (await page.getByText('Is 20 hours right?').count()) === 1, 8000)));
+pass('M12: Daily plan asks about the odd night once ("Is 20 hours right?")', Boolean(await until(async () => (await page.getByText('Is 20 hours right?').count()) === 1, 8000)));
 await check('day reviews', db.from('day_reviews').insert([6, 7, 7].map((r, i) => ({ user_id: me, local_date: dayKey(-4 + i), way_of_being_rating: r, status: 'finished', finished_at: `${dayKey(-4 + i)}T20:00:00Z` }))));
 const ratings = (await check('read reviews', db.from('day_reviews').select('way_of_being_rating').eq('user_id', me))).map((r) => r.way_of_being_rating);
 const wob = m12WayOfBeing(ratings);

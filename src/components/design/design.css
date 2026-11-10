@@ -1601,6 +1601,10 @@
   visibility: hidden;
   pointer-events: none;
   white-space: nowrap;
+  /* Clipped to the box, so pills too wide to fit never give the page a
+     sideways scroll; each pill keeps its own width for the measuring. */
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .ui-root .ds-seg-measure-pill {
@@ -6584,6 +6588,10 @@
   gap: var(--space-px12);
   margin-top: var(--space-px10);
 }
+
+/* A rating's five words take the full width, so they fit or stack on a
+   phone and never push the page sideways. */
+.ui-root .ds-objfig-choice { flex: 1 1 100%; min-width: 0; }
 
 .ui-root .ds-objfig-line {
   display: inline-flex;

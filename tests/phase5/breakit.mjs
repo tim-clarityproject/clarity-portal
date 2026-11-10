@@ -32,7 +32,7 @@ if (se) throw se;
 const me = si.user.id;
 const london = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 const CUR = checkinMonth(london);
-const CUR_PATH = `/check-in/${CUR.slice(0, 7)}`;
+const CUR_PATH = `/monthly-review/${CUR.slice(0, 7)}`;
 const { data: before } = await db.from('checkins').select('*').eq('user_id', me).eq('month', CUR);
 const { data: ps } = await db.from('person_settings').select('page_preferences').eq('user_id', me).limit(1);
 const prefsBefore = ps?.[0]?.page_preferences ?? {};
@@ -96,7 +96,7 @@ try {
   const h0 = await heading(p2);
   await p2.goBack(); await sleep(1500);
   note(`back button from "${h0.slice(0, 50)}": now ${new URL(p2.url()).pathname}, heading "${(await heading(p2)).slice(0, 50)}"`);
-  if (!new URL(p2.url()).pathname.startsWith('/check-in')) { await p2.goto(`${APP}${CUR_PATH}`); await p2.waitForSelector('.ds-guide', { timeout: 20000 }); await sleep(1500); if ((await p2.locator('.ds-guide-body [role=radio]').count()) === 0) await next(p2); }
+  if (!new URL(p2.url()).pathname.startsWith('/monthly-review')) { await p2.goto(`${APP}${CUR_PATH}`); await p2.waitForSelector('.ds-guide', { timeout: 20000 }); await sleep(1500); if ((await p2.locator('.ds-guide-body [role=radio]').count()) === 0) await next(p2); }
 
   // ---------------------------------------------------------------- 2
   const p3 = await context.newPage(); watch(p3, 'tab 3');
@@ -146,7 +146,7 @@ try {
   await p3.close();
 
   // ---------------------------------------------------------------- 7
-  for (const u of ['/check-in/2099-13', '/check-in/garbage', '/check-in/2099-12', '/check-in/2025-01/answers', '/check-in/%27%3Bdrop', '/check-in/2026-10/../../welcome']) {
+  for (const u of ['/monthly-review/2099-13', '/monthly-review/garbage', '/monthly-review/2099-12', '/monthly-review/2025-01/answers', '/monthly-review/%27%3Bdrop', '/monthly-review/2026-10/../../welcome']) {
     const n = errors.length;
     await p2.goto(`${APP}${u}`); await sleep(2500);
     note(`${u} -> ${new URL(p2.url()).pathname}: "${(await body(p2)).replace(/^.*?(Home|Personal)\s/, '').slice(0, 110)}"`);
@@ -167,7 +167,8 @@ try {
   await context.setOffline(false);
   const synced = await until(async () => {
     const { data } = await db.from('person_settings').select('page_preferences').eq('user_id', me).limit(1);
-    return data?.[0]?.page_preferences?.dashboard?.closed ? data[0].page_preferences.dashboard.closed : null;
+    const c = data?.[0]?.page_preferences?.dashboard?.closed;
+    return c && Object.values(c).some(Boolean) ? c : null; // an empty {} from an earlier run isn't the answer yet
   }, 40000);
   pass('3 back online: the collapse reaches the account', synced && Object.values(synced).some(Boolean), JSON.stringify(synced));
   note(`"Saved" after sync: ${/Saved/.test(await body(p2))}`);

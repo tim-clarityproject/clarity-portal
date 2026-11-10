@@ -138,7 +138,7 @@ async function formFor(tool) {
 }
 
 const PLAN_TOOLS = [
-  ['daily_plan', null, 'Plan my day', '/daily-plan-summary'],
+  ['daily_plan', null, 'Daily plan', '/daily-plan-summary'],
   ['plan_meeting', `${STAMP}: Harbour introduction call`, 'Meeting planner', '/meeting-summary'],
   ['if_then_planning', `${STAMP}: Board presentation`, 'Pressure plan', '/pressure-plan/summary'],
   ['stop_doing_audit', `${STAMP}: Monday mornings`, 'Time audit', '/time-audit/summary'],
@@ -165,7 +165,7 @@ async function seed() {
         content: JSON.stringify({ a: `${STAMP}: the morning went to plan.`, b: '', planKind: 'daily_plan', planId: row.id, dateKey: '2026-10-20', reviewType: 'plan-review' }),
         created_at: '2026-10-20T19:00:00Z',
       }, 'entries');
-      expectReviews.push({ id: rev.id, title: 'Yesterday’s review', tool: 'Review my day', date: 'Yesterday', path: '/review-plan-summary', area: 'personal' });
+      expectReviews.push({ id: rev.id, title: 'Yesterday’s review', tool: 'Daily review', date: 'Yesterday', path: '/review-plan-summary', area: 'personal' });
     }
   }
   const hcForm = await formFor('strategic-alignment');
@@ -174,7 +174,7 @@ async function seed() {
   }
   expectPlans.push({ title: TEAM, tool: 'Strategic Alignment Health Check', date: 'Mon 12 Oct', area: 'strategic', path: '/decision-summary', version: 'Version 2' });
   expectPlans.push({ title: `Version ${plan.major}.${plan.minor}`, tool: 'Individual Performance Plan', path: '/performance-plan', area: 'personal' });
-  expectPlans.push({ title: `Performance Sprint ${sprint.number}`, tool: 'Performance Sprint', date: dayLabel(sprint.start_on), path: '/performance-sprint', area: 'personal' });
+  expectPlans.push({ title: `Sprint ${sprint.number}`, tool: 'Performance Sprint', date: dayLabel(sprint.start_on), path: '/performance-sprint', area: 'personal' });
 
   const [mission] = await insert('missions', { user_id: me, title: `${STAMP}: Grow the studio`, archived_at: '2026-09-01T09:00:00Z', created_at: '2026-06-01T09:00:00Z', updated_at: '2026-09-01T09:00:00Z' }, 'missions');
   expectPlans.push({ title: `${STAMP}: Grow the studio`, tool: 'Personal Operating Plan', date: 'Tue 1 Sep', path: `/personal-operating-plan-archived/${mission.id}`, area: 'personal' });
@@ -215,10 +215,10 @@ async function seed() {
 
   const planDay = await freeDay('day_plans', 'local_date', '2026-08-04');
   await insert('day_plans', { user_id: me, local_date: planDay, status: 'finished', finished_at: `${planDay}T08:00:00Z`, way_of_being: 'Calm and clear' }, 'dayPlans');
-  expectPlans.push({ title: 'Day plan', tool: 'Plan my day', date: dayLabel(planDay), path: `/my-day/plan/${planDay}`, area: 'personal' });
+  expectPlans.push({ title: 'Daily plan', tool: 'Daily plan', date: dayLabel(planDay), path: `/daily-plan/${planDay}`, area: 'personal' });
   const reviewDay = await freeDay('day_reviews', 'local_date', '2026-08-04');
   await insert('day_reviews', { user_id: me, local_date: reviewDay, status: 'finished', finished_at: `${reviewDay}T19:00:00Z`, went_well: `${STAMP}: a good day.` }, 'dayReviews');
-  expectReviews.push({ title: 'Day review', tool: 'Review my day', date: dayLabel(reviewDay), path: `/my-day/review/${reviewDay}`, area: 'personal' });
+  expectReviews.push({ title: 'Daily review', tool: 'Daily review', date: dayLabel(reviewDay), path: `/daily-review/${reviewDay}`, area: 'personal' });
 
   const { data: debriefs } = await db.from('weekly_debriefs').select('sprint_week').eq('sprint_id', sprint.id);
   const taken = new Set((debriefs || []).map((d) => d.sprint_week));
@@ -229,7 +229,7 @@ async function seed() {
 
   // Migration 038 isn't on the test database: the review's answers wait on
   // the device, as the app keeps them until it is.
-  expectReviews.push({ title: `Performance Sprint ${sprint.number}`, tool: 'End-of-sprint review', date: 'Sun 18 Oct', path: `/performance-sprint/review/${sprint.id}`, area: 'personal', shows: `${STAMP}: what worked` });
+  expectReviews.push({ title: `Sprint ${sprint.number}`, tool: 'End-of-sprint review', date: 'Sun 18 Oct', path: `/performance-sprint/review/${sprint.id}`, area: 'personal', shows: `${STAMP}: what worked` });
 }
 
 await seed();
@@ -405,7 +405,7 @@ async function checkHubs(page, tag) {
   await page.goto(`${APP}/personal/plan`);
   await until(async () => (await page.locator('.ds-hub-recent .ds-row').count()) > 0, 20000);
   await page.locator('.ds-hub-recent .ds-row').first().click();
-  pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(my-day\/plan\/|daily-plan-summary|decision-summary|pre-mortem\/summary|time-audit\/summary|pressure-plan\/summary|give-difficult-feedback\/summary)/)), path(page));
+  pass(`${tag}: a recent item opens its page`, Boolean(await landsOn(page, /^\/(daily-plan\/|daily-plan-summary|decision-summary|pre-mortem\/summary|time-audit\/summary|pressure-plan\/summary|give-difficult-feedback\/summary)/)), path(page));
 
   // Strategic: the Health Check's teams.
   await page.goto(`${APP}/strategic`);

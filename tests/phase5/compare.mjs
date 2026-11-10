@@ -10,7 +10,7 @@
 //
 // Screens: the dashboard (as it opens, every part open, Show as a table
 // open, Customise), the check-in (the opening, a question, a statement,
-// the results, Add to my sprint, the saved results, the First check-in's
+// the results, Add to my sprint, the saved results, the First review's
 // opening and its goals), and the follow-ups (the search in My Plans and
 // My Reviews, found and nothing found).
 //
@@ -79,7 +79,7 @@ const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year
 const CUR = checkinMonth(today);
 const prevDate = new Date(Date.UTC(Number(CUR.slice(0, 4)), Number(CUR.slice(5, 7)) - 2, 1));
 const PREV = `${prevDate.toISOString().slice(0, 7)}-01`;
-const CUR_PATH = `/check-in/${CUR.slice(0, 7)}`;
+const CUR_PATH = `/monthly-review/${CUR.slice(0, 7)}`;
 
 // ---------------------------------------------------------------- the seed
 const { data: settingsRow } = await db.from('person_settings').select('page_preferences').eq('user_id', me).limit(1);
@@ -159,7 +159,7 @@ async function signInOnce() {
   storage = { cookies: s.cookies, origins: s.origins.map((o) => ({ ...o, localStorage: o.localStorage.filter((x) => !/^(clarity-cache|clarity-draft|ds-guide|clarity-queue|clarity-sending)/.test(x.name)) })) };
   await ctx.close();
 }
-// first: the First check-in (a coach, Tim; no check-ins yet, and nothing it writes reaches the database).
+// first: the First review (a coach, Tim; no check-ins yet, and nothing it writes reaches the database).
 async function guard(context, { first = false } = {}) {
   await context.route('**/*', (route) => {
     const req = route.request();
@@ -288,8 +288,8 @@ const SCREENS = [
   { id: 'My Plans, search found', coral: 'atMost', open: (p) => search(p, '/my-plans', firstWord) },
   { id: 'My Plans, search nothing found', coral: 'atMost', open: (p) => search(p, '/my-plans', 'zzqx') },
   { id: 'My Reviews, search found', coral: 'atMost', open: (p) => search(p, '/my-reviews', 'check-in') },
-  { id: 'First check-in, the opening', first: true, coral: 'one', open: async (p) => { await go(p, '/check-in', '.ds-guide-question, .ds-guide-title'); await until(async () => /first check-in/i.test(await heading(p))); } },
-  { id: 'First check-in, the goals', first: true, coral: 'atMost', open: async (p) => { await sleep(450); await p.locator('.ds-guide-next').click(); await until(async () => !/^Ready /.test(await heading(p)), 6000); await settle(p); } },
+  { id: 'First review, the opening', first: true, coral: 'one', open: async (p) => { await go(p, '/monthly-review', '.ds-guide-question, .ds-guide-title'); await until(async () => /first review/i.test(await heading(p))); } },
+  { id: 'First review, the goals', first: true, coral: 'atMost', open: async (p) => { await sleep(450); await p.locator('.ds-guide-next').click(); await until(async () => !/^Ready /.test(await heading(p)), 6000); await settle(p); } },
 ];
 const wanted = SCREENS.filter((s) => !ONLY || ONLY.test(s.id));
 // A screen's own exemption from "no line said twice" (each objective's status line is its own fact, as dashboard.mjs).

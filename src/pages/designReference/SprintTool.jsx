@@ -12,7 +12,7 @@ export default function SprintTool({ demo, layout, open, onClose, role }) {
       name="Start a sprint"
       steps={demo.steps}
       skipLabel="Skip"
-      finishLabel="Start Performance Sprint 5"
+      finishLabel="Start my sprint"
       saveState={demo.state}
       role={role}
       draftKey={stepDraft(demo.key, layout)}

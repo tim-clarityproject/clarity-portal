@@ -1,4 +1,4 @@
-// Plan my day: the newest choice wins (Phase 5 follow-up 2, open fault 1).
+// Daily plan: the newest choice wins (Phase 5 follow-up 2, open fault 1).
 // In one full run of quick-ticks.mjs a habit chosen straight after two
 // to-dos, while the page was refreshing, came off the screen. This test
 // repeats that exact sequence 20 times (RUNS= to change it) and every run
@@ -9,7 +9,7 @@
 //   2.5 seconds, and every save of the day's to-dos slowed by a second; two
 //   to-dos and then a habit are chosen at once.
 //
-// The miss in quick-ticks.mjs was its own leftover: Review my day's runs
+// The miss in quick-ticks.mjs was its own leftover: Daily review's runs
 // had saved the morning's habit for the same day, so it showed as already
 // chosen and the third tap unchose it. This test starts every run with
 // day_plan_habits cleared too, so a miss here is the app's.
@@ -184,7 +184,7 @@ for (let run = 1; run <= RUNS; run += 1) {
     await cleanDay();
     await page.goto(`${APP}/welcome`);
     await forgetDay();
-    await page.goto(`${APP}/my-day/plan`);
+    await page.goto(`${APP}/daily-plan`);
     await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
     for (let i = 0; i < 6 && (await heading()) !== 'What will you do today?'; i += 1) await next();
     if ((await heading()) !== 'What will you do today?') throw new Error(`Not on What will you do today? ("${await heading()}")`);

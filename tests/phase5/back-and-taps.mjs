@@ -173,11 +173,11 @@ const sideways = (page) => page.evaluate(() => document.documentElement.scrollWi
 
 // Guided tools: opened, then one Next (never an answer), so Back shows.
 const GUIDED = [
-  { who: 'ORG_CLIENT', path: '/check-in', name: 'Check-in' },
+  { who: 'ORG_CLIENT', path: '/monthly-review', name: 'Check-in' },
   { who: 'CLIENT', path: '/performance-sprint/debrief', name: 'Weekly debrief' },
   { who: 'CLIENT', path: '/performance-plan/edit', name: 'Plan builder (edit)' },
-  { who: 'CLIENT', path: '/my-day/review', name: 'Review my day' },
-  { who: 'CLIENT', path: '/my-day/plan', name: 'Plan my day' },
+  { who: 'CLIENT', path: '/daily-review', name: 'Daily review' },
+  { who: 'CLIENT', path: '/daily-plan', name: 'Daily plan' },
 ];
 const BAR_EDGE = () => { const bar = document.querySelector('.ds-guide-bar'); const r = bar.getBoundingClientRect(); return r.left + parseFloat(getComputedStyle(bar).paddingLeft); };
 async function toBack(page, path) {
@@ -283,7 +283,7 @@ try {
     const tag = `Check-in, ${width}px, reduced motion`;
     const { context, page } = await open('ORG_CLIENT', width, 'dark', { motion: 'reduce' });
     try {
-      if (!(await toBack(page, '/check-in'))) { note(`${tag}: Back wasn't reached`); continue; }
+      if (!(await toBack(page, '/monthly-review'))) { note(`${tag}: Back wasn't reached`); continue; }
       await page.locator('.ds-guide-back').first().click();
       await sleep(800);
       const seen = await motionSeen(page);

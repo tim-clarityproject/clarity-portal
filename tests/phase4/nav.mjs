@@ -191,12 +191,12 @@ const AREAS = [
   ['Strategic', '/strategic'],
   ['My Account', '/my-account'],
 ];
-// The Hardware and Software check-in joined Review in Phase 5 step 1.
+// The Monthly Hardware and Software review joined Review in Phase 5 step 1.
 const HUB_TILES = {
   '/personal': [['Dashboard', '/dashboard'], ['Plan', '/personal/plan'], ['Reset', '/personal/reset'], ['Review', '/personal/review']],
-  '/personal/plan': [['Individual Performance Plan', '/performance-plan'], ['Performance Sprint', '/performance-sprint'], ['Plan my day', '/my-day/plan'], ['Get unstuck', '/get-unstuck'], ['Pre-mortem', '/pre-mortem'], ['Time audit', '/time-audit']],
+  '/personal/plan': [['Individual Performance Plan', '/performance-plan'], ['Performance Sprint', '/performance-sprint'], ['Daily plan', '/daily-plan'], ['Get unstuck', '/get-unstuck'], ['Pre-mortem', '/pre-mortem'], ['Time audit', '/time-audit']],
   '/personal/reset': [['Breathe', '/breathe'], ['Sleep wind down', '/sleep-wind-down'], ['Pressure plan', '/pressure-plan'], ['Journal', '/daily-journal']],
-  '/personal/review': [['Review my day', '/my-day/review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/life-balance-review'], ['Hardware and Software check-in', '/check-in']],
+  '/personal/review': [['Daily review', '/daily-review'], ['Weekly performance debrief', '/performance-sprint/debrief'], ['After-action review', '/my-journal'], ['Life balance review', '/life-balance-review'], ['Monthly Hardware and Software review', '/monthly-review']],
   '/interpersonal': [['Meeting planner', '/plan-meeting'], ['Give difficult feedback', '/give-difficult-feedback']],
   '/strategic': [['Strategic Alignment Health Check', '/goal-setting']],
 };

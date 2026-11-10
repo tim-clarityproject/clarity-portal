@@ -60,6 +60,16 @@ const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 const results = [];
 let failures = 0;
+// A rating is one of five words (10 Nov): pick it from the answers under
+// the label, whichever form the shared Choice gives them.
+const pickWord = async (page, scope, label, word) => {
+  const field = scope.locator('.ds-choice, .ds-objed-field, .ds-habed-target').filter({ hasText: label }).last();
+  const radio = field.getByRole('radio', { name: word, exact: true });
+  if (await radio.count()) { await radio.first().click(); return; }
+  await field.locator('.ds-dd').first().click();
+  await page.getByRole('option', { name: word, exact: true }).click();
+  await page.waitForTimeout(150);
+};
 const pass = (name, ok, detail = '') => {
   if (!ok) failures += 1;
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail && !ok ? `: ${detail}` : ''}`);
@@ -364,13 +374,13 @@ try {
   await pickDate(0, '15 June 2027', 8);
   await page.getByRole('button', { name: 'Add an objective' }).click();
   await card(1).locator('textarea').fill(O2);
-  await card(1).getByRole('radio', { name: 'I’ll rate it out of 10' }).click();
-  await card(1).getByLabel('Where are you now?').fill('5');
-  await card(1).getByLabel('What’s your target?').fill('8');
+  await card(1).getByRole('radio', { name: 'I’ll rate it from Poor to Excellent' }).click();
+  await pickWord(page, card(1), 'Where are you now?', 'Good');
+  await pickWord(page, card(1), 'What’s your target?', 'Very good');
   await pickDate(1, '30 April 2027', 6);
   await until(async () => {
     const o = await q(db.from('outcome_objectives').select('name, target_value').eq('user_id', me).is('archived_at', null));
-    return o.some((x) => x.name === O1 && Number(x.target_value) === 20) && o.some((x) => x.name === O2 && Number(x.target_value) === 8);
+    return o.some((x) => x.name === O1 && Number(x.target_value) === 20) && o.some((x) => x.name === O2 && Number(x.target_value) === 7.5);
   });
   await savedShown(page);
   await next(page);
@@ -425,8 +435,8 @@ try {
   await habit(0).getByLabel('What’s the target?').fill('3');
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(1).locator('textarea').fill('Energy');
-  await measure(1, 'I’ll rate it from 1 to 5 each day');
-  await habit(1).getByLabel('What’s the target?').fill('4');
+  await measure(1, 'I’ll rate it each day, from Poor to Excellent');
+  await pickWord(page, habit(1), 'What’s the target?', 'Very good');
   await habitsSaved([['Thank-you notes sent', 'yes_no_days_target', 4], ['Weekly referral review', 'yes_no_weekly', null], ['Practice runs', null, 3], ['Energy', 'rating', 4]]);
   await savedShown(page);
   const habits = await q(db.from('habits').select('name, measure, target, strategy_id').eq('user_id', me));
@@ -444,11 +454,11 @@ try {
   await page.getByRole('radio', { name: '85%', exact: true }).click().catch(() => null);
   await next(page);
   const ready = await bodyText(page);
-  pass('build: Ready lists both objectives with their figures', ready.includes('12 now, target 20, by 15 Jun 2027') && ready.includes('5/10 now, target 8/10, by 30 Apr 2027'), ready.slice(0, 300));
+  pass('build: Ready lists both objectives with their figures', ready.includes('12 now, target 20, by 15 Jun 2027') && ready.includes('Good now, target Very good, by 30 Apr 2027'), ready.slice(0, 300));
   pass('build: Ready says 3 weeks from today', ready.includes('3 weeks') && /Today/.test(ready));
   await shot(page, '1-ready');
   await pastTapGuard(page);
-  await page.getByRole('button', { name: 'Start Performance Sprint 1' }).click();
+  await page.getByRole('button', { name: 'Start my first sprint' }).click();
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
   await page.waitForSelector('.ds-sdial--running', { timeout: 30000 });
   const s1 = await runningSprint();
@@ -676,10 +686,10 @@ try {
   await shot(page, '3-rolled-over');
   all = await todosOf();
   pass('roll-over: still four to-dos, none lost or added', all.length === 4 && new Set(all.map((t) => t.text)).size === 4, JSON.stringify(all.map((t) => t.text)));
-  pass('roll-over: the open one shows once, from week 2', (await todoRow(TB).count()) === 1 && (await todoRow(TB).textContent()).includes('rolled over from week 2'));
+  pass('roll-over: the open one shows once, from week 2', (await todoRow(TB).count()) === 1 && (await todoRow(TB).textContent()).includes('Rolled over from week 2'));
   pass('roll-over: the done one stays in week 2', (await todoRow(TA).count()) === 0);
   pass('roll-over: the moved and the later one show once each, this week', (await todoRow(TD).count()) === 1 && (await todoRow(TC).count()) === 1
-    && !(await todoRow(TD).textContent()).includes('rolled over') && !(await todoRow(TC).textContent()).includes('rolled over'));
+    && !/rolled over/i.test(await todoRow(TD).textContent()) && !/rolled over/i.test(await todoRow(TC).textContent()));
   pass('roll-over: last week’s wins aren’t listed this week', (await todoRow(W1).count()) === 0);
   const v3 = await libraryView();
   pass('week 3: the score so far matches src/lib/scores', (await centreScore()) === (v3.soFar ? `${v3.soFar.value}%` : ''), `${await centreScore()} vs ${v3.soFar?.value}`);
@@ -782,7 +792,7 @@ try {
   await next(page);
   await next(page); // habits that stuck: as they are
   at = 'review next';
-  await page.getByRole('radio', { name: /Straight into Performance Sprint 2/ }).click();
+  await page.getByRole('radio', { name: /straight into my next sprint/ }).click();
   await shot(page, '6-review-next');
   await pastTapGuard(page);
   await page.locator('.ds-guide .ds-btn--primary').last().click();
@@ -798,7 +808,7 @@ try {
   at = 'start length';
   await page.waitForSelector('.ds-guide', { timeout: 20000 });
   await calm(page);
-  pass('start: opens on the steps for Sprint 2', (await page.locator('.ds-guide').textContent()).includes('Performance Sprint 2') && /How long is this sprint\?/.test(await heading(page)), await heading(page));
+  pass('start: opens on the steps for Sprint 2', (await page.locator('.ds-guide').textContent()).includes('Performance Sprint') && /How long is this sprint\?/.test(await heading(page)), await heading(page));
   await page.getByRole('radio', { name: '4 weeks', exact: true }).click();
   await page.getByLabel('What would you like to call it?').fill('Workshop month');
   await next(page);
@@ -822,7 +832,7 @@ try {
   pass('start: Ready sums it up', ready.includes('4 weeks') && ready.includes('Workshop month') && ready.includes('80%'), ready.slice(0, 300));
   await shot(page, '6-start-ready');
   await pastTapGuard(page);
-  await page.getByRole('button', { name: 'Start Performance Sprint 2' }).click();
+  await page.getByRole('button', { name: 'Start my sprint' }).click();
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
   await until(async () => (await runningSprint())?.number === 2, 20000);
   const list = await q(db.from('sprints').select('*').eq('user_id', me).order('number'));
@@ -842,7 +852,7 @@ try {
   pass('the plan page shows the new target', Boolean(await until(async () => (await bodyText(page)).includes('of 25'), 15000)), (await bodyText(page)).slice(0, 400));
   await visit(page, '/performance-sprint/year', 'performance-year');
   const yTips = await page.locator('[data-tip]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || ''));
-  pass('View your year: Sprint 1’s weeks are kept', yTips.some((t) => /Performance Sprint 1/.test(t)), yTips.slice(-6).join(' | '));
+  pass('View your year: Sprint 1’s weeks are kept', yTips.some((t) => /Sprint 1/.test(t)), yTips.slice(-6).join(' | '));
   await shot(page, '6-year-after');
 } catch (e) {
   pass('journey 6 ran to the end', false, `${at}: ${e.message.split('\n')[0]}`);

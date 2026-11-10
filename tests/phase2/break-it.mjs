@@ -301,11 +301,11 @@ if (run('taps')) {
     // Next, step by step, until "What's next?". Each press waits for the
     // step to change; a press the tool's 400ms guard swallowed (just after
     // it appeared, or just after a move) is pressed again.
-    for (let i = 0; i < 12 && !(await s.page.getByRole('radio', { name: /Straight into Performance Sprint/ }).count()); i += 1) {
+    for (let i = 0; i < 12 && !(await s.page.getByRole('radio', { name: /straight into my next sprint/ }).count()); i += 1) {
       if (!(await advance(s.page))) break;
     }
-    await s.page.getByRole('radio', { name: /Straight into Performance Sprint/ }).click();
-    await until(async () => (await s.page.getByRole('radio', { name: /Straight into Performance Sprint/ }).getAttribute('aria-checked')) === 'true', 5000);
+    await s.page.getByRole('radio', { name: /straight into my next sprint/ }).click();
+    await until(async () => (await s.page.getByRole('radio', { name: /straight into my next sprint/ }).getAttribute('aria-checked')) === 'true', 5000);
     await afterGuard(s.page);
     await s.page.locator('.ds-guide .ds-btn--primary').last().click({ clickCount: 3 });
     await until(async () => /\/performance-sprint\/start/.test(s.page.url()), 30000);
@@ -316,12 +316,12 @@ if (run('taps')) {
     // Start a sprint: Start Performance Sprint 3, three taps.
     if (/\/start/.test(s.page.url())) {
       await s.page.waitForSelector('.ds-guide', { timeout: 30000 });
-      for (let i = 0; i < 10 && !/Performance Sprint 3/.test(await heading(s.page)); i += 1) {
+      for (let i = 0; i < 10 && !/^\s*Performance Sprint\s*$/i.test(await heading(s.page)); i += 1) {
         const today = s.page.getByRole('radio', { name: /^Tomorrow|^Today/ });
         if (await today.count()) await today.first().click();
         if (!(await advance(s.page))) break;
       }
-      const start = s.page.getByRole('button', { name: 'Start Performance Sprint 3' });
+      const start = s.page.getByRole('button', { name: 'Start my sprint' });
       await start.waitFor({ timeout: 10000 });
       await afterGuard(s.page);
       await start.click({ clickCount: 3 });

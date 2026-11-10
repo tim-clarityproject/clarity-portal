@@ -9,10 +9,10 @@
 // In Chromium AND WebKit:
 // 1. After one online visit in a fresh profile, offline: the portal opens
 //    from the start URL "/" and shows Today, the sprint and the plan, plus
-//    Plan my day, Review my day, the debrief, My Plans, My Reviews and a
+//    Daily plan, Daily review, the debrief, My Plans, My Reviews and a
 //    tool never opened, all as last seen; a page never opened with no copy
 //    yet says calmly that it needs a connection the first time.
-// 2. Offline: a day's logging (Home), Plan my day and Review my day. The
+// 2. Offline: a day's logging (Home), Daily plan and Daily review. The
 //    access token is then made expired (a long flight), and back online the
 //    sign-in refreshes first, then each save is sent exactly once (every
 //    write request is recorded, and the database checked).
@@ -228,17 +228,17 @@ async function openPage(page, path, selector) {
   return page.waitForSelector(selector, { timeout: 30000 }).then(() => true, () => false);
 }
 
-// Plan my day, start to Set my day, with the fewest answers.
+// Daily plan, start to Set my day, with the fewest answers.
 async function planMyDay(page) {
-  await openPage(page, '/my-day/plan', '.ds-guide-question');
+  await openPage(page, '/daily-plan', '.ds-guide-question');
   for (let i = 0; i < 14; i += 1) {
     const h = await heading(page);
     const body = page.locator('.ds-guide-body');
-    if (/^Here’s your day/.test(h)) {
+    if (h === 'This was your plan') {
       return until(async () => {
-        if (!/\/my-day\/plan/.test(new URL(page.url()).pathname)) return true;
+        if (!/\/daily-plan/.test(new URL(page.url()).pathname)) return true;
         await page.getByRole('button', { name: 'Set my day' }).click({ timeout: 2000 }).catch(() => null);
-        return !/\/my-day\/plan/.test(new URL(page.url()).pathname);
+        return !/\/daily-plan/.test(new URL(page.url()).pathname);
       }, 15000);
     }
     if (h === 'How did you sleep last night?') {
@@ -261,12 +261,12 @@ async function planMyDay(page) {
     }
     await next(page);
   }
-  throw new Error(`Plan my day didn't reach its summary (last: "${await heading(page)}")`);
+  throw new Error(`Daily plan didn't reach its summary (last: "${await heading(page)}")`);
 }
 
-// Review my day, start to Work's done for today.
+// Daily review, start to Work's done for today.
 async function reviewMyDay(page) {
-  await openPage(page, '/my-day/review', '.ds-guide-question');
+  await openPage(page, '/daily-review', '.ds-guide-question');
   for (let i = 0; i < 14; i += 1) {
     const h = await heading(page);
     const body = page.locator('.ds-guide-body');
@@ -288,7 +288,7 @@ async function reviewMyDay(page) {
     }
     await next(page);
   }
-  throw new Error(`Review my day didn't reach Close the day (last: "${await heading(page)}")`);
+  throw new Error(`Daily review didn't reach Close the day (last: "${await heading(page)}")`);
 }
 
 async function logWater(page, value) {
@@ -314,7 +314,7 @@ for (const kind of BROWSERS) {
       return missing.length === 0 ? true : null;
     }, 45000, 500);
     const missing = await page.evaluate((want) => want.filter((k) => localStorage.getItem(k) == null), WARMED.map(cacheKey));
-    pass(`${tag}: after one visit the key pages' data is on the device (Home's day, the plan, the sprint, Plan and Review my day, the debrief, My Plans, My Reviews, the check-in, the dashboard and its patterns)`, Boolean(warmed), missing.join(', '));
+    pass(`${tag}: after one visit the key pages' data is on the device (Home's day, the plan, the sprint, Plan and Daily review, the debrief, My Plans, My Reviews, the check-in, the dashboard and its patterns)`, Boolean(warmed), missing.join(', '));
 
     if (part(1)) {
       await offline(true);
@@ -327,8 +327,8 @@ for (const kind of BROWSERS) {
       pass(`${tag}: offline, the calm offline line shows`, Boolean(await until(async () => (await page.locator('.ds-connection').count()) > 0, 20000)));
       pass(`${tag}: offline, the sprint opens with its score`, await openPage(page, '/performance-sprint', '.ds-sdial-big--score'));
       pass(`${tag}: offline, the plan opens with its Strategies`, await openPage(page, '/performance-plan', '.ds-page-title') && Boolean(await until(async () => (await bodyText(page)).includes('Grow through referrals'), 10000)));
-      pass(`${tag}: offline, Plan my day opens`, await openPage(page, '/my-day/plan', '.ds-guide-question'));
-      pass(`${tag}: offline, Review my day opens`, await openPage(page, '/my-day/review', '.ds-guide-question'));
+      pass(`${tag}: offline, Daily plan opens`, await openPage(page, '/daily-plan', '.ds-guide-question'));
+      pass(`${tag}: offline, Daily review opens`, await openPage(page, '/daily-review', '.ds-guide-question'));
       const debrief = await openPage(page, '/performance-sprint/debrief', '.ds-page-title, .ds-guide-question');
       pass(`${tag}: offline, the debrief opens without a load error`, debrief && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN), ((await bodyText(page)).match(/.{0,120}(didn’t load|needs a connection the first time).{0,60}/s) || [''])[0]);
       pass(`${tag}: offline, My Plans opens with its list`, await openPage(page, '/my-plans', '.ds-page-title') && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN));
@@ -346,8 +346,8 @@ for (const kind of BROWSERS) {
       await offline(true);
       await logWater(page, WATER_A);
       pass(`${tag}: offline, the day's log waits on the device`, Boolean(await until(async () => (await queued(page)) >= 1, 10000)));
-      pass(`${tag}: offline, Plan my day finishes`, Boolean(await planMyDay(page).catch((e) => { notes.push(`${tag} plan: ${e.message}`); return false; })));
-      pass(`${tag}: offline, Review my day finishes`, Boolean(await reviewMyDay(page).catch((e) => { notes.push(`${tag} review: ${e.message}`); return false; })));
+      pass(`${tag}: offline, Daily plan finishes`, Boolean(await planMyDay(page).catch((e) => { notes.push(`${tag} plan: ${e.message}`); return false; })));
+      pass(`${tag}: offline, Daily review finishes`, Boolean(await reviewMyDay(page).catch((e) => { notes.push(`${tag} review: ${e.message}`); return false; })));
       const waiting = await queued(page);
       pass(`${tag}: offline, every save waits on the device`, waiting >= 3, String(waiting));
       pass(`${tag}: nothing reached the database while offline`, (await waterLog())?.length === 0 && !(await db.from('day_plans').select('id').eq('user_id', me).eq('local_date', today)).data?.length);
@@ -561,7 +561,7 @@ for (const kind of BROWSERS) {
     pass(`${tag}: offline, the dashboard shows its parts as last seen`, Boolean(await until(async () => (await page.locator('.dash-sec').count()) > 0, 15000)) && !(await bodyText(page)).includes('didn’t load') && !(await bodyText(page)).includes(FIRST_OPEN), (await bodyText(page)).slice(0, 300));
     pass(`${tag}: offline, the dashboard's chart shows`, (await page.locator('.dash-hchart-bar, .dash-big, .dash-hero-value').count()) > 0);
 
-    const ck = await openPage(page, '/check-in', '.ds-guide-question, .ds-guide-title');
+    const ck = await openPage(page, '/monthly-review', '.ds-guide-question, .ds-guide-title');
     pass(`${tag}: offline, the check-in opens`, ck && !(await bodyText(page)).includes(FIRST_OPEN), (await bodyText(page)).slice(0, 200));
     const opening = await heading(page);
     pass(`${tag}: offline, the check-in opens on its first screen`, /^Ready /.test(opening), opening);

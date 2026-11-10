@@ -319,7 +319,7 @@ async function checkHabitColours(page, tag) {
 async function playThrough(page, tag, { deep = false } = {}) {
   await open(page, '/performance-sprint/debrief');
   // 1. Numbers
-  pass(`${tag}: opens on week 3 with ~5 minutes`, (await heading(page)) === `How did week ${WEEK} go?` && (await page.locator('.ds-guide-label').first().textContent()).trim() === '~5 minutes', await heading(page));
+  pass(`${tag}: opens on week 3, with no time on the first screen (10 Nov)`, (await heading(page)) === `How did week ${WEEK} go?` && !/~\d+ minutes/.test(await page.locator('.ds-guide').innerText()), await heading(page));
   pass(`${tag}: the % complete bar, never a step count`, await page.locator('.ds-guide-pct').isVisible());
   pass(`${tag}: rule 5 over M1: no "missed"`, (await page.locator('.ds-guide-nudge').allInnerTexts()).includes('Fill in any day you didn’t log, or leave it empty.'));
   pass(`${tag}: grouped by Strategy`, (await page.locator('.deb-group-name').allInnerTexts()).join('|').startsWith('Maintain my availability to do good work'));
@@ -355,7 +355,8 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await clients.fill('33');
   const change = await until(async () => (await page.locator('.ds-objfig', { hasText: 'Coaching clients' }).locator('.ds-objfig-change--good').count()) === 1, 4000);
   pass(`${tag}: the change at a glance, mint`, Boolean(change) && (await page.locator('.ds-objfig', { hasText: 'Coaching clients' }).locator('.ds-objfig-change').innerText()) === '+2');
-  await page.getByRole('textbox', { name: 'How world-class is my coaching? now' }).fill('8');
+  // A rating is one of five words (10 Nov).
+  await page.locator('.ds-objfig', { hasText: 'How world-class is my coaching?' }).getByRole('radio', { name: 'Very good', exact: true }).click();
   if (deep) {
     await page.locator('.ds-objfig', { hasText: 'Publish my coaching book' }).getByRole('button', { name: 'Mark as done' }).click();
     pass(`${tag}: a milestone marked as reached says so`, Boolean(await until(async () => (await page.getByText('Publish my coaching book is marked as reached.').count()) > 0, 6000)));
@@ -366,7 +367,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   // 4. Went well
   pass(`${tag}: Went well`, (await heading(page)) === 'What went well this week?');
   if (deep) {
-    pass(`${tag}: Your days folds the week's Review my day entries`, (await page.getByText('1 Review my day entry this week').count()) === 1);
+    pass(`${tag}: Your days folds the week's Daily review entries`, (await page.getByText('1 Daily review this week').count()) === 1);
     await page.locator('.deb-days .ds-collapse-summary, .deb-days button').first().click();
     await page.getByRole('button', { name: /Wed 14 Oct/ }).click();
     pass(`${tag}: a day opens to its answers`, Boolean(await until(async () => (await page.locator('.deb-day').first().innerText()).includes('Grow through referrals, High'), 4000)));
@@ -463,7 +464,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
     return r?.status === 'finished' ? r : null;
   });
   pass(`${tag}: the debrief is saved as finished`, Boolean(row?.finished_at));
-  pass(`${tag}: the sprint page's debrief line goes once it's done`, Boolean(await until(async () => (await page.getByText('Your weekly debrief is ready.').count()) === 0 && (await page.locator('.ds-sdial, .sprint-hero').count()) > 0, 10000)));
+  pass(`${tag}: the sprint page's debrief line goes once it's done`, Boolean(await until(async () => (await page.getByRole('button', { name: 'Start my debrief' }).count()) === 0 && (await page.locator('.ds-sdial, .sprint-hero').count()) > 0, 10000)));
   return row;
 }
 
@@ -474,7 +475,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
   const tag = `${width}px ${mode}`;
   const deep = width === 1280 && mode === 'dark';
   if (deep) {
-    // One Review my day entry in week 3, for "Your days".
+    // One Daily review entry in week 3, for "Your days".
     const r = (await db.from('day_reviews').insert({ user_id: me, local_date: dayKey(2, weekStart), went_well: 'The Harbour call landed.', differently: 'Leave ten minutes between calls.', status: 'finished', finished_at: `${dayKey(2, weekStart)}T20:00:00Z` }).select('id').single()).data;
     await db.from('day_review_strategies').insert({ day_review_id: r.id, strategy_id: sid('Grow through referrals'), level: 3, user_id: me });
   }
@@ -483,7 +484,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
     if (deep) {
       // The sprint page offers the debrief while its window is open (M1 "Start my debrief").
       await page.goto(`${APP}/performance-sprint`);
-      pass('the sprint page says the weekly debrief is ready', Boolean(await until(async () => (await page.getByText('Your weekly debrief is ready.').count()) === 1, 20000)));
+      pass('the sprint page says the weekly debrief is ready', Boolean(await until(async () => (await page.getByRole('button', { name: 'Start my debrief' }).count()) === 1, 20000)));
       await page.getByRole('button', { name: 'Start my debrief' }).click();
       await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
       pass('Start my debrief opens the debrief', (await heading(page)) === `How did week ${WEEK} go?`);
@@ -496,7 +497,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       pass('the habit log typed in the debrief is in the sprint', Number((await db.from('habit_logs').select('value').eq('sprint_habit_id', hid('Focus')).eq('local_date', SAT)).data?.[0]?.value) === 4);
       const figs = (await db.from('objective_figures').select('objective_id, value, recorded_on, sprint_id, sprint_week').eq('user_id', me).eq('sprint_id', sprint.id).eq('sprint_week', WEEK)).data;
       const fig = (name) => figs.find((f) => f.objective_id === oid(name));
-      pass('objective figures saved for the week, on its last day (M9)', figs.length === 2 && Number(fig('Coaching clients')?.value) === 33 && Number(fig('How world-class is my coaching?')?.value) === 8 && figs.every((f) => f.recorded_on === weekEnd), JSON.stringify(figs));
+      pass('objective figures saved for the week, on its last day (M9)', figs.length === 2 && Number(fig('Coaching clients')?.value) === 33 && Number(fig('How world-class is my coaching?')?.value) === 7.5 && figs.every((f) => f.recorded_on === weekEnd), JSON.stringify(figs));
       const reached = (await db.from('outcome_objectives').select('reached_on').eq('id', oid('Publish my coaching book'))).data?.[0]?.reached_on;
       pass('the milestone is reached on the week\'s last day', reached === weekEnd, reached);
       const todo = (await db.from('todos').select('sprint_id, planned_week, source, source_id, strategy_id, created_on').eq('user_id', me).eq('text', TODO)).data;

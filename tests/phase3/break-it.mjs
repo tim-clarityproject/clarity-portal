@@ -1,4 +1,4 @@
-// Phase 3 step 5, the break-it tester: tries to break Plan my day, Review
+// Phase 3 step 5, the break-it tester: tries to break Daily plan, Review
 // my day and the Weekly performance debrief in the running app on the TEST
 // database only (every other host and every email call is blocked), signed
 // in as the invented test clients.
@@ -21,7 +21,7 @@
 //   window    a debrief on the last day of its window and the day after.
 //   zones     Pacific/Auckland, America/Los_Angeles and Europe/London, and
 //             the UK clock-change day.
-//   dayoff    a day off in the working pattern: Plan my day, Review my day,
+//   dayoff    a day off in the working pattern: Daily plan, Daily review,
 //             the debrief and the score.
 //   others    another test client reading or changing the day plans,
 //             reviews and debriefs (routes, ids, direct calls with the
@@ -268,7 +268,7 @@ async function backUntil(page, question) {
   }
   if (!(await there())) throw new Error(`Never got back to "${question || 'the first step'}"`);
 }
-// With no way of being from the morning, Review my day first asks how they
+// With no way of being from the morning, Daily review first asks how they
 // wanted to be (Tim, 5 Nov); then the rating.
 async function rate(page, n) {
   if ((await heading(page)) === 'How did you want to be today?') {
@@ -293,7 +293,7 @@ async function finishWith(page, label) {
   }, 15000);
   if (!gone) throw new Error(`${label} did not go back`);
 }
-// Review my day ends on Work's done for today (Phase 4 step 6): from its
+// Daily review ends on Work's done for today (Phase 4 step 6): from its
 // summary, Next to "Ready to close the day?", then Close my day pressed
 // until Work's done shows.
 async function closeDay(page) {
@@ -344,8 +344,8 @@ if (run('taps')) {
   await planFor(yesterday, { review: { tomorrow: [NIGHT] } });
   const { context, page } = await signedIn({ width: 1280, coach: true });
   try {
-    // ---- Plan my day
-    await open(page, '/my-day/plan');
+    // ---- Daily plan
+    await open(page, '/daily-plan');
     await page.waitForTimeout(900); // past the first moment's guard, so the first tap counts
     await page.locator('.ds-guide-next').click({ clickCount: 3 });
     await until(async () => (await heading(page)) !== PLAN_Q.sleep, 3000);
@@ -403,10 +403,10 @@ if (run('taps')) {
     const plans = (await dayPlans()).filter((p) => p.local_date === today);
     pass('taps: Set my day triple tapped: one plan, set', plans.length === 1 && plans[0].status === 'finished', JSON.stringify(plans.map((p) => p.status)));
     pass('taps: Set my day says so once', (await toasts(page)).filter((t) => t.startsWith('Your day is set')).length === 1, JSON.stringify(await toasts(page)));
-    await clean(page, 'taps, Plan my day');
+    await clean(page, 'taps, Daily plan');
 
-    // ---- Review my day
-    await open(page, '/my-day/review');
+    // ---- Daily review
+    await open(page, '/daily-review');
     pass('taps: Review opens on Do', (await heading(page)) === REVIEW_Q.do, await heading(page));
     const box = page.getByRole('checkbox', { name: PANEL, exact: true }).first();
     await box.click({ clickCount: 3 });
@@ -468,7 +468,7 @@ if (run('taps')) {
     pass(`taps: ${finishReview} triple tapped: one review, finished`, reviews.length === 1 && reviews[0].status === 'finished' && reviews[0].tomorrow.length === 1, JSON.stringify(reviews.map((r) => [r.status, r.tomorrow])));
     // Phase 4 (M19): the review ends with Work's done for today, once, not a toast.
     pass('taps: the review ends with Work’s done once', (await page.locator('.ds-end-title').count()) === 1, String(await page.locator('.ds-end-title').count()));
-    await clean(page, 'taps, Review my day');
+    await clean(page, 'taps, Daily review');
 
     // ---- The debrief (week 3, the last day of its window)
     await open(page, '/performance-sprint/debrief');
@@ -554,13 +554,13 @@ if (run('back')) {
     await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
   };
   try {
-    // Plan my day: typed, then Back before the save's delay ran out.
-    await open(page, '/my-day/plan');
+    // Daily plan: typed, then Back before the save's delay ran out.
+    await open(page, '/daily-plan');
     await next(page);
     const T = `${TAG} back and forward`;
     await body(page).locator('textarea').first().fill(T);
     await backAndForward();
-    pass('back: Plan my day comes back on the same step', (await heading(page)) === PLAN_Q.gratitude, await heading(page));
+    pass('back: Daily plan comes back on the same step', (await heading(page)) === PLAN_Q.gratitude, await heading(page));
     pass('back: ... with the typing', Boolean(await until(async () => (await body(page).locator('textarea').first().inputValue()) === T, 8000)), await body(page).locator('textarea').first().inputValue());
     await settled(page);
     const p = (await dayPlans()).filter((x) => x.local_date === today);
@@ -576,20 +576,20 @@ if (run('back')) {
     pass('back: the half-typed to-do comes back in its panel', Boolean(panelBack));
     pass('back: ... and nothing was saved from it', (await liveTodos(PT)).length === 0);
     if (panelBack) await page.getByRole('dialog', { name: 'Add a to-do' }).getByRole('button', { name: 'Cancel' }).click();
-    await clean(page, 'back, Plan my day');
+    await clean(page, 'back, Daily plan');
 
-    // Review my day.
-    await open(page, '/my-day/review');
+    // Daily review.
+    await open(page, '/daily-review');
     await nextUntil(page, REVIEW_Q.well);
     const R = `${TAG} went well, then Back`;
     await body(page).locator('textarea').first().fill(R);
     await backAndForward();
-    pass('back: Review my day comes back on the same step', (await heading(page)) === REVIEW_Q.well, await heading(page));
+    pass('back: Daily review comes back on the same step', (await heading(page)) === REVIEW_Q.well, await heading(page));
     pass('back: ... with the typing', Boolean(await until(async () => (await body(page).locator('textarea').first().inputValue()) === R, 8000)));
     await settled(page);
     const r = (await dayReviews()).filter((x) => x.local_date === today);
     pass('back: one review, still a draft', r.length === 1 && r[0].status === 'draft' && r[0].went_well === R, JSON.stringify(r.map((x) => [x.status, x.went_well])));
-    await clean(page, 'back, Review my day');
+    await clean(page, 'back, Daily review');
 
     // The debrief.
     await open(page, '/performance-sprint/debrief');
@@ -621,7 +621,7 @@ if (run('text')) {
   // Anything typed that became a real element (the tool's own name is a <b>).
   const injected = () => page.evaluate(() => (window.__pwned ? `ran ${window.__pwned}` : '') + [...document.querySelectorAll('.ds-guide img, .ds-guide script, .ds-guide b:not(.ds-guide-name), .ds-panel img, .ds-panel script, .ds-panel b')].map((el) => el.outerHTML.slice(0, 60)).join(' | '));
   try {
-    await open(page, '/my-day/plan');
+    await open(page, '/daily-plan');
     await next(page);
     const g = body(page).locator('textarea').first();
     await g.focus();
@@ -663,10 +663,10 @@ if (run('text')) {
       pass('text: a to-do with tags is saved as typed', (await liveTodos(TT)).length === 1);
       pass('text: ... and listed as text', (await page.locator('.ds-answer--pick', { hasText: '<script>' }).count()) >= 1 && !(await injected()), await injected());
     } else pass('text: Back reaches Do from the summary', false, await heading(page));
-    await clean(page, 'text, Plan my day');
+    await clean(page, 'text, Daily plan');
 
-    // Review my day: 50,000 characters in Went well (4,000 kept), spaces in tomorrow.
-    await open(page, '/my-day/review');
+    // Daily review: 50,000 characters in Went well (4,000 kept), spaces in tomorrow.
+    await open(page, '/daily-review');
     await nextUntil(page, REVIEW_Q.well);
     const w = body(page).locator('textarea').first();
     await w.focus();
@@ -700,7 +700,7 @@ if (run('text')) {
     pass('text: a row of spaces is left out of tomorrow', JSON.stringify(rv?.tomorrow) === JSON.stringify([`${TAG} ‮reversed‬ thing`]), `${JSON.stringify(rv?.tomorrow)} summary "${summaryTomorrow}"`);
     pass('text: the review summary has no sideways scroll', await noSideways(page), await sideways(page));
     await shot(page, 'text-review-summary');
-    await clean(page, 'text, Review my day');
+    await clean(page, 'text, Daily review');
 
     // The debrief: 50,000 characters in Went well.
     await open(page, '/performance-sprint/debrief');
@@ -728,11 +728,11 @@ if (run('text')) {
     pass('text: the database refuses 50,000 characters in a plan', Boolean(big.error));
     const bigR = await db.from('weekly_debriefs').update({ adjust: HUGE }).eq('sprint_id', sprint.id).select();
     pass('text: ... and in a debrief', Boolean(bigR.error));
-    // An oversized thing for tomorrow (written past the app), then Plan my day the next day.
+    // An oversized thing for tomorrow (written past the app), then Daily plan the next day.
     const LONG_NIGHT = `${TAG} ${'y'.repeat(600)}`;
     await db.from('day_reviews').update({ tomorrow: [LONG_NIGHT], status: 'finished' }).eq('user_id', me).eq('local_date', today);
     await context.clock.setSystemTime(londonInstant(dayKey(1), '08:00'));
-    await open(page, '/my-day/plan');
+    await open(page, '/daily-plan');
     await nextUntil(page, PLAN_Q.do);
     pass('text: an oversized thing from last night shows without sideways scroll', await noSideways(page), await sideways(page));
     const longPick = page.locator('.ds-answer--pick', { hasText: `${TAG} yyyy` }).first();
@@ -759,13 +759,13 @@ if (run('offline')) {
   const willSync = () => page.waitForFunction(() => /Will sync/.test(document.body.innerText), null, { timeout: 10000 }).then(() => true).catch(() => false);
   const savedAgain = () => page.waitForFunction(() => /Saved/.test(document.body.innerText) && !/Will sync/.test(document.body.innerText), null, { timeout: 25000 }).then(() => true).catch(() => false);
   try {
-    // Plan my day: the day's row is made offline, an answer and a pick.
-    await open(page, '/my-day/plan');
+    // Daily plan: the day's row is made offline, an answer and a pick.
+    await open(page, '/daily-plan');
     await next(page);
     await context.setOffline(true);
     const T = `${TAG} typed offline`;
     await body(page).locator('textarea').first().fill(T);
-    pass('offline: Plan my day says Will sync', await willSync());
+    pass('offline: Daily plan says Will sync', await willSync());
     await nextUntil(page, PLAN_Q.do);
     const pick = page.locator('.ds-answer--pick', { hasText: DRAFT }).first();
     await pick.click();
@@ -778,10 +778,10 @@ if (run('offline')) {
     pass('offline: one plan, with the answer', p.length === 1 && p[0].grateful_for === T, `${p.length}`);
     pass('offline: the pick arrived once', dpt.filter((r) => r.todo_id === ids.draft).length === 1, JSON.stringify(dpt));
     pass('offline: still signed in', !signedOut(page), page.url());
-    await clean(page, 'offline, Plan my day');
+    await clean(page, 'offline, Daily plan');
 
-    // Review my day: a tick offline, then a win whose save is cut off mid-way.
-    await open(page, '/my-day/review');
+    // Daily review: a tick offline, then a win whose save is cut off mid-way.
+    await open(page, '/daily-review');
     await context.setOffline(true);
     const box = page.getByRole('checkbox', { name: DRAFT, exact: true }).first();
     await box.click();
@@ -819,7 +819,7 @@ if (run('offline')) {
     const r = (await dayReviews()).filter((x) => x.local_date === today);
     pass('offline: a review finished offline arrives once, finished', r.length === 1 && r[0].status === 'finished', JSON.stringify(r.map((x) => x.status)));
     pass('offline: still signed in', !signedOut(page), page.url());
-    await clean(page, 'offline, Review my day');
+    await clean(page, 'offline, Daily review');
 
     // The debrief: typed and finished offline.
     await open(page, '/performance-sprint/debrief');
@@ -864,8 +864,8 @@ if (run('refresh')) {
     });
   };
   try {
-    // Plan my day: an answer refreshed mid-save.
-    await open(page, '/my-day/plan');
+    // Daily plan: an answer refreshed mid-save.
+    await open(page, '/daily-plan');
     await next(page);
     await body(page).locator('textarea').first().fill(`${TAG} first`);
     await settled(page);
@@ -877,7 +877,7 @@ if (run('refresh')) {
     await page.reload();
     await page.unroute('**/rest/v1/day_plans*');
     await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
-    pass('refresh: Plan my day comes back on its step', (await heading(page)) === PLAN_Q.gratitude, await heading(page));
+    pass('refresh: Daily plan comes back on its step', (await heading(page)) === PLAN_Q.gratitude, await heading(page));
     pass('refresh: ... with the answer', Boolean(await until(async () => (await body(page).locator('textarea').first().inputValue()) === T, 8000)));
     await until(async () => (await dayPlans()).some((x) => x.grateful_for === T), 20000);
     const p = (await dayPlans()).filter((x) => x.local_date === today);
@@ -894,16 +894,16 @@ if (run('refresh')) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000);
     const p2 = (await dayPlans()).filter((x) => x.local_date === today);
-    const onSummary = /Here’s your day/.test(await heading(page));
+    const onSummary = /This was your plan/.test(await heading(page));
     pass('refresh: Set my day refreshed mid-save is set, or the summary is back to set it again', p2.length === 1 && (p2[0].status === 'finished' || onSummary), `${p2[0]?.status}, "${await heading(page)}"`);
     if (p2[0]?.status !== 'finished' && onSummary) {
       await finishWith(page, 'Set my day');
       pass('refresh: ... and it can be set again', Boolean(await until(async () => (await dayPlans()).find((x) => x.local_date === today)?.status === 'finished', 15000)));
     }
-    await clean(page, 'refresh, Plan my day');
+    await clean(page, 'refresh, Daily plan');
 
-    // Review my day: a win refreshed mid-save.
-    await open(page, '/my-day/review');
+    // Daily review: a win refreshed mid-save.
+    await open(page, '/daily-review');
     await nextUntil(page, REVIEW_Q.well);
     const WIN = `${TAG}: win refreshed mid-save`;
     await page.getByRole('button', { name: 'Add an unplanned win' }).click();
@@ -929,7 +929,7 @@ if (run('refresh')) {
     w = await myWins(WIN);
     pass('refresh: the win ends up saved once', w.length === 1, `${w.length}`);
     // A tick refreshed mid-save.
-    await page.goto(`${APP}/my-day/review`);
+    await page.goto(`${APP}/daily-review`);
     await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
     await backUntil(page, null);
     const box = page.getByRole('checkbox', { name: DRAFT, exact: true }).first();
@@ -950,7 +950,7 @@ if (run('refresh')) {
       return shownTick === savedTick;
     });
     pass('refresh: a tick refreshed mid-save shows what is saved', shownTick === savedTick, `shown ${shownTick}, saved ${savedTick}`);
-    await clean(page, 'refresh, Review my day');
+    await clean(page, 'refresh, Daily review');
 
     // Finish refused once by the server: it says so plainly, and a second tap finishes.
     await nextUntil(page, REVIEW_Q.tomorrow);
@@ -1020,13 +1020,13 @@ if (run('refresh')) {
 if (run('midnight')) {
   await tidyDays();
   await planFor(yesterday);
-  const yName = `Review my day, ${new Date(`${yesterday}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(',', '')}`;
+  const yName = `Daily review, ${new Date(`${yesterday}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(',', '')}`;
   for (const [time, wantDay] of [['00:30', yesterday], ['03:59', yesterday], ['04:01', today]]) {
     const { context, page } = await signedIn({ width: 390, clock: londonInstant(today, time) });
     try {
-      await open(page, '/my-day/review');
+      await open(page, '/daily-review');
       const name = await toolName(page);
-      pass(`midnight: at ${time} the review is for ${wantDay}`, wantDay === yesterday ? name === yName : name === 'Review my day', name);
+      pass(`midnight: at ${time} the review is for ${wantDay}`, wantDay === yesterday ? name === yName : name === 'Daily review', name);
       await next(page);
       await rate(page, 6);
       await settled(page);
@@ -1045,7 +1045,7 @@ if (run('midnight')) {
   const { context, page } = await signedIn({ width: 390, clock: londonInstant(today, '23:58') });
   try {
     await planFor(today);
-    await open(page, '/my-day/review');
+    await open(page, '/daily-review');
     await next(page);
     await context.clock.setSystemTime(londonInstant(dayKey(1), '00:02'));
     // Anything that redraws the page (here, the connection dropping and coming back).
@@ -1053,31 +1053,31 @@ if (run('midnight')) {
     await page.waitForTimeout(800);
     await context.setOffline(false);
     await page.waitForTimeout(1500);
-    pass('midnight: a review carried past midnight keeps its day in the top bar', (await toolName(page)) === 'Review my day' || /Wed 21 Oct/.test(await toolName(page)), await toolName(page));
+    pass('midnight: a review carried past midnight keeps its day in the top bar', (await toolName(page)) === 'Daily review' || /Wed 21 Oct/.test(await toolName(page)), await toolName(page));
     pass('midnight: ... and its step', /how calm under pressure were you today\?$/.test(await heading(page)), await heading(page));
     await rate(page, 8);
     await settled(page);
     await until(async () => (await dayReviews()).length > 0, 10000);
     const r = await dayReviews();
     pass('midnight: ... and saves on the day it began', r.length === 1 && r[0].local_date === today && r[0].way_of_being_rating === 8, JSON.stringify(r.map((x) => [x.local_date, x.way_of_being_rating])));
-    // Plan my day, opened at 23:58 and carried past midnight, too.
+    // Daily plan, opened at 23:58 and carried past midnight, too.
     await db.from('day_plans').delete().eq('user_id', me).eq('local_date', today);
     await context.clock.setSystemTime(londonInstant(today, '23:58'));
-    await open(page, '/my-day/plan');
+    await open(page, '/daily-plan');
     await next(page);
     await context.clock.setSystemTime(londonInstant(dayKey(1), '00:02'));
     await context.setOffline(true);
     await page.waitForTimeout(800);
     await context.setOffline(false);
     await page.waitForTimeout(1500);
-    pass('midnight: Plan my day carried past midnight keeps its day and step', (await toolName(page)) === 'Plan my day' && (await heading(page)) === PLAN_Q.gratitude, `${await toolName(page)}: ${await heading(page)}`);
+    pass('midnight: Daily plan carried past midnight keeps its day and step', (await toolName(page)) === 'Daily plan' && (await heading(page)) === PLAN_Q.gratitude, `${await toolName(page)}: ${await heading(page)}`);
     await shot(page, 'midnight-plan');
     const T = `${TAG} planned at midnight`;
     await body(page).locator('textarea').first().fill(T, { timeout: 5000 });
     await settled(page);
     await until(async () => (await dayPlans()).some((x) => x.grateful_for === T), 10000);
     const p = (await dayPlans()).filter((x) => x.grateful_for === T);
-    pass('midnight: Plan my day carried past midnight saves on the day it began', p.length === 1 && p[0].local_date === today, JSON.stringify(p.map((x) => x.local_date)));
+    pass('midnight: Daily plan carried past midnight saves on the day it began', p.length === 1 && p[0].local_date === today, JSON.stringify(p.map((x) => x.local_date)));
     await clean(page, 'midnight, carried over');
   } catch (e) {
     pass('midnight carried over ran to the end', false, e.message.split('\n')[0]);
@@ -1160,17 +1160,17 @@ if (run('zones')) {
     const tag = `${tz} at ${instant.toISOString()}`;
     const { context, page } = await signedIn({ width: 390, timezoneId: tz, clock: instant });
     try {
-      await open(page, '/my-day/plan');
+      await open(page, '/daily-plan');
       await next(page);
       const T = `${TAG} in ${tz}`;
       await body(page).locator('textarea').first().fill(T);
       await settled(page);
       await until(async () => (await dayPlans()).some((x) => x.grateful_for === T), 10000);
       const p = (await dayPlans()).filter((x) => x.grateful_for === T);
-      pass(`zones: ${tag}: Plan my day saves on the device's day (${day})`, p.length === 1 && p[0].local_date === day, JSON.stringify(p.map((x) => x.local_date)));
+      pass(`zones: ${tag}: Daily plan saves on the device's day (${day})`, p.length === 1 && p[0].local_date === day, JSON.stringify(p.map((x) => x.local_date)));
       await nextUntil(page, PLAN_Q.do);
       pass(`zones: ${tag}: this week's to-dos are listed`, (await page.locator('.ds-answer--pick').count()) > 0);
-      await open(page, '/my-day/review');
+      await open(page, '/daily-review');
       const early = Number(new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', hourCycle: 'h23' }).format(instant)) < 4;
       await next(page);
       // With no way of being from the morning, it first asks how they wanted to be (Tim, 5 Nov).
@@ -1184,7 +1184,7 @@ if (run('zones')) {
       await until(async () => (await dayReviews()).length > 0, 10000);
       const r = await dayReviews();
       // Before 04:00, the day before when it was planned and not reviewed (it isn't here).
-      pass(`zones: ${tag}: Review my day saves on the device's day${early ? ' (early, nothing planned the day before)' : ''}`, r.length === 1 && r[0].local_date === day, JSON.stringify(r.map((x) => x.local_date)));
+      pass(`zones: ${tag}: Daily review saves on the device's day${early ? ' (early, nothing planned the day before)' : ''}`, r.length === 1 && r[0].local_date === day, JSON.stringify(r.map((x) => x.local_date)));
       await clean(page, `zones, ${tag}`);
     } catch (e) {
       pass(`zones ${tag} ran to the end`, false, e.message.split('\n')[0]);
@@ -1197,8 +1197,8 @@ if (run('zones')) {
   await planFor('2026-10-24');
   const { context, page } = await signedIn({ width: 390, clock: new Date('2026-10-25T01:30:00Z') });
   try {
-    await open(page, '/my-day/review');
-    pass('zones: on the clock-change night at 01:30 the review is Saturday\'s', (await toolName(page)) === 'Review my day, Sat 24 Oct', await toolName(page));
+    await open(page, '/daily-review');
+    pass('zones: on the clock-change night at 01:30 the review is Saturday\'s', (await toolName(page)) === 'Daily review, Sat 24 Oct', await toolName(page));
     await clean(page, 'zones, clock change');
   } catch (e) {
     pass('zones clock change ran to the end', false, e.message.split('\n')[0]);
@@ -1215,7 +1215,7 @@ if (run('dayoff')) {
   await q(db.from('working_patterns').insert({ user_id: me, starts_on: sprint.start_on, days: [0, 1, 3, 4] }).select());
   const { context, page } = await signedIn({ width: 390, coach: false });
   try {
-    await open(page, '/my-day/plan');
+    await open(page, '/daily-plan');
     await nextUntil(page, PLAN_Q.do);
     const pick = page.locator('.ds-answer--pick', { hasText: DRAFT }).first();
     await pick.click();
@@ -1224,13 +1224,13 @@ if (run('dayoff')) {
     await next(page);
     const planScore = (await page.locator('.ds-stat', { hasText: 'Performance score' }).locator('.ds-stat-value').textContent().catch(() => '')).trim();
     await finishWith(page, 'Set my day');
-    pass('dayoff: Plan my day on a day off is set', (await dayPlans())[0]?.status === 'finished');
-    await open(page, '/my-day/review');
+    pass('dayoff: Daily plan on a day off is set', (await dayPlans())[0]?.status === 'finished');
+    await open(page, '/daily-review');
     await page.getByRole('checkbox', { name: DRAFT, exact: true }).first().click();
     await until(async () => (await myTodos(DRAFT))[0]?.done_on === today, 10000);
     await nextUntil(page, REVIEW_Q.numbers);
     const steps = page.getByRole('textbox', { name: 'Steps today' });
-    pass('dayoff: Review my day still lets a day off\'s numbers be logged', (await steps.count()) === 1);
+    pass('dayoff: Daily review still lets a day off\'s numbers be logged', (await steps.count()) === 1);
     if (await steps.count()) {
       await steps.fill('4000');
       await steps.blur();
@@ -1243,7 +1243,7 @@ if (run('dayoff')) {
     pass('dayoff: the review\'s score is src/lib/scores\' with the day off', v.soFar ? shown === `${v.soFar.value}%` : shown === '', `${shown} vs ${v.soFar?.value}`);
     pass('dayoff: the plan showed a score too', planScore === '' || /^\d+%$/.test(planScore), planScore);
     await closeDay(page);
-    pass('dayoff: Review my day on a day off is saved', (await dayReviews())[0]?.status === 'finished');
+    pass('dayoff: Daily review on a day off is saved', (await dayReviews())[0]?.status === 'finished');
     await page.goto(`${APP}/performance-sprint`);
     await page.waitForSelector('.ds-sdial-big--score', { timeout: 30000 });
     const sprintShown = await until(async () => {
@@ -1352,7 +1352,7 @@ if (run('others')) {
   const writes = [];
   page.on('request', (r) => { if (r.method() !== 'GET' && /day_plans|day_reviews|weekly_debriefs/.test(r.url())) writes.push(r.url()); });
   try {
-    for (const path of [`/my-day/plan/${today}`, `/my-day/review/${today}`, '/my-day/plan', '/my-day/review', `/performance-sprint/debrief/${sprint.id}/${DEBRIEF_WEEK}`, `/performance-sprint/debrief/${sprint.id}/${WEEK}`, '/performance-sprint/debrief', `/my-day/plan/${planId}`]) {
+    for (const path of [`/daily-plan/${today}`, `/daily-review/${today}`, '/daily-plan', '/daily-review', `/performance-sprint/debrief/${sprint.id}/${DEBRIEF_WEEK}`, `/performance-sprint/debrief/${sprint.id}/${WEEK}`, '/performance-sprint/debrief', `/daily-plan/${planId}`]) {
       await page.goto(`${APP}${path}`);
       await page.waitForSelector('.ds-guide-question, .plan-page, .ui-root', { timeout: 30000 }).catch(() => null);
       await page.waitForTimeout(2000);
@@ -1370,7 +1370,7 @@ if (run('others')) {
   // Signed out: every Phase 3 route asks to sign in.
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
-  for (const path of ['/my-day/plan', '/my-day/review', `/my-day/review/${today}`, '/performance-sprint/debrief', `/performance-sprint/debrief/${sprint.id}/${DEBRIEF_WEEK}`]) {
+  for (const path of ['/daily-plan', '/daily-review', `/daily-review/${today}`, '/performance-sprint/debrief', `/performance-sprint/debrief/${sprint.id}/${DEBRIEF_WEEK}`]) {
     await p.goto(`${APP}${path}`);
     await p.waitForTimeout(2000);
     const text = await p.locator('body').innerText();

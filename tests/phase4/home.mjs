@@ -4,7 +4,7 @@
 //
 //   node --import ./tests/scores/register.mjs tests/phase4/home.mjs [folder for screenshots]
 //
-// 1. The moments of the day on a mid-sprint day: morning (Plan my day),
+// 1. The moments of the day on a mid-sprint day: morning (Daily plan),
 //    midday (how today is going), 16:30 (still the afternoon: the review is
 //    suggested from 17:00, as M2 and the decisions say), 17:30 (Review my
 //    day), from 21:00 (Sleep wind down, and Not tonight), after midnight
@@ -15,9 +15,9 @@
 //    before the first session.
 // 4. Logging from Home shows on the sprint page, and the reverse.
 // 5. Adding a to-do from Home: saved, and on the sprint page.
-// 6. Two taps from Home: Log today, Plan my day, Review my day and Add a
+// 6. Two taps from Home: Log today, Daily plan, Daily review and Add a
 //    to-do, on desktop and phone.
-// 7. A half-finished Plan my day appears under "Carry on where you left off".
+// 7. A half-finished Daily plan appears under "Carry on where you left off".
 // 8. 360px: no sideways scrolling, and every tap area 44px or more.
 // 9. Measured against M2 at desktop and phone, dark and light (the mock-up
 //    opened from a copy, with the real fonts; nothing in it is run but its
@@ -195,18 +195,18 @@ if (part(1)) {
     pass('morning: ~4 minutes', (await text(page, '.ds-suggest-time')) === '~4 minutes');
     pass('morning: the greeting', (await title(page)).startsWith('good morning'), await title(page));
     pass('morning: one coral button on Home', (await page.locator('.home-page .ds-btn--primary').count()) === 1);
-    pass('morning: Plan my day is the coral button', /plan my day/i.test(await text(page, '.ds-suggest .ds-btn--primary')));
+    pass('morning: Daily plan is the coral button', /daily plan/i.test(await text(page, '.ds-suggest .ds-btn--primary')));
     // Declutter (Tim, 5 Nov): no line saying the to-dos will show here.
     pass('morning: no "to-dos show here" line', (await page.locator('.home-today', { hasText: 'Your to-dos for today show here' }).count()) === 0);
     await shot(page, 'moment-morning');
 
     await homeAt(page, THU, '13:00');
-    // The one card takes turns (Tim, 5 Nov): after Plan my day's morning a due
-    // monthly check-in has its turn in place of "How is today going?".
-    const checkinTurn = (await cardQuestion(page)) === 'Ready for your monthly check-in?';
+    // The one card takes turns (Tim, 5 Nov): after Daily plan's morning a due
+    // monthly review has its turn in place of "Ready to log today?".
+    const checkinTurn = (await cardQuestion(page)) === 'Your monthly review is ready.';
     if (checkinTurn) results.push('NOTE  midday: this month’s check-in is due, so it has the card’s turn (Tim, 5 Nov)');
-    pass('midday: "How is today going?" or the due check-in', checkinTurn || (await cardQuestion(page)) === 'How is today going?', await cardQuestion(page));
-    if (!checkinTurn) pass('midday: the review is suggested from 17:00', (await text(page, '.ds-suggest')).includes('Your review is suggested from 17:00.'));
+    pass('midday: "Ready to log today?" or the due check-in', checkinTurn || (await cardQuestion(page)) === 'Ready to log today?', await cardQuestion(page));
+    pass('midday: no line saying when the review is suggested (calm layout, 10 Nov)', !(await text(page, '.ds-suggest')).includes('suggested from'));
     pass('midday: no to-do count (UNDEFINED)', !/to-dos done so far/.test(await text(page, '.ds-suggest')));
     pass('midday: the greeting', (await title(page)).startsWith('good afternoon'), await title(page));
     if (!checkinTurn) {
@@ -219,7 +219,7 @@ if (part(1)) {
     await shot(page, 'moment-midday');
 
     await homeAt(page, THU, '16:30');
-    pass('16:30: still the afternoon card (review from 17:00, M2)', (await cardQuestion(page)) === (checkinTurn ? 'Ready for your monthly check-in?' : 'How is today going?'), await cardQuestion(page));
+    pass('16:30: still the afternoon card (review from 17:00, M2)', (await cardQuestion(page)) === (checkinTurn ? 'Your monthly review is ready.' : 'Ready to log today?'), await cardQuestion(page));
     await homeAt(page, THU, '17:30');
     pass('17:30: "Ready to review your day?"', (await cardQuestion(page)) === 'Ready to review your day?', await cardQuestion(page));
     pass('17:30: ~5 minutes', (await text(page, '.ds-suggest-time')) === '~5 minutes');
@@ -310,11 +310,11 @@ if (part(3)) {
     pass('debrief ready: open until today', (await text(c.page, '.ds-suggest')).includes('Your debrief is open until Wed 21 Oct.'));
     pass('debrief ready: Start my debrief', /start my debrief/i.test(await text(c.page, '.ds-suggest .ds-btn--primary')));
     await homeAt(c.page, FIXED_TODAY, '08:30');
-    pass('debrief day mornings stay Plan my day', (await cardQuestion(c.page)) === 'Ready to plan your day?', await cardQuestion(c.page));
+    pass('debrief day mornings stay Daily plan', (await cardQuestion(c.page)) === 'Ready to plan your day?', await cardQuestion(c.page));
     await shot(c.page, 'state-debrief');
 
     // The line is a quiet link into the sprint (Tim, 3 Nov): "Sprint 1, week 4 of 8".
-    pass('mid-sprint: the mini dial says the week', /Sprint \d+, week 4 of 8/.test(await text(c.page, '.ds-mdial')), await text(c.page, '.ds-mdial'));
+    pass('mid-sprint: the mini dial reads "View your week" (10 Nov)', /View your week/.test(await text(c.page, '.ds-mdial')) && /week 4 of 8/.test(await c.page.locator('.ds-mdial').getAttribute('aria-label')), await text(c.page, '.ds-mdial'));
     pass('mid-sprint: the week line', (await text(c.page, '.ds-weekline')).startsWith('Performance score this week'));
     const good = await c.page.locator('.ds-weekline-figure--good').count();
     const fig = await c.page.locator('.ds-weekline-figure').evaluate((el) => getComputedStyle(el).color).catch(() => '');
@@ -413,14 +413,20 @@ if (part(6) || part(7)) {
       if (part(6)) {
         // Log today: on Home itself (no tap), and through the menu in two.
         pass(`${tag}: Log today is on Home`, (await page.locator('#log-today .home-log-title').count()) === 1);
-        if (width < 769) await page.locator('.ds-bar-menu').click();
-        else await page.getByRole('button', { name: 'Menu', exact: true }).click();
-        await page.locator(width < 769 ? '#site-tile-menu' : '#site-menu').getByRole('button', { name: 'Log today', exact: true }).click();
-        pass(`${tag}: the menu’s Log today (2 taps) lands on Home’s Log today`, Boolean(await until(async () => {
-          const box = await page.locator('#log-today').boundingBox();
-          return path(page) === '/welcome' && box && box.y < 400 && box.y > -50;
-        }, 8000)), path(page));
-        for (const [label, to] of [['Plan my day', '/my-day/plan'], ['Review my day', '/my-day/review']]) {
+        // The slim desktop menu (option A, 9 Nov) has no Log today: it is on Home.
+        if (width < 769) {
+          await page.locator('.ds-bar-menu').click();
+          await page.locator('#site-tile-menu').getByRole('button', { name: 'Log today', exact: true }).click();
+          pass(`${tag}: the menu’s Log today (2 taps) lands on Home’s Log today`, Boolean(await until(async () => {
+            const box = await page.locator('#log-today').boundingBox();
+            return path(page) === '/welcome' && box && box.y < 400 && box.y > -50;
+          }, 8000)), path(page));
+        } else {
+          await page.getByRole('button', { name: 'Menu', exact: true }).click();
+          pass(`${tag}: the slim menu has no Log today`, (await page.locator('#site-menu').getByRole('button', { name: 'Log today', exact: true }).count()) === 0);
+          await page.keyboard.press('Escape');
+        }
+        for (const [label, to] of [['Daily plan', '/daily-plan'], ['Daily review', '/daily-review']]) {
           await home(page);
           await page.locator('.home-links .ds-link', { hasText: label }).click();
           pass(`${tag}: ${label} in one tap`, Boolean(await landsOn(page, to)), path(page));
@@ -431,7 +437,7 @@ if (part(6) || part(7)) {
         await page.keyboard.press('Escape');
       }
       if (part(7) && width === 1280) {
-        await page.goto(`${APP}/my-day/plan`);
+        await page.goto(`${APP}/daily-plan`);
         const next = page.getByRole('button', { name: /^(Next|Skip)$/ }).first();
         await next.waitFor({ timeout: 30000 });
         // GuidedTool ignores a tap in the first moment after it appears (a double tap's second half).
@@ -441,13 +447,13 @@ if (part(6) || part(7)) {
         await home(page);
         const rows = await page.locator('.ds-carryon .ds-row-title').allInnerTexts();
         const kept = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('ds-guide:')).map((k) => `${k.replace(/[0-9a-f-]{36}/, 'me')}=${localStorage.getItem(k)}`).join(', '));
-        pass('Carry on: the half-finished Plan my day appears', rows.includes('Plan my day'), `${rows.join(' | ')} [${kept}]`);
-        if (rows.includes('Plan my day')) {
-          await page.locator('.ds-carryon .ds-row', { hasText: 'Plan my day' }).click();
-          pass('Carry on: its row opens Plan my day', Boolean(await landsOn(page, '/my-day/plan')));
+        pass('Carry on: the half-finished Daily plan appears', rows.includes('Daily plan'), `${rows.join(' | ')} [${kept}]`);
+        if (rows.includes('Daily plan')) {
+          await page.locator('.ds-carryon .ds-row', { hasText: 'Daily plan' }).click();
+          pass('Carry on: its row opens Daily plan', Boolean(await landsOn(page, '/daily-plan')));
         }
         await homeAt(page, THU, '09:00');
-        pass('Carry on: not repeated while the card suggests it', !(await page.locator('.ds-carryon .ds-row-title').allInnerTexts()).includes('Plan my day'));
+        pass('Carry on: not repeated while the card suggests it', !(await page.locator('.ds-carryon .ds-row-title').allInnerTexts()).includes('Daily plan'));
       }
     } finally {
       await c.context.close();
@@ -560,7 +566,7 @@ if (part(9)) {
       for (const [what, ms] of [...PARTS.desktop, ...PARTS.phone]) mock[what] = await mp.evaluate(MEASURE, ms);
       await mp.close();
 
-      // The app on Wed 21 Oct at 08:30: Plan my day, as M2's Morning.
+      // The app on Wed 21 Oct at 08:30: Daily plan, as M2's Morning.
       const dk = await signedIn({ width: 1280, mode, day: FIXED_TODAY, time: '08:30' });
       const appDesk = {};
       for (const [what, , as] of PARTS.desktop) appDesk[what] = await dk.page.evaluate(MEASURE, as);
@@ -594,7 +600,7 @@ if (part(3)) {
     pass('last week: "Ready for what comes next?"', (await cardQuestion(lw.page)) === 'Ready for what comes next?', await cardQuestion(lw.page));
     pass('last week: Go straight into the next sprint, or take a Recovery week first.', (await text(lw.page, '.ds-suggest')).includes('Go straight into the next sprint, or take a Recovery week first.'));
     pass('last week: Plan what’s next', /plan what’s next/i.test(await text(lw.page, '.ds-suggest .ds-btn--primary')));
-    pass('last week: the mini dial says week 8 of 8', /Sprint \d+, week 8 of 8/.test(await text(lw.page, '.ds-mdial')), await text(lw.page, '.ds-mdial'));
+    pass('last week: the mini dial says week 8 of 8', /week 8 of 8/.test(await lw.page.locator('.ds-mdial').getAttribute('aria-label')), await text(lw.page, '.ds-mdial'));
     await shot(lw.page, 'state-last-week');
   } finally {
     await lw.context.close();
@@ -607,7 +613,7 @@ if (part(3)) {
     pass('Recovery: the banner', Boolean(await until(async () => /You’re in recovery until/.test(await text(rc.page, '.home-recovery')), 15000)), await text(rc.page, '.home-recovery'));
     pass('Recovery: What would help you recharge today?', (await text(rc.page, '.home-recovery')).includes('What would help you recharge today?'));
     pass('Recovery: no Today and no week line', (await rc.page.locator('.home-today').count()) === 0 && (await rc.page.locator('.ds-weekline').count()) === 0);
-    pass('Recovery: Plan my day isn’t suggested', !/plan your day|review your day/.test(await cardQuestion(rc.page)), await cardQuestion(rc.page));
+    pass('Recovery: Daily plan isn’t suggested', !/plan your day|review your day/.test(await cardQuestion(rc.page)), await cardQuestion(rc.page));
     await shot(rc.page, 'state-recovery');
     await homeAt(rc.page, FIXED_TODAY, '21:30');
     pass('Recovery: Sleep wind down is still offered', (await cardQuestion(rc.page)) === 'Ready to wind down?', await cardQuestion(rc.page));
@@ -624,13 +630,13 @@ if (part(3)) {
     pass('new, no coach: My Mission is next', (await text(nn.page, '.ds-planstep--next .ds-planstep-name')) === 'My Mission');
     pass('new, no coach: the date, no dial', (await nn.page.locator('.ds-mdial').count()) === 0 && (await text(nn.page, '.ds-page-meta')) === 'Wed 21 Oct');
     pass('new, no coach: no Log today', (await nn.page.locator('#log-today').count()) === 0);
-    // The quiet lines: the mission's, and (Phase 5) the monthly check-in's while this month's is due.
+    // The quiet lines: the mission's, and (Phase 5) the monthly review's while this month's is due.
     const quiets = await nn.page.locator('.ds-quiet').allInnerTexts();
     const q = quiets.find((t) => t.includes('mission')) || '';
     // M2: it appears once two weeks after joining, so it depends on when the test account was made.
     const joinedDays = Math.floor((zoneInstant(LONDON, FIXED_TODAY, '10:00') - new Date(signIn.user.created_at)) / 86400000);
     pass(`new, no coach: "Ready to add your mission?" ${joinedDays >= 14 ? 'shows' : 'waits'} (${joinedDays} days after joining)`, joinedDays >= 14 ? q.includes('Ready to add your mission?') : !q, q);
-    pass('new, no coach: any other quiet line is the monthly check-in’s (Phase 5)', quiets.filter((t) => !t.includes('mission')).every((t) => t.includes('Ready for your monthly check-in?')), quiets.join(' | '));
+    pass('new, no coach: any other quiet line is the monthly review’s (Phase 5)', quiets.filter((t) => !t.includes('mission')).every((t) => t.includes('Your monthly review is ready.')), quiets.join(' | '));
     if (q) {
       await nn.page.locator('.ds-quiet', { hasText: 'mission' }).getByRole('button', { name: 'Not now' }).click();
       pass('new, no coach: Not now hides it', Boolean(await until(async () => (await nn.page.locator('.ds-quiet', { hasText: 'mission' }).count()) === 0, 5000)));
@@ -647,12 +653,12 @@ if (part(3)) {
   }
   const nc = await signedIn({ day: FIXED_TODAY, time: '10:00', coach: 'Tim' });
   try {
-    // Phase 5 built the First check-in: a new coaching client's card is it (M2 sugCard newc).
-    // The test client keeps Tim's own finished November check-in (5 Nov preview check),
-    // so on the fixed October day it isn't a first check-in any more.
+    // Phase 5 built the First review: a new coaching client's card is it (M2 sugCard newc).
+    // The test client keeps Tim's own finished November review (5 Nov preview check),
+    // so on the fixed October day it isn't a first review any more.
     const { data: hadCheckin } = await db.from('checkins').select('id').eq('user_id', me).eq('status', 'finished').limit(1);
-    if (hadCheckin?.length) results.push('NOTE  coaching client: the account has a finished check-in, so no First check-in card');
-    else pass('coaching client: the card is the First check-in (Phase 5)', (await cardQuestion(nc.page)) === 'Ready for your first check-in?', await cardQuestion(nc.page));
+    if (hadCheckin?.length) results.push('NOTE  coaching client: the account has a finished check-in, so no First review card');
+    else pass('coaching client: the card is the First review (Phase 5)', (await cardQuestion(nc.page)) === 'Ready for your first review?', await cardQuestion(nc.page));
     pass('coaching client: "You’ll build your plan with your coach in your first session."', (await text(nc.page, '.home-section')).includes('You’ll build your plan with your coach in your first session.'));
     pass('coaching client: Start on my own', (await nc.page.locator('.home-links .ds-link', { hasText: 'Start on my own' }).count()) === 1);
     pass('coaching client: no mission quiet line', (await nc.page.locator('.ds-quiet', { hasText: 'mission' }).count()) === 0);

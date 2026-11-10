@@ -19,7 +19,7 @@ export default function ObjectiveFigureRow({ name, value, onChange, unit, decima
       <div className="ds-objfig-name">{name}</div>
       <div className="ds-objfig-row">
         {options
-          ? <Choice ariaLabel={entryLabel || name} options={options} value={value || null} onChange={onChange} />
+          ? <div className="ds-objfig-choice"><Choice ariaLabel={entryLabel || name} options={options} value={value || null} onChange={onChange} /></div>
           : <NumberField value={value} onChange={onChange} unit={unit} decimals={decimals} label={entryLabel || name} />}
         <span className="ds-objfig-line">
           {lastLine && <span>{lastLine}</span>}

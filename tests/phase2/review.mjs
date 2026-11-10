@@ -38,6 +38,16 @@ const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 const results = [];
 let failures = 0;
+// A rating is one of five words (10 Nov): pick it from the answers under
+// the label, whichever form the shared Choice gives them.
+const pickWord = async (page, scope, label, word) => {
+  const field = scope.locator('.ds-choice, .ds-objed-field, .ds-habed-target').filter({ hasText: label }).last();
+  const radio = field.getByRole('radio', { name: word, exact: true });
+  if (await radio.count()) { await radio.first().click(); return; }
+  await field.locator('.ds-dd').first().click();
+  await page.getByRole('option', { name: word, exact: true }).click();
+  await page.waitForTimeout(150);
+};
 const pass = (name, ok, detail = '') => {
   if (!ok) failures += 1;
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `: ${detail}` : ''}`);
@@ -273,9 +283,9 @@ for (const width of [1280, 700, 390, 360]) {
   await page.waitForTimeout(400);
   const card = page.locator('.review-added .ds-objed').first();
   await card.locator('textarea').fill('Confidence leading group workshops');
-  await card.getByRole('radio', { name: 'I’ll rate it out of 10' }).click();
-  await card.getByLabel('Where are you now?').fill('6');
-  await card.getByLabel('What’s your target?').fill('8');
+  await card.getByRole('radio', { name: 'I’ll rate it from Poor to Excellent' }).click();
+  await pickWord(page, card, 'Where are you now?', 'Good');
+  await pickWord(page, card, 'What’s your target?', 'Very good');
   await card.locator('.ds-date').click();
   for (let m = 0; m < 8; m += 1) await page.getByRole('button', { name: 'Next month' }).click();
   await page.getByRole('button', { name: '30 June 2027', exact: true }).click();
@@ -292,16 +302,16 @@ for (const width of [1280, 700, 390, 360]) {
   // What's next: Recovery changes the button, then back to the sprint.
   await page.getByRole('radio', { name: 'I’ll take a recovery week first' }).click();
   pass('Recovery first: the button says Start my Recovery', (await primary(page).textContent()).trim().toLowerCase() === 'start my recovery');
-  await page.getByRole('radio', { name: /Straight into Performance Sprint/ }).click();
+  await page.getByRole('radio', { name: /straight into my next sprint/ }).click();
   const label = (await primary(page).textContent()).trim();
-  pass('straight on: the button says Set up Performance Sprint 3', /set up performance sprint 3/i.test(label), label);
+  pass('straight on: the button says Set up my next sprint', /^set up my next sprint$/i.test(label), label);
   await shot(page, 'next-step');
   const versionsBefore = (await db.from('plan_versions').select('id').eq('plan_id', before.plan.id)).data.length;
   // A double tap on finish.
   await primary(page).dblclick();
   const landed = await until(async () => page.url().endsWith('/performance-sprint/start'), 20000);
   pass('finishing opens Start a sprint', Boolean(landed), page.url());
-  pass('the toast says what comes next', Boolean(await until(async () => (await page.locator('.ds-toast').textContent().catch(() => '')).includes('Saved. Set up Performance Sprint 3 next.'), 5000)));
+  pass('the toast says what comes next', Boolean(await until(async () => (await page.locator('.ds-toast').textContent().catch(() => '')).includes('Saved. Set up your next sprint.'), 5000)));
   const after = await until(async () => {
     const s = (await db.from('sprints').select('*').eq('id', before.sprint.id)).data[0];
     return s.status === 'finished' ? s : null;
@@ -311,7 +321,7 @@ for (const width of [1280, 700, 390, 360]) {
   pass('the changed objective was saved', Number(objs.find((o) => o.id === first.id).target_value) === 45);
   pass('the retired objective is archived', Boolean(objs.find((o) => o.id === milestone.id).archived_at));
   const newObj = objs.find((o) => o.name === 'Confidence leading group workshops');
-  pass('the new objective was added', newObj && newObj.kind === 'rating' && Number(newObj.target_value) === 8 && newObj.by_when === '2027-06-30' && newObj.start_set_on === today, JSON.stringify(newObj && { k: newObj.kind, t: newObj.target_value, b: newObj.by_when, s: newObj.start_set_on }));
+  pass('the new objective was added', newObj && newObj.kind === 'rating' && Number(newObj.target_value) === 7.5 && newObj.by_when === '2027-06-30' && newObj.start_set_on === today, JSON.stringify(newObj && { k: newObj.kind, t: newObj.target_value, b: newObj.by_when, s: newObj.start_set_on }));
   const habit = (await db.from('habits').select('*').eq('plan_id', before.plan.id).eq('name', 'Mobility sessions')).data;
   pass('the habit that stuck is in the plan, once', habit.length === 1 && habit[0].measure === 'count' && Number(habit[0].target) === 3, JSON.stringify(habit.map((h) => h.id)));
   const linked = (await db.from('sprint_habits').select('habit_id').eq('sprint_id', before.sprint.id).eq('name', 'Mobility sessions')).data[0];

@@ -8,9 +8,9 @@
 //    query, the hash and the state passed on, and a saved item opened
 //    through an old address is the same item (one invented item per
 //    renamed tool, taken away again at the end).
-// 2. /review-plan's two meanings: with no plan it is the new Review my day;
+// 2. /review-plan's two meanings: with no plan it is the new Daily review;
 //    with a saved plan (a meeting plan here) it still reviews that plan.
-//    /plan-my-day the same: the new Plan my day, or an old saved day plan.
+//    /plan-my-day the same: the new Daily plan, or an old saved day plan.
 // 3. A pin stored as an old address still opens its tool (and a pin
 //    stored as a tool key, as the menu saves them, too).
 // 4. No old name in the visible text, aria-labels or titles of any page in
@@ -263,7 +263,7 @@ async function checkOldAddresses(page, tag) {
 // ---------------------------------------------------------------- 2: two meanings
 async function checkTwoMeanings(page, tag) {
   await page.goto(`${APP}/review-plan`);
-  pass(`${tag}: /review-plan with no plan opens the new Review my day`, Boolean(await landsOn(page, '/my-day/review')), here(page).path);
+  pass(`${tag}: /review-plan with no plan opens the new Daily review`, Boolean(await landsOn(page, '/daily-review')), here(page).path);
   await home(page);
   await pushRoute(page, '/review-plan', { planKind: 'plan_meeting', plan: items.meeting });
   pass(`${tag}: /review-plan with a meeting plan reviews that meeting`, Boolean(await shows(page, 'Review this meeting')) && Boolean(await shows(page, 'Your meeting plan')));
@@ -271,10 +271,10 @@ async function checkTwoMeanings(page, tag) {
   await shot(page, `${tag}-review-plan-meeting`);
   await home(page);
   await pushRoute(page, '/review-plan', { planKind: 'daily_plan', plan: null });
-  pass(`${tag}: /review-plan for a day with no plan opens the new Review my day`, Boolean(await landsOn(page, '/my-day/review')), here(page).path);
+  pass(`${tag}: /review-plan for a day with no plan opens the new Daily review`, Boolean(await landsOn(page, '/daily-review')), here(page).path);
 
   await page.goto(`${APP}/plan-my-day`);
-  pass(`${tag}: /plan-my-day with nothing saved opens the new Plan my day`, Boolean(await landsOn(page, '/my-day/plan')), here(page).path);
+  pass(`${tag}: /plan-my-day with nothing saved opens the new Daily plan`, Boolean(await landsOn(page, '/daily-plan')), here(page).path);
   await home(page);
   await pushRoute(page, '/plan-my-day', { decisionId: items.dayPlan.id });
   await until(async () => (await page.locator('.ds-loading').count()) === 0 && (await page.locator('h1, h2').count()) > 0, 20000);
@@ -296,7 +296,7 @@ async function checkPins(tag, width) {
         await page.waitForSelector('#site-menu .ds-dmenu-area', { timeout: 5000 });
       }
     };
-    const sel = phone ? '#site-tile-menu .ds-menu-pins a' : '#site-menu .ds-menu-pins a';
+    const sel = phone ? '#site-tile-menu .ds-menu-pins a' : '#site-menu .ds-dmenu-pins a';
     await open();
     const names = await until(async () => {
       const t = (await page.locator(sel).allInnerTexts()).map((x) => x.trim());
@@ -347,8 +347,8 @@ function routeList(sprintId) {
   const fill = {
     '/performance-sprint/review/:sprintId': `/performance-sprint/review/${sprintId}`,
     '/performance-sprint/debrief/:sprintId/:week': `/performance-sprint/debrief/${sprintId}/1`,
-    '/my-day/plan/:date': `/my-day/plan/${FIXED_TODAY}`,
-    '/my-day/review/:date': `/my-day/review/${FIXED_TODAY}`,
+    '/daily-plan/:date': `/daily-plan/${FIXED_TODAY}`,
+    '/daily-review/:date': `/daily-review/${FIXED_TODAY}`,
     '/daily-journals/:date': `/daily-journals/${FIXED_TODAY}`,
   };
   return [...new Set(paths.map((p) => fill[p] || p).filter((p) => !p.includes(':')))];

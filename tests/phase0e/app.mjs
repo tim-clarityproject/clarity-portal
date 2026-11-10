@@ -197,13 +197,13 @@ async function within(ms, fn) {
 
 // ---- 4 and 5: sideways scrolling, at the standard and the largest text size ----------
 const PAGES = ['/welcome', '/my-plans', '/my-reviews', '/daily-journals', '/personal-operating-plan',
-  '/daily-journal', '/plan-meeting', '/pressure-plan', '/my-journal', '/my-day/review', '/my-day/plan',
+  '/daily-journal', '/plan-meeting', '/pressure-plan', '/my-journal', '/daily-review', '/daily-plan',
   '/time-audit', '/get-unstuck', '/pre-mortem', '/give-difficult-feedback', '/edit-profile',
   '/my-account', '/about', '/life-balance-review/results', '/life-balance-review/areas',
   // The hub pages (Phase 4).
   '/personal', '/personal/plan', '/personal/reset', '/personal/review', '/interpersonal', '/strategic',
   // The dashboard and the check-in (Phase 5).
-  '/dashboard', '/check-in'];
+  '/dashboard', '/monthly-review'];
 for (const [label, scale] of [['standard text size', 1], ['largest text size (twice the standard)', 2]]) {
   const { context, page } = await signedIn();
   const wide = [];

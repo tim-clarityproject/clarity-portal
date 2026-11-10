@@ -1,11 +1,11 @@
-// Phase 5 step 1: the Hardware and Software check-in (mock-up M12 v14) in
+// Phase 5 step 1: the Monthly Hardware and Software review (mock-up M12 v14) in
 // the running app, signed in as the invented test client on the TEST
 // database only (every other host, /functions/v1/ and every email call is
 // blocked).
 //
 //   node --import ./tests/scores/register.mjs tests/phase5/checkin.mjs [folder]
 //
-// A  The monthly check-in (no coach): Home's quiet line, the opening
+// A  The monthly review (no coach): Home's quiet line, the opening
 //    screen, one tap moving on, the % bar, Back, a draft surviving a reload
 //    (on the device and in the database), the travel pair after a Yes, the
 //    results against the seeded last month (every figure checked against
@@ -18,7 +18,7 @@
 //    and the sizes M12 draws (question, statement, answer rows, % bar).
 // B  Offline: after one visit, the whole check-in done with no connection,
 //    then back online it is sent and finished exactly once.
-// C  The First check-in (a coach, Tim, as my_coach answers): the opening
+// C  The First review (a coach, Tim, as my_coach answers): the opening
 //    screen and its ⓘ, the goals with See an example, Do this later and
 //    Home's question, carrying on where it was left, Your starting point
 //    and My goals, and the coach's flag in the database when the test
@@ -80,7 +80,7 @@ const londonToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London'
 const CUR = checkinMonth(londonToday);
 const prevDate = new Date(Date.UTC(Number(CUR.slice(0, 4)), Number(CUR.slice(5, 7)) - 2, 1));
 const PREV = `${prevDate.toISOString().slice(0, 7)}-01`;
-const CUR_PATH = `/check-in/${CUR.slice(0, 7)}`;
+const CUR_PATH = `/monthly-review/${CUR.slice(0, 7)}`;
 
 // What the database held for those months, put back at the end.
 const { data: before } = await db.from('checkins').select('*').eq('user_id', me).in('month', [CUR, PREV]);
@@ -293,7 +293,7 @@ process.on('uncaughtException', async (e) => {
   process.exit(1);
 });
 
-// ---------------------------------------------------------------- A: the monthly check-in
+// ---------------------------------------------------------------- A: the monthly review
 await clearMonths(CUR, PREV);
 await db.from('checkins').insert({ user_id: me, kind: 'monthly', month: PREV, status: 'finished', answers: PREV_ANS });
 
@@ -302,33 +302,33 @@ if (part('A')) {
   try {
     await home(page);
     // The check-in is timed, so it queues for the one Suggested for now
-    // card (Tim, 5 Nov), never a quiet line. While Plan my day (or Review my
+    // card (Tim, 5 Nov), never a quiet line. While Daily plan (or Review my
     // day, or the debrief) holds the card, it waits its turn.
     pass('Home: the check-in is never a quiet line', (await page.locator('.ds-quiet-row', { hasText: 'check-in' }).count()) === 0);
-    const card = page.locator('.ds-suggest', { hasText: 'Ready for your monthly check-in?' });
+    const card = page.locator('.ds-suggest', { hasText: 'Ready for your monthly review?' });
     if (await card.count()) {
       pass('Home: ~3 minutes', (await card.locator('.ds-suggest-time').innerText().catch(() => '')) === '~3 minutes');
-      await card.locator('button', { hasText: 'Start my check-in' }).click();
-      pass('the card opens the check-in', Boolean(await until(async () => path(page) === '/check-in')));
+      await card.locator('button', { hasText: 'Start my monthly review' }).click();
+      pass('the card opens the check-in', Boolean(await until(async () => path(page) === '/monthly-review')));
     } else {
       results.push(`NOTE  Home: the card holds "${await text(page, '.ds-suggest-question')}", so the check-in waits its turn`);
-      await page.goto(`${APP}/check-in`);
+      await page.goto(`${APP}/monthly-review`);
     }
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('opening: "Ready to look back on your month?"', (await heading(page)) === 'Ready to look back on your month?', await heading(page));
-    pass('opening: ~3 minutes', (await text(page, '.ds-guide-label')) === '~3 minutes', await text(page, '.ds-guide-label'));
+    pass('opening: no time on the first screen (10 Nov)', (await text(page, '.ds-guide-label')) === '', await text(page, '.ds-guide-label'));
     pass('opening: "Answer for the past month, on average."', (await text(page, '.ds-guide-nudge')) === 'Answer for the past month, on average.');
     pass('opening: no Skip', (await page.locator('.ds-guide-skip').count()) === 0);
     pass('opening: never last month’s scores before answering (rule 50)', !/\/100|last month/i.test(await text(page, '.ds-guide-page')));
     await page.locator('button', { hasText: 'Who sees my answers?' }).click();
     pass('Who sees my answers? (no coach)', (await text(page, '.ck-who-lines')).replace(/\n+/g, '|') === 'Only you see your answers.|Your organisation never sees them.', await text(page, '.ck-who-lines'));
-    pass('opening: Monthly check-in in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'monthly check-in');
+    pass('opening: Monthly review in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'monthly review');
     await checkScreen(page, 'A opening 1280 dark');
     await page.locator('.ds-guide-next').click();
     await until(async () => (await currentQuestion(page))?.code === 'H1');
-    pass('Start my check-in opens the first question', (await currentQuestion(page))?.code === 'H1', await heading(page));
+    pass('Start my monthly review opens the first question', (await currentQuestion(page))?.code === 'H1', await heading(page));
     // The eye beside the question (Tim, 5 Nov, 11:09): the icon alone, its words for screen readers and in the pop-up.
-    pass('H1: the eye beside the question says Only you can see this', /only you can see this/i.test((await page.locator('.ds-guide-eye').innerText().catch(() => '')) + (await page.locator('.ds-guide-eye [aria-label]').first().getAttribute('aria-label').catch(() => '') || '')));
+    pass('H1: the eye beside the question says Only you can see this', /only you can see this/i.test((await page.locator('.ds-guide-page .ds-page-aside').innerText().catch(() => '')) + (await page.locator('.ds-guide-page .ds-page-aside [aria-label]').first().getAttribute('aria-label').catch(() => '') || '')));
 
     const seen = [];
     const percents = [await pct(page)];
@@ -399,7 +399,7 @@ if (part('A')) {
     pass(`results: Software score ${want.software.value}/100 and its change`, stats[1]?.replace(/\s+/g, ' ').includes(`Software score ${want.software.value}/100 ${want.software.change.text}`), stats[1]);
     const improved = await page.locator('.ck-improved li').allInnerTexts();
     pass('results: what improved, up to three, biggest first', JSON.stringify(improved) === JSON.stringify(want.improved.map((x) => x.line)), `${improved} vs ${want.improved.map((x) => x.line)}`);
-    // One thing to work on is a short choice (Tim, 5 Nov, 10:30): "What could help with movement?", each option with Already doing this.
+    // One next step is a short choice (Tim, 5 Nov, 10:30): "What could help with movement?", each option with Already doing this.
     pass(`results: one thing to work on is ${want.workOn.name}`, (await text(page, '.ck-one-question')) === `What could help with ${want.workOn.name.toLowerCase()}?`, await text(page, '.ck-one-question'));
     const optionCount = await page.locator('.ck-option').count();
     pass('results: 3 or 4 options, each with Already doing this', optionCount >= 3 && optionCount <= 4 && (await page.locator('.ck-option', { hasText: 'Already doing this' }).count()) === optionCount, optionCount);
@@ -419,13 +419,13 @@ if (part('A')) {
 
     if (sprint) {
       // A repeating suggestion is added only as a habit with a measure.
-      await page.locator('.ck-option', { hasText: 'Three 30-minute training sessions a week' }).getByRole('button', { name: 'Add as a habit' }).click();
+      await page.locator('.ck-option', { hasText: 'Three 30-minute training sessions a week' }).getByRole('button', { name: 'Add it as a habit' }).click();
       await page.waitForSelector('.ds-dialog', { timeout: 5000 });
       pass('Add to my sprint: the panel asks which Strategy', (await page.locator('.ds-dialog .ds-field-label, .ds-dialog label, .ds-dialog .ds-choice', { hasText: 'Which Strategy' }).count()) > 0);
       await page.locator('.ds-dialog .ds-choice').last().locator('[role=radio]').first().click();
       await page.locator('.ds-dialog .ds-btn--primary').click();
-      pass('Add to my sprint: says where it went', Boolean(await toastSeen(page, `Added to Performance Sprint ${sprint.number} as a habit.`)));
-      pass('Add to my sprint: the line under the tip', (await text(page, '.ck-one-added')) === `It’s in Performance Sprint ${sprint.number} as a habit.`);
+      pass('Add to my sprint: says where it went', Boolean(await toastSeen(page, 'Added to your Performance Sprint as a habit.')));
+      pass('Add to my sprint: the line under the tip', (await text(page, '.ck-one-added')) === 'It’s in your Performance Sprint as a habit.');
       const sh = await until(async () => {
         const { data } = await db.from('sprint_habits').select('id, name').eq('sprint_id', sprint.id).eq('name', '30-minute training session');
         return data?.length ? data : null;
@@ -438,7 +438,7 @@ if (part('A')) {
     }
 
     await page.locator('.ds-guide-next').click();
-    pass('Finish: "Saved. Your next check-in is in a month."', Boolean(await toastSeen(page, 'Saved. Your next check-in is in a month.')));
+    pass('Finish: "Saved. Your next monthly review is in a month."', Boolean(await toastSeen(page, 'Saved. Your next monthly review is in a month.')));
     pass('Finish: back to Home', Boolean(await until(async () => path(page) === '/welcome')));
     await sleep(1500);
     const { data: done } = await db.from('checkins').select('status, kind, hardware_score, software_score, answers').eq('user_id', me).eq('month', CUR).limit(1);
@@ -447,9 +447,9 @@ if (part('A')) {
     await home(page);
     pass('Home: the line has gone once done', (await page.locator('.ds-quiet-row', { hasText: 'check-in' }).count()) === 0);
     await page.goto(`${APP}/my-reviews`);
-    const name = `${monthName(CUR)} check-in`;
-    pass(`My Reviews: "${name}", Hardware and Software check-in`, Boolean(await until(async () => (await page.locator('.hlist-row', { hasText: name }).filter({ hasText: 'Hardware and Software check-in' }).count()) === 1, 15000)));
-    await page.goto(`${APP}/check-in`);
+    const name = `${monthName(CUR)} review`;
+    pass(`My Reviews: "${name}", Monthly Hardware and Software review`, Boolean(await until(async () => (await page.locator('.hlist-row', { hasText: name }).filter({ hasText: 'Monthly Hardware and Software review' }).count()) === 1, 15000)));
+    await page.goto(`${APP}/monthly-review`);
     pass('a finished month opens its results page', Boolean(await until(async () => path(page) === CUR_PATH)));
     await page.waitForSelector('.ck-results', { timeout: 15000 });
     pass('results page: titled in words', (await text(page, '.ds-page-title')).toLowerCase() === name.toLowerCase());
@@ -552,7 +552,7 @@ if (part('B')) {
   await clearMonths(CUR);
   const { context, page } = await signedIn({ width: 390, mode: 'light', coach: null });
   try {
-    await page.goto(`${APP}/check-in`);
+    await page.goto(`${APP}/monthly-review`);
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     await sleep(1500);
     await context.setOffline(true);
@@ -567,7 +567,7 @@ if (part('B')) {
     pass('offline: the results, worked out on the device', (await page.locator('.ck-scores .ds-stat').count()) === 2);
     pass('offline: "Will sync"', Boolean(await until(async () => /will sync/i.test(await text(page, '.ds-guide-bar')), 5000)), await text(page, '.ds-guide-bar'));
     await page.locator('.ds-guide-next').click();
-    pass('offline: Finish still works', Boolean(await toastSeen(page, 'Saved. Your next check-in is in a month.')));
+    pass('offline: Finish still works', Boolean(await toastSeen(page, 'Saved. Your next monthly review is in a month.')));
     const { data: none } = await db.from('checkins').select('id').eq('user_id', me).eq('month', CUR);
     pass('offline: nothing reached the database yet', !none?.length);
     const mark = writes.length;
@@ -587,7 +587,7 @@ if (part('B')) {
   }
 }
 
-// ---------------------------------------------------------------- C: the First check-in
+// ---------------------------------------------------------------- C: the First review
 if (part('C') && others?.length) results.push(`NOTE  C skipped: the test client has ${others.length} finished check-ins in other months, so its next is a monthly one.`);
 if (part('C') && !others?.length) {
   await clearMonths(CUR, PREV);
@@ -595,16 +595,16 @@ if (part('C') && !others?.length) {
   try {
     await home(page);
     const homeText = await text(page, '.home-page');
-    // Timed, so it waits its turn while another timed card (Review my day from 17:00, the debrief) holds Home's one card (Tim, 5 Nov).
-    const held = async () => { const q = await text(page, '.ds-suggest-question'); return q && !/first check-in/i.test(q) ? q : null; };
+    // Timed, so it waits its turn while another timed card (Daily review from 17:00, the debrief) holds Home's one card (Tim, 5 Nov).
+    const held = async () => { const q = await text(page, '.ds-suggest-question'); return q && !/first review/i.test(q) ? q : null; };
     const heldBy = await held();
-    if (heldBy) results.push(`NOTE  Home: the card holds "${heldBy}", so the First check-in waits its turn`);
-    else pass('Home: the First check-in is offered', /Ready for your first check-in\?/.test(homeText));
-    await page.goto(`${APP}/check-in`, { waitUntil: 'domcontentloaded' });
+    if (heldBy) results.push(`NOTE  Home: the card holds "${heldBy}", so the First review waits its turn`);
+    else pass('Home: the First review is offered', /Ready for your first review\?/.test(homeText));
+    await page.goto(`${APP}/monthly-review`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('first: "What would make coaching useful for you?"', (await heading(page)) === 'What would make coaching useful for you?');
-    pass('first: First check-in in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'first check-in');
-    pass('first: the two nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).map((t) => t.trim()).join('|') === 'Let’s start with 5 questions about that.|Then your first Hardware and Software check-in.');
+    pass('first: First review in the top bar', (await text(page, '.ds-guide-name')).toLowerCase() === 'first review');
+    pass('first: the two nudges', (await page.locator('.ds-guide-nudge').allInnerTexts()).map((t) => t.trim()).join('|') === 'Let’s start with 5 questions about that.|Then your first Hardware and Software review.');
     await page.locator('.ds-guide-nudge .ds-guide-i').click();
     pass('first: the ⓘ opens hardware and software', (await page.locator('.ds-infopop:not([hidden]) .ds-infopop-line').allInnerTexts()).join('|') === HARDWARE_SOFTWARE.join('|'));
     await page.keyboard.press('Escape');
@@ -617,7 +617,7 @@ if (part('C') && !others?.length) {
     pass('G1: Your goals, the question, the nudge', (await text(page, '.ds-guide-label')) === 'Your goals' && (await text(page, '.ds-guide-nudge')) === 'Describe what you’d be doing and what others would notice.');
     await page.locator('.ds-guide-example-link').click();
     pass('G1: See an example', (await text(page, '.ds-guide-example')).startsWith('For example: '));
-    pass('G1: the eye says You and Tim can see this', /you and tim can see this/i.test((await page.locator('.ds-guide-eye [aria-label]').first().getAttribute('aria-label').catch(() => '')) || ''));
+    pass('G1: the eye says You and Tim can see this', /you and tim can see this/i.test((await page.locator('.ds-guide-page .ds-page-aside [aria-label]').first().getAttribute('aria-label').catch(() => '')) || ''));
     pass('first: Do this later, never Skip', (await text(page, '.ds-guide-skip')) === 'Do this later');
     await page.locator('.ds-guide-body textarea').first().fill('I’d lead the board calmly through the merger.');
     await nextStep(page);
@@ -635,10 +635,10 @@ if (part('C') && !others?.length) {
     await until(async () => path(page) === '/welcome');
     await home(page);
     const heldBy2 = await held();
-    if (heldBy2) results.push(`NOTE  Home: the card holds "${heldBy2}", so finishing the First check-in waits its turn`);
-    else pass('Home: "Ready to finish your first check-in?"', /Ready to finish your first check-in\?/.test(await text(page, '.home-page')));
-    if (heldBy2) await page.goto(`${APP}/check-in`);
-    else await page.locator('button', { hasText: 'Finish my first check-in' }).first().click();
+    if (heldBy2) results.push(`NOTE  Home: the card holds "${heldBy2}", so finishing the First review waits its turn`);
+    else pass('Home: "Ready to finish your first review?"', /Ready to finish your first review\?/.test(await text(page, '.home-page')));
+    if (heldBy2) await page.goto(`${APP}/monthly-review`);
+    else await page.locator('button', { hasText: 'Finish my first review' }).first().click();
     await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
     pass('carries on where it was left', (await heading(page)) === 'What has got in the way of progress before?', await heading(page));
     await page.locator('.ds-guide-body textarea').first().fill('I say yes to everything.');
@@ -671,7 +671,7 @@ if (part('C') && !others?.length) {
     pass('Finish: "Saved. Tim will see this before your first session."', Boolean(await toastSeen(page, 'Saved. Tim will see this before your first session.')));
     await sleep(2000);
     const { data: first } = await db.from('checkins').select('id, kind, status, goals, answers').eq('user_id', me).eq('month', CUR).limit(1);
-    pass('database: the First check-in with its goals', first?.[0]?.kind === 'first' && first[0].status === 'finished' && first[0].goals?.G3?.length === 3 && first[0].answers?.H3 === 'always', JSON.stringify(first?.[0] && { k: first[0].kind, s: first[0].status }));
+    pass('database: the First review with its goals', first?.[0]?.kind === 'first' && first[0].status === 'finished' && first[0].goals?.G3?.length === 3 && first[0].answers?.H3 === 'always', JSON.stringify(first?.[0] && { k: first[0].kind, s: first[0].status }));
     if (realCoach) {
       for (const who of ['TEST_COACH_OWNER', 'TEST_COACH_TWO']) {
         const c = createClient(env.TEST_SUPABASE_URL, env.TEST_SUPABASE_ANON_KEY, { auth: { persistSession: false } });

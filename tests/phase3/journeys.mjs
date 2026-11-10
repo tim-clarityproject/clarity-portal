@@ -5,17 +5,17 @@
 //   node --import ./tests/scores/register.mjs tests/phase3/journeys.mjs [folder for screenshots]
 //
 // One phone (390px, light), kept for the whole week as a client's own
-// device, so what Plan my day keeps on the device (the habits chosen for
+// device, so what Daily plan keeps on the device (the habits chosen for
 // the day) is there in the evening. The seed is built around Monday 19
 // Oct 2026, the first day of week 4 of the running sprint, and the
 // browser's clock is moved on a day at a time (tests/phase2/fixed-day.mjs):
 //
-// 1. Monday morning: Plan my day (sleep, a to-do, a habit, a to-do added
+// 1. Monday morning: Daily plan (sleep, a to-do, a habit, a to-do added
 //    in the panel, the Strategy of the day); the to-dos show on the sprint.
-// 2. Monday evening: Review my day (ticks, the numbers, an unplanned win,
+// 2. Monday evening: Daily review (ticks, the numbers, an unplanned win,
 //    three things for tomorrow); the habit logs, the score (src/lib/scores)
 //    and Confidence Bank update.
-// 3. Tuesday morning: Plan my day lists last night's three things.
+// 3. Tuesday morning: Daily plan lists last night's three things.
 // 4. Tuesday to Friday: plan and review each day, one thing for tomorrow.
 // 5. Monday 26 Oct: the Weekly performance debrief, from the sprint page;
 //    the week's score final in week_scores and equal to src/lib/scores, the
@@ -208,7 +208,7 @@ async function finishWith(label) {
   }, 15000);
   if (!gone) throw new Error(`${label} did not go back`);
 }
-// Review my day's ending since Phase 4 (M19): Close my day, Work's done for
+// Daily review's ending since Phase 4 (M19): Close my day, Work's done for
 // today, then Back to Home.
 async function closeDay() {
   const done = await until(async () => {
@@ -226,7 +226,7 @@ async function tick(name) {
   return until(async () => (await checkbox(name).getAttribute('aria-checked')) === 'true', 5000);
 }
 async function sprintScoreMatches(day, tag) {
-  // Review my day now ends on Work's done, then Home (Phase 4 step 6), so
+  // Daily review now ends on Work's done, then Home (Phase 4 step 6), so
   // the sprint page is opened here when the journey isn't already on it.
   if (new URL(page.url()).pathname !== '/performance-sprint') await page.goto(`${APP}/performance-sprint`);
   await page.waitForSelector('.ds-sdial-big--score', { timeout: 30000 });
@@ -239,13 +239,13 @@ async function sprintScoreMatches(day, tag) {
   return v;
 }
 
-// ---------------------------------------------------------------- Plan my day
+// ---------------------------------------------------------------- Daily plan
 // picks: the names to choose on "What will you do today?"; lastNight: the
-// names that must be first, carried over "From Review my day" (Phase 4, M19).
+// names that must be first, carried over "From Daily review" (Phase 4, M19).
 async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   const tag = `${day} plan`;
   await at(day, '07:30');
-  await open('/my-day/plan');
+  await open('/daily-plan');
   pass(`${tag}: opens on Sleep`, (await heading()) === 'How did you sleep last night?', await heading());
   await page.getByRole('button', { name: 'Half an hour more' }).click();
   await page.getByRole('radio', { name: 'Good', exact: true }).click();
@@ -257,7 +257,7 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   pass(`${tag}: Do`, (await heading()) === 'What will you do today?', await heading());
   const shown = await page.locator('.ds-answer--pick').allInnerTexts();
   lastNight.forEach((name, n) => {
-    pass(`${tag}: last night's "${name}" is on the list, in order, tagged`, (shown[n] || '').includes(name) && shown[n].includes('From Review my day'), shown.slice(0, 4).join(' | '));
+    pass(`${tag}: last night's "${name}" is on the list, in order, tagged`, (shown[n] || '').includes(name) && shown[n].includes('From Daily review'), shown.slice(0, 4).join(' | '));
   });
   for (const name of picks) {
     const pick = page.locator('.ds-answer--pick', { hasText: name }).first();
@@ -282,7 +282,7 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   await body().locator('textarea').nth(0).fill('Calls run over.');
   await body().locator('textarea').nth(1).fill('Block an hour for the proposal.');
   await next();
-  pass(`${tag}: the summary`, /^Here’s your day, \S+\.$/.test(await heading()), await heading());
+  pass(`${tag}: the summary`, (await heading()) === 'This was your plan', await heading());
   await shot(`${day}-plan-summary`);
   await finishWith('Set my day');
   const row = await until(async () => {
@@ -293,11 +293,11 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   return row;
 }
 
-// ---------------------------------------------------------------- Review my day
+// ---------------------------------------------------------------- Daily review
 async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   const tag = `${day} review`;
   await at(day, '19:30');
-  await open('/my-day/review');
+  await open('/daily-review');
   pass(`${tag}: opens on today's to-dos`, (await heading()) === 'Which of today’s to‑dos did you do?', await heading());
   for (const name of ticks) pass(`${tag}: ticked "${name}"`, Boolean(await tick(name)));
   await next();
@@ -316,7 +316,7 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   }
   const focus = page.getByRole('group', { name: 'Focus today' });
   if (await focus.count()) {
-    await focus.getByRole('button', { name: '4', exact: true }).click();
+    await focus.getByRole('button', { name: 'Very good', exact: true }).click();
     typed.Focus = 4;
   }
   const late = page.getByRole('group', { name: 'Late finishes today' });
@@ -424,7 +424,7 @@ try {
   // ---------------------------------------------------------- 5: the debrief, Monday 26 Oct
   await at(NEXT_MONDAY, '08:30');
   await page.goto(`${APP}/performance-sprint`);
-  pass('Monday 26: the sprint page says the debrief is ready', Boolean(await until(async () => (await page.getByText('Your weekly debrief is ready.').count()) === 1, 20000)));
+  pass('Monday 26: the sprint page says the debrief is ready', Boolean(await until(async () => (await page.getByRole('button', { name: 'Start my debrief' }).count()) === 1, 20000)));
   await page.getByRole('button', { name: 'Start my debrief' }).click();
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
   pass('debrief: opens on week 4', (await heading()) === `How did week ${WEEK} go?`, await heading());
@@ -439,7 +439,7 @@ try {
   await clients.fill('33');
   await until(async () => (await page.locator('.ds-objfig', { hasText: 'Coaching clients' }).locator('.ds-objfig-change').count()) === 1, 4000);
   await next();
-  pass('debrief: Your days counts the five reviews', (await page.getByText('5 Review my day entries this week').count()) === 1);
+  pass('debrief: Your days counts the five reviews', (await page.getByText('5 Daily reviews this week').count()) === 1);
   await body().locator('textarea').last().fill(DEBRIEF.well);
   await next();
   await body().locator('textarea').first().fill(DEBRIEF.way);
@@ -494,7 +494,7 @@ try {
   pass('sprint page: week 5 now', v5.week?.number === 5, JSON.stringify(v5.week));
   const list5 = await until(async () => (await page.locator('.ds-todos').first().innerText()).includes(NEXT_TODO), 10000);
   pass('sprint page: the debrief\'s to-do is on week 5\'s list', Boolean(list5));
-  pass('sprint page: the debrief line has gone', (await page.getByText('Your weekly debrief is ready.').count()) === 0);
+  pass('sprint page: the debrief line has gone', (await page.getByRole('button', { name: 'Start my debrief' }).count()) === 0);
   await shot('next-monday-sprint');
 
   await page.goto(`${APP}/performance-sprint/year`);

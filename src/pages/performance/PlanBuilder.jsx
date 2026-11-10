@@ -664,7 +664,7 @@ function PlanTool({ userId, data, mode }) {
         steps={steps}
         progress="percent"
         skipLabel="Skip"
-        finishLabel={building ? 'Start Performance Sprint 1' : 'Save my plan'}
+        finishLabel={building ? 'Start my first sprint' : 'Save my plan'}
         saveState={shownState}
         role={role}
         draftKey={stepDraftKey(mode, userId)}

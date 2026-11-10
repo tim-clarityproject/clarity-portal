@@ -37,6 +37,16 @@ const out = process.argv[2] || null;
 if (out) mkdirSync(out, { recursive: true });
 const results = [];
 let failures = 0;
+// A rating is one of five words (10 Nov): pick it from the answers under
+// the label, whichever form the shared Choice gives them.
+const pickWord = async (page, scope, label, word) => {
+  const field = scope.locator('.ds-choice, .ds-objed-field, .ds-habed-target').filter({ hasText: label }).last();
+  const radio = field.getByRole('radio', { name: word, exact: true });
+  if (await radio.count()) { await radio.first().click(); return; }
+  await field.locator('.ds-dd').first().click();
+  await page.getByRole('option', { name: word, exact: true }).click();
+  await page.waitForTimeout(150);
+};
 const pass = (name, ok, detail = '') => {
   if (!ok) failures += 1;
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `: ${detail}` : ''}`);
@@ -211,11 +221,10 @@ try {
   await pickDate(1, '20 January 2027', 3);
   await page.getByRole('button', { name: 'Add an objective' }).click();
   await card(2).locator('textarea').fill('Confidence leading group workshops');
-  await card(2).getByRole('radio', { name: 'I’ll rate it out of 10' }).click();
-  await card(2).getByLabel('Where are you now?').fill('6');
-  await card(2).getByLabel('What’s your target?').fill('12');
-  pass('build: a rating over 10 says what to type', (await card(2).textContent()).includes('Any figure from 0 to 10.'));
-  await card(2).getByLabel('What’s your target?').fill('8');
+  await card(2).getByRole('radio', { name: 'I’ll rate it from Poor to Excellent' }).click();
+  pass('build: a rating is five words, with no number box (10 Nov)', (await card(2).locator('input[inputmode]').count()) === 0 && /Poor.*Fair.*Good.*Very good.*Excellent/s.test(await card(2).textContent()));
+  await pickWord(page, card(2), 'Where are you now?', 'Good');
+  await pickWord(page, card(2), 'What’s your target?', 'Very good');
   await pickDate(2, '26 February 2027', 4);
   await shot(page, 'flow-objectives');
   await page.waitForTimeout(1200);
@@ -268,11 +277,9 @@ try {
   pass('build: an amount counts a day', (await habit(1).textContent()).includes('a day'));
   await page.getByRole('button', { name: 'Add a habit' }).click();
   await habit(2).locator('textarea').fill('Focus');
-  await measure(2, 'I’ll rate it from 1 to 5 each day');
-  await habit(2).getByRole('radio', { name: 'Lower is better' }).click();
-  await habit(2).getByLabel('What’s the target?').fill('5');
-  pass('build: a rating target out of range says what to type', (await habit(2).textContent()).includes('Any figure from 1 to 4.'));
-  await habit(2).getByLabel('What’s the target?').fill('2');
+  await measure(2, 'I’ll rate it each day, from Poor to Excellent');
+  pass('build: a new rated habit has no "Lower is better" (10 Nov)', (await habit(2).getByRole('radio', { name: 'Lower is better' }).count()) === 0);
+  await pickWord(page, habit(2), 'What’s the target?', 'Very good');
   await shot(page, 'flow-habits');
   // Another Strategy's habits.
   await page.locator('.ds-guide-body > div > .ds-choice .ds-dd').first().click();
@@ -309,12 +316,12 @@ try {
   const ready = await page.locator('.ds-guide-body').textContent();
   pass('build: Ready title', (await heading(page)) === 'Your plan and first sprint');
   pass('build: Ready lists the plan', ready.includes('Coaching clients') && ready.includes('31 now, target 40, by 15 Dec 2026')
-    && ready.includes('Milestone, by 20 Jan 2027') && ready.includes('6/10 now, target 8/10, by 26 Feb 2027')
+    && ready.includes('Milestone, by 20 Jan 2027') && ready.includes('Good now, target Very good, by 26 Feb 2027')
     && ready.includes('4 habits across 2 Strategies') && ready.includes('Monday to Friday') && ready.includes('8 weeks') && ready.includes('80%'), ready.slice(0, 200));
   pass('build: Ready’s alignment check', ready.includes('Every objective has a Strategy') && ready.includes('Every Strategy serves an objective'));
   pass('build: the set-up dial shows 8 weeks', (await page.locator('.ds-sdial-seg').count()) === 8 && (await page.locator('.ds-sdial-big').textContent()) === '8');
   await shot(page, 'flow-ready');
-  await page.getByRole('button', { name: 'Start Performance Sprint 1' }).click();
+  await page.getByRole('button', { name: 'Start my first sprint' }).click();
   // Start a sprint (step 3) makes Sprint 1 from the hand-over at once.
   await page.waitForURL(/\/performance-sprint$/, { timeout: 30000 });
   await page.waitForTimeout(800);

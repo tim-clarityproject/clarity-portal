@@ -108,8 +108,8 @@ async function check(page, tag, words, scope) {
 }
 
 const TRAVEL = ['I didn’t travel', 'I took short trips', 'I made long journeys or crossed time zones'];
-const AUDIT = ['Stop doing it', 'Automate it', 'Hand it to someone else', 'Do it later'];
-const MEASURES = ['I’ll count it each week', 'I’ll measure an amount each day', 'I’ll say yes or no each day', 'I’ll say yes or no each day, under a limit', 'I’ll say yes or no once a week', 'I’ll keep a daily count under a limit', 'I’ll rate it from 1 to 5 each day'];
+const AUDIT = ['Stop it', 'Automate it', 'Delegate it', 'Do it later'];
+const MEASURES = ['I’ll count it each week', 'I’ll measure an amount each day', 'I’ll say yes or no each day', 'I’ll say yes or no each day, under a limit', 'I’ll say yes or no once a week', 'I’ll keep a daily count under a limit', 'I’ll rate it each day, from Poor to Excellent'];
 
 try {
   for (const mode of (process.env.MODES || 'dark,light').split(',')) {
@@ -120,7 +120,7 @@ try {
         // The check-in, as far as the travel question (the first answer on
         // each screen; the drinks question counts and keeps Next).
         await clearMonth();
-        await page.goto(`${APP}/check-in`);
+        await page.goto(`${APP}/monthly-review`);
         await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
         for (let i = 0; i < 30 && (await heading(page)) !== 'Did you travel this month?'; i += 1) {
           const before = await heading(page) + await statement(page);
@@ -139,13 +139,13 @@ try {
         await page.goto(`${APP}/time-audit`);
         await page.getByRole('textbox', { name: 'Activity 1' }).waitFor({ timeout: 30000 });
         await page.getByRole('textbox', { name: 'Activity 1' }).fill('Weekly status reports for the board');
-        await page.getByRole('radio', { name: 'Hand it to someone else' }).first().waitFor({ timeout: 8000 });
-        await page.getByRole('radio', { name: 'Hand it to someone else' }).first().click();
+        await page.getByRole('radio', { name: 'Delegate it' }).first().waitFor({ timeout: 8000 });
+        await page.getByRole('radio', { name: 'Delegate it' }).first().click();
         await check(page, `Stop doing audit, ${at}`, AUDIT, null);
         // "Which one will you take action on first?" is a drop-down: its answer carries the new words.
         await page.locator('.plan-field .ds-dd').first().click();
         await page.getByRole('option').first().waitFor({ timeout: 5000 });
-        await check(page, `Stop doing audit, which one first open, ${at}`, ['Weekly status reports for the board (Hand it to someone else)'], null);
+        await check(page, `Stop doing audit, which one first open, ${at}`, ['Weekly status reports for the board (Delegate it)'], null);
         await page.keyboard.press('Escape');
 
         // The plan's habits: "How will you measure it?" open.

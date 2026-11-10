@@ -34,7 +34,7 @@ const id = (key) => `current_setting('rules.${key}')::uuid`;
 // Quinn had one too and has left. Casey leads the parent team (and so both
 // children); Riley leads child team two only; Avery is the admin. Alex is
 // the owner coach, coaching Sam; Priya coaches Jordan. Jordan shares
-// Progress, not the monthly check-in, and shares their wellbeing with the
+// Progress, not the monthly review, and shares their wellbeing with the
 // organisation (the first one only: wellbeing is chosen per organisation,
 // migration 033); Quinn shared theirs before leaving. Drew sponsors Jordan's
 // seat in a second organisation.

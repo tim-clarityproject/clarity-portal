@@ -1,5 +1,5 @@
 // Phase 3 step 5: every Phase 3 screen and state measured against its
-// mock-up (M5 for Plan my day and Review my day, M1 for the Weekly
+// mock-up (M5 for Daily plan and Daily review, M1 for the Weekly
 // performance debrief), in the running app on the TEST database only,
 // signed in as the invented test client (every other host and every email
 // call is blocked).
@@ -374,34 +374,49 @@ const ALLOWED = [
   { side: 'app', re: /^~# minutes$/, why: '"~4 minutes" and "~5 minutes", never "About" (CLAUDE.md 27, writing rule 28)' },
   { side: 'app', re: /^#% complete$/, why: 'the % complete bar replaces the step list on guided steps, as in approved M6 (decisions part 2)' },
   { side: 'mock', re: /^(#|sleep|gratitude|be|do|priority|strategy|risk|your day|numbers|went well|differently|strategies|tomorrow|stress|objectives|in the way|adjust|next week|summary)$/, why: 'the % complete bar replaces the step list on guided steps, as in approved M6 (decisions part 2)' },
-  { side: 'mock', re: /^(plan my day|review my day|weekly performance debrief)( <day> # <month>)?$/, why: 'the top bar names the tool; the date is in the page (rule 5 of 26 Oct: no dots)' },
-  { side: 'app', re: /^(plan my day|review my day|weekly performance debrief)$/, why: 'the top bar names the tool; the date is in the page (rule 5 of 26 Oct: no dots)' },
+  { side: 'mock', re: /^(daily plan|daily review|weekly performance debrief)( <day> # <month>)?$/, why: 'the top bar names the tool; the date is in the page (rule 5 of 26 Oct: no dots)' },
+  { side: 'app', re: /^(daily plan|daily review|weekly performance debrief)$/, why: 'the top bar names the tool; the date is in the page (rule 5 of 26 Oct: no dots)' },
   { side: 'app', re: /^#%$/, why: 'the % complete bar replaces the step list on guided steps, as in approved M6 (decisions part 2)' },
   // Invented data (made "<name>" above) and the walk-through's own state
   { side: 'both', re: /^(#\.? )?<name>((, | and |, and )<name>)*(,? ?(highest priority|high|medium|low|#\/#))?$/, why: 'invented data: the seeded test client’s names and answers, not the mock-up’s example' },
   { side: 'mock', re: /^<day>$/, why: 'day names follow the fixed day (made neutral)' },
   { side: 'both', re: /^(# )?(of )?#( (steps|litres|hours|sessions|notes|messages|minutes|conversations|coffees|late finishes|<name>))?( <day>| this week)?$|^# <day>, no more than #$|^(#|no more than #)( \w+| <name>)? a day$|^# no more than #( a day)?$|^yes or no each day, aim for # days a week$|^average #( aim for #)?$|^# of # days( this week)?$|^rated # to # <day>, aim for #$|^# this week, no more than #$|^£k$|^#k$|^# ?weeks?$/, why: 'each habit’s and objective’s own measure line, from the seeded plan through src/lib, with its unit (the mock-up’s habits differ)' },
   { side: 'app', re: /^[−–]$/, why: 'the stepper’s minus and its empty value, drawn as M5 draws them (hrs1)' },
-  { screen: /review my day/, side: 'app', re: /^add another$/, why: 'lists are rows (CLAUDE.md 30): up to three rows with Add another, for M5’s three numbered boxes' },
-  { screen: /review my day/, side: 'mock', re: /^(high|medium|low)$/, why: 'the mock-up has a Strategy chosen; nothing is chosen in this walk-through, so no Low, Medium, High shows yet' },
-  { screen: /plan my day/, side: 'mock', re: /^if it happens: /, why: 'no colons (writing rule 48): “If it happens, …” (step 1)' },
+  { screen: /daily review/, side: 'app', re: /^add another$/, why: 'lists are rows (CLAUDE.md 30): up to three rows with Add another, for M5’s three numbered boxes' },
+  { screen: /daily review/, side: 'mock', re: /^(high|medium|low)$/, why: 'the mock-up has a Strategy chosen; nothing is chosen in this walk-through, so no Low, Medium, High shows yet' },
+  { screen: /daily plan/, side: 'mock', re: /^if it happens: /, why: 'no colons (writing rule 48): “If it happens, …” (step 1)' },
   { screen: /no plan/, side: 'app', re: /^try one of these\.$/, why: 'data: with no plan there are no earlier ways of being, so M5’s “You’ve used these recently.” is left out and the suggestions open the list' },
   { screen: /no plan/, side: 'mock', re: /^(or try one of these\.|you've used these recently\.|add a to-do|last night you also wrote this note\.|if it needs doing, add it as a to-do\.)$/, why: 'CHOICE (audit P0): with no plan, Do offers Build my plan, and there is no last night or earlier way of being' },
   { screen: /debrief, add a to-do/, side: 'both', re: /^(this week|week #),? <day> # <month> to <day> # <month>$/, why: 'data: week 3 is debriefed on Wednesday of week 4, so its next week is this week, named as the sprint page’s panel names it; M1’s debrief is at the end of week 4' },
   { screen: /debrief, your days/, side: 'both', re: /^strateg(y|ies) that moved$/, why: 'M1’s “Strategy that moved”, plural when several moved that day' },
   { side: 'app', re: /^(on last night's list|to-do this week|habit, .*|rolled over from week #|rolls over from week #|highest priority|done)$/, why: 'the mock-up’s dotted line split into separate labels, the Strategy and the tag (26 Oct rule 5)' },
+  // Tim, 10 Nov (part 5 and Phase 5 calm layout):
+  { side: 'mock', re: /^(plan my day|review my day)$/, why: 'renamed (Tim, 10 Nov): Plan my day is the Daily plan and Review my day is the Daily review (CLAUDE.md 26a)' },
+  { side: 'app', re: /^(daily plan|daily review)$/, why: 'renamed (Tim, 10 Nov): Plan my day is the Daily plan and Review my day is the Daily review (CLAUDE.md 26a)' },
+  { side: 'mock', re: /^(here's your day, <name>\.|here's your day, sam\.|check it over\.|change anything you need to\.)$/, why: 'calm layout (Tim, 10 Nov): the summary loses its greeting and its two nudges; its heading is “This was your plan”' },
+  { side: 'app', re: /^this was your plan$/, why: 'calm layout (Tim, 10 Nov): the summary’s heading, in the same pattern as the review’s “This was your day”' },
+  { side: 'mock', re: /^(review my day will ask how they moved tonight\.|it comes first on home and in review my day\.)$/, why: 'renamed (Tim, 10 Nov): the sentence names the Daily review' },
+  { side: 'app', re: /^(your daily review will ask how they moved tonight\.|it comes first on home and in your daily review\.)$/, why: 'renamed (Tim, 10 Nov): the sentence names the Daily review' },
+  { side: 'mock', re: /^−$/, why: 'steppers use the plain minus and plus drawn as icons (5e rule 29g, swept 10 Nov), so the app has no minus character to read' },
+  { side: 'app', re: /^(poor|fair|good|very good|excellent|rated each day, aim for (poor|fair|good|very good|excellent)( or lower)?)$/, why: 'ratings are five words, never numbers (5e rule 29i; Tim, 10 Nov; CLAUDE.md 26c)' },
+  { side: 'mock', re: /^(it counts as done and is saved to your performance evidence\.|they'll be waiting in <day>'s plan my day\.|each tick also updates your sprint\.)$/, why: 'Tim, 10 Nov: Performance Evidence is the Confidence Bank, Plan my day is the Daily plan, and the first screen keeps one nudge' },
+  { side: 'app', re: /^(it counts as done and is saved to your confidence bank\.|they'll be waiting in <day>'s daily plan, in this order\.)$/, why: 'Tim, 10 Nov: Performance Evidence is the Confidence Bank and Plan my day is the Daily plan' },
+  { side: 'mock', re: /^(your standard is #%\.|rated # to # each day, aim for #|last week #\/#|\/#|# review my day entr(y|ies) this week)$/, why: 'Tim, 10 Nov: no “Your standard is” line, ratings in five words (CLAUDE.md 26c), and Review my day is the Daily review' },
+  { side: 'app', re: /^((poor|fair|good|very good|excellent) on average, aim for (poor|fair|good|very good|excellent)|last week (poor|fair|good|very good|excellent)|# daily reviews? this week)$/, why: 'Tim, 10 Nov: ratings in five words (CLAUDE.md 26c), and Review my day is the Daily review' },
+  { side: 'mock', re: /^only you$/, why: 'the eye stands alone beside the title, with its words in a pop-up (5e rule 29d, 5 Nov), so “Only you” is not on the screen until it is opened' },
+  { side: 'app', re: /^priority #$/, why: 'a carried-over item says which of last night’s priorities it was (Phase 5 preview fixes, step 4)' },
   { side: 'app', re: /^(skipped|add)$/, why: 'M5’s note: skipped answers show in the summary with an Add link (this walk-through answers nothing)' },
   { side: 'mock', re: /^change$/, why: 'the mock-up’s answers are filled in; this walk-through answers nothing, so its rows say Skipped with Add (M5 note)' },
-  { screen: /plan my day/, side: 'app', re: /^(you haven't chosen any to-dos yet\.|choose my to-dos)$/, why: 'nothing was chosen in this walk-through, so M5’s own empty state shows (M5 pri step)' },
-  { screen: /plan my day/, side: 'mock', re: /^only you$/, why: 'nothing was chosen in this walk-through, so the list and its eye are not shown (M5’s own empty state)' },
+  { screen: /daily plan/, side: 'app', re: /^(you haven't chosen any to-dos yet\.|choose my to-dos)$/, why: 'nothing was chosen in this walk-through, so M5’s own empty state shows (M5 pri step)' },
+  { screen: /daily plan/, side: 'mock', re: /^only you$/, why: 'nothing was chosen in this walk-through, so the list and its eye are not shown (M5’s own empty state)' },
   { screen: /no plan/, side: 'app', re: /^(your to-dos and strategies come from your plan\.|build your plan, and they show here\.|build my plan)$/, why: 'CHOICE (audit P0): with no plan, Do and Strategy offer Build my plan' },
   { screen: /no plan today/, side: 'both', re: /^(which of (this week's|<day>'s) to-dos did you do( <day>)?\?|did you do anything else on this week's list\?|show this week's list|choose any that moved <day>\.|on a scale of # to # how (<name> were you <day>|was <day>)\?|this morning you said <day> would serve <name>( and <name>)? most\.)$/, why: 'CHOICE (audit R0, step 2): no plan for the day, so the first screen lists this week’s list, and there is no way of being or Strategy of the day to name' },
-  { screen: /review my day/, side: 'both', re: /^this morning you said <day> would serve <name>( and <name>)? most\.$/, why: 'invented data: the seeded morning chose two Strategies, the mock-up’s one' },
-  { screen: /review my day/, side: 'mock', re: /^how much did it move\?$/, why: 'rule 64: the app names the Strategy (“How much did “Grow through referrals” move?”), shown once one is chosen' },
-  { screen: /review my day/, side: 'mock', re: /^so far this week: /, why: 'no colons, one full sentence (writing rule 48): “So far this week you have …”, with each habit’s full name' },
-  { screen: /review my day/, side: 'app', re: /^so far this week you have /, why: 'no colons, one full sentence (writing rule 48): “So far this week you have …”, with each habit’s full name' },
-  { screen: /review my day/, side: 'mock', re: /^(did you finish late <day>\?|<name>)$/, why: 'no question is stored for a habit: the row uses its name (as the sprint page, Phase 2)' },
-  { screen: /review my day/, side: 'mock', re: /^# of # done$|^plus # more from this week's list\.$/, why: 'invented data: nothing is ticked in this walk-through, so the summary’s to-dos row is skipped' },
+  { screen: /daily review/, side: 'both', re: /^this morning you said <day> would serve <name>( and <name>)? most\.$/, why: 'invented data: the seeded morning chose two Strategies, the mock-up’s one' },
+  { screen: /daily review/, side: 'mock', re: /^how much did it move\?$/, why: 'rule 64: the app names the Strategy (“How much did “Grow through referrals” move?”), shown once one is chosen' },
+  { screen: /daily review/, side: 'mock', re: /^so far this week: /, why: 'no colons, one full sentence (writing rule 48): “So far this week you have …”, with each habit’s full name' },
+  { screen: /daily review/, side: 'app', re: /^so far this week you have /, why: 'no colons, one full sentence (writing rule 48): “So far this week you have …”, with each habit’s full name' },
+  { screen: /daily review/, side: 'mock', re: /^(did you finish late <day>\?|<name>)$/, why: 'no question is stored for a habit: the row uses its name (as the sprint page, Phase 2)' },
+  { screen: /daily review/, side: 'mock', re: /^# of # done$|^plus # more from this week's list\.$/, why: 'invented data: nothing is ticked in this walk-through, so the summary’s to-dos row is skipped' },
   { screen: /debrief/, side: 'mock', re: /^your usual range is # to #%\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M8)' },
   { screen: /debrief/, side: 'app', re: /^your usual range appears after # weeks\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M8)' },
   { screen: /debrief/, side: 'mock', re: /^(share with tim|only you can see this debrief\.|tim will see this week's scores, your objective figures and your three answers\.)$/, why: 'the test client has no coach, so there is no share row (step 3: no coach, no row)' },
@@ -412,16 +427,16 @@ const ALLOWED = [
   { screen: /debrief/, side: 'app', re: /^fill in any day you didn't log, or leave it empty\.$/, why: 'writing rule 5 bans “missed”: “Fill in any day you didn’t log, or leave it empty.” (step 3)' },
   { screen: /debrief/, side: 'mock', re: /^(not yet, by # <month> #|done)$/, why: 'milestones say “reached” (decisions 26 Oct, 11:43): “Not reached yet, due by …” (step 3)' },
   { screen: /debrief/, side: 'app', re: /^not reached yet, due by # <month> #$/, why: 'milestones say “reached” (decisions 26 Oct, 11:43): “Not reached yet, due by …” (step 3)' },
-  { screen: /debrief/, side: 'both', re: /^# review my day entr(y|ies) this week$/, why: 'invented data: one Review my day entry in the seeded week 3, seven in the mock-up' },
+  { screen: /debrief/, side: 'both', re: /^# daily review entr(y|ies) this week$/, why: 'invented data: one Daily review entry in the seeded week 3, seven in the mock-up' },
   { screen: /finished/, side: 'mock', re: /^finish to lock in your score\.$/, why: 'a finished debrief opens on its summary, still changeable (step 3): “Your week is debriefed.”' },
   { screen: /finished/, side: 'app', re: /^(your week is debriefed\.|you can still change your answers\.)$/, why: 'a finished debrief opens on its summary, still changeable (step 3)' },
-  // Phase 4 (M19, 29 Oct, newer than M5): Review my day closes with Close my
-  // day, and Plan my day's Do step opens with Carried over (step 6); rule 64
+  // Phase 4 (M19, 29 Oct, newer than M5): Daily review closes with Close my
+  // day, and Daily plan's Do step opens with Carried over (step 6); rule 64
   // names the Strategy in the add panels (step 7).
-  { screen: /review my day/, side: 'mock', re: /^finish my review$/, why: 'M19 (Phase 4 step 6): the review closes with “Ready to close the day?” and Close my day' },
-  { screen: /review my day/, side: 'app', re: /^(close my day|ready to close the day\?|moving to <day>|check what moves to <day>\.|nothing is left open <day>\.|to-do)$/, why: 'M19 (Phase 4 step 6): the review closes with “Ready to close the day?” and Close my day' },
-  { screen: /plan my day/, side: 'mock', re: /^choose up to three from this week's habits and to-dos\.$/, why: 'M19 (Phase 4 step 6): Do opens with Carried over, then This week, “Choose up to 3.” and “You’ve chosen n of 3.”' },
-  { screen: /plan my day/, side: 'app', re: /^(carried over|this week|from review my day|choose up to #|you've chosen # of #)$/, why: 'M19 (Phase 4 step 6): Do opens with Carried over, then This week, “Choose up to 3.” and “You’ve chosen n of 3.”' },
+  { screen: /daily review/, side: 'mock', re: /^finish my review$/, why: 'M19 (Phase 4 step 6): the review closes with “Ready to close the day?” and Close my day' },
+  { screen: /daily review/, side: 'app', re: /^(close my day|ready to close the day\?|moving to <day>|check what moves to <day>\.|nothing is left open <day>\.|to-do)$/, why: 'M19 (Phase 4 step 6): the review closes with “Ready to close the day?” and Close my day' },
+  { screen: /daily plan/, side: 'mock', re: /^choose up to three from this week's habits and to-dos\.$/, why: 'M19 (Phase 4 step 6): Do opens with Carried over, then This week, “Choose up to 3.” and “You’ve chosen n of 3.”' },
+  { screen: /daily plan/, side: 'app', re: /^(carried over|this week|from daily review|choose up to #|you've chosen # of #)$/, why: 'M19 (Phase 4 step 6): Do opens with Carried over, then This week, “Choose up to 3.” and “You’ve chosen n of 3.”' },
   { side: 'mock', re: /^how much will it move this strategy\?$/, why: 'rule 64 (Phase 4 step 7): the add panel names the Strategy chosen (“How much will it move “Grow through referrals”?”), plain while none is chosen' },
   { side: 'app', re: /^how much will it move ("<name>"|its strategy)\?$/, why: 'rule 64 (Phase 4 step 7): the add panel names the Strategy chosen (“How much will it move “Grow through referrals”?”), plain while none is chosen' },
   { side: 'mock', re: /^performance score this week( ?#%)?$/, why: 'M5 (scoring methods): the live score is labelled "so far" wherever it shows' },
@@ -679,7 +694,7 @@ async function loadSprint() {
   weekStart = sprint ? dayKey(14, sprint.start_on) : null; // week 3, whose debrief window is open
 }
 const strategyId = async (name) => (await db.from('plan_strategies').select('id').eq('user_id', me).eq('name', name).is('archived_at', null)).data[0].id;
-// Last night's review and an earlier way of being, for Plan my day.
+// Last night's review and an earlier way of being, for Daily plan.
 async function lastNight() {
   await db.from('day_reviews').delete().eq('user_id', me);
   await db.from('day_plans').delete().eq('user_id', me);
@@ -687,7 +702,7 @@ async function lastNight() {
   await db.from('day_reviews').insert({ user_id: me, local_date: dayKey(-1), status: 'finished', finished_at: `${dayKey(-1)}T20:30:00Z`, tomorrow: [NIGHT], on_my_mind: NOTE });
   await db.from('day_plans').insert({ user_id: me, local_date: dayKey(-2), way_of_being: 'Calm under pressure', status: 'finished', finished_at: `${dayKey(-2)}T08:00:00Z` });
 }
-// This morning's plan, as Plan my day saves it, for Review my day.
+// This morning's plan, as Daily plan saves it, for Daily review.
 async function thisMorning() {
   await db.from('day_reviews').delete().eq('user_id', me).eq('local_date', today);
   await db.from('day_plans').delete().eq('user_id', me).eq('local_date', today);
@@ -704,7 +719,7 @@ async function thisMorning() {
   ]);
 }
 // Week 1 debriefed (week 2 not, so its window has closed with no debrief),
-// and one Review my day in week 3 for "Your days".
+// and one Daily review in week 3 for "Your days".
 async function debriefWeeks() {
   await db.from('weekly_debriefs').delete().eq('user_id', me).eq('sprint_id', sprint.id);
   await db.from('weekly_debriefs').insert({ user_id: me, sprint_id: sprint.id, sprint_week: 1, status: 'finished', finished_at: `${dayKey(8, sprint.start_on)}T18:00:00Z` });
@@ -730,19 +745,19 @@ const GROUPS = [
     seed: ['--reset'],
     before: lastNight,
     screens: [
-      { id: 'plan my day', flow: [M5, 'plan'], open: (p) => go(p, '/my-day/plan', '.ds-guide-question') },
-      { id: 'plan my day, add a to-do', scope: DIALOG, mock: [M5, 'plan', ['go:3', 'todoopen']], open: async (p) => { await go(p, '/my-day/plan', '.ds-guide-question'); await nextStep(p, 3); await openPanel(p, 'Add a to-do'); } },
-      { id: 'review my day, no plan today', flow: [M5, 'rev'], open: (p) => go(p, '/my-day/review', '.ds-guide-question') },
+      { id: 'daily plan', flow: [M5, 'plan'], open: (p) => go(p, '/daily-plan', '.ds-guide-question') },
+      { id: 'daily plan, add a to-do', scope: DIALOG, mock: [M5, 'plan', ['go:3', 'todoopen']], open: async (p) => { await go(p, '/daily-plan', '.ds-guide-question'); await nextStep(p, 3); await openPanel(p, 'Add a to-do'); } },
+      { id: 'daily review, no plan today', flow: [M5, 'rev'], open: (p) => go(p, '/daily-review', '.ds-guide-question') },
     ],
   },
   {
     before: thisMorning,
     screens: [
-      { id: 'plan my day, set', scope: GUIDE, mock: [M5, 'plan', ['go:7']], open: (p) => go(p, '/my-day/plan', '.ds-guide-question') },
-      { id: 'review my day', flow: [M5, 'rev'], open: (p) => go(p, '/my-day/review', '.ds-guide-question') },
-      { id: 'review my day, this week’s list open', scope: GUIDE, mock: [M5, 'rev', ['more']], open: async (p) => { await go(p, '/my-day/review', '.ds-guide-question'); await button(p, 'Show this week’s list').click(); await button(p, 'Hide this week’s list').waitFor(); await settle(p); } },
-      { id: 'review my day, add a win', scope: DIALOG, mock: [M5, 'rev', ['go:3', 'winopen']], open: async (p) => { await go(p, '/my-day/review', '.ds-guide-question'); await nextStep(p, 3); await openPanel(p, 'Add an unplanned win'); } },
-      { id: 'review my day, after midnight', scope: GUIDE, mock: null, clock: () => londonInstant(dayKey(1), '00:30'), open: (p) => go(p, '/my-day/review', '.ds-guide-question') },
+      { id: 'daily plan, set', scope: GUIDE, mock: [M5, 'plan', ['go:7']], open: (p) => go(p, '/daily-plan', '.ds-guide-question') },
+      { id: 'daily review', flow: [M5, 'rev'], open: (p) => go(p, '/daily-review', '.ds-guide-question') },
+      { id: 'daily review, this week’s list open', scope: GUIDE, mock: [M5, 'rev', ['more']], open: async (p) => { await go(p, '/daily-review', '.ds-guide-question'); await button(p, 'Show this week’s list').click(); await button(p, 'Hide this week’s list').waitFor(); await settle(p); } },
+      { id: 'daily review, add a win', scope: DIALOG, mock: [M5, 'rev', ['go:3', 'winopen']], open: async (p) => { await go(p, '/daily-review', '.ds-guide-question'); await nextStep(p, 3); await openPanel(p, 'Add an unplanned win'); } },
+      { id: 'daily review, after midnight', scope: GUIDE, mock: null, clock: () => londonInstant(dayKey(1), '00:30'), open: (p) => go(p, '/daily-review', '.ds-guide-question') },
     ],
   },
   {
@@ -766,7 +781,7 @@ const GROUPS = [
   {
     seed: ['--empty'],
     screens: [
-      { id: 'plan my day, no plan', flow: [M5, 'plan'], open: (p) => go(p, '/my-day/plan', '.ds-guide-question') },
+      { id: 'daily plan, no plan', flow: [M5, 'plan'], open: (p) => go(p, '/daily-plan', '.ds-guide-question') },
       { id: 'debrief, no sprint', mock: null, open: (p) => go(p, '/performance-sprint/debrief', '.deb-closed') },
     ],
   },
@@ -859,7 +874,7 @@ for (const group of GROUPS) {
           const entry = { screen: s.id, width, mocked: Boolean(s.flow || s.mock), steps: [] };
           appSteps.forEach((a, i) => {
             if (!mockSteps.length) { entry.steps.push({ app: a.headings[0] || s.id, mock: null }); return; }
-            // Review my day's "Ready to close the day?" is M19's (Phase 4 step 6), not
+            // Daily review's "Ready to close the day?" is M19's (Phase 4 step 6), not
             // M5's: its wording is compared in tests/phase4/compare.mjs.
             if (a.headings.some((h) => /^Ready to close the day\?$/.test(h))) { entry.steps.push({ app: 'Ready to close the day? (M19, compared in tests/phase4/compare.mjs)', mock: null }); return; }
             // A flow's step pairs with the mock-up step that asks the same

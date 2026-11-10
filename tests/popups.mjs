@@ -20,7 +20,7 @@
 // everything outside localhost is blocked. Where the portal's design system
 // is there (src/components/design), it also signs in as the invented test
 // client on the TEST database only and checks a sample of portal pages: the
-// sprint, the year, the plan, Plan my day, Review my day, the weekly
+// sprint, the year, the plan, Daily plan, Daily review, the weekly
 // debrief, the design gallery and older pages with an ⓘ.
 // Each page lists the pop-up kinds it must have, and a page missing one
 // fails on its own (Tim, 29 Oct). Every page is also checked for "Next
@@ -500,8 +500,8 @@ const PAGES = [
   // test client has no coach): each is still opened on its own, checked for
   // "Next coaching session", and any pop-up found on it is still checked.
   // The debrief shows its first step or, outside a window, when the next opens.
-  { path: '/my-day/plan', name: 'Plan my day', ready: '.ds-guide-question', desktop: [], touch: [] },
-  { path: '/my-day/review', name: 'Review my day', ready: '.ds-guide-question', desktop: [], touch: [] },
+  { path: '/daily-plan', name: 'Daily plan', ready: '.ds-guide-question', desktop: [], touch: [] },
+  { path: '/daily-review', name: 'Daily review', ready: '.ds-guide-question', desktop: [], touch: [] },
   { path: '/performance-sprint/debrief', name: 'the weekly debrief', ready: '.ds-guide-question, .deb-closed', desktop: [], touch: [] },
   // No ⓘ beside any page title (Tim, 5 Nov, declutter): checked below on every page.
   { path: '/daily-journal', name: 'an older page (Daily journal)', ready: '.ds-page-title', desktop: [], touch: [] },

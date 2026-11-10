@@ -537,7 +537,7 @@ if (part(6)) {
     try {
       await open(page, '/my-account');
       pass('chat, phone: not in the header', (await page.locator('.hdr .ds-chat:visible').count()) === 0);
-      pass('chat, phone: in My Account', Boolean(await until(async () => (await page.locator('.account-row', { hasText: 'Chat to Adie' }).count()) === 1, 10000)));
+      pass('chat, phone: in My Account', Boolean(await until(async () => (await page.locator('.account-page').getByRole('button', { name: 'Chat to Adie' }).count()) === 1, 10000)));
     } finally {
       await context.close();
     }

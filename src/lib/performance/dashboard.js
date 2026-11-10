@@ -340,7 +340,7 @@ function heroView(d, weeks, sprint, today) {
     value: shown == null ? 'Not yet' : `${shown}%`,
     good: avg != null && m0AtStandard(avg, standard),
     change,
-    lines: [line],
+    lines: line ? [line] : [],
     // Shown only before there is a range: once there is one, the band on
     // the chart and its pop-up say it (M4 hero; no repeated text).
     usualLine: usual ? null : `Your usual range appears after ${USUAL_RANGE_MIN_WEEKS} weeks.`,

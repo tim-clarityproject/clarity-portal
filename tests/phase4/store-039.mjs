@@ -207,7 +207,7 @@ try {
     pass('A: ... marked as still to be sent (moved across once 039 runs)', kept?.sent === false, JSON.stringify(kept));
     pass('A: no error shown', (await errorShown(page)) === 0);
 
-    // The day's habits, through the app's own module (the same one Plan my day uses).
+    // The day's habits, through the app's own module (the same one Daily plan uses).
     const r = await page.evaluate(async ({ uid, h }) => {
       const m = await import('/src/lib/performance/dayPlanHabits.js');
       const out = await m.saveDayChoices(uid, '2026-10-21', { habits: [h], order: [`habit:${h}`], top: `habit:${h}` });

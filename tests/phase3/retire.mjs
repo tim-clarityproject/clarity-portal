@@ -329,11 +329,11 @@ async function checkOldItems(page, tag) {
 }
 
 // ---------------------------------------------------------------- 4. Home and the menus
-// Home as Today (Phase 4 step 2, M2): Plan my day and Review my day open
+// Home as Today (Phase 4 step 2, M2): Daily plan and Daily review open
 // the new tools, and on a Friday afternoon the debrief is the suggestion.
 const SENSIBLE = {
-  'Plan my day': ['/my-day/plan'],
-  'Review my day': ['/my-day/review'],
+  'Daily plan': ['/daily-plan'],
+  'Daily review': ['/daily-review'],
 };
 
 async function checkHome(page, tag) {
@@ -361,7 +361,7 @@ async function checkHome(page, tag) {
 const REVIEW_TILES = [
   ['Weekly performance debrief', '/performance-sprint/debrief'],
   ['After-action review', '/my-journal'],
-  ['Review my day', '/my-day/review'],
+  ['Daily review', '/daily-review'],
 ];
 
 async function checkDrawer(page, tag) {
@@ -369,12 +369,11 @@ async function checkDrawer(page, tag) {
     await page.goto(`${APP}/welcome`);
     await page.waitForSelector('.home-page .ds-page-title', { timeout: 30000 });
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    await page.locator('#site-menu .ds-dmenu-name', { hasText: /^personal$/i }).click();
-    await landsOn(page, '/personal');
-    await page.locator('.ds-hub-tile', { hasText: 'Review' }).first().click();
+    // The slim menu (option A, 9 Nov) lists Review itself under Personal.
+    await page.locator('#site-menu .ds-dmenu-name', { hasText: /^review$/i }).click();
     await landsOn(page, '/personal/review');
     await page.locator('.ds-hub-tile', { hasText: title }).click();
-    pass(`${tag}: the menu's Personal, Review, ${title} opens ${want}`, await landsOn(page, want), path(page));
+    pass(`${tag}: the menu's Review, ${title} opens ${want}`, await landsOn(page, want), path(page));
   }
 }
 

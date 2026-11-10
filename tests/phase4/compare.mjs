@@ -32,7 +32,7 @@
 // Then:
 //  - the safe area: Home Screen app on a notch (47px) and a Dynamic Island
 //    (59px) phone, every Phase 4 page and the open menu inside the insets;
-//  - tap counts: Log today, Plan my day, Review my day and Add a to-do from
+//  - tap counts: Log today, Daily plan, Daily review and Add a to-do from
 //    Home, on desktop and phone, in every moment of a mid-sprint day;
 //  - the wording that differs from the mock-up (figures, dates and names
 //    made neutral), each explained by an approved later rule (ALLOWED, with
@@ -396,12 +396,12 @@ const ALLOWED = [
   // Phase 5 preview fixes (Tim, 5 Nov; decisions part 4, "Phase 5 preview check").
   { screen: /./, side: 'mock', re: /^only you$/, why: 'DECLUTTER (Tim, 5 Nov): the eye alone beside the title, its words in the pop-up and for screen readers' },
   { screen: /^home/, side: 'mock', re: /^your to-dos for <day> show here once you've planned your day\.$/, why: 'DECLUTTER (Tim, 5 Nov): no line saying what will show' },
-  { screen: /^home, afternoon/, side: 'mock', re: /^(how is <day> going\?|your review is suggested from #.*)$/, why: 'ONE CARD TAKES TURNS (Tim, 5 Nov): after Plan my day’s morning, the due monthly check-in takes the card' },
+  { screen: /^home, afternoon/, side: 'mock', re: /^(how is <day> going\?|your review is suggested from #.*)$/, why: 'ONE CARD TAKES TURNS (Tim, 5 Nov): after Daily plan’s morning, the due monthly review takes the card' },
   { screen: /^home/, side: 'app', re: /^your day's done, <name>$|^your day's done, sam$/, why: 'DAY STATES (Tim, 5 Nov): reviewed, the greeting is “Your day’s done, Sam.” at any time of day' },
   { screen: /^home, recovery|recovery/i, side: 'app', re: /^you're in recovery, so there are no numbers to log <day>\.$/, why: 'A PAUSED TOOL IS A GATE (Tim, 5 Nov): Recovery’s Home says there are no numbers to log today' },
-  { screen: /^home/, side: 'mock', re: /^((coaching )?session with (<name>|tim) <day> at #\.?|what would make it useful\?|get ready for my session|ready for your monthly check-in\?|start my check-in|<name> has sent you a note\.|read my note|your agreement is ready to sign\.|read and sign)$/, why: 'quiet lines with no data until Phase 6a (the coach’s note, the coaching session, the agreement): left out (Step 2); the monthly check-in’s line (Phase 5 step 1) shows only while this month’s check-in is due' },
-  { screen: /^home, new coaching/, side: 'app', re: /^(ready for your first check-in\?|start my first check-in)$/, why: 'data: the new coaching client has not started the First check-in, so Home asks “Ready for your first check-in?” (Phase 5 step 1, M12 v14); M2 draws it half done (“Ready to finish your first check-in?”)' },
-  { screen: /^home/, side: 'app', re: /^(ready for your monthly check-in\?|start my check-in)$/, why: 'the monthly check-in’s quiet line (M2, built in Phase 5 step 1) shows while this month’s check-in is due; the mock-up’s state shows it only on some moments' },
+  { screen: /^home/, side: 'mock', re: /^((coaching )?session with (<name>|tim) <day> at #\.?|what would make it useful\?|get ready for my session|ready for your monthly review\?|start my check-in|<name> has sent you a note\.|read my note|your agreement is ready to sign\.|read and sign)$/, why: 'quiet lines with no data until Phase 6a (the coach’s note, the coaching session, the agreement): left out (Step 2); the monthly review’s line (Phase 5 step 1) shows only while this month’s check-in is due' },
+  { screen: /^home, new coaching/, side: 'app', re: /^(ready for your first review\?|start my first review)$/, why: 'data: the new coaching client has not started the First review, so Home asks “Ready for your first review?” (Phase 5 step 1, M12 v14); M2 draws it half done (“Ready to finish your first review?”)' },
+  { screen: /^home/, side: 'app', re: /^(ready for your monthly review\?|start my check-in)$/, why: 'the monthly review’s quiet line (M2, built in Phase 5 step 1) shows while this month’s check-in is due; the mock-up’s state shows it only on some moments' },
   { screen: /^home/, side: 'mock', re: /^week # of #$/, why: 'LATER RULE: the dial’s line names the sprint and is a quiet link into it (Tim, 3 Nov, Phase 2 preview fixes 7f5959e): “Sprint 1, week 4 of 8”' },
   { screen: /^home/, side: 'app', re: /^sprint #,? week # of #$/, why: 'LATER RULE: the dial’s line names the sprint and is a quiet link into it (Tim, 3 Nov, Phase 2 preview fixes 7f5959e): “Sprint 1, week 4 of 8”' },
   { screen: /^hub, plan$/, side: 'mock', re: /^week # of #$/, why: 'NAMED DIFFERENCE: the tiles’ live lines (“Sprint 4, week 4 of 8”) are not built; tiles show their fixed line and time (Step 1 left them for later)' },
@@ -409,18 +409,18 @@ const ALLOWED = [
   { screen: /^hub, review$/, side: 'app', re: /^(hardware and software check-in|check your body and mind are backing your performance\.|~# minutes)$/, why: 'Phase 5 step 1: the check-in is built, so it gets its tile; its line says how it helps (CLAUDE.md 16, one line on how it helps, as Life balance review’s “Check the rest of your life is backing your performance.”), for M3’s “Check in on your hardware and software each month.”' },
   { screen: /^home/, side: 'mock', re: /^your usual range is # to #%\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M2’s own rule)' },
   { screen: /^home/, side: 'app', re: /^your usual range appears after # weeks\.$/, why: 'data: the seeded sprint has fewer than 6 finished weeks, so “Your usual range appears after 6 weeks.” (M2’s own rule)' },
-  { screen: /^home/, side: 'app', re: /^(plan my day|review my day|add a to-do)$/, why: 'RULE OVER MOCK-UP: Plan my day, Review my day and Add a to-do on Today, for two taps from Home (experience rule 21; Step 2)' },
+  { screen: /^home/, side: 'app', re: /^(daily plan|daily review|add a to-do)$/, why: 'RULE OVER MOCK-UP: Daily plan, Daily review and Add a to-do on Today, for two taps from Home (experience rule 21; Step 2)' },
   { screen: /^home/, side: 'mock', re: /^i need help with something$/, why: 'RULE OVER MOCK-UP: never “I” on a button (writing rule 13, 27 Oct): “Get help with something” (Step 9)' },
   { screen: /^home/, side: 'mock', re: /^(# of # to-dos done so far\.)$/, why: 'UNDEFINED: “2 of 3 to-dos done so far” is not in the scoring methods, so no count line (Step 2)' },
-  { screen: /^home/, side: 'mock', re: /^(how you want to be <day>|<day>'s strategy)$/, why: 'data: no Plan my day is finished for the day shown, so Today says “Your to-dos for today show here once you’ve planned your day.” (M2’s own before-planning state)' },
-  { screen: /^home/, side: 'app', re: /^your to-dos for <day> show here once you've planned your day\.$/, why: 'data: no Plan my day is finished for the day shown, so Today says “Your to-dos for today show here once you’ve planned your day.” (M2’s own before-planning state)' },
+  { screen: /^home/, side: 'mock', re: /^(how you want to be <day>|<day>'s strategy)$/, why: 'data: no Daily plan is finished for the day shown, so Today says “Your to-dos for today show here once you’ve planned your day.” (M2’s own before-planning state)' },
+  { screen: /^home/, side: 'app', re: /^your to-dos for <day> show here once you've planned your day\.$/, why: 'data: no Daily plan is finished for the day shown, so Today says “Your to-dos for today show here once you’ve planned your day.” (M2’s own before-planning state)' },
   { screen: /^home/, side: 'app', re: /^(highest priority|only you|habit|to-do|this week|log <day>|litres|yes|no|# weekly habits, # done|performance score this week|#%|week # of #)$/, why: 'the tag and label words of Today, Log today and the week line, as separate labels (26 Oct rule 5); the eye says “Only you” (rule 24)' },
   { screen: /^home, last week/, side: 'app', re: /^let's start with this week\.$/, why: 'data: the last-week seed has nothing logged in the last 7 days, so Home also says the coming-back line (experience rule 18; Step 2 GAP_DAYS)' },
   { screen: /^home, recovery/, side: 'mock', re: /^(recovery week|suggested for now|ready for performance sprint #\?|this is your recovery week, so nothing is tracked\.|performance sprint # can start on <day> # <month>\.|plan performance sprint #)$/, why: 'RULE OVER MOCK-UP: Recovery started at any time shows M15’s basics (sleep, Breathe, What would help you recharge today?), the later approved design (Step 2)' },
   { screen: /^home, recovery/, side: 'app', re: /^(your chart starts after your second night\.|change my target range)$/, why: 'LATER APPROVED DESIGN: the Recovery sleep chart (Tim, 3 Nov, 14:26): the empty chart’s one line and the target range’s quiet link, under Sleep and Breathe' },
   { screen: /^home, recovery/, side: 'app', re: /^(you're in recovery until <day> # <month>\.|# days left\.|what would help you recharge <day>\?|this is optional, like everything here\.|only you|sleep|how did you sleep last night\?|~# minutes?|breathe|slow your breathing to settle your body\.|# # or # minutes|add a few more days|ready to go again)$/, why: 'RULE OVER MOCK-UP: Recovery started at any time shows M15’s basics (sleep, Breathe, What would help you recharge today?), the later approved design (Step 2)' },
   { screen: /^home, new/, side: 'mock', re: /^(ready to add your mission\?|add my mission)$/, why: 'data: the mission quiet line shows two weeks after joining with no mission (M2); the test account’s join date decides (home.mjs checks both)' },
-  { screen: /^home, new coaching/, side: 'mock', re: /^(suggested for now|ready to finish your first check-in\?|you're about halfway through\.|it helps <name> get the most from your first session\.|it helps tim get the most from your first session\.|finish my first check-in|ready to sign your coaching agreement\?|read and sign my agreement|your first session with tim is on <day> # <month> at #\.?|done)$/, why: 'no data until Phase 6a: the First check-in, the agreement and the first session’s date (Step 2)' },
+  { screen: /^home, new coaching/, side: 'mock', re: /^(suggested for now|ready to finish your first review\?|you're about halfway through\.|it helps <name> get the most from your first session\.|it helps tim get the most from your first session\.|finish my first review|ready to sign your coaching agreement\?|read and sign my agreement|your first session with tim is on <day> # <month> at #\.?|done)$/, why: 'no data until Phase 6a: the First review, the agreement and the first session’s date (Step 2)' },
   { screen: /^home, wind down/, side: 'mock', re: /^(done at #|done|habit|to-do)$/, why: 'M19 draws Home’s 21:00 card on a short Home; the rest of Home follows M2 (Home’s own mock-up)' },
   // The menu and the hubs (M3)
   { screen: /^menu open/, side: 'mock', re: /^(meetings, conversations, your team|health check, strategy, leverage|settings, coaching, chat to tim)$/, why: 'CHOICE and decisions (Step 1): the Dashboard joined in Phase 5, no Your people tools yet, Points of leverage removed (Tim, 2 Nov), Chat only with a coach; lines as full phrases' },
@@ -436,8 +436,8 @@ const ALLOWED = [
   { screen: /\(m19\)/, side: 'app', re: /^(personal|slow your breathing to settle your body\.|# # or # minutes|get ready for a high-pressure moment\.|clear your head\.|pin tools to my menu)$/, why: 'NAMED DIFFERENCE: M19 sketches the Reset hub with its own tile lines and a “What Reset is for” link; the app keeps M3’s hub (the hubs’ mock-up) with its ⓘ, plus M19’s Sleep wind down tile' },
   // M19
   { screen: /breathe$/, side: 'mock', re: /^change the sound$/, why: 'NOT BUILT: sound is left out until real audio files exist (brief Step 6); off until chosen' },
-  { screen: /carried over/, side: 'mock', re: /^(from review my day and last night's sleep wind down|check-in message to a past client)$/, why: 'invented data: no thought here was written in both places, so no merged row (the merge is checked in wind-down.mjs)' },
-  { screen: /carried over/, side: 'app', re: /^(only you|habit, .*|rolled over from week #|add a to-do|skip)$/, why: 'NAMED DIFFERENCE: Plan my day keeps Phase 3’s M5 pick rows and This week list under Carried over (Step 6)' },
+  { screen: /carried over/, side: 'mock', re: /^(from daily review and last night's sleep wind down|check-in message to a past client)$/, why: 'invented data: no thought here was written in both places, so no merged row (the merge is checked in wind-down.mjs)' },
+  { screen: /carried over/, side: 'app', re: /^(only you|habit, .*|rolled over from week #|add a to-do|skip)$/, why: 'NAMED DIFFERENCE: Daily plan keeps Phase 3’s M5 pick rows and This week list under Carried over (Step 6)' },
   { side: 'mock', re: /^back$/, why: 'the shared guided tool draws Back as the one chevron on a phone (26 Oct rule 6)' },
   { screen: /^home/, side: 'app', re: /^get help with something$/, why: 'RULE OVER MOCK-UP: never “I” on a button (writing rule 13, 27 Oct): “Get help with something” (Step 9)' },
 ];
@@ -713,7 +713,8 @@ const GROUPS = [
       { id: 'header', mock: null, coral: 'none', scope: '.hdr', open: (p) => homeAt(p, THU, '13:00') },
       { id: 'phone bar', mock: null, coral: 'none', scope: 'nav.ds-phone-bar', widths: phoneOnly, open: (p) => homeAt(p, THU, '13:00') },
       { id: 'Breathe button', mock: { file: ORB, clicks: ['button[data-s="button"]'], scope: '.fab' }, coral: 'none', scope: '.ds-orb', widths: desktopOnly, open: (p) => homeAt(p, THU, '13:00') },
-      { id: 'menu open', mock: m3('plan', true), coral: 'one', scope: (phone) => (phone ? '.ds-tmenu' : '.ds-dmenu'), open: async (p, phone) => { await homeAt(p, THU, '13:00'); await openMenu(p, phone); } },
+      // The slim desktop menu (option A, 9 Nov) has no coral button; the phone's tile menu keeps Log today.
+      { id: 'menu open', mock: m3('plan', true), coral: 'most', scope: (phone) => (phone ? '.ds-tmenu' : '.ds-dmenu'), open: async (p, phone) => { await homeAt(p, THU, '13:00'); await openMenu(p, phone); } },
       { id: 'hub, Personal', mock: m3('personal'), coral: 'none', open: (p) => hub(p, '/personal') },
       { id: 'hub, Plan', mock: m3('plan'), coral: 'none', open: (p) => hub(p, '/personal/plan') },
       { id: 'hub, Reset', mock: m3('ground'), coral: 'none', open: (p) => hub(p, '/personal/reset') },
@@ -732,9 +733,9 @@ const GROUPS = [
       { id: 'sleep wind down, tomorrow', mock: m19('think'), coral: 'one', scope: GUIDE, open: async (p) => { await at(p, WED, '22:30'); await go(p, '/sleep-wind-down', '.ds-guide-question'); await p.getByRole('textbox', { name: 'Thought 1' }).fill('Book a day off for the half term'); await until(async () => (await p.locator('.ds-guide-bar').innerText()).includes('Saved'), 8000); } },
       { id: 'sleep wind down, breathe', mock: m19('breathe'), coral: 'none', scope: GUIDE, open: async (p) => { await p.locator('.ds-guide-next').click(); await p.locator('.ds-night-breathe .ds-borb').waitFor({ timeout: 8000 }); await settle(p); } },
       { id: 'sleep wind down, Sleep well', mock: m19('night'), coral: 'none', scope: GUIDE, open: async (p) => { await p.getByRole('button', { name: 'End early' }).click(); await until(async () => (await heading(p)) === 'Sleep well', 8000); await settle(p); } },
-      { id: 'review my day, close the day', mock: m19('close'), coral: 'one', scope: GUIDE, open: async (p) => { await at(p, WED, '21:00'); await go(p, '/my-day/review', '.ds-guide'); await nextUntil(p, /^Ready to close the day\?$/); } },
-      { id: 'review my day, Work’s done for today', mock: m19('wdone'), coral: 'one', scope: GUIDE, open: async (p) => { await nextUntil(p, /^Work’s done for today$/, 2); } },
-      { id: 'plan my day, carried over', mock: m19('morning'), coral: 'one', scope: GUIDE, open: async (p) => { await at(p, THU, '08:30'); await go(p, '/my-day/plan', '.ds-guide-question'); await nextUntil(p, /^What will you do today\?$/); await p.locator('.ds-pick-groups').waitFor({ timeout: 15000 }); await settle(p); } },
+      { id: 'daily review, close the day', mock: m19('close'), coral: 'one', scope: GUIDE, open: async (p) => { await at(p, WED, '21:00'); await go(p, '/daily-review', '.ds-guide'); await nextUntil(p, /^Ready to close the day\?$/); } },
+      { id: 'daily review, Work’s done for today', mock: m19('wdone'), coral: 'one', scope: GUIDE, open: async (p) => { await nextUntil(p, /^Work’s done for today$/, 2); } },
+      { id: 'daily plan, carried over', mock: m19('morning'), coral: 'one', scope: GUIDE, open: async (p) => { await at(p, THU, '08:30'); await go(p, '/daily-plan', '.ds-guide-question'); await nextUntil(p, /^What will you do today\?$/); await p.locator('.ds-pick-groups').waitFor({ timeout: 15000 }); await settle(p); } },
     ],
     after: cleanMorning,
   },
@@ -857,7 +858,7 @@ if (PARTS.includes('screens')) {
 // "(display-mode: standalone)" read as true (as tests/phase4/header.mjs does).
 if (PARTS.includes('safe')) {
   seedFixed('--reset');
-  const ROUTES = ['/welcome', '/personal', '/personal/plan', '/personal/reset', '/personal/review', '/interpersonal', '/strategic', '/my-plans', '/my-reviews', '/sleep-wind-down', '/my-day/plan', '/my-day/review'];
+  const ROUTES = ['/welcome', '/personal', '/personal/plan', '/personal/reset', '/personal/review', '/interpersonal', '/strategic', '/my-plans', '/my-reviews', '/sleep-wind-down', '/daily-plan', '/daily-review'];
   const CASES = [
     { name: 'notch', width: 390, height: 844, inset: { top: 47, left: 0, right: 0, bottom: 34 } },
     { name: 'Dynamic Island', width: 393, height: 852, inset: { top: 59, left: 0, right: 0, bottom: 34 } },
@@ -926,8 +927,8 @@ const tapCounts = [];
 if (PARTS.includes('taps')) {
   const TARGETS = [
     { what: 'Log today', onHome: '#log-today .home-log-title', menu: 'Log today', reached: async (p) => { const b = await p.locator('#log-today').boundingBox(); return path(p) === '/welcome' && b && b.y < 500 && b.y > -50; } },
-    { what: 'Plan my day', link: /^Plan my day$|^Start my plan$|^Plan my day/i, menuTool: 'Plan my day', reached: async (p) => path(p) === '/my-day/plan' },
-    { what: 'Review my day', link: /^Review my day$|^Start my review$|^Review my day/i, menuTool: 'Review my day', reached: async (p) => path(p) === '/my-day/review' },
+    { what: 'Daily plan', link: /^Daily plan$|^Start my daily plan$/i, menuTool: 'Daily plan', reached: async (p) => path(p) === '/daily-plan' },
+    { what: 'Daily review', link: /^Daily review$|^Start my daily review$/i, menuTool: 'Daily review', reached: async (p) => path(p) === '/daily-review' },
     { what: 'Add a to-do', link: /^Add a to-do$/i, reached: async (p) => (await p.getByLabel('What needs doing?').count()) > 0 },
   ];
   const MOMENTS = [['morning', THU, '08:30'], ['afternoon', THU, '13:00'], ['evening', THU, '17:30'], ['21:15', THU, '21:15']];
