@@ -21,6 +21,8 @@ export default function StatusAction({
 }) {
   return (
     <div className="ds-status-action">
+      {/* Never "Not yet" as a big figure (5e rule 6): with no words for
+          not done, only the empty bar shows. */}
       <p className={`ds-status-action-state${done ? ' ds-status-action-state--done' : ''}`} aria-live="polite">
         {done ? doneLabel : notDoneLabel}
       </p>

@@ -23,7 +23,9 @@ import './design.css';
 // onEdit:     opens this objective on its own (Tim, 3 Nov): a quiet
 //             "Edit this objective" link at the foot of the card.
 export default function ObjectiveCard({ objective: o, onMarkDone, onEdit, as: Heading = 'h3' }) {
-  const labels = [`Outcome Objective ${o.number}`, o.kindLabel, o.dateText, o.timeLeft].filter(Boolean);
+  // Its number and its date only (Tim, 10 Nov): the figure shows what kind
+  // it is, and the date already says how long is left (29n).
+  const labels = [`Outcome Objective ${o.number}`, o.dateText].filter(Boolean);
   return (
     <article className={`ds-objective${o.flagged ? ' ds-objective--flagged' : ''}`}>
       <p className="ds-objective-labels">
@@ -33,7 +35,7 @@ export default function ObjectiveCard({ objective: o, onMarkDone, onEdit, as: He
       {o.kind === 'milestone' ? (
         onMarkDone ? (
           <div className="ds-objective-milestone">
-            <StatusAction done={o.reached} onChange={onMarkDone} between={<Bar value={o.reached ? 1 : 0} className="ds-objective-bar" />} />
+            <StatusAction done={o.reached} notDoneLabel="" onChange={onMarkDone} between={<Bar value={o.reached ? 1 : 0} className="ds-objective-bar" />} />
           </div>
         ) : (
           <div className="ds-objective-milestone">
@@ -51,11 +53,8 @@ export default function ObjectiveCard({ objective: o, onMarkDone, onEdit, as: He
           <Bar value={o.progress} className="ds-objective-bar" />
         </>
       )}
-      <p className="ds-objective-foot">
-        {o.flagged
-          ? 'No Strategy working on this yet'
-          : `${o.strategyCount} ${o.strategyCount === 1 ? 'Strategy' : 'Strategies'} working on this`}
-      </p>
+      {/* Only a gap is named: the Strategies' own Serves numbers show the rest. */}
+      {o.flagged && <p className="ds-objective-foot">No Strategy working on this yet</p>}
       {onEdit && (
         <Button variant="text" className="ds-part-edit" onClick={onEdit} aria-label={`Edit this objective: ${o.name}`}>
           Edit this objective

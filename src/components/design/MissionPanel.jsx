@@ -20,9 +20,8 @@ import './design.css';
 // onOpenPlan:    goes to the Individual Performance Plan.
 export default function MissionPanel({ open, onClose, mission, objectives = [], score = null, who = {}, onSystemLink, onOpenPlan }) {
   return (
-    <DropPanel open={open} onClose={onClose} title="My Mission">
+    <DropPanel open={open} onClose={onClose} title="My Mission" titleAside={<WhoSees {...who} />}>
       <div className="ds-mpanel">
-        <div className="ds-mpanel-who"><WhoSees {...who} /></div>
         <p className="ds-mpanel-mission">{keepWords(mission)}</p>
         {objectives.length > 0 && (
           <ul className="ds-mpanel-objectives" aria-label="Outcome Objectives">

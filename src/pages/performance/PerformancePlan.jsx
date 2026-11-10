@@ -31,10 +31,9 @@ import { readCache, writeCache } from '../../lib/pageCache';
 import { isNetworkError } from '../../lib/connection';
 import { notifyPlanChanged } from '../../lib/performance/planChanged';
 import PlanPartPanel, { partSavedMessage } from './PlanPartPanel';
-import { recoveryLead, versionLabel } from '../../lib/performance';
+import { recoveryLead } from '../../lib/performance';
 import { friendlyError } from '../../lib/friendlyError';
 import pageText from '../../content/pageText';
-import { dayWords } from './planDates';
 import './performance.css';
 
 // The Individual Performance Plan (mock-up M1, R.ipp): My Mission, the
@@ -185,7 +184,8 @@ export default function PerformancePlan() {
   const scoreNote = (s) => {
     if (view.pausedWeek) return s.score ? null : `This Strategy had no score in week ${view.pausedWeek}.`;
     if (!view.sprintRunning || s.score) return null;
-    return 'This Strategy has no score yet this week.';
+    // A Strategy with no score yet this week says nothing (5e rule 6).
+    return null;
   };
   // The dashboard's "Review its Strategies" lands on the Strategies (#strategies).
   const strategiesShown = Boolean(view);
@@ -198,9 +198,9 @@ export default function PerformancePlan() {
   const hideScores = view?.inRecovery && !showResults;
   const scoreLabel = view?.pausedWeek ? `Performance score in week ${view.pausedWeek}, before your recovery` : SCORE_LABEL;
 
-  const meta = view
-    ? [versionLabel(view.version), view.changedAt ? `Changed ${dayWords(view.changedAt)}` : null]
-    : [];
+  // No version or "Changed" line under the title (Tim, 10 Nov): the version
+  // history is one tap away, at the foot of the page.
+  const meta = [];
 
   return (
     <div className="ui-root">
@@ -239,8 +239,8 @@ export default function PerformancePlan() {
             )}
             <section className="ds-mission-card" aria-labelledby="ipp-mission">
               <div className="ds-mission-card-head">
-                <h2 id="ipp-mission" className="ds-mission-card-label">My Mission</h2>
-                <WhoSees {...who('mission', 'Your mission')} />
+                {/* The eye beside the title it belongs to (5e rules 10 and 29d). */}
+                <h2 id="ipp-mission" className="ds-mission-card-label">My Mission<span className="ds-page-aside"><WhoSees {...who('mission', 'Your mission')} /></span></h2>
               </div>
               {view.mission
                 ? <p className="ds-mission-card-text">{keepWords(view.mission)}</p>

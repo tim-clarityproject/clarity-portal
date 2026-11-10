@@ -34,18 +34,14 @@ export function alignmentCheck(objectives = [], strategies = [], links = []) {
 }
 
 /**
- * The check's lines, as M1 words them: two quiet "good" labels when the plan
- * lines up, or one line per gap ("Annual revenue has no Strategy working on
+ * The check's lines: nothing when the plan lines up, or one line per gap ("Annual revenue has no Strategy working on
  * it").
  * @returns {{ good: boolean, text: string }[]}
  */
 export function alignmentLines(check) {
-  if (check.ok) {
-    return [
-      { good: true, text: 'Every objective has a Strategy' },
-      { good: true, text: 'Every Strategy serves an objective' },
-    ];
-  }
+  // A plan that lines up says nothing (Tim, 10 Nov: the two lines only
+  // described the page). Only a gap is named, because a gap is something to do.
+  if (check.ok) return [];
   return [
     ...check.unservedObjectives.map((o) => ({ good: false, text: `${o.name} has no Strategy working on it` })),
     ...check.unlinkedStrategies.map((s) => ({ good: false, text: `${s.name} serves no objective yet` })),

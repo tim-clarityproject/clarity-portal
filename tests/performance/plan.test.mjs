@@ -91,7 +91,8 @@ test('alignment: gaps both ways, in words', () => {
   ]);
   const ok = alignmentCheck(objectives, strategies, [{ strategyId: 's1', objectiveId: 'o1' }, { strategyId: 's2', objectiveId: 'o2' }]);
   assert.equal(ok.ok, true);
-  assert.equal(alignmentLines(ok)[0].text, 'Every objective has a Strategy');
+  // A plan that lines up says nothing: only a gap is named.
+  assert.deepEqual(alignmentLines(ok), []);
 });
 
 test('words: figures, targets and measure lines', () => {

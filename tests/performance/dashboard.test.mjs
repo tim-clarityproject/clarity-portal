@@ -207,16 +207,20 @@ test('Outcome Objectives: progress, pace, effort, the change this sprint and the
   const [o1, o2, o3] = v.chain.objectives.rows;
   assert.equal(o1.value, '31');
   assert.equal(o1.of, 'of 38');
-  assert.equal(o1.label, 'Up 9 this sprint');
-  assert.equal(o1.line, 'You’re on pace to reach 38 by 30 Jun 2027.');
-  assert.equal(o1.effortLine, 'The work behind it is on track.');
+  // No line describing the figure, and the rise only under What's improving (Tim, 10 Nov).
+  assert.equal(o1.label, '');
+  assert.equal(o1.line, null);
+  assert.equal(o1.pace, 'You’re on pace to reach 38 by 30 Jun 2027.');
+  assert.equal(o1.effortLine, null);
   assert.ok(Math.abs(o1.bar.value - 31 / 38) < 1e-9);
-  assert.equal(o2.label, 'Steady this sprint');
+  assert.equal(o2.label, '');
   assert.equal(o2.of, 'Target 9/10');
-  assert.equal(o3.line, 'You haven’t reached this milestone yet.');
+  assert.equal(o3.line, null);
   assert.equal(o3.value, '8 months');
   assert.equal(o3.of, 'left');
-  assert.equal(o3.label, 'Due 30 Jun 2027');
+  // Its date shows once, at the end of its bar.
+  assert.equal(o3.label, '');
+  assert.equal(o3.bar.dueText, '30 Jun 2027');
   assert.equal(v.chain.objectives.summary, '1 of 2 are improving this sprint, and the milestone is due by 30 Jun 2027, 8 months left.');
 });
 
@@ -239,13 +243,13 @@ test('Strategies: the strip for the span, the latest figure, last week at the st
 test('what’s behind: wins, streaks, sleep (Recovery’s chart and range), stress and the way of being, each from its section', () => {
   const v = dashboardView(rows(), { today: TODAY, target });
   const by = Object.fromEntries(v.behind.rows.map((r) => [r.key, r]));
-  assert.deepEqual(v.behind.rows.map((r) => r.key), ['wins', 'rhythm', 'check', 'lbr', 'be', 'sleep', 'stress']);
-  assert.equal(by.wins.line, 'You added 2 unplanned wins this sprint, the latest “Landed a referral from a past client”.');
+  assert.deepEqual(v.behind.rows.map((r) => r.key), ['wins', 'rhythm', 'be', 'sleep', 'stress']);
+  assert.equal(by.wins.line, 'Your latest was “Landed a referral from a past client”.');
   assert.deepEqual(by.wins.items[0].served, ['Grow through referrals']);
   // M11: four finished weeks of this sprint debriefed, and all of Sprint 1.
   assert.equal(m11DebriefStreak([{ debriefDone: true }]), 1);
   assert.equal(by.rhythm.figure.text, '12');
-  assert.match(by.rhythm.line, /^You’ve done your debrief 12 weeks in a row, and used Breathe (twice|2 times) this week\.$/);
+  assert.match(by.rhythm.line, /^You’ve used Breathe (once|\d+ times) this week\.$/);
   // M12 sleep over the sprint's nights so far.
   const nights = rows().dayPlans.map((p) => ({ value: p.sleep_hours }));
   assert.equal(by.sleep.figure.text, String(m12SleepHours(nights).shown));
@@ -253,12 +257,13 @@ test('what’s behind: wins, streaks, sleep (Recovery’s chart and range), stre
   assert.equal(by.sleep.slots.find((s) => s.last).axis, 'Last night');
   // Last night (day 31) was 6.5 hours, under the suggested 7 to 9.
   assert.deepEqual(by.sleep.action.lines, ['Last night was under your target range.', 'Tonight, Sleep wind down could help.']);
-  assert.equal(by.stress.line, 'You answered “Not at all” or “A little” in 3 of 4 weeks this sprint.');
+  assert.equal(by.stress.line, 'These are the weeks you answered “Not at all” or “A little”.');
   assert.equal(by.stress.dots[1].good, false);
   assert.equal(by.be.figure.text, '7');
-  assert.equal(by.be.line, 'You rated it 7/10 on average this sprint.');
-  assert.equal(by.check.line, 'You haven’t done a monthly review yet.');
-  assert.equal(by.lbr.line, 'You haven’t done a life balance review yet.');
+  // The figure says it: no line repeats it. Sections with nothing yet stay hidden.
+  assert.equal(by.be.line, null);
+  assert.equal(by.check, undefined);
+  assert.equal(by.lbr, undefined);
   // No tool writes the emotional control checks yet: the row waits for the first one.
   assert.equal(by.line, undefined);
   // Patterns appear only once there is enough data to check (patterns.js patternsRow).
@@ -275,15 +280,8 @@ test('a new person with no sprint: empty frames, each with its start line', () =
   assert.deepEqual(v.hero.lines, ['Your dashboard fills in once your first Performance Sprint starts.']);
   assert.equal(v.hero.empty, true);
   assert.equal(v.current, null);
-  assert.deepEqual(v.behind.rows.map((r) => r.line), [
-    'You haven’t added an unplanned win this sprint.',
-    'Your streaks start with your first Performance Sprint.',
-    'You haven’t done a monthly review yet.',
-    'You haven’t done a life balance review yet.',
-    'You haven’t rated it yet.',
-    'You haven’t logged sleep yet.',
-    'This starts after your first weekly debrief.',
-  ]);
+  // Nothing to show yet: every section stays hidden (5e rule 6).
+  assert.deepEqual(v.behind.rows, []);
 });
 
 test('Recovery hides the scores until Show my results', () => {
@@ -323,7 +321,8 @@ test('the life balance review: the average and its move over the review’s 6 mo
   ];
   const v = dashboardView(rows({ lifeChecks: life }), { today: TODAY, target });
   const lbr = v.behind.rows.find((r) => r.key === 'lbr');
-  assert.equal(lbr.line, 'Your life balance average is 7.5, up 1.0 since 4 Sep.');
+  assert.equal(lbr.figure.text, '7.5');
+  assert.equal(lbr.line, 'It’s up 1.0 since 4 Sep.');
   assert.equal(lbr.stats.biggestRise.change, 2);
 });
 

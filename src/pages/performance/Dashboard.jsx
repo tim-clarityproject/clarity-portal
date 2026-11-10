@@ -437,7 +437,7 @@ function GoalBar({ bar }) {
   if (bar.kind === 'timeline') {
     return (
       <span className="dash-goal dash-goal--time" aria-hidden="true">
-        <span className="dash-goal-labels"><span style={{ left: pct(bar.gone * 100) }}>Today</span><span>Due</span></span>
+        <span className="dash-goal-labels"><span>{bar.dueText ? `Due ${bar.dueText}` : 'Due'}</span></span>
         <span className="dash-goal-track"><span className="dash-goal-fill dash-goal-fill--time" style={{ width: pct(bar.gone * 100) }} /><span className="dash-goal-now" style={{ left: pct(bar.gone * 100) }} /></span>
       </span>
     );

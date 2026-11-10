@@ -73,7 +73,9 @@ import { objectiveFigure, objectiveTarget, plainNumber, shortDate } from './word
 
 export const DASHBOARD_CACHE = 'performance-dashboard';
 export const DASHBOARD_ROUTE = '/dashboard';
-export const DASHBOARD_TITLE = 'Individual Performance Dashboard';
+// On screen the short form (5e rule 29b: capitals for names of up to about
+// 3 words); the browser tab has the full name (navigation.js tabTitle).
+export const DASHBOARD_TITLE = 'Dashboard';
 
 // ---------------------------------------------------------------- the person's choices
 
@@ -292,11 +294,9 @@ function heroView(d, weeks, sprint, today) {
   const figures = m6SprintFigures(mine.map((w) => ({ number: w.number, score: w.raw, finished: w.finished })), standard, previousSprintAverage(weeks, sprint));
   const avg = figures.average;
   const shown = avg == null ? null : m0Round(avg);
-  let line;
-  if (avg == null) line = 'Your first week isn’t finished yet.';
-  else if (shown > standard) line = `You’re above your standard of ${standard}%.`;
-  else if (shown === standard) line = `You’re right on your standard of ${standard}%.`;
-  else line = `You’re below your standard of ${standard}%.`;
+  // Under the figure, only a next step (5e rules 1 and 9; Tim, 10 Nov):
+  // the chart's Standard line and the bars already say where it stands.
+  const line = avg == null ? 'Your first week isn’t finished yet.' : null;
   const d0 = figures.change;
   const change = d0 == null ? null : {
     text: glance(d0),
@@ -388,8 +388,6 @@ function objectiveRows(d, today, sprint, weeks) {
     const effortOnTrack = finishedHere.length && sprint ? m9EffortOnTrack(serving.map(strategyAverage), sprint.standard) : null;
     const number = numberOf.get(row.id);
     const base = { id: row.id, number, name: objective.name, kind: objective.kind, objective, result, effortOnTrack };
-    const effortLine = effortOnTrack == null || !serving.length ? null
-      : effortOnTrack ? 'The work behind it is on track.' : 'The work behind it is below your standard.';
     if (objective.kind === 'milestone') {
       const reached = result.reached;
       const set = objective.startOn || row.created_at?.slice(0, 10) || today;
@@ -399,12 +397,14 @@ function objectiveRows(d, today, sprint, weeks) {
       const left = due && !reached ? m9TimeLeft(today, due) : null;
       return {
         ...base,
-        line: reached ? 'You’ve reached this milestone.' : 'You haven’t reached this milestone yet.',
-        effortLine,
+        // No line describing what the bar and the figure show (5e rule 9).
+        line: null,
+        effortLine: null,
         bar: { kind: 'timeline', gone, reached, dueText: due ? shortDate(due) : null },
         value: reached ? 'Done' : left ? (left.count === 0 ? 'Today' : plural(left.count, left.unit)) : '',
         of: reached || !left ? '' : left.days < 0 ? 'overdue' : left.count === 0 ? '' : 'left',
-        label: due ? `Due ${shortDate(due)}` : '',
+        // Its date shows once, at the end of its bar (29n).
+        label: '',
         improving: false,
         notMoving: false,
       };
@@ -416,12 +416,14 @@ function objectiveRows(d, today, sprint, weeks) {
     const pace = m9PaceSentence(objective, result, shortDate)?.replace(/'/g, '’') ?? null;
     let label = '';
     if (reached) label = 'Target reached';
-    else if (sprint && result.improving && better) label = `${objective.direction === 'down' ? 'Down' : 'Up'} ${deltaWords(objective, delta)} this sprint`;
-    else if (sprint) label = 'Steady this sprint';
+    // The rise shows once, under What's improving ("+3"), never here too (5e rule 9).
     return {
       ...base,
-      line: reached ? 'Well done, you’ve reached your target!' : pace,
-      effortLine: reached ? null : effortLine,
+      // At most one line, and only when it's an action: these described
+      // the figure, so they went (Tim, 10 Nov). The pace is kept for the pop-up.
+      line: null,
+      pace,
+      effortLine: null,
       bar: { kind: 'progress', value: (result.progress ?? 0) / 100, good: reached || Boolean(result.onPace && result.paceShown) },
       value: objectiveFigure(objective, result.current),
       of: objective.kind === 'rating' ? `Target ${plainNumber(objective.target)}/10` : objectiveTarget(objective),
@@ -610,9 +612,8 @@ function winsRow(d, sprint, here) {
   return {
     key: 'wins',
     title: 'Unplanned wins',
-    line: n
-      ? `You added ${plural(n, 'unplanned win')} this sprint, the latest “${wins[0].what}”.`
-      : 'You haven’t added an unplanned win this sprint.',
+    // The figure is the count; the line says only what it can't (5e rule 9).
+    line: n ? `Your latest was “${wins[0].what}”.` : null,
     figure: n ? { text: String(n) } : null,
     mini: weeklyMini(here, (w) => wins.filter((x) => w.days?.includes(x.local_date)).length, (v) => v >= 1, 3),
     items: wins.map((w) => ({ key: w.id, text: w.what, served: served(w.id), date: w.local_date })),
@@ -632,17 +633,14 @@ function rhythmRow(d, sprint, here, today) {
     const r = m11HabitKeptUp(finished.map((w) => w.habits.get(h.id) ?? null));
     return { key: h.id, title: h.name, value: r.of ? `Kept up in ${r.keptUp} of ${plural(r.of, 'week')}` : 'No finished week yet' };
   });
-  const parts = [];
-  if (streak > 0) parts.push(`You’ve done your debrief ${plural(streak, 'week')} in a row`);
-  if (breaths) parts.push(`${parts.length ? 'used' : 'You’ve used'} Breathe ${breaths === 1 ? 'once' : `${breaths} times`} this week`);
-  let line;
-  if (parts.length) line = `${parts.join(', and ')}.`;
-  else line = sprint ? 'Your streak starts with your next weekly debrief.' : 'Your streaks start with your first Performance Sprint.';
+  // The figure is the debrief streak; the line adds only Breathe (5e rule
+  // 9). With neither, the section stays hidden (5e rule 6).
+  const line = breaths ? `You’ve used Breathe ${breaths === 1 ? 'once' : `${breaths} times`} this week.` : null;
   return {
     key: 'rhythm',
     title: 'Streaks and habits',
     line,
-    figure: streak ? { text: String(streak), unit: streak === 1 ? 'week' : 'weeks' } : null,
+    figure: streak ? { text: String(streak), unit: streak === 1 ? 'week' : 'weeks' } : breaths ? { text: String(breaths), unit: breaths === 1 ? 'session' : 'sessions' } : null,
     items: [
       { key: 'debriefs', title: 'Weekly debriefs in a row', value: plural(streak, 'week') },
       ...(thisWeek ? [{ key: 'breathe', title: 'Breathing sessions this week', value: String(breaths) }] : []),
@@ -663,7 +661,7 @@ function checkRow(d) {
     return x > 0 ? `${name} is up ${x}` : x < 0 ? `${name} is down ${-x}` : `${name} is the same`;
   };
   let line;
-  if (!last) line = 'You haven’t done a monthly review yet.';
+  if (!last) line = null;
   else if (!prev) line = null;
   else line = `${move('Hardware', last.hardware, prev.hardware)} and ${move('Software', last.software, prev.software)} since your last monthly review.`;
   return {
@@ -694,13 +692,14 @@ function lifeRow(d) {
   if (!stats) return { key: 'lbr', title: 'Life balance review', line: 'You haven’t done a life balance review yet.', figure: null, stats: null };
   const avg = (Math.round(stats.average * 10) / 10).toFixed(1);
   let line;
-  if (stats.one) line = `Your first life balance review averaged ${avg}.`;
+  if (stats.one) line = null;
   else {
     const since = formatCheckinDate(inPeriod[0].date, false);
     const moved = Math.round(stats.averageMove * 10) / 10;
+    // The figure is the average; the line says only how it has moved.
     line = moved === 0
-      ? `Your life balance average is ${avg}, the same as on ${since}.`
-      : `Your life balance average is ${avg}, ${stats.averageUp ? 'up' : 'down'} ${moved.toFixed(1)} since ${since}.`;
+      ? `It’s the same as on ${since}.`
+      : `It’s ${stats.averageUp ? 'up' : 'down'} ${moved.toFixed(1)} since ${since}.`;
   }
   return { key: 'lbr', title: 'Life balance review', line, figure: { text: avg }, stats, latestDate: latest.date };
 }
@@ -721,7 +720,7 @@ function wayRow(d, sprint, here) {
   return {
     key: 'be',
     title: 'How you want to be',
-    line: overall ? `You rated it ${overall.shown}/10 on average this sprint.` : 'You haven’t rated it yet.',
+    line: null,
     figure: overall ? { text: String(overall.shown), unit: '/10', good: overall.green } : null,
     mini: weeklyMini(here, weekAvg, (v) => v >= 7, 10),
     latestWay: latestWay ? latestWay.trim() : null,
@@ -802,9 +801,9 @@ function sleepRow(d, sprint, today, target) {
     weeks.push({ key: from, value: weekAvg(from) });
   }
   let line;
-  if (!avg) line = 'You haven’t logged sleep yet.';
-  else if (usual) line = `You slept ${hoursFigure(avg.shown)} hours a night on average this sprint, mostly rated “${usual}”.`;
-  else line = `You slept ${hoursFigure(avg.shown)} hours a night on average this sprint.`;
+  // The figure is the average; the line says only how the nights felt.
+  if (avg && usual) line = `Your nights were mostly rated “${usual}”.`;
+  else line = null;
   return {
     key: 'sleep',
     title: 'Sleep',
@@ -839,9 +838,7 @@ function stressRow(d, sprint, here) {
   return {
     key: 'stress',
     title: 'Stress',
-    line: answered.length
-      ? `You answered “Not at all” or “A little” in ${green} of ${plural(answered.length, 'week')} this sprint.`
-      : 'This starts after your first weekly debrief.',
+    line: answered.length ? 'These are the weeks you answered “Not at all” or “A little”.' : null,
     figure: answered.length ? { text: `${green} of ${answered.length}` } : null,
     mini: answered.slice(-8).map((w) => {
       const lvl = WEEKLY_STRESS.indexOf(byWeek.get(w.number));
@@ -935,7 +932,9 @@ export function dashboardView(d, { today, span = 'sprint', target, patterns = nu
     controlRow(d, sprint, here),
     sleepRow(d, sprint, today, target),
     stressRow(d, sprint, here),
-  ].filter(Boolean);
+    // A section with nothing to show yet stays hidden (5e rule 6; Tim, 10
+    // Nov): it appears with its first figure.
+  ].filter((r) => r && (r.key === 'pat' || r.figure));
   const behind = {
     lead: 'This section shows the current sprint.',
     closedLine: patterns?.cards?.length

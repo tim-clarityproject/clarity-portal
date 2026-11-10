@@ -551,7 +551,7 @@
 }
 
 .ui-root .dash-goal-labels span { position: absolute; right: 0; white-space: nowrap; }
-.ui-root .dash-goal-labels span:first-child { right: auto; transform: translateX(-50%); }
+.ui-root .dash-goal-labels span:first-child:not(:only-child) { right: auto; transform: translateX(-50%); }
 
 /* ---------- What's behind your performance ---------- */
 .ui-root .dash-folds { margin-top: var(--space-px18); }
