@@ -21,6 +21,15 @@
 //                                             with a Recovery started N days ago
 //                                             for M days (default 3 and 7), still
 //                                             open, "Let [coach] know" ticked
+//   node scripts/seed-test-plan.mjs --second --reset
+//                                             the same plan and running sprint for the
+//                                             SECOND invented test person (the
+//                                             organisation client, "Jordan"), with
+//                                             one Strategy below the standard for
+//                                             its 3 finished weeks, so the
+//                                             dashboard's "What's holding you back"
+//                                             can be seen (Tim, 10 Nov). Sam's own
+//                                             plan is never touched by it.
 //   ... --today=YYYY-MM-DD                    builds everything around that day
 //                                             instead of today (tests/phase2/recovery.mjs)
 //
@@ -45,9 +54,12 @@ if (!env.TEST_SUPABASE_URL?.includes(TEST_REF)) {
   process.exit(1);
 }
 const db = createClient(env.TEST_SUPABASE_URL, env.TEST_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+// --second: the second invented test person, never Sam.
+const second = process.argv.includes('--second');
+const account = second ? 'TEST_ORG_CLIENT' : 'TEST_CLIENT';
 const { data: signIn, error: signInError } = await db.auth.signInWithPassword({
-  email: env.TEST_CLIENT_EMAIL,
-  password: env.TEST_CLIENT_PASSWORD,
+  email: env[`${account}_EMAIL`],
+  password: env[`${account}_PASSWORD`],
 });
 if (signInError) throw signInError;
 const me = signIn.user.id;
@@ -87,6 +99,9 @@ if (existing?.length || empty) {
   await db.from('day_plans').delete().eq('user_id', me);
   await db.from('day_reviews').delete().eq('user_id', me);
   await db.from('todos').delete().eq('user_id', me);
+  // Rows left behind by earlier test runs (Tim, 10 Nov: no junk in the
+  // invented data): the 0e check's draft meeting plans.
+  await db.from('decisions').delete().eq('user_id', me).like('title', 'Phase 0e check %');
   // 038 and 039's own-row tables (on a database without them these do
   // nothing): a finished wind-down left from a run on the fixed day would
   // hide Home's wind-down card and fill the next run's night.
@@ -213,6 +228,10 @@ const week = [
   { steps: [12000, 10400, 11000, 10200, 12500, 8000, 9000], train: [1, 1, 0, 1, 0, 1, 0], water: [2, 2, 2, 2, 2, 2, 2], late: [0, 0, 1, 0, 0, 0, 0], focus: [4, 4, 5, 4, 4, null, null], notes: [1, 1, 1, 1, 1, 1, 0], read: [1, 0, 1, 0, 0.5, 0.5, 0], msgs: [2, 1, 1, 1, 1, 0, 0], block: [null, 1, null, null, null, null, null], screens: [1, 1, 1, 1, 0, null, null], coffee: [2, 1, 2, 2, 1, null, null] },
   { steps: [11200, 8400, null, null, null, null, null], train: [1, 0, null, null, null, null, null], water: [2, 1.5, null, null, null, null, null], late: [0, 1, null, null, null, null, null], focus: [4, 3, null, null, null, null, null], notes: [2, 1, null, null, null, null, null], read: [0.5, 0, null, null, null, null, null], msgs: [1, 2, null, null, null, null, null], block: [null, null, null, null, null, null, null], screens: [1, 0, null, null, null, null, null], coffee: [2, 2, null, null, null, null, null] },
 ];
+// The second person's Strategy below the standard: "Build The Clarity
+// Portal" has one habit, the weekly strategic block, answered No in each of
+// the three finished weeks, so it scores 0% in all three.
+if (second) for (const w of week.slice(0, 3)) w.block = [null, null, null, 0, null, null, null];
 // Each week's logs from the pattern, every day before today.
 function logsFor(sprintKeys, startOn, pattern) {
   const out = [];
@@ -295,7 +314,7 @@ if (recoveryArg) {
   console.log(`Added an open Recovery from ${day(today, -(ago || 0))} for ${chosen || 7} days.`);
 }
 
-console.log(`Seeded the test client's plan (version 3.2) and Performance Sprint 1 (8 weeks from ${startOn}), ${logs.length} logs.`);
+console.log(`Seeded the ${second ? 'second test person' : 'test client'}'s plan (version 3.2) and Performance Sprint 1 (8 weeks from ${startOn}), ${logs.length} logs.${second ? ' "Build The Clarity Portal" is below the standard in its 3 finished weeks.' : ''}`);
 
 // The worked example M5-1 (docs/scoring-methods.md), with M9-1's figures on
 // the first objective: Sam works Monday to Friday, standard 85%. Sprint 1
