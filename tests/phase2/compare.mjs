@@ -295,6 +295,8 @@ async function popups(page, width, touch) {
 // screens it covers, a pattern on the neutral line, and why.
 const ALLOWED = [
   // Everywhere
+  { side: 'mock', re: /^(keep|change|remove|retire|number|milestone|rating \/#|count|amount with a unit|a few more days|recovery first)$/, why: 'RULE OVER MOCK-UP: every tappable answer is a full sentence in the person’s own voice (5e rule 29aa); Tim’s wording of 9 Nov (docs/tappable-answers-29aa.md)' },
+  { side: 'app', re: /^(keep it|keep it as it is|change it|remove it|retire it|i'll track a number|i'll track a milestone|i'll rate it out of #|i'll count it each week|i'll measure an amount each day|i'll say yes or no each day(, under a limit)?|i'll say yes or no once a week|i'll keep a daily count under a limit|i'll rate it from # to # each day|i need a few more days|i'm ready to go again|i'll take a recovery week first)$/, why: 'RULE OVER MOCK-UP: every tappable answer is a full sentence in the person’s own voice (5e rule 29aa); Tim’s wording of 9 Nov (docs/tappable-answers-29aa.md)' },
   { side: 'mock', re: /^(Personal|Plan|Home|Chat to #?\w*)$/, why: 'header, menu and back links belong to Home and navigation (Phase 4); back links name the page they go to' },
   { side: 'both', re: /^(Breathe|Skip|Back|Next|Close)$/, why: 'shared tool chrome (the Breathe orb and the guided tool foot) is measured, not compared word for word' },
   { side: 'mock', re: /^\d+%$|^#%$|^#$/, why: 'figures come from src/lib/scores on the seeded rows, not the mock-up’s' },
