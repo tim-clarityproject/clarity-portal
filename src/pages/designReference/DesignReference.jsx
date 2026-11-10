@@ -1841,11 +1841,12 @@ function Gallery() {
 
         <GallerySection id="c50" title="The desktop menu" demo={DesktopMenuDemo} rules={(
           <>
-            <p><New /><b>The menu never lists tools</b> (M3, 23 Oct): it lists the areas, and each opens its hub page.</p>
+            <p><New /><b>The slim panel</b> (option A; Tim, 9 Nov): a narrow list in the body font at 15px, with quiet group labels. It covers the least of the page.</p>
+            <p><b>The menu never lists tools</b> (M3, 23 Oct): it lists the hubs, and each opens its hub page. Pinned tools come first, up to 3.</p>
+            <p>Home sits at the top. Dashboard, Plan, Reset and Review sit under Personal; Interpersonal and Strategic under With others.</p>
+            <p>My Account and Sign out sit at the bottom, below a line. No Log today or Breathe in the menu: Log today is on Home, and Breathe has its own button.</p>
             <p>The bold crosshair in the header opens it from the left, under the header, and turns 45 degrees while it is open.</p>
-            <p>Pinned tools come first, up to 3. Then Home, Personal, Interpersonal, Strategic and My Account, each with one grey line.</p>
-            <p>Log today, the one coral button, and Breathe sit at the bottom.</p>
-            <p>The area you are in is marked for screen readers. Escape closes it and focus goes back to the crosshair.</p>
+            <p>The row you are on sits on the raised surface and is marked for screen readers. Escape closes it and focus goes back to the crosshair.</p>
           </>
         )} />
 

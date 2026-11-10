@@ -4,9 +4,11 @@
 //
 //   MOCKUPS=<folder with m3-hub-pages.html> node --import ./tests/scores/register.mjs tests/phase4/nav.mjs [folder]
 //
-// 1. Desktop menu: its areas in M3's order, one coral button, every area
-//    opens the right route, Log today and Breathe, the area someone is in
-//    marked, and the keyboard (Enter opens, focus moves in and stays in,
+// 1. Desktop menu: the slim panel (menu-options.html, option A; Tim, 9
+//    Nov), measured against its CSS: its rows in order under their quiet
+//    labels, no Log today or Breathe, every row opens the right route and
+//    is marked when someone is there, My Account and Sign out at the
+//    bottom, and the keyboard (Enter opens, focus moves in and stays in,
 //    Escape closes and gives focus back to the crosshair).
 // 2. Hub pages: every tile opens its tool's route (After-action review with
 //    its state), each ⓘ starts with one full sentence saying what the area
@@ -171,6 +173,17 @@ async function pageReady(page) {
 
 // What M3 says, and what may not appear (brief: no tile for tools not built
 // yet, Points of leverage removed).
+// The desktop menu's rows (option A, the slim panel) and where each goes.
+const MENU_ROWS = [
+  ['Home', '/welcome'],
+  ['Dashboard', '/dashboard'],
+  ['Plan', '/personal/plan'],
+  ['Reset', '/personal/reset'],
+  ['Review', '/personal/review'],
+  ['Interpersonal', '/interpersonal'],
+  ['Strategic', '/strategic'],
+  ['My Account', '/my-account'],
+];
 const AREAS = [
   ['Home', '/welcome'],
   ['Personal', '/personal'],
@@ -209,29 +222,55 @@ if (part(1) || part(2) || part(3)) {
       await goHub(page, '/personal/plan');
       await openDesktopMenu(page);
       await shot(page, 'desktop-menu-dark');
-      const names = await page.locator('.ds-dmenu-name').allInnerTexts();
-      pass('desktop menu: Home, Personal, Interpersonal, Strategic, My Account, in that order', samePins(names.map((n) => n.toLowerCase()), AREAS.map((a) => a[0].toLowerCase())), names.join(', '));
-      const lines = await page.locator('.ds-dmenu-line').allInnerTexts();
-      pass('desktop menu: no line names leverage, and Personal names the Dashboard (Phase 5)', !lines.some((l) => /leverage/i.test(l)) && lines.some((l) => /^Dashboard, plan, reset, review$/i.test(l)), lines.join(' | '));
-      pass('desktop menu: one coral button (Log today)', (await page.locator('#site-menu .ds-btn--primary').count()) === 1 && (await page.locator('#site-menu .ds-btn--primary').innerText()).toLowerCase() === 'log today');
+      // The slim panel (menu-options.html, option A; Tim, 9 Nov, 14:41).
+      const names = await page.locator('#site-menu .ds-dmenu-name').allInnerTexts();
+      pass('desktop menu: Home, Dashboard, Plan, Reset, Review, Interpersonal, Strategic, My Account, Sign out, in that order', samePins(names, MENU_ROWS.map((r) => r[0]).concat('Sign out')), names.join(', '));
+      const labs = await page.locator('#site-menu .ds-dmenu-lab').allInnerTexts();
+      pass('desktop menu: the quiet group labels are Personal and With others', samePins(labs.map((l) => l.toLowerCase()), ['personal', 'with others']), labs.join(', '));
+      pass('desktop menu: no Log today or Breathe button, and no coral button', (await page.locator('#site-menu .ds-btn').count()) === 0 && !/log today|breathe/i.test(await page.locator('#site-menu').innerText()));
       pass('desktop menu: the crosshair turns 45 degrees while open', await until(async () => /matrix\(0\.707/.test(await page.locator('.hdr-menu .ds-bold-cross').evaluate((el) => getComputedStyle(el).transform)), 3000));
-      const cur = await page.locator('.ds-dmenu-area[aria-current="page"] .ds-dmenu-name').allInnerTexts();
-      pass('desktop menu: on the Plan hub, Personal is marked as the current area', cur.length === 1 && /personal/i.test(cur[0]), cur.join(','));
-      pass('desktop menu: no pins shown before any are chosen', (await page.locator('#site-menu .ds-menu-pins').count()) === 0);
+      const cur = await page.locator('#site-menu .ds-dmenu-area[aria-current="page"] .ds-dmenu-name').allInnerTexts();
+      pass('desktop menu: on the Plan hub, Plan is marked as the current row', cur.length === 1 && cur[0] === 'Plan', cur.join(','));
+      pass('desktop menu: no pins shown before any are chosen', (await page.locator('#site-menu .ds-dmenu-pins').count()) === 0 && !labs.some((l) => /pinned/i.test(l)));
+      // Measured against option A's own CSS: 280px wide, rows in DM Sans at
+      // 15px in a 44px tap area with a 10px radius, labels in Nekst
+      // capitals at 10px, My Account and Sign out below a line.
+      const m = await page.evaluate(() => {
+        const one = (sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return null;
+          const c = getComputedStyle(el);
+          const r = el.getBoundingClientRect();
+          return { x: r.x, y: r.y, w: r.width, h: r.height, right: r.right, bottom: r.bottom, fs: c.fontSize, ff: c.fontFamily.split(',')[0].replace(/["']/g, ''), radius: c.borderTopLeftRadius, tt: c.textTransform, bg: c.backgroundColor, color: c.color, fw: c.fontWeight, bt: c.borderTopWidth };
+        };
+        return {
+          panel: one('#site-menu'), row: one('#site-menu .ds-dmenu-area:not([aria-current])'), cur: one('#site-menu .ds-dmenu-area[aria-current="page"]'), lab: one('#site-menu .ds-dmenu-lab'),
+          foot: one('#site-menu .ds-dmenu-foot'), account: one('#site-menu .ds-dmenu-foot a'), out: one('#site-menu .ds-dmenu-out'), header: one('.hdr-desktop'), button: one('.hdr-menu'),
+          rows: [...document.querySelectorAll('#site-menu .ds-dmenu-area')].map((el) => el.getBoundingClientRect().height),
+        };
+      });
+      pass('desktop menu: 280px wide, starting under the header', Math.abs(m.panel.w - 280) <= 1 && m.panel.x === 0 && m.panel.y >= m.header.bottom - 1, JSON.stringify(m.panel));
+      pass('desktop menu: rows are DM Sans at 15px', m.row.ff === 'DM Sans' && m.row.fs === '15px', `${m.row.ff} ${m.row.fs}`);
+      pass('desktop menu: every row is a 44px tap area with a 10px radius', m.rows.every((h) => h >= 44) && m.row.radius === '10px', `${m.rows.join(',')} ${m.row.radius}`);
+      pass('desktop menu: the labels are Nekst capitals at 10px', m.lab.ff === 'Nekst' && m.lab.fs === '10px' && m.lab.tt === 'uppercase', JSON.stringify(m.lab));
+      pass('desktop menu: the panel is the box colour (dark)', m.panel.bg === 'rgb(11, 11, 11)', m.panel.bg);
+      pass('desktop menu: the current row sits on the raised surface, medium weight', m.cur.bg === 'rgb(17, 17, 16)' && m.cur.fw === '500', `${m.cur.bg} ${m.cur.fw}`);
+      pass('desktop menu: My Account and Sign out sit at the bottom, below a line', m.foot.bt === '1px' && m.account.y > m.foot.y && m.out.y > m.account.y && m.out.bottom <= m.panel.bottom + 1, JSON.stringify([m.foot, m.out]));
+      pass('desktop menu: Sign out is in the secondary grey', m.out.color === 'rgb(163, 163, 160)', m.out.color);
       await page.keyboard.press('Escape');
 
-      for (const [name, want] of AREAS) {
-        await goHub(page, name === 'Personal' ? '/strategic' : '/personal');
+      for (const [name, want] of MENU_ROWS) {
+        await goHub(page, want === '/strategic' ? '/personal' : '/strategic');
         await openDesktopMenu(page);
-        await page.locator('.ds-dmenu-name', { hasText: new RegExp(`^${name}$`, 'i') }).click();
+        await page.locator('#site-menu .ds-dmenu-name', { hasText: new RegExp(`^${name}$`) }).click();
         pass(`desktop menu: ${name} opens ${want}`, await landsOn(page, want), path(page));
         pass(`desktop menu: closes after choosing ${name}`, await until(async () => (await page.locator('#site-menu').count()) === 0, 3000));
-      }
-      for (const [label, want] of [['Log today', '/welcome'], ['Breathe', '/breathe']]) {
-        await goHub(page, '/personal');
-        await openDesktopMenu(page);
-        await page.locator('#site-menu').getByRole('button', { name: label, exact: true }).click();
-        pass(`desktop menu: ${label} opens ${want}`, await landsOn(page, want), path(page));
+        if (want !== '/welcome' && want !== '/my-account') {
+          await openDesktopMenu(page);
+          const now = await page.locator('#site-menu .ds-dmenu-area[aria-current="page"] .ds-dmenu-name').allInnerTexts();
+          pass(`desktop menu: on ${want}, ${name} is the current row`, now.length === 1 && now[0] === name, now.join(','));
+          await page.keyboard.press('Escape');
+        }
       }
 
       // The keyboard.
@@ -254,10 +293,10 @@ if (part(1) || part(2) || part(3)) {
       await page.keyboard.press('Enter');
       await page.waitForSelector('#site-menu .ds-dmenu-area', { timeout: 5000 });
       await until(() => page.evaluate(() => Boolean(document.activeElement?.closest('#site-menu'))), 3000);
-      // First link is Home; the next is Personal.
+      // First link is Home; the next is Dashboard.
       await page.keyboard.press('Tab');
       await page.keyboard.press('Enter');
-      pass('keyboard: Tab then Enter on Personal opens it', await landsOn(page, '/personal'), path(page));
+      pass('keyboard: Tab then Enter on Dashboard opens it', await landsOn(page, '/dashboard'), path(page));
     }
 
     if (part(2)) {
@@ -347,7 +386,7 @@ if (part(4)) {
     await page.keyboard.press('Escape');
     await panel.waitFor({ state: 'hidden', timeout: 5000 });
 
-    const menuPins = async () => (await page.locator('#site-menu .ds-menu-pins a').allInnerTexts()).map((t) => t.trim());
+    const menuPins = async () => (await page.locator('#site-menu .ds-dmenu-pins a').allInnerTexts()).map((t) => t.trim());
     await openDesktopMenu(page);
     pass('pins: the menu shows them at the top', samePins(await menuPins(), ['Get unstuck', 'Journal', 'Meeting planner']), (await menuPins()).join(','));
     await shot(page, 'desktop-menu-pinned-light');
@@ -356,7 +395,7 @@ if (part(4)) {
     await page.waitForSelector('.ds-hub-page', { timeout: 30000 });
     await openDesktopMenu(page);
     pass('pins: kept after a reload', samePins(await menuPins(), ['Get unstuck', 'Journal', 'Meeting planner']), (await menuPins()).join(','));
-    await page.locator('#site-menu .ds-menu-pins a', { hasText: 'Journal' }).click();
+    await page.locator('#site-menu .ds-dmenu-pins a', { hasText: 'Journal' }).click();
     pass('pins: a pinned tool opens its page', await landsOn(page, '/daily-journal'), path(page));
 
     // Another device: nothing on it yet, the pins come from the account.
@@ -364,7 +403,7 @@ if (part(4)) {
     await goHub(d.page, '/personal');
     await d.page.getByRole('button', { name: 'Menu', exact: true }).click();
     const other = await until(async () => {
-      const t = (await d.page.locator('#site-menu .ds-menu-pins a').allInnerTexts()).map((x) => x.trim());
+      const t = (await d.page.locator('#site-menu .ds-dmenu-pins a').allInnerTexts()).map((x) => x.trim());
       return samePins(t, ['Get unstuck', 'Journal', 'Meeting planner']) ? t : null;
     }, 15000);
     pass('pins: another device shows the same pins', Boolean(other));
@@ -517,12 +556,7 @@ const MEASURE = (sel) => {
 // [what, mock selector, app selector, fields, known difference]
 const PARTS = {
   desktop: [
-    ['menu panel', '#dk .mx', '.ds-dmenu', ['w', 'pt', 'bg']],
-    ['menu area row', '#dk .mx .ix', '.ds-dmenu-area', ['pt']],
-    ['menu area name', '#dk .mx .ix .nm', '.ds-dmenu-name', ['fs', 'ff', 'tt', 'color']],
-    ['menu area line', '#dk .mx .ix .sb', '.ds-dmenu-line', ['fs', 'color']],
-    ['menu chevron', '#dk .mx .ix svg', '.ds-dmenu-area > .ds-chevron', ['w'], 'The one chevron (Chevron md) is an 18px square turned 45 degrees, so it measures 25px across; M3 drew its own 20px arrow (26 Oct rule 6).'],
-    ['Log today', '#dk .mx .qa button.p', '#site-menu .ds-btn--primary', ['h', 'bg']],
+    // The desktop menu is measured against option A in part 1 (it replaced M3's menu on 9 Nov).
     ['hub tile', '#dk .page .hub .ht:not(.big)', '.ds-hub-grid .ds-hub-tile:not(.ds-hub-tile--big)', ['minH', 'pt', 'radius', 'bg']],
     ['hub tile name', '#dk .page .hub .ht:not(.big) b', '.ds-hub-grid .ds-hub-tile:not(.ds-hub-tile--big) .ds-hub-tile-name', ['fs', 'color']],
     ['hub tile line', '#dk .page .hub .ht:not(.big) small', '.ds-hub-grid .ds-hub-tile:not(.ds-hub-tile--big) .ds-hub-tile-line', ['fs', 'color']],

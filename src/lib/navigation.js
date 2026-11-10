@@ -269,6 +269,36 @@ export function menuAreas(coachName) {
   ];
 }
 
+/**
+ * The desktop menu (menu-options.html, option A, the slim panel; Tim, 9
+ * Nov, 14:41): Home at the top, the hubs under two quiet group labels,
+ * and My Account at the bottom, with Sign out below it. Pinned tools sit
+ * above Home, as before. No Log today or Breathe in the menu: Log today
+ * is on Home and Breathe has its own button.
+ */
+export const DESKTOP_MENU = {
+  top: [{ key: 'home', name: 'Home', to: '/welcome' }],
+  groups: [
+    {
+      title: 'Personal',
+      items: [
+        { key: 'dash', name: 'Dashboard', to: '/dashboard' },
+        { key: 'plan', name: 'Plan', to: '/personal/plan' },
+        { key: 'reset', name: 'Reset', to: '/personal/reset' },
+        { key: 'review', name: 'Review', to: '/personal/review' },
+      ],
+    },
+    {
+      title: 'With others',
+      items: [
+        { key: 'interpersonal', name: 'Interpersonal', to: '/interpersonal' },
+        { key: 'strategic', name: 'Strategic', to: '/strategic' },
+      ],
+    },
+  ],
+  foot: [{ key: 'account', name: 'My Account', to: '/my-account' }],
+};
+
 const AREA_ROUTES = {
   home: ['/welcome'],
   personal: ['/dashboard'],
@@ -295,6 +325,28 @@ export function areaOf(pathname) {
   }
   if (['/my-plans', '/decision-history', '/decision-summary'].includes(path)) return 'personal';
   if (['/my-reviews', '/daily-journals'].some((r) => matches(path, r))) return 'personal';
+  return null;
+}
+
+/**
+ * Which row of the desktop menu a page belongs to (marked aria-current):
+ * 'home', 'dash', a hub ('plan', 'reset', 'review', 'interpersonal',
+ * 'strategic') for the hub itself and every tool on it, or 'account'.
+ * The Personal hub page itself has no row of its own.
+ */
+export function menuCurrent(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/';
+  if (AREA_ROUTES.home.some((r) => matches(path, r))) return 'home';
+  if (AREA_ROUTES.personal.some((r) => matches(path, r))) return 'dash';
+  if (AREA_ROUTES.account.some((r) => matches(path, r))) return 'account';
+  for (const key of ['plan', 'reset', 'review', 'interpersonal', 'strategic']) {
+    const hub = HUBS[key];
+    if (path === hub.path) return key;
+    const keys = [...(hub.groups || []).flatMap((g) => g.tools), ...(hub.anchor ? [hub.anchor] : [])];
+    if (keys.some((k) => TOOLS[k].routes.some((r) => matches(path, r)))) return key;
+  }
+  if (['/my-plans', '/decision-history', '/decision-summary'].includes(path)) return 'plan';
+  if (['/my-reviews', '/daily-journals'].some((r) => matches(path, r))) return 'review';
   return null;
 }
 

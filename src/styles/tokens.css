@@ -414,9 +414,12 @@
 
   /* Navigation (M3, Phase 4): the desktop menu, the phone bar and its
      tile menu, the hub pages' tiles */
-  --menu-w: 380px;
-  --fs-menu-area: calc(24 * var(--u-big));
-  --ls-menu-area: 0.08em;
+  --menu-w: 280px;           /* the slim desktop menu (menu-options.html, option A) */
+  --ls-menu-area: 0.08em;    /* the hub pages' big tile names */
+  --fs-menu-row: calc(15 * var(--u));
+  --fs-menu-label: calc(10 * var(--u));     /* the quiet group labels (Nekst is never below 10px) */
+  --ls-menu-label: 0.16em;
+  --radius-menu-row: 10px;
   --phone-bar-h: 74px;       /* the phone bar, above the safe area */
   --bar-btn-w: 56px;
   --bar-btn-h: 48px;

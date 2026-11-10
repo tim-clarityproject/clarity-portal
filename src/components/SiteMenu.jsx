@@ -3,13 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { DesktopMenu, PhoneBar, TileMenu, useCoachName } from './design';
 import { isNavPhone } from './design/pageLock';
-import { areaOf, menuAreas, TOOLS } from '../lib/navigation';
+import { areaOf, DESKTOP_MENU, menuAreas, menuCurrent, TOOLS } from '../lib/navigation';
 import { usePins } from '../lib/menuPins';
 import { SignOutLink, useSignOut } from './SignOut';
 
-// The portal's menus, wired to the app (mock-up M3; Phase 4 step 1): the
-// areas with the one someone is in marked, their pinned tools, and Log
-// today and Breathe. The parts themselves are in src/components/design
+// The portal's menus, wired to the app: the desktop's slim panel (option
+// A, Tim, 9 Nov) and the phone's tile menu (mock-up M3; Phase 4 step 1),
+// with the place someone is in marked, their pinned tools, and on the
+// phone Log today and Breathe. The parts themselves are in src/components/design
 // (Navigation.jsx).
 //
 // Log today opens Home's own Log today (Phase 4 step 2).
@@ -33,6 +34,12 @@ function useSiteMenu(onClosed) {
   const area = areaOf(location.pathname);
   const areas = useMemo(() => menuAreas(coachName).map((a) => ({ ...a, current: a.key === area })), [coachName, area]);
   const pins = useMemo(() => pinKeys.map((k) => ({ key: k, ...TOOLS[k] })), [pinKeys]);
+  // The desktop menu's rows (option A), with the one someone is on marked.
+  const row = menuCurrent(location.pathname);
+  const desktop = useMemo(() => {
+    const mark = (items) => items.map((it) => ({ ...it, current: it.key === row }));
+    return { top: mark(DESKTOP_MENU.top), groups: DESKTOP_MENU.groups.map((g) => ({ ...g, items: mark(g.items) })), foot: mark(DESKTOP_MENU.foot) };
+  }, [row]);
   const signOutFlow = useSignOut({ before: onClosed });
   const go = useCallback((to, state) => {
     onClosed();
@@ -40,6 +47,9 @@ function useSiteMenu(onClosed) {
   }, [navigate, onClosed]);
   return {
     areas,
+    desktop,
+    signOutStart: signOutFlow.start,
+    signOutBusy: signOutFlow.busy,
     pins,
     refresh,
     onGo: (item) => go(item.to, item.state),
@@ -63,10 +73,10 @@ export function SiteDesktopMenu({ open, onClose, top, buttonRef }) {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [open, onClose]);
-  const { signOutChoice, ...parts } = menu;
+  const { signOutChoice } = menu;
   return (
     <>
-      <DesktopMenu open={open} onClose={onClose} top={top} buttonRef={buttonRef} {...parts} />
+      <DesktopMenu open={open} onClose={onClose} top={top} buttonRef={buttonRef} menu={menu.desktop} pins={menu.pins} onGo={menu.onGo} onSignOut={menu.signOutStart} signOutBusy={menu.signOutBusy} />
       {signOutChoice}
     </>
   );
@@ -146,7 +156,7 @@ export function SitePhoneNav() {
         onGo={onGo}
         current={current}
       />
-      <TileMenu open={open} onClose={close} buttonRef={buttonRef} {...menu} signOutChoice={undefined} areas={menu.areas.filter((a) => !a.desktopOnly)} />
+      <TileMenu open={open} onClose={close} buttonRef={buttonRef} areas={menu.areas.filter((a) => !a.desktopOnly)} pins={menu.pins} onGo={menu.onGo} onLogToday={menu.onLogToday} onBreathe={menu.onBreathe} signOut={menu.signOut} />
       {menu.signOutChoice}
     </div>
   );

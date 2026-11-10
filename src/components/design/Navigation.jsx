@@ -12,9 +12,9 @@ import './design.css';
 // The menu never lists tools: it lists the areas, each opening its hub.
 //
 // - DesktopMenu: the bold crosshair in the header opens it from the left,
-//   under the header: Pinned (up to 3), then Home, Personal,
-//   Interpersonal, Strategic and My Account, each with one grey line,
-//   then Log today and Breathe at the bottom.
+//   under the header (menu-options.html, option A, the slim panel; Tim,
+//   9 Nov): Pinned (up to 3), Home, the hubs under two quiet group
+//   labels, then My Account and Sign out at the bottom below a line.
 // - PhoneBar: Home on the left, the bold crosshair in the middle (opens
 //   TileMenu and turns 45 degrees while it is open), This week on the
 //   right. Icons only, each named for screen readers.
@@ -102,10 +102,10 @@ function useMenuFocus({ open, onClose, panelRef, buttonRef }) {
   }, [open, panelRef, buttonRef]);
 }
 
-/** The pinned tools at the top of either menu ("Pinned", then up to 3). */
+/** The pinned tools at the top of the phone menu ("Pinned", then up to 3). */
 export function MenuPins({ pins = [], onGo, tabIndex }) {
-  // Breathe already has its own button at the foot of both menus, so a pin
-  // for it never shows it twice (Tim, 5 Nov).
+  // The phone menu has Breathe's own button at its foot, so a pin for it
+  // never shows it twice (Tim, 5 Nov). The desktop menu lists every pin.
   const shown = pins.filter((p) => p.key !== 'breathe');
   if (!shown.length) return null;
   return (
@@ -125,7 +125,7 @@ export function MenuPins({ pins = [], onGo, tabIndex }) {
   );
 }
 
-/** Log today (the one coral button) and Breathe, at the foot of either menu; Sign out (`signOut`, a node or a function of the tab index) below them. */
+/** Log today (the one coral button) and Breathe, at the foot of the phone menu; Sign out (`signOut`, a node or a function of the tab index) below them. */
 export function MenuActions({ onLogToday, onBreathe, tabIndex }) {
   return (
     <div className="ds-menu-actions">
@@ -136,35 +136,59 @@ export function MenuActions({ onLogToday, onBreathe, tabIndex }) {
 }
 
 /**
- * The desktop menu. `top` is where the header ends (the menu and its
- * scrim start there). `buttonRef` is the header's menu button. `inline`
- * draws it in place, for the gallery.
+ * The desktop menu (menu-options.html, option A, the slim panel; Tim, 9
+ * Nov, 14:41). A narrow list in the body font under the header, sliding
+ * in from the left over a scrim: Pinned (up to 3), a faint line, Home,
+ * then the hubs under two quiet group labels, and My Account and Sign out
+ * at the bottom below a line. No Log today or Breathe here.
+ *
+ * menu: { top, groups: [{ title, items }], foot } (navigation.js
+ *   DESKTOP_MENU), each item { key, name, to, current }.
+ * `top` is where the header ends (the menu and its scrim start there).
+ * `buttonRef` is the header's menu button. `inline` draws it in place,
+ * for the gallery.
  */
-export function DesktopMenu({ open, onClose, top = 0, areas = [], pins = [], onGo, onLogToday, onBreathe, signOut, buttonRef, id = 'site-menu', inline = false }) {
+export function DesktopMenu({ open, onClose, top = 0, menu, pins = [], onGo, onSignOut, signOutBusy = false, buttonRef, id = 'site-menu', inline = false }) {
   const panelRef = useRef(null);
   const [mounted, shown] = useShown(open);
   useMenuFocus({ open: open && !inline, onClose, panelRef, buttonRef });
   if (!mounted && !inline) return null;
   const tab = open || inline ? undefined : -1;
+  const row = (item) => (
+    <li key={item.key}>
+      <a href={item.to} className="ds-dmenu-area" aria-current={item.current ? 'page' : undefined} onClick={goHandler(onGo, item)} tabIndex={tab}>
+        <span className="ds-dmenu-name">{item.name}</span>
+      </a>
+    </li>
+  );
   const body = (
     <div className={`ds-dmenu-wrap${shown || inline ? ' ds-dmenu-wrap--open' : ''}${inline ? ' ds-dmenu-wrap--inline' : ''}`} style={inline ? undefined : { '--menu-top': `${top}px` }}>
       <div className="ds-dmenu-scrim" onClick={onClose} aria-hidden="true" />
       <nav id={id} ref={panelRef} className="ds-dmenu" aria-label="Menu" inert={open || inline ? undefined : true}>
-        <MenuPins pins={pins} onGo={onGo} tabIndex={tab} />
-        <ul className="ds-dmenu-areas">
-          {areas.map((a, i) => (
-            <li key={a.key} style={{ '--i': i }}>
-              <a href={a.to} className="ds-dmenu-area" aria-current={a.current ? 'page' : undefined} onClick={goHandler(onGo, a)} tabIndex={tab}>
-                <span className="ds-dmenu-name">{a.name}</span>
-                <Chevron direction="right" />
-                <span className="ds-dmenu-line">{a.line}</span>
-              </a>
-            </li>
+        <div className="ds-dmenu-nav">
+          {pins.length > 0 && (
+            <>
+              <p className="ds-dmenu-lab" id={`${id}-pinned`}>Pinned</p>
+              <ul className="ds-dmenu-list ds-dmenu-pins" aria-labelledby={`${id}-pinned`}>{pins.map((p) => row({ ...p, current: false }))}</ul>
+              <div className="ds-dmenu-hr" aria-hidden="true" />
+            </>
+          )}
+          <ul className="ds-dmenu-list">{(menu?.top || []).map(row)}</ul>
+          {(menu?.groups || []).map((g, n) => (
+            <div key={g.title}>
+              <p className="ds-dmenu-lab" id={`${id}-group-${n}`}>{g.title}</p>
+              <ul className="ds-dmenu-list" aria-labelledby={`${id}-group-${n}`}>{g.items.map(row)}</ul>
+            </div>
           ))}
-        </ul>
-        <MenuActions onLogToday={onLogToday} onBreathe={onBreathe} tabIndex={tab} />
-        {/* Sign out, at the very bottom below a thin line (Tim, 5 Nov). */}
-        {signOut && <div className="ds-menu-signout">{typeof signOut === 'function' ? signOut(tab) : signOut}</div>}
+        </div>
+        <div className="ds-dmenu-foot">
+          <ul className="ds-dmenu-list">{(menu?.foot || []).map(row)}</ul>
+          {onSignOut && (
+            <button type="button" className="ds-dmenu-area ds-dmenu-out" onClick={onSignOut} disabled={signOutBusy} tabIndex={tab}>
+              <span className="ds-dmenu-name">Sign out</span>
+            </button>
+          )}
+        </div>
       </nav>
     </div>
   );

@@ -26,6 +26,15 @@ const AREAS = [
   { key: 'account', name: 'My Account', line: 'Settings, coaching, chat to Tim', to: '#account' },
 ];
 
+// The desktop menu's rows (option A, the slim panel), Home marked.
+const DESKTOP = {
+  top: [{ key: 'home', name: 'Home', to: '#home', current: true }],
+  groups: [
+    { title: 'Personal', items: [{ key: 'dash', name: 'Dashboard', to: '#dashboard' }, { key: 'plan', name: 'Plan', to: '#plan' }, { key: 'reset', name: 'Reset', to: '#reset' }, { key: 'review', name: 'Review', to: '#review' }] },
+    { title: 'With others', items: [{ key: 'interpersonal', name: 'Interpersonal', to: '#interpersonal' }, { key: 'strategic', name: 'Strategic', to: '#strategic' }] },
+  ],
+  foot: [{ key: 'account', name: 'My Account', to: '#account' }],
+};
 const PINS = [
   { key: 'meet', name: 'Meeting planner', to: '#meet' },
   { key: 'journal', name: 'Journal', to: '#journal' },
@@ -49,11 +58,10 @@ export function DesktopMenuDemo() {
     <DesktopMenu
       inline
       open
-      areas={AREAS}
+      menu={DESKTOP}
       pins={PINS}
       onGo={(item) => say(`Opens ${item.name}.`)}
-      onLogToday={() => say('Opens Log today.')}
-      onBreathe={() => say('Opens Breathe.')}
+      onSignOut={() => say('Signs out.')}
       id="dr-desktop-menu"
     />
   );

@@ -6913,7 +6913,6 @@
 }
 
 .ui-root .ds-menu-pins a:focus-visible,
-.ui-root .ds-dmenu-area:focus-visible,
 .ui-root .ds-tmenu-tile:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
@@ -6935,7 +6934,11 @@
   padding-right: var(--space-px12) !important;
 }
 
-/* The desktop menu: a panel from the left under the header, over a scrim. */
+/* The desktop menu (menu-options.html, option A, the slim panel; Tim, 9
+   Nov): a narrow panel sliding in from the left under the header, over a
+   scrim. Rows in the body font, quiet group labels, the row someone is
+   on on the raised surface. My Account and Sign out at the bottom, below
+   a line. */
 .ui-root .ds-dmenu-scrim {
   position: fixed;
   left: 0;
@@ -6955,39 +6958,119 @@
   bottom: 0;
   z-index: 5002;
   box-sizing: border-box;
-  width: min(var(--menu-w), 100vw);
+  width: min(calc(var(--menu-w) + env(safe-area-inset-left, 0px)), 100vw);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--space-4) calc(var(--space-5) + var(--space-1)) max(var(--space-5), env(safe-area-inset-bottom));
-  padding-left: max(calc(var(--space-5) + var(--space-1)), env(safe-area-inset-left));
-  background: var(--bg);
+  padding-left: env(safe-area-inset-left, 0px);
+  background: var(--card);
   border-right: var(--line-w) solid var(--line);
-  opacity: 0;
-  transition: opacity var(--dur) var(--ease);
+  transform: translateX(-102%);
+  transition: transform var(--dur) var(--ease);
 }
 
-.ui-root .ds-dmenu-wrap--open .ds-dmenu-scrim,
-.ui-root .ds-dmenu-wrap--open .ds-dmenu {
+.ui-root .ds-dmenu-wrap--open .ds-dmenu-scrim {
   opacity: 1;
 }
 
-.ui-root .ds-dmenu .ds-menu-pins {
-  margin-bottom: var(--space-px18);
+.ui-root .ds-dmenu-wrap--open .ds-dmenu {
+  transform: none;
 }
 
-.ui-root .ds-dmenu .ds-menu-pins a {
-  border-bottom: var(--line-w) solid var(--line-soft);
+.ui-root .ds-dmenu-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-px20) var(--space-3) var(--space-px12);
 }
 
-.ui-root .ds-dmenu-areas {
+.ui-root .ds-dmenu-foot {
+  border-top: var(--line-w) solid var(--line);
+  padding: var(--space-px10) var(--space-3) max(var(--space-3), env(safe-area-inset-bottom));
+}
+
+.ui-root .ds-dmenu-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.ui-root .ds-dmenu-areas li,
+.ui-root .ds-dmenu-lab {
+  margin: var(--space-px18) var(--space-px12) var(--space-px6);
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-menu-label);
+  line-height: var(--lh-text);
+  letter-spacing: var(--ls-menu-label);
+  text-transform: uppercase;
+  color: var(--placeholder);
+}
+
+.ui-root .ds-dmenu-nav > .ds-dmenu-lab:first-child {
+  margin-top: var(--space-1);
+}
+
+.ui-root .ds-dmenu-hr {
+  height: var(--line-w);
+  background: var(--line-soft);
+  margin: var(--space-px12);
+}
+
+.ui-root .ds-dmenu-area {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-px12);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-1) var(--space-px12);
+  border-radius: var(--radius-menu-row);
+  font-family: var(--font-body);
+  font-size: var(--fs-menu-row);
+  line-height: var(--lh-tile);
+  color: var(--text);
+  overflow-wrap: anywhere;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.ui-root .ds-dmenu-area[aria-current="page"] {
+  background: var(--raised);
+  font-weight: var(--fw-medium);
+}
+
+.ui-root .ds-dmenu-area:focus-visible {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: calc(-1 * var(--focus-w));
+}
+
+/* Sign out: quiet, in the secondary grey; coral on hover, with no shape behind it. */
+.ui-root .ds-dmenu-out {
+  color: var(--text-2);
+}
+
+.ui-root .ds-dmenu-out[disabled] {
+  cursor: default;
+  color: var(--placeholder);
+}
+
+@media (hover: hover) {
+  .ui-root .ds-dmenu-area:hover {
+    background: var(--raised);
+  }
+
+  .ui-root .ds-dmenu-out:hover {
+    background: none;
+    color: var(--coral-text);
+  }
+
+  .ui-root .ds-menu-pins a:hover {
+    color: var(--coral-text);
+  }
+}
+
+/* The phone menu's tiles rise in, one after another. */
 .ui-root .ds-tmenu-tiles li {
   opacity: 0;
   transform: translateY(var(--space-px14));
@@ -6995,60 +7078,12 @@
   transition-delay: calc(var(--i, 0) * var(--dur-fast) / 3);
 }
 
-.ui-root .ds-dmenu-wrap--open .ds-dmenu-areas li,
 .ui-root .ds-tmenu-wrap--open .ds-tmenu-tiles li {
   opacity: 1;
   transform: none;
 }
 
-.ui-root .ds-dmenu-area {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: var(--space-3);
-  padding: var(--space-px18) 0;
-  border-bottom: var(--line-w) solid var(--line-soft);
-  color: var(--text);
-  text-decoration: none;
-}
-
-.ui-root .ds-dmenu-name {
-  font-family: var(--font-display);
-  font-weight: var(--fw-regular);
-  font-size: var(--fs-menu-area);
-  line-height: var(--lh-title);
-  letter-spacing: var(--ls-menu-area);
-  text-transform: uppercase;
-  overflow-wrap: break-word;
-  transition: color var(--dur-fast) var(--ease);
-}
-
-.ui-root .ds-dmenu-area > .ds-chevron {
-  grid-row: 1 / span 2;
-  grid-column: 2;
-}
-
-.ui-root .ds-dmenu-line {
-  grid-column: 1;
-  margin-top: var(--space-2);
-  font-size: var(--fs-note);
-  line-height: var(--lh-text);
-  color: var(--placeholder);
-}
-
-@media (hover: hover) {
-  .ui-root .ds-dmenu-area:hover .ds-dmenu-name,
-  .ui-root .ds-menu-pins a:hover {
-    color: var(--coral-text);
-  }
-}
-
-.ui-root .ds-dmenu .ds-menu-actions {
-  margin-top: auto;
-  padding-top: var(--space-4);
-}
-
-/* Sign out (Tim, 5 Nov): the very bottom of either menu, below a thin
+/* Sign out on the phone menu (Tim, 5 Nov): the very bottom, below a thin
    line, a quiet text link in the secondary grey (IconText), coral only on
    hover or focus. */
 .ui-root .ds-menu-signout {
@@ -7283,8 +7318,9 @@
   position: relative;
   top: auto;
   bottom: auto;
-  width: 100%;
+  width: min(var(--menu-w), 100%);
   min-height: 0;
+  transform: none;
   border: var(--line-w) solid var(--line);
   border-radius: var(--radius-card);
   z-index: auto;
@@ -7574,10 +7610,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-root .ds-dmenu-areas li,
   .ui-root .ds-tmenu-tiles li,
   .ui-root .ds-tmenu {
     transform: none;
+  }
+
+  /* The desktop menu appears in place instead of sliding. */
+  .ui-root .ds-dmenu,
+  .ui-root .ds-dmenu-scrim {
+    transition: none;
   }
 }
 
