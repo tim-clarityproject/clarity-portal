@@ -75,7 +75,7 @@ import './design.css';
 // progress: 'steps' or 'percent'.
 // initialStep: the key of the step to open on (instead of where it was left).
 // skipMoves: false when the quiet word only calls onSkip and stays put
-//           (the First check-in's "Do this later" closes the tool, M12).
+//           (the First review's "Do this later" closes the tool, M12).
 
 const NEXT_GUARD_MS = 400;     // a second tap this soon after a move is ignored
 const TIP_PREFIX = 'ds-tip-seen:';

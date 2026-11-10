@@ -23,7 +23,7 @@
 // out and keeps the person's own cards only.
 //
 // Choices made here because Tim wasn't there (listed in the report):
-// - L1 and L2 compare a night's sleep (as Plan my day records it the next
+// - L1 and L2 compare a night's sleep (as Daily plan records it the next
 //   morning) with that day's day score (M14.2), which is never shown as a
 //   number (M14.2 over M4's "9 points higher" and "Average score 86%
 //   against 77%"): the card says the plan got more done, and How was this
@@ -228,7 +228,7 @@ export function buildPatternPerson(d, today) {
       working: Boolean(info?.working),
       sleepHours: plan?.sleep_hours == null ? null : Number(plan.sleep_hours),
       // Rule 14: an odd entry (20 hours of sleep) is asked about once in
-      // Plan my day and left out until it is confirmed.
+      // Daily plan and left out until it is confirmed.
       sleepToConfirm: Boolean(plan?.sleep_to_confirm),
       sleepQuality: plan?.sleep_quality || null,
       dayScore: null,
@@ -498,7 +498,7 @@ export function patternCardWords(card, names = {}) {
       ...base,
       line: `${when}, your performance score was ${points(card.gap)} higher.`,
       question: card.id === 'L4' ? 'What keeps your stress low in those weeks?' : 'What helps you be that way?',
-      action: card.id === 'L4' ? { label: 'Plan some recovery', to: '/personal/reset' } : { label: 'Plan my day', to: '/plan-my-day' },
+      action: card.id === 'L4' ? { label: 'Plan some recovery', to: '/personal/reset' } : { label: 'Start my daily plan', to: '/daily-plan' },
       how: [
         card.id === 'L4'
           ? `Compared ${times(inGroup, 'week', 'weeks')} when your stress was “Not at all” or “A little” with ${times(outGroup, 'week', 'weeks')} when it was more.`

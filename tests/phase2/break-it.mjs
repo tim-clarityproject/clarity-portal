@@ -211,7 +211,7 @@ if (run('taps')) {
     const links = win ? await q(db.from('win_strategies').select('win_id').eq('win_id', win.id)) : [];
     const ev = win ? await q(db.from('performance_evidence').select('id').eq('user_id', me).ilike('text', '%Triple tap win%')).catch(() => []) : [];
     pass('taps: the win has one Strategy link', links.length === 1, `${links.length}`);
-    pass('taps: the win is in Performance Evidence at most once', ev.length <= 1, `${ev.length}`);
+    pass('taps: the win is in Confidence Bank at most once', ev.length <= 1, `${ev.length}`);
 
     // Tick a to-do three times: it ends ticked, on the page and saved.
     const row = page.locator('.ds-todo').filter({ hasText: 'Triple tap to-do' });

@@ -179,7 +179,7 @@ test('a change based before this window\'s own save landed goes on top of it, ne
 });
 
 test('a save that lands while the device is being warmed still moves the version on', async () => {
-  // Review my day, refreshed part way (tests/phase3/review-my-day.mjs):
+  // Daily review, refreshed part way (tests/phase3/review-my-day.mjs):
   // warmDevice.js was reading quietly when the page's own save landed, so
   // the book kept the version before it; the answers kept for later as the
   // page closed went out on that version and, the new page knowing nothing

@@ -5,7 +5,7 @@
 //
 // The nights come from day_plans: each day's row holds the sleep of the
 // night before it ("How did you sleep last night?", Recovery's Sleep tile
-// and Plan my day's first screen write the same row). So Day 1 of a
+// and Daily plan's first screen write the same row). So Day 1 of a
 // Recovery holds the night before it started, and today's row is "Last
 // night".
 //

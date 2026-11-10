@@ -683,7 +683,7 @@ export function saveTodo(userId, t) {
       sprint_id: t.sprintId,
       planned_week: t.week,
       created_on: t.createdOn,
-      // Where it came from (Plan my day, last night's review); a to-do
+      // Where it came from (Daily plan, last night's review); a to-do
       // added on the sprint page is 'manual'.
       source: t.source || 'manual',
       source_id: t.sourceId || null,
@@ -716,7 +716,7 @@ export function setTodoDeleted(userId, todoId, deletedAt) {
 
 /**
  * An unplanned win and the Strategies it helped (M3). The database saves
- * every win to Performance Evidence as well (trigger wins_to_evidence).
+ * every win to Confidence Bank as well (trigger wins_to_evidence).
  */
 export async function saveWin(userId, w) {
   let queued = false;
@@ -739,7 +739,7 @@ export async function saveWin(userId, w) {
   return { status: queued ? 'queued' : 'saved' };
 }
 
-/** A win taken away (Undo), which takes it out of Performance Evidence too. */
+/** A win taken away (Undo), which takes it out of Confidence Bank too. */
 export function setWinDeleted(userId, winId, deletedAt) {
   return saveOrQueue(userId, {
     table: 'wins',
@@ -836,12 +836,12 @@ export function saveRechargeAnswer(userId, recoveryId, localDate, answer, shared
 
 /**
  * Last night's sleep (M15's Sleep tile, "How did you sleep last night?"),
- * on today's day plan: found by the person and day, so Plan my day later
+ * on today's day plan: found by the person and day, so Daily plan later
  * finds the same row. Only the sleep fields are written.
  */
 export function saveSleep(userId, localDate, { hours, quality }) {
   // An answer left blank is not sent, so it never wipes one saved before
-  // (from this panel or Plan my day, offline or on a slow connection).
+  // (from this panel or Daily plan, offline or on a slow connection).
   const values = { user_id: userId, local_date: localDate };
   if (hours != null) values.sleep_hours = hours;
   if (quality) values.sleep_quality = quality;
@@ -858,7 +858,7 @@ export async function loadSleep(userId, localDate) {
   return one(supabase.from('day_plans').select('sleep_hours, sleep_quality').eq('user_id', userId).eq('local_date', localDate).limit(1));
 }
 
-// ---------------------------------------------------------------- Plan my day
+// ---------------------------------------------------------------- Daily plan
 
 const DAY_PLAN_COLS = 'id, user_id, local_date, sleep_hours, sleep_quality, sleep_to_confirm, grateful_for, way_of_being, biggest_risk, risk_response, status, finished_at, updated_at';
 
@@ -868,10 +868,10 @@ function dayBefore(key, n) {
 }
 
 /**
- * Everything Plan my day shows for one day (M5), as rows: the sprint page's
+ * Everything Daily plan shows for one day (M5), as rows: the sprint page's
  * rows (this week's to-dos, habits and score), that day's plan with its
  * to-dos and Strategies, the ways of being used before it, the latest
- * finished Review my day of the 3 days before it (its list for tomorrow,
+ * finished Daily review of the 3 days before it (its list for tomorrow,
  * its note, and the Strategies of its day), and, with no sprint running,
  * the plan's Strategies and to-dos that have no sprint.
  */
@@ -939,14 +939,14 @@ export async function loadDayPlanRow(userId, date) {
   return one(supabase.from('day_plans').select(DAY_PLAN_COLS).eq('user_id', userId).eq('local_date', date).limit(1));
 }
 
-// ---------------------------------------------------------------- Review my day
+// ---------------------------------------------------------------- Daily review
 
 const DAY_REVIEW_COLS = 'id, user_id, local_date, way_of_being_rating, where_it_showed, went_well, differently, tomorrow, on_my_mind, status, finished_at, updated_at';
 // With way_of_being once migration 040 is there (answerExtras.js).
 const reviewCols = async () => DAY_REVIEW_COLS + ((await extrasReady()) ? REVIEW_EXTRA_COLS : '');
 
 /**
- * Everything Review my day shows for one day (M5), as rows: Plan my day's
+ * Everything Daily review shows for one day (M5), as rows: Daily plan's
  * rows for that day (the sprint page's rows, that day's plan with its
  * to-dos and Strategies, the plan's Strategies and to-dos with no sprint),
  * that day's review and the Strategies it says moved.
@@ -980,7 +980,7 @@ export async function loadReviewWhich(userId, yesterday) {
 /**
  * What Home shows for one day beside the sprint page's own rows (Home and
  * the sprint share those, so a log or a tick on one shows on the other at
- * once, offline too): today's Plan my day (its row, to-dos and
+ * once, offline too): today's Daily plan (its row, to-dos and
  * Strategies), whether today and the day before are reviewed, the latest
  * day before today with anything logged, planned or reviewed (for a gap),
  * the plan's steps so far (for someone new), the highest sprint number
@@ -1057,7 +1057,7 @@ const DEBRIEF_COLS = 'id, user_id, sprint_id, sprint_week, stress, unusual, went
  * logs, to-dos and wins as the sprint page loads them, its plan's live
  * objectives with every figure (M9), its Strategies and links (M5's
  * weighting), every debrief, the frozen week scores (M8), that week's
- * debrief row, the Review my day entries from the sprint's start and the
+ * debrief row, the Daily review entries from the sprint's start and the
  * Strategies they say moved, the first name and the coach.
  *
  * No sprint and week given: the week whose debrief window is open today

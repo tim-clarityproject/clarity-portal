@@ -20,8 +20,8 @@ test('dates on the right: Today, Yesterday, then the day, with the year only whe
 test('day plans and reviews: Today’s, Yesterday’s, then Day plan or Day review', () => {
   assert.equal(dayName(TODAY, TODAY, 'plan'), 'Today’s plan');
   assert.equal(dayName('2026-10-20', TODAY, 'review'), 'Yesterday’s review');
-  assert.equal(dayName('2026-10-12', TODAY, 'plan'), 'Day plan');
-  assert.equal(dayName('2026-10-12', TODAY, 'review'), 'Day review');
+  assert.equal(dayName('2026-10-12', TODAY, 'plan'), 'Daily plan');
+  assert.equal(dayName('2026-10-12', TODAY, 'review'), 'Daily review');
 });
 
 const at = (day, time = '09:00:00') => `${day}T${time}`;
@@ -52,7 +52,7 @@ test('My Plans: every type, named in words, with its tool, area and date', () =>
   const rows = planRows(PLANS, TODAY);
   const by = (id) => rows.find((r) => r.id === id);
   assert.equal(by('decision:d1').title, 'Yesterday’s plan', 'an old day plan is never named by its date');
-  assert.equal(by('decision:d1').typeLabel, 'Plan my day');
+  assert.equal(by('decision:d1').typeLabel, 'Daily plan');
   assert.equal(by('decision:d2').area, 'interpersonal');
   assert.equal(by('decision:d2').reviewed, true);
   assert.equal(by('decision:d3').isDraft, true);
@@ -66,7 +66,7 @@ test('My Plans: every type, named in words, with its tool, area and date', () =>
   assert.equal(by('day-plan:dp1').title, 'Today’s plan');
   assert.equal(by('day-plan:dp1').dateLabel, 'Today');
   assert.equal(by('day-plan:dp2').isDraft, true);
-  assert.equal(by('day-plan:dp2').edit.path, '/my-day/plan/2026-10-18');
+  assert.equal(by('day-plan:dp2').edit.path, '/daily-plan/2026-10-18');
   assert.equal(by('day-plan:dp3'), undefined);
   assert.equal(by('pop:m1').to.path, '/personal-operating-plan-archived/m1');
   for (const r of rows) {
@@ -114,7 +114,7 @@ test('My Reviews: every type, named in words, with its tool, area and date', () 
   const rows = reviewRows(REVIEWS, TODAY);
   const by = (id) => rows.find((r) => r.id === id);
   assert.equal(by('entry:e1').title, 'Yesterday’s review');
-  assert.equal(by('entry:e1').typeLabel, 'Review my day');
+  assert.equal(by('entry:e1').typeLabel, 'Daily review');
   assert.equal(by('entry:e2').area, 'interpersonal');
   assert.equal(by('entry:e2').typeLabel, 'Meeting review');
   assert.equal(by('entry:e3').title, 'Weekly check-in');

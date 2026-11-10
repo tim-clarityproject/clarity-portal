@@ -120,8 +120,8 @@ export default function DailyPlanSummary() {
         <div className="plan-page">
           <p className="ui-subtitle">Plan not found.</p>
           <div className="plan-actions">
-            <Button type="button" variant="primary" onClick={() => navigate('/my-day/plan')}>
-              Plan my day
+            <Button type="button" variant="primary" onClick={() => navigate('/daily-plan')}>
+              Start my daily plan
             </Button>
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function DailyPlanSummary() {
                 : navigate('/review-plan', { state: { planKind: 'daily_plan', plan } })
             )}
           >
-            {reviewEntryId ? 'View my review' : 'Review my day'}
+            {reviewEntryId ? 'View my review' : 'Start my daily review'}
           </Button>
           <Button
             type="button"

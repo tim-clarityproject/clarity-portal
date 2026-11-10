@@ -1,4 +1,4 @@
-// Migration 039 (Phase 4 step 7): the habits chosen in Plan my day
+// Migration 039 (Phase 4 step 7): the habits chosen in Daily plan
 // (dayPlanHabits.js) and the sleep wind down's thoughts (windDownStore.js),
 // device first. Without 039 they stay on the device with no error; once the
 // tables are there, what waits on the device is moved across once (never

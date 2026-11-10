@@ -79,7 +79,7 @@ import {
 } from '../../lib/performance';
 import './performance.css';
 
-// Review my day (mock-up M5, version 19, approved by Tim on 23 Oct; read
+// Daily review (mock-up M5, version 19, approved by Tim on 23 Oct; read
 // in full with its notes). One guided tool, one question per screen on
 // phone and desktop, with the % complete bar (the approved rule over M5's
 // step list), "~5 minutes" on the first screen and the eye on every answer:
@@ -92,12 +92,12 @@ import './performance.css';
 //               time, into the sprint's habit logs; one sentence for the
 //               weekly habits
 //   Went well   "What went well today?" with Add an unplanned win (saved to
-//               wins, and by the database to Performance Evidence)
+//               wins, and by the database to Confidence Bank)
 //   Differently "What would you do differently next time?"
 //   Strategies  "Which Strategies moved today?" Low, Medium or High inside
 //               each, with the morning's reminder
 //   Tomorrow    up to three things, as rows (lists are rows), then anything
-//               else on your mind; tomorrow's Plan my day lists them
+//               else on your mind; tomorrow's Daily plan lists them
 //   Your day    the summary, with the score this week so far
 //   Close       "Ready to close the day?" (M19, approved 29 Oct): what
 //               moves to tomorrow (today's open to-dos, still on this
@@ -105,7 +105,7 @@ import './performance.css';
 //   Work's done the closing moment (M19): "Work’s done for today", the
 //               two lines that are true, and Back to Home
 //
-// Everything saves as it goes, as Plan my day does: the answers into the
+// Everything saves as it goes, as Daily plan does: the answers into the
 // day's day_reviews row a moment after typing pauses, each tick, log and
 // level at once, all through the offline queue (Saving, Will sync, Saved)
 // with the version it was based on. Typing is kept as a draft on the
@@ -190,7 +190,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <PageHeader title="Review my day" />
+        <PageHeader title="Daily review" />
         {children}
         <div className="ds-actions ipp-actions">
           <Button onClick={() => navigate('/performance-sprint')}>Open my sprint</Button>
@@ -207,7 +207,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
   const queue = useQueueState();
   const { data, setData } = loaded;
 
-  // The habits chosen for the day in the morning (Plan my day keeps them
+  // The habits chosen for the day in the morning (Daily plan keeps them
   // on the device: no table holds them yet).
   // The habits chosen in the morning (dayPlanHabits.js), another device's
   // too once migration 039 has run.
@@ -516,7 +516,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     setPanel(false);
     setWinForm(emptyWin(date));
     clearWinDraft();
-    // The database saves every win to Performance Evidence too (wins_to_evidence).
+    // The database saves every win to Confidence Bank too (wins_to_evidence).
     const ok = await sent(() => saveWin(userId, { id, what: row.what, date: row.local_date, impact: row.impact, strategyIds }));
     if (!ok) {
       setData((d) => ({ ...d, wins: (d.wins || []).filter((w) => w.id !== id) }));
@@ -526,7 +526,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     }
     const names = view.strategies.filter((s) => strategyIds.includes(s.value));
     toast.saved({
-      message: `Win added to ${names.length === 1 ? names[0].label : `${names.length} Strategies`} and your Performance Evidence.`,
+      message: `Win added to ${names.length === 1 ? names[0].label : `${names.length} Strategies`} and your Confidence Bank.`,
       onUndo: () => {
         setData((d) => ({ ...d, wins: (d.wins || []).filter((w) => w.id !== id) }));
         sent(() => setWinDeleted(userId, id, new Date().toISOString()));
@@ -562,7 +562,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
   const planned = view.today.length > 0;
   const weekShown = !planned || showWeek;
   // Today's to-dos still open: they stay on this week's list, so tomorrow's
-  // Plan my day offers them again (M19 "Moving to tomorrow").
+  // Daily plan offers them again (M19 "Moving to tomorrow").
   const moving = view.today.filter((t) => t.kind === 'todo' && !t.done);
 
   const steps = [
@@ -570,7 +570,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       key: 'do',
       name: 'Do',
       eye: screenEye,
-      label: '~5 minutes',
       question: planned ? 'Which of today’s to‑dos did you do?' : 'Which of this week’s to‑dos did you do today?',
       nudges: view.running ? ['Tick each one you did.', 'Each tick also updates your sprint.'] : ['Tick each one you did.'],
       render: () => (!view.hasPlan ? noPlan : (
@@ -740,7 +739,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       name: 'Tomorrow',
       eye: screenEye,
       question: 'What are the most important things to do tomorrow?',
-      nudges: ['They’ll be waiting in tomorrow’s Plan my day, in this order.'],
+      nudges: ['They’ll be waiting in tomorrow’s Daily plan, in this order.'],
       example: TOMORROW_EXAMPLE,
       render: () => (
         // One eye for the screen, and both boxes the same width (Tim, 5 Nov).
@@ -859,14 +858,14 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     return (
       <div className="ui-root plan-builder-wait">
         <GuidedTool
-          name="Review my day"
+          name="Daily review"
           steps={[{
             key: 'paused',
             name: 'Paused',
             plain: true,
             render: (tool) => (
               <PausedGate
-                toolName="Review my day"
+                toolName="Daily review" anywayLabel="Start my daily review anyway"
                 headingRef={tool.headingRef}
                 onBack={() => navigate(location.state?.from || '/recovery/today', { replace: true })}
                 onAnyway={() => setAnyway(true)}
@@ -879,7 +878,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     );
   }
 
-  const toolName = date === today ? 'Review my day' : `Review my day, ${dayName(date, today)}`;
+  const toolName = date === today ? 'Daily review' : `Daily review, ${dayName(date, today)}`;
   if (closed) {
     return (
       <div className="ui-root plan-builder-wait">

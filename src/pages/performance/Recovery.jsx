@@ -453,7 +453,7 @@ function RecoverySleep({ recovery, grow }) {
   );
 }
 
-/** "How did you sleep last night?" (M15's Sleep tile): total hours and quality on one screen, as Plan my day's first screen, on today's day plan. */
+/** "How did you sleep last night?" (M15's Sleep tile): total hours and quality on one screen, as Daily plan's first screen, on today's day plan. */
 function SleepPanel({ open, onClose, userId, today, saved, onSaved }) {
   const toast = useToast();
   const [hours, setHours] = useState(null);

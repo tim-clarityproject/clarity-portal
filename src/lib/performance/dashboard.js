@@ -663,12 +663,12 @@ function checkRow(d) {
     return x > 0 ? `${name} is up ${x}` : x < 0 ? `${name} is down ${-x}` : `${name} is the same`;
   };
   let line;
-  if (!last) line = 'You haven’t done a check-in yet.';
+  if (!last) line = 'You haven’t done a monthly review yet.';
   else if (!prev) line = null;
-  else line = `${move('Hardware', last.hardware, prev.hardware)} and ${move('Software', last.software, prev.software)} since your last check-in.`;
+  else line = `${move('Hardware', last.hardware, prev.hardware)} and ${move('Software', last.software, prev.software)} since your last monthly review.`;
   return {
     key: 'check',
-    title: 'Hardware and Software check-in',
+    title: 'Monthly Hardware and Software review',
     line,
     figure: last ? { text: `Hardware ${last.hardware}, Software ${last.software}` } : null,
     points,
@@ -940,7 +940,7 @@ export function dashboardView(d, { today, span = 'sprint', target, patterns = nu
     lead: 'This section shows the current sprint.',
     closedLine: patterns?.cards?.length
       ? `Your wins, streaks, ${plural(patterns.cards.length, 'pattern')} and more.`
-      : 'Your wins, streaks, check-in and more.',
+      : 'Your wins, streaks, monthly review and more.',
     rows,
   };
 

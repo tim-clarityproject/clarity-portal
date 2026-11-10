@@ -1055,7 +1055,7 @@
   margin-bottom: var(--space-5);
 }
 
-/* ---------- Plan my day (M5) ---------- */
+/* ---------- Daily plan (M5) ---------- */
 .ui-root .day-narrow { max-width: var(--row-max-w); }
 .ui-root .day-gap { margin-top: var(--space-5); }
 .ui-root .day-stack { display: grid; gap: var(--space-4); }
@@ -1109,7 +1109,7 @@
   .ui-root .day-add { width: 100%; }
 }
 
-/* ---------- Review my day (M5) ---------- */
+/* ---------- Daily review (M5) ---------- */
 .ui-root .rev-list { margin-top: var(--space-px2); }
 .ui-root .rev-more { margin-top: var(--space-5); }
 .ui-root .rev-more p,
@@ -1173,7 +1173,7 @@
   border-top: var(--line-w) solid var(--line);
 }
 
-/* "Your days" (M1 .fold): the week's Review my day entries. */
+/* "Your days" (M1 .fold): the week's Daily review entries. */
 .ui-root .deb-days { margin-bottom: var(--space-px22); }
 .ui-root .deb-day p {
   margin: 0 0 var(--space-px10);

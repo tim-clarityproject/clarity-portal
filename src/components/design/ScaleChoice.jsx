@@ -2,7 +2,7 @@ import { useId, useRef } from 'react';
 import FieldLabel from './FieldLabel';
 import './design.css';
 
-// A 1 to 10 scale (M5 Review my day, "On a scale of 1 to 10, how calm
+// A 1 to 10 scale (M5 Daily review, "On a scale of 1 to 10, how calm
 // under pressure were you today?"): ten equal boxes in one row, five by
 // two on a phone, with the meaning of each end in words underneath ("1 is
 // not at all", "10 is completely"). The chosen number fills in the text

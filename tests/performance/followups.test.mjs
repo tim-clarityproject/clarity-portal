@@ -1,5 +1,5 @@
 // Phase 5 step 4, the Phase 4 follow-ups (logic only; the browser side is
-// tests/phase5/followups.mjs): Plan my day and Review my day know a
+// tests/phase5/followups.mjs): Daily plan and Daily review know a
 // Recovery is open on their day, so they say Recovery's calm line instead
 // of "No sprint is running"; and the search in My Plans and My Reviews
 // (src/lib/savedItems.js searchRows), on the rows already on the device.
@@ -154,7 +154,7 @@ test('search: My Reviews too, by name and by tool', () => {
   }, TODAY);
   assert.deepEqual(ids(searchRows(rows, 'harbour')), ['entry:e2', 'entry:e4']);
   assert.deepEqual(ids(searchRows(rows, 'meeting review')), ['entry:e2']);
-  assert.deepEqual(ids(searchRows(rows, 'review my day')), ['day-review:dr1']);
+  assert.deepEqual(ids(searchRows(rows, 'daily review')), ['day-review:dr1']);
   assert.deepEqual(ids(searchRows(rows, 'sprint 1, week 3')), ['debrief:db1']);
   assert.equal(searchRows(rows, 'zzzz nothing').length, 0);
 });

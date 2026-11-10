@@ -27,7 +27,7 @@ export function SuggestionDemo() {
       <SuggestionCard
         question="Ready to plan your day?"
         time="~4 minutes"
-        action={{ label: 'Plan my day', onClick: () => say('Opens Plan my day.') }}
+        action={{ label: 'Daily plan', onClick: () => say('Opens Daily plan.') }}
       />
       <SuggestionCard
         label="Sleep wind down"

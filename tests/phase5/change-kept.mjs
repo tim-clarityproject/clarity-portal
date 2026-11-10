@@ -144,8 +144,8 @@ async function saveMyChange() {
   return false;
 }
 
-const PLAN = process.env.PLAN_PATH || '/my-day/plan';
-const REVIEW = process.env.REVIEW_PATH || '/my-day/review';
+const PLAN = process.env.PLAN_PATH || '/daily-plan';
+const REVIEW = process.env.REVIEW_PATH || '/daily-review';
 const DO = 'What will you do today?';
 
 // ------------------------------------------------------------ the Daily plan, set

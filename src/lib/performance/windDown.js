@@ -1,9 +1,9 @@
 // Sleep wind down (mock-up M19, approved by Tim on 29 Oct; Phase 4 step 6):
 // the thoughts written down at night, and the next morning's one
-// "Carried over" list in Plan my day.
+// "Carried over" list in Daily plan.
 //
 // The thoughts are kept per night (the person's own local date, with a
-// wind-down before 04:00 counting for the night before, as Review my day
+// wind-down before 04:00 counting for the night before, as Daily review
 // does), read and written in one place: windDownStore.js (the device
 // first, and the wind_down_nights table once migration 039 has run).
 //
@@ -14,7 +14,7 @@ import { weekday } from '../scores/dates.js';
 
 export const WIND_DOWN_THOUGHT_MAX = 300;     // each thought, as the "for tomorrow" items (wind_down_nights holds the same, 039)
 export const WIND_DOWN_THOUGHTS_KEPT = 100;   // no limit on how many (M19), only the table's ceiling no one reaches
-export const WIND_DOWN_EARLY_HOURS = 4;       // before 04:00 it is still the night before (Review my day's rule)
+export const WIND_DOWN_EARLY_HOURS = 4;       // before 04:00 it is still the night before (Daily review's rule)
 export const WIND_DOWN_BREATHE_SECONDS = 300; // 5 minutes at 4 in and 6 out (Tim, 29 Oct, 08:32): 30 breaths
 export const WIND_DOWN_NIGHTS_KEPT = 14;      // the device keeps two weeks of nights, no more
 
@@ -37,7 +37,7 @@ export function windDownNight({ today, hour }) {
   return hour < WIND_DOWN_EARLY_HOURS ? addDay(today, -1) : today;
 }
 
-/** The night before a morning's Plan my day ("last night"). */
+/** The night before a morning's Daily plan ("last night"). */
 export function nightBefore(date) {
   return addDay(date, -1);
 }
@@ -67,7 +67,7 @@ export function thingKey(text) {
 }
 
 /**
- * The one Carried over list (M19): Review my day's things for tomorrow
+ * The one Carried over list (M19): Daily review's things for tomorrow
  * first, then last night's wind-down thoughts, a line in both kept once
  * (where it first appears, as the review wrote it) and marked as from both.
  * @returns {{ text: string, review: boolean, windDown: boolean, reviewIndex: number|null, windIndex: number|null }[]}
@@ -102,11 +102,11 @@ export function carriedOver({ review = [], windDown = [] }) {
 /**
  * Where a carried-over thing came from, the small line under it (M19).
  * The review is "last night's" when it was the day before; an older one
- * (Plan my day looks back three days) is named by its day.
+ * (Daily plan looks back three days) is named by its day.
  */
 export function carriedSource({ review, windDown }, reviewDate, date) {
   const fromReview = review
-    ? (reviewDate && reviewDate !== addDay(date, -1) ? `Review my day on ${DAY_FULL[weekday(reviewDate)]}` : 'Review my day')
+    ? (reviewDate && reviewDate !== addDay(date, -1) ? `Daily review on ${DAY_FULL[weekday(reviewDate)]}` : 'Daily review')
     : null;
   if (fromReview && windDown) return `From ${fromReview} and last night’s sleep wind down`;
   if (fromReview) return `From ${fromReview}`;

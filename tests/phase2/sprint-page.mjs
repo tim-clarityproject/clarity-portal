@@ -16,7 +16,7 @@
 //     page froze (freeze_week) match too.
 //  3. Logging every way to measure, in the day view and the week view;
 //     changing a log updates the same row (same id).
-//  4. To-dos: tick, add, move, roll-over; a win reaches Performance Evidence.
+//  4. To-dos: tick, add, move, roll-over; a win reaches Confidence Bank.
 //  5. Offline: a log waits on the device ("Will sync") and arrives when
 //     the connection is back ("Saved").
 //  Every date is FIXED (tests/phase2/fixed-day.mjs): the seed is built
@@ -345,7 +345,7 @@ await page.locator('.ds-panel').getByRole('button', { name: 'Add my win' }).clic
 const win = await until(async () => (await db.from('wins').select('id, local_date').eq('user_id', me).eq('what', 'A past client sent two introductions')).data[0]);
 const evidence = win ? (await db.from('performance_evidence').select('kind, text').eq('win_id', win.id)).data[0] : null;
 pass('add a win: saved for today', win?.local_date === today, JSON.stringify(win));
-pass('add a win: also in Performance Evidence', evidence?.kind === 'win' && evidence.text === 'A past client sent two introductions', JSON.stringify(evidence));
+pass('add a win: also in Confidence Bank', evidence?.kind === 'win' && evidence.text === 'A past client sent two introductions', JSON.stringify(evidence));
 await page.waitForTimeout(600);
 pass('add a win: listed with its tag', (await todoRow('A past client sent two introductions').textContent()).includes('Unplanned win'));
 

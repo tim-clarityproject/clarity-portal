@@ -201,7 +201,7 @@ const HUB_TILES = {
   '/strategic': [['Strategic Alignment Health Check', '/goal-setting']],
 };
 const HUB_TITLES = { '/personal': 'Personal', '/personal/plan': 'Plan', '/personal/reset': 'Reset', '/personal/review': 'Review', '/interpersonal': 'Interpersonal', '/strategic': 'Strategic' };
-const NOT_BUILT = ['Find my sweet spot', 'Deliberate vs default', 'Travel and jet lag plan', 'Delegation audit', 'Emotional wash', 'Identity beyond the role', 'Above or below the line', 'Stay deliberate under pressure', 'Performance Evidence', 'Prepare for a difficult conversation', 'Prepare for a pitch', 'Map my stakeholders', 'Map my team', 'Understand their sweet spot', 'Decide who decides', 'Strategy on a page', 'Points of leverage', 'Pre-mortem for an initiative'];
+const NOT_BUILT = ['Find my sweet spot', 'Deliberate vs default', 'Travel and jet lag plan', 'Delegation audit', 'Emotional wash', 'Identity beyond the role', 'Above or below the line', 'Stay deliberate under pressure', 'Confidence Bank', 'Prepare for a difficult conversation', 'Prepare for a pitch', 'Map my stakeholders', 'Map my team', 'Understand their sweet spot', 'Decide who decides', 'Strategy on a page', 'Points of leverage', 'Pre-mortem for an initiative'];
 const MOVED = [
   ['/plan-section', '/personal/plan'],
   ['/planning-tools', '/personal/plan'],

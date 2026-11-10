@@ -3,7 +3,7 @@
 // database, no React, no device clock (today is passed in), tested in
 // tests/performance/checkin.test.mjs.
 //
-// Two flows on the same questions: the First check-in for coaching
+// Two flows on the same questions: the First review for coaching
 // clients (its five goal questions first) and the monthly check-in for
 // everyone. One question per screen, one tap each, the % bar. Every score
 // and figure comes from src/lib/scores (methods M13, m13.js); this file
@@ -17,14 +17,14 @@
 //
 // A check-in belongs to the calendar month it is started in (029: one row
 // per person and month, the month's first day), named in words: "October
-// check-in", or "First check-in" (writing rule 60).
+// check-in", or "First review" (writing rule 60).
 
 import { HARDWARE_AREAS, SOFTWARE_AREAS, m0Bands, m0Round, m13CheckinScores, m13Results } from '../scores/index.js';
 
 export const CHECKIN_TIME = '~3 minutes';
-/** The First check-in with its goals (spec: about 6 minutes the first time). */
+/** The First review with its goals (spec: about 6 minutes the first time). */
 export const FIRST_CHECKIN_TIME = '~6 minutes';
-export const CHECKIN_ROUTE = '/check-in';
+export const CHECKIN_ROUTE = '/monthly-review';
 /** Each goal answer is kept short enough for the coach's page (029 caps the goals at 20,000 bytes in all). */
 export const GOAL_MAX = 1000;
 export const GOAL_ITEM_MAX = 150;
@@ -276,7 +276,7 @@ export const UNITS_GUIDE = Object.freeze({
   ],
 });
 
-// ------------------------------------------------------------------ the goals (First check-in)
+// ------------------------------------------------------------------ the goals (First review)
 
 /**
  * The five goal questions (M12 intakeSteps), each with its example for
@@ -353,17 +353,17 @@ export function monthFromParam(param) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(param || '') ? `${param}-01` : null;
 }
 
-/** Saved items name it in words (writing rule 60): "First check-in", or "October check-in". */
+/** Saved items name it in words (writing rule 60): "First review", or "October check-in". */
 export function checkinTitle(row) {
-  if (row.kind === 'first') return 'First check-in';
-  return `${monthName(row.month)} check-in`;
+  if (row.kind === 'first') return 'First review';
+  return `${monthName(row.month)} review`;
 }
 
 export const finishedOnly = (checkins = []) => checkins.filter((c) => c.status === 'finished');
 
 /**
  * Which check-in someone does now (M12): a coaching client who has never
- * finished one does the First check-in, with the goals; everyone else the
+ * finished one does the First review, with the goals; everyone else the
  * monthly one. A row already started this month keeps its kind.
  * @param {{ hasCoach: boolean, checkins: object[], month: string }} input
  */
@@ -635,31 +635,31 @@ export function checkinPrompt({ hasCoach, coachName, checkins = [], today }) {
         key: 'first-checkin',
         first: true,
         draft: true,
-        question: 'Ready to finish your first check-in?',
+        question: 'Ready to finish your first review?',
         lines: [...(halfway ? ['You’re about halfway through.'] : []), `It helps ${coach} get the most from your first session.`],
         time: CHECKIN_TIME,
-        action: { label: 'Finish my first check-in', to: CHECKIN_ROUTE },
+        action: { label: 'Finish my first review', to: CHECKIN_ROUTE },
       }
       : {
         key: 'first-checkin',
         first: true,
         draft: false,
-        question: 'Ready for your first check-in?',
+        question: 'Ready for your first review?',
         lines: [`It helps ${coach} get the most from your first session.`],
         time: FIRST_CHECKIN_TIME,
-        action: { label: 'Start my first check-in', to: CHECKIN_ROUTE },
+        action: { label: 'Start my first review', to: CHECKIN_ROUTE },
       };
   }
   return draft
-    ? { key: 'checkin', first: false, draft: true, question: 'Ready to finish your monthly check-in?', lines: [], time: CHECKIN_TIME, action: { label: 'Finish my check-in', to: CHECKIN_ROUTE } }
-    : { key: 'checkin', first: false, draft: false, question: 'Ready for your monthly check-in?', lines: [], time: CHECKIN_TIME, action: { label: 'Start my check-in', to: CHECKIN_ROUTE } };
+    ? { key: 'checkin', first: false, draft: true, question: 'Ready to finish your monthly review?', lines: [], time: CHECKIN_TIME, action: { label: 'Finish my monthly review', to: CHECKIN_ROUTE } }
+    : { key: 'checkin', first: false, draft: false, question: 'Your monthly review is ready.', lines: [], time: CHECKIN_TIME, action: { label: 'Start my monthly review', to: CHECKIN_ROUTE } };
 }
 
 /** The toast when a check-in is finished (M12 act 'finish'). `sharing`: the coach sees it. */
 export function finishToastWords({ kind, coachName, sharing }) {
   if (kind === 'first' && coachName && sharing) return `Saved. ${coachName} will see this before your first session.`;
   if (coachName && sharing) return 'Saved. Your coach can see it before your next session.';
-  return 'Saved. Your next check-in is in a month.';
+  return 'Saved. Your next monthly review is in a month.';
 }
 
 export const CLOSE_TOAST = 'Saved. Carry on from Home whenever you like.';

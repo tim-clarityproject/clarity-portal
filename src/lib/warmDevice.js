@@ -12,7 +12,7 @@ import { moveAnswerExtras } from './performance/answerExtras';
 import { REVIEW_EARLY_HOURS } from './performance/dayReview';
 
 // The key pages are on the device before they are needed (Phase 4 step 8,
-// "Works on a flight"): Today, the plan, the sprint, Plan my day, Review
+// "Works on a flight"): Today, the plan, the sprint, Daily plan, Review
 // my day, this week's debrief, My Plans, My Reviews, the check-in and the
 // dashboard (Phase 5) show everything
 // as last seen even if they weren't opened recently. Once per visit, a
@@ -54,7 +54,7 @@ function pages(userId) {
     [DASHBOARD_CACHE, () => loadDashboard(userId, today)],
     [PATTERNS_CACHE, () => loadPatternRows(userId, today)],
   ];
-  // Just after midnight, Review my day may be for the day before.
+  // Just after midnight, Daily review may be for the day before.
   if (now.getHours() < REVIEW_EARLY_HOURS) {
     const yesterday = addDayKey(today, -1);
     list.push([`day-review:${yesterday}`, () => loadDayReview(userId, yesterday)]);

@@ -48,7 +48,6 @@ import {
 } from '../../lib/performance/api';
 import { useLatestWhenSuperseded, useSprintPage } from '../../lib/performance/hooks';
 import {
-  CHECKIN_TIME,
   CLOSE_TOAST,
   HARDWARE_SOFTWARE,
   LATER_TOAST,
@@ -77,6 +76,7 @@ import {
   extrasFromRow,
   extrasToRow,
   finishToastWords,
+  CHECKIN_ROUTE,
   goalQuestions,
   habitComplete,
   habitRow,
@@ -93,14 +93,13 @@ import {
   withMeasure,
 } from '../../lib/performance';
 import { exampleRole } from '../../content/planBuilder';
-import pageText from '../../content/pageText';
 import { formatSavedDate, getLocalDateKey, parseDbTimestamp } from '../../lib/dateFormatter';
 import './performance.css';
 
 // The Hardware and Software check-in (mock-up M12 version 14, read in full
 // with its notes; Phase 5 step 1). Two flows on one guided tool, one
 // question per screen with the % complete bar:
-//   First check-in  coaching clients who have never finished one: "What
+//   First review  coaching clients who have never finished one: "What
 //                   would make coaching useful for you?", the five goal
 //                   questions, then the check-in; Do this later saves and
 //                   closes ("Home will ask you to finish before your
@@ -166,18 +165,18 @@ export default function CheckIn() {
   if (!loaded.data && loaded.error) {
     return (
       <Shell>
-        <LoadError>Your check-in didn’t load. Check your connection and try again.</LoadError>
+        <LoadError>Your monthly review didn’t load. Check your connection and try again.</LoadError>
       </Shell>
     );
   }
   if (!loaded.data) {
-    return <div className="ui-root plan-builder-wait"><Loading label="Loading your check-in" className="ds-loading--page" /></div>;
+    return <div className="ui-root plan-builder-wait"><Loading label="Loading your monthly review" className="ds-loading--page" /></div>;
   }
   const row = asked ? loaded.data.checkins.find((c) => c.month === asked) || null : null;
   if (!asked || (asked !== current && !row)) {
     return (
       <Shell>
-        <p className="ck-quiet">There’s no check-in saved for that month.</p>
+        <p className="ck-quiet">There’s no monthly review saved for that month.</p>
         <OpenThisMonth />
       </Shell>
     );
@@ -194,7 +193,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <PageHeader title="Hardware and Software check-in" info={pageText.checkIn} />
+        <PageHeader title="Monthly review" />
         {children}
       </div>
     </div>
@@ -205,7 +204,7 @@ function OpenThisMonth() {
   const navigate = useNavigate();
   return (
     <div className="ds-actions ipp-actions">
-      <Button variant="primary" onClick={() => navigate('/check-in')}>Open this month’s check-in</Button>
+      <Button variant="primary" onClick={() => navigate(CHECKIN_ROUTE)}>Open this month’s review</Button>
     </div>
   );
 }
@@ -233,7 +232,7 @@ function useCheckinEye(userId, loaded) {
     }
   };
   const eye = coach
-    ? <WhoSees audience={sharing ? 'coach' : 'me'} coachName={coach} name="Your check-in" onChange={change} />
+    ? <WhoSees audience={sharing ? 'coach' : 'me'} coachName={coach} name="Your monthly review" onChange={change} />
     : <WhoSees audience="me" />;
   return { coach, sharing, eye };
 }
@@ -425,7 +424,7 @@ function CheckinFlow({ userId, today, month, loaded }) {
       key: 'start',
       name: 'Start',
       question: 'What would make coaching useful for you?',
-      nudges: ['Let’s start with 5 questions about that.', 'Then your first Hardware and Software check-in.'],
+      nudges: ['Let’s start with 5 questions about that.', 'Then your first Hardware and Software review.'],
       nudgeInfo: { label: 'What are hardware and software?', text: [...HARDWARE_SOFTWARE] },
       nextLabel: 'Start with my goals',
       render: () => <WhoSeesFold coach={coach} sharing={sharing} />,
@@ -433,10 +432,9 @@ function CheckinFlow({ userId, today, month, loaded }) {
     : {
       key: 'start',
       name: 'Start',
-      label: CHECKIN_TIME,
       question: 'Ready to look back on your month?',
       nudges: ['Answer for the past month, on average.'],
-      nextLabel: 'Start my check-in',
+      nextLabel: 'Start my monthly review',
       // No Skip here: skipping the opening screen would only open the first question.
       required: true,
       render: () => <WhoSeesFold coach={coach} sharing={sharing} />,
@@ -503,8 +501,8 @@ function CheckinFlow({ userId, today, month, loaded }) {
     key: 'results',
     name: 'Results',
     title: first || !results.compared ? 'Your starting point' : 'Your month',
-    nudges: [first || !results.compared ? 'Next month’s check-in will show what’s changed.' : 'Here’s how this month compares with last month.'],
-    nextLabel: first ? 'Finish my first check-in' : 'Finish my check-in',
+    nudges: [first || !results.compared ? 'Next month’s review will show what’s changed.' : 'Here’s how this month compares with last month.'],
+    nextLabel: first ? 'Finish my first review' : 'Finish my monthly review',
     // The eye beside the title, never on its own row (rule 29d, Tim, 5 Nov).
     eye,
     render: () => (
@@ -554,14 +552,14 @@ function CheckinFlow({ userId, today, month, loaded }) {
   return (
     <div className="ui-root plan-builder-wait">
       <GuidedTool
-        name={first ? 'First check-in' : 'Monthly check-in'}
+        name={first ? 'First review' : 'Monthly review'}
         steps={steps}
         progress="percent"
         role={role}
         skipLabel={first ? 'Do this later' : 'Skip'}
         skipMoves={!first}
         onSkip={first ? () => leave(LATER_TOAST) : undefined}
-        finishLabel={first ? 'Finish my first check-in' : 'Finish my check-in'}
+        finishLabel={first ? 'Finish my first review' : 'Finish my monthly review'}
         saveState={save}
         draftKey={draftKey}
         initialStep={finishedBefore ? questionSteps[0]?.key : undefined}
@@ -1010,7 +1008,7 @@ function CheckinRead({ userId, today, loaded, row }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page ck-page">
-        <PageHeader title={checkinTitle(row)} meta={['Hardware and Software check-in', when]} aside={eye} />
+        <PageHeader title={checkinTitle(row)} meta={['Monthly Hardware and Software review', when]} aside={eye} />
         <Results
           userId={userId}
           today={today}

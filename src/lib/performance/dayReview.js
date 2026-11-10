@@ -1,8 +1,8 @@
-// What Review my day shows (mock-up M5, approved 23 Oct), worked out from
+// What Daily review shows (mock-up M5, approved 23 Oct), worked out from
 // the rows in one place. Pure code: no database, no React, no device
 // clock (the day and the hour are passed in), tested in tests/performance.
 //
-// The day's to-dos are Plan my day's own (dayPlanView, the same picks in
+// The day's to-dos are Daily plan's own (dayPlanView, the same picks in
 // the same order), and the week's to-dos, habits and score come from the
 // sprint page's view (sprintPageView), so they are the same as the sprint
 // shows: M2 for the to-dos, M1 for the habits, M5 "so far" for the score.

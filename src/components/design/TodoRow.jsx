@@ -4,7 +4,7 @@ import { Button } from './Button';
 import './design.css';
 
 // A to-do or an unplanned win in a list (M1 .td and winRow; reused by
-// the weekly debrief and Plan my day in Phase 3). Every row in one list
+// the weekly debrief and Daily plan in Phase 3). Every row in one list
 // looks alike: the tick, the words, the Strategy line with its tags,
 // and Move as a quiet text button.
 //

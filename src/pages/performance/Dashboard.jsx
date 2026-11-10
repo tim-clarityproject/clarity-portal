@@ -150,7 +150,7 @@ export default function Dashboard() {
     );
   }
 
-  const parts = coach ? [{ key: 'checkin', label: 'Your Hardware and Software check-in', shared }] : [];
+  const parts = coach ? [{ key: 'checkin', label: 'Your Monthly Hardware and Software review', shared }] : [];
   return (
     <div className="ui-root">
       <DesignHeader />
@@ -636,7 +636,7 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
   const { behind } = view;
   const shut = closed.more;
   const checkEye = coach
-    ? <WhoSees audience={shared ? 'coach' : 'me'} coachName={coach} name="Your Hardware and Software check-in" onChange={(a) => setShared(a === 'coach')} />
+    ? <WhoSees audience={shared ? 'coach' : 'me'} coachName={coach} name="Your Monthly Hardware and Software review" onChange={(a) => setShared(a === 'coach')} />
     : <WhoSees audience="me" />;
   const bodies = {
     wins: (row) => (
@@ -655,7 +655,7 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
             ))}
           </ul>
         ) : <p className="dash-fp">Add one from the Performance Sprint when something good happens that wasn’t planned.</p>}
-        {row.items.length > 0 && <p className="dash-fp">These come from the Performance Sprint, Review my day and the weekly debrief.</p>}
+        {row.items.length > 0 && <p className="dash-fp">These come from the Performance Sprint, the Daily review and the weekly debrief.</p>}
       </>
     ),
     rhythm: (row) => (
@@ -690,7 +690,7 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
             rows={row.points.map((p) => ({ key: p.month, cells: { month: p.when, hw: p.hardware == null ? 'Not answered' : `${p.hardware}/100`, sw: p.software == null ? 'Not answered' : `${p.software}/100`, trips: tripsWords(p.trips) } }))}
           />
         )}
-        <Button variant="text" onClick={() => navigate('/check-in')}>{row.started ? 'Open my check-ins' : 'Start my check-in'}</Button>
+        <Button variant="text" onClick={() => navigate('/monthly-review')}>{row.started ? 'Open my monthly reviews' : 'Start my monthly review'}</Button>
       </>
     ),
     lbr: (row) => (
@@ -711,11 +711,11 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
     be: (row) => (
       <>
         <Lab text="Your daily rating out of 10, averaged each week" eye={<WhoSees audience="me" />} />
-        {row.enough ? <TrendBars bars={row.bars} max={10} label="How you want to be, week by week" /> : <p className="dash-fp">Review my day adds your first rating here.</p>}
+        {row.enough ? <TrendBars bars={row.bars} max={10} label="How you want to be, week by week" /> : <p className="dash-fp">Your Daily review adds your first rating here.</p>}
         {row.enough && (
           <ChartTable caption="Your rating each week" columns={[{ key: 'week', label: 'Week' }, { key: 'v', label: 'Average rating' }]} rows={row.bars.filter((b) => b.value != null).map((b) => ({ key: b.key, cells: { week: b.tip.when, v: `${b.value}/10` } }))} />
         )}
-        {row.latestWay && <p className="dash-fp">{`Your latest way of being was “${row.latestWay}”, from Plan my day.`}</p>}
+        {row.latestWay && <p className="dash-fp">{`Your latest way of being was “${row.latestWay}”, from your Daily plan.`}</p>}
         {row.enough && <p className="dash-fp">Green weeks averaged 7/10 or more.</p>}
       </>
     ),

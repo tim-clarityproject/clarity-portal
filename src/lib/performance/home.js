@@ -6,10 +6,10 @@
 // Home shows today: one suggestion that changes through the day, today's
 // to-dos and habits logged right there, one line for the week, and help
 // behind one button. The moments come from the decisions ("Home's moments
-// of the day"): morning until 12:00 (Plan my day stays the suggestion
+// of the day"): morning until 12:00 (Daily plan stays the suggestion
 // until it is done or noon), afternoon until 17:00, evening from 17:00
-// (Review my day); on debrief days the debrief takes over from 12:00
-// (mornings stay Plan my day, experience rule 17). Sleep wind down is
+// (Daily review); on debrief days the debrief takes over from 12:00
+// (mornings stay Daily plan, experience rule 17). Sleep wind down is
 // offered from 21:00 on the person's own clock until 03:00, or until it is
 // used or dismissed (M19). Every figure comes from src/lib/scores through
 // the sprint page's own view (sprintPageView), never from here.
@@ -20,6 +20,7 @@ import { addDayKey } from './dayPlan';
 import { REVIEW_EARLY_HOURS, isDailyHabit } from './dayReview';
 import { recoveryEndOn, settingForWeek, toMeasure } from './rows';
 import { dayName } from './sprintPage';
+import { TOOLS } from '../navigation';
 
 /**
  * A gap (decided for Phase 4): 7 days in a row with nothing logged,
@@ -37,11 +38,13 @@ export const WIND_DOWN_UNTIL_HOUR = 3;
 export const WIND_DOWN_ROUTE = '/sleep-wind-down';
 
 // How long each takes (rule 27: "~4 minutes"), as M2 and M19 give them.
+// The same times as the tools' tiles (navigation.js), so Home's card and
+// a tile never disagree (Tim, 10 Nov).
 export const TIMES = {
-  planMyDay: '~4 minutes',
-  reviewMyDay: '~5 minutes',
-  debrief: '~5 minutes',
-  windDown: '~6 minutes',
+  planMyDay: TOOLS.pmd.time,
+  reviewMyDay: TOOLS.rmd.time,
+  debrief: TOOLS.debrief.time,
+  windDown: TOOLS.wind.time,
 };
 
 /** "Good morning", "Good afternoon" or "Good evening" (M2: evening from 17:00; still the evening after midnight). */
@@ -134,9 +137,9 @@ export function homePerson({ sprintView, recovery, steps }) {
 /**
  * Home's three day states (Tim, 5 Nov: "Home follows what's been done, not
  * only the clock"):
- *   'not-planned'  Plan my day isn't done yet
+ *   'not-planned'  Daily plan isn't done yet
  *   'planned'      today is planned and not yet reviewed
- *   'reviewed'     Review my day is finished (Close my day): "Your day's
+ *   'reviewed'     Daily review is finished (Close my day): "Your day's
  *                  done", at any time of day
  * From 04:00 (the review rule, REVIEW_EARLY_HOURS) a new day starts at
  * 'not-planned'; before 04:00 the day before's finished review still counts.
@@ -152,18 +155,18 @@ export function tomorrowPriorities(list) {
 }
 
 /**
- * The one suggestion for now, taking turns (Tim, 5 Nov): Plan my day in the
+ * The one suggestion for now, taking turns (Tim, 5 Nov): Daily plan in the
  * morning, then anything timed that is due (the monthly check-in), then
- * Review my day in the evening. Anything timed queues for this one card and
+ * Daily review in the evening. Anything timed queues for this one card and
  * is never a loose line under it; when it isn't its turn, Home doesn't
  * mention it. `checkin`: checkinPrompt() while one is due.
  */
 export function homeSuggestion(input) {
   const card = suggestionInTurn(input);
   const c = input.checkin;
-  // The check-in's turn: once the day is planned (or Plan my day's morning
+  // The check-in's turn: once the day is planned (or Daily plan's morning
   // has gone), in place of "How is today going?", or when nothing else is
-  // suggested. A new coaching client's First check-in is already the card.
+  // suggested. A new coaching client's First review is already the card.
   // Never in the night: the check-in waits for the day to start at 04:00 (REVIEW_EARLY_HOURS).
   if (c && input.hour >= REVIEW_EARLY_HOURS && card?.key !== 'first-checkin' && (!card || card.key === 'today')) {
     return { key: c.key, question: c.question, lines: c.lines || [], time: c.time, action: c.action };
@@ -181,12 +184,12 @@ export function homeSuggestion(input) {
  *   person                 homePerson()
  *   sprintView             sprintPageView() (or null)
  *   hasCoach               whether the person has a coach
- *   dayPlanned             today's Plan my day is finished
- *   reviewed               today's Review my day is finished
+ *   dayPlanned             today's Daily plan is finished
+ *   reviewed               today's Daily review is finished
  *   yesterday              { planned, reviewed } (a review before 04:00 can be for the day before)
  *   windDown               { from, dismissed: [evening keys] }
  *   recovery               the open Recovery row, if any; recoveryNext: the next sprint's number
- *   firstCheckin           checkinPrompt() when it's the First check-in (Phase 5), else null
+ *   firstCheckin           checkinPrompt() when it's the First review (Phase 5), else null
  */
 function suggestionInTurn(input) {
   const { today, hour, minute = 0, person, sprintView: v, dayPlanned, reviewed, yesterday = {}, windDown = {}, recovery, nextSprint } = input;
@@ -207,7 +210,7 @@ function suggestionInTurn(input) {
 
   if (person === 'new') {
     if (input.hasCoach) {
-      // A new coaching client: the First check-in first (M2 sugCard newc),
+      // A new coaching client: the First review first (M2 sugCard newc),
       // until it's finished (checkinPrompt in checkin.js).
       const c = input.firstCheckin;
       return c ? { key: 'first-checkin', question: c.question, lines: c.lines, time: c.time, action: c.action } : null;
@@ -230,7 +233,7 @@ function suggestionInTurn(input) {
       };
     }
     // Between sprints (M2 "Recovery week"): the next sprint, when ready.
-    // Plan my day and Review my day aren't suggested in Recovery.
+    // Daily plan and Daily review aren't suggested in Recovery.
     if (!v || v.state === 'none') {
       const name = `Performance Sprint ${nextSprint || 1}`;
       return {
@@ -264,7 +267,7 @@ function suggestionInTurn(input) {
 
   const running = v?.state === 'running';
   // The day is reviewed or closed: "Your day's done", with tomorrow's
-  // priorities from the review, waiting in tomorrow's Plan my day.
+  // priorities from the review, waiting in tomorrow's Daily plan.
   if (dayState({ hour, dayPlanned, reviewed, yesterday }) === 'reviewed') {
     const priorities = tomorrowPriorities(input.tomorrow);
     return {
@@ -272,9 +275,9 @@ function suggestionInTurn(input) {
       label: 'Priorities for tomorrow',
       question: null,
       list: priorities,
-      lines: priorities.length ? ['They’re waiting in tomorrow’s Plan my day.'] : ['Nothing is set for tomorrow yet.'],
+      lines: priorities.length ? ['They’re waiting in tomorrow’s Daily plan.'] : ['Nothing is set for tomorrow yet.'],
       action: null,
-      link: { label: 'Change my review', to: input.reviewTo || '/my-day/review' },
+      link: { label: 'Change my review', to: input.reviewTo || '/daily-review' },
     };
   }
   // Before 04:00: yesterday's review, if yesterday was planned and not reviewed (dayReview.js reviewDayFor).
@@ -285,7 +288,7 @@ function suggestionInTurn(input) {
 
   if (hour < AFTERNOON_FROM) {
     if (!dayPlanned) {
-      return { key: 'plan', question: 'Ready to plan your day?', lines: [], time: TIMES.planMyDay, action: { label: 'Plan my day', to: '/my-day/plan' } };
+      return { key: 'plan', question: 'Ready to plan your day?', lines: [], time: TIMES.planMyDay, action: { label: 'Start my daily plan', to: '/daily-plan' } };
     }
     return running ? todaySoFar() : null;
   }
@@ -317,7 +320,7 @@ function suggestionInTurn(input) {
   return null;
 
   function reviewCard() {
-    return { key: 'review', question: 'Ready to review your day?', lines: [], time: TIMES.reviewMyDay, action: { label: 'Review my day', to: '/my-day/review' } };
+    return { key: 'review', question: 'Ready to review your day?', lines: [], time: TIMES.reviewMyDay, action: { label: 'Start my daily review', to: '/daily-review' } };
   }
   // M2 afternoon. UNDEFINED: "2 of 3 to-dos done so far." is a count the
   // methods don't define, so the card leaves it out (the to-dos show their ticks).
@@ -351,7 +354,7 @@ export function quietLines({ person, hasCoach, mission, joinedDaysAgo = 0, dismi
 }
 
 /**
- * Today's to-dos (M2 Today): the day's picks from Plan my day, the
+ * Today's to-dos (M2 Today): the day's picks from Daily plan, the
  * highest priority first, each with its tick from the sprint's own rows.
  * picks: dayPicks().picks in order; top: the highest priority's key.
  */

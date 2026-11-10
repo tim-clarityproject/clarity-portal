@@ -39,7 +39,7 @@ import './performance.css';
 // draft too, for the night they belong to: a wind-down before 04:00 is
 // the night before. They are kept on this device and, once migration 039
 // has run, in wind_down_nights (windDownStore.js is the one place that
-// reads and writes them), and tomorrow's Plan my day lists them under
+// reads and writes them), and tomorrow's Daily plan lists them under
 // Carried over.
 
 const SAVE_AFTER_MS = 600;
@@ -141,7 +141,7 @@ export default function SleepWindDown() {
       key: 'tomorrow',
       name: 'Tomorrow',
       question: 'What’s on your mind for tomorrow?',
-      nudges: ['Write a few quick lines, then let them go.', 'They’ll wait for you in tomorrow’s Plan my day.'],
+      nudges: ['Write a few quick lines, then let them go.', 'They’ll wait for you in tomorrow’s Daily plan.'],
       skippable: true,
       render: () => (
         <div className="day-narrow">
@@ -231,7 +231,7 @@ function SleepWell({ headingRef, onShown, onHome }) {
     <EndScreen
       kind="night"
       title="Sleep well"
-      lines={['Your thoughts are saved for the morning.', 'Plan my day will have them ready.']}
+      lines={['Your thoughts are saved for the morning.', 'Your Daily plan will have them ready.']}
       headingRef={headingRef}
       action={<Button variant="outline" onClick={onHome}>Back to Home</Button>}
     />

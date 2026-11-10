@@ -34,7 +34,7 @@
   var BACKGROUND = { dark: '#000000', light: '#F9F8F5' };
 
   // Pages rebuilt for both modes (path prefixes).
-  var BOTH_MODES = ['/design-reference', '/welcome', '/performance-plan', '/performance-sprint', '/recovery', '/my-day', '/personal', '/interpersonal', '/strategic', '/my-plans', '/my-reviews', '/sleep-wind-down', '/check-in', '/dashboard'];
+  var BOTH_MODES = ['/design-reference', '/welcome', '/performance-plan', '/performance-sprint', '/recovery', '/my-day', '/daily-plan', '/daily-review', '/monthly-review', '/personal', '/interpersonal', '/strategic', '/my-plans', '/my-reviews', '/sleep-wind-down', '/check-in', '/dashboard'];
 
   var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
 

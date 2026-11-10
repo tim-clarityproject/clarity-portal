@@ -5,7 +5,7 @@ import { IMPACT_OPTIONS } from './impact';
 import './design.css';
 
 // Answer rows that each open Low, Medium and High inside once chosen (M5
-// Review my day, "Which Strategies moved today?"; approved 23 Oct, 13:16).
+// Daily review, "Which Strategies moved today?"; approved 23 Oct, 13:16).
 // A chosen row is outlined in the text colour and shows the follow-up
 // question with its three pills in the same row, starting at Medium; the
 // rest of the list never moves except by that row growing. Choosing the

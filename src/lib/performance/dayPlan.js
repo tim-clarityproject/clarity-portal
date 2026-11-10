@@ -1,4 +1,4 @@
-// What Plan my day shows (mock-up M5, approved 23 Oct), worked out from
+// What Daily plan shows (mock-up M5, approved 23 Oct), worked out from
 // the rows in one place. Pure code: no database, no React, no device
 // clock (the day is passed in), tested in tests/performance.
 //
@@ -199,7 +199,7 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
     }
   }
 
-  // Carried over (M19): Review my day's things for tomorrow first, then
+  // Carried over (M19): Daily review's things for tomorrow first, then
   // last night's wind-down thoughts, a line in both once. A thing not yet
   // chosen is only on this list; once chosen it is a to-do on this week of
   // the sprint (decisions 23 Oct, 12:58) and stays here, chosen. A thing
@@ -210,7 +210,7 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
   const used = new Set();
   const options = [];
   carried.forEach((c, i) => {
-    // Review my day's priorities keep their order as priority 1, 2 and 3 (Tim, 5 Nov, 10:38).
+    // Daily review's priorities keep their order as priority 1, 2 and 3 (Tim, 5 Nov, 10:38).
     const where = carriedSource(c, review?.local_date, date);
     const tags = c.review && c.reviewIndex != null ? [`Priority ${c.reviewIndex + 1}`, where] : [where];
     const made = madeFrom.find((t) => !used.has(t.id) && thingKey(t.text) === thingKey(c.text) && ((c.review && fromReview(t)) || (c.windDown && fromWindDown(t))));
@@ -219,7 +219,7 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
       if (!openIds.has(made.id)) return;
       const t = open.find((o) => o.id === made.id);
       // M19: a carried-over row shows only where it came from; the
-      // Strategy stays on the option for Review my day.
+      // Strategy stays on the option for Daily review.
       options.push({ value: `todo:${t.id}`, label: t.text, detail: t.strategyName, tags, kind: 'todo', id: t.id, group: 'carried', onlyTags: true });
       return;
     }
@@ -289,7 +289,7 @@ export function dayPlanView(d, { date, local = {}, windDown = [] }) {
 }
 
 /**
- * Recovery's calm lines in Plan my day and Review my day (M15 "Plan,
+ * Recovery's calm lines in Daily plan and Daily review (M15 "Plan,
  * review and logging reminders pause", "nothing counts against you";
  * Claude's wording, Phase 5 step 4), in place of "No sprint is running".
  */

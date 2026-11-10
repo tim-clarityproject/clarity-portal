@@ -56,7 +56,7 @@ export const pageText = {
   // it is, in one full sentence (Tim, 2 Nov), then the glossary's words
   // (writing rule 40), one sentence per line.
   checkIn: [
-    'The Hardware and Software check-in is a monthly look at your body and mind, in ~3 minutes.',
+    'The Monthly Hardware and Software review is a look at your body and mind each month, in ~3 minutes.',
     'Hardware is your body’s physiology.',
     'Software is your decision-making, emotional control and communication.',
     'Software relies on hardware being maintained, so we look after both.',
@@ -66,7 +66,7 @@ export const pageText = {
   dashboard: [
     'The Individual Performance Dashboard is the mirror of your performance, showing what’s improving and what’s holding you back.',
     'Each thing holding you back has one small step to fix it.',
-    'Every figure comes from your own plan, sprint, daily tools and check-ins.',
+    'Every figure comes from your own plan, sprint, daily tools and monthly reviews.',
   ],
   hubReview: [
     'Review is where you turn what happened into better performance.',

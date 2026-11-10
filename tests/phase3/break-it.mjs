@@ -452,7 +452,7 @@ if (run('taps')) {
     const wins = await myWins(WIN);
     pass('taps: Add my win triple tapped adds one win', wins.length === 1, `${wins.length}`);
     const ev = wins.length ? await q(db.from('performance_evidence').select('id').eq('win_id', wins[0].id)) : [];
-    pass('taps: ... with one Performance Evidence row', ev.length === 1, `${ev.length}`);
+    pass('taps: ... with one Confidence Bank row', ev.length === 1, `${ev.length}`);
     await nextUntil(page, REVIEW_Q.tomorrow);
     // Three numbered rows from the start (Tim, 5 Nov): Add another, if shown, is tapped three times.
     if (await page.getByRole('button', { name: 'Add another' }).count()) await page.getByRole('button', { name: 'Add another' }).click({ clickCount: 3 });
@@ -808,7 +808,7 @@ if (run('offline')) {
     const w = await myWins(WIN);
     pass('offline: the win arrived once', w.length === 1, `${w.length}`);
     const ev = w.length ? await q(db.from('performance_evidence').select('id').eq('win_id', w[0].id)) : [];
-    pass('offline: ... with one Performance Evidence row', ev.length === 1, `${ev.length}`);
+    pass('offline: ... with one Confidence Bank row', ev.length === 1, `${ev.length}`);
     // Finish offline.
     await nextUntil(page, REVIEW_Q.tomorrow);
     await next(page);

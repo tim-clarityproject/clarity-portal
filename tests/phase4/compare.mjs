@@ -453,7 +453,7 @@ const MOCK_DATA = [
   'Be fit and healthy', 'Protect my evenings', 'Stay sharp', 'Reflect after every session', 'Keep learning', 'Stay in touch with past clients', 'Weekly strategic block',
   'Steps', 'Training sessions', 'Water', 'Late finishes', 'Focus', 'Reflective notes', 'Reading', 'Check-in messages', 'Strategic block happened', 'Did you finish late today?',
   'Book a physio assessment', 'Ask Evan for an introduction to Harbour', 'Draft the Harbour case study', 'Shortlist breathing sound loops', 'Update my LinkedIn profile',
-  'Test the new Plan my day with two clients', 'Book a supervision session', 'Renew supervision contract', 'Spoke at a breakfast event and two people asked about coaching',
+  'Test the new Daily plan with two clients', 'Book a supervision session', 'Renew supervision contract', 'Spoke at a breakfast event and two people asked about coaching',
   'Call Evan before 09:00 about the referral', 'Finish the Harbour case study', 'Send the Harbour proposal', 'Send the Harbour proposal by 12:00', 'Training session',
   'Reply to Max about the workshop', 'Book a day off for the half term', 'Calm under pressure',
 ];

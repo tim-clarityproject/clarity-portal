@@ -1,11 +1,11 @@
 import { deviceKey, readJson, writeJson } from '../deviceStore';
 import { dayStore } from './dayStore';
 
-// The habits chosen in Plan my day, with the order of the day's choices
+// The habits chosen in Daily plan, with the order of the day's choices
 // and the one at the top (the to-dos themselves are day_plan_todos). Read
 // and written only here. Kept on this device per day, under
-// clarity-day-plan-local:<user>:<date> as before, which Plan my day,
-// Review my day and Home read at once, offline too. Once Tim has run
+// clarity-day-plan-local:<user>:<date> as before, which Daily plan,
+// Daily review and Home read at once, offline too. Once Tim has run
 // migration 039 each day is also saved to day_plan_habits through the
 // offline queue (dayStore.js), so another device sees the same choices,
 // and the days waiting on this device are moved across once. Until then a

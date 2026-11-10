@@ -50,7 +50,7 @@ function changeWords(d, before) {
   return [`The same as ${before}.`];
 }
 
-export default function CheckinChart({ points = [], empty = 'Your graph starts here after your second check-in.', label = 'Hardware score and Software score by month, out of 100' }) {
+export default function CheckinChart({ points = [], empty = 'Your graph starts here after your second monthly review.', label = 'Hardware score and Software score by month, out of 100' }) {
   const phone = useIsPhone();
   const boxRef = useRef(null);
   const [width, setWidth] = useState(0);

@@ -148,7 +148,7 @@ const COLOURS = [
 
 const TYPE_OPTIONS = [
   { value: 'all', label: 'All types' },
-  { value: 'day', label: 'Day review' },
+  { value: 'day', label: 'Daily review' },
   { value: 'aar', label: 'After-action review' },
   { value: 'debrief', label: 'Weekly performance debrief' },
 ];
@@ -782,7 +782,7 @@ function ListDemo() {
   return (
     <List label="Recent reviews">
       <ListRow title="Board pitch" type="After-action review" date="Today" onClick={() => toast.show('The review opens here.')} />
-      <ListRow title="Wednesday reflections" type="Review my day" date="Mon 19 Oct" onClick={() => toast.show('The review opens here.')} />
+      <ListRow title="Wednesday reflections" type="Daily review" date="Mon 19 Oct" onClick={() => toast.show('The review opens here.')} />
     </List>
   );
 }
@@ -1172,7 +1172,7 @@ function PanelsDemo() {
         onClose={() => setWinPanel(false)}
         title="Add an unplanned win"
         initialFocusRef={winBox}
-        footer={<Button variant="primary" disabled={!win.text.trim() || win.strategies.length === 0} onClick={() => { setWinPanel(false); setWin((w) => ({ ...w, text: '', strategies: [] })); toast.show('Added to your Performance Evidence.'); }}>Add my win</Button>}
+        footer={<Button variant="primary" disabled={!win.text.trim() || win.strategies.length === 0} onClick={() => { setWinPanel(false); setWin((w) => ({ ...w, text: '', strategies: [] })); toast.show('Added to your Confidence Bank.'); }}>Add my win</Button>}
       >
         <div className="dr-panel-form">
           <TextBox ref={winBox} label="What did you do?" who="me" value={win.text} onChange={(text) => setWin((w) => ({ ...w, text }))} placeholder="e.g. Closed the renewal with the biggest client" />
@@ -1302,7 +1302,7 @@ function RulesOfFiveNovDemo() {
       <p className="dr-small">Back at the top (rules 29o and 29t): the chevron on the content edge, 14px before the tool’s name</p>
       <div className="ds-guide-bar dr-rules5-bar">
         <button type="button" className="ds-guide-back" aria-label="Back"><Chevron direction="left" size="sm" /></button>
-        <b className="ds-guide-name">Review my day</b>
+        <b className="ds-guide-name">Daily review</b>
         <IconButton label="Close" />
       </div>
 
@@ -1654,7 +1654,7 @@ function Gallery() {
 
         <GallerySection id="c45" title="Scales and levels" demo={ScaleLevelDemo} rules={(
           <>
-            <p><New /><b>A 1 to 10 scale</b> (M5 Review my day): ten equal boxes in one row, five by two on a phone, with what each end means in words underneath.</p>
+            <p><New /><b>A 1 to 10 scale</b> (M5 Daily review): ten equal boxes in one row, five by two on a phone, with what each end means in words underneath.</p>
             <p>The chosen number fills in the text colour, never coral; tapping it again clears it.</p>
             <p><New /><b>Rows that open Low, Medium and High inside</b> (M5 “Which Strategies moved today?”): choosing a row outlines it and opens the follow-up in the same row, starting at Medium.</p>
             <p>The follow-up names the thing it asks about (writing rule 64): “How much did “Grow through referrals” move?”.</p>
@@ -1699,7 +1699,7 @@ function Gallery() {
             <p><New /><b>The daily tools’ summary</b> (M5): a skipped answer says “Skipped” with Add; a row can hold several lines, a grey line under it, or a mint line for a win.</p>
             <p><New /><b>The celebration glow</b> (M1 debrief): a thin mint edge that fades in once and stays, at or above the standard only; with reduced motion it is simply there.</p>
             <p>Mint means good, never coral (Tim, 26 Oct).</p>
-            <p><New /><b>Add a to-do from Plan my day</b>: the usual panel without “Which week?”, saying it goes into today and this week’s sprint.</p>
+            <p><New /><b>Add a to-do from Daily plan</b>: the usual panel without “Which week?”, saying it goes into today and this week’s sprint.</p>
           </>
         )} />
 
@@ -1882,7 +1882,7 @@ function Gallery() {
         <GallerySection id="c61" title="Saved items" demo={SavedItemsDemo} rules={(
           <>
             <p><New /><b>Named in words, never by a date</b> (writing rule 60, Tim 23 Oct): the name on the left, the tool under it, the date on the right.</p>
-            <p>Day plans read Today’s plan, Yesterday’s plan, then Day plan, and reviews the same. A debrief reads Sprint 4, week 3. A journal is Journal entry, never its first words.</p>
+            <p>Day plans read Today’s plan, Yesterday’s plan, then Daily plan, and reviews the same. A debrief reads Sprint 4, week 3. A journal is Journal entry, never its first words.</p>
             <p>Plan, Review and Interpersonal end with their last three saved items and a link to the whole list, filtered to that area. Reset has none, so journal entries never show on a shared screen.</p>
             <p>The Health Check’s card lists each team with its versions. A team opens its versions in My Plans.</p>
             <p>My Plans and My Reviews use the same row, with the area behind the one Filter button.</p>
@@ -1892,7 +1892,7 @@ function Gallery() {
         <GallerySection id="c54" title="Home: the suggestion" demo={SuggestionDemo} rules={(
           <>
             <p><New /><b>One suggestion for now</b> (M2, 23 Oct): a question, how long it takes, and the one coral button.</p>
-            <p>It changes through the day: Plan my day until 12:00, how today is going in the afternoon, Review my day from 17:00, the debrief on debrief days, and Sleep wind down from 21:00 until 03:00.</p>
+            <p>It changes through the day: Daily plan until 12:00, how today is going in the afternoon, Daily review from 17:00, the debrief on debrief days, and Sleep wind down from 21:00 until 03:00.</p>
             <p>The wind-down card says Sleep wind down above its question and has Not tonight as a text link.</p>
             <p>At most two quiet lines sit under it, each with one text link. A line that can be dismissed has the 45 degree crosshair, read as Not now.</p>
           </>
@@ -1908,7 +1908,7 @@ function Gallery() {
 
         <GallerySection id="c56" title="Home: today’s focus" demo={DayFocusDemo} rules={(
           <>
-            <p><New /><b>How you want to be today, and today’s Strategy</b> (M2), from Plan my day.</p>
+            <p><New /><b>How you want to be today, and today’s Strategy</b> (M2), from Daily plan.</p>
             <p>Side by side on a laptop, stacked on a phone. Each shows only once it has been chosen.</p>
           </>
         )} />
@@ -1949,13 +1949,13 @@ function Gallery() {
         <GallerySection id="c63" title="The centred end screen" demo={WorkDoneDemo} rules={(
           <>
             <p><New /><b>One clear last line</b> (M19): the title in Nekst capitals, one sentence per line under it, then one button, all centred.</p>
-            <p>Work’s done for today ends Review my day with the coral Back to Home. Sleep well uses the outlined button, so nothing bright shows at bedtime.</p>
+            <p>Work’s done for today ends Daily review with the coral Back to Home. Sleep well uses the outlined button, so nothing bright shows at bedtime.</p>
           </>
         )} />
 
         <GallerySection id="c64" title="Carried over" demo={CarriedOverDemo} rules={(
           <>
-            <p><New /><b>One list the next morning</b> (M19): Review my day’s things for tomorrow first, then last night’s sleep wind down thoughts, then This week.</p>
+            <p><New /><b>One list the next morning</b> (M19): Daily review’s things for tomorrow first, then last night’s sleep wind down thoughts, then This week.</p>
             <p>Each row says where it came from. A line in both is one row, when it matches once case and punctuation are ignored.</p>
             <p>Up to 3 can be chosen. Once 3 are chosen the rest grey out, and the line under the list says how many.</p>
           </>

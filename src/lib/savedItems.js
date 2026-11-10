@@ -1,6 +1,6 @@
 import { getLocalDateKey, parseDbTimestamp, formatSavedDate } from './dateFormatter';
 import { STANDARD_AREAS, areaName } from './wheelOfLife';
-import { checkinMonth, checkinPath, checkinTitle } from './performance/checkin';
+import { CHECKIN_ROUTE, checkinMonth, checkinPath, checkinTitle } from './performance/checkin';
 
 // My Plans and My Reviews (Phase 4 step 4): one list each across the three
 // areas, every saved item in it, old and new. This file only turns rows
@@ -10,10 +10,10 @@ import { checkinMonth, checkinPath, checkinTitle } from './performance/checkin';
 // Writing rule 60 (Tim, 23 Oct, 19:51): every row has a name in words
 // saying what it was about, the tool under it, and the date on the right.
 // Never a date as the name. Day plans read "Today’s plan", "Yesterday’s
-// plan", then "Day plan" (reviews the same); debriefs "Sprint 4, week 3";
+// plan", then "Daily plan" (reviews the same, "Daily review"); debriefs "Sprint 4, week 3";
 // the Life balance review the area chosen ("Focus on sleep"), otherwise
 // "October review"; the Hardware and Software check-in "October check-in",
-// the first one "First check-in"; a journal "Journal entry", never its first words; the
+// the first one "First review"; a journal "Journal entry", never its first words; the
 // other tools what was typed first. Tool names follow CLAUDE.md rule 26.
 //
 // Each row: { id (unique in the list), dbId, source, area, title,
@@ -27,7 +27,7 @@ export const AREAS = [
 ];
 
 export const TOOL_NAME = {
-  daily_plan: 'Plan my day',
+  daily_plan: 'Daily plan',
   plan_meeting: 'Meeting planner',
   if_then_planning: 'Pressure plan',
   stop_doing_audit: 'Time audit',
@@ -74,7 +74,7 @@ export const REVIEWABLE_TYPES = new Set(['daily_plan', 'plan_meeting', 'if_then_
 
 // A plan-review's tool line, by the kind of plan it reviews.
 const PLAN_REVIEW_TOOL = {
-  daily_plan: 'Review my day',
+  daily_plan: 'Daily review',
   plan_meeting: 'Meeting review',
   if_then_planning: 'Pressure plan review',
   inversion: 'Pre-mortem review',
@@ -101,11 +101,11 @@ function addDays(dayKey, n) {
   return getLocalDateKey(new Date(y, m - 1, d + n, 12));
 }
 
-/** "Today’s plan", "Yesterday’s plan", then "Day plan" (kind 'plan' or 'review'). */
+/** "Today’s plan", "Yesterday’s plan", then "Daily plan" or "Daily review" (kind 'plan' or 'review'). */
 export function dayName(dayKey, today, kind) {
   if (dayKey === today) return `Today’s ${kind}`;
   if (dayKey && dayKey === addDays(today, -1)) return `Yesterday’s ${kind}`;
-  return kind === 'plan' ? 'Day plan' : 'Day review';
+  return kind === 'plan' ? 'Daily plan' : 'Daily review';
 }
 
 function parseJson(text) {
@@ -220,14 +220,14 @@ export function planRows(data, today = getLocalDateKey()) {
     .filter((p) => p.status === 'finished' || filled(p.grateful_for, p.way_of_being, p.biggest_risk, p.risk_response))
     .forEach((p) => {
       const draft = p.status !== 'finished';
-      const to = { path: `/my-day/plan/${p.local_date}` };
+      const to = { path: `/daily-plan/${p.local_date}` };
       out.push(base(today, {
         id: `day-plan:${p.id}`,
         dbId: p.id,
         source: 'day-plan',
         area: 'personal',
         title: dayName(p.local_date, today, 'plan'),
-        typeLabel: 'Plan my day',
+        typeLabel: 'Daily plan',
         day: p.local_date,
         isDraft: draft,
         canEdit: draft,
@@ -277,7 +277,7 @@ function journalEntryRow(e, today) {
       source: 'day',
       area: DECISION_AREA[kind] || 'personal',
       title: isDay ? dayName(day, today, 'review') : ((e.title || '').trim() || 'Review'),
-      typeLabel: isDay ? 'Review my day' : (PLAN_REVIEW_TOOL[kind] || 'Review'),
+      typeLabel: isDay ? 'Daily review' : (PLAN_REVIEW_TOOL[kind] || 'Review'),
       at: e.created_at,
       isDraft: draft,
       canEdit: true,
@@ -390,14 +390,14 @@ export function reviewRows(data, today = getLocalDateKey()) {
     .filter((r) => r.status === 'finished' || filled(r.way_of_being_rating, r.where_it_showed, r.went_well, r.differently, r.tomorrow, r.on_my_mind))
     .forEach((r) => {
       const draft = r.status !== 'finished';
-      const to = { path: `/my-day/review/${r.local_date}` };
+      const to = { path: `/daily-review/${r.local_date}` };
       out.push(base(today, {
         id: `day-review:${r.id}`,
         dbId: r.id,
         source: 'day-review',
         area: 'personal',
         title: dayName(r.local_date, today, 'review'),
-        typeLabel: 'Review my day',
+        typeLabel: 'Daily review',
         day: r.local_date,
         isDraft: draft,
         canEdit: draft,
@@ -459,12 +459,12 @@ export function reviewRows(data, today = getLocalDateKey()) {
         source: 'hs-checkin',
         area: 'personal',
         title: checkinTitle(c),
-        typeLabel: 'Hardware and Software check-in',
+        typeLabel: 'Monthly Hardware and Software review',
         at: c.finished_at || c.updated_at,
         isDraft: draft,
         canEdit: draft,
-        to: { path: draft ? '/check-in' : checkinPath(c.month) },
-        edit: draft ? { path: '/check-in' } : null,
+        to: { path: draft ? CHECKIN_ROUTE : checkinPath(c.month) },
+        edit: draft ? { path: CHECKIN_ROUTE } : null,
       }));
     });
 

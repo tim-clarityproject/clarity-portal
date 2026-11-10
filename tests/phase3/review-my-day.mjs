@@ -331,8 +331,8 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await panel.locator('textarea').first().fill(WIN);
   await panel.getByRole('button', { name: 'Grow through referrals' }).click();
   await panel.getByRole('button', { name: 'Add my win' }).click();
-  const winToast = await until(async () => (await page.getByText('Win added to Grow through referrals and your Performance Evidence.').count()) > 0, 10000);
-  pass(`${tag}: the win's toast names its Strategy and Performance Evidence`, Boolean(winToast));
+  const winToast = await until(async () => (await page.getByText('Win added to Grow through referrals and your Confidence Bank.').count()) > 0, 10000);
+  pass(`${tag}: the win's toast names its Strategy and Confidence Bank`, Boolean(winToast));
   pass(`${tag}: the win shows under the question, ticked`, (await page.locator('.ds-todo--win', { hasText: WIN }).count()) === 1);
   await shot(page, `${tag}-4-well`);
   await next(page);
@@ -434,12 +434,12 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       pass('a ticked count habit logs one more today', Number(await logOf('Training sessions')) === Number(trainBefore || 0) + 1, `${trainBefore} then ${await logOf('Training sessions')}`);
       pass('the numbers screen logs into the sprint', Number(await logOf('Steps')) === 9800 && Number(await logOf('Water')) === 1.5 && Number(await logOf('Focus')) === 4 && Number(await logOf('Late finishes')) === 0,
         `${await logOf('Steps')} ${await logOf('Water')} ${await logOf('Focus')} ${await logOf('Late finishes')}`);
-      // The win, and its Performance Evidence row (the database's own trigger).
+      // The win, and its Confidence Bank row (the database's own trigger).
       const win = (await db.from('wins').select('id, local_date, impact').eq('user_id', me).eq('what', WIN)).data?.[0];
       const ws = win ? (await db.from('win_strategies').select('strategy_id').eq('win_id', win.id)).data : [];
       pass('the unplanned win is saved on today, on its Strategy', win?.local_date === today && ws.length === 1 && ws[0].strategy_id === sid('Grow through referrals'), JSON.stringify({ win, ws }));
       const ev = win ? (await db.from('performance_evidence').select('kind, text, local_date, deleted_at').eq('win_id', win.id)).data : [];
-      pass('the win appears in Performance Evidence', ev.length === 1 && ev[0].kind === 'win' && ev[0].text === WIN && ev[0].local_date === today && !ev[0].deleted_at, JSON.stringify(ev));
+      pass('the win appears in Confidence Bank', ev.length === 1 && ev[0].kind === 'win' && ev[0].text === WIN && ev[0].local_date === today && !ev[0].deleted_at, JSON.stringify(ev));
 
       // The sprint page: the ticks and logs are there, and its score is src/lib/scores'.
       // (Since Phase 4 the review ends on Work's done, then Home.)

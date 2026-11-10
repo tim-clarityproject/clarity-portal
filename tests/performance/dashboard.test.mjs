@@ -257,7 +257,7 @@ test('what’s behind: wins, streaks, sleep (Recovery’s chart and range), stre
   assert.equal(by.stress.dots[1].good, false);
   assert.equal(by.be.figure.text, '7');
   assert.equal(by.be.line, 'You rated it 7/10 on average this sprint.');
-  assert.equal(by.check.line, 'You haven’t done a check-in yet.');
+  assert.equal(by.check.line, 'You haven’t done a monthly review yet.');
   assert.equal(by.lbr.line, 'You haven’t done a life balance review yet.');
   // No tool writes the emotional control checks yet: the row waits for the first one.
   assert.equal(by.line, undefined);
@@ -278,7 +278,7 @@ test('a new person with no sprint: empty frames, each with its start line', () =
   assert.deepEqual(v.behind.rows.map((r) => r.line), [
     'You haven’t added an unplanned win this sprint.',
     'Your streaks start with your first Performance Sprint.',
-    'You haven’t done a check-in yet.',
+    'You haven’t done a monthly review yet.',
     'You haven’t done a life balance review yet.',
     'You haven’t rated it yet.',
     'You haven’t logged sleep yet.',
@@ -306,7 +306,7 @@ test('the check-in card: the latest scores and their change (M13 through checkin
   const check = v.behind.rows.find((r) => r.key === 'check');
   // The figure says what each score is; the line says only how they moved (rule 29n, 5 Nov).
   const move = (name, a, b) => (a > b ? `${name} is up ${a - b}` : a < b ? `${name} is down ${b - a}` : `${name} is the same`);
-  assert.equal(check.line, `${move('Hardware', p1.hardware, p0.hardware)} and ${move('Software', p1.software, p0.software)} since your last check-in.`);
+  assert.equal(check.line, `${move('Hardware', p1.hardware, p0.hardware)} and ${move('Software', p1.software, p0.software)} since your last monthly review.`);
   assert.ok(p1.hardware > p0.hardware);
   assert.equal(check.figure.text, `Hardware ${p1.hardware}, Software ${p1.software}`);
   assert.equal(check.points.length, 2);

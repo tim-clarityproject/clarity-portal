@@ -62,7 +62,7 @@ export function findPlanReview(reviews, { planKind, planId, dateKey }) {
   }) || null;
 }
 
-// "Review my day"/"Review My Day" have no specific plan in hand (unlike
+// "Daily review"/"Review My Day" have no specific plan in hand (unlike
 // a Review button on a plan's own summary) - find today's daily plan,
 // if one exists, client-side (the created_at column has no time zone
 // ending - rule 19 - so "today" cannot be a safe SQL date filter).

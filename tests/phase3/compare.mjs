@@ -445,7 +445,7 @@ const MOCK_DATA = [
   'Be fit and healthy', 'Protect my evenings', 'Stay sharp', 'Reflect after every session', 'Keep learning', 'Stay in touch with past clients', 'Weekly strategic block',
   'Steps', 'Training sessions', 'Water', 'Late finishes', 'Focus', 'Reflective notes', 'Reading', 'Check-in messages', 'Strategic block happened', 'Did you finish late today?',
   'Ask Evan for an introduction to Harbour', 'Draft the Harbour case study', 'Shortlist breathing sound loops', 'Update my LinkedIn profile',
-  'Test the new Plan my day with two clients', 'Book a supervision session', 'Renew supervision contract', 'Spoke at a breakfast event and two people asked about coaching',
+  'Test the new Daily plan with two clients', 'Book a supervision session', 'Renew supervision contract', 'Spoke at a breakfast event and two people asked about coaching',
   'Clear morning, two good sessions back to back.', 'Got the Harbour introduction from Evan.', 'Strategic block went well.', 'Long walk between calls.', 'Good energy all day.', 'Family day, no screens.', 'Light planning for next week.',
   'Start the reflective note straight after, not at lunch.', 'Finished late again. Protect Tuesday evenings.', 'Drink water before coffee.', 'Fewer back-to-back calls.', 'Prepare Monday on Friday.', 'Start earlier on Sunday.',
   'Two strong client weeks in a row, and the Harbour introduction landed.', 'Two late finishes on Tuesday and Thursday ate my evenings.', 'Block out 17:30 to 18:30 on Tuesdays for wrap-up, then stop.',

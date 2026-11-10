@@ -84,7 +84,7 @@ const DAILY_MEASURES = new Set(['count', 'amount', 'yes_no_days_target']);
  * M14.2: the day score, used only for the daily links (L1, L2) and never
  * shown as a number. The impact-weighted share of that day's planned items
  * done: each daily habit against its daily target, and each to-do chosen in
- * that morning's Plan my day (done that day or before). Any sleep habit is
+ * that morning's Daily plan (done that day or before). Any sleep habit is
  * left out, so the sleep links never contain their own cause (M14.1).
  *
  * Claude's calls on the detail (Phase 5 step 3, listed in the report):

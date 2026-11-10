@@ -21,7 +21,7 @@ import {
 } from '../../components/design';
 
 // The shared parts the daily tools and the weekly debrief need (Phase 3:
-// M5 Plan my day and Review my day, M1's debrief). Invented text only.
+// M5 Daily plan and Daily review, M1's debrief). Invented text only.
 
 const STRATEGIES = [
   { value: 's1', label: 'Maintain my availability to do good work' },
@@ -31,7 +31,7 @@ const STRATEGIES = [
 ];
 
 const DO_LIST = [
-  { value: 'n1', label: 'Call Evan before 09:00 about the referral', tags: ['From Review my day'] },
+  { value: 'n1', label: 'Call Evan before 09:00 about the referral', tags: ['From Daily review'] },
   { value: 't1', label: 'Send the Harbour proposal by 12:00', detail: 'Grow through referrals', tags: ['To-do this week'] },
   { value: 'h1', label: 'Training sessions', detail: 'Maintain my availability to do good work', tags: ['Habit, 1 of 4 this week'] },
   { value: 'h2', label: 'Weekly strategic block', detail: 'Build The Clarity Portal', tags: ['Habit, not yet this week'] },

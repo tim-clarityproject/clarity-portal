@@ -6,7 +6,7 @@ import { drinksToRow } from './checkin';
 // Answers kept with their rows once Tim has run migration 040 (Phase 5
 // follow-up, step 1): the drinks counted and the kind of trip on the
 // month's check-in (checkins.drinks, checkins.trip), and the way of being
-// chosen in Review my day when the day had no plan (day_reviews.way_of_being).
+// chosen in Daily review when the day had no plan (day_reviews.way_of_being).
 //
 // Until 040 has run, the database doesn't have these columns, so they stay
 // on the device, with no error shown, as before. Once it has:

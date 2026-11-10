@@ -1,4 +1,4 @@
-// Plan my day's view (src/lib/performance/dayPlan.js): which things can
+// Daily plan's view (src/lib/performance/dayPlan.js): which things can
 // be chosen for the day, last night's list and note, the order of the
 // saves for the day's to-dos and Strategies, and the summary's words.
 // The week's score is the sprint page's own (sprintPageView, M5 "so far"),
@@ -72,7 +72,7 @@ const DATE = '2026-10-21';
 test('the Do list: last night first, this week’s to-dos, weekly habits not yet met, then rolled over', () => {
   const v = dayPlanView(rows({ lastReview: { id: 'r1', local_date: '2026-10-20', tomorrow: ['Call Evan before 09:00', ''], on_my_mind: 'Idea: a workshop.', strategies: [], dayStrategies: [] } }), { date: DATE });
   assert.deepEqual(v.options.map((o) => o.value), ['night:0', 'todo:t1', 'habit:train', 'habit:block', 'todo:t2']);
-  assert.deepEqual(v.options[0].tags, ['Priority 1', 'From Review my day']);
+  assert.deepEqual(v.options[0].tags, ['Priority 1', 'From Daily review']);
   assert.equal(v.options[0].group, 'carried');
   assert.deepEqual(v.options[1].tags, ['To-do this week']);
   assert.equal(v.options[1].group, 'week');
@@ -90,14 +90,14 @@ test('a thing from last night already made a to-do shows once, as that to-do', (
   d.todos.push(made);
   const v = dayPlanView(d, { date: DATE });
   assert.equal(v.options[0].value, 'todo:t9');
-  assert.deepEqual(v.options[0].tags, ['Priority 1', 'From Review my day']);
+  assert.deepEqual(v.options[0].tags, ['Priority 1', 'From Daily review']);
   assert.equal(v.options[0].group, 'carried');
   assert.ok(!v.options.some((o) => o.kind === 'night'));
 });
 
 test('last night after a gap keeps the day’s name; nothing older than 3 days is loaded', () => {
   const d = rows({ lastReview: { id: 'r1', local_date: '2026-10-16', tomorrow: ['Call Evan'], strategies: [], dayStrategies: [] } });
-  assert.deepEqual(dayPlanView(d, { date: '2026-10-19' }).options[0].tags, ['Priority 1', 'From Review my day on Friday']);
+  assert.deepEqual(dayPlanView(d, { date: '2026-10-19' }).options[0].tags, ['Priority 1', 'From Daily review on Friday']);
   assert.equal(addDayKey('2026-10-31', 1), '2026-11-01');
 });
 
@@ -107,8 +107,8 @@ test('Carried over (M19): the review’s things first, then last night’s thoug
   const carried = v.options.filter((o) => o.group === 'carried');
   assert.deepEqual(carried.map((o) => o.label), ['Call Evan before 09:00', 'Finish the Harbour case study', 'Book a day off']);
   assert.deepEqual(carried.map((o) => o.tags.join(', ')), [
-    'Priority 1, From Review my day',
-    'Priority 2, From Review my day and last night’s sleep wind down',
+    'Priority 1, From Daily review',
+    'Priority 2, From Daily review and last night’s sleep wind down',
     'From last night’s sleep wind down',
   ]);
   assert.equal(v.options[3].group, 'week');

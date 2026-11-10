@@ -12,7 +12,7 @@ import {
 // The one place the sleep wind down's thoughts are read and written (M19;
 // Phase 4 steps 6 and 7). Kept on this device per night, under
 // clarity-cache:<user>:wind-down-nights (the last two weeks), which the
-// page and the next morning's Plan my day read at once, offline too. Once
+// page and the next morning's Daily plan read at once, offline too. Once
 // Tim has run migration 039 each night is also saved to wind_down_nights
 // through the offline queue (dayStore.js), and what waits on the device
 // is moved across once. Until then a save answers { status: 'device' },
@@ -68,7 +68,7 @@ export function readWindDown(userId, night) {
   return { thoughts: cleanThoughts(n?.thoughts), finishedAt: n?.finishedAt || null, sound: n?.sound || WIND_DOWN_SOUND_DEFAULT };
 }
 
-/** Last night's thoughts, for the morning's Plan my day. */
+/** Last night's thoughts, for the morning's Daily plan. */
 export function lastNightThoughts(userId, date) {
   return readWindDown(userId, nightBefore(date)).thoughts;
 }

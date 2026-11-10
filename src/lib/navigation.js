@@ -11,7 +11,7 @@ import pageText from '../content/pageText';
 // in Phase 5 step 2, as its first big tile. Not built yet, so no tile: Find my sweet spot, Deliberate vs default, Travel
 // and jet lag plan, Delegation audit, Emotional wash, Identity beyond the
 // role, Stay deliberate under pressure,
-// Performance Evidence, Prepare for a difficult conversation, Prepare for
+// Confidence Bank, Prepare for a difficult conversation, Prepare for
 // a pitch, Map my stakeholders, Map my team, Understand their sweet spot,
 // Decide who decides, Strategy on a page and Pre-mortem for an initiative.
 // Sleep wind down joined Reset in step 6 (M19), second, marked New for its
@@ -49,11 +49,12 @@ export const TOOLS = {
     routes: ['/performance-sprint', '/recovery'],
   },
   pmd: {
-    name: 'Plan my day',
+    name: 'Daily plan',
     line: 'Choose what matters most today.',
-    time: '~3 minutes',
-    to: '/my-day/plan',
-    routes: ['/my-day/plan', '/plan-my-day', '/daily-plan-summary'],
+    // One time for the tile, Home's card and the tool (Tim, 10 Nov: they never disagree).
+    time: '~4 minutes',
+    to: '/daily-plan',
+    routes: ['/daily-plan', '/my-day/plan', '/plan-my-day', '/daily-plan-summary'],
   },
   grow: {
     name: 'Get unstuck',
@@ -108,11 +109,11 @@ export const TOOLS = {
     routes: ['/daily-journal'],
   },
   rmd: {
-    name: 'Review my day',
+    name: 'Daily review',
     line: 'Learn from today so tomorrow goes better.',
-    time: '~3 minutes',
-    to: '/my-day/review',
-    routes: ['/my-day/review', '/review-plan', '/review-summary'],
+    time: '~5 minutes',
+    to: '/daily-review',
+    routes: ['/daily-review', '/my-day/review', '/review-plan', '/review-summary'],
   },
   debrief: {
     name: 'Weekly performance debrief',
@@ -137,11 +138,12 @@ export const TOOLS = {
     routes: ['/life-balance-review'],
   },
   check: {
-    name: 'Hardware and Software check-in',
+    name: 'Monthly Hardware and Software review',
+    short: 'Monthly review',
     line: 'Check your body and mind are backing your performance.',
     time: '~3 minutes',
-    to: '/check-in',
-    routes: ['/check-in'],
+    to: '/monthly-review',
+    routes: ['/monthly-review', '/check-in'],
   },
   meet: {
     name: 'Meeting planner',
@@ -350,6 +352,49 @@ export function menuCurrent(pathname) {
   return null;
 }
 
+// Pages that aren't a hub or a tool's own page, by address (the longest
+// match wins), for the browser tab.
+const PAGE_NAMES = [
+  ['/welcome', 'Home'],
+  ['/my-account', 'My Account'],
+  ['/edit-profile', 'My Account'],
+  ['/about', 'About'],
+  ['/my-plans', 'My Plans'],
+  ['/my-reviews', 'My Reviews'],
+  ['/daily-journals', 'Journal'],
+  ['/performance-plan/build', 'Build my plan'],
+  ['/performance-plan/edit', 'Edit my plan'],
+  ['/performance-plan/history', 'Version history'],
+  ['/performance-sprint/year', 'View your year'],
+  ['/performance-sprint/debrief', 'Weekly performance debrief'],
+  ['/performance-sprint/review', 'End-of-sprint review'],
+  ['/performance-sprint/start', 'Start my sprint'],
+  ['/recovery', 'Recovery'],
+];
+
+/**
+ * The browser tab's title for a page: the page's full name, then the
+ * portal's ("Individual Performance Dashboard, The Clarity Portal"). The
+ * title on screen can be the short form (5e rule 29b: capitals only for
+ * names of up to about 3 words); the tab always has the full name.
+ */
+export const PORTAL_NAME = 'The Clarity Portal';
+export function tabTitle(pathname) {
+  const path = renamedPath(pathname.replace(/\/+$/, '') || '/');
+  let name = null;
+  const page = PAGE_NAMES.filter(([r]) => matches(path, r)).sort((x, y) => y[0].length - x[0].length)[0];
+  if (page) [, name] = page;
+  if (!name) name = Object.values(HUBS).find((h) => h.path === path)?.title || null;
+  if (!name) {
+    const tool = Object.values(TOOLS)
+      .flatMap((t) => t.routes.map((r) => [r, t.name]))
+      .filter(([r]) => matches(path, r))
+      .sort((x, y) => y[0].length - x[0].length)[0];
+    if (tool) [, name] = tool;
+  }
+  return name ? `${name}, ${PORTAL_NAME}` : PORTAL_NAME;
+}
+
 /**
  * The pin panel's groups (M3 PINGRP): every tool with a tile except the
  * plan and the sprint, which always stay at the top of Plan.
@@ -416,9 +461,27 @@ export const RENAMED = {
   '/wheel-of-life/targets': '/life-balance-review/targets',
 };
 
+/**
+ * Tools renamed on 10 Nov (Tim, 08:55 to 08:57): Plan my day is the Daily
+ * plan, Review my day the Daily review, and the Hardware and Software
+ * check-in the Monthly Hardware and Software review. Each old address
+ * goes to its new one with whatever follows it (a day, a month, a
+ * month's answers) and its query, hash and state (App.jsx MovedUnder),
+ * so saved items, pins, bookmarks and old emails still open the same thing.
+ */
+export const MOVED_UNDER = {
+  '/my-day/plan': '/daily-plan',
+  '/my-day/review': '/daily-review',
+  '/check-in': '/monthly-review',
+};
+
 /** An address after the renames (itself when it wasn't renamed). */
 export function renamedPath(path) {
-  return RENAMED[path] || MOVED[path] || path;
+  if (RENAMED[path] || MOVED[path]) return RENAMED[path] || MOVED[path];
+  for (const [from, to] of Object.entries(MOVED_UNDER)) {
+    if (path === from || path.startsWith(`${from}/`)) return `${to}${path.slice(from.length)}`;
+  }
+  return path;
 }
 
 /**

@@ -43,9 +43,9 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
   };
 
   // The rebuilt guided tools: where they were left, and their typing.
-  add('plan-my-day', 'Plan my day', '/my-day/plan', { step: `day-plan-${userId}-${today}`, draft: `day-plan:${today}` });
+  add('plan-my-day', 'Daily plan', '/daily-plan', { step: `day-plan-${userId}-${today}`, draft: `day-plan:${today}` });
   for (const day of [today, yesterday]) {
-    add(`review-my-day:${day}`, 'Review my day', day === today ? '/my-day/review' : `/my-day/review/${day}`, { step: `day-review-${userId}-${day}`, draft: `day-review:${day}` });
+    add(`review-my-day:${day}`, 'Daily review', day === today ? '/daily-review' : `/daily-review/${day}`, { step: `day-review-${userId}-${day}`, draft: `day-review:${day}` });
   }
   add('build-plan', 'Build your plan', '/performance-plan/build', { step: `performance-plan-build-${userId}` });
   add('start-sprint', 'Start a Performance Sprint', '/performance-sprint/start', { step: `performance-sprint-start-${userId}` });

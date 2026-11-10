@@ -1,4 +1,4 @@
-// Review my day's view (src/lib/performance/dayReview.js): which day a
+// Daily review's view (src/lib/performance/dayReview.js): which day a
 // review just after midnight is for, today's to-dos from the morning's
 // plan, this week's list, the numbers screen and its weekly sentence,
 // ticking a habit, the wins, the saves for the Strategies that moved and

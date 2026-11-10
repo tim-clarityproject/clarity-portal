@@ -4,7 +4,7 @@ import { PageHeader } from '../components/design';
 import pageText from '../content/pageText';
 
 const PLAN_ROWS = [
-  { title: 'Plan my day', description: 'Set your intentions and priorities.', route: '/plan-my-day' },
+  { title: 'Daily plan', description: 'Set your intentions and priorities.', route: '/plan-my-day' },
   { title: 'Meeting planner', description: "Bad meetings kill team morale. Let's get it right.", route: '/plan-meeting' },
   { title: 'Personal operating plan', description: 'Define your mission, strategies and tactics.', route: '/personal-operating-plan' },
 ];

@@ -7,12 +7,12 @@ import { findTodaysDailyPlan } from '../lib/planReview';
 import { PageHeader } from '../components/design';
 import pageText from '../content/pageText';
 
-// "Review my day" now opens the prompt 8 review page for today's daily
+// "Daily review" now opens the prompt 8 review page for today's daily
 // plan (separated from "Review a situation", which still opens the
 // existing after-action journal flow - they used to land in the same
 // place, see build summary point 6).
 const CARDS = [
-  { title: 'Review my day', description: 'Reflect on what worked today.', needsTodaysPlan: true },
+  { title: 'Daily review', description: 'Reflect on what worked today.', needsTodaysPlan: true },
   { title: 'Weekly momentum check-in', description: 'Look back on your week and set up the next.', route: '/my-journal', state: { reviewType: 'weekly-momentum' } },
   { title: 'Check in on your Wheel of Life', description: 'Rate the areas of your life and see how your wheel changes over time.', route: '/life-balance-review' },
   { title: 'Review a situation', description: 'Learn from something that has happened.', route: '/my-journal', state: { reviewType: 'after-action' } },

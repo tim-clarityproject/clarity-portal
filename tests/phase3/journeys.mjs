@@ -14,7 +14,7 @@
 //    in the panel, the Strategy of the day); the to-dos show on the sprint.
 // 2. Monday evening: Review my day (ticks, the numbers, an unplanned win,
 //    three things for tomorrow); the habit logs, the score (src/lib/scores)
-//    and Performance Evidence update.
+//    and Confidence Bank update.
 // 3. Tuesday morning: Plan my day lists last night's three things.
 // 4. Tuesday to Friday: plan and review each day, one thing for tomorrow.
 // 5. Monday 26 Oct: the Weekly performance debrief, from the sprint page;
@@ -334,7 +334,7 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
     await p.locator('textarea').first().fill(WIN);
     await p.getByRole('button', { name: 'Grow through referrals' }).click();
     await p.getByRole('button', { name: 'Add my win' }).click();
-    pass(`${tag}: the win's toast names Performance Evidence`, Boolean(await until(async () => (await page.getByText('Win added to Grow through referrals and your Performance Evidence.').count()) > 0, 10000)));
+    pass(`${tag}: the win's toast names Confidence Bank`, Boolean(await until(async () => (await page.getByText('Win added to Grow through referrals and your Confidence Bank.').count()) > 0, 10000)));
   }
   await next();
   await body().locator('textarea').first().fill('Leave time between calls.');
@@ -392,7 +392,7 @@ try {
   pass('Monday review: the ticked to-dos are done on Monday', done.length === 2 && done.every((t) => t.done_on === MONDAY), JSON.stringify(done));
   const win = (await db.from('wins').select('id, local_date').eq('user_id', me).eq('what', WIN)).data?.[0];
   const ev = win ? (await db.from('performance_evidence').select('kind, text, local_date, deleted_at').eq('win_id', win.id)).data : [];
-  pass('Monday review: the unplanned win is in Performance Evidence', ev.length === 1 && ev[0].kind === 'win' && ev[0].local_date === MONDAY && !ev[0].deleted_at, JSON.stringify(ev));
+  pass('Monday review: the unplanned win is in Confidence Bank', ev.length === 1 && ev[0].kind === 'win' && ev[0].local_date === MONDAY && !ev[0].deleted_at, JSON.stringify(ev));
   const evening = await sprintScoreMatches(MONDAY, 'Monday review');
   pass('Monday review: the score moved from the morning\'s', evening.soFar.value !== scoreMorning.value, `${scoreMorning.value} then ${evening.soFar.value}`);
   pass('Monday review: the sprint shows the win', (await page.locator('main, .ui-root').first().innerText()).includes(WIN));

@@ -7,7 +7,7 @@ import './design.css';
 // Lists are rows (Tim, 26 Oct, 16:51; CLAUDE.md rule 30): when someone
 // lists several things, each gets its own box, with "Add another" (the
 // one add button) to add a row and the 45 degree crosshair to remove
-// one, never one big box. Used by Review my day's "What are the most
+// one, never one big box. Used by Daily review's "What are the most
 // important things to do tomorrow?" (up to three).
 //
 // rows:      the typed rows (strings); at least one box always shows.

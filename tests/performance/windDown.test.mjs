@@ -12,7 +12,7 @@ import {
   windDownNight,
 } from '../../src/lib/performance/windDown.js';
 
-test('a wind-down before 04:00 counts for the night before, as Review my day', () => {
+test('a wind-down before 04:00 counts for the night before, as Daily review', () => {
   assert.equal(windDownNight({ today: '2026-10-22', hour: 0 }), '2026-10-21');
   assert.equal(windDownNight({ today: '2026-10-22', hour: 3 }), '2026-10-21');
   assert.equal(windDownNight({ today: '2026-10-22', hour: 4 }), '2026-10-22');
@@ -50,8 +50,8 @@ test('Carried over: review first, then the thoughts, duplicates merged into the 
 });
 
 test('the source line says where each came from', () => {
-  assert.equal(carriedSource({ review: true, windDown: false }, '2026-10-20', '2026-10-21'), 'From Review my day');
+  assert.equal(carriedSource({ review: true, windDown: false }, '2026-10-20', '2026-10-21'), 'From Daily review');
   assert.equal(carriedSource({ review: false, windDown: true }, null, '2026-10-21'), 'From last night’s sleep wind down');
-  assert.equal(carriedSource({ review: true, windDown: true }, '2026-10-20', '2026-10-21'), 'From Review my day and last night’s sleep wind down');
-  assert.equal(carriedSource({ review: true, windDown: false }, '2026-10-16', '2026-10-19'), 'From Review my day on Friday');
+  assert.equal(carriedSource({ review: true, windDown: true }, '2026-10-20', '2026-10-21'), 'From Daily review and last night’s sleep wind down');
+  assert.equal(carriedSource({ review: true, windDown: false }, '2026-10-16', '2026-10-19'), 'From Daily review on Friday');
 });

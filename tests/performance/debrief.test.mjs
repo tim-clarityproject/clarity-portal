@@ -196,11 +196,11 @@ test('objectives: "last week" is the figure before this debrief\'s own (M9, CHOI
   assert.equal(v.figureDay, '2026-10-11');
 });
 
-test('your days: the week\'s Review my day entries with something written', () => {
+test('your days: the week\'s Daily review entries with something written', () => {
   const v = debriefView(m51(), { today: '2026-10-12' });
   assert.deepEqual(v.yourDays, [{ key: '2026-10-06', title: 'Tue 6 Oct', wentWell: 'The Harbour call landed.', differently: 'Leave ten minutes between calls.', moved: ['Grow through referrals, High'] }]);
-  assert.equal(yourDaysLine(1), '1 Review my day entry this week');
-  assert.equal(yourDaysLine(7), '7 Review my day entries this week');
+  assert.equal(yourDaysLine(1), '1 Daily review this week');
+  assert.equal(yourDaysLine(7), '7 Daily reviews this week');
 });
 
 test('next week: open to-dos roll over, next week\'s are listed; none in the last week', () => {

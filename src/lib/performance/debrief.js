@@ -260,7 +260,7 @@ export function debriefView(d, { today }) {
 
   const todos = sprintTodos(d, calendar, number, today);
 
-  // Your days (M1 "Your days"): the week's Review my day entries.
+  // Your days (M1 "Your days"): the week's Daily review entries.
   const reviewLevel = new Map();
   for (const x of d.reviewStrategies || []) {
     if (!reviewLevel.has(x.day_review_id)) reviewLevel.set(x.day_review_id, []);
@@ -383,7 +383,7 @@ export function shareLine(coach, shared) {
     : 'Only you can see this debrief.';
 }
 
-/** "7 Review my day entries this week" (a label: no full stop). */
+/** "7 Daily reviews this week" (a label: no full stop). */
 export function yourDaysLine(n) {
-  return `${n} Review my day ${n === 1 ? 'entry' : 'entries'} this week`;
+  return `${n} Daily ${n === 1 ? 'review' : 'reviews'} this week`;
 }

@@ -27,7 +27,7 @@ export function NightDemo() {
         <EndScreen
           kind="night"
           title="Sleep well"
-          lines={['Your thoughts are saved for the morning.', 'Plan my day will have them ready.']}
+          lines={['Your thoughts are saved for the morning.', 'Daily plan will have them ready.']}
           action={<Button variant="outline" onClick={() => toast.show('Home opens here.')}>Back to Home</Button>}
         />
       </NightScope>
@@ -49,9 +49,9 @@ export function WorkDoneDemo() {
 }
 
 const CARRIED = [
-  { value: 'c0', label: 'Call Evan before 09:00 about the referral', tags: ['From Review my day and last night’s sleep wind down'], group: 'carried' },
-  { value: 'c1', label: 'Finish the Harbour case study', tags: ['From Review my day and last night’s sleep wind down'], group: 'carried' },
-  { value: 'c2', label: 'Reply to Max about the workshop', tags: ['From Review my day'], group: 'carried' },
+  { value: 'c0', label: 'Call Evan before 09:00 about the referral', tags: ['From Daily review and last night’s sleep wind down'], group: 'carried' },
+  { value: 'c1', label: 'Finish the Harbour case study', tags: ['From Daily review and last night’s sleep wind down'], group: 'carried' },
+  { value: 'c2', label: 'Reply to Max about the workshop', tags: ['From Daily review'], group: 'carried' },
   { value: 'c3', label: 'Book a day off for the half term', tags: ['From last night’s sleep wind down'], group: 'carried' },
   { value: 'w0', label: 'Send the Harbour proposal by 12:00', detail: 'Grow through referrals', tags: ['To-do this week'], group: 'week' },
   { value: 'w1', label: 'Check-in message to a past client', detail: 'Grow through referrals', tags: ['Habit, 3 of 5 this week'], group: 'week' },

@@ -8,7 +8,7 @@ import { IMPACT_OPTIONS, helpQuestion, moveQuestion } from './impact';
 import './design.css';
 
 // The add panels (M1 sheetPanel 'todo' and 'win'; reused in Phase 3 by
-// the weekly debrief and Plan my day). They keep one order (Tim, 23 Oct):
+// the weekly debrief and Daily plan). They keep one order (Tim, 23 Oct):
 // what it is, which Strategy, how much, then when, last. The page holds
 // the form (so a draft survives a refresh) and does the saving.
 //
@@ -29,7 +29,7 @@ function Footer({ onCancel, onAdd, ready, label }) {
   );
 }
 
-// todayNote: Plan my day's mode (M5 todoPanel): no "Which week?" (it goes
+// todayNote: Daily plan's mode (M5 todoPanel): no "Which week?" (it goes
 // into today and this week), and this line instead ("It’s added to today
 // and to this week’s sprint.").
 export function AddTodoPanel({ open, onClose, form, onFormChange, strategies, weeks, onAdd, todayNote }) {
@@ -77,7 +77,7 @@ export function AddWinPanel({ open, onClose, form, onFormChange, strategies, day
       <div className="ds-panel-form">
         <div className="ds-panel-lead">
           <p>Something you did that wasn’t in your plan but moved the needle.</p>
-          <p>It counts as done and is saved to your Performance Evidence.</p>
+          <p>It counts as done and is saved to your Confidence Bank.</p>
         </div>
         <TextBox ref={box} label="What did you do?" who="me" value={form.text} onChange={(text) => set({ text })} placeholder="e.g. Ran a workshop that led to two referrals" maxLength={TEXT_LIMIT} />
         <MultiChoice label="Which Strategies did it help?" hint="Pick all that apply." options={strategies} values={form.strategyIds} onChange={(strategyIds) => set({ strategyIds })} />

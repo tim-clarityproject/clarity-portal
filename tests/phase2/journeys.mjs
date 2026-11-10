@@ -655,7 +655,7 @@ try {
   pass('wins: two saved for today, each linked to its Strategy', wins.length === 2 && wins.every((w) => w.local_date === today)
     && links.some((l) => l.win_id === wins.find((w) => w.what === W1)?.id && l.strategy_id === sid(S1))
     && links.some((l) => l.win_id === wins.find((w) => w.what === W2)?.id && l.strategy_id === sid(S2)), JSON.stringify({ wins, links }));
-  pass('wins: both in Performance Evidence', evidence.filter((e) => e.kind === 'win').length === 2, JSON.stringify(evidence));
+  pass('wins: both in Confidence Bank', evidence.filter((e) => e.kind === 'win').length === 2, JSON.stringify(evidence));
   pass('wins: listed with the to-dos, tagged and with the Strategy', (await todoRow(W1).textContent()).includes('Unplanned win') && (await todoRow(W1).textContent()).includes(S1));
   const rowsNow = await sprintRows();
   const so = sprintWeekSoFar(rowsNow, today).result.strategies;

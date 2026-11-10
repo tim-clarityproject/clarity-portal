@@ -33,7 +33,7 @@ Each claim has where it shows in the portal, its strength, its sources (Part C) 
 | C4 | Goals you pursue for your own reasons get more sustained effort and are reached more often than goals driven by pressure. | Goal check, Find my sweet spot | Moderate | R4, R5 | Longitudinal studies, much of it with students; motivation measured by self-report. |
 | C5 | People perform and persist better when they feel ownership, growing competence and connection. | How it works, organisation pitch ("agree the what, own the how") | Moderate | R5 | Mostly surveys at work, so the links are associations; the portal applies the theory, not tests it. |
 | C9 | New habits take weeks to months to become automatic, and missing a day now and then doesn't undo them. | Sprint length, kind streaks, How it works | Early | R9 | Few studies measured time to a habit, many at high risk of bias; the time varied from days to most of a year. Never say "66 days" as a rule. |
-| C10 | Seeing progress, even small wins, keeps motivation up. | Small-win ticks, unplanned wins, Performance Evidence | Early | R10 | Based on diary studies of knowledge workers, not trials. |
+| C10 | Seeing progress, even small wins, keeps motivation up. | Small-win ticks, unplanned wins, Confidence Bank | Early | R10 | Based on diary studies of knowledge workers, not trials. |
 
 ### Reviewing and learning
 | ID | Claim | Where it shows | Strength | Sources | Caveat |
@@ -128,7 +128,7 @@ Strength is the strength of the evidence behind the tool's main idea, not proof 
 | Above or below the line | Ownership and responsibility model from leadership practice | C36 | Our model | Flag |
 | After-action review | Structured debriefs (from US Army practice) | C6, C41 | Strong | |
 | Life balance review | The wheel of life, a coaching practice tool | C29 | Our model | Flag |
-| Performance Evidence | Recalling progress and past successes | C10 | Early | Flag |
+| Confidence Bank | Recalling progress and past successes | C10 | Early | Flag |
 | Travel and jet lag plan | Circadian science: timed light, shifting sleep before travel | C18 | Moderate (light shifts the body clock); early (full travel plans) | |
 | Time audit and Delegation audit | Practitioner tools | C44 | Our model | Flag |
 | Meeting planner | Clear outcomes and agendas; debriefs after | C2, C6 | Moderate | |

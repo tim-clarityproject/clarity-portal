@@ -57,7 +57,7 @@ import {
 } from '../../lib/performance';
 import './performance.css';
 
-// Plan my day (mock-up M5, version 19, approved by Tim on 23 Oct; read in
+// Daily plan (mock-up M5, version 19, approved by Tim on 23 Oct; read in
 // full with its notes). One guided tool, one question per screen on phone
 // and desktop, with the % complete bar (the approved rule over M5's step
 // list), "~4 minutes" on the first screen and the eye on every answer:
@@ -67,7 +67,7 @@ import './performance.css';
 //   Gratitude  "What’s one thing you’re grateful for today?"
 //   Be         "How do you want to be today?" own words, recent ones, three suggestions
 //   Do         "What will you do today?" up to three, from one Carried
-//              over list (M19: Review my day's things for tomorrow, then
+//              over list (M19: Daily review's things for tomorrow, then
 //              last night's sleep wind down thoughts, each with where it
 //              came from), then This week's to-dos and weekly habits; last
 //              night's note; Add a to-do
@@ -124,7 +124,7 @@ function Shell({ children }) {
     <div className="ui-root">
       <DesignHeader />
       <div className="plan-page ipp-page">
-        <PageHeader title="Plan my day" />
+        <PageHeader title="Daily plan" />
         {children}
         <div className="ds-actions ipp-actions">
           <Button onClick={() => navigate('/performance-sprint')}>Open my sprint</Button>
@@ -363,7 +363,7 @@ function PlanFlow({ userId, date, today, loaded }) {
   };
 
   // A thing carried over becomes a to-do only when chosen (decisions 23
-  // Oct, 12:58), on this week of the sprint. From Review my day it keeps
+  // Oct, 12:58), on this week of the sprint. From Daily review it keeps
   // that review as its source; a wind-down thought alone is from the sleep
   // wind down once 039 has added that source, from another tool before.
   const todoFromNight = async (option) => {
@@ -484,7 +484,6 @@ function PlanFlow({ userId, date, today, loaded }) {
     {
       key: 'sleep',
       name: 'Sleep',
-      label: '~4 minutes',
       question: 'How did you sleep last night?',
       render: () => (
         <div className="day-narrow">
@@ -598,7 +597,7 @@ function PlanFlow({ userId, date, today, loaded }) {
       name: 'Priority',
       eye: screenEye,
       question: 'Which one is your highest priority?',
-      nudges: ['It comes first on Home and in Review my day.'],
+      nudges: ['It comes first on Home and in your Daily review.'],
       oneTap: view.picks.length > 0,
       render: (tool) => (view.picks.length ? (
         <div className="day-narrow">
@@ -623,7 +622,7 @@ function PlanFlow({ userId, date, today, loaded }) {
       key: 'strategy',
       name: 'Strategy',
       question: 'Which Strategies does today serve most?',
-      nudges: ['One is best, so the day has a clear focus.', 'You can choose two if you need to.', 'Review my day will ask how they moved tonight.'],
+      nudges: ['One is best, so the day has a clear focus.', 'You can choose two if you need to.', 'Your Daily review will ask how they moved tonight.'],
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
         <MultiChoice
@@ -727,14 +726,14 @@ function PlanFlow({ userId, date, today, loaded }) {
     return (
       <div className="ui-root plan-builder-wait">
         <GuidedTool
-          name="Plan my day"
+          name="Daily plan"
           steps={[{
             key: 'paused',
             name: 'Paused',
             plain: true,
             render: (tool) => (
               <PausedGate
-                toolName="Plan my day"
+                toolName="Daily plan" anywayLabel="Start my daily plan anyway"
                 headingRef={tool.headingRef}
                 onBack={() => navigate(location.state?.from || '/recovery/today', { replace: true })}
                 onAnyway={() => setAnyway(true)}
@@ -750,7 +749,7 @@ function PlanFlow({ userId, date, today, loaded }) {
   return (
     <div className="ui-root plan-builder-wait">
       <GuidedTool
-        name={date === today ? 'Plan my day' : `Plan my day, ${dayName(date, today)}`}
+        name={date === today ? 'Daily plan' : `Daily plan, ${dayName(date, today)}`}
         steps={steps}
         progress="percent"
         skipLabel="Skip"

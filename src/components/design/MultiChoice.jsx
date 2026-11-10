@@ -12,11 +12,11 @@ import './design.css';
 // max: the most that can be chosen (M5: two Strategies of the day, three
 //      things to do today). Once it is reached the others grey out until
 //      one is unchosen (Tim, 23 Oct).
-// variant 'pick': the Do list in Plan my day (M5 .pk): each row has a
+// variant 'pick': the Do list in Daily plan (M5 .pk): each row has a
 //      second line (the option's `detail`, then its `tags` as separate
 //      grey words, never joined by dots) and a circle at the end that
 //      fills with a tick once chosen, so every row has the same layout.
-// groups: named groups of rows (M19, Plan my day's "Carried over" then
+// groups: named groups of rows (M19, Daily plan's "Carried over" then
 //      "This week"): [{ key, title }], each option naming its `group`.
 //      An empty group is left out with its heading. The rows stay one
 //      list for the limit, and for screen readers each group is named.

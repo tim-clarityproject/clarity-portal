@@ -7,7 +7,7 @@ import { tableReady } from './tableReady';
 // can be tagged to a strategy in one tap", shown under the Strategy as
 // "Work this sprint"). Stored in tool_work_strategies (migration 038, Tim
 // 29 Oct): one row per item and Strategy, the item being a decisions row
-// (decision tools, Plan my day's old tool, meeting plans) or a
+// (decision tools, Daily plan's old tool, meeting plans) or a
 // journal_entries row (after-action and weekly reviews), with the sprint
 // and week it was done in.
 //
@@ -15,7 +15,7 @@ import { tableReady } from './tableReady';
 // moved across once the table is there.
 //
 // Nothing in the app tags work yet. Where Phase 3 will use these:
-//   Step 1 (Plan my day) and Step 2 (Review my day): "Which Strategy did
+//   Step 1 (Daily plan) and Step 2 (Daily review): "Which Strategy did
 //     this serve?" on a finished tool's summary calls linkToolWork.
 //   Step 3 (the weekly debrief): "Your work this week" reads
 //     loadToolWork({ sprintId, week }).

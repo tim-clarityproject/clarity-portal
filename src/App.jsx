@@ -96,7 +96,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import LegalDocumentPage from './pages/legal/LegalDocumentPage';
 import ScrollToTop from './components/ScrollToTop';
 import HubPage from './pages/hubs/HubPage';
-import { MOVED } from './lib/navigation';
+import { MOVED, MOVED_UNDER, tabTitle } from './lib/navigation';
 import { loadWithReload } from './lib/loadWithReload';
 
 // Strategic Alignment Health Check: a standalone page for people with no
@@ -135,6 +135,18 @@ function MyJournalRoute() {
   return <MyJournal />;
 }
 
+// The browser tab names the page someone is on, by its full name
+// (navigation.js tabTitle): "Individual Performance Dashboard, The
+// Clarity Portal". The outside Health Check sets its own.
+function TabTitle() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (/^\/health-check(\/|$)/.test(pathname)) return;
+    document.title = tabTitle(pathname);
+  }, [pathname]);
+  return null;
+}
+
 // An old address moved to a new one (Phase 4): the query, the hash and
 // any state go with it, so nothing that relied on them is lost.
 function MovedTo({ to }) {
@@ -142,16 +154,24 @@ function MovedTo({ to }) {
   return <Navigate to={{ pathname: to, search: location.search, hash: location.hash }} state={location.state} replace />;
 }
 
+// An old address that carries something after it (a day, a month): the
+// rest of the address goes with it too (the renames of 10 Nov).
+function MovedUnder({ from, to }) {
+  const location = useLocation();
+  const rest = location.pathname.slice(from.length).replace(/\/+$/, '');
+  return <Navigate to={{ pathname: `${to}${rest}`, search: location.search, hash: location.hash }} state={location.state} replace />;
+}
+
 // Two old addresses that meant two things (Phase 4, step 5). /plan-my-day
-// started the old Plan my day, and still finishes an old saved day plan
-// (state.decisionId); with no saved plan it opens the new Plan my day.
-// /review-plan was the old Review my day and still reviews a saved plan
+// started the old Daily plan, and still finishes an old saved day plan
+// (state.decisionId); with no saved plan it opens the new Daily plan.
+// /review-plan was the old Daily review and still reviews a saved plan
 // (a meeting plan, a Pressure plan, a Pre-mortem, feedback or an old day
-// plan, in state.plan); with no plan it opens the new Review my day.
+// plan, in state.plan); with no plan it opens the new Daily review.
 function PlanMyDayRoute() {
   const location = useLocation();
   if (!location.state?.decisionId) {
-    return <Navigate to={{ pathname: '/my-day/plan', search: location.search, hash: location.hash }} replace />;
+    return <Navigate to={{ pathname: '/daily-plan', search: location.search, hash: location.hash }} replace />;
   }
   return <PlanMyDayStep1 />;
 }
@@ -159,7 +179,7 @@ function PlanMyDayRoute() {
 function ReviewPlanRoute() {
   const location = useLocation();
   if (!location.state?.plan) {
-    return <Navigate to={{ pathname: '/my-day/review', search: location.search, hash: location.hash }} replace />;
+    return <Navigate to={{ pathname: '/daily-review', search: location.search, hash: location.hash }} replace />;
   }
   return <ReviewPlan />;
 }
@@ -297,6 +317,7 @@ function AppContent() {
 
   return (
     <>
+      <TabTitle />
       <ScrollToTop />
       <ErrorBoundary>
         <Routes>
@@ -394,15 +415,19 @@ function AppContent() {
           <Route path="/performance-sprint/year" element={<SprintYear />} />
           <Route path="/performance-sprint/debrief" element={<WeeklyDebrief />} />
           <Route path="/performance-sprint/debrief/:sprintId/:week" element={<WeeklyDebrief />} />
-          <Route path="/my-day/plan" element={<PlanMyDay />} />
-          <Route path="/my-day/plan/:date" element={<PlanMyDay />} />
-          <Route path="/my-day/review" element={<ReviewMyDay />} />
-          <Route path="/my-day/review/:date" element={<ReviewMyDay />} />
+          <Route path="/daily-plan" element={<PlanMyDay />} />
+          <Route path="/daily-plan/:date" element={<PlanMyDay />} />
+          <Route path="/daily-review" element={<ReviewMyDay />} />
+          <Route path="/daily-review/:date" element={<ReviewMyDay />} />
+          {/* The old addresses (before 10 Nov), with whatever follows them. */}
+          {Object.entries(MOVED_UNDER).map(([from, to]) => (
+            <Route key={from} path={`${from}/*`} element={<MovedUnder from={from} to={to} />} />
+          ))}
           <Route path="/sleep-wind-down" element={<SleepWindDown />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/check-in" element={<CheckIn />} />
-          <Route path="/check-in/:month" element={<CheckIn />} />
-          <Route path="/check-in/:month/answers" element={<CheckIn />} />
+          <Route path="/monthly-review" element={<CheckIn />} />
+          <Route path="/monthly-review/:month" element={<CheckIn />} />
+          <Route path="/monthly-review/:month/answers" element={<CheckIn />} />
           <Route path="/personal-operating-plan-archived/:missionId" element={<PersonalOperatingPlanArchivedOne />} />
           <Route path="/mission-progress-review" element={<MissionProgressReviewDetail />} />
           <Route path="/my-account" element={<MyAccount />} />

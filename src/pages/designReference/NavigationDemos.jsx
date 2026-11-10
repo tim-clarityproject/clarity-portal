@@ -42,7 +42,7 @@ const PINS = [
 ];
 
 const PIN_GROUPS = [
-  { title: 'Plan', tools: [{ key: 'pmd', name: 'Plan my day' }, { key: 'grow', name: 'Get unstuck' }, { key: 'inv', name: 'Pre-mortem' }, { key: 'time', name: 'Time audit' }] },
+  { title: 'Plan', tools: [{ key: 'pmd', name: 'Daily plan' }, { key: 'grow', name: 'Get unstuck' }, { key: 'inv', name: 'Pre-mortem' }, { key: 'time', name: 'Time audit' }] },
   { title: 'Reset', tools: [{ key: 'breathe', name: 'Breathe' }, { key: 'wind', name: 'Sleep wind down' }, { key: 'pp', name: 'Pressure plan' }, { key: 'journal', name: 'Journal' }] },
   { title: 'Interpersonal', tools: [{ key: 'meet', name: 'Meeting planner' }, { key: 'fb', name: 'Give difficult feedback' }] },
 ];
@@ -108,7 +108,7 @@ export function HubTilesDemo() {
         <HubTile big name="Reset" line="Get back to your best when the pressure is on." time="3 tools" href="#reset" onClick={go('Reset')} />
       </HubGrid>
       <HubGroup title="Decide">
-        <HubTile name="Plan my day" line="Choose what matters most today." time="~3 minutes" live="Done today" good href="#pmd" onClick={go('Plan my day')} />
+        <HubTile name="Daily plan" line="Choose what matters most today." time="~3 minutes" live="Done today" good href="#pmd" onClick={go('Daily plan')} />
         <HubTile name="Pre-mortem" line="Test a plan by imagining it went wrong." time="~10 minutes" live="Draft saved" href="#inv" onClick={go('Pre-mortem')} />
       </HubGroup>
       <HubAnchor>
@@ -153,7 +153,7 @@ export function SavedItemsDemo() {
       <HubRecent
         title="My Plans"
         items={[
-          { key: 'a', title: 'Today’s plan', type: 'Plan my day', date: 'Today', onClick: open('today’s plan') },
+          { key: 'a', title: 'Today’s plan', type: 'Daily plan', date: 'Today', onClick: open('today’s plan') },
           { key: 'b', title: 'Referral pipeline', type: 'Get unstuck', date: 'Mon 19 Oct', onClick: open('Referral pipeline') },
           { key: 'c', title: 'Harbour proposal', type: 'Pre-mortem', date: 'Wed 14 Oct', onClick: open('Harbour proposal') },
         ]}

@@ -52,19 +52,19 @@ export function RecoveryLinks({ links, className = '' }) {
 
 /**
  * A paused tool is a gate (Tim, 5 Nov, 11:09: the most important fact
- * leads). In Recovery, Plan my day and Review my day open on this one calm
+ * leads). In Recovery, Daily plan and Daily review open on this one calm
  * screen only: what's true, the one button back to recovery, and a quiet
  * link to go on anyway. No questions, % bar or minutes behind it until
  * they choose to go on. GuidedTool passes headingRef for focus.
  */
-export function PausedGate({ toolName, onBack, onAnyway, headingRef }) {
+export function PausedGate({ toolName, anywayLabel, onBack, onAnyway, headingRef }) {
   return (
     <div className="ds-paused">
       <h2 ref={headingRef} tabIndex={-1} className="ds-paused-title">Your daily tools are paused while you recharge.</h2>
       <p className="ds-paused-line">Nothing here counts against you.</p>
       <div className="ds-paused-actions">
         <Button variant="primary" onClick={onBack}>Back to recovery</Button>
-        <Button variant="text" onClick={onAnyway}>{`${toolName} anyway`}</Button>
+        <Button variant="text" onClick={onAnyway}>{anywayLabel || `${toolName} anyway`}</Button>
       </div>
     </div>
   );

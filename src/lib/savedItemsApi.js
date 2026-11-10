@@ -109,7 +109,7 @@ export async function loadSavedReviews(userId) {
     part('sprint reviews', () => loadSprintReviews(userId)),
     // The Hardware and Software check-in (029's checkins; Phase 5). The
     // "checkins" above are the Life balance review's, an older name.
-    part('Hardware and Software check-ins', () => rows(supabase.from('checkins')
+    part('Monthly Hardware and Software reviews', () => rows(supabase.from('checkins')
       .select('id, kind, month, status, finished_at, updated_at').eq('user_id', userId))),
   ]);
   // The device's own sprint reviews don't count: offline, the list keeps

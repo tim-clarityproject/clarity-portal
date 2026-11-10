@@ -277,7 +277,7 @@ await put('todos', [
   { strategy_id: S[2], text: 'Draft the Harbour case study', impact: 3, planned_week: 4, created_on: day(startOn, 16) },
   { strategy_id: S[3], text: 'Shortlist breathing sound loops', impact: 1, planned_week: 4, created_on: day(startOn, 18) },
   { strategy_id: S[2], text: 'Update my LinkedIn profile', impact: 1, planned_week: 5, created_on: day(startOn, 18) },
-  { strategy_id: S[3], text: 'Test the new Plan my day with two clients', impact: 2, planned_week: 6, created_on: day(startOn, 18) },
+  { strategy_id: S[3], text: 'Test the new Daily plan with two clients', impact: 2, planned_week: 6, created_on: day(startOn, 18) },
   { strategy_id: S[1], text: 'Book a supervision session', impact: 2, planned_week: 7, created_on: day(startOn, 18) },
   { strategy_id: S[1], text: 'Renew supervision contract', impact: 2, planned_week: 2, created_on: day(startOn, 3), done_on: day(startOn, 9) },
 ].map((t) => ({ ...t, id: randomUUID(), user_id: me, sprint_id: sprintId, source: 'manual' })));

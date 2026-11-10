@@ -126,7 +126,7 @@ In plain words: something you did that wasn't in the plan but moved things forwa
 
 - A win counts as a done item (100%) in **every** Strategy picked, at the one impact level chosen for the whole win (Tim, 23 Oct, 13:52).
 - It lifts a Strategy's score but can never take it above 100%, because it is an item in the same weighted average (M4).
-- Every win is also saved to Performance Evidence and listed under Unplanned wins on the dashboard.
+- Every win is also saved to Confidence Bank and listed under Unplanned wins on the dashboard.
 - Known limit: a week full of wins and few planned items will score highly. That is intended (the work happened), and the dashboard shows wins separately so it stays visible.
 
 ---

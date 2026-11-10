@@ -82,7 +82,7 @@ import './performance.css';
 //   Objectives  "Where are your Outcome Objectives now?" a figure for each
 //               number or rating (M9, objective_figures), Mark as done for
 //               a milestone
-//   Went well   with "Your days" (the week's Review my day entries) folded
+//   Went well   with "Your days" (the week's Daily review entries) folded
 //   In the way, Adjust
 //   Next week   the open to-dos that roll over and next week's, Add a to-do
 //               (into the sprint, next week chosen)
@@ -501,7 +501,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
     setPanel(null);
     setWinForm(emptyWin(form.day));
     clearWinDraft();
-    // The database saves every win to Performance Evidence too (wins_to_evidence).
+    // The database saves every win to Confidence Bank too (wins_to_evidence).
     const ok = await sent(() => saveWin(userId, { id, what: row.what, date: row.local_date, impact: row.impact, strategyIds }));
     if (!ok) {
       setData((d) => ({ ...d, wins: (d.wins || []).filter((w) => w.id !== id) }));
@@ -511,7 +511,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
     }
     const names = view.strategies.filter((s) => strategyIds.includes(s.value));
     toast.saved({
-      message: `Win added to ${names.length === 1 ? names[0].label : `${names.length} Strategies`} and your Performance Evidence.`,
+      message: `Win added to ${names.length === 1 ? names[0].label : `${names.length} Strategies`} and your Confidence Bank.`,
       onUndo: () => {
         setData((d) => ({ ...d, wins: (d.wins || []).filter((w) => w.id !== id) }));
         sent(() => setWinDeleted(userId, id, new Date().toISOString()));
@@ -646,7 +646,6 @@ function DebriefFlow({ userId, today, loaded, view }) {
     {
       key: 'numbers',
       name: 'Numbers',
-      label: '~5 minutes',
       question: `How did week ${week} go?`,
       // Writing rule 5 over M1's "Fill in any day you missed".
       nudges: ['Let’s start with your numbers.', 'Fill in any day you didn’t log, or leave it empty.'],

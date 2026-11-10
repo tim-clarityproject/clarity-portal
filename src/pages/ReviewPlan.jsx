@@ -17,7 +17,7 @@ const RQ = [
 ];
 
 const TY = {
-  daily_plan: { h: 'Review my day', sub: 'Reflect on what worked today.', panel: 'Your intentions for the day', summaryRoute: '/daily-plan-summary' },
+  daily_plan: { h: 'Daily review', sub: 'Reflect on what worked today.', panel: 'Your intentions for the day', summaryRoute: '/daily-plan-summary' },
   plan_meeting: { h: 'Review this meeting', sub: 'Reflect on what worked in this meeting.', panel: 'Your meeting plan', summaryRoute: '/meeting-summary' },
   if_then_planning: { h: 'Review this plan', sub: 'Reflect on what worked and what to change.', panel: 'Your plan', summaryRoute: '/pressure-plan/summary' },
   inversion: { h: 'Review this plan', sub: 'Reflect on what worked and what to change.', panel: 'Your plan', summaryRoute: '/pre-mortem/summary' },
@@ -291,8 +291,8 @@ export default function ReviewPlan() {
             {!plan && planKind === 'daily_plan' ? (
               <div className="rp-no-plan">
                 <span>There is no daily plan for this day. You can still review it.</span>
-                <Button type="button" variant="text" onClick={() => navigate('/my-day/plan')}>
-                  Plan my day
+                <Button type="button" variant="text" onClick={() => navigate('/daily-plan')}>
+                  Start my daily plan
                 </Button>
               </div>
             ) : (

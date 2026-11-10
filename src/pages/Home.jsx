@@ -85,7 +85,7 @@ import './performance/performance.css';
 // Logging and to-dos are the sprint page's own (sprintActions.js and the
 // sprint's copy on the device), so a change on one shows on the other at
 // once, offline too, through the same offline queue and version check.
-// Log today, Plan my day, Review my day and Add a to-do are never more
+// Log today, Daily plan, Daily review and Add a to-do are never more
 // than two taps from Home (experience rule 21). In Recovery, Home shrinks
 // to the basics (M15). A first visit after a gap of 7 days says "Good to
 // see you." (experience rule 18); the first day back from a Recovery says
@@ -221,8 +221,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   });
   const person = homePerson({ sprintView: view, recovery, steps });
   const running = view?.state === 'running';
-  // What's been done today, from the database or, sooner, from Plan my day's
-  // and Review my day's own copies on this device (finished a moment ago,
+  // What's been done today, from the database or, sooner, from Daily plan's
+  // and Daily review's own copies on this device (finished a moment ago,
   // offline too).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const local = useMemo(() => ({
@@ -255,7 +255,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     // Anything timed takes its turn on the one card (Tim, 5 Nov).
     checkin: person !== 'new' ? checkin : null,
     tomorrow: tomorrowList,
-    reviewTo: reviewed ? '/my-day/review' : `/my-day/review/${addDayKey(today, -1)}`,
+    reviewTo: reviewed ? '/daily-review' : `/daily-review/${addDayKey(today, -1)}`,
   });
   const joined = user?.created_at ? Math.floor((now - parseDbTimestamp(user.created_at)) / 86400000) : 0;
   const quiet = quietLines({ person, hasCoach: Boolean(coach), mission: day.plan?.mission, joinedDaysAgo: joined, dismissed: notNow });
@@ -270,7 +270,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const dayDone = state === 'reviewed' && person !== 'recovery' && person !== 'new';
   const title = welcomeBack ? named('Welcome back') : comingBack ? named('Good to see you') : dayDone ? named('Your day’s done') : named(homeGreeting(hour));
 
-  // Today's to-dos: the day's picks from Plan my day, highest priority first
+  // Today's to-dos: the day's picks from Daily plan, highest priority first
   // (the habits and order as kept on the device; dayPlanHabits.js).
   // Read again when another device's choices arrive (fresh).
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -448,8 +448,8 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           <div className="home-links">
             {/* Planning after reviewing isn't offered for the same day, and
                 the done card has "Change my review" (Tim, 5 Nov). */}
-            {card?.key !== 'plan' && !dayDone && <Button variant="text" onClick={() => go('/my-day/plan')}>Plan my day</Button>}
-            {card?.key !== 'review' && card?.key !== 'done' && <Button variant="text" onClick={() => go('/my-day/review')}>Review my day</Button>}
+            {card?.key !== 'plan' && !dayDone && <Button variant="text" onClick={() => go('/daily-plan')}>Daily plan</Button>}
+            {card?.key !== 'review' && card?.key !== 'done' && <Button variant="text" onClick={() => go('/daily-review')}>Daily review</Button>}
           </div>
           {running && (
             <AddButton className="home-add" onClick={() => { setTodoForm((f) => (f.text ? f : emptyTodo(view.current))); setPanel('todo'); }}>
