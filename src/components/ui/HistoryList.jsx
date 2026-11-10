@@ -553,6 +553,9 @@ const HLIST_CSS = `
   .ui-root .hlist-row {
     flex-wrap: wrap;
     align-items: flex-start;
+    /* The 16px gap is for the laptop's side-by-side layout: stacked, it
+       left about 40px above the action's words (Tim, 10 Nov). */
+    row-gap: 0;
   }
   .ui-root .hlist-row-main {
     flex: 1 1 100%;

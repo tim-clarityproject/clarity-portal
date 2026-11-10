@@ -295,3 +295,5 @@ node --import ./tests/scores/register.mjs scripts/seed-test-plan.mjs --second --
 It never touches Sam's plan. To see it on the preview, sign out, sign in as the organisation test client, and open the Dashboard.
 
 `--reset` (for either person) also clears rows earlier test runs left behind: the draft meeting plans named "Phase 0e check …" and any "Not tonight" evenings saved to the account.
+
+Every seed of Sam (the test client) also puts back Sam's saved settings: two pinned tools (Daily plan and the Weekly performance debrief) and a sleep target range of 7 to 9 hours. The second person, Jordan, keeps the starting settings.

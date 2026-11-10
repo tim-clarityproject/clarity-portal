@@ -73,6 +73,11 @@ const PAGES = [
   ['my-plans', '/my-plans'],
   ['my-reviews', '/my-reviews'],
   ['my-account', '/my-account'],
+  // The end-of-sprint review's two written questions and the first-time
+  // builder's working days (Tim, 10 Nov): opened on their step, nothing saved.
+  ['sprint-review-worked', '/performance-sprint/review', 'review:1'],
+  ['sprint-review-next-time', '/performance-sprint/review', 'review:2'],
+  ['build-working-days', '/performance-plan/build', 'build:4'],
 ].filter(([name]) => !ONLY || ONLY.test(name));
 
 const BACKGROUND = { dark: 'rgb(0, 0, 0)', light: 'rgb(249, 248, 245)' };
@@ -209,8 +214,14 @@ for (const width of [1280, 390]) {
       if (/resend\.com|sendgrid|mailgun|postmarkapp|smtp/i.test(url)) return route.abort();
       if (/supabase\.co/.test(url) && !url.includes(TEST_HOST)) return route.abort();
       if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
+      // The first-time builder needs a person with no plan: every read is
+      // answered empty for that page only (nothing in the database is touched).
+      if (emptyReads && route.request().method() === 'GET' && /\/rest\/v1\/(?!person_settings|profiles)/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      if (emptyReads && /\/rest\/v1\/rpc\//.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      if (emptyReads && route.request().method() !== 'GET' && /\/rest\/v1\//.test(url)) return route.abort();
       return route.fallback();
     });
+    let emptyReads = false;
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -225,7 +236,31 @@ for (const width of [1280, 390]) {
       const tag = `${name} ${width}px ${mode}`;
       errors.length = 0;
       try {
+        // A guided tool opened on one step: its saved place is set first.
+        const [kind, at] = /^(review|build):\d+$/.test(act || '') ? act.split(':') : [];
+        emptyReads = kind === 'build';
+        if (kind) {
+          // The person's page copies carry their id: wait until one is on the device.
+          await page.waitForFunction(() => Object.keys(localStorage).some((x) => /^clarity-[a-z-]+:[0-9a-f-]{36}(:|$)/.test(x)), null, { timeout: 15000 });
+          await page.evaluate(({ kind: k, at: n }) => {
+            // The person's id, from any of their page copies on the device.
+            const uid = Object.keys(localStorage).map((x) => /^clarity-[a-z-]+:([0-9a-f-]{36})(:|$)/.exec(x)?.[1]).find(Boolean);
+            for (const x of Object.keys(localStorage)) if (x.startsWith('clarity-cache:') && k === 'build') localStorage.removeItem(x);
+            localStorage.setItem(`ds-guide:${k === 'review' ? `performance-sprint-review-${uid}` : `performance-plan-build-${uid}`}`, JSON.stringify({ index: Number(n), skipped: [] }));
+          }, { kind, at });
+        }
         await page.goto(`${APP}${path}`);
+        if (kind === 'review') {
+          await page.getByRole('button', { name: 'Review it now' }).click({ timeout: 15000 }).catch(() => null);
+        }
+        if (kind) {
+          await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
+          const want = { 'review:1': 'What worked best in this sprint?', 'review:2': 'What would make the next sprint even better?', 'build:4': 'Which days do you work?' }[act];
+          const got = (await page.locator('.ds-guide-question').first().innerText()).replace(/\s+/g, ' ').trim();
+          pass(`${tag}: opened on "${want}"`, got.startsWith(want), got);
+          const eyes = await page.locator('.ds-guide-question .ds-who, .ds-guide-question .ds-page-aside').count();
+          pass(`${tag}: the eye is inside the heading`, eyes >= 1, `${eyes}`);
+        }
         await page.waitForLoadState('networkidle').catch(() => null);
         await page.evaluate(() => document.fonts.ready);
         await sleep(1200);
@@ -253,7 +288,10 @@ for (const width of [1280, 390]) {
         pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
         if (out && mode === 'light') await page.screenshot({ path: join(out, `${name}-${width === 1280 ? '1280' : '390x844'}.png`), fullPage: true });
         if (act === 'menu') await page.keyboard.press('Escape');
+        if (kind) await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.startsWith('ds-guide:performance-') || x.startsWith('clarity-cache:') || x.startsWith('clarity-draft:')) localStorage.removeItem(x); });
+        emptyReads = false;
       } catch (e) {
+        emptyReads = false;
         pass(`${tag}: opened`, false, e.message.split('\n')[0]);
       }
     }

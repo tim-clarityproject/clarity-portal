@@ -337,8 +337,6 @@ function PlanTool({ userId, data, mode }) {
           <div className="plan-help-card">
             <TextBox
               label="What do you want to be known for?"
-              who={missionWho.audience}
-              coachName={coachName || undefined}
               value={draft.help.known}
               onChange={(known) => set((d) => ({ help: { ...d.help, known } }))}
             />
@@ -521,6 +519,8 @@ function PlanTool({ userId, data, mode }) {
     key: 'days',
     name: 'Working days',
     question: 'Which days do you work?',
+    // The eye inside the heading, with its last word (rule 29d; Tim, 10 Nov), so the answers have none.
+    eye: <WhoSees audience="me" />,
     nudges: ['Pick every day you usually work.', 'Daily targets and logging count these days only.'],
     render: () => (
       <div className="plan-days">
@@ -529,7 +529,6 @@ function PlanTool({ userId, data, mode }) {
           options={WORKING_DAY_OPTIONS}
           values={draft.workingDays}
           onChange={(workingDays) => set({ workingDays })}
-          who="me"
         />
         {!draft.workingDays.length && <p className="ds-hint">Pick at least 1 day.</p>}
       </div>

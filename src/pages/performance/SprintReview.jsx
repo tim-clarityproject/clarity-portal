@@ -387,12 +387,13 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
       key: 'worked',
       name: 'Worked',
       question: 'What worked best in this sprint?',
+      // The eye inside the heading, with its last word (rule 29d; Tim, 10 Nov), so the box has none.
+      eye: <WhoSees audience="me" />,
       nudges: ['Name 1 or 2 things you’d keep doing.'],
       example: REVIEW_WORKED_EXAMPLE,
       render: () => (
         <TextBox
           ariaLabel="What worked best"
-          who="me"
           focusMode
           maxLength={ANSWER_MAX}
           value={draft.worked}
@@ -404,12 +405,13 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
       key: 'next-time',
       name: 'Next time',
       question: 'What would make the next sprint even better?',
+      // The eye inside the heading, with its last word (rule 29d; Tim, 10 Nov), so the box has none.
+      eye: <WhoSees audience="me" />,
       nudges: ['Pick one thing you’d do differently.'],
       example: REVIEW_NEXT_EXAMPLE,
       render: () => (
         <TextBox
           ariaLabel="What would make the next sprint better"
-          who="me"
           focusMode
           maxLength={ANSWER_MAX}
           value={draft.next}

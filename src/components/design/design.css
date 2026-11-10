@@ -4714,6 +4714,14 @@
 
 .ui-root .ds-objective-milestone .ds-status-action-link {
   margin-top: var(--space-px10);
+  /* "Edit this objective" follows: room for both 44px tap areas, with no
+     overlap (Tim, 10 Nov). */
+  margin-bottom: var(--space-px18);
+}
+
+/* Here the tap area is centred on the words, so it reaches 12px each way. */
+.ui-root .ds-objective-milestone .ds-status-action-link::after {
+  top: calc((1lh - var(--tap-min)) / 2);
 }
 
 .ui-root .ds-objective-foot {

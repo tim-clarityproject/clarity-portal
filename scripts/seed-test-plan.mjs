@@ -126,11 +126,16 @@ await db.from('person_settings').upsert({ user_id: me, time_zone: 'Europe/London
 {
   const { data: settings } = await db.from('person_settings').select('page_preferences').eq('user_id', me).limit(1);
   const prefs = settings?.[0]?.page_preferences;
-  if (prefs && typeof prefs === 'object' && 'wind_down_not_tonight' in prefs) {
-    const rest = { ...prefs };
-    delete rest.wind_down_not_tonight;
-    await db.from('person_settings').update({ page_preferences: rest }).eq('user_id', me);
+  const rest = prefs && typeof prefs === 'object' ? { ...prefs } : {};
+  delete rest.wind_down_not_tonight;
+  // Sam's own saved settings, put back on every seed (Tim, 10 Nov): two
+  // pinned tools (room left for a third) and a sleep target range. The
+  // second person keeps the starting settings.
+  if (!second) {
+    rest.menu_pins = ['pmd', 'debrief'];
+    rest.sleep_target = { from: 7, to: 9 };
   }
+  await db.from('person_settings').update({ page_preferences: rest }).eq('user_id', me);
 }
 
 const planId = randomUUID();

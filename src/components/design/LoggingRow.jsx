@@ -79,7 +79,10 @@ export function Stepper({ value, onChange, min = 0, max = Infinity, label, step:
       >
         <StepIcon />
       </button>
-      <output id={outputId} className={`ds-stepper-value${by % 1 ? ' ds-stepper-value--wide' : ''}`} aria-live="polite">{empty ? '–' : format(value)}</output>
+      <output id={outputId} className={`ds-stepper-value${by % 1 ? ' ds-stepper-value--wide' : ''}`} aria-live="polite">
+        {/* Nothing chosen yet: the dash is only for the eye; a screen reader hears "Not set" (Tim, 10 Nov). */}
+        {empty ? <><span aria-hidden="true">–</span><span className="ds-sr">Not set</span></> : format(value)}
+      </output>
       <button
         type="button"
         className="ds-stepper-btn"
