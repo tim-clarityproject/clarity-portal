@@ -32,6 +32,20 @@ export const GRATITUDE_EXAMPLE = 'The team stepping up while I was away last wee
 
 const DAY_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+/**
+ * A real calendar day written "YYYY-MM-DD", in the years the portal works
+ * in. An address can carry anything ("2026-13-45", "9999-12-31"): those
+ * are not days, so the daily tools open on today instead.
+ */
+export function isDayKey(value) {
+  const m = typeof value === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(value) : null;
+  if (!m) return false;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (y < 2000 || y > 2199) return false;
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d;
+}
+
 export function addDayKey(key, n) {
   const [y, m, d] = key.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); // a pure date sum, never "today"

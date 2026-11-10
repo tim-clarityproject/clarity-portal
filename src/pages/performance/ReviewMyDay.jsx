@@ -62,6 +62,7 @@ import {
   WHERE_MAX,
   addDayKey,
   dayName,
+  isDayKey,
   dayReviewStrategyOps,
   dayReviewView,
   habitTickValue,
@@ -122,7 +123,6 @@ import './performance.css';
 const SAVE_AFTER_MS = 800;
 const LOG_AFTER_MS = 700; // a number typed is logged this long after the last key, or on leaving the box
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
-const isDay = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const cacheName = (date) => `day-review:${date}`;
 const draftName = (date) => `day-review:${date}`;
 const stepKey = (userId, date) => `day-review-${userId}-${date}`;
@@ -148,7 +148,7 @@ export default function ReviewMyDay() {
   const [today] = useState(() => localToday());
   // Read once: the hour the review was opened decides which day it is for.
   const [early] = useState(() => new Date().getHours() < REVIEW_EARLY_HOURS);
-  if (isDay(params.date)) return <ReviewLoad userId={userId} date={params.date} today={today} pinned />;
+  if (isDayKey(params.date)) return <ReviewLoad userId={userId} date={params.date} today={today} pinned />;
   if (early) return <EarlyReview userId={userId} today={today} />;
   return <ReviewLoad userId={userId} date={today} today={today} />;
 }

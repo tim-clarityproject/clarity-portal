@@ -194,8 +194,10 @@ export function MissionProvider({ children }) {
       } catch (error) {
         console.error('Error updating visibility preference:', error);
         setShowInHeader(previousValue);
+        return false;
       }
     }
+    return true;
   };
 
   return (

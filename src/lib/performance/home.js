@@ -91,7 +91,10 @@ export function notTonightNights(saved) {
 
 /** The saved evenings with one more: the last two weeks only, each once. */
 export function withNotTonight(saved, night) {
-  return notTonightNights([...notTonightNights(saved), night]);
+  // This evening always stays, whatever is saved: later dates (a device
+  // with the wrong clock, or anything else written there) never push it out.
+  const others = notTonightNights(saved).filter((n) => n !== night).slice(-(NOT_TONIGHT_KEPT - 1));
+  return notTonightNights([...others, night]);
 }
 
 /** The latest day before today with anything logged, planned or reviewed, or null. */

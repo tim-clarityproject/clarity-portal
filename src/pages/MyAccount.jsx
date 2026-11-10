@@ -203,7 +203,10 @@ export default function MyAccount() {
   }, [user?.id]);
 
   const handleToggleGoalVisibility = () => {
-    updateShowInHeader(!showInHeader);
+    // Offline or refused, the switch goes back: say so (rule 28), never silently.
+    Promise.resolve(updateShowInHeader(!showInHeader)).then((ok) => {
+      if (ok === false) toast.error('That didn’t save. Check your connection and try again.');
+    });
   };
 
   // Handle hash-based scrolling to sections

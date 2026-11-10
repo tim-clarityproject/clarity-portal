@@ -252,9 +252,12 @@ export default function GuidedTool({
   const [index, setIndex] = useState(() => {
     if (changeLeft) return changeLeft.at;
     const asked = initialStep ? steps.findIndex((s) => s.key === initialStep) : -1;
-    return asked >= 0 ? asked : Math.min(saved?.index ?? 0, steps.length - 1);
+    // Only a whole step number counts: anything else kept there (a damaged
+    // or older draft) opens the first step, never a blank screen.
+    const left = Number.isInteger(saved?.index) && saved.index >= 0 ? saved.index : 0;
+    return asked >= 0 ? asked : Math.min(left, steps.length - 1);
   });
-  const [skipped, setSkipped] = useState(() => new Set(saved?.skipped || []));
+  const [skipped, setSkipped] = useState(() => new Set(Array.isArray(saved?.skipped) ? saved.skipped : []));
   // "Change" on a summary (Tim, 5 Nov, 10:41): only that question opens,
   // and moving on from it goes straight back to the summary, with the
   // change shown. The steps in between are never shown again.

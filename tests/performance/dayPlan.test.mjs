@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {
   addDayKey,
   answersToRow,
+  isDayKey,
   dayPicks,
   dayPlanView,
   dayStrategyOps,
@@ -207,4 +208,12 @@ test('no sprint: to-dos without a sprint, the plan’s Strategies, and no score'
   assert.equal(v.score, null);
   assert.deepEqual(v.options.map((o) => o.value), ['todo:l1']);
   assert.deepEqual(v.strategies, [{ value: 'grow', label: 'Grow through referrals' }]);
+});
+
+test('a day in an address is a real calendar day, or the tool opens on today (the break-it tester, 10 Nov)', () => {
+  for (const day of ['2026-11-10', '2024-02-29', '2000-01-01', '2199-12-31']) assert.equal(isDayKey(day), true, day);
+  // Not days: /daily-review/9999-12-31 took the page down (the week sums ran past the year 9999).
+  for (const not of ['2026-13-45', '0000-00-00', '9999-12-31', '2026-02-30', '2025-02-29', '1999-12-31', 'garbage', '2026-11-10 ', '2026-11-1', '<b>x', '', null, undefined, 20261110]) {
+    assert.equal(isDayKey(not), false, String(not));
+  }
 });

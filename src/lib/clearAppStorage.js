@@ -24,10 +24,18 @@ const EXACT_KEYS = [
   'pendingSignupName',
 ];
 
-function isAppOwnedKey(key) {
+export function isAppOwnedKey(key) {
   if (EXACT_KEYS.includes(key)) return true;
   // Page copies, drafts and saves waiting to be sent (deviceStore.js).
   if (DEVICE_PREFIXES.some((prefix) => key.startsWith(prefix))) return true;
+  // Where a guided tool was left, and a change from its summary still
+  // open (GuidedTool.jsx; the key holds the person's id and the day).
+  if (key.startsWith('ds-guide:')) return true;
+  // Not cleared: answers that wait on the device until their migration has
+  // run (clarity-day-plan-local:, clarity-day-review-local:,
+  // clarity-checkin-extras:; dayStore.js, answerExtras.js). They carry the
+  // person's id, so nobody else is shown them, and clearing them could lose
+  // an answer that has nowhere else to live yet.
   // Journal, plan-edit and other drafts: clarity-<thing>-draft-<id>.
   if (key.startsWith('clarity-') && key.includes('-draft-')) return true;
   // Older per-tool saves, <toolType>-autosave / -progress, still on some devices.

@@ -72,3 +72,23 @@ test('worked example M1-R1: the words’ scores give the same habit score as the
   // Lower is better, the same way round: target Fair (25), average Good (50).
   assert.ok(Math.abs(m1RatingScore(3, 2, 'lower') - ((100 - 50) / (100 - 25)) * 100) < 1e-9);
 });
+
+test('odd saved figures read as a word or as nothing, never as text that isn’t a word (the break-it tester, 10 Nov)', () => {
+  // An objective's figure outside 0 to 10 reads as the nearest end; in between, by its band.
+  assert.deepEqual([-1, 11, 3.3, 7.49, 7.5, '7'].map(ratingWord), ['Poor', 'Excellent', 'Fair', 'Very good', 'Very good', 'Very good']);
+  // No figure: no word. A blank box is never "Poor".
+  for (const none of [null, undefined, '', '  ', 'abc', '7,5', NaN, Infinity, true, false, [], {}]) {
+    assert.equal(ratingStep(none), null, String(none));
+    assert.equal(ratingWord(none), '');
+    assert.equal(ratingOption(none), null);
+    assert.equal(ratingScore(none), null);
+    assert.equal(habitRatingWord(none), '');
+  }
+  // A habit's day outside 1 to 5 reads as the nearest end, a half as the word above.
+  assert.deepEqual([0, 6, 9, 2.5].map(habitRatingWord), ['Poor', 'Excellent', 'Excellent', 'Good']);
+  // A rating with no target saved says nothing about one, never "target" alone.
+  assert.equal(objectiveTarget({ kind: 'rating', target: null }), '');
+  assert.equal(objectiveTarget({ kind: 'rating', target: 7 }), 'target Very good');
+  // The editor shows an older 7 as Very good without changing it: the answer shown is 7.5, the saved 7 stays until a word is tapped.
+  assert.equal(ratingOption(7), '7.5');
+});

@@ -426,7 +426,7 @@ function objectiveRows(d, today, sprint, weeks) {
       effortLine: null,
       bar: { kind: 'progress', value: (result.progress ?? 0) / 100, good: reached || Boolean(result.onPace && result.paceShown) },
       value: objectiveFigure(objective, result.current),
-      of: objective.kind === 'rating' ? `Target ${ratingWord(objective.target)}` : objectiveTarget(objective),
+      of: objective.kind === 'rating' ? (ratingWord(objective.target) ? `Target ${ratingWord(objective.target)}` : '') : objectiveTarget(objective),
       label,
       reached,
       improving: Boolean(result.improving && better),

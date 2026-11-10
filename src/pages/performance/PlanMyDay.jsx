@@ -54,6 +54,7 @@ import {
   thingKey,
   sleepToConfirm,
   sleepWords,
+  isDayKey,
 } from '../../lib/performance';
 import './performance.css';
 
@@ -89,7 +90,6 @@ import './performance.css';
 
 const SAVE_AFTER_MS = 800;
 const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
-const isDay = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const cacheName = (date) => `day-plan:${date}`;
 const draftName = (date) => `day-plan:${date}`;
 const stepKey = (userId, date) => `day-plan-${userId}-${date}`;
@@ -101,7 +101,7 @@ export default function PlanMyDay() {
   // The day the page opened on, kept while it stays open: a tool carried
   // past midnight stays on its day (and step) when the page redraws.
   const [today] = useState(() => localToday());
-  const date = isDay(params.date) ? params.date : today;
+  const date = isDayKey(params.date) ? params.date : today;
   const loaded = useCachedLoad({ userId, name: cacheName(date), load: () => loadDayPlan(userId, date), deps: [date] });
   useLatestWhenSuperseded(loaded.reload);
 

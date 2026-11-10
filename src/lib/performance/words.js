@@ -45,9 +45,14 @@ function splitUnit(unit) {
 //   Very good, 9 to 10 Excellent, keeping its date. Targets the same.
 export const RATING_WORDS = Object.freeze(['Poor', 'Fair', 'Good', 'Very good', 'Excellent']);
 
+// A saved or typed figure: a number, or text that reads as one. Nothing,
+// blank text, true or false, a list or anything else is no figure, so it
+// shows no word (never "Poor" for an empty answer).
+const isFigure = (value) => (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) && Number.isFinite(Number(value));
+
 /** Which of the five words (0 to 4) an objective's saved 0 to 10 figure reads as, or null. */
 export function ratingStep(value) {
-  if (value == null || value === '' || Number.isNaN(Number(value))) return null;
+  if (!isFigure(value)) return null;
   const v = Number(value);
   if (v < 2.5) return 0;
   if (v < 5) return 1;
@@ -82,7 +87,7 @@ export function ratingOption(value) {
 
 /** "Very good" for a habit's daily rating (1 to 5), or its average. */
 export function habitRatingWord(value) {
-  if (value == null || Number.isNaN(Number(value))) return '';
+  if (!isFigure(value)) return '';
   return RATING_WORDS[Math.min(5, Math.max(1, Math.round(Number(value)))) - 1];
 }
 
@@ -98,7 +103,8 @@ export function objectiveFigure(objective, value) {
 
 /** What the figure is measured against: "of 40", "of £250k", "target Excellent". */
 export function objectiveTarget(objective) {
-  if (objective.kind === 'rating') return `target ${ratingWord(objective.target)}`;
+  // A rating with no target saved says nothing, never "target" on its own.
+  if (objective.kind === 'rating') return ratingWord(objective.target) ? `target ${ratingWord(objective.target)}` : '';
   const { word } = splitUnit(objective.unit);
   return `of ${objectiveFigure(objective, objective.target)}${word ? ` ${word}` : ''}`;
 }
@@ -121,7 +127,7 @@ export function objectiveDate(objective) {
  */
 export function objectiveStripFigure(objective, current, reached) {
   if (objective.kind === 'milestone') return reached ? 'Done' : `Not yet, by ${shortDate(objective.dueOn)}`;
-  if (objective.kind === 'rating') return `${objectiveFigure(objective, current)}, target ${ratingWord(objective.target)}`;
+  if (objective.kind === 'rating') return [objectiveFigure(objective, current), objectiveTarget(objective)].filter(Boolean).join(', ');
   return `${objectiveFigure(objective, current)} ${objectiveTarget(objective)}`;
 }
 

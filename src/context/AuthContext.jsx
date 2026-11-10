@@ -346,6 +346,9 @@ export function AuthProvider({ children }) {
       stopSyncQueue();
       clearUserDrafts();
       await auth.signOut();
+      // Again once signed out: a page still open can finish a read while
+      // the sign-out is on its way and put its copy back on the device.
+      clearUserDrafts();
       sessionManager.clearSession();
       setUser(null);
     } catch (err) {

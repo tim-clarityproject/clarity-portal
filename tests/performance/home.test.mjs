@@ -217,6 +217,16 @@ test('Not tonight is kept in the account for every device: the evenings, cleaned
   assert.equal(kept.length, 14);
   assert.equal(kept.at(-1), '2026-10-21');
   assert.equal(kept[0], '2026-10-08');
+  // This evening always stays, whatever else is saved there (the break-it
+  // tester, 10 Nov): 20 later dates used to push it straight out again, so
+  // "Not tonight" never reached the other devices.
+  const later = Array.from({ length: 20 }, (_, i) => `9999-12-${String(i + 1).padStart(2, '0')}`);
+  const withLater = withNotTonight(later, '2026-10-21');
+  assert.equal(withLater.length, 14);
+  assert.ok(withLater.includes('2026-10-21'));
+  for (const odd of ['tonight', 42, null, { '2026-10-21': true }, [['2026-10-21'], 20261021, ' 2026-10-21']]) {
+    assert.deepEqual(withNotTonight(odd, '2026-10-21'), ['2026-10-21']);
+  }
   // An evening saved on another device hides the card here.
   assert.equal(homeSuggestion(base({ hour: 22, windDown: { dismissed: notTonightNights(['2026-10-21']) } })).key, 'review');
 });
