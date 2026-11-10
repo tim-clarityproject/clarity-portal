@@ -61,7 +61,7 @@ test('My Plans: every type, named in words, with its tool, area and date', () =>
   assert.equal(by('decision:d6').area, 'strategic');
   assert.equal(by('decision:d8').typeLabel, 'Give difficult feedback');
   assert.equal(by('plan:p1').title, 'Version 3.2');
-  assert.equal(by('sprint:s1').title, 'Performance Sprint 1');
+  assert.equal(by('sprint:s1').title, 'Sprint 1');
   assert.equal(by('sprint:s1').to.path, '/performance-sprint');
   assert.equal(by('day-plan:dp1').title, 'Today’s plan');
   assert.equal(by('day-plan:dp1').dateLabel, 'Today');
@@ -128,7 +128,7 @@ test('My Reviews: every type, named in words, with its tool, area and date', () 
   assert.equal(by('day-review:dr2'), undefined, 'an empty draft is not a review');
   assert.equal(by('debrief:db1').title, 'Sprint 1, week 3');
   assert.equal(by('debrief:db1').dateLabel, 'Sun 18 Oct');
-  assert.equal(by('sprint-review:s0').title, 'Performance Sprint 4');
+  assert.equal(by('sprint-review:s0').title, 'Sprint 4');
   assert.equal(by('sprint-review:s0').to.path, '/performance-sprint/review/s0');
   assert.ok(!recentRows(rows, 'personal', 10).some((r) => r.source === 'journal'), 'journal entries never show on a hub');
 });

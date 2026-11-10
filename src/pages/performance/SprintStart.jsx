@@ -229,7 +229,7 @@ function SprintStartView({ userId, data }) {
       if (!live) return;
       navigate('/performance-sprint', {
         replace: true,
-        state: { toast: `Saved. Performance Sprint ${p.number} starts ${dayLabel(p.startOn)}.` },
+        state: { toast: `Saved. Your Performance Sprint starts ${dayLabel(p.startOn)}.` },
       });
     }).catch((error) => {
       if (live) setPhase({ kind: 'failed', pending: p, error });
@@ -238,7 +238,7 @@ function SprintStartView({ userId, data }) {
   }, [phase, userId, navigate, forgetFlow]);
 
   if (phase.kind === 'starting') {
-    return <div className="ui-root plan-builder-wait"><Loading label={`Starting Performance Sprint ${phase.pending.number}`} className="ds-loading--page" /></div>;
+    return <div className="ui-root plan-builder-wait"><Loading label="Starting your Performance Sprint" className="ds-loading--page" /></div>;
   }
 
   if (phase.kind === 'failed') {
@@ -270,7 +270,7 @@ function SprintStartView({ userId, data }) {
 
   if (phase.kind === 'running') {
     const standing = sprintStanding(running, data.recoveries, today);
-    const name = `Performance Sprint ${running.number}`;
+    const name = 'Your Performance Sprint';
     const review = () => navigate('/performance-sprint/review');
     const proceed = () => setPhase({ kind: 'flow' });
     return (
@@ -292,7 +292,7 @@ function SprintStartView({ userId, data }) {
               <p>{`It starts on ${dayLabel(running.start_on)}.`}</p>
             </>
           )}
-          <p>{`Starting a new sprint finishes ${name}.`}</p>
+          <p>Starting a new sprint finishes this one.</p>
         </div>
         <div className="ds-actions ipp-actions">
           {standing.over ? (
@@ -331,7 +331,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
   const fixedStandard = data.fixedStandard ?? null;
   const planHabits = data.habits || [];
   const strategies = data.strategies || [];
-  const name = `Performance Sprint ${number}`;
+  const name = 'Performance Sprint';
 
   // The answers start as M6 suggests (12 weeks, next Monday, 85%), or from
   // a first sprint chosen in Build your plan whose start day has passed.
@@ -560,7 +560,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
           ]}
         />
         {running && (
-          <p className="plan-muted sprint-start-gap">{`Starting it finishes Performance Sprint ${running.number}.`}</p>
+          <p className="plan-muted sprint-start-gap">Starting it finishes your current sprint.</p>
         )}
         {openRecovery(data.recoveries || []) && (
           <p className="plan-muted sprint-start-gap">Starting it ends your recovery today.</p>
@@ -606,7 +606,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
         steps={steps}
         progress="percent"
         skipLabel="Skip"
-        finishLabel={`Start ${name}`}
+        finishLabel="Start my sprint"
         role={role}
         draftKey={stepDraftKey(userId)}
         onClose={close}

@@ -106,7 +106,7 @@ export function withRecovery(rows = [], row) {
  */
 function sprintWords(sprint, recoveries, today) {
   if (!sprint || sprint.status !== 'running') return null;
-  const name = `Performance Sprint ${sprint.number}`;
+  const name = 'Performance Sprint';
   if (today < sprint.start_on) return { name, number: sprint.number, notStarted: true, startsOn: dayName(sprint.start_on, today) };
   const p = sprintPause(sprint, recoveries, today);
   return {
@@ -141,7 +141,7 @@ export function recoveryView(d, { today }) {
       ...common,
       state: 'none',
       endsOn: (days) => dayName(addDays(today, days), today),
-      sprint: sprint ? { name: `Performance Sprint ${sprint.number}`, number: sprint.number } : null,
+      sprint: sprint ? { name: 'Performance Sprint', number: sprint.number } : null,
     };
   }
   const endOn = recoveryEndOn(open);

@@ -881,7 +881,7 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
     setAdded(done);
     setOpen(false);
     clearFormDraft();
-    toast.show(`Added to ${sprintName} as a ${form.as === 'todo' ? 'to-do' : 'habit'}.`);
+    toast.show(`Added to your ${sprintName} as a ${form.as === 'todo' ? 'to-do' : 'habit'}.`);
   };
 
   const ready = Boolean(form.strategyId) && (form.as === 'habit'

@@ -277,7 +277,8 @@ export function sprintPageView(d, { today }) {
   if (!sprint) {
     return { state: 'none', today, hasPlan: Boolean(d.plan), recovery: openRecovery(d.recoveries || []), welcomeBack: Boolean(backToday(d.recoveries || [], today)) };
   }
-  const name = `Performance Sprint ${sprint.number}`;
+  // Never with its number in client text (5e rule 29m).
+  const name = 'Performance Sprint';
   const standard = sprint.standard;
   const base = { today, name, label: sprint.label || null, sprintId: sprint.id, number: sprint.number, lengthWeeks: sprint.length_weeks, standard };
   const recovery = openRecovery(d.recoveries || []);

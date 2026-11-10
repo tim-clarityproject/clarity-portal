@@ -92,7 +92,7 @@ export function reviewView(d, { today }) {
   if (!d) return null;
   const sprint = d.sprint || null;
   if (!sprint) return { state: 'none', today };
-  const name = `Performance Sprint ${sprint.number}`;
+  const name = 'Performance Sprint';
   const standing = sprintStanding(sprint, d.recoveries || [], today);
   const base = { today, sprintId: sprint.id, number: sprint.number, name, standard: sprint.standard, nextNumber: nextSprintNumber(d.sprints || [sprint]) };
   if (!standing.started) return { ...base, state: 'future', startsOn: dayName(sprint.start_on, today) };

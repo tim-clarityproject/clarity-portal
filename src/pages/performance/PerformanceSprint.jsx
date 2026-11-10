@@ -310,7 +310,7 @@ export default function PerformanceSprint() {
       <>
         <SprintDial length={view.lengthWeeks} label={`${view.name}, ${view.lengthWeeks} weeks, starting ${view.startsOn}`} />
         <div className="ipp-gap ipp-coming">
-          <p>{`${view.name} starts on ${view.startsOn}.`}</p>
+          <p>{`Your ${view.name} starts on ${view.startsOn}.`}</p>
           <p>You can log your habits and tick off to-dos from that day.</p>
         </div>
         <div className="ds-actions ipp-actions">
@@ -331,7 +331,7 @@ export default function PerformanceSprint() {
             label={`${view.name}, finished${view.average.value ? `, average performance score ${view.average.value}` : ''}`}
           />
           <div className="sprint-side ipp-coming">
-            <p>{`${view.name} ended on ${view.endedOn}.`}</p>
+            <p>{`Your ${view.name} ended on ${view.endedOn}.`}</p>
             <p>Its review is waiting for you.</p>
           </div>
         </div>
@@ -500,7 +500,6 @@ function SprintBody({
         <div className="sprint-side">
           <div className="sprint-usual">
             {view.usualLine.ready && <p>{view.usualLine.lead}<span className="sprint-figure">{view.usualLine.figure}</span>{view.usualLine.end}</p>}
-            <p>Your standard is <span className="sprint-figure">{`${view.standard}%`}</span>.</p>
           </div>
           {view.soFar?.good && (
             <p className="sprint-std">
@@ -521,10 +520,6 @@ function SprintBody({
                     {view.average.value ? <span className="sprint-figure">{view.average.value}</span> : null}
                     <span className="sprint-dd-note">{view.average.note}</span>
                   </dd>
-                </div>
-                <div>
-                  <dt>{view.endsIn.label}</dt>
-                  <dd><span className="sprint-figure">{view.endsIn.value}</span></dd>
                 </div>
                 <div>
                   <dt>Length</dt>
@@ -596,8 +591,8 @@ function SprintBody({
                   done={x.done}
                   disabled={x.movedOut}
                   tags={[
-                    x.rolledFrom ? `rolled over from week ${x.rolledFrom}` : null,
-                    x.movedOut ? (x.movedTo ? `moved to week ${x.movedTo}` : 'moved out of this sprint') : null,
+                    x.rolledFrom ? `Rolled over from week ${x.rolledFrom}` : null,
+                    x.movedOut ? (x.movedTo ? `Moved to week ${x.movedTo}` : 'Moved out of this sprint') : null,
                   ].filter(Boolean)}
                   onToggle={(done) => onToggleTodo(x, done)}
                   onMove={x.done || x.movedOut ? undefined : () => onMove(x)}
@@ -619,11 +614,6 @@ function SprintBody({
               summary={(
                 <span className="sprint-later-head">
                   <span className="sprint-later-title">Later in this sprint</span>
-                  <span className="sprint-later-line">
-                    {t.later.length
-                      ? `${t.later.length} to-do${t.later.length === 1 ? '' : 's'} planned for later weeks`
-                      : 'Nothing planned for later weeks yet.'}
-                  </span>
                 </span>
               )}
             >
@@ -719,7 +709,7 @@ function SprintPaused({ view, working, onMore, onReady, onToday }) {
         <div className="rec-sprint-lines">
           {p.complete ? (
             <>
-              <p className="rec-sprint-lead">{`${view.name} ended on ${p.endedOn}.`}</p>
+              <p className="rec-sprint-lead">{`Your ${view.name} ended on ${p.endedOn}.`}</p>
               <p className="rec-sprint-line">Its review opens when you’re back.</p>
             </>
           ) : (
@@ -734,7 +724,6 @@ function SprintPaused({ view, working, onMore, onReady, onToday }) {
               <p className="rec-sprint-line">
                 {view.average ? <>Your average performance score so far is <span className="sprint-figure">{view.average}</span>.</> : 'No week of this sprint has a score yet.'}
               </p>
-              <p className="rec-sprint-line">Your standard is <span className="sprint-figure">{`${view.standard}%`}</span>.</p>
             </div>
           ) : (
             <div className="rec-results">

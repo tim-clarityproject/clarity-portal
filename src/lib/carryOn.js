@@ -1,7 +1,7 @@
 import { STEP_PREFIX } from '../components/design/guideDraft';
 import { readDraft } from './drafts';
 import { readJson } from './deviceStore';
-import { formatDayMonthTime } from './dateFormatter';
+import { formatSavedDate, getLocalDateKey } from './dateFormatter';
 
 // "Carry on where you left off" on Home (brief, Phase 4 step 2): one row
 // per half-finished tool, from what this device keeps of it. A guided
@@ -76,7 +76,7 @@ export function carryOnItems(userId, { today, yesterday, exclude = [], finished 
     .sort((a, b) => (b.at || 0) - (a.at || 0));
 }
 
-/** "Last changed 21 Oct, 08:12" for a row, when the device knows (24-hour clock, rule 19). */
-export function carryOnWhen(at) {
-  return at ? formatDayMonthTime(new Date(at)) : null;
+/** When a row was last changed, when the device knows: "Today", "Yesterday", then "Mon 19 Oct" (writing rule 28; never a time). */
+export function carryOnWhen(at, today = getLocalDateKey()) {
+  return at ? formatSavedDate(getLocalDateKey(new Date(at)), today) : null;
 }

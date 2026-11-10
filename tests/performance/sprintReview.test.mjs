@@ -89,7 +89,7 @@ function rows(over = {}) {
 test('the review of an ended sprint: figures from the scores library', () => {
   const v = reviewView(rows(), { today: '2026-10-20' });
   assert.equal(v.state, 'over');
-  assert.equal(v.name, 'Performance Sprint 2');
+  assert.equal(v.name, 'Performance Sprint');
   assert.equal(v.nextNumber, 3);
   assert.equal(v.finishOn, '2026-10-18');
   // Week 1: both habits met, 100. Week 2: sessions met, the block not: 50.

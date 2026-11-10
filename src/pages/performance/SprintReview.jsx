@@ -197,7 +197,7 @@ function ReviewView({ userId, data }) {
         toast.show('Saved. Nothing is tracked during Recovery.');
         navigate('/recovery', { replace: true, state: { fromReview: view.sprintId } });
       } else {
-        toast.show(`Saved. Set up Performance Sprint ${view.nextNumber} next.`);
+        toast.show('Saved. Set up your next sprint.');
         navigate('/performance-sprint/start', { replace: true, state: { skipReview: true } });
       }
     } catch (error) {
@@ -238,12 +238,12 @@ function ReviewView({ userId, data }) {
         <div className="ipp-gap ipp-coming">
           {view.state === 'future' ? (
             <>
-              <p>{`${view.name} hasn’t started yet.`}</p>
+              <p>{`Your ${view.name} hasn’t started yet.`}</p>
               <p>{`It starts on ${view.startsOn}.`}</p>
             </>
           ) : (
             <>
-              <p>{`You’re in recovery, so ${view.name} is paused.`}</p>
+              <p>{`You’re in recovery, so your ${view.name} is paused.`}</p>
               <p>Its review opens when you’re back.</p>
             </>
           )}
@@ -260,7 +260,7 @@ function ReviewView({ userId, data }) {
     return (
       <Shell>
         <div className="ipp-gap ipp-coming">
-          <p>{`${view.name} is still running.`}</p>
+          <p>{`Your ${view.name} is still running.`}</p>
           <p>{`It ends on ${view.endsOn}.`}</p>
           <p>Reviewing it now finishes it today.</p>
         </div>
@@ -273,7 +273,7 @@ function ReviewView({ userId, data }) {
   }
 
   if (phase.kind === 'finishing') {
-    return <div className="ui-root plan-builder-wait"><Loading label={`Finishing ${view.name}`} className="ds-loading--page" /></div>;
+    return <div className="ui-root plan-builder-wait"><Loading label={`Finishing your ${view.name}`} className="ds-loading--page" /></div>;
   }
 
   if (phase.kind === 'failed') {
@@ -545,7 +545,7 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
         steps={steps}
         progress="percent"
         skipLabel="Skip"
-        finishLabel={draft.choice === 'recovery' ? 'Start my Recovery' : `Set up Performance Sprint ${view.nextNumber}`}
+        finishLabel={draft.choice === 'recovery' ? 'Start my Recovery' : 'Set up my next sprint'}
         role={role}
         draftKey={stepDraftKey(userId)}
         onClose={close}

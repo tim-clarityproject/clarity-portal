@@ -5809,7 +5809,7 @@
 
 .ui-root .ds-todo {
   display: grid;
-  grid-template-columns: var(--tap-min) minmax(0, 1fr) auto;
+  grid-template-columns: var(--tap-min) minmax(0, 1fr);
   gap: var(--space-2);
   align-items: center;
   padding: var(--space-2) 0;
@@ -5879,27 +5879,31 @@
 }
 
 .ui-root .ds-todo-move {
-  min-width: var(--tap-min);
-  justify-content: center;
   font-size: var(--fs-note);
 }
 
-/* A narrow list for its text size (a phone at a large text size): Move
-   goes under the words, so they keep the width and never break inside a
-   word. At the standard size a phone keeps Move beside them. */
-@container (max-width: 17em) {
-  .ui-root .ds-todo {
-    grid-template-columns: var(--tap-min) minmax(0, 1fr);
-  }
+/* A to-do that can be moved opens on a tap of its words (5e rule 18): at
+   rest it looks like every other row, and Move shows under the words. */
+.ui-root .ds-todo-open {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--tap-min);
+  align-content: center;
+}
 
-  .ui-root .ds-todo-move {
-    grid-column: 2;
-    justify-self: start;
-  }
+.ui-root .ds-todo-open:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+  border-radius: var(--space-px6);
+}
 
-  .ui-root .ds-todo > span:empty {
-    display: none;
-  }
+.ui-root .ds-todo-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
 /* The add panels: one field after another, a short note under a field,

@@ -145,7 +145,8 @@ export function yearView(d, { today, showResults = false }) {
       weeks = frozenWeeks(s, recoveries, d.weekScores, today);
       for (const w of weeks) if (w.finished && !w.frozen) toFreeze.push({ sprintId: s.id, week: w.number });
     }
-    const name = `Performance Sprint ${s.number}`;
+    // Sprints in a year are told apart by number, in the short form ("Sprint 4, week 2").
+    const name = `Sprint ${s.number}`;
     const placed = [];
     for (const w of weeks) {
       const at = isoWeek(w.start);

@@ -215,7 +215,7 @@ export function debriefView(d, { today }) {
   const wk = calendar.weeks[number - 1];
   const window = wk ? m0DebriefWindow(wk, today) : null;
   const finished = d.debrief?.status === 'finished';
-  const base = { today, sprintId: sprint.id, week: number, standard: sprint.standard, sprintName: `Performance Sprint ${sprint.number}`, lengthWeeks: sprint.length_weeks, finished };
+  const base = { today, sprintId: sprint.id, week: number, standard: sprint.standard, sprintName: 'Performance Sprint', lengthWeeks: sprint.length_weeks, finished };
   // Before its last 3 days, or closed with no debrief done: nothing to fill in.
   if (!wk || !window || window.state === 'before') {
     return { ...base, state: 'before', opensOn: window ? dayName(window.opensOn, today) : null, next: nextDebriefOpens(d.sprints || [], d.recoveries || [], today), openNow: openElsewhere(d, today, number) };

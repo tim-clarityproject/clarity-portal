@@ -81,7 +81,7 @@ export default function SprintReviewRead() {
     );
   }
 
-  const meta = sprint ? [`Performance Sprint ${sprint.number}`, answers?.finishedAt ? formatDocDate(answers.finishedAt) : null].filter(Boolean) : [];
+  const meta = sprint ? [`Sprint ${sprint.number}`, answers?.finishedAt ? formatDocDate(answers.finishedAt) : null].filter(Boolean) : [];
   return (
     <div className="ui-root">
       <DesignHeader />

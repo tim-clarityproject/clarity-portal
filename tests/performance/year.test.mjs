@@ -44,7 +44,7 @@ test('a finished sprint sits in the calendar weeks of its weeks’ first days, w
   assert.deepEqual(s.map((x) => x.state), ['good', 'below', 'none', 'good']);
   assert.deepEqual(s.map((x) => x.score), [90, 70, null, 85]);
   assert.equal(s[2].tip.value, 'Not scored yet');
-  assert.equal(s[0].tip.when, 'Performance Sprint 1, week 1');
+  assert.equal(s[0].tip.when, 'Sprint 1, week 1');
   assert.deepEqual(v.toFreeze, [{ sprintId: 's1', week: 3 }]);
   // M6: the mean of the finished weeks with a score, (90 + 70 + 85) / 3 = 81.7, shown as 82%.
   assert.equal(v.sprints[0].average, '82%');
@@ -52,7 +52,7 @@ test('a finished sprint sits in the calendar weeks of its weeks’ first days, w
   assert.deepEqual(v.standardLines, [{ value: 85, from: 1, to: 53 }]);
   assert.equal(v.selected, 44);
   assert.equal(v.slots[43].kind, 'empty');
-  assert.deepEqual(selectedWeek(v, 10).lines, ['Performance Sprint 1, week 1', 'Debriefed']);
+  assert.deepEqual(selectedWeek(v, 10).lines, ['Sprint 1, week 1', 'Debriefed']);
   assert.equal(selectedWeek(v, 10).score, 90);
   assert.deepEqual(selectedWeek(v, 44).lines, ['No sprint running']);
 });

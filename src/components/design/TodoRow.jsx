@@ -1,12 +1,14 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import keepWords from './keepWords';
 import { Button } from './Button';
 import './design.css';
 
 // A to-do or an unplanned win in a list (M1 .td and winRow; reused by
 // the weekly debrief and Daily plan in Phase 3). Every row in one list
-// looks alike: the tick, the words, the Strategy line with its tags,
-// and Move as a quiet text button.
+// looks alike: the tick, the words and the Strategy line with its tags.
+// Move lives inside the opened item (5e rule 18; Tim, 10 Nov): a to-do
+// that can be moved opens when its words are tapped, and Move shows under
+// them. At rest no row has a button another row lacks.
 //
 // - A to-do: the tick fills mint when done (Tim, 26 Oct) and the words
 //   are struck through in grey.
@@ -15,8 +17,8 @@ import './design.css';
 // - A win: always ticked (it counts as done, M3), with "Unplanned win, Tue".
 // Tags are separate grey words, never joined by dots (icon-row rule).
 //
-// tags:   ['rolled over from week 3'], read after the Strategy's name
-// onMove: shows Move (read out as "Move: [the to-do]")
+// tags:   ['Rolled over from week 3'], read after the Strategy's name
+// onMove: the to-do opens on a tap, showing Move (read out as "Move: [the to-do]")
 // plain:  shown, not ticked here (the debrief's Next week, M1): the box
 //         is only a mark, mint when done, and nothing to press.
 // lead:   words before the Strategy's name in the text colour (Home's
@@ -29,6 +31,19 @@ export function TodoList({ children, label, className = '' }) {
 
 export default function TodoRow({ text, strategyName, tags = [], done = false, onToggle, disabled = false, onMove, win = false, winTag, plain = false, lead }) {
   const textId = useId();
+  const moreId = useId();
+  const [open, setOpen] = useState(false);
+  const words = (
+    <>
+      <span id={textId} className="ds-todo-text">{keepWords(text)}</span>
+      <span className="ds-todo-line">
+        {lead && <span className="ds-todo-lead">{lead}</span>}
+        {strategyName && <span>{strategyName}</span>}
+        {win && <span className="ds-todo-tag ds-todo-tag--win">{winTag}</span>}
+        {tags.map((t) => <span key={t} className="ds-todo-tag">{t}</span>)}
+      </span>
+    </>
+  );
   return (
     <div className={`ds-todo${done && !win ? ' ds-todo--done' : ''}${win ? ' ds-todo--win' : ''}`} role="listitem">
       {win || plain ? (
@@ -47,17 +62,17 @@ export default function TodoRow({ text, strategyName, tags = [], done = false, o
         </button>
       )}
       <div className="ds-todo-main">
-        <span id={textId} className="ds-todo-text">{keepWords(text)}</span>
-        <span className="ds-todo-line">
-          {lead && <span className="ds-todo-lead">{lead}</span>}
-          {strategyName && <span>{strategyName}</span>}
-          {win && <span className="ds-todo-tag ds-todo-tag--win">{winTag}</span>}
-          {tags.map((t) => <span key={t} className="ds-todo-tag">{t}</span>)}
-        </span>
+        {onMove ? (
+          <button type="button" className="ds-todo-open" aria-expanded={open} aria-controls={moreId} onClick={() => setOpen((v) => !v)}>
+            {words}
+          </button>
+        ) : words}
+        {onMove && open && (
+          <div id={moreId} className="ds-todo-more">
+            <Button variant="text" className="ds-todo-move" aria-label={`Move: ${text}`} onClick={onMove}>Move</Button>
+          </div>
+        )}
       </div>
-      {onMove ? (
-        <Button variant="text" className="ds-todo-move" aria-label={`Move: ${text}`} onClick={onMove}>Move</Button>
-      ) : <span />}
     </div>
   );
 }

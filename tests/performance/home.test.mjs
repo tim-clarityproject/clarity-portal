@@ -27,7 +27,7 @@ import {
 const TODAY = '2026-10-21'; // a Wednesday, week 3 of a sprint from Mon 5 Oct
 const running = (over = {}) => ({
   state: 'running',
-  name: 'Performance Sprint 1',
+  name: 'Performance Sprint',
   current: 3,
   lengthWeeks: 8,
   debrief: null,
@@ -58,8 +58,8 @@ test('morning: Daily plan until it is done or noon', () => {
 
 test('afternoon: how today is going, with no to-do count (UNDEFINED)', () => {
   const c = homeSuggestion(base({ hour: 13, dayPlanned: true }));
-  assert.equal(c.question, 'How is today going?');
-  assert.deepEqual(c.lines, ['Your review is suggested from 17:00.']);
+  assert.equal(c.question, 'Ready to log today?');
+  assert.deepEqual(c.lines, []);
   assert.equal(c.action.jump, 'log-today');
   assert.equal(homeSuggestion(base({ hour: 16, minute: 59 })).key, 'today');
 });
@@ -143,8 +143,8 @@ test('debrief days: the debrief from 12:00, mornings stay Daily plan', () => {
 test('the last week of the sprint and a sprint that has ended', () => {
   const c = homeSuggestion(base({ hour: 13, sprintView: running({ current: 8 }) }));
   assert.equal(c.question, 'Ready for what comes next?');
-  assert.deepEqual(c.lines, ['Performance Sprint 1 ends on Sun 29 Nov.', 'Go straight into the next sprint, or take a Recovery week first.']);
-  const over = homeSuggestion(base({ sprintView: { state: 'over', name: 'Performance Sprint 1', endedOn: 'Sun 18 Oct' } }));
+  assert.deepEqual(c.lines, ['Your Performance Sprint ends on Sun 29 Nov.', 'Go straight into the next sprint, or take a Recovery week first.']);
+  const over = homeSuggestion(base({ sprintView: { state: 'over', name: 'Performance Sprint', endedOn: 'Sun 18 Oct' } }));
   assert.equal(over.action.to, '/performance-sprint/review');
 });
 
@@ -154,7 +154,7 @@ test('new people, a plan with no sprint, and Recovery', () => {
   assert.equal(homeSuggestion(base({ person: 'new', sprintView: none, hasCoach: true })), null);
   assert.equal(homeSuggestion(base({ person: 'planned', sprintView: none })).key, 'start-sprint');
   const rec = { start_on: '2026-10-19', chosen_days: 7, extended_days: 0, ended_at: null, end_on: null };
-  assert.equal(homeSuggestion(base({ person: 'recovery', sprintView: none, recovery: rec, nextSprint: 3 })).question, 'Ready for Performance Sprint 3?');
+  assert.equal(homeSuggestion(base({ person: 'recovery', sprintView: none, recovery: rec, nextSprint: 3 })).question, 'Ready for your next Performance Sprint?');
   assert.equal(homeSuggestion(base({ person: 'recovery', sprintView: { state: 'paused' }, recovery: rec })), null);
   assert.equal(homeSuggestion(base({ person: 'recovery', sprintView: { state: 'paused' }, recovery: { ...rec, start_on: '2026-10-10' } })).key, 'recovery-end');
 });

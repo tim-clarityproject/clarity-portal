@@ -235,7 +235,7 @@ function suggestionInTurn(input) {
     // Between sprints (M2 "Recovery week"): the next sprint, when ready.
     // Daily plan and Daily review aren't suggested in Recovery.
     if (!v || v.state === 'none') {
-      const name = `Performance Sprint ${nextSprint || 1}`;
+      const name = 'your next Performance Sprint';
       return {
         key: 'next-sprint',
         question: `Ready for ${name}?`,
@@ -260,7 +260,7 @@ function suggestionInTurn(input) {
     return {
       key: 'next',
       question: 'Ready for what comes next?',
-      lines: [`${v.name} ended on ${v.endedOn}.`, 'Go straight into the next sprint, or take a Recovery week first.'],
+      lines: [`Your ${v.name} ended on ${v.endedOn}.`, 'Go straight into the next sprint, or take a Recovery week first.'],
       action: { label: 'Plan what’s next', to: '/performance-sprint/review' },
     };
   }
@@ -310,7 +310,7 @@ function suggestionInTurn(input) {
     return {
       key: 'next',
       question: 'Ready for what comes next?',
-      lines: [`${v.name} ends on ${dayName(v.dates.end, today)}.`, 'Go straight into the next sprint, or take a Recovery week first.'],
+      lines: [`Your ${v.name} ends on ${dayName(v.dates.end, today)}.`, 'Go straight into the next sprint, or take a Recovery week first.'],
       action: { label: 'Plan what’s next', to: '/performance-sprint/review' },
     };
   }
@@ -327,8 +327,10 @@ function suggestionInTurn(input) {
   function todaySoFar() {
     return {
       key: 'today',
-      question: 'How is today going?',
-      lines: [`Your review is suggested from ${String(EVENING_FROM).padStart(2, '0')}:00.`],
+      // The heading names what the one button does, with no line about a
+      // time (5e rules 1 and 13; Tim's check of 10 Nov).
+      question: 'Ready to log today?',
+      lines: [],
       action: { label: 'Log today', jump: 'log-today' },
     };
   }

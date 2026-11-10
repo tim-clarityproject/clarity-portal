@@ -207,7 +207,7 @@ function NotOpen({ view }) {
             label={`Week ${view.week} performance score`}
             value={view.score ? `${view.score.value}%` : 'None'}
             good={Boolean(view.score?.good)}
-            note={view.score ? `Your standard is ${view.standard}%.` : 'Nothing was planned this week.'}
+            note={view.score ? null : 'Nothing was planned this week.'}
           />
         </div>
       )}
@@ -813,7 +813,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
               label={view.scoreLabel}
               value={view.score ? `${view.score.value}%` : 'None'}
               good={Boolean(view.score?.good)}
-              note={view.score ? [view.usualLine, `Your standard is ${view.standard}%.`] : ['Nothing was planned this week.']}
+              note={view.score ? [view.usualLine].filter(Boolean) : ['Nothing was planned this week.']}
             />
             <Stat panel label="Debrief streak" value={String(view.streak)} unit={view.streak === 1 ? 'week' : 'weeks'} note={view.streakLine} />
           </StatGroup>

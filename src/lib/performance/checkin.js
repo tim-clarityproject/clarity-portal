@@ -681,5 +681,5 @@ export function noSprintLine({ kind, coachName }) {
 
 /** The line once it's added (M12): "It’s in Performance Sprint 4 as a habit." */
 export function addedLine(sprintName, as) {
-  return `It’s in ${sprintName} as a ${as === 'todo' ? 'to-do' : 'habit'}.`;
+  return `It’s in your ${sprintName} as a ${as === 'todo' ? 'to-do' : 'habit'}.`;
 }
