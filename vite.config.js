@@ -70,7 +70,7 @@ function publicFiles(dir, base = '') {
     : [`${base}${e.name}`]));
 }
 
-function serviceWorker(buildId) {
+function serviceWorker(buildId, preview) {
   let config
   return {
     name: 'clarity-service-worker',
@@ -93,7 +93,9 @@ function serviceWorker(buildId) {
       ].filter((f) => !gallery.has(f) && !/\.map$/.test(f) && f !== 'version.json' && f !== 'sw.js' && !/(^|\/)\.[^/]+$/.test(f))
       const onDemand = files.filter((f) => /noto-sans-sc-/.test(f))
       const precache = [...new Set(files.filter((f) => !onDemand.includes(f)))].map((f) => `/${f}`).sort()
-      const head = `self.__CLARITY_BUILD__ = ${JSON.stringify({ id: buildId, precache, onDemand: onDemand.map((f) => `/${f}`) })};\n`
+      // preview: a Vercel preview build (a branch address or a deployment's
+      // own), where the worker always opens the newest build (worker.js).
+      const head = `self.__CLARITY_BUILD__ = ${JSON.stringify({ id: buildId, preview, precache, onDemand: onDemand.map((f) => `/${f}`) })};\n`
       const body = readFileSync(new URL('./src/serviceWorker/worker.js', import.meta.url), 'utf8')
       this.emitFile({ type: 'asset', fileName: 'sw.js', source: head + body })
     },
@@ -140,7 +142,7 @@ export default defineConfig(({ command }) => {
   const galleryEnabled = command === 'serve' || process.env.VERCEL_ENV === 'preview'
   const buildId = command === 'serve' ? 'dev' : (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()))
   return {
-    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), serviceWorker(buildId), healthCheckPage(buildId)],
+    plugins: [react(), colourMode(), designGallery(galleryEnabled), buildVersion(buildId), serviceWorker(buildId, process.env.VERCEL_ENV === 'preview'), healthCheckPage(buildId)],
     define: { __BUILD_ID__: JSON.stringify(buildId) },
   }
 })

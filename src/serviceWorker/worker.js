@@ -28,13 +28,23 @@
      next full open, or when the app asks it to: only while the page is
      hidden and nobody is typing (src/lib/serviceWorker.js, appUpdate.js).
      The last version's files are kept until the one after, so a window
-     still running it never loses a file it needs. */
+     still running it never loses a file it needs.
+   - A preview build (Vercel's branch address and each deployment's own,
+     never the live site) always opens the newest build (Tim, 10 Nov: the
+     branch address showed the build before the newest push, because a
+     fixed address kept its saved copy until the next full open). There a
+     page comes from the network first, with the saved copy only when
+     there is no connection, and a new worker takes over as soon as it has
+     installed. The live site is unchanged. */
 
 const BUILD = self.__CLARITY_BUILD__;
 const PREFIX = 'clarity-app-';
 const CACHE = `${PREFIX}${BUILD.id}`;
 // Big font parts only a few PDFs need (Chinese text): kept once used.
 const ON_DEMAND_CACHE = 'clarity-on-demand';
+const PREVIEW = Boolean(BUILD.preview);
+// How long a preview waits for the network before showing its saved copy.
+const PREVIEW_WAIT_MS = 4000;
 const PRECACHE = new Set(BUILD.precache);
 const ON_DEMAND = new Set(BUILD.onDemand);
 
@@ -69,7 +79,10 @@ function askedByOutside(request) {
 
 self.addEventListener('install', (event) => {
   // Fresh copies, never the browser's own cache of an older file.
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([...PRECACHE].map((url) => new Request(url, { cache: 'reload' })))));
+  event.waitUntil(caches.open(CACHE)
+    .then((cache) => cache.addAll([...PRECACHE].map((url) => new Request(url, { cache: 'reload' }))))
+    // A preview never waits: the newest build looks after the next page opened.
+    .then(() => (PREVIEW ? self.skipWaiting() : undefined)));
 });
 
 self.addEventListener('activate', (event) => {
@@ -99,7 +112,27 @@ async function fromCache(path) {
   return (await own.match(path)) || caches.match(path);
 }
 
+// A preview's page: the newest build from the network, or the saved copy
+// when there's no connection (or no answer within a few seconds).
+async function freshPage(request) {
+  let timer;
+  const late = new Promise((resolve) => { timer = setTimeout(() => resolve(null), PREVIEW_WAIT_MS); });
+  try {
+    const fresh = await Promise.race([fetch(request), late]);
+    if (fresh && fresh.status < 500) return fresh;
+  } catch {
+    // No connection: the saved copy.
+  } finally {
+    clearTimeout(timer);
+  }
+  return null;
+}
+
 async function page(request) {
+  if (PREVIEW) {
+    const fresh = await freshPage(request);
+    if (fresh) return fresh;
+  }
   const saved = await fromCache('/index.html');
   if (saved) return saved;
   return fetch(request);
