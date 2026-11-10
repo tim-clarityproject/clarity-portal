@@ -335,8 +335,7 @@ export default function PerformanceSprint() {
             <p>Its review is waiting for you.</p>
           </div>
         </div>
-        {view.debrief && <p className="sprint-debrief-line">Your weekly debrief is ready.</p>}
-        <div className="ds-actions ipp-actions">
+          <div className="ds-actions ipp-actions">
           <Button variant="primary" onClick={() => navigate('/performance-sprint/review')}>Review this sprint</Button>
           {view.debrief && <Button onClick={() => navigate('/performance-sprint/debrief')}>Start my debrief</Button>}
           <Button onClick={() => navigate('/performance-sprint/start')}>Start a new sprint</Button>
@@ -545,6 +544,7 @@ function SprintBody({
         <Section
           title={day ? 'Log today' : 'Log this week'}
           className="ipp-section sprint-section sprint-log"
+          eye={<WhoSees audience="me" />}
           aside={<SegmentedControl label="Log by" options={[{ value: 'day', label: 'Today' }, { value: 'week', label: 'This week' }]} value={mode} onChange={setMode} />}
         >
           <div className="sprint-subrow">
@@ -552,7 +552,6 @@ function SprintBody({
               <span>{day ? view.todayText : 'Fill in any day this week.'}</span>
               <SaveStatus state={save} />
             </span>
-            <WhoSees audience="me" />
           </div>
           {day && !view.todayIsWorking && (
             <div className="sprint-dayoff">
@@ -579,7 +578,7 @@ function SprintBody({
           // A first-visit tip: shown once, then never again (Tim, 5 Nov).
           helpKey="sprint-todos-roll"
           className="ipp-section sprint-section"
-          aside={<WhoSees audience="me" />}
+          eye={<WhoSees audience="me" />}
         >
           {t.thisWeek.length || t.wins.length ? (
             <TodoList label="To-dos this week" className="sprint-gap">
@@ -638,7 +637,6 @@ function SprintBody({
         </Section>
       </div>
 
-      {view.debrief && <p className="sprint-debrief-line">Your weekly debrief is ready.</p>}
       <div className="ds-actions ipp-actions">
         {view.debrief && <Button onClick={() => navigate('/performance-sprint/debrief')}>Start my debrief</Button>}
         <Button onClick={() => navigate('/performance-sprint/year')}>View your year</Button>

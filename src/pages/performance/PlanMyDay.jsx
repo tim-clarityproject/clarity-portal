@@ -489,7 +489,6 @@ function PlanFlow({ userId, date, today, loaded }) {
         <div className="day-narrow">
           <div className="ds-label-row">
             <span className="ds-label-row-text">Total hours</span>
-            <WhoSees audience="me" />
           </div>
           <Stepper
             label="Total hours"
@@ -531,7 +530,7 @@ function PlanFlow({ userId, date, today, loaded }) {
       nudges: ['It can be something small.'],
       example: GRATITUDE_EXAMPLE,
       render: () => (
-        <TextBox ariaLabel="One thing you’re grateful for today" who="me" maxLength={DAY_TEXT_MAX} value={answers.grateful} onChange={(grateful) => change({ grateful })} />
+        <TextBox ariaLabel="One thing you’re grateful for today" maxLength={DAY_TEXT_MAX} value={answers.grateful} onChange={(grateful) => change({ grateful })} />
       ),
     },
     {
@@ -545,7 +544,7 @@ function PlanFlow({ userId, date, today, loaded }) {
         );
         return (
           <div>
-            <TextBox ariaLabel="How you want to be today" who="me" lines="one" maxLength={WAY_MAX} value={answers.way} onChange={(way) => change({ way })} />
+            <TextBox ariaLabel="How you want to be today" lines="one" maxLength={WAY_MAX} value={answers.way} onChange={(way) => change({ way })} />
             {view.recent.length > 0 && (
               <>
                 <p className="day-sgh">You’ve used these recently.</p>
@@ -561,7 +560,6 @@ function PlanFlow({ userId, date, today, loaded }) {
     {
       key: 'do',
       name: 'Do',
-      eye: screenEye,
       question: 'What will you do today?',
       nudges: ['Choose up to 3.'],
       render: () => (!view.hasPlan ? noPlan : (
@@ -570,7 +568,6 @@ function PlanFlow({ userId, date, today, loaded }) {
             <MultiChoice
               variant="pick"
               ariaLabel="What will you do today?"
-              who="me"
               options={view.options}
               values={view.picks}
               onChange={choosePicks}
@@ -595,7 +592,6 @@ function PlanFlow({ userId, date, today, loaded }) {
     {
       key: 'priority',
       name: 'Priority',
-      eye: screenEye,
       question: 'Which one is your highest priority?',
       nudges: ['It comes first on Home and in your Daily review.'],
       oneTap: view.picks.length > 0,
@@ -627,7 +623,6 @@ function PlanFlow({ userId, date, today, loaded }) {
         <div className="day-narrow">
         <MultiChoice
           ariaLabel="Which Strategies does today serve most?"
-          who="me"
           options={view.strategies}
           values={view.dayStrategies}
           onChange={chooseStrategies}
@@ -643,16 +638,17 @@ function PlanFlow({ userId, date, today, loaded }) {
       nudges: ['Name what could knock today off course.', 'Then decide what you’ll do if it happens.'],
       render: () => (
         <div className="day-stack">
-          <TextBox label="What could knock today off course?" who="me" maxLength={DAY_TEXT_MAX} value={answers.risk} onChange={(risk) => change({ risk })} />
-          <TextBox label="If it happens, what will you do?" who="me" maxLength={DAY_TEXT_MAX} value={answers.response} onChange={(response) => change({ response })} />
+          <TextBox label="What could knock today off course?" maxLength={DAY_TEXT_MAX} value={answers.risk} onChange={(risk) => change({ risk })} />
+          <TextBox label="If it happens, what will you do?" maxLength={DAY_TEXT_MAX} value={answers.response} onChange={(response) => change({ response })} />
         </div>
       ),
     },
     {
       key: 'summary',
       name: 'Your day',
-      question: view.firstName ? `Here’s your day, ${view.firstName}.` : 'Here’s your day.',
-      nudges: ['Check it over.', 'Change anything you need to.'],
+      // The same pattern as the review's "This was your day", with no
+      // lines describing the screen (5e rules 1 and 5; Tim, 10 Nov).
+      question: 'This was your plan',
       render: (tool) => {
         const strategyName = new Map(view.strategies.map((s) => [s.value, s.label]));
         return (
@@ -689,6 +685,10 @@ function PlanFlow({ userId, date, today, loaded }) {
       },
     },
   ];
+
+  // One eye per screen, beside its question (5e rules 10 and 29d): never a
+  // second one in the body.
+  for (const s of steps) if (!s.plain && !s.bare) s.eye = screenEye;
 
   const backTo = location.state?.from || '/performance-sprint';
   const [anyway, setAnyway] = useState(false);

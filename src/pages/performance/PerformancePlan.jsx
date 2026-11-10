@@ -252,7 +252,7 @@ export default function PerformancePlan() {
 
             <Section
               title="Outcome Objectives"
-              aside={<WhoSees {...who('progress', 'Your Outcome Objective figures and scores')} />}
+              eye={<WhoSees {...who('progress', 'Your Outcome Objective figures and scores')} />}
               className="ipp-section"
             >
               {view.objectives.length ? (

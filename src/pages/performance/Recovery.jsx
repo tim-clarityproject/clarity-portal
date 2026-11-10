@@ -406,7 +406,7 @@ function RecoverySleep({ recovery, grow }) {
   const { last, average, action } = sleep;
   const answered = sleep.slots.filter((s) => s.hours != null || s.quality);
   return (
-    <Section title="Sleep" aside={<WhoSees audience="me" />} className="rec-sleep-sec">
+    <Section title="Sleep" eye={<WhoSees audience="me" />} className="rec-sleep-sec">
       {(last?.hours != null || average) && (
         <div className="rec-sleep-figs">
           {last?.hours != null && <Stat label="Last night" value={hoursFigure(last.hours)} unit="hours" />}

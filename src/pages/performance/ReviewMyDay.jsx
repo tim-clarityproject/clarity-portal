@@ -569,9 +569,8 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'do',
       name: 'Do',
-      eye: screenEye,
       question: planned ? 'Which of today’s to‑dos did you do?' : 'Which of this week’s to‑dos did you do today?',
-      nudges: view.running ? ['Tick each one you did.', 'Each tick also updates your sprint.'] : ['Tick each one you did.'],
+      nudges: ['Tick each one you did.'],
       render: () => (!view.hasPlan ? noPlan : (
         <div className="day-narrow">
           {eye}
@@ -596,7 +595,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'be',
       name: 'Be',
-      eye: screenEye,
       // Named in both questions (Tim, 5 Nov, 10:39; rule 64). With no way of
       // being from this morning, it first asks how they wanted to be today;
       // Skip skips both. Never a rating of nothing in particular.
@@ -622,7 +620,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
           <div>
             <ScaleChoice
               ariaLabel={wayQuestion(way)}
-              who="me"
               value={answers.rating}
               onChange={(rating) => change({ rating })}
               lowLabel="1 is not at all"
@@ -637,7 +634,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'numbers',
       name: 'Numbers',
-      eye: screenEye,
       // "Log today", as Home's Log today section (Tim, 5 Nov, 10:37).
       title: 'Log today',
       nudges: ['Anything you logged earlier is already here.'],
@@ -689,7 +685,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       nudges: ['Start with what worked, however small.'],
       render: () => (
         <div>
-          <TextBox ariaLabel="What went well today?" who="me" maxLength={REVIEW_TEXT_MAX} value={answers.wentWell} onChange={(wentWell) => change({ wentWell })} />
+          <TextBox ariaLabel="What went well today?" maxLength={REVIEW_TEXT_MAX} value={answers.wentWell} onChange={(wentWell) => change({ wentWell })} />
           {view.strategies.length > 0 && (
             <div className="rev-wins">
               <p>Did something outside your plan move the needle?</p>
@@ -713,7 +709,7 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       nudges: ['Pick one thing you’d change.'],
       example: DIFFERENTLY_EXAMPLE,
       render: () => (
-        <TextBox ariaLabel="What would you do differently next time?" who="me" maxLength={REVIEW_TEXT_MAX} value={answers.differently} onChange={(differently) => change({ differently })} />
+        <TextBox ariaLabel="What would you do differently next time?" maxLength={REVIEW_TEXT_MAX} value={answers.differently} onChange={(differently) => change({ differently })} />
       ),
     },
     {
@@ -725,7 +721,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
         <div className="day-narrow">
           <LevelChoice
             ariaLabel="Which Strategies moved today?"
-            who="me"
             options={view.strategies}
             values={view.moved}
             onChange={chooseMoved}
@@ -737,7 +732,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     {
       key: 'tomorrow',
       name: 'Tomorrow',
-      eye: screenEye,
       question: 'What are the most important things to do tomorrow?',
       nudges: ['They’ll be waiting in tomorrow’s Daily plan, in this order.'],
       example: TOMORROW_EXAMPLE,
@@ -763,7 +757,6 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       name: 'Your day',
       required: true, // nothing to skip: Next goes on to closing the day
       question: 'This was your day',
-      nudges: ['Check it over.', 'Change anything you need to.'],
       render: (tool) => {
         const tomorrow = tomorrowToRow(answers.tomorrow);
         return (
@@ -821,6 +814,10 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       },
     },
   ];
+
+  // One eye per screen, beside its question (5e rules 10 and 29d): never a
+  // second one in the body.
+  for (const s of steps) if (!s.plain && !s.bare) s.eye = screenEye;
 
   const backTo = location.state?.from || '/performance-sprint';
 

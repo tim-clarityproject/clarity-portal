@@ -397,7 +397,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
       {person === 'recovery' && recovery && <RecoveryBasics userId={userId} today={today} />}
 
       {person === 'new' && (
-        <Section title="Your plan" className="ipp-section home-section" aside={<WhoSees audience="me" />}>
+        <Section title="Your plan" className="ipp-section home-section" eye={<WhoSees audience="me" />}>
           {coach && <p className="home-line">You’ll build your plan with your coach in your first session.</p>}
           <PlanSteps steps={steps} />
           {/* M2: Start on my own (coaching clients), then How the system fits together. */}
@@ -413,7 +413,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
       />
 
       {hasPlan && person !== 'recovery' && (
-        <Section title="Today" className="ipp-section home-section home-today" aside={<WhoSees audience="me" />}>
+        <Section title="Today" className="ipp-section home-section home-today" eye={<WhoSees audience="me" />}>
           {running && dayPlanned && (
             <>
               <DayFocus way={day.dayPlan?.way_of_being || ''} strategies={dayStrategyNames(day.dayStrategies || [], d.strategies || [])} />

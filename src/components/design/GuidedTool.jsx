@@ -444,6 +444,7 @@ export default function GuidedTool({
 
   const progressBar = progress === 'percent' ? (
     <div
+      id={positionId}
       className="ds-guide-pct"
       role="progressbar"
       aria-valuenow={percent}
@@ -452,7 +453,7 @@ export default function GuidedTool({
       aria-label={`${percent}% complete`}
     >
       <span className="ds-guide-pct-track"><span style={{ width: `${percent}%` }} /></span>
-      <span className="ds-guide-pct-text">{`${percent}%`}</span>
+      <span className="ds-guide-pct-text" aria-hidden="true">{`${percent}%`}</span>
     </div>
   ) : (
     <nav className="ds-guide-steps" aria-label="Steps">
@@ -506,7 +507,8 @@ export default function GuidedTool({
         <div ref={scrollRef} className="ds-guide-scroll">
           <div key={step.key} className={`ds-guide-page${motion}`}>
             {!step.bare && !step.plain && progressBar}
-            {!step.plain && <span id={positionId} className="ds-sr">{positionText}</span>}
+            {/* The % shows once and is said once (29n): the bar itself names it. */}
+            {!step.plain && progress !== 'percent' && <span id={positionId} className="ds-sr">{positionText}</span>}
             {step.bare || step.plain ? (
               step.render(tool)
             ) : (

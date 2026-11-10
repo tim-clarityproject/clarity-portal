@@ -185,6 +185,8 @@ try {
   // A. A third thing chosen from the summary, then a refresh.
   await page.goto(`${APP}${PLAN}`);
   pass('A: a finished plan opens on its summary', await onSummary());
+  pass('A: the summary heading is "This was your plan", with no line under it', (await heading()) === 'This was your plan' && (await page.locator('.ds-guide-nudge').count()) === 0, await heading());
+  pass('A: the % shows once', ((await page.locator('.ds-guide-page').innerText()).match(/100%/g) || []).length === 1);
   await change('To-dos');
   pass('A: Change opens the to-dos step', (await heading()) === DO, await heading());
   await pick(TRAIN).click();
@@ -293,6 +295,7 @@ try {
   await until(() => queueEmpty());
   await page.goto(`${APP}${REVIEW}`);
   pass('E: a finished review opens on its summary', await onSummary());
+  pass('E: the review summary heading is "This was your day", with no line under it', (await heading()) === 'This was your day' && (await page.locator('.ds-guide-nudge').count()) === 0, await heading());
   const first = page.locator('.ds-guide-summary-change').first();
   const what = await first.getAttribute('aria-label');
   await first.click();
