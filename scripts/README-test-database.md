@@ -283,3 +283,15 @@ The copy script doesn't copy these. They need setting up separately before the m
 - **Edge Function `delete-user`** (`supabase/functions/delete-user/index.ts`). This is the **Delete account** button on My Account. Until it is deployed to clarity-portal-test, that button fails in the previews. Nothing else depends on it. It can be deployed from the project folder with the Supabase command-line tool, `supabase functions deploy delete-user --project-ref gqtqljngeenqzxneucoc`, after `supabase login`. It needs no extra secrets: Supabase gives every function its own project URL and service key.
 - **Scheduled jobs**: the code has none, so nothing is needed. If the copy shows that live has the `pg_cron` extension, it is copied as an extension only, with no jobs.
 - **Health-check emails** (`api/alignment-email.js` on Vercel). These use `RESEND_API_KEY`, `ALIGNMENT_EMAIL_FROM` and `ALIGNMENT_NOTIFY_TO`. If these are set for Preview, finishing a test health check in a preview sends a real completion email to the `ALIGNMENT_NOTIFY_TO` addresses.
+
+## The second invented test person (10 Nov)
+
+Sam (the test client) has nothing holding him back, so the dashboard's "What's holding you back" can't be seen with his data. A second invented person, Jordan Lee (the organisation test client in `~/.clarity-test-accounts.env`, `TEST_ORG_CLIENT_EMAIL`), has the same plan and running sprint with one Strategy, "Build The Clarity Portal", below the standard in its three finished weeks.
+
+```
+node --import ./tests/scores/register.mjs scripts/seed-test-plan.mjs --second --reset
+```
+
+It never touches Sam's plan. To see it on the preview, sign out, sign in as the organisation test client, and open the Dashboard.
+
+`--reset` (for either person) also clears rows earlier test runs left behind: the draft meeting plans named "Phase 0e check …" and any "Not tonight" evenings saved to the account.
