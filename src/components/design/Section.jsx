@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react';
-import keepWords from './keepWords';
+import { titleWithAside } from './keepWords';
 import './design.css';
 
 const SEEN_PREFIX = 'ds-help-seen:';
@@ -39,7 +39,7 @@ export default function Section({ title, line, helpKey, as: Heading = 'h2', id, 
   return (
     <section id={id} className={`ds-section ${className}`.trim()}>
       <div className="ds-section-head">
-        <Heading className="ds-section-title">{keepWords(title)}{eye && <span className="ds-page-aside">{eye}</span>}</Heading>
+        <Heading className="ds-section-title">{titleWithAside(title, eye)}</Heading>
         {aside && <div className="ds-section-aside">{aside}</div>}
       </div>
       {/* A first-visit tip: shown once, then never again (Tim, 5 Nov:

@@ -41,3 +41,23 @@ export default function keepWords(children) {
   if (isValidElement(children)) return children;
   return Children.map(children, (child, i) => (typeof child === 'string' ? keepString(child, `${i}-`) : child));
 }
+
+/**
+ * A title with a small icon after it (the eye, the play icon): the icon
+ * sits inside the heading, wrapped with the title's last word so it never
+ * drops to a line of its own (design reference: Small icons; rule 29d).
+ * `aside` is the icon; with none, the title alone.
+ */
+export function titleWithAside(title, aside) {
+  if (!aside) return keepWords(title);
+  const icon = <span className="ds-page-aside">{aside}</span>;
+  if (typeof title !== 'string' || !title.trim().includes(' ')) return <span className="ds-title-end">{keepWords(title)}{icon}</span>;
+  const text = title.trim();
+  const at = text.lastIndexOf(' ');
+  return (
+    <>
+      {keepWords(`${text.slice(0, at)} `)}
+      <span className="ds-title-end">{text.slice(at + 1)}{icon}</span>
+    </>
+  );
+}

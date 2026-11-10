@@ -724,8 +724,9 @@ function Results({ userId, today, kind, coach, results, points, goals, note, spr
         </Section>
       )}
 
+      {/* Three words at most in capitals (5e rule 29b): M12 drew "One thing to work on". */}
       {r.workOn && (
-        <Section title="One thing to work on" as="h3" className="ck-sec">
+        <Section title="One next step" as="h3" className="ck-sec">
           <WorkOn userId={userId} today={today} kind={kind} coach={coach} workOn={r.workOn} sprint={sprint} checkinId={checkinId} ensureCheckin={ensureCheckin} month={month} />
         </Section>
       )}

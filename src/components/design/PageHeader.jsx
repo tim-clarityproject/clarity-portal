@@ -1,4 +1,4 @@
-import keepWords from './keepWords';
+import { titleWithAside } from './keepWords';
 import './design.css';
 
 // Page header (design reference v3: Page header). The title in Nekst
@@ -22,8 +22,8 @@ export default function PageHeader({ title, meta = [], info, onSystemLink, aside
   return (
     <header className={`ds-page-header ${className}`.trim()}>
       <div className="ds-page-title-row">
-        <Heading className="ds-page-title">{keepWords(title)}</Heading>
-        {aside && <span className="ds-page-aside">{aside}</span>}
+        {/* The eye sits inside the heading, wrapped with its last word (rule 29d). */}
+        <Heading className="ds-page-title">{titleWithAside(title, aside)}</Heading>
       </div>
       {items.length > 0 && (
         <div className="ds-page-meta">

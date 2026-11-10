@@ -9082,10 +9082,39 @@
 .ui-root .ds-page-aside {
   display: inline-flex;
   align-items: center;
-  margin-left: var(--icon-title-gap);
+  /* The aside keeps the title's own text size, so the measures below are
+     in the title's em. 12px from the last letter: a spaced title leaves
+     its letter-spacing after that letter, which is taken back here. */
+  margin-left: calc(var(--icon-title-gap) - var(--aside-ls, 0em));
+  /* vertical-align middle is the middle of the small letters; the lift
+     takes the icon up to the middle of the capitals (measured: within
+     0.25px in DM Sans questions and in Nekst titles). */
   vertical-align: middle;
-  font-size: var(--fs-body);
+  position: relative;
+  top: calc(-1 * var(--aside-lift, 0.098em));
   line-height: 1;
+  white-space: nowrap;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Spaced Nekst capitals: page titles, section names, panel titles. */
+.ui-root .ds-page-title-row .ds-page-aside,
+.ui-root .ds-page-title .ds-page-aside {
+  --aside-ls: var(--ls-page-title);
+  --aside-lift: 0.088em;
+}
+
+.ui-root .ds-section-title .ds-page-aside,
+.ui-root .ds-mission-card-label .ds-page-aside,
+.ui-root .ds-dialog-title .ds-page-aside {
+  --aside-ls: var(--ls-section-title);
+  --aside-lift: 0.088em;
+}
+
+/* The title's last word and its icon stay together, so the icon never
+   drops to a line of its own (design reference: Small icons). */
+.ui-root .ds-title-end {
   white-space: nowrap;
 }
 

@@ -24,6 +24,7 @@ import {
   useToast,
   LoadError,
   keepWords,
+  titleWithAside,
 } from '../../components/design';
 import { usePlanPage } from '../../lib/performance/hooks';
 import { loadPlanEditor, saveMilestoneReached, saveSharing } from '../../lib/performance/api';
@@ -240,7 +241,7 @@ export default function PerformancePlan() {
             <section className="ds-mission-card" aria-labelledby="ipp-mission">
               <div className="ds-mission-card-head">
                 {/* The eye beside the title it belongs to (5e rules 10 and 29d). */}
-                <h2 id="ipp-mission" className="ds-mission-card-label">My Mission<span className="ds-page-aside"><WhoSees {...who('mission', 'Your mission')} /></span></h2>
+                <h2 id="ipp-mission" className="ds-mission-card-label">{titleWithAside('My Mission', <WhoSees {...who('mission', 'Your mission')} />)}</h2>
               </div>
               {view.mission
                 ? <p className="ds-mission-card-text">{keepWords(view.mission)}</p>
