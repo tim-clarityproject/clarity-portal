@@ -74,6 +74,7 @@ export default function ObjectiveEditor({
       </div>
       <Choice
         label="How will you track it?"
+        form="rows"
         options={OBJECTIVE_KINDS.map((k) => ({ value: k.value, label: k.label }))}
         value={o.kind}
         onChange={(next) => onChange({ kind: next })}
