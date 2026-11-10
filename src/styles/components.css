@@ -3400,7 +3400,7 @@ span.tc-editable:focus-visible {
 
 .tsa-row {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 150px 44px;
+  grid-template-columns: 28px minmax(0, 1fr) 200px 44px; /* the hours: two 44px buttons, the box and hrs/wk (follow-up 2) */
   align-items: start;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
@@ -3472,6 +3472,18 @@ span.tc-editable:focus-visible {
 .ui-root .tsa-stepper input::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* The Stop doing audit's hours (follow-up 2): 44px taps, and the box
+   never squeezed below 44px. The plan editor's own stepper is unchanged. */
+.ui-root .tsa-row .tsa-stepper-btn {
+  width: var(--tap-min);
+  height: var(--tap-min);
+}
+
+.ui-root .tsa-row .tsa-stepper input {
+  min-width: var(--tap-min);
+  flex-shrink: 0;
 }
 
 .tsa-hrs-label {
