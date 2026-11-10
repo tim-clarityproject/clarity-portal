@@ -1113,6 +1113,8 @@
   box-sizing: border-box;
   width: var(--onum-size);
   height: var(--onum-size);
+  /* Never squeezed out of round by a long name beside it. */
+  flex: none;
   border: var(--line-w) solid var(--quiet-line);
   border-radius: 50%;
   display: inline-flex;
@@ -5899,6 +5901,9 @@
   box-sizing: border-box;
   width: 100%;
   min-height: var(--tap-min);
+  /* The older phone rule pads every button (see the top of this file): it
+     pushed a to-do that opens 16px to the right of one that doesn't. */
+  padding: 0 !important;
   align-content: center;
 }
 

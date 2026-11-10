@@ -20,7 +20,8 @@
   display: grid;
   grid-template-columns: minmax(0, var(--dash-hero-l)) minmax(0, 1fr);
   gap: var(--space-3) var(--space-5);
-  align-items: end;
+  /* The score and the chart line up along the top (dashboard-calm.html). */
+  align-items: start;
   margin-top: var(--space-5);
 }
 
@@ -823,14 +824,31 @@
   .ui-root .dash-hero { grid-template-columns: minmax(0, 1fr); margin-top: var(--space-px18); }
   .ui-root .dash-sgrid { grid-template-columns: minmax(0, 1fr); }
   .ui-root .dash-crow {
-    grid-template-columns: minmax(0, 1fr) minmax(var(--dash-value-col-phone), max-content);
+    /* A figure in words with its target ("Very good", "Target Excellent")
+       takes just over half the row at most and wraps between the two, so
+       the objective's name keeps room for whole words. */
+    grid-template-columns: minmax(0, 1fr) fit-content(55%);
     grid-template-areas: "n v" "c c";
     gap: var(--space-2) var(--space-px12);
   }
   .ui-root .dash-crow-n { grid-area: n; }
   .ui-root .dash-crow-v { grid-area: v; }
+  /* The figure and its target wrap as two whole pieces, right-aligned. */
+  .ui-root .dash-crow-v {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: baseline;
+    column-gap: var(--space-1);
+  }
+  .ui-root .dash-crow-v strong { white-space: nowrap; }
+  .ui-root .dash-crow-v .dash-crow-dl,
+  .ui-root .dash-crow-v .dash-crow-cvl { flex-basis: 100%; }
   .ui-root .dash-crow-c { grid-area: c; }
-  .ui-root .dash-fold-h { grid-template-columns: minmax(0, 1fr) auto var(--tap-min); }
+  /* A long figure ("Hardware 60, Software 71") takes half the row at most and
+     wraps, so a long title beside it is never squashed to a letter a line. */
+  .ui-root .dash-fold-h { grid-template-columns: minmax(0, 1fr) fit-content(50%) var(--tap-min); }
+  .ui-root .dash-fv b { white-space: normal; text-align: right; }
   .ui-root .dash-hchart-plot,
   .ui-root .dash-hchart-axis { gap: var(--space-px3); }
 }

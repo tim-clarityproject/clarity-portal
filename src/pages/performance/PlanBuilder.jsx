@@ -473,6 +473,9 @@ function PlanTool({ userId, data, mode }) {
     name: 'Habits',
     question: 'Which habits will carry out each Strategy?',
     nudges: ['Add a measure and a target for each.', 'You can change them in any sprint.'],
+    // The eye beside the question, once (rule 29d), not at the far edge
+    // of the drop-down's label row.
+    eye: <WhoSees audience="me" />,
     render: () => {
       if (!habitStrategyId) {
         return (
@@ -487,7 +490,6 @@ function PlanTool({ userId, data, mode }) {
         <div>
           <Dropdown
             label="Which Strategy?"
-            who="me"
             options={namedStrategies.map((s) => ({ value: s.id, label: s.name.trim() }))}
             value={habitStrategyId}
             onChange={(habitStrategy) => set({ habitStrategy })}

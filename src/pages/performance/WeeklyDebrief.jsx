@@ -633,11 +633,10 @@ function DebriefFlow({ userId, today, loaded, view }) {
       />
     );
   };
+  // The eye sits beside each step's question (rule 29d), so the box has none.
   const box = (k, label) => (
     <TextBox
       ariaLabel={label}
-      who={audience}
-      coachName={view.coach || undefined}
       maxLength={DEBRIEF_TEXT_MAX}
       value={answers[k]}
       onChange={(v) => change({ [k]: v })}
@@ -723,6 +722,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
       name: 'Went well',
       question: 'What went well this week?',
       nudges: ['Start with what worked, however small.'],
+      eye: eye(),
       render: () => (
         <div>
           {view.yourDays.length > 0 && (
@@ -761,6 +761,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
       name: 'In the way',
       question: 'What got in the way?',
       nudges: ['Name one or two things.'],
+      eye: eye(),
       render: () => box('inTheWay', 'What got in the way?'),
     },
     {
@@ -768,6 +769,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
       name: 'Adjust',
       question: 'What will you adjust next week?',
       nudges: ['Pick one change you can make.'],
+      eye: eye(),
       render: () => box('adjust', 'What will you adjust next week?'),
     },
     {
