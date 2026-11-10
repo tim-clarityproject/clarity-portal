@@ -224,7 +224,7 @@ const chartFacts = (page) => page.evaluate(() => {
     };
   };
   const head = sec.querySelector('.ds-section-head');
-  const who = sec.querySelector('.ds-section-aside .ds-who');
+  const who = sec.querySelector('.ds-section-title .ds-who');
   const side = sec.querySelector('.ds-schart-range-side');
   const strip = sec.querySelector('.ds-schart-range-strip');
   const plot = sec.querySelector('.ds-schart-plot');
@@ -232,7 +232,8 @@ const chartFacts = (page) => page.evaluate(() => {
     title: sec.querySelector('.ds-section-title')?.textContent,
     // The eye alone, its words for screen readers (5 Nov); its drawn icon, not its 44px tap area, lines up on the right.
     who: who ? (who.getAttribute('aria-label') || who.textContent) : null,
-    whoRight: who && head ? head.getBoundingClientRect().right - (who.querySelector('svg, .ds-icon') || who).getBoundingClientRect().right : null,
+    // Beside the title's last letter, 12px after it (5e rule 29d; 10 Nov: never at the far edge).
+    whoRight: who && head ? (who.querySelector('svg, .ds-icon') || who).getBoundingClientRect().left - head.getBoundingClientRect().left : null,
     last: stat('Last night'),
     average: stat('Average quality'),
     bars,
@@ -367,7 +368,7 @@ if (part('chart')) {
       const f = await chartFacts(page);
       if (!f) { pass(`${tag}: the Sleep section shows`, false); await ctx.close(); continue; }
       pass(`${tag}: headed "Sleep"`, /^sleep$/i.test(f.title), f.title);
-      pass(`${tag}: "Only you" on the right`, /Only you/.test(f.who || '') && f.whoRight != null && Math.abs(f.whoRight) < 2, `${f.who} ${f.whoRight}`);
+      pass(`${tag}: "Only you" beside the title, not at the far edge`, /Only you/.test(f.who || '') && f.whoRight != null && f.whoRight > 20 && f.whoRight < 160, `${f.who} ${f.whoRight}`);
       pass(`${tag}: "Last night" 6.5 in Nekst Light`, f.last?.value === '6.5' && /nekst/i.test(f.last.font) && Number(f.last.weight) <= 300, JSON.stringify(f.last));
       pass(`${tag}: "hours" small and grey beside it`, f.last?.unit === 'hours' && f.last.unitSize < f.last.valueSize && f.last.unitColour !== 'rgb(255, 255, 255)' && f.last.unitColour !== 'rgb(0, 0, 0)', JSON.stringify(f.last));
       pass(`${tag}: "Average quality Good" (most common)`, f.average?.value === 'Good', f.average?.value);
@@ -498,9 +499,9 @@ if (part('target')) {
     pass(`${tag}: open`, (await link.getAttribute('aria-expanded')) === 'true');
     const btns = page.locator('.rec-sleep-sec .ds-starget .ds-stepper-btn');
     const val = (i) => page.locator('.rec-sleep-sec .ds-starget .ds-stepper-value').nth(i).textContent();
-    const minusSign = await btns.nth(0).evaluate((b) => b.textContent.trim());
-    const plusCross = await btns.nth(1).evaluate((b) => Boolean(b.querySelector('svg, img, .ds-crosshair, [class*=cross]')));
-    pass(`${tag}: the portal's stepper: a line for minus, the crosshair for plus`, minusSign === '−' && plusCross, minusSign);
+    // A plain minus and plus, drawn alike, never the crosshair (5e rules 29e and 29g; swept 10 Nov).
+    const icons = await btns.evaluateAll((bs) => bs.slice(0, 2).map((b) => ({ step: Boolean(b.querySelector('svg.ds-step-icon')), cross: Boolean(b.querySelector('.ds-crosshair, [class*=cross], img')) })));
+    pass(`${tag}: the portal's stepper: a plain minus and plus, never the crosshair`, icons.length === 2 && icons.every((i) => i.step && !i.cross), JSON.stringify(icons));
     const tapBoxes = await btns.evaluateAll((list) => list.map((b) => { const r = b.getBoundingClientRect(); return Math.min(r.width, r.height); }));
     pass(`${tag}: stepper buttons 44px`, tapBoxes.every((s) => s >= 43.5), tapBoxes.join(','));
     // From: up to 8.5 at most (below To 9).

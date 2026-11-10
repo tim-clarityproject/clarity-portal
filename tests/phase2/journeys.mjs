@@ -642,6 +642,7 @@ try {
   pass('tick: saved with today', Boolean(await until(async () => (await todosOf()).find((t) => t.text === TA)?.done_on === today)));
   // Move one to week 3: its options start at week 3, never "This week".
   at = 'move';
+  await todoRow(TD).locator('.ds-todo-open').click(); // Move sits inside the opened to-do (10 Nov)
   await todoRow(TD).getByRole('button', { name: /Move/ }).click();
   await page.waitForSelector('.ds-panel');
   const opts = await page.locator('.ds-panel [role=radio]').allTextContents();

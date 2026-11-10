@@ -4,7 +4,7 @@
 
 ## Design rules (Clarity Portal)
 
-1. **Dark and light modes both exist**, chosen as Light, Dark or Match my device (the starting choice), in My Account under Appearance. **Every page follows the choice** (Tim, 10 Nov), the older pages not yet rebuilt included: nothing is held in dark any more (`src/lib/colourMode/boot.js`). Every colour comes from a token with a dark and a light value, so check any page you touch in both.
+1. **Dark and light modes both exist**, chosen as Light, Dark or Match my device (the starting choice), in My Account under Appearance. **Every page follows the choice** (Tim, 10 Nov), the older pages not yet rebuilt included: nothing in the portal is held in dark any more (`src/lib/colourMode/boot.js`). The one exception is the outside Health Check (`/health-check`), which has no Appearance setting and stays dark until Tim decides otherwise. Every colour comes from a token with a dark and a light value, so check any page you touch in both.
 
 2. **Never hard-code a colour, font, font size, spacing or timing.** All design values must come from `src/styles/tokens.css` (CSS variables starting with `--`) and all component classes from `src/styles/components.css`. This includes button styles, borders, text sizes, padding, gaps, animation duration, and motion curves.
 

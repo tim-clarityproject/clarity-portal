@@ -318,7 +318,7 @@ try {
   pass('build: Ready lists the plan', ready.includes('Coaching clients') && ready.includes('31 now, target 40, by 15 Dec 2026')
     && ready.includes('Milestone, by 20 Jan 2027') && ready.includes('Good now, target Very good, by 26 Feb 2027')
     && ready.includes('4 habits across 2 Strategies') && ready.includes('Monday to Friday') && ready.includes('8 weeks') && ready.includes('80%'), ready.slice(0, 200));
-  pass('build: Ready’s alignment check', ready.includes('Every objective has a Strategy') && ready.includes('Every Strategy serves an objective'));
+  pass('build: Ready says nothing when the plan lines up (10 Nov: only a gap is named)', !ready.includes('Every objective has a Strategy') && !ready.includes('has no Strategy working on it'));
   pass('build: the set-up dial shows 8 weeks', (await page.locator('.ds-sdial-seg').count()) === 8 && (await page.locator('.ds-sdial-big').textContent()) === '8');
   await shot(page, 'flow-ready');
   await page.getByRole('button', { name: 'Start my first sprint' }).click();

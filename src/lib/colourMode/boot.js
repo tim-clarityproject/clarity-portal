@@ -19,7 +19,11 @@
    Every page follows the choice (Tim, 10 Nov: My Account and the old Time
    audit showed dark while the rest showed light). Until 10 Nov only the
    pages rebuilt for both modes did; every colour comes from the tokens,
-   which have a dark and a light value, so the older pages follow too. */
+   which have a dark and a light value, so the older pages follow too.
+
+   One exception: the outside Health Check (/health-check), which people
+   open without an account. It has no Appearance setting and has only been
+   checked in dark, so it stays dark until Tim decides otherwise. */
 (function () {
   if (typeof window === 'undefined' || window.ClarityColourMode) return;
 
@@ -46,7 +50,13 @@
 
   var choice = read();
 
+  function outsideHealthCheck() {
+    var path = window.location.pathname;
+    return path === '/health-check' || path === '/health-check.html' || path.indexOf('/health-check/') === 0;
+  }
+
   function resolve(c) {
+    if (outsideHealthCheck()) return 'dark';
     if (c === 'light' || c === 'dark') return c;
     return media && media.matches ? 'light' : 'dark';
   }

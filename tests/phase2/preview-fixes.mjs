@@ -357,8 +357,11 @@ if (part('part')) {
   for (const w of [1280, 390]) {
     const { ctx, page } = await open(b, { width: w });
     const phone = w < 769;
+    // The plan page no longer shows its version (calm layout, 10 Nov): the plan's history does.
+    await page.goto(`${APP}/performance-plan/history`);
+    await page.waitForFunction(() => /Version \d+\.\d+/.test(document.body.innerText), null, { timeout: 30000 });
+    const version = (await page.locator('body').innerText()).match(/Version (\d+)\.(\d+)/);
     await go(page, '/performance-plan', '.ds-mission-card');
-    const version = (await page.locator('.ds-page-meta').first().innerText()).match(/Version (\d+)\.(\d+)/);
     const [major, minor] = version ? [Number(version[1]), Number(version[2])] : [0, 0];
     const panel = page.locator('.ds-panel:has(.plan-part)');
     const editAndLeave = async (label, typeInto, words, how) => {
@@ -594,10 +597,10 @@ if (part('dial')) {
         underline: getComputedStyle(line.querySelector('.ds-mdial-link')).textDecorationColor,
       };
     });
-    const m = /^Sprint (\d+), week (\d+) of (\d+)$/.exec(r.line);
-    pass(`dial ${engineName} ${w}: the line reads "Sprint N, week X of Y"`, Boolean(m), r.line);
+    // The line is the link itself (calm layout, 10 Nov): "View your week".
+    pass(`dial ${engineName} ${w}: the line reads "View your week"`, r.line === 'View your week', r.line);
     pass(`dial ${engineName} ${w}: followed by the portal's chevron, no other icon`, r.chevron && r.otherIcons === 0);
-    pass(`dial ${engineName} ${w}: one button named "Open ${r.line}"`, r.name === `Open ${r.line}` && r.buttons === 0, r.name);
+    pass(`dial ${engineName} ${w}: one button, named with the date, the week and "View your week."`, /week \d+ of \d+\. View your week\.$/.test(r.name) && r.buttons === 0, r.name);
     pass(`dial ${engineName} ${w}: a 44px tap area`, r.h >= 44, `${r.h}px`);
     if (shots) await page.locator('.ds-mdial').screenshot({ path: `${shots}/dial-${engineName}-${w}.png` });
     if (w < 769 && engineName === 'chromium') {

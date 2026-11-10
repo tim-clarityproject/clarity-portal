@@ -316,6 +316,8 @@ const toastText = await page.locator('.ds-toast, [role=status]').filter({ hasTex
 pass('tick: "Done. 2 of 4 this week."', toastText.includes('Done. 2 of 4 this week.'), toastText);
 pass('tick: saved with today', Boolean(await until(async () => (await db.from('todos').select('done_on').eq('user_id', me).eq('text', 'Draft the Harbour case study')).data[0]?.done_on === today)));
 
+// Move sits inside the opened to-do (10 Nov).
+await todoRow('Shortlist breathing sound loops').locator('.ds-todo-open').click();
 await todoRow('Shortlist breathing sound loops').getByRole('button', { name: /Move/ }).click();
 await page.waitForSelector('.ds-panel');
 pass('move: says it won’t count this week', (await page.locator('.ds-panel').textContent()).includes('This week has started, so it won’t count as done in week 4.'));
@@ -325,7 +327,7 @@ const moves = moved ? (await db.from('todo_moves').select('to_week, moved_on').e
 pass('move: planned for week 6, with the move recorded', Boolean(moved) && moves.some((m) => m.to_week === 6 && m.moved_on === today), JSON.stringify(moves));
 await page.waitForTimeout(500);
 const movedRow = todoRow('Shortlist breathing sound loops').first();
-pass('move: stays this week, tagged, its tick off', (await movedRow.textContent()).includes('moved to week 6') && await movedRow.getByRole('checkbox').isDisabled());
+pass('move: stays this week, tagged, its tick off', (await movedRow.textContent()).includes('Moved to week 6') && await movedRow.getByRole('checkbox').isDisabled());
 
 await page.getByRole('button', { name: 'Add a to-do' }).click();
 await page.waitForSelector('.ds-panel textarea');

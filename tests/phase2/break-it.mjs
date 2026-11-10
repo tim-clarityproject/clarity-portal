@@ -37,6 +37,7 @@
 import { chromium } from 'playwright';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
 import { localToday } from '../../src/lib/performance/rows.js';
 import { m0SprintCalendar, m0WeekOfDay } from '../../src/lib/scores/index.js';
@@ -255,6 +256,7 @@ if (run('taps')) {
     const todos = await todosOf();
     const later = todos.find((t) => t.text === 'Draft the Harbour case study');
     const moveRow = page.locator('.ds-todo').filter({ hasText: 'Draft the Harbour case study' });
+    await moveRow.locator('.ds-todo-open').click(); // Move sits inside the opened to-do (10 Nov)
     await moveRow.getByRole('button', { name: /Move/ }).click();
     await page.waitForSelector('.ds-panel [role=radio]');
     await page.locator('.ds-panel [role=radio]').first().click({ clickCount: 3 }).catch(() => null);
@@ -865,6 +867,7 @@ if (run('versions')) {
     pass('versions: window B\'s tick is saved', Boolean(await until(async () => (await todoNow(T))?.done_on === today)));
     const ticked = await todoNow(T);
     // Window A, from the older version, moves it to week 6.
+    await todoRow(A.page, T).locator('.ds-todo-open').click();
     await todoRow(A.page, T).getByRole('button', { name: /Move/ }).click();
     await A.page.waitForSelector('.ds-panel');
     await A.page.locator('.ds-panel').getByRole('radio', { name: /Week 6/ }).click();
@@ -1117,6 +1120,10 @@ if (run('others')) {
     pass(`others: signed out can't write ${t}`, Boolean(i.error), JSON.stringify(i.data).slice(0, 80));
   }
   // In the app as the other client: my plan's routes show them nothing of mine.
+  // Since 10 Nov the other client is also the second invented person, seeded
+  // with the same plan wording: emptied here, so any of these words on their
+  // screen could only be mine, then seeded again at the end of this part.
+  execFileSync('node', ['scripts/seed-test-plan.mjs', '--second', '--empty'], { stdio: 'pipe' });
   const { context, page } = await signedIn({ email: env.TEST_ORG_CLIENT_EMAIL, password: env.TEST_ORG_CLIENT_PASSWORD });
   try {
     for (const path of ['/performance-plan', '/performance-plan/history', '/performance-plan/history/3.2', '/performance-plan/history/1.0', '/performance-plan/edit', '/performance-sprint', '/performance-sprint/year', '/performance-sprint/review', '/performance-sprint/start', '/recovery', '/recovery/today', '/recovery/check-in', `/performance-plan/history/${plan.id}`, `/performance-sprint?sprint=${sprint.id}`]) {
@@ -1141,6 +1148,7 @@ if (run('others')) {
   }
   await ctx.close();
   await other.auth.signOut();
+  execFileSync('node', ['scripts/seed-test-plan.mjs', '--second', '--reset'], { stdio: 'pipe' });
 }
 
 await browser.close();

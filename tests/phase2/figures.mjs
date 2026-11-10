@@ -184,7 +184,7 @@ const objs = objectiveResults(d.objectives, d.figures, today, sprint.start_on);
 const ms = d.objectives.find((o) => o.kind === 'milestone');
 const left = m9TimeLeft(today, ms.due_on);
 const msCard = cards.find((c) => c.text.includes(ms.name));
-pass('plan (M9.2): the milestone’s time left equals src/lib/scores', msCard && objs.length === 3 && msCard.text.toLowerCase().includes(left.text), `${JSON.stringify(left)} in ${msCard?.text.slice(0, 120)}`);
+pass('plan: the milestone shows its date, with no “months left” line (calm layout, 10 Nov)', msCard && objs.length === 3 && !msCard.text.toLowerCase().includes(left.text) && /By \d+ \w+ \d{4}/.test(msCard.text), `${JSON.stringify(left)} in ${msCard?.text.slice(0, 120)}`);
 const tiles = await page.evaluate(() => [...document.querySelectorAll('.ds-stile')].map((t) => t.textContent.replace(/\s+/g, ' ')));
 for (const s of d.strategies) {
   const want = soFar?.result?.strategies?.find((x) => x.id === s.id)?.score;
