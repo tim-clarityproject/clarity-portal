@@ -4,6 +4,7 @@
 // and a sprint week for M5, so no screen works out a score itself.
 
 import { getLocalDateKey } from '../dateFormatter';
+import { dayIn, isZone } from '../time/index.js';
 import { addDays } from '../scores/dates.js';
 import {
   m0SprintCalendar,
@@ -21,15 +22,9 @@ import {
  * api.js readSettings).
  */
 export function localToday(timeZone, now = new Date()) {
-  if (timeZone) {
-    try {
-      const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
-      const get = (t) => parts.find((p) => p.type === t)?.value;
-      if (get('year') && get('month') && get('day')) return `${get('year')}-${get('month')}-${get('day')}`;
-    } catch {
-      // An unknown time zone: the device's own day.
-    }
-  }
+  // A named zone's day comes from the one time library (src/lib/time); an
+  // unknown zone falls back to the device's own day.
+  if (timeZone && isZone(timeZone)) return dayIn(timeZone, now);
   return getLocalDateKey(now);
 }
 

@@ -1,0 +1,95 @@
+// Booking helpers, for Phase 6a to use (decisions part 5, 10 Nov, 11:40
+// and 18:26; time-zone-safeguards.md rules 4, 9 and 13). No screens here.
+//
+//   - a call starts only on a quarter hour (:00, :15, :30, :45) in the
+//     CLIENT's time, so half-hour and 45-minute zones (India, Newfoundland,
+//     Nepal) still get tidy starts;
+//   - there are always at least 15 clear minutes between any two calls;
+//   - only times from 07:00 to 20:00 in the BOOKER's own time are offered,
+//     unless they choose "Show early and late times".
+import { addDays, instantAt, wallClock } from './instants.js';
+
+export const GAP_MINUTES = 15;
+export const QUARTER_MINUTES = 15;
+export const SOCIABLE_FROM = '07:00';
+export const SOCIABLE_TO = '20:00';
+export const EARLY_AND_LATE_LABEL = 'Show early and late times';
+
+const MIN = 60000;
+const ms = (t) => (t instanceof Date ? t.getTime() : new Date(t).getTime());
+const minutesOf = (time) => { const [h, m] = String(time).split(':').map(Number); return h * 60 + m; };
+
+/** Whether an instant is on a quarter hour in the client's own time. */
+export function onQuarterHour(instant, clientZone) {
+  const w = wallClock(instant, clientZone);
+  return w.minute % QUARTER_MINUTES === 0 && w.second === 0 && ms(instant) % 1000 === 0;
+}
+
+/** The first quarter hour, in the client's time, at or after an instant. */
+export function nextQuarterHour(instant, clientZone) {
+  let t = Math.ceil(ms(instant) / MIN) * MIN;
+  for (let i = 0; i < 60 && !onQuarterHour(t, clientZone); i += 1) t += MIN;
+  return new Date(t);
+}
+
+/**
+ * Whether a call from `start` for `minutes` leaves 15 clear minutes before
+ * and after every other booking ({ start, end } instants, any coach's
+ * calendar entry that blocks time).
+ */
+export function clearOfOthers(start, minutes, bookings = [], gap = GAP_MINUTES) {
+  const s = ms(start);
+  const e = s + minutes * MIN;
+  return bookings.every((b) => e + gap * MIN <= ms(b.start) || s >= ms(b.end) + gap * MIN);
+}
+
+/** Whether an instant falls from 07:00 up to 20:00 in a zone (the booker's own time). */
+export function sociable(instant, zone, { from = SOCIABLE_FROM, to = SOCIABLE_TO } = {}) {
+  const w = wallClock(instant, zone);
+  const m = w.hour * 60 + w.minute;
+  return m >= minutesOf(from) && m <= minutesOf(to);
+}
+
+/**
+ * Why a start can't be booked, or null when it can:
+ *   'quarter'   not on a quarter hour in the client's time
+ *   'gap'       within 15 minutes of another booking
+ *   'early-late' outside 07:00 to 20:00 for the booker (only when they
+ *               haven't chosen "Show early and late times")
+ */
+export function bookingProblem({ start, minutes, clientZone, bookerZone = clientZone, bookings = [], earlyAndLate = false }) {
+  if (!onQuarterHour(start, clientZone)) return 'quarter';
+  if (!clearOfOthers(start, minutes, bookings)) return 'gap';
+  if (!earlyAndLate && !sociable(start, bookerZone)) return 'early-late';
+  return null;
+}
+
+/**
+ * The starts that can be offered on one day of the booker's own calendar.
+ * @param {object} o
+ * @param {string} o.day          'YYYY-MM-DD', a day in the booker's zone
+ * @param {number} o.minutes      the call's length
+ * @param {string} o.clientZone   the anchor zone: starts are on its quarter hours
+ * @param {string} [o.bookerZone] whoever is choosing the time (default: the client)
+ * @param {{start, end}[]} [o.bookings] what is already in the coach's calendar
+ * @param {{start, end}[]} [o.open]  when the coach is free to be booked (instants); left out, the whole day
+ * @param {boolean} [o.earlyAndLate] "Show early and late times" was chosen
+ * @param {Date} [o.notBefore]    nothing before this instant (for example 24 hours ahead)
+ * @returns {Date[]} instants, earliest first
+ */
+export function offeredStarts({ day, minutes, clientZone, bookerZone = clientZone, bookings = [], open = null, earlyAndLate = false, notBefore = null }) {
+  const dayStart = instantAt(day, '00:00', bookerZone);
+  const dayEnd = instantAt(addDays(day, 1), '00:00', bookerZone);
+  const out = [];
+  for (let t = nextQuarterHour(dayStart, clientZone).getTime(); t < dayEnd.getTime(); t += QUARTER_MINUTES * MIN) {
+    const start = new Date(t);
+    // A clock change inside the day can leave a start off the quarter hour.
+    if (!onQuarterHour(start, clientZone)) continue;
+    if (wallClock(start, bookerZone).date !== day) continue;
+    if (notBefore && t < ms(notBefore)) continue;
+    if (open && !open.some((o) => t >= ms(o.start) && t + minutes * MIN <= ms(o.end))) continue;
+    if (bookingProblem({ start, minutes, clientZone, bookerZone, bookings, earlyAndLate })) continue;
+    out.push(start);
+  }
+  return out;
+}
