@@ -176,7 +176,7 @@ test('what’s improving and what’s holding you back come from M10, in its ord
   assert.ok(v.current.holdingBack.length <= 3, 'never more than 3');
   assert.deepEqual(v.current.holdingBack[0].fix, { label: 'Plan it into this week', to: '/performance-sprint', state: { addTodoFor: 'b' } });
   const notMoving = v.current.holdingBack.find((x) => x.kind === 'objective_not_moving');
-  assert.equal(notMoving.line, 'Your rating is still 7/10 this sprint, while the work behind it is on track.');
+  assert.equal(notMoving.line, 'Your rating is still “Very good” this sprint, while the work behind it is on track.');
   assert.equal(notMoving.fix.label, 'Review its Strategies');
   assert.equal(v.current.lead, 'This is week 5 of 8 of Sprint 2.');
   assert.equal(v.current.closedLine, `3 things are improving and ${v.current.holdingBack.length} are holding you back.`);
@@ -214,7 +214,7 @@ test('Outcome Objectives: progress, pace, effort, the change this sprint and the
   assert.equal(o1.effortLine, null);
   assert.ok(Math.abs(o1.bar.value - 31 / 38) < 1e-9);
   assert.equal(o2.label, '');
-  assert.equal(o2.of, 'Target 9/10');
+  assert.equal(o2.of, 'Target Excellent');
   assert.equal(o3.line, null);
   assert.equal(o3.value, '8 months');
   assert.equal(o3.of, 'left');

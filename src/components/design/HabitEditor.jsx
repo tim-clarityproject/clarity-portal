@@ -6,6 +6,7 @@ import FieldLabel from './FieldLabel';
 import { NumberField } from './LoggingRow';
 import TextBox from './TextBox';
 import {
+  HABIT_RATING_OPTIONS,
   HABIT_MEASURES,
   IMPACTS,
   NAME_MAX,
@@ -64,7 +65,9 @@ export default function HabitEditor({ habit: h, onChange, onRemove, placeholder 
           className="ds-habed-unit"
         />
       )}
-      {h.measure === 'rating' && (
+      {/* Five words run from Poor to Excellent, so higher is better; an
+          older habit set the other way keeps its choice. */}
+      {h.measure === 'rating' && h.direction === 'lower' && (
         <Choice
           label="Which is better?"
           options={RATING_DIRECTIONS}
@@ -75,6 +78,16 @@ export default function HabitEditor({ habit: h, onChange, onRemove, placeholder 
       <div className="ds-habed-row">
         {h.measure !== 'yes_no_weekly' && (
           <div className="ds-habed-target">
+            {/* A rating's target is one of the five words (5e rule 29i). */}
+            {h.measure === 'rating' ? (
+              <Choice
+                label="What’s the target?"
+                options={HABIT_RATING_OPTIONS.filter((o) => (h.direction === 'lower' ? o.value <= 4 : o.value >= 2)).map((o) => ({ value: String(o.value), label: o.label }))}
+                value={h.target ? String(h.target) : null}
+                onChange={(target) => onChange({ target })}
+              />
+            ) : (
+            <>
             <FieldLabel label="What’s the target?" htmlFor={`${id}-target`} />
             <div className="ds-habed-target-box">
               <NumberField
@@ -89,6 +102,8 @@ export default function HabitEditor({ habit: h, onChange, onRemove, placeholder 
               {suffix && <span className="ds-habed-suffix">{suffix}</span>}
             </div>
             {hint && <p id={`${id}-hint`} className="ds-hint">{hint}</p>}
+            </>
+            )}
           </div>
         )}
         <div className="ds-habed-impact">

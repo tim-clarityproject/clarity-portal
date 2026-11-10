@@ -33,16 +33,72 @@ function splitUnit(unit) {
   return { pre: '', suf: '', word: u };
 }
 
-/** An objective's figure on its own: "£172k", "31", "7/10". */
+// Ratings are five words, never numbers (5e rule 29i; Tim and Claude, 10
+// Nov): Poor, Fair, Good, Very good, Excellent, the "how good" scale. The
+// five words score 0, 25, 50, 75 and 100 (docs/scoring-methods.md, M1 and
+// M9.1). Nothing saved changes shape:
+// - a habit rated each day keeps its saved 1 to 5 (1 Poor to 5 Excellent),
+//   and M1's rating rule gives the same score as the words' 0 to 100;
+// - an Outcome Objective's rating stays on its saved 0 to 10: a word saves
+//   0, 2.5, 5, 7.5 or 10 (the same 0, 25, 50, 75 and 100 out of 100), and
+//   an older figure reads 0 to 2 Poor, 3 to 4 Fair, 5 to 6 Good, 7 to 8
+//   Very good, 9 to 10 Excellent, keeping its date. Targets the same.
+export const RATING_WORDS = Object.freeze(['Poor', 'Fair', 'Good', 'Very good', 'Excellent']);
+
+/** Which of the five words (0 to 4) an objective's saved 0 to 10 figure reads as, or null. */
+export function ratingStep(value) {
+  if (value == null || value === '' || Number.isNaN(Number(value))) return null;
+  const v = Number(value);
+  if (v < 2.5) return 0;
+  if (v < 5) return 1;
+  if (v < 7) return 2;
+  if (v < 9) return 3;
+  return 4;
+}
+
+/** "Very good" for an objective's saved 0 to 10 figure ('' when there is none). */
+export function ratingWord(value) {
+  const step = ratingStep(value);
+  return step == null ? '' : RATING_WORDS[step];
+}
+
+/** The figure a word saves on the objective's 0 to 10 scale: 0, 2.5, 5, 7.5 or 10. */
+export const ratingValue = (step) => step * 2.5;
+
+/** The word's score out of 100: 0, 25, 50, 75 or 100. */
+export function ratingScore(value) {
+  const step = ratingStep(value);
+  return step == null ? null : step * 25;
+}
+
+/** The answers for an objective's rating, each saving its 0 to 10 figure as text. */
+export const OBJECTIVE_RATING_OPTIONS = Object.freeze(RATING_WORDS.map((label, step) => ({ value: String(ratingValue(step)), label })));
+
+/** A typed or saved objective rating as the answer it shows ('' when none). */
+export function ratingOption(value) {
+  const step = ratingStep(value);
+  return step == null ? null : String(ratingValue(step));
+}
+
+/** "Very good" for a habit's daily rating (1 to 5), or its average. */
+export function habitRatingWord(value) {
+  if (value == null || Number.isNaN(Number(value))) return '';
+  return RATING_WORDS[Math.min(5, Math.max(1, Math.round(Number(value)))) - 1];
+}
+
+/** The answers for a habit's daily rating: the five words, saving 1 to 5. */
+export const HABIT_RATING_OPTIONS = Object.freeze(RATING_WORDS.map((label, i) => ({ value: i + 1, label })));
+
+/** An objective's figure on its own: "£172k", "31", "Very good". */
 export function objectiveFigure(objective, value) {
-  if (objective.kind === 'rating') return `${plainNumber(value)}/10`;
+  if (objective.kind === 'rating') return ratingWord(value);
   const { pre, suf } = splitUnit(objective.unit);
   return `${pre}${plainNumber(value)}${suf}`;
 }
 
-/** What the figure is measured against: "of 40", "of £250k", "target 9/10". */
+/** What the figure is measured against: "of 40", "of £250k", "target Excellent". */
 export function objectiveTarget(objective) {
-  if (objective.kind === 'rating') return `target ${plainNumber(objective.target)}/10`;
+  if (objective.kind === 'rating') return `target ${ratingWord(objective.target)}`;
   const { word } = splitUnit(objective.unit);
   return `of ${objectiveFigure(objective, objective.target)}${word ? ` ${word}` : ''}`;
 }
@@ -50,7 +106,7 @@ export function objectiveTarget(objective) {
 /** How the kind is named on its card, or null for a number. */
 export function objectiveKindLabel(objective) {
   if (objective.kind === 'milestone') return 'Milestone';
-  if (objective.kind === 'rating') return 'Rated out of 10';
+  if (objective.kind === 'rating') return 'Rated from Poor to Excellent';
   return null;
 }
 
@@ -65,7 +121,7 @@ export function objectiveDate(objective) {
  */
 export function objectiveStripFigure(objective, current, reached) {
   if (objective.kind === 'milestone') return reached ? 'Done' : `Not yet, by ${shortDate(objective.dueOn)}`;
-  if (objective.kind === 'rating') return `${objectiveFigure(objective, current)} of ${plainNumber(objective.target)}/10`;
+  if (objective.kind === 'rating') return `${objectiveFigure(objective, current)}, target ${ratingWord(objective.target)}`;
   return `${objectiveFigure(objective, current)} ${objectiveTarget(objective)}`;
 }
 
@@ -92,8 +148,8 @@ export function habitMeasureLine(habit) {
         : `Yes or no each day, aim for ${plainNumber(habit.target)} ${Number(habit.target) === 1 ? 'day' : 'days'} a week`;
     case 'rating':
       return habit.direction === 'lower'
-        ? `Rated 1 to 5 each day, aim for ${plainNumber(habit.target)} or lower`
-        : `Rated 1 to 5 each day, aim for ${plainNumber(habit.target)}`;
+        ? `Rated each day, aim for ${habitRatingWord(habit.target)} or lower`
+        : `Rated each day, aim for ${habitRatingWord(habit.target)}`;
     case 'yes_no_weekly':
       return 'Once a week';
     default:

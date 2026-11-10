@@ -512,7 +512,7 @@ function ReviewFlow({ userId, data, view, today, onFinish }) {
             form="rows"
             ariaLabel="What’s next?"
             options={[
-              { value: 'sprint', label: `Straight into Performance Sprint ${view.nextNumber}` },
+              { value: 'sprint', label: 'I’ll go straight into my next sprint' },
               { value: 'recovery', label: 'I’ll take a recovery week first' },
             ]}
             value={draft.choice}

@@ -97,14 +97,14 @@ test('alignment: gaps both ways, in words', () => {
 
 test('words: figures, targets and measure lines', () => {
   assert.equal(objectiveTarget({ kind: 'number', unit: '£k', target: 250 }), 'of £250k');
-  assert.equal(objectiveTarget({ kind: 'rating', target: 9 }), 'target 9/10');
+  assert.equal(objectiveTarget({ kind: 'rating', target: 9 }), 'target Excellent');
   assert.equal(objectiveStripFigure({ kind: 'number', unit: null, target: 40 }, 31, false), '31 of 40');
-  assert.equal(objectiveStripFigure({ kind: 'rating', target: 9 }, 7, false), '7/10 of 9/10');
+  assert.equal(objectiveStripFigure({ kind: 'rating', target: 9 }, 7, false), 'Very good, target Excellent');
   assert.equal(objectiveStripFigure({ kind: 'milestone', dueOn: '2027-06-30' }, null, false), 'Not yet, by 30 Jun 2027');
   assert.equal(habitMeasureLine({ measure: 'amount', unit: 'steps', target: 10000, targetPer: 'day' }), '10,000 steps a day');
   assert.equal(habitMeasureLine({ measure: 'count', unit: 'sessions', target: 4, targetPer: 'week' }), '4 sessions a week');
   assert.equal(habitMeasureLine({ measure: 'yes_no_days_limit', limit: 2 }), 'Yes or no each day, no more than 2 days a week');
-  assert.equal(habitMeasureLine({ measure: 'rating', target: 4, direction: 'higher' }), 'Rated 1 to 5 each day, aim for 4');
+  assert.equal(habitMeasureLine({ measure: 'rating', target: 4, direction: 'higher' }), 'Rated each day, aim for Very good');
   assert.equal(habitMeasureLine({ measure: 'yes_no_weekly' }), 'Once a week');
   assert.equal(servesLine([1, 2, 4]), 'Serves objectives 1, 2 and 4');
 });

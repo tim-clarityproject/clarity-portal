@@ -62,6 +62,8 @@
 
 26b. **Performance Evidence is the Confidence Bank (Tim, 10 Nov).** Everywhere it is named: tiles, the menu, page titles, saved items, toasts, emails, PDFs and the gallery. The things inside it are **wins**: "Save a new win", "Look back at my wins", "Edit this win", "Save my win"; when it's empty its one button reads "Save my first win". No "Ask someone for a few words" button (anything already saved that way stays viewable). It has no page or address yet (it is built in a later phase, at /confidence-bank; any /performance-evidence address must redirect there). The database table keeps its name, `performance_evidence`.
 
+26c. **Ratings are five words, never numbers (5e rule 29i; 10 Nov).** A habit rated each day and an Outcome Objective tracked by a rating both read Poor, Fair, Good, Very good, Excellent, scoring 0, 25, 50, 75 and 100 (`RATING_WORDS` and its helpers in `src/lib/performance/words.js`; docs/scoring-methods.md M1 and M9.1). Saved values keep their shape: a habit's 1 to 5, and an objective's 0 to 10, where a word saves 0, 2.5, 5, 7.5 or 10 and an earlier figure reads 0 to 2 Poor, 3 to 4 Fair, 5 to 6 Good, 7 to 8 Very good, 9 to 10 Excellent. No screen shows "/10" or "1 to 5" for these.
+
 27. **Times for a tool read "~5 minutes"** (Tim, 23 Oct), never "About 5 minutes" or "5 min". Ranges stay as they are, for example "1, 3 or 5 minutes".
 
 28. **Error messages say what happened, then what to do** (Tim's rule 15), for example "That didn’t save. Check your connection and try again." "Fail" and "failed" are never used in client text. After deleting something the message reads "Deleted" (with Undo where Undo exists), apart from deleting the whole account, which says "Your account has been deleted."

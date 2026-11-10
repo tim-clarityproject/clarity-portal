@@ -30,7 +30,7 @@ import {
 } from '../scores/index.js';
 import { shownUnit, toShown } from '../units.js';
 import { backToday, openRecovery, recoveryEndOn, settingForWeek, sprintPause, sprintWeekResult, toMeasure, toRecoveries, toTodo } from './rows';
-import { habitMeasureLine, plainNumber } from './words';
+import { habitMeasureLine, habitRatingWord, plainNumber } from './words';
 
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -126,13 +126,14 @@ export function logRow(sh, setting, { week, workingDays, today, logs, score, not
       break;
     }
     case 'rating': {
-      const aim = m.direction === 'lower' ? `aim for ${n(m.target)} or lower` : `aim for ${n(m.target)}`;
+      // Five words, never 1 to 5 (5e rule 29i).
+      const aim = m.direction === 'lower' ? `aim for ${habitRatingWord(m.target)} or lower` : `aim for ${habitRatingWord(m.target)}`;
       // Today's line: the bar is today's rating towards the aim, empty until
       // rated today (UI tester, 3 Nov: a full bar beside no rating yet).
       lineBar = todayValue == null ? 0 : m1RatingScore(todayValue, m.target, m.direction) / 100;
-      line = `Rated 1 to 5 today, ${aim}`;
+      line = `Rated each day, ${aim}`;
       weekLine = upTo.length
-        ? `Average ${n(Math.round((total / upTo.length) * 10) / 10)} this week, ${aim}`
+        ? `${habitRatingWord(total / upTo.length)} on average this week, ${aim}`
         : `No rating yet this week, ${aim}`;
       break;
     }

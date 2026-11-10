@@ -193,7 +193,7 @@ test('Ready’s words', () => {
   assert.equal(workingDaysWords([0, 2, 4]), 'Monday, Wednesday and Friday');
   assert.equal(workingDaysWords([0, 1, 2, 3, 4, 5, 6]), 'Every day');
   assert.equal(objectiveSummary({ kind: 'number', start: '31', target: '40', date: '2027-12-31' }), '31 now, target 40, by 31 Dec 2027');
-  assert.equal(objectiveSummary({ kind: 'rating', start: '6', target: '8', date: '2027-06-30' }), '6/10 now, target 8/10, by 30 Jun 2027');
+  assert.equal(objectiveSummary({ kind: 'rating', start: '6', target: '8', date: '2027-06-30' }), 'Good now, target Very good, by 30 Jun 2027');
   assert.equal(objectiveSummary({ kind: 'milestone', date: '2027-03-31' }), 'Milestone, by 31 Mar 2027');
   const long = draftMission({ known: 'calm leadership through every merger, restructure and difficult board meeting', serve: 'my executive team and the wider business', great: 'we are trusted' });
   assert.ok(long.length <= 120 && long.endsWith('.'));

@@ -157,6 +157,8 @@ export function figureChange(objective, now, before) {
   const diff = Math.round((now - before) * 100) / 100;
   if (!diff) return null;
   const down = objective.kind === 'number' && objective.direction === 'down';
+  // A rating has no number to show (5e rule 29i): the answers say it.
+  if (objective.kind === 'rating') return null;
   const sign = diff > 0 ? '+' : '−';
   return { text: `${sign}${plainNumber(Math.abs(diff))}`, good: down ? diff < 0 : diff > 0 };
 }
@@ -187,7 +189,7 @@ export function debriefObjectives(d, { sprintId, week, day }) {
       name: row.name,
       kind: row.kind,
       objective,
-      unit: row.kind === 'rating' ? '/10' : unitWord(row.unit),
+      unit: row.kind === 'rating' ? null : unitWord(row.unit),
       decimals: row.kind !== 'rating',
       before,
       lastLine: before == null ? 'Not set yet' : `Last week ${objectiveFigure(objective, before)}`,

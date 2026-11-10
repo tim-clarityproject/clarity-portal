@@ -934,7 +934,7 @@ function WorkOn({ userId, today, kind, coach, workOn, sprint, checkinId, ensureC
                 <span className="ck-option-text">{o.text}</span>
                 <span className="ck-option-reason">{o.reason}</span>
                 <span className="ck-option-actions">
-                  {canAdd(o) && <Button variant="text" onClick={() => choose(o)}>{o.as === 'habit' ? 'Add as a habit' : 'Add as a to-do'}</Button>}
+                  {canAdd(o) && <Button variant="text" onClick={() => choose(o)}>{o.as === 'habit' ? 'Add it as a habit' : 'Add it as a to-do'}</Button>}
                   <Button variant="text" onClick={() => alreadyDoing(o)}>Already doing this</Button>
                 </span>
               </li>

@@ -145,7 +145,9 @@ function TickBox({ checked, onChange, label }) {
 }
 
 const YES_NO = [{ value: 0, label: 'No' }, { value: 1, label: 'Yes' }];
-const RATINGS = [1, 2, 3, 4, 5].map((r) => ({ value: r, label: String(r) }));
+// A daily rating is five words, never 1 to 5 (5e rule 29i): Poor to
+// Excellent, saving 1 to 5 as before.
+const RATINGS = ['Poor', 'Fair', 'Good', 'Very good', 'Excellent'].map((label, i) => ({ value: i + 1, label }));
 
 // Logging row (design reference: Logging rows; M1 hrow). One habit per
 // row: the name, one grey line (today against today's target, or the
@@ -156,7 +158,7 @@ const RATINGS = [1, 2, 3, 4, 5].map((r) => ({ value: r, label: String(r) }));
 // kind 'stepper': minus and plus (value is a number); give `min`/`max`
 //                 (a count's sensible top number, M1).
 // kind 'yesno':   No and Yes for today (value 0, 1 or null).
-// kind 'rating':  1 to 5 (value or null).
+// kind 'rating':  the five words, Poor to Excellent (value 1 to 5, or null).
 // kind 'tick':    once a week, a tick box (value true or false).
 // progress:       0 to 1 for the thin bar.
 // onMore:         the chevron button for the habit's panel, read out as `moreLabel`.

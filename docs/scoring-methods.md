@@ -88,13 +88,18 @@ Each habit has one measure, chosen by the person. Nothing is tracked by default.
 | Yes or no each day, against a target | At least 4 days with no screens after 21:00 | days with yes ÷ target days, capped at 100% |
 | Yes or no each day, under a limit | No more than 2 late finishes | limit rule below, counting days with yes |
 | Keep a count under a limit | No more than 2 coffees a day | limit rule below |
-| Rating 1 to 5 | Focus, higher is better | rating rule below |
+| Rating in five words, Poor to Excellent (saved as 1 to 5) | Focus, higher is better | rating rule below |
 
 **Limit rule (decided 21 Oct):** at or under the limit scores 100%. Each one over takes it down by an equal step: score = 1 − (logged − limit) ÷ limit, never below 0%. A limit of 2: 3 scores 50%, 4 scores 0%. A limit of 0 (none at all): one over scores 0% (Claude: the step is worked out as if the limit were 1, so nothing divides by zero).
 
 **Rating rule (Claude):** the week's average rating is compared with the target on the part of the scale above the floor, so the lowest rating scores 0% rather than 20%.
 - Higher is better: score = (average − 1) ÷ (target − 1), capped at 100%. Target 4, average 3: 67%.
 - Lower is better (for example pressure): score = (5 − average) ÷ (5 − target), capped at 100%. Target 2, average 3: 67%.
+
+**Ratings are five words, never numbers (Tim's rule 29i of 5 Nov; Claude's call of 10 Nov, for methods 1.5).** A habit rated each day and an Outcome Objective tracked by a rating both use the "how good" scale: Poor, Fair, Good, Very good, Excellent. The five words score **0, 25, 50, 75 and 100**.
+- **A daily habit rating** is saved as 1 to 5, as before (1 Poor, 2 Fair, 3 Good, 4 Very good, 5 Excellent), so every earlier answer maps straight across and keeps its date. The rating rule above gives exactly the score the words' 0 to 100 would: (average − 1) ÷ (target − 1) is the same as the average word score ÷ the target's word score. Nothing in the database changes.
+- **Worked example M1-R1 (test `tests/performance/ratings.test.mjs`):** target Very good (75). A week rated Good, Very good, Good, Excellent and Good averages (50 + 75 + 50 + 100 + 50) ÷ 5 = 65, and 65 ÷ 75 = **87%**. In the saved figures that is an average of 3.6 against a target of 4: (3.6 − 1) ÷ (4 − 1) = 87%, the same.
+- The week's line reads the average as its nearest word ("Very good on average this week, aim for Very good"); a half rounds up.
 - A higher-is-better target can't be 1, and a lower-is-better target can't be 5, because both would always score 100%. Set-up offers 2 to 5 and 1 to 4.
 
 **Days not logged (Claude):**
@@ -220,9 +225,11 @@ In plain words: your usual range is the middle half of your recent weeks. A week
 
 In plain words: each Outcome Objective shows how far it has come towards its target, and whether, at the rate so far, it will get there by its date.
 
-Each Outcome Objective is tracked one of three ways (Tim, 22 Oct): a number, a rating out of 10, or a milestone. The figure is updated in each weekly debrief.
+Each Outcome Objective is tracked one of three ways (Tim, 22 Oct): a number, a rating in five words (out of 10 until 10 Nov; see M9.1), or a milestone. The figure is updated in each weekly debrief.
 
 ### M9.1 Numbers and ratings
+- **A rating is one of five words (Claude's call of 10 Nov, from rule 29i; for methods 1.5):** Poor, Fair, Good, Very good, Excellent, scoring 0, 25, 50, 75 and 100. It stays on the saved 0 to 10 scale, so nothing in the database changes: a word saves 0, 2.5, 5, 7.5 or 10 (the same 0 to 100, out of 10). Figures saved before 10 Nov convert for display and keep their dates: **0 to 2 Poor, 3 to 4 Fair, 5 to 6 Good, 7 to 8 Very good, 9 to 10 Excellent**; targets the same. Progress and pace are still worked out on the saved figures, so an earlier objective's bar doesn't jump. Screens show the word, never a number: "Very good, target Excellent".
+- **Worked example M9-R1 (test `tests/performance/ratings.test.mjs`):** an objective saved as 7 with a target of 9 reads "Very good, target Excellent" (scores 75 and 100). Rated Excellent in the next debrief, it saves 10, and its progress bar is full (10 of 9, capped). An objective saved as 6 with a target of 8 reads "Good now, target Very good".
 - **Start figure:** the figure when the objective was set (for organisation seats, the figure agreed at the First check-in).
 - **Progress bar:** from zero to the target, with the current figure filling it (Tim, 26 Oct, 11:36). For an objective that should go down (fewer incidents), the bar shows progress from the start figure towards the target (Claude).
 - **Pace (Claude, matching the agreed sentences):**
@@ -652,6 +659,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 (addition) | 10 Nov 2026 | Ratings are five words (rule 29i): a habit's daily rating and an objective's rating both read Poor, Fair, Good, Very good, Excellent, scoring 0, 25, 50, 75 and 100. Saved values keep their shape (1 to 5; 0 to 10 with words saving 0, 2.5, 5, 7.5, 10); earlier out-of-10 figures read 0 to 2 Poor, 3 to 4 Fair, 5 to 6 Good, 7 to 8 Very good, 9 to 10 Excellent. No score changes and no database change (M1 rating rule, M9.1; worked examples M1-R1 and M9-R1). |
 | 1.5 | 5 Nov 2026 | Bands for a list of scores (M0.8; Tim, 5 Nov, 10:59): 67 and above good, 50 to 66 mid, below 50 low, and the single lowest in the list coral (ties: the first), replacing the single level of 70. The check-in's "Lowest: …" line is removed; the colour says it. No score's arithmetic changed. |
 | 1.4 | 28 Oct 2026 | The Health Check's results rethink (M20.1; Tim, 28 Oct, 14:00 to 15:26): each CSF is Critical, Very important or Important, weighted 1.4, 1.2 and 1, so strategic importance = Σ(contribution × weight) ÷ Σ(3 × weight) × 100, and every CSF at Very important gives exactly the old figures (test case M20-4); each Health Check sets its own line for important, 30% to 80%, 50% unless changed, used everywhere "above 50%" was; the headline ("2 of 5" important projects moving well, with the rest adding up to the total); up to three questions to start with (Timing, Progress, Resource, CSF cover, or On track); dot size from resource. Older Health Checks score and read as before. |
 | 1.2 (repo) | 27 Oct 2026 | Claude's calls in building 1.2 (migration 033): pulse results also stay private when only 1 or 2 people stayed anonymous beside named answers, and the count shows only once closed (M18); a seat's standard is set to 85 rather than refused, and set when the seat is taken up mid-sprint (M7); the single wellbeing switch moved to each organisation the person was in, which was its reach (M19.4). |

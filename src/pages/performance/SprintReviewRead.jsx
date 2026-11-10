@@ -22,7 +22,8 @@ const QUESTIONS = [
   ['worked', 'What worked best in this sprint?'],
   ['next', 'What would make the next sprint even better?'],
 ];
-const CHOICE = { sprint: 'Straight into the next sprint.', recovery: 'Recovery first.' };
+// Read back in the past tense (writing rule 54; Tim, 10 Nov).
+const CHOICE = { sprint: 'You went straight into your next sprint.', recovery: 'You took a recovery week first.' };
 
 async function loadReview(userId, sprintId) {
   const { data: sprint, error } = await supabase.from('sprints')

@@ -69,7 +69,7 @@ import { heldWeeks } from './year';
 import { openRecovery, sprintWeekResult, toObjective, toRecoveries } from './rows';
 import { dayName } from './sprintPage';
 import { hoursFigure, nightDate, nightState, qualityWords, sleepAction, usualQuality } from './sleepChart';
-import { objectiveFigure, objectiveTarget, plainNumber, shortDate } from './words';
+import { objectiveFigure, objectiveTarget, plainNumber, ratingWord, shortDate } from './words';
 
 export const DASHBOARD_CACHE = 'performance-dashboard';
 export const DASHBOARD_ROUTE = '/dashboard';
@@ -426,14 +426,14 @@ function objectiveRows(d, today, sprint, weeks) {
       effortLine: null,
       bar: { kind: 'progress', value: (result.progress ?? 0) / 100, good: reached || Boolean(result.onPace && result.paceShown) },
       value: objectiveFigure(objective, result.current),
-      of: objective.kind === 'rating' ? `Target ${plainNumber(objective.target)}/10` : objectiveTarget(objective),
+      of: objective.kind === 'rating' ? `Target ${ratingWord(objective.target)}` : objectiveTarget(objective),
       label,
       reached,
       improving: Boolean(result.improving && better),
       change: better ? delta : 0,
       notMoving: Boolean(result.notMoving),
       stillWords: objective.kind === 'rating'
-        ? `Your rating is still ${objectiveFigure(objective, result.current)} this sprint, while the work behind it is on track.`
+        ? `Your rating is still “${objectiveFigure(objective, result.current)}” this sprint, while the work behind it is on track.`
         : `The number is still ${objectiveFigure(objective, result.current)} this sprint, while the work behind it is on track.`,
     };
   });
@@ -513,7 +513,7 @@ function improvingAndHoldingBack(d, weeks, sprint, objectives, signals) {
       case 'objective_reached':
       case 'objective_improving': {
         const o = byId.get(x.id);
-        return { key: `o:${x.id}`, kind: x.kind, title: x.name, line: x.kind === 'objective_reached' ? 'You’ve reached its target.' : null, big: { text: o.reached && !o.change ? 'Reached' : `${o.change < 0 ? '−' : '+'}${deltaWords(o.objective, o.change).replace(/ points?$/, '')}`, unit: o.kind === 'rating' ? (Math.abs(o.change) === 1 ? 'point' : 'points') : null, good: true } };
+        return { key: `o:${x.id}`, kind: x.kind, title: x.name, line: x.kind === 'objective_reached' ? 'You’ve reached its target.' : null, big: { text: o.reached && !o.change ? 'Reached' : o.kind === 'rating' ? objectiveFigure(o.objective, o.result.current) : `${o.change < 0 ? '−' : '+'}${deltaWords(o.objective, o.change)}`, unit: null, good: true } };
       }
       case 'strategy_at_standard':
         return { key: `s:${x.id}`, kind: x.kind, title: x.name, line: 'It’s been at or above your standard for the last 3 weeks.', repeats: true, strip: strategyStrip(x.id) };

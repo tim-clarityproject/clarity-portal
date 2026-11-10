@@ -176,8 +176,8 @@ test('habit lines for every way to measure, and US units for water', () => {
   assert.equal(logRow(sh, st({ measure: 'yes_no_days_limit', limit_value: 2 }), ctx([L(1), L(0, '2026-10-12')])).line, '1 this week, no more than 2');
   assert.equal(logRow(sh, st({ measure: 'yes_no_days_target', target: 4 }), ctx([L(1)])).line, '1 of 4 days this week');
   assert.equal(logRow(sh, st({ measure: 'count_limit', limit_value: 2, limit_per: 'day' }), ctx([L(3)])).line, '3 today, no more than 2');
-  assert.equal(logRow(sh, st({ measure: 'rating', target: 4, direction: 'higher' }), ctx([L(3)])).line, 'Rated 1 to 5 today, aim for 4');
-  assert.equal(logRow(sh, st({ measure: 'rating', target: 4, direction: 'higher' }), ctx([L(3), L(4, '2026-10-12')])).weekLine, 'Average 3.5 this week, aim for 4');
+  assert.equal(logRow(sh, st({ measure: 'rating', target: 4, direction: 'higher' }), ctx([L(3)])).line, 'Rated each day, aim for Very good');
+  assert.equal(logRow(sh, st({ measure: 'rating', target: 4, direction: 'higher' }), ctx([L(3), L(4, '2026-10-12')])).weekLine, 'Very good on average this week, aim for Very good');
   assert.equal(logRow(sh, st({ measure: 'yes_no_weekly' }), ctx([])).line, 'Once this week');
   assert.equal(logRow(sh, st({ measure: 'yes_no_weekly' }), ctx([L(1)])).line, 'Done this week');
   const water = logRow(sh, st({ measure: 'amount', unit: 'litres', target: 2, target_per: 'day' }), ctx([L(1.5)], { units: 'imperial' }));

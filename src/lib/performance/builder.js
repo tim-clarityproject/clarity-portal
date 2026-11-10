@@ -15,7 +15,7 @@
 
 import { DEFAULT_STANDARD, DEFAULT_WORKING_DAYS, m7IsValidStandard, m7StandardFor } from '../scores/index.js';
 import { planSnapshot } from './versions';
-import { shortDate, plainNumber } from './words';
+import { shortDate, plainNumber, ratingWord } from './words';
 
 export const MAX_OBJECTIVES = 4;
 export const NAME_MAX = 80;      // objective, Strategy and habit names (the tables' checks)
@@ -32,9 +32,9 @@ export const TEMPLATE_LABEL = 'First 90 days in a new role';
 
 /** How an objective is tracked (decisions "Three ways to track"), with M6's two lines under the choice. Each answer is a short sentence in the person's voice (rule 29aa, Tim, 9 Nov). */
 export const OBJECTIVE_KINDS = Object.freeze([
-  { value: 'number', label: 'I’ll track a number', lines: ['A figure you move towards a target.', 'If you can’t count it, rate it out of 10 instead.'] },
+  { value: 'number', label: 'I’ll track a number', lines: ['A figure you move towards a target.', 'If you can’t count it, rate it from Poor to Excellent instead.'] },
   { value: 'milestone', label: 'I’ll track a milestone', lines: ['Something you get done once, by a date.', 'Tick it off when it’s done.'] },
-  { value: 'rating', label: 'I’ll rate it out of 10', lines: ['Your own honest score out of 10.', 'You update it in each Weekly performance debrief.'] },
+  { value: 'rating', label: 'I’ll rate it from Poor to Excellent', lines: ['Your own honest rating.', 'You update it in each Weekly performance debrief.'] },
 ]);
 
 /** A figure typed into a box, or null when it isn't one. Commas in "10,000" are allowed. */
@@ -108,7 +108,7 @@ export const HABIT_MEASURES = Object.freeze([
   { value: 'yes_no_days_limit', label: 'I’ll say yes or no each day, under a limit', hint: 'e.g. no more than 2 late finishes' },
   { value: 'yes_no_weekly', label: 'I’ll say yes or no once a week', hint: 'e.g. a strategic block happened' },
   { value: 'count_limit', label: 'I’ll keep a daily count under a limit', hint: 'e.g. no more than 2 coffees', per: 'day' },
-  { value: 'rating', label: 'I’ll rate it from 1 to 5 each day', hint: 'e.g. focus, rated each day' },
+  { value: 'rating', label: 'I’ll rate it each day, from Poor to Excellent', hint: 'e.g. focus, rated each day' },
 ]);
 
 export const IMPACTS = Object.freeze([
@@ -540,7 +540,7 @@ export function objectiveSummary(o) {
   if (o.kind === 'milestone') return `Milestone, by ${shortDate(o.date)}`;
   const start = typedNumber(o.start);
   const target = typedNumber(o.target);
-  if (o.kind === 'rating') return `${plainNumber(start)}/10 now, target ${plainNumber(target)}/10, by ${shortDate(o.date)}`;
+  if (o.kind === 'rating') return `${ratingWord(start)} now, target ${ratingWord(target)}, by ${shortDate(o.date)}`;
   return `${plainNumber(start)} now, target ${plainNumber(target)}, by ${shortDate(o.date)}`;
 }
 

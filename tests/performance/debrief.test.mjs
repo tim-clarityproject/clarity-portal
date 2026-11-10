@@ -176,8 +176,8 @@ test('objectives: "last week" is the figure before this debrief\'s own (M9, CHOI
   assert.equal(clients.lastLine, 'Last week 31');
   assert.equal(clients.value, 31, 'the box starts on it');
   assert.equal(clients.figureId, null);
-  assert.equal(rating.lastLine, 'Last week 6/10');
-  assert.equal(rating.unit, '/10');
+  assert.equal(rating.lastLine, 'Last week Good');
+  assert.equal(rating.unit, null); // five words, no unit (5e rule 29i)
   assert.equal(book.kind, 'milestone');
   assert.equal(book.status, 'Not reached yet, due by 30 Jun 2027');
   // With this debrief's own figure: the box holds it, "last week" stays.

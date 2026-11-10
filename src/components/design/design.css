@@ -769,6 +769,9 @@
 .ui-root .ds-log-press--rate {
   border: 0;
   gap: var(--space-2);
+  /* Five words (Poor to Excellent, 5e rule 29i) wrap onto a second line
+     on a phone rather than squeeze or push the page sideways. */
+  flex-wrap: wrap;
 }
 
 .ui-root .ds-log-press-btn {
@@ -791,10 +794,11 @@
 }
 
 .ui-root .ds-log-press--rate .ds-log-press-btn {
-  padding: 0 !important;
+  padding: 0 var(--space-px12) !important;
   border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-input);
-  font-family: var(--font-display);
+  font-family: var(--font-body);
+  white-space: nowrap;
 }
 
 .ui-root .ds-log-press-btn[aria-pressed='true'] {

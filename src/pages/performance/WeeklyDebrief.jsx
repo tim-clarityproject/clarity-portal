@@ -62,6 +62,8 @@ import {
   debriefView,
   figureChange,
   finishToast,
+  OBJECTIVE_RATING_OPTIONS,
+  ratingOption,
   localToday,
   shareLine,
   yourDaysLine,
@@ -548,7 +550,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
   // ------------------------------------------------------------ objectives
 
   const typeFigure = (o, text) => {
-    if (o.kind === 'rating' && text !== '' && !/^(10|[0-9])$/.test(text)) return;
+    if (o.kind === 'rating' && text !== '' && !/^(10|[0-9](\.5)?)$/.test(text)) return;
     setFigTyped((t) => ({ ...t, [o.id]: text }));
     const value = parseTyped(text);
     // One figure row per objective and debrief, whatever is typed and cleared.
@@ -704,8 +706,9 @@ function DebriefFlow({ userId, today, loaded, view }) {
               key={o.id}
               name={o.name}
               entryLabel={`${o.name} now`}
-              value={figTyped[o.id] ?? toText(o.value)}
+              value={o.kind === 'rating' ? ratingOption(figTyped[o.id] ?? o.value) : (figTyped[o.id] ?? toText(o.value))}
               onChange={(text) => typeFigure(o, text)}
+              options={o.kind === 'rating' ? OBJECTIVE_RATING_OPTIONS : undefined}
               unit={o.unit}
               decimals={o.decimals}
               lastLine={o.lastLine}

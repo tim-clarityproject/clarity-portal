@@ -16,7 +16,8 @@ import { StepIcon, Loading, PageHeader, TextBox, AddButton, Button, Choice, useT
 // The saved values stay as they were; the answers people tap are full
 // sentences in their own voice (rule 29aa, Tim, 9 Nov).
 const ACTIONS = ['Stop', 'Automate', 'Delegate', 'Defer'];
-const ACTION_WORDS = { Stop: 'Stop doing it', Automate: 'Automate it', Delegate: 'Hand it to someone else', Defer: 'Do it later' };
+// The approved Time audit's words (Tim approved it on 3 Nov; Claude's call of 10 Nov), so nothing changes again when it replaces this page.
+const ACTION_WORDS = { Stop: 'Stop it', Automate: 'Automate it', Delegate: 'Delegate it', Defer: 'Do it later' };
 const MAX_ACTIVITY = 80;
 const MAX_LONG = 2000;
 

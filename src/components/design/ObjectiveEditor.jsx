@@ -6,11 +6,11 @@ import FieldLabel from './FieldLabel';
 import { NumberField } from './LoggingRow';
 import TextBox from './TextBox';
 import { todayKey } from './dates';
-import { NAME_MAX, OBJECTIVE_KINDS, ratingHint, shortDate } from '../../lib/performance';
+import { NAME_MAX, OBJECTIVE_KINDS, OBJECTIVE_RATING_OPTIONS, ratingOption, shortDate } from '../../lib/performance';
 import './design.css';
 
 // One Outcome Objective being written (M6 objCard): what result will be
-// tracked, how (a number, a milestone or a rating out of 10, with M6's two
+// tracked, how (a number, a milestone or a rating in five words, with M6's two
 // lines under the choice), then where they are now, the target and the
 // date from the calendar. Shared by Build your plan, editing the plan and
 // the end-of-sprint review's "Add an objective".
@@ -34,16 +34,23 @@ export default function ObjectiveEditor({
   const kind = OBJECTIVE_KINDS.find((k) => k.value === o.kind) || OBJECTIVE_KINDS[0];
   const rating = o.kind === 'rating';
   const figure = (key, label) => {
-    const hint = rating ? ratingHint(o[key]) : null;
+    // A rating is one of five words, never a number (5e rule 29i).
+    if (rating) {
+      return (
+        <div className="ds-objed-field ds-objed-field--rating">
+          <Choice label={label} options={OBJECTIVE_RATING_OPTIONS} value={ratingOption(o[key])} onChange={(v) => onChange({ [key]: v })} />
+        </div>
+      );
+    }
+    const hint = null;
     return (
       <div className="ds-objed-field">
         <FieldLabel label={label} htmlFor={`${id}-${key}`} />
         <NumberField
           id={`${id}-${key}`}
           size="box"
-          decimals={!rating}
-          maxDigits={rating ? 2 : 9}
-          unit={rating ? '/10' : undefined}
+          decimals
+          maxDigits={9}
           value={o[key]}
           onChange={(v) => onChange({ [key]: v })}
           aria-describedby={hint ? `${id}-${key}-hint` : undefined}
