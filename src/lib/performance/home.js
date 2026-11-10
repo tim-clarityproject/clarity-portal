@@ -70,6 +70,27 @@ export function windDownEvening({ today, hour, minute = 0, from = WIND_DOWN_FROM
   return hour * 60 + minute >= start ? today : null;
 }
 
+/**
+ * "Not tonight" on Home's wind-down card hides it on every device for
+ * that night (Tim, 9 and 10 Nov): the evenings are kept in the account,
+ * in person_settings.page_preferences under this name (beside the menu's
+ * pins; menuPins.js), as well as on the device that was tapped, so the
+ * card goes at once, offline too.
+ */
+export const NOT_TONIGHT_PREF = 'wind_down_not_tonight';
+const NOT_TONIGHT_KEPT = 14;
+const isNight = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+/** The evenings saved as "Not tonight", cleaned (anything else saved there is ignored). */
+export function notTonightNights(saved) {
+  return Array.isArray(saved) ? [...new Set(saved.filter(isNight))].sort().slice(-NOT_TONIGHT_KEPT) : [];
+}
+
+/** The saved evenings with one more: the last two weeks only, each once. */
+export function withNotTonight(saved, night) {
+  return notTonightNights([...notTonightNights(saved), night]);
+}
+
 /** The latest day before today with anything logged, planned or reviewed, or null. */
 export function lastActiveBefore(dates = [], today) {
   return dates.filter((d) => d && d < today).sort().at(-1) || null;

@@ -32,6 +32,7 @@ import {
 import { readCache, useCachedLoad } from '../lib/pageCache';
 import { useDraft } from '../lib/drafts';
 import { deviceKey, readJson, writeJson } from '../lib/deviceStore';
+import { refreshPins, updatePreference, usePreferences } from '../lib/menuPins';
 import { carryOnItems, carryOnWhen } from '../lib/carryOn';
 import { parseDbTimestamp } from '../lib/dateFormatter';
 import { loadCheckins, loadHomeDay } from '../lib/performance/api';
@@ -47,6 +48,9 @@ import {
   RECOVERY_NUMBERS_LINE,
   dayState,
   homeSuggestion,
+  NOT_TONIGHT_PREF,
+  notTonightNights,
+  withNotTonight,
   isComingBack,
   lastActiveBefore,
   localToday,
@@ -185,6 +189,27 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     return () => { live = false; };
   }, [userId, today]);
 
+  // "Not tonight" tapped on another device (Tim, 10 Nov): the evenings are
+  // in the account's page settings, read when Home opens and each time it
+  // comes back to the screen (at most every half a minute after the first).
+  const awayNights = notTonightNights(usePreferences(userId)?.[NOT_TONIGHT_PREF]);
+  useEffect(() => {
+    if (!userId) return undefined;
+    refreshPins(userId, { force: true });
+    const onShow = () => { if (document.visibilityState === 'visible') refreshPins(userId); };
+    document.addEventListener('visibilitychange', onShow);
+    window.addEventListener('focus', onShow);
+    return () => {
+      document.removeEventListener('visibilitychange', onShow);
+      window.removeEventListener('focus', onShow);
+    };
+  }, [userId]);
+  const notTonightHere = (night) => {
+    addNotTonight(night); // gone at once on this device, offline too
+    // Kept on this device either way; sent when the connection is back.
+    updatePreference(userId, NOT_TONIGHT_PREF, (saved) => withNotTonight(saved, night)).catch(() => null);
+  };
+
   const recovery = openRecovery(d.recoveries || []);
   const coach = day.coach?.firstName || null;
   const checkin = checkins.data ? checkinPrompt({ hasCoach: Boolean(coach), coachName: coach, checkins: checkins.data, today }) : null;
@@ -223,7 +248,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
     reviewed,
     yesterday: day.yesterday,
     // Not tonight, or used tonight (Sleep wind down's own record of the night).
-    windDown: { dismissed: [...notTonight, ...finishedNights(userId)] },
+    windDown: { dismissed: [...notTonight, ...awayNights, ...finishedNights(userId)] },
     recovery,
     nextSprint: (day.lastSprintNumber || 0) + 1,
     firstCheckin: checkin?.first ? checkin : null,
@@ -319,7 +344,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
   const go = (to) => navigate(to, { replace: alreadyOn(to), state: { from: '/welcome' } });
   const cardAction = card?.action ? { label: card.action.label, onClick: () => (card.action.jump ? jumpToLog() : go(card.action.to)) } : null;
   const cardLink = card?.notTonight
-    ? { label: 'Not tonight', onClick: () => { addNotTonight(card.notTonight); toast.show('You can wind down tomorrow evening.'); } }
+    ? { label: 'Not tonight', onClick: () => { notTonightHere(card.notTonight); toast.show('You can wind down tomorrow evening.'); } }
     : card?.link ? { label: card.link.label, onClick: () => go(card.link.to) } : null;
 
   const dateText = dayName(today, today);

@@ -6,6 +6,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GAP_DAYS,
+  NOT_TONIGHT_PREF,
+  notTonightNights,
+  withNotTonight,
   dayState,
   tomorrowPriorities,
   dayStrategyNames,
@@ -197,4 +200,23 @@ test("today's to-dos: the picks with the highest priority first, ticks from the 
   assert.equal(items[2].done, false);
   assert.deepEqual(dayStrategyNames([{ strategy_id: 's1' }, { strategy_id: 'gone' }], [{ id: 's1', name: 'Grow' }]), ['Grow']);
   assert.equal(weeklyFoldLine([{ bar: 1 }, { bar: 0.2 }, { bar: 0 }]), '3 weekly habits, 1 done');
+});
+
+test('Not tonight is kept in the account for every device: the evenings, cleaned, two weeks at most', () => {
+  assert.equal(NOT_TONIGHT_PREF, 'wind_down_not_tonight');
+  // Nothing saved yet, or something else saved there: no evenings.
+  assert.deepEqual(notTonightNights(undefined), []);
+  assert.deepEqual(notTonightNights('2026-10-21'), []);
+  assert.deepEqual(notTonightNights(['2026-10-21', 7, null, 'tonight', '2026-10-21']), ['2026-10-21']);
+  // One more evening, each once, in order.
+  assert.deepEqual(withNotTonight(['2026-10-20'], '2026-10-21'), ['2026-10-20', '2026-10-21']);
+  assert.deepEqual(withNotTonight(['2026-10-21'], '2026-10-21'), ['2026-10-21']);
+  // Only the last two weeks stay.
+  const many = Array.from({ length: 20 }, (_, i) => `2026-10-${String(i + 1).padStart(2, '0')}`);
+  const kept = withNotTonight(many, '2026-10-21');
+  assert.equal(kept.length, 14);
+  assert.equal(kept.at(-1), '2026-10-21');
+  assert.equal(kept[0], '2026-10-08');
+  // An evening saved on another device hides the card here.
+  assert.equal(homeSuggestion(base({ hour: 22, windDown: { dismissed: notTonightNights(['2026-10-21']) } })).key, 'review');
 });

@@ -146,6 +146,19 @@ const landsOn = (page, want, ms = 20000) => until(async () => path(page) === wan
 async function shot(page, name) {
   if (out) await page.screenshot({ path: join(out, `${name}.png`), fullPage: true });
 }
+// The evenings saved as "Not tonight" in the account (person_settings.page_preferences).
+async function readPrefs() {
+  const { data } = await db.from('person_settings').select('page_preferences').eq('user_id', me).limit(1);
+  return data?.[0]?.page_preferences || {};
+}
+const notTonightSaved = async () => (await readPrefs()).wind_down_not_tonight || [];
+async function setNotTonight(nights) {
+  const prefs = { ...(await readPrefs()) };
+  if (nights.length) prefs.wind_down_not_tonight = nights;
+  else delete prefs.wind_down_not_tonight;
+  await db.from('person_settings').update({ page_preferences: prefs }).eq('user_id', me);
+}
+const clearNotTonight = () => setNotTonight([]);
 // Home, loaded: its title, and the data settled (the sprint's copy and the day's).
 async function home(page) {
   if (path(page) !== '/welcome') await page.goto(`${APP}/welcome`);
@@ -226,8 +239,33 @@ if (part(1)) {
     pass('Not tonight: the review takes the card', Boolean(await until(async () => (await cardQuestion(page)) === 'Ready to review your day?', 5000)), await cardQuestion(page));
     await homeAt(page, '2026-10-23', '00:30');
     pass('after midnight: still dismissed for the evening before', (await cardQuestion(page)) !== 'Ready to wind down?', await cardQuestion(page));
+    // Not tonight hides the card on every device for that night (Tim, 9
+    // and 10 Nov): the evening is in the account, and a second device,
+    // signed in the same evening, never offers the wind down.
+    pass('Not tonight: the evening is saved to the account', Boolean(await until(async () => (await notTonightSaved()).includes(THU), 15000)), JSON.stringify(await notTonightSaved()));
+    const second = await signedIn({ day: THU, time: '21:15' });
+    try {
+      pass('Not tonight: a second device that evening has no wind-down card', Boolean(await until(async () => (await cardQuestion(second.page)) === 'Ready to review your day?', 15000)), await cardQuestion(second.page));
+      await homeAt(second.page, '2026-10-23', '00:30');
+      pass('Not tonight: nor after midnight on the second device', (await cardQuestion(second.page)) !== 'Ready to wind down?', await cardQuestion(second.page));
+    } finally {
+      await second.context.close();
+    }
+    // A device left open on Home hears of it when it comes back to the screen.
+    await clearNotTonight();
+    const open = await signedIn({ day: THU, time: '21:15' });
+    try {
+      pass('an open Home shows the card before Not tonight elsewhere', (await cardQuestion(open.page)) === 'Ready to wind down?', await cardQuestion(open.page));
+      await setNotTonight([THU]);
+      await sleep(31000); // the account's settings are read at most every half a minute
+      await open.page.evaluate(() => window.dispatchEvent(new Event('focus')));
+      pass('Not tonight elsewhere: an open Home drops the card when it comes back to the screen', Boolean(await until(async () => (await cardQuestion(open.page)) === 'Ready to review your day?', 15000)), await cardQuestion(open.page));
+    } finally {
+      await open.context.close();
+    }
   } finally {
     await context.close();
+    await clearNotTonight();
   }
 
   // After midnight on a new device: the evening before's wind down.

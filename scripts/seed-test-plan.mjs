@@ -106,6 +106,17 @@ if (empty) {
 if (process.argv.includes('--worked')) await seedWorkedExample();
 
 await db.from('person_settings').upsert({ user_id: me, time_zone: 'Europe/London', units: 'metric' }, { onConflict: 'user_id' });
+// "Not tonight" evenings left by a test (page_preferences, beside the
+// menu's pins) never hide Home's wind-down card on a later run.
+{
+  const { data: settings } = await db.from('person_settings').select('page_preferences').eq('user_id', me).limit(1);
+  const prefs = settings?.[0]?.page_preferences;
+  if (prefs && typeof prefs === 'object' && 'wind_down_not_tonight' in prefs) {
+    const rest = { ...prefs };
+    delete rest.wind_down_not_tonight;
+    await db.from('person_settings').update({ page_preferences: rest }).eq('user_id', me);
+  }
+}
 
 const planId = randomUUID();
 const mission = 'Be a world-class high-performance coach';
