@@ -41,11 +41,18 @@
   overflow-wrap: anywhere;
 }
 
+/* The frame is the email's true width inside: its line is an outline, so
+   it takes nothing from the 600px or 375px. On a phone it may use the
+   page's side padding, centred, so a 375px email is a true 375px on a
+   390px screen. */
 .ui-root .emailp-frame {
   display: block;
-  max-width: 100%;
+  width: var(--emailp-width);
+  max-width: calc(100% + var(--space-3) * 2);
+  margin-left: clamp(calc(var(--space-3) * -1), calc((100% - var(--emailp-width)) / 2), 0px);
   min-height: var(--space-7);
-  border: var(--line-w) solid var(--line);
+  border: 0;
+  outline: var(--line-w) solid var(--line);
   border-radius: var(--space-px12);
   background: var(--bg);
   align-self: flex-start;

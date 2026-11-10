@@ -54,7 +54,7 @@ export function healthCheckFinishedForCoachEmail({ link, organisation, email, co
     subject: `${org} finished their Health Check`,
     blocks: [
       { type: 'heading', text: `${org} finished their Health Check.` },
-      { type: 'text', text: `They finished on ${finishedText}.`, quiet: true },
+      { type: 'text', text: `They finished on ${finishedText}.` },
       { type: 'button', label: 'Open the results', href: link },
       { type: 'details', rows: [['Email', email], ['Access code', code]] },
       ...(oneLine(objective) ? [{ type: 'label', text: 'Objective' }, { type: 'note', text: oneLine(objective) }] : []),

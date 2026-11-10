@@ -38,7 +38,7 @@ export default function EmailPreview() {
           key={`${key}-${width}`}
           className="emailp-frame"
           title={`${example.name}, as an email`}
-          style={{ width: `${width}px` }}
+          style={{ '--emailp-width': `${width}px` }}
           srcDoc={email.html}
           onLoad={(e) => { e.currentTarget.style.height = `${e.currentTarget.contentDocument.documentElement.scrollHeight}px`; }}
         />

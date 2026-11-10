@@ -10,7 +10,11 @@
 // for layout, every style inline, nothing that relies on a web font (Nekst
 // and DM Sans load where the app allows; Helvetica or Arial everywhere
 // else), and an image with its words as alt text, so the email still reads
-// with images blocked.
+// with images blocked. Outlook on Windows ignores max-width, so it alone
+// gets a 520px table around the column (the "if mso" comments). A word
+// too long for the column (a web address typed into an objective, a name
+// with no spaces) breaks onto the next line instead of pushing the email
+// sideways.
 //
 // A document:
 //   { brand: 'portal' | 'project'   the bold crosshair and "The Clarity
@@ -58,7 +62,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const oneLine = (s) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
 
 const row = (html, style = '') => `<tr><td style="${style}">${html}</td></tr>`;
-const text = (size, colour, extra = '') => `font-family:${BODY_FONT};font-size:${size}px;line-height:1.6;color:${colour};${extra}`;
+// Reading text is 1.6 tall; the small parts (the sign-in box, the time, the quiet link, the footer) are 1.5, as in the mock-up.
+const text = (size, colour, extra = '', lineHeight = 1.6) => `font-family:${BODY_FONT};font-size:${size}px;line-height:${lineHeight};color:${colour};${extra}`;
 
 function brandHtml(brand, src) {
   if (brand === 'project') {
@@ -77,45 +82,47 @@ const linkStyle = (colour, line = C.line) => `color:${colour};text-decoration:un
 function footerLine(line) {
   if (typeof line === 'string') return esc(line);
   const links = Array.isArray(line) ? line : [line];
-  return links.map((l) => `<a href="${esc(l.href)}" style="${linkStyle(C.quiet, C.quiet)}">${esc(l.label)}</a>`).join(' &middot; ');
+  return links.map((l) => `<a href="${esc(l.href)}" style="color:${C.quiet};text-decoration:underline;">${esc(l.label)}</a>`).join(' &middot; ');
 }
 
 function blockHtml(b, first) {
   switch (b.type) {
     case 'heading':
-      return row(`<h1 style="margin:0;font-family:${BODY_FONT};font-size:22px;line-height:1.3;font-weight:400;color:${C.text};">${esc(b.text)}</h1>`, `padding:${b.tight ? 10 : 36}px 0 0;`);
+      return row(`<h1 style="margin:0;font-family:${BODY_FONT};font-size:22px;line-height:1.3;font-weight:400;color:${C.text};text-wrap:balance;">${esc(b.text)}</h1>`, `padding:${b.tight ? 10 : 36}px 0 0;`);
     case 'text':
-      return row(esc(b.text), `padding:${b.sectionText ? 10 : 14}px 0 0;${text(16, b.quiet ? C.quiet : C.text)}`);
+      return row(esc(b.text), `padding:${b.sectionText ? 10 : 14}px 0 0;${text(16, b.quiet ? C.quiet : C.text, 'text-wrap:pretty;')}`);
     case 'button':
       // A table cell carries the colour and the shape, so Outlook shows a
       // coral button too (with square corners); on a phone it runs full
-      // width with the time under it.
+      // width with the time under it. Outlook on Windows ignores padding
+      // on a link, so the cell carries the same padding for Outlook alone
+      // (mso-padding-alt), or its button would shrink to the words.
       return row(`<table role="presentation" cellspacing="0" cellpadding="0" border="0" class="cta"><tr>
-<td class="btn-cell" bgcolor="${C.coral}" style="background:${C.coral};border-radius:999px;text-align:center;"><a class="btn" href="${esc(b.href)}" style="display:inline-block;padding:16px 24px;font-family:${TITLE_FONT};font-size:12px;line-height:16px;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;color:#000000;text-decoration:none;border-radius:999px;">${esc(b.label)}</a></td>
-${b.time ? `<td class="cta-time" style="padding:0 0 0 16px;vertical-align:middle;${text(14, C.quiet)}">${esc(b.time)}</td>` : ''}
+<td class="btn-cell" bgcolor="${C.coral}" style="background:${C.coral};border-radius:999px;text-align:center;mso-padding-alt:16px 24px;"><a class="btn" href="${esc(b.href)}" style="display:inline-block;padding:16px 24px;font-family:${TITLE_FONT};font-size:12px;line-height:16px;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;color:#000000;text-decoration:none;border-radius:999px;">${esc(b.label)}</a></td>
+${b.time ? `<td class="cta-time" style="padding:0 0 0 16px;vertical-align:middle;${text(14, C.quiet, '', 1.5)}">${esc(b.time)}</td>` : ''}
 </tr></table>`, 'padding:28px 0 0;');
     case 'details':
       return row(`<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid ${C.line};border-radius:12px;border-collapse:separate;"><tr><td style="padding:13px 18px 13px;">
 <table role="presentation" cellspacing="0" cellpadding="0" border="0">${b.rows.map(([label, value]) => `<tr>
-<td style="padding:3px 16px 3px 0;vertical-align:baseline;white-space:nowrap;${text(13, C.quiet)}">${esc(label)}</td>
-<td style="padding:3px 0;vertical-align:baseline;word-break:break-word;overflow-wrap:anywhere;${text(15, C.text, 'font-weight:500;letter-spacing:0.02em;')}">${esc(value)}</td>
+<td style="padding:3px 16px 3px 0;vertical-align:baseline;white-space:nowrap;${text(13, C.quiet, '', 1.5)}">${esc(label)}</td>
+<td style="padding:3px 0;vertical-align:baseline;word-break:break-word;overflow-wrap:anywhere;${text(15, C.text, 'font-weight:500;letter-spacing:0.02em;', 1.5)}">${esc(value)}</td>
 </tr>`).join('')}</table>
 </td></tr></table>`, 'padding:22px 0 0;');
     case 'link':
-      return row(`<a href="${esc(b.href)}" style="font-family:${BODY_FONT};font-size:15px;line-height:1.6;${linkStyle(C.text)}">${esc(b.label)}</a>`, 'padding:20px 0 0;');
+      return row(`<a href="${esc(b.href)}" style="font-family:${BODY_FONT};font-size:15px;line-height:1.5;${linkStyle(C.text)}">${esc(b.label)}</a>`, `padding:20px 0 0;${text(15, C.text, '', 1.5)}`);
     case 'coral-link':
-      return row(`<a href="${esc(b.href)}" style="font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${C.text};text-decoration:underline;text-decoration-color:${C.coral};text-decoration-thickness:2px;text-underline-offset:4px;">${esc(b.label)}</a>`, 'padding:10px 0 0;');
+      return row(`<a href="${esc(b.href)}" style="font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${C.text};text-decoration:underline;text-decoration-color:${C.coral};text-decoration-thickness:2px;text-underline-offset:4px;">${esc(b.label)}</a>`, `padding:10px 0 0;${text(16, C.text)}`);
     case 'files':
       return row(b.names.map((n) => `<span style="display:inline-block;margin:0 8px 8px 0;padding:8px 12px;border:1px solid ${C.line};border-radius:8px;${text(13, C.quiet)}">${esc(n)}</span>`).join(''), 'padding:22px 0 0;');
     case 'label':
-      return row(esc(b.text), `padding:${first ? 20 : 36}px 0 0;font-family:${TITLE_FONT};font-size:12px;line-height:1.5;letter-spacing:0.16em;text-transform:uppercase;color:${C.quiet};`);
+      return row(esc(b.text), `padding:${first ? 20 : 36}px 0 0;font-family:${TITLE_FONT};font-size:12px;line-height:1.6;letter-spacing:0.16em;text-transform:uppercase;color:${C.quiet};`);
     case 'quote':
-      return row(`<div style="font-family:${BODY_FONT};font-size:20px;line-height:1.45;color:${C.text};">${esc(b.text)}</div>${b.by ? `<div style="padding:8px 0 0;${text(14, C.quiet)}">${esc(b.by)}</div>` : ''}`, 'padding:12px 0 0;');
+      return row(`<div style="font-family:${BODY_FONT};font-size:20px;line-height:1.45;color:${C.text};text-wrap:pretty;">${esc(b.text)}</div>${b.by ? `<div style="padding:8px 0 0;${text(14, C.quiet, '', 1.45)}">${esc(b.by)}</div>` : ''}`, 'padding:12px 0 0;');
     case 'question':
       return row(esc(b.text), `padding:12px 0 0;font-family:${BODY_FONT};font-size:20px;line-height:1.45;color:${C.text};`);
     case 'note':
       // A smaller pair of lines under a label: a name, then its line.
-      return row(`${b.lead ? `<span style="${text(14, C.quiet)}">${esc(b.lead)}</span><br>` : ''}${esc(b.text)}${b.after ? `<br><span style="${text(14, C.quiet)}">${esc(b.after)}</span>` : ''}`, `padding:${b.lead ? 12 : 10}px 0 0;${text(16, C.text)}`);
+      return row(`${b.lead ? `<span style="${text(14, C.quiet)}">${esc(b.lead)}</span><br>` : ''}${esc(b.text)}${b.after ? `<br><span style="${text(14, C.quiet)}">${esc(b.after)}</span>` : ''}`, `padding:${b.lead ? 12 : 10}px 0 0;${text(16, C.text, 'text-wrap:pretty;')}`);
     case 'slot':
       // Where another service puts the message itself (Kit's {{ message_content }}); only ever a fixed placeholder, never a person's words.
       return row(b.placeholder, `padding:0;${text(16, C.text)}`);
@@ -127,8 +134,8 @@ ${b.time ? `<td class="cta-time" style="padding:0 0 0 16px;vertical-align:middle
 }
 
 function footerHtml(footer, sectionBefore) {
-  const lines = footer.lines.map((l) => `<tr><td style="padding:3px 0;${text(13, C.quiet)}">${footerLine(l)}</td></tr>`).join('\n');
-  const legal = footer.legal ? `<tr><td style="padding:9px 0 0;font-family:${BODY_FONT};font-size:12px;line-height:1.6;color:${C.legal};">${esc(footer.legal)}</td></tr>` : '';
+  const lines = footer.lines.map((l) => `<tr><td style="padding:3px 0;${text(13, C.quiet, '', 1.5)}">${footerLine(l)}</td></tr>`).join('\n');
+  const legal = footer.legal ? `<tr><td style="padding:9px 0 0;font-family:${BODY_FONT};font-size:12px;line-height:1.5;color:${C.legal};">${esc(footer.legal)}</td></tr>` : '';
   return `${row('', `padding:${sectionBefore ? 28 : 40}px 0 0;border-bottom:1px solid ${C.line};font-size:0;line-height:0;`)}${row(`<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">${lines}${legal}</table>`, 'padding:17px 0 0;')}`;
 }
 
@@ -201,11 +208,13 @@ export function renderEmail(doc, { image = (key) => `cid:${EMAIL_IMAGES[key].cid
 ${doc.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.bg};">${esc(doc.preheader)}</div>` : ''}
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${C.bg}" style="background:${C.bg};">
 <tr><td align="center" class="pad" style="padding:40px 32px 32px;">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;text-align:left;">
+<!--[if mso]><table role="presentation" width="520" align="center" cellspacing="0" cellpadding="0" border="0"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;text-align:left;word-break:break-word;overflow-wrap:anywhere;">
 ${brandHtml(brand, image)}
 ${blocks.map((b) => blockHtml(b, false)).join('\n')}
 ${footerHtml(doc.footer, last?.type === 'section')}
 </table>
+<!--[if mso]></td></tr></table><![endif]-->
 </td></tr>
 </table>
 </body>
