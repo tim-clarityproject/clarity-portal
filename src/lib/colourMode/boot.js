@@ -16,11 +16,10 @@
    The choice is remembered on this device for now; from Phase 1 the
    account saves it.
 
-   Existing pages stay in dark until each is rebuilt in its own phase
-   (Tim, 23 Oct), so nobody on a light-mode phone sees a page half in
-   light mode. Only the pages listed in BOTH_MODES follow the choice;
-   every other page shows dark whatever the choice, without changing it.
-   A page joins the list when its phase rebuilds it for both modes. */
+   Every page follows the choice (Tim, 10 Nov: My Account and the old Time
+   audit showed dark while the rest showed light). Until 10 Nov only the
+   pages rebuilt for both modes did; every colour comes from the tokens,
+   which have a dark and a light value, so the older pages follow too. */
 (function () {
   if (typeof window === 'undefined' || window.ClarityColourMode) return;
 
@@ -32,9 +31,6 @@
   // src/styles/tokens.css (JavaScript can't read the tokens before the
   // first paint).
   var BACKGROUND = { dark: '#000000', light: '#F9F8F5' };
-
-  // Pages rebuilt for both modes (path prefixes).
-  var BOTH_MODES = ['/design-reference', '/welcome', '/performance-plan', '/performance-sprint', '/recovery', '/my-day', '/daily-plan', '/daily-review', '/monthly-review', '/personal', '/interpersonal', '/strategic', '/my-plans', '/my-reviews', '/sleep-wind-down', '/check-in', '/dashboard'];
 
   var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
 
@@ -50,17 +46,7 @@
 
   var choice = read();
 
-  function pageHasBothModes() {
-    var path = window.location.pathname.replace(/\/+$/, '');
-    for (var i = 0; i < BOTH_MODES.length; i += 1) {
-      var page = BOTH_MODES[i];
-      if (path === page || path.indexOf(page + '/') === 0) return true;
-    }
-    return false;
-  }
-
   function resolve(c) {
-    if (!pageHasBothModes()) return 'dark';
     if (c === 'light' || c === 'dark') return c;
     return media && media.matches ? 'light' : 'dark';
   }

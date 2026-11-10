@@ -13,7 +13,7 @@ import { join, resolve } from 'node:path'
 // The colour mode (Light, Dark or Match my device) must be set before the
 // first paint, so src/lib/colourMode/boot.js is inlined into <head> on
 // every page of every build. It holds existing pages in dark (only the
-// pages in its BOTH_MODES list follow the choice), so the live site looks
+// every page follows the choice since 10 Nov), so the live site looks
 // exactly as before.
 const colourModeBoot = readFileSync(new URL('./src/lib/colourMode/boot.js', import.meta.url), 'utf8')
 

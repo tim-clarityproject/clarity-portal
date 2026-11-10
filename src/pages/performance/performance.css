@@ -1729,3 +1729,86 @@
 .ui-root .ck-change {
   margin-top: var(--space-5);
 }
+
+/* ---------- My Account (the calm layout, 10 Nov; design reference v28) ----------
+   Section names with the line above, rows of words with a quiet text link
+   at the right, the reference's switch, and nothing boxed. */
+.ui-root .account-section .ds-section-body {
+  margin-top: var(--space-2);
+}
+
+.ui-root .account-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .account-row-text {
+  flex: 1 1 14em;
+  min-width: 0;
+}
+
+.ui-root .account-row-title,
+.ui-root .account-row-note {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-root .account-row-title {
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+  color: var(--text);
+}
+
+.ui-root .account-row-note {
+  margin-top: var(--space-px2);
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}
+
+.ui-root .account-section .ds-switchrow {
+  padding: var(--space-px14) 0;
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .account-choice {
+  padding: var(--space-px14) 0 var(--space-1);
+}
+
+.ui-root .account-sleep-target {
+  padding: 0 0 var(--space-4);
+  border-bottom: var(--line-w) solid var(--line-soft);
+}
+
+.ui-root .account-sleep-target .ds-starget {
+  margin-top: 0;
+}
+
+.ui-root .account-row--sleep:has(+ .account-sleep-target) {
+  border-bottom: 0;
+}
+
+.ui-root .account-links {
+  display: grid;
+  justify-items: start;
+  padding-top: var(--space-1);
+}
+
+.ui-root .account-signout {
+  margin-top: var(--space-5);
+}
+
+.ui-root .account-phone-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .ui-root .account-phone-only {
+    display: inline-flex;
+  }
+}

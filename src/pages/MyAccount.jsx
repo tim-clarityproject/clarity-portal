@@ -6,11 +6,11 @@ import { supabase } from '../lib/supabase';
 import { clearAppStorage } from '../lib/clearAppStorage';
 import DeleteDialog from '../components/ui/DeleteDialog';
 import DesignHeader from '../components/DesignHeader';
-import pageText from '../content/pageText';
 import PersonalGoalModal from '../components/PersonalGoalModal';
 import { SignOutLink, useSignOut } from '../components/SignOut';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
-import { useCoachName, Crosshair, PageHeader, Button, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget, keepWords } from '../components/design';
+import { useCoachName, PageHeader, Button, ColourModeChoice, Section, SwitchRow, useToast, SleepTargetEditor, SleepTargetLink, useSleepTarget, keepWords } from '../components/design';
+import './performance/performance.css';
 import { DashboardCustomise } from './performance/DashboardCustomise';
 import { SLEEP_SUGGESTED_LINE, rangeWords } from '../lib/performance/sleepChart';
 import { useStartChat } from '../components/coach/startChat';
@@ -221,262 +221,59 @@ export default function MyAccount() {
 
   const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Your Name';
 
+  // The calm layout (design reference version 28; Tim's rules of 5 Nov, and
+  // Claude's call of 10 Nov that My Account gets it before go-live): one
+  // title, section names with the line above, quiet text links in place
+  // of big outlined buttons, the reference's switch with no word beside
+  // it, and nothing shown that has nothing in it.
+  const editMission = () => (hasPlan
+    // One Mission (Tim, 5 Nov): with a plan it is changed in the plan's own
+    // Mission panel, so it reads the same everywhere.
+    ? navigate('/performance-plan', { state: { openPart: 'mission' } })
+    : setShowGoalModal(true));
   return (
-    <div className="ui-root account-root">
-      <style>{`
-        .account-root {
-          width: 100%;
-          min-height: 100dvh;
-          display: flex;
-          flex-direction: column;
-          background: var(--bg);
-        }
-
-        .account-content {
-          flex: 1;
-          width: 100%;
-          background: var(--bg);
-          display: flex;
-          flex-direction: column;
-          box-sizing: border-box;
-        }
-
-        @media (max-width: 768px) {
-          .account-content {
-            min-height: calc(100dvh - var(--tabbar-height, 81px));
-          }
-        }
-
-        .account-column {
-          width: 100%;
-          box-sizing: border-box;
-          padding: 0 20px;
-        }
-
-        @media (min-width: 769px) {
-          .account-column {
-            max-width: 620px;
-            margin: 0 auto;
-            padding: 44px 24px 40px;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .account-column {
-            padding-top: 34px;
-            padding-bottom: 40px;
-          }
-        }
-
-        .account-section-label {
-          font-family: var(--font-display);
-          font-weight: 400;
-          text-transform: uppercase;
-          letter-spacing: var(--ls-section-title);
-          font-size: var(--fs-section-title);
-          color: var(--text);
-          margin: 38px 0 6px;
-        }
-
-
-        .account-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 20px;
-          padding: 20px 0;
-          border-bottom: 1px solid var(--line);
-        }
-
-        .account-row-text {
-          min-width: 0;
-        }
-
-        .account-row-title {
-          font-family: var(--font-body);
-          font-weight: 500;
-          font-size: calc(16 * var(--u, 1px));
-          color: var(--text);
-        }
-
-        .account-row-desc {
-          font-family: var(--font-body);
-          font-size: calc(14 * var(--u, 1px));
-          color: var(--text-2);
-          margin-top: 4px;
-        }
-
-        .account-row-count {
-          font-family: var(--font-body);
-          font-size: calc(12 * var(--u, 1px));
-          color: var(--label);
-          margin-top: 6px;
-        }
-
-        /* The sleep target range's steppers open in place, under its row. */
-        /* The link goes under the words when they'd squeeze it (large text). */
-        .account-row--sleep {
-          flex-wrap: wrap;
-          row-gap: var(--space-2);
-        }
-
-        .account-row--sleep .account-row-text {
-          flex: 1 1 14em;
-        }
-
-        .account-row--sleep .ds-starget-link {
-          flex: 0 0 auto;
-        }
-
-        .account-sleep-target {
-          padding: 0 0 var(--space-4);
-          border-bottom: var(--line-w) solid var(--line);
-        }
-
-        .account-sleep-target .ds-starget {
-          margin-top: 0;
-        }
-
-        .account-row--sleep:has(+ .account-sleep-target) {
-          border-bottom: 0;
-        }
-
-        .account-row-buttons {
-          display: flex;
-          gap: 8px;
-          flex-shrink: 0;
-        }
-
-        .account-empty-line {
-          font-family: var(--font-body);
-          font-size: calc(14 * var(--u, 1px));
-          color: var(--text-2);
-          padding: 18px 0;
-          border-bottom: 1px solid var(--line);
-        }
-
-        .account-switch-row {
-          min-height: 44px;
-        }
-
-        .account-switch-control {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-shrink: 0;
-        }
-
-        .account-switch-state-label {
-          font-family: var(--font-body);
-          font-weight: 400;
-          font-size: var(--fs-meta);
-          letter-spacing: normal;
-          color: var(--label);
-        }
-
-        .account-danger-zone {
-          margin-top: 48px;
-        }
-
-        /* Phone-only rows (Chat to the coach: in the desktop header). */
-        .account-row--phone-only {
-          display: none;
-        }
-
-        @media (max-width: 768px) {
-          .account-row--phone-only {
-            display: flex;
-          }
-        }
-      `}</style>
-
+    <div className="ui-root">
       <DesignHeader />
+      <div className="plan-page ipp-page account-page">
+        <PageHeader title="My Account" />
+        <EmailVerificationBanner />
 
-      <div className="account-content">
-        <div className="account-column">
-          <PageHeader title="My Account" info={pageText.myAccount} />
-
-          <EmailVerificationBanner />
-
-          {/* Profile */}
-          <div className="account-section-label">Profile</div>
+        <Section title="Profile" className="ipp-section account-section">
           <div className="account-row">
             <div className="account-row-text">
-              <div className="account-row-title">{fullName}</div>
-              <div className="account-row-desc">{user?.email}</div>
+              <p className="account-row-title">{fullName}</p>
+              <p className="account-row-note">{user?.email}</p>
             </div>
-            <Button variant="outline" onClick={() => navigate('/edit-profile')}>
-              Edit
-            </Button>
+            <Button variant="text" onClick={() => navigate('/edit-profile')}>Edit my profile</Button>
           </div>
+        </Section>
 
-          {/* Mission */}
-          <div id="mission-section" className="account-section-label">Mission</div>
+        <Section id="mission-section" title="My Mission" className="ipp-section account-section">
           <div className="account-row">
             <div className="account-row-text">
-              <div className="account-row-title">Statement</div>
-              <div className="account-row-desc">{keepWords(personalGoal || 'No mission set yet')}</div>
+              <p className="account-row-title">{keepWords(personalGoal || 'Your mission isn’t written yet.')}</p>
             </div>
-            {/* One Mission (Tim, 5 Nov): with a plan, it is changed only on
-                the plan, in Edit my mission, so it reads the same everywhere. */}
-            <Button
-              variant="outline"
-              onClick={() => (hasPlan
-                ? navigate('/performance-plan', { state: { openPart: 'mission' } })
-                : setShowGoalModal(true))}
-            >
-              Edit
-            </Button>
+            <Button variant="text" onClick={editMission}>{personalGoal ? 'Edit my mission' : 'Write my mission'}</Button>
           </div>
-          <div className="account-row account-switch-row">
-            <div className="account-row-text">
-              <div className="account-row-title">Show in header</div>
-              <div className="account-row-desc">Display your mission in the page heading</div>
-            </div>
-            <div className="account-switch-control">
-              <span className="account-switch-state-label">
-                {showInHeader ? 'Visible' : 'Hidden'}
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={showInHeader}
-                aria-label="Show mission in header"
-                className={`ui-switch${showInHeader ? ' ui-switch--on' : ''}`}
-                onClick={handleToggleGoalVisibility}
-              />
-            </div>
-          </div>
+          <SwitchRow
+            label="Show my Mission at the top of every page"
+            checked={Boolean(showInHeader)}
+            onChange={handleToggleGoalVisibility}
+          />
+        </Section>
 
-          {/* Archived missions: redirects to the dedicated Archived
-              plans page (prompt 9 spec - restore/view live there now,
-              not in profile settings). */}
-          <div className="account-section-label">Archived missions</div>
-          <div className="account-row">
-            <div className="account-row-text">
-              <div className="account-row-title">Archived plans</div>
-              <div className="account-row-desc">
-                {loadingArchivedMissions ? (
-                  <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <Crosshair size="sm" tone="label" spin />
-                    Loading
-                  </span>
-                ) : `${archivedMissionsCount} archived`}
-              </div>
-            </div>
-            <Button variant="outline" onClick={() => navigate('/personal-operating-plan-archived')}>
-              Open
-            </Button>
+        <Section title="Appearance" className="ipp-section account-section">
+          <div className="account-choice">
+            <ColourModeChoice />
           </div>
+        </Section>
 
-          {/* Settings: the sleep target range, the same control as
-              Recovery's Home (Tim, 3 Nov 2026). */}
-          <div className="account-section-label">Settings</div>
+        <Section title="Settings" className="ipp-section account-section">
           <div className="account-row account-row--sleep">
             <div className="account-row-text">
-              <div className="account-row-title">Sleep target range</div>
-              <div className="account-row-desc">{rangeWords(sleepTarget)}</div>
-              {!sleepTarget.own && <div className="account-row-desc">{SLEEP_SUGGESTED_LINE}</div>}
+              <p className="account-row-title">Sleep target range</p>
+              <p className="account-row-note">{rangeWords(sleepTarget)}</p>
+              {!sleepTarget.own && <p className="account-row-note">{SLEEP_SUGGESTED_LINE}</p>}
             </div>
             <SleepTargetLink open={sleepEditing} onToggle={() => setSleepEditing((v) => !v)} controls="account-sleep-target" />
           </div>
@@ -485,67 +282,41 @@ export default function MyAccount() {
               <SleepTargetEditor id="account-sleep-target" target={sleepTarget} onChange={changeSleepTarget} />
             </div>
           )}
-          {/* The Individual Performance Dashboard's parts and order: the
-              same Customise panel as the dashboard's (Phase 5). */}
-          <div className="account-row">
-            <div className="account-row-text">
-              <div className="account-row-title">Dashboard</div>
-              <div className="account-row-desc">Choose which parts of your dashboard show, and in what order.</div>
-            </div>
-            <Button variant="outline" onClick={() => setCustomising(true)}>Customise my dashboard</Button>
+          <div className="account-links">
+            <Button variant="text" onClick={() => setCustomising(true)}>Customise my dashboard</Button>
+            {/* Only when there is one: a section with nothing in it stays hidden. */}
+            {!loadingArchivedMissions && archivedMissionsCount > 0 && (
+              <Button variant="text" onClick={() => navigate('/personal-operating-plan-archived')}>
+                {`Open my archived plans (${archivedMissionsCount})`}
+              </Button>
+            )}
+            <Button variant="text" onClick={() => navigate('/about')}>About The Clarity Portal</Button>
+            {/* Chat to the coach: in the header on desktop, here on phone. */}
+            {coachName && startChat && (
+              <Button variant="text" className="account-phone-only" onClick={startChat}>{`Chat to ${coachName}`}</Button>
+            )}
           </div>
           <DashboardCustomise open={customising} onClose={() => setCustomising(false)} />
+        </Section>
 
-          {/* Portal */}
-          <div className="account-section-label">Portal</div>
-          {/* About: on every width now the menu lists areas only (M3). */}
+        {/* Sign out, as in the menu (Tim, 5 Nov): the same quiet link,
+            sending anything waiting first. */}
+        <div className="account-signout">
+          <SignOutLink onSignOut={signOutFlow.start} busy={signOutFlow.busy} />
+        </div>
+        {signOutFlow.choice}
+
+        <Section title="Delete my account" className="ipp-section account-section">
           <div className="account-row">
             <div className="account-row-text">
-              <div className="account-row-title">About</div>
-              <div className="account-row-desc">Learn about The Clarity Project</div>
+              <p className="account-row-note">This removes your account and everything in it, for good.</p>
             </div>
-            <Button variant="outline" onClick={() => navigate('/about')}>
-              Open
+            <Button variant="text" onClick={handleDeleteAccount} disabled={isDeleting}>
+              {isDeleting ? 'Deleting my account' : 'Delete my account'}
             </Button>
           </div>
-          {/* Chat to the coach: in the header on desktop, here on phone. */}
-          {coachName && startChat && (
-            <div className="account-row account-row--phone-only">
-              <div className="account-row-text">
-                <div className="account-row-title">{`Chat to ${coachName}`}</div>
-                <div className="account-row-desc">A message to your coach</div>
-              </div>
-              <Button variant="outline" onClick={startChat}>
-                Start a chat
-              </Button>
-            </div>
-          )}
-          {/* Sign out, as in the menu (Tim, 5 Nov): the same quiet link,
-              sending anything waiting first. */}
-          <div className="account-row">
-            <SignOutLink onSignOut={signOutFlow.start} busy={signOutFlow.busy} />
-          </div>
-          {signOutFlow.choice}
-
-          {/* Danger zone */}
-          <div className="account-danger-zone">
-            <div className="account-section-label">Danger zone</div>
-            <div className="account-row">
-              <div className="account-row-text">
-                <div className="account-row-title">Delete account</div>
-                <div className="account-row-desc">Permanently delete your account and all data</div>
-              </div>
-              <Button
-                variant="outline"
-                onClick={handleDeleteAccount}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting' : 'Delete'}
-              </Button>
-            </div>
-            {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
-          </div>
-        </div>
+          {deleteError && <p className="plan-save-error" role="alert">{deleteError}</p>}
+        </Section>
       </div>
 
       <DeleteDialog
