@@ -63,7 +63,7 @@ async function until(fn, ms = 15000) {
 
 console.log(`Fixed day: ${fixedLabel()}`);
 seedFixed('--reset');
-const MONTH = FIXED_TODAY.slice(0, 7);
+const MONTH = `${FIXED_TODAY.slice(0, 7)}-01`; // as checkins.month holds it
 const { data: monthBefore } = await db.from('checkins').select('*').eq('user_id', me).eq('month', MONTH);
 const clearMonth = () => db.from('checkins').delete().eq('user_id', me).eq('month', MONTH);
 await clearMonth();
