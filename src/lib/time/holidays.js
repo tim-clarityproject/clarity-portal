@@ -6,8 +6,8 @@
 // The dates come from the date-holidays package (pinned in package.json),
 // loaded only when a booking is checked, so it is never part of the
 // portal's first load.
-import { wallClock } from './instants.js';
-import { countryWords, zoneCountry } from './zones.js';
+import { instantAt, wallClock } from './instants.js';
+import { countryWords, isZone, zoneCountry } from './zones.js';
 
 let load = null;
 const library = () => {
@@ -26,9 +26,12 @@ export async function publicHolidayOn(day, country, region) {
   if (!country) return null;
   const Holidays = await library();
   const hd = region ? new Holidays(country, region, { languages: ['en'] }) : new Holidays(country, { languages: ['en'] });
+  // Noon on the day by the country's own clock, which is how the package
+  // reads a day. Never the device's noon: from the UK that is already the
+  // next day in New Zealand, and from Sydney still the day before in the US.
+  const zone = hd.getTimezones()?.[0];
   const [y, m, d] = String(day).split('-').map(Number);
-  // Noon on the day, read as the country's own calendar day.
-  const found = hd.isHoliday(new Date(y, m - 1, d, 12));
+  const found = hd.isHoliday(isZone(zone) ? instantAt(day, '12:00', zone) : new Date(y, m - 1, d, 12));
   const list = Array.isArray(found) ? found : [];
   const holiday = list.find((h) => h.type === 'public') || null;
   return holiday ? { name: holiday.name, country } : null;

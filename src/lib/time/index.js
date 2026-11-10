@@ -7,7 +7,7 @@
 // (The device's own clock on screen, "07:53" in whatever zone the phone is
 // in, stays with src/lib/dateFormatter.js, CLAUDE.md rule 19: inside the
 // portal the screen already shows the person's own time.)
-export { isZone, mustBeZone, zonePlace, zoneLabel, zoneCountry, usesTwelveHour, countryWords, deviceZone } from './zones.js';
+export { isZone, mustBeZone, zonePlace, zoneLabel, zoneCountry, usesTwelveHour, countryWords, countryAdjective, deviceZone } from './zones.js';
 export { wallClock, offsetMinutes, instantAt, dayIn, addDays, daysBetween, weekdayOf, savedTime, savedTimeAt, readSavedTime } from './instants.js';
 export { clockWords, timeWords, dayWords, dayKeyWords, whenWords, bothWords, relativeDayWords, sessionWhenWords } from './words.js';
 export { seriesRule, seriesCalls, nextCall } from './series.js';

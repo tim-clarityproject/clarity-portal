@@ -42,6 +42,7 @@ const US_ZONES = new Set([
   // older names still found on devices
   'America/Indianapolis', 'America/Louisville', 'America/Fort_Wayne', 'US/Eastern', 'US/Central', 'US/Mountain',
   'US/Pacific', 'US/Arizona', 'US/Alaska', 'US/Hawaii', 'US/Michigan', 'US/East-Indiana', 'US/Indiana-Starke',
+  'US/Aleutian', 'America/Atka', 'America/Knox_IN', 'America/Shiprock', 'Pacific/Johnston',
 ]);
 const CANADA_ZONES = new Set([
   'America/St_Johns', 'America/Halifax', 'America/Glace_Bay', 'America/Moncton', 'America/Goose_Bay',
@@ -51,7 +52,7 @@ const CANADA_ZONES = new Set([
   'America/Whitehorse', 'America/Dawson', 'America/Vancouver',
   // older names still found on devices
   'America/Montreal', 'America/Nipigon', 'America/Thunder_Bay', 'America/Rainy_River', 'America/Pangnirtung',
-  'America/Yellowknife', 'Canada/Atlantic', 'Canada/Central', 'Canada/Eastern', 'Canada/Mountain',
+  'America/Yellowknife', 'America/Coral_Harbour', 'Canada/Atlantic', 'Canada/Central', 'Canada/Eastern', 'Canada/Mountain',
   'Canada/Newfoundland', 'Canada/Pacific', 'Canada/Saskatchewan', 'Canada/Yukon',
 ]);
 
@@ -64,7 +65,7 @@ const COUNTRY_BY_ZONE = {
   'Europe/Vienna': 'AT', 'Europe/Stockholm': 'SE', 'Europe/Oslo': 'NO', 'Europe/Copenhagen': 'DK', 'Europe/Helsinki': 'FI',
   'Europe/Lisbon': 'PT', 'Europe/Warsaw': 'PL', 'Europe/Prague': 'CZ', 'Europe/Athens': 'GR',
   'Asia/Kolkata': 'IN', 'Asia/Calcutta': 'IN', 'Asia/Singapore': 'SG', 'Asia/Hong_Kong': 'HK', 'Asia/Tokyo': 'JP',
-  'Asia/Dubai': 'AE', 'Asia/Kathmandu': 'NP',
+  'Asia/Dubai': 'AE', 'Asia/Kathmandu': 'NP', 'Asia/Katmandu': 'NP',
   'Australia/Sydney': 'AU', 'Australia/Melbourne': 'AU', 'Australia/Brisbane': 'AU', 'Australia/Adelaide': 'AU',
   'Australia/Perth': 'AU', 'Australia/Hobart': 'AU', 'Australia/Darwin': 'AU',
   'Pacific/Auckland': 'NZ', 'Africa/Johannesburg': 'ZA',
@@ -121,6 +122,11 @@ export function zoneCountry(zone) {
 
 /** US and Canadian readers see 12-hour times; everyone else 24-hour (rule 8). */
 export const usesTwelveHour = (zone) => US_ZONES.has(zone) || CANADA_ZONES.has(zone);
+
+const COUNTRY_ADJECTIVES = { US: 'US', CA: 'Canadian', GB: 'UK', IE: 'Irish', AU: 'Australian', NZ: 'New Zealand', IN: 'Indian' };
+
+/** "US", "Canadian", "UK": a country before a noun ("US clocks", "Canadian clients"), or null when there's no plain word for it. */
+export const countryAdjective = (country) => COUNTRY_ADJECTIVES[country] || null;
 
 /** "the US", "Canada", "the UK": a country inside a sentence. */
 export const countryWords = (country) => COUNTRY_WORDS[country] || country;

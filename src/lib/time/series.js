@@ -19,7 +19,7 @@ export function seriesRule({ every = 1, weekday, time, zone, from, until = null 
   mustBeZone(zone);
   if (!Number.isInteger(every) || every < 1 || every > 52) throw new Error('A series repeats every 1 to 52 weeks.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(from))) throw new Error('A series starts on a day.');
-  if (!/^\d{2}:\d{2}$/.test(String(time))) throw new Error('A series has a time, as HH:MM.');
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(time))) throw new Error('A series has a time, as HH:MM.');
   const day = weekday ?? weekdayOf(from);
   if (!Number.isInteger(day) || day < 1 || day > 7) throw new Error('A series falls on a weekday, Monday 1 to Sunday 7.');
   if (until != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(until))) throw new Error('A series ends on a day.');

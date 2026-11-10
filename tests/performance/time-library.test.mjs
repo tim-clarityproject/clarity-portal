@@ -56,6 +56,23 @@ test('US and Canadian readers get 12-hour times; everyone else 24-hour', () => {
   assert.equal(zoneCountry('America/Mexico_City'), null);
 });
 
+test('the names a device gives for US and Canadian places are known too', () => {
+  // Atikokan in Ontario comes back from a browser as America/Coral_Harbour; the Navajo Nation and the Aleutians have older names.
+  for (const z of ['America/Coral_Harbour', 'America/Atikokan']) { assert.equal(usesTwelveHour(z), true, z); assert.equal(zoneCountry(z), 'CA', z); }
+  for (const z of ['America/Shiprock', 'America/Knox_IN', 'America/Atka', 'US/Aleutian', 'Pacific/Johnston']) { assert.equal(usesTwelveHour(z), true, z); assert.equal(zoneCountry(z), 'US', z); }
+  // Whatever this device calls each of these places, the answer is the same.
+  for (const z of [NY, 'America/Indiana/Indianapolis', 'America/Kentucky/Louisville', 'America/Atikokan', 'America/Toronto', 'America/St_Johns', 'Pacific/Honolulu', 'America/Phoenix']) {
+    const named = new Intl.DateTimeFormat('en-GB', { timeZone: z }).resolvedOptions().timeZone;
+    assert.equal(usesTwelveHour(named), true, `${z} as ${named}`);
+  }
+  for (const z of ['Asia/Kolkata', 'Asia/Kathmandu', UK, 'Australia/Sydney', 'Pacific/Auckland']) {
+    const named = new Intl.DateTimeFormat('en-GB', { timeZone: z }).resolvedOptions().timeZone;
+    assert.equal(zoneCountry(named), zoneCountry(z), `${z} as ${named}`);
+    assert.equal(usesTwelveHour(named), false, `${z} as ${named}`);
+  }
+  assert.equal(usesTwelveHour('America/Nassau'), false); // the Bahamas share Toronto's clock, not its country
+});
+
 // ---------------------------------------------------------------- saving
 test('a time is saved as a UTC instant with its anchor zone’s place name, never an offset', () => {
   const saved = savedTimeAt('2026-10-26', '07:30', NY);
@@ -299,6 +316,10 @@ test('the clock changes coming up in the next 7 days, and which calls move for T
   const ukMoves = callsThatMove({ coachZone: UK, series, from: before, days: 7 });
   assert.deepEqual(ukMoves.map((m) => [m.name, m.was, m.now]).sort(), [['Priya', '09:30', '08:30'], ['Tyson', '12:30', '11:30']]);
   assert.ok(!ukMoves.some((m) => m.name === 'Dana'));
+  // The coach's own clocks: the line names the clients elsewhere, and says "this week" once.
+  const ukChange = ukMoves[0].change;
+  assert.equal(clockChangeLine({ coachZone: UK, change: ukChange, moves: ukMoves.filter((m) => m.name === 'Tyson') }), 'UK clocks go back on Sunday 25 Oct. Your calls with clients in other time zones stay at their usual time for them; for you, Tyson’s Monday call moves from 12:30 to 11:30 UK time this week.');
+  assert.throws(() => seriesRule({ time: '25:99', zone: NY, from: '2026-10-19' }), /HH:MM/);
   // A quiet week: nothing.
   assert.deepEqual(callsThatMove({ coachZone: UK, series, from: instantAt('2026-11-09', '08:00', UK), days: 7 }), []);
 });
@@ -322,6 +343,28 @@ test('a public holiday in the client’s country is found before a booking is co
   assert.equal((await publicHolidayFor(instantAt('2026-11-26', '08:00', NY), NY))?.name, 'Thanksgiving Day');
   // Late on Wednesday in Los Angeles is already Thursday in the UK: it is the client's day that counts.
   assert.equal(await publicHolidayFor(instantAt('2026-11-25', '18:00', 'America/Los_Angeles'), 'America/Los_Angeles'), null);
+});
+
+test('a public holiday is the country’s own day, wherever the device asking is', async () => {
+  // The device's own noon is already the next day in New Zealand from the UK, and still the day before in the US from Sydney.
+  const days = [
+    ['2026-02-06', 'NZ', 'Waitangi Day'], ['2026-02-07', 'NZ', null], ['2026-12-25', 'NZ', 'Christmas Day'],
+    ['2026-11-26', 'US', 'Thanksgiving Day'], ['2026-11-25', 'US', null], ['2026-11-27', 'US', null],
+    ['2026-07-04', 'US', 'Independence Day'], ['2026-07-01', 'CA', 'Canada Day'], ['2026-06-30', 'CA', null], ['2026-07-02', 'CA', null],
+    ['2026-01-26', 'AU', 'Australia Day'], ['2026-01-25', 'AU', null], ['2026-12-25', 'GB', 'Christmas Day'], ['2026-12-24', 'GB', null],
+  ];
+  const device = process.env.TZ;
+  try {
+    for (const zone of [UK, 'UTC', 'Pacific/Auckland', 'Australia/Sydney', 'Pacific/Honolulu', 'America/Los_Angeles']) {
+      process.env.TZ = zone;
+      for (const [day, country, name] of days) assert.equal((await publicHolidayOn(day, country))?.name ?? null, name, `${day} in ${country}, asked from ${zone}`);
+      // Friday 09:00 in Auckland is still Thursday in the UK: it is Waitangi Day for the client.
+      assert.equal((await publicHolidayFor(instantAt('2026-02-06', '09:00', 'Pacific/Auckland'), 'Pacific/Auckland'))?.name, 'Waitangi Day', `asked from ${zone}`);
+    }
+  } finally {
+    if (device === undefined) delete process.env.TZ; else process.env.TZ = device;
+  }
+  assert.equal(await publicHolidayOn('2026-12-25', 'ZZ'), null); // a country the package doesn't know
 });
 
 // ---------------------------------------------------------------- reminders

@@ -11,7 +11,7 @@
 import { offsetMinutes, wallClock } from './instants.js';
 import { nextCall, seriesCalls } from './series.js';
 import { clockWords, dayKeyWords } from './words.js';
-import { countryWords, zoneCountry, zoneLabel, zonePlace } from './zones.js';
+import { countryAdjective, zoneCountry, zoneLabel, zonePlace } from './zones.js';
 
 const HOUR = 3600000;
 const DAY = 24 * HOUR;
@@ -89,14 +89,14 @@ const WEEKDAY_WORDS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', '
  * and clock. `moves` are callsThatMove's rows for that change.
  */
 export function clockChangeLine({ coachZone, change, moves }) {
-  const country = zoneCountry(change.zone);
-  const whose = country ? `${countryWords(country).replace(/^the /, '')} clocks` : `${zonePlace(change.zone)} clocks`;
-  const first = `${whose.charAt(0).toUpperCase()}${whose.slice(1)} go ${change.direction === 'back' ? 'back' : 'forward'} on ${dayKeyWords(change.date, { long: true })}.`;
+  const adjective = countryAdjective(zoneCountry(change.zone)) || zonePlace(change.zone);
+  const first = `${adjective} clocks go ${change.direction === 'back' ? 'back' : 'forward'} on ${dayKeyWords(change.date, { long: true })}.`;
   if (!moves.length) return first;
   const own = change.zone === coachZone;
-  const each = moves.map((m) => `${m.name}’s ${WEEKDAY_WORDS[wallClock(m.call.at, coachZone).weekday - 1]} call moves from ${clockWords(seriesInstantAt(m, 'was', coachZone), coachZone)} to ${clockWords(m.call.at, coachZone)} ${zoneLabel(coachZone)} this week`);
-  const who = country && !own ? `${countryWords(country).replace(/^the /, '')} clients` : 'those clients';
-  return `${first} Your calls with ${who} stay at their usual time for them; for you, ${each.join(', and ')}.`;
+  const each = moves.map((m) => `${m.name}’s ${WEEKDAY_WORDS[wallClock(m.call.at, coachZone).weekday - 1]} call moves from ${clockWords(seriesInstantAt(m, 'was', coachZone), coachZone)} to ${clockWords(m.call.at, coachZone)} ${zoneLabel(coachZone)}`);
+  // The coach's own clocks: every client elsewhere keeps their time, so their calls move for the coach.
+  const who = own ? 'clients in other time zones' : `${adjective} clients`;
+  return `${first} Your calls with ${who} stay at their usual time for them; for you, ${each.join(', and ')} this week.`;
 }
 
 // The instant on the call's own day that reads `was` on the coach's clock:
