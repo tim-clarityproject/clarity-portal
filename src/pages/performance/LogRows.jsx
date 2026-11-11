@@ -65,6 +65,10 @@ export function WeekRow({ habit: h, view, typed, onLog, onType, onLeave, onTick,
   if (kind === 'yesno') {
     return <LoggingWeekRow {...common} kind="yesno" values={h.values} onChange={(d, v) => onLog(h, d, v)} />;
   }
+  // A rated habit: a mint box for each day, never a number (Tim, 10 Nov, 23:22).
+  if (kind === 'rating') {
+    return <LoggingWeekRow {...common} kind="rating" values={h.values} onChange={(d, v) => onLog(h, d, v)} />;
+  }
   const texts = Object.fromEntries(view.shownDays.map((d) => [d.key, typed[`${h.id}:${d.key}`] ?? toText(h.shown[d.key])]));
   return (
     <LoggingWeekRow

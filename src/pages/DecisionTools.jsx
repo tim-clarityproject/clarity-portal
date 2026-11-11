@@ -8,7 +8,7 @@ const LIVE_CARDS = [
   { id: 'stop-doing', title: "I've got too many things to do", description: 'Reclaim hours by stopping or delegating time-sink activities', route: '/time-audit' },
   { id: 'if-then', title: "I'm feeling anxious about an uncertain situation", description: 'Prepare for uncertain situations with contingency plans', route: '/pressure-plan' },
   { id: 'inversion', title: "I want to make sure something doesn't go wrong", description: 'Look at the risks before you start, then plan to prevent them.', route: '/pre-mortem' },
-  { id: 'personal-operating-plan', title: 'I want to shape my personal operating plan', description: 'Define your mission, strategies, and tactics', route: '/personal-operating-plan' },
+  { id: 'personal-operating-plan', title: 'I want to shape my personal operating plan', description: 'Define your Mission, strategies, and tactics', route: '/personal-operating-plan' },
 ];
 
 const COMING_SOON = [
@@ -22,7 +22,7 @@ const COMING_SOON = [
   { title: 'I need to create alignment in my team', description: 'Improve team clarity and shared direction' },
   { title: 'I want to improve my habits', description: 'Build better habits and break unhelpful ones' },
   { title: 'I want to get out of a rut', description: "Refocus on what's working and build momentum" },
-  { title: 'I want to feel more connected to my mission', description: 'Reconnect with your intention and "why"' },
+  { title: 'I want to feel more connected to my Mission', description: 'Reconnect with your intention and "why"' },
   { title: 'I want to cultivate gratitude', description: 'Shift perspective and boost wellbeing' },
   { title: 'I need to look after my wellbeing', description: 'Human performance audit and recovery' },
   { title: 'I need to set team goals and OKRs', description: 'Define and align on team objectives' },

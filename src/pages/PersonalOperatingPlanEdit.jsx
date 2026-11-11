@@ -13,7 +13,7 @@ import { DiscardLink } from '../components/ui/DiscardLink';
 import DiscardDialog from '../components/ui/DiscardDialog';
 import { StepIcon, Loading, PageHeader, TextBox, TextField, AddButton, Button, SegmentedControl } from '../components/design';
 
-const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your mission. It's your overall direction, how you'll tackle things in a consistent, thoughtful way. Unlike tactics, which happen day-to-day, your strategies don't change frequently. They're the foundation that guides your daily actions.";
+const STRATEGY_INFO = "A strategy is the big-picture approach you take to achieve your Mission. It's your overall direction, how you'll tackle things in a consistent, thoughtful way. Unlike tactics, which happen day-to-day, your strategies don't change frequently. They're the foundation that guides your daily actions.";
 const TACTIC_INFO = 'A tactic is a specific, repeatable action you do regularly to carry out your strategy. These are the everyday, concrete things you actually do: the habits, routines, and practices that bring your strategies to life. Multiple tactics usually work together to execute one strategy.';
 
 function BinIcon() {
@@ -414,7 +414,7 @@ export default function PersonalOperatingPlanEdit() {
         )}
 
         <div className="plan-field">
-          <TextBox id="pop-title" label="Your mission statement" who="me" lines="many" placeholder="Define your mission in clear, compelling language..." value={missionTitle} onChange={setMissionTitle} maxLength={LIMITS.mission} />
+          <TextBox id="pop-title" label="Your Mission statement" who="me" lines="many" placeholder="Define your Mission in clear, compelling language..." value={missionTitle} onChange={setMissionTitle} maxLength={LIMITS.mission} />
           {fieldError?.field === 'mission' && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
         </div>
 
@@ -428,7 +428,7 @@ export default function PersonalOperatingPlanEdit() {
             <div className="pop-strategy-top">
               <div className="pop-strategy-fields">
                 <TextBox lines="one" placeholder="Strategy name" ariaLabel={`Strategy ${sIndex + 1} name`} value={strategy.name} onChange={(v) => updateStrategy(sIndex, 'name', v)} maxLength={LIMITS.strategyName} />
-                <TextBox lines="many" placeholder="Why does this matter? How does it support your mission?" ariaLabel={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} maxLength={LIMITS.strategyDescription} />
+                <TextBox lines="many" placeholder="Why does this matter? How does it support your Mission?" ariaLabel={`Strategy ${sIndex + 1} description`} value={strategy.description || ''} onChange={(v) => updateStrategy(sIndex, 'description', v)} maxLength={LIMITS.strategyDescription} />
                 {fieldError?.field === `strategy-${sIndex}` && <p className="plan-save-error" role="alert">{fieldError.message}</p>}
               </div>
               <button type="button" className="plan-bin-btn" aria-label={`Remove strategy ${sIndex + 1}`} onClick={() => setDeleteTarget({ kind: 'strategy', sIndex })}>

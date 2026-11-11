@@ -16,7 +16,6 @@ import {
   LoggingRow,
   PageHeader,
   PriorityRows,
-  ScaleChoice,
   Choice,
   Stat,
   TextBox,
@@ -76,6 +75,8 @@ import {
   tomorrowToRow,
   recentWays,
   wayQuestion,
+  WAY_RATING_OPTIONS,
+  wayRatingOption,
   whereQuestion,
 } from '../../lib/performance';
 import './performance.css';
@@ -619,12 +620,13 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
       ) : (
         <div className="day-stack">
           <div>
-            <ScaleChoice
+            {/* The five words, never 1 to 10 (Tim, 10 Nov, 23:22): a word saves 2, 4, 6, 8 or 10, and an older figure shows as its word. */}
+            <Choice
               ariaLabel={wayQuestion(way)}
-              value={answers.rating}
+              options={WAY_RATING_OPTIONS}
+              value={wayRatingOption(answers.rating)}
               onChange={(rating) => change({ rating })}
-              lowLabel="1 is not at all"
-              highLabel="10 is completely"
+              form="rows"
             />
           </div>
           <TextBox label={whereQuestion(way)} maxLength={WHERE_MAX} value={answers.where} onChange={(where) => change({ where })} />

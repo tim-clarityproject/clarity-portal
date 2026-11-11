@@ -43,7 +43,7 @@ export default function PlanVersion() {
           <>
             <section className="ds-mission-card" aria-labelledby="ipp-v-mission">
               <div className="ds-mission-card-head"><h2 id="ipp-v-mission" className="ds-mission-card-label">My Mission</h2></div>
-              <p className="ds-mission-card-text">{view.mission || 'No mission was written in this version.'}</p>
+              <p className="ds-mission-card-text">{view.mission || 'No Mission was written in this version.'}</p>
             </section>
 
             <Section title="Outcome Objectives" className="ipp-version-block">

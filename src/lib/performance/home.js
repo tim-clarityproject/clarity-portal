@@ -353,7 +353,7 @@ export function quietLines({ person, hasCoach, mission, joinedDaysAgo = 0, dismi
   // never a quiet line (Tim, 5 Nov). `checkin` is kept for older callers.
   void checkin;
   if (person === 'new' && !hasCoach && !mission && joinedDaysAgo >= 14) {
-    out.push({ key: 'mission', lines: ['Ready to add your mission?'], action: { label: 'Add my mission', to: '/performance-plan/build' }, dismissable: true });
+    out.push({ key: 'mission', lines: ['Ready to add your Mission?'], action: { label: 'Add my Mission', to: '/performance-plan/build' }, dismissable: true });
   }
   return out.filter((q) => !dismissed.includes(q.key)).slice(0, 2);
 }

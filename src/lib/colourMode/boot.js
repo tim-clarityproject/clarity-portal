@@ -21,9 +21,11 @@
    pages rebuilt for both modes did; every colour comes from the tokens,
    which have a dark and a light value, so the older pages follow too.
 
-   One exception: the outside Health Check (/health-check), which people
-   open without an account. It has no Appearance setting and has only been
-   checked in dark, so it stays dark until Tim decides otherwise. */
+   The outside Health Check (/health-check), which people open without an
+   account, has no Appearance setting, so it follows the person's device,
+   light or dark (Tim, 10 Nov, 23:22), whatever was chosen for the portal on
+   this device. Its own page (health-check.html) does the same in its own
+   styles (src/health-check/hc.css). */
 (function () {
   if (typeof window === 'undefined' || window.ClarityColourMode) return;
 
@@ -56,8 +58,7 @@
   }
 
   function resolve(c) {
-    if (outsideHealthCheck()) return 'dark';
-    if (c === 'light' || c === 'dark') return c;
+    if (!outsideHealthCheck() && (c === 'light' || c === 'dark')) return c;
     return media && media.matches ? 'light' : 'dark';
   }
 
@@ -102,7 +103,7 @@
 
   // The device switching between light and dark (for example at night).
   function onDeviceChange() {
-    if (choice !== 'device') return;
+    if (choice !== 'device' && !outsideHealthCheck()) return;
     apply();
     announce();
   }

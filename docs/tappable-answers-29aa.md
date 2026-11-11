@@ -28,7 +28,7 @@ Answers made from the person's own words (their Strategies, priorities, ways of 
 
 ## Plan my day and Recovery (`PlanMyDay.jsx`, `Recovery.jsx`, `src/lib/performance/dayPlan.js`)
 
-- Sleep quality: Very poor, Poor, Fair, Good, Very good. **Left as it is** (sleep quality, a rating scale).
+- Sleep quality: Poor, Fair, Good, Very good, Excellent (Tim, 10 Nov, 23:22: the five words; it was Very poor to Very good, and the saved answers read straight across in order).
 - Recovery's “How are you feeling?” (`Recovery.jsx`), **reworded**: A few more days → I need a few more days; Ready to go again → I’m ready to go again. The buttons that act (“Ready to go again”, “Pick up my sprint”, “Add a few more days” on the sprint page) are buttons, not answers, and keep their words (never “I” on a button, writing rule 13).
 
 ## End-of-sprint review (`SprintReview.jsx`)

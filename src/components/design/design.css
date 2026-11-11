@@ -868,6 +868,60 @@
 .ui-root .ds-logweek-box input:focus { border-color: var(--coral-text); }
 .ui-root .ds-logweek-box input:disabled { opacity: 0.35; }
 
+/* A rated habit's days (Tim, 10 Nov, 23:22): a box a day in a shade of
+   mint, stronger for better days (--rate-1 Poor to --rate-5 Excellent),
+   with no number; a day not rated stays an empty box. */
+.ui-root .ds-logweek-rate-zone { display: block; }
+
+.ui-root .ds-logweek-rate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--fs-chart);
+  color: var(--label);
+  text-align: center;
+}
+
+.ui-root .ds-logweek-rate.ds-logweek--today { color: var(--text); }
+
+.ui-root .ds-logweek-rate-box {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--tap-min) !important;
+  padding: 0 !important;
+  border: var(--line-w) solid var(--field-line);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-root .ds-logweek-rate-box.ds-logweek-rate-box--1 { background: var(--rate-1); border-color: var(--rate-1); }
+.ui-root .ds-logweek-rate-box.ds-logweek-rate-box--2 { background: var(--rate-2); border-color: var(--rate-2); }
+.ui-root .ds-logweek-rate-box.ds-logweek-rate-box--3 { background: var(--rate-3); border-color: var(--rate-3); }
+.ui-root .ds-logweek-rate-box.ds-logweek-rate-box--4 { background: var(--rate-4); border-color: var(--rate-4); }
+.ui-root .ds-logweek-rate-box.ds-logweek-rate-box--5 { background: var(--rate-5); border-color: var(--rate-5); }
+.ui-root .ds-logweek-rate-box.ds-logweek-rate-box--empty { border-style: dashed; }
+.ui-root .ds-logweek-rate-box:disabled { opacity: 0.35; cursor: default; }
+
+/* The day whose five words are open under the row. */
+.ui-root .ds-logweek-rate-box[aria-expanded='true'] {
+  outline: var(--focus-w) solid var(--text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-logweek-rate-box:focus-visible {
+  outline: var(--focus-w) solid var(--coral-text);
+  outline-offset: var(--space-px2);
+}
+
+.ui-root .ds-logweek-rate-choose { margin-top: var(--space-2); }
+
 .ui-root .ds-logweek-yn {
   all: unset;
   cursor: pointer;

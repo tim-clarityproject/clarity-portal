@@ -895,7 +895,7 @@ try {
   pass('eyes: the same after a reload', (await page.locator('.ds-who').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') || e.textContent))).slice(0, 2).every((t) => t.includes('You and Alex')));
   await page.locator('.ds-who').first().click();
   const sheet = (await page.locator('[role=dialog]').last().innerText()).replace(/\s+/g, ' ');
-  pass('eyes: the sheet names the thing and says where else to change it', sheet.includes('Who can see this?') && sheet.includes('Your mission') && sheet.includes('What your coach sees'), sheet);
+  pass('eyes: the sheet names the thing and says where else to change it', sheet.includes('Who can see this?') && sheet.includes('Your Mission') && sheet.includes('What your coach sees'), sheet);
   await page.keyboard.press('Escape');
 
   const on = coachRead();

@@ -406,7 +406,7 @@ if (part('part')) {
     pass(`part ${w} objective: Escape saves and leaves the same way, with a minor version`, r.writes.some((x) => x.table === 'outcome_objectives' && x.body.includes(tag)) && /"kind":"minor"/.test(r.versionWrite?.body || ''), r.writes.map((x) => x.table).join(', '));
     await go(page, '/performance-plan', '.ds-mission-card');
     // The mission: a major version, as Edit my plan.
-    r = await editAndLeave('Edit my mission', 'textarea, input', ` ${tag}`, 'done');
+    r = await editAndLeave('Edit my Mission', 'textarea, input', ` ${tag}`, 'done');
     pass(`part ${w} mission: saves the mission with a major version, as Edit my plan`, r.writes.some((x) => x.table === 'performance_plans' && x.body.includes(tag)) && /"kind":"major"/.test(r.versionWrite?.body || ''), r.writes.map((x) => x.table).join(', '));
     // A habit, from the Strategy's detail.
     await go(page, '/performance-plan', '.ds-mission-card');
@@ -432,7 +432,7 @@ if (part('part')) {
     // Opened and closed with no change: no version, nothing said.
     await go(page, '/performance-plan', '.ds-mission-card');
     writes.length = 0;
-    await page.getByRole('button', { name: 'Edit my mission' }).click();
+    await page.getByRole('button', { name: 'Edit my Mission' }).click();
     await page.waitForSelector('.ds-panel .plan-part');
     await still(page);
     await page.keyboard.press('Escape');
@@ -441,12 +441,12 @@ if (part('part')) {
     pass(`part ${w}: closed with no change, no "Saved"`, !/Saved/.test(await page.locator('.ds-toast-region').innerText().catch(() => '')));
     // Clearing the mission to rewrite it never saves an empty mission.
     writes.length = 0;
-    await page.getByRole('button', { name: 'Edit my mission' }).click();
+    await page.getByRole('button', { name: 'Edit my Mission' }).click();
     await page.waitForSelector('.ds-panel .plan-part');
     await page.locator('.ds-panel .plan-part textarea, .ds-panel .plan-part input').first().fill('');
     await page.waitForTimeout(1500);
     pass(`part ${w}: clearing the mission sends no empty mission`, !writes.some((x) => x.table === 'performance_plans' && /"mission":(null|"")/.test(x.body)), writes.map((x) => `${x.method} ${x.table} ${x.body.slice(0, 60)}`).join(' | '));
-    pass(`part ${w}: an empty mission says what's needed`, (await page.locator('.ds-panel .plan-part-hint').innerText().catch(() => '')).includes('Write your mission'));
+    pass(`part ${w}: an empty mission says what's needed`, (await page.locator('.ds-panel .plan-part-hint').innerText().catch(() => '')).includes('Write your Mission'));
     await page.keyboard.press('Escape');
     await still(page);
 
@@ -471,7 +471,7 @@ if (part('part')) {
     writes.length = 0;
     await ctx.setOffline(true);
     const toasts = [];
-    for (const [label, words] of [['Edit my mission', ' O1'], ['Edit this objective', ' O2']]) {
+    for (const [label, words] of [['Edit my Mission', ' O1'], ['Edit this objective', ' O2']]) {
       await page.getByRole('button', { name: label }).first().click();
       await page.waitForSelector('.ds-panel .plan-part');
       const box = page.locator('.ds-panel .plan-part textarea, .ds-panel .plan-part input').first();

@@ -69,7 +69,7 @@ import { heldWeeks } from './year';
 import { openRecovery, sprintWeekResult, toObjective, toRecoveries } from './rows';
 import { dayName } from './sprintPage';
 import { hoursFigure, nightDate, nightState, qualityWords, sleepAction, usualQuality } from './sleepChart';
-import { objectiveFigure, objectiveTarget, plainNumber, ratingWord, shortDate } from './words';
+import { objectiveFigure, objectiveTarget, plainNumber, ratingWord, shortDate, wayRatingWord } from './words';
 
 export const DASHBOARD_CACHE = 'performance-dashboard';
 export const DASHBOARD_ROUTE = '/dashboard';
@@ -715,13 +715,14 @@ function wayRow(d, sprint, here) {
   const latestWay = sprint ? [...(d.dayPlans || [])].filter((p) => p.local_date >= sprint.start_on && p.way_of_being).sort((a, b) => (a.local_date < b.local_date ? 1 : -1))[0]?.way_of_being : null;
   const bars = here.map((w) => {
     const v = w.future ? null : weekAvg(w);
-    return { key: w.key, value: v, state: w.future ? 'next' : v == null ? 'none' : v >= 7 ? 'good' : 'below', tip: w.future ? { value: 'To come', when: whenWords(w) } : { value: v == null ? 'Not rated' : `${v}/10 on average`, when: `${whenWords(w)}${w.now ? ', so far' : ''}` }, label: String(w.number) };
+    return { key: w.key, value: v, state: w.future ? 'next' : v == null ? 'none' : v >= 7 ? 'good' : 'below', tip: w.future ? { value: 'To come', when: whenWords(w) } : { value: v == null ? 'Not rated' : `${wayRatingWord(v)} on average`, when: `${whenWords(w)}${w.now ? ', so far' : ''}` }, label: String(w.number) };
   });
   return {
     key: 'be',
     title: 'How you want to be',
     line: null,
-    figure: overall ? { text: String(overall.shown), unit: '/10', good: overall.green } : null,
+    // The five words, never a figure out of 10 (Tim, 10 Nov, 23:22): the average reads as its word.
+    figure: overall ? { text: wayRatingWord(overall.shown), good: overall.green } : null,
     mini: weeklyMini(here, weekAvg, (v) => v >= 7, 10),
     latestWay: latestWay ? latestWay.trim() : null,
     bars,

@@ -302,7 +302,7 @@ test('Chance in words (M14.8)', () => {
 test('The other links in words: stress, the way of being, and effort then results', () => {
   const base = { strength: 'clear', sizes: [12, 10], values: [88, 76], gap: 7.6, swing: 6, q: 0.01, holds: true };
   assert.equal(patternCardWords({ ...base, key: 'L4', id: 'L4' }).line, 'In weeks your stress was “Not at all” or “A little”, your performance score was 8 points higher.');
-  assert.equal(patternCardWords({ ...base, key: 'L5', id: 'L5' }).line, 'In weeks you rated how you wanted to be 7 or more on average, your performance score was 8 points higher.');
+  assert.equal(patternCardWords({ ...base, key: 'L5', id: 'L5' }).line, 'In weeks you rated how you wanted to be Very good or better on average, your performance score was 8 points higher.');
   const names = { strategies: { s1: 'Grow through referrals' }, objectives: { o1: { name: 'Coaching clients', unit: 'clients', direction: 'up' } } };
   const l6 = patternCardWords({ ...base, key: 'L6:s1:o1', id: 'L6', subject: 's1:o1', values: [1.5, 0.4], gap: 1.1 }, names);
   assert.equal(l6.line, 'In the weeks after “Grow through referrals” was at your standard, “Coaching clients” rose by 1.1 clients more, 2 to 4 weeks later.');

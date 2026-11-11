@@ -24,6 +24,16 @@
      colour. --on-good is the tick or number drawn on top of it. */
   --good: var(--mint-text);
   --on-good: #000000;
+  /* A day's rating in the week grid (Tim, 10 Nov, 23:22): five shades of
+     mint, Poor (1) to Excellent (5), stronger for better days. Each is at
+     least 3 to 1 against the page, the surface and the boxes, and about
+     1.4 to 1 from the next, in both modes. Never the only signal: every
+     box says its word on tap, hover and focus, and to a screen reader. */
+  --rate-1: #2B7259;
+  --rate-2: #2A926D;
+  --rate-3: #2AB583;
+  --rate-4: #23D897;
+  --rate-5: #5FEFBB;
   --scrim: rgba(0, 0, 0, 0.62);
 
   /* Wheel of Life chart colours (wheel-of-life.html mock-up) that have no
@@ -593,6 +603,12 @@
   --mint-text: #0B7A52;
   --good: var(--mint-text);  /* deep green in light, as design reference v15 */
   --on-good: #FFFFFF;        /* white tick on deep green */
+  /* The week grid's five shades in light: darker for better days. */
+  --rate-1: #2B956F;
+  --rate-2: #167C57;
+  --rate-3: #096644;
+  --rate-4: #064E34;
+  --rate-5: #043423;
   --mint-tint: #DDF7EC;
   --below: #8F8D88;
   --band-mid: #6B6A67;        /* 5.1 to 1 on the page */

@@ -40,6 +40,7 @@ import { tripsWords } from '../../lib/performance/checkin';
 import { SLEEP_SUGGESTED_LINE } from '../../lib/performance/sleepChart';
 import { dayName } from '../../lib/performance/sprintPage';
 import { areaName } from '../../lib/wheelOfLife';
+import { wayRatingWord } from '../../lib/performance/words';
 import { patternsRow } from '../../lib/performance/patterns';
 import { DashboardCustomise, useDashboardPrefs, useFold } from './DashboardCustomise';
 import { usePatterns } from './usePatterns';
@@ -710,13 +711,13 @@ function BehindSection({ view, closed, toggle, phone, target, changeTarget, coac
     ),
     be: (row) => (
       <>
-        <Lab text="Your daily rating out of 10, averaged each week" eye={<WhoSees audience="me" />} />
+        <Lab text="Your daily rating, averaged each week" eye={<WhoSees audience="me" />} />
         {row.enough ? <TrendBars bars={row.bars} max={10} label="How you want to be, week by week" /> : <p className="dash-fp">Your Daily review adds your first rating here.</p>}
         {row.enough && (
-          <ChartTable caption="Your rating each week" columns={[{ key: 'week', label: 'Week' }, { key: 'v', label: 'Average rating' }]} rows={row.bars.filter((b) => b.value != null).map((b) => ({ key: b.key, cells: { week: b.tip.when, v: `${b.value}/10` } }))} />
+          <ChartTable caption="Your rating each week" columns={[{ key: 'week', label: 'Week' }, { key: 'v', label: 'Average rating' }]} rows={row.bars.filter((b) => b.value != null).map((b) => ({ key: b.key, cells: { week: b.tip.when, v: wayRatingWord(b.value) } }))} />
         )}
         {row.latestWay && <p className="dash-fp">{`Your latest way of being was “${row.latestWay}”, from your Daily plan.`}</p>}
-        {row.enough && <p className="dash-fp">Green weeks averaged 7/10 or more.</p>}
+        {row.enough && <p className="dash-fp">Green weeks averaged Very good or better.</p>}
       </>
     ),
     line: (row) => (

@@ -259,7 +259,10 @@ test('what’s behind: wins, streaks, sleep (Recovery’s chart and range), stre
   assert.deepEqual(by.sleep.action.lines, ['Last night was under your target range.', 'Tonight, Sleep wind down could help.']);
   assert.equal(by.stress.line, 'These are the weeks you answered “Not at all” or “A little”.');
   assert.equal(by.stress.dots[1].good, false);
-  assert.equal(by.be.figure.text, '7');
+  // An average of 7 on the saved 1 to 10 reads as its word, with no unit (Tim, 10 Nov, 23:22).
+  assert.equal(by.be.figure.text, 'Very good');
+  assert.equal(by.be.figure.unit, undefined);
+  assert.ok(by.be.bars.filter((b) => b.value != null).every((b) => /^(Poor|Fair|Good|Very good|Excellent) on average$/.test(b.tip.value)));
   // The figure says it: no line repeats it. Sections with nothing yet stay hidden.
   assert.equal(by.be.line, null);
   assert.equal(by.check, undefined);

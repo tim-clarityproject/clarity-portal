@@ -28,7 +28,7 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
       onClose();
     } catch (error) {
       console.error('[PersonalGoalModal] save failed:', error);
-      setSaveError('Your mission didn’t save. Check your connection and try again.');
+      setSaveError('Your Mission didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -53,7 +53,7 @@ export default function PersonalGoalModal({ isOpen, onClose, currentGoal, onGoal
       </p>
 
       <TextBox
-        ariaLabel="Your mission"
+        ariaLabel="Your Mission"
         who="me"
         value={goal}
         onChange={(v) => setGoal(v.slice(0, MAX_GOAL_LENGTH))}

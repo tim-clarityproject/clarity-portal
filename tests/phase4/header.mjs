@@ -11,7 +11,7 @@
 //    1,000-character one and none: never "…" (no text-overflow: ellipsis,
 //    no "…" character), at most two lines, "My Mission" alone when it
 //    doesn't fit or under 360px, no sideways scroll, and it opens the full
-//    text. With no mission: grey "Add your mission when you’re ready".
+//    text. With no mission: grey "Add your Mission when you’re ready".
 // 2. With no mission, the pill opens the new plan's mission step, on a
 //    phone and on desktop, never the old Personal Operating Plan page.
 // 3. The notch: safe-area insets emulated through Chromium's DevTools
@@ -75,7 +75,7 @@ async function until(fn, ms = 15000) {
 
 const LONG = Array.from({ length: 40 }, (_, i) => `Lead with clarity and care in season ${i + 1}`).join(' ').slice(0, 1000);
 if (LONG.length !== 1000) throw new Error('The long mission should be 1,000 characters.');
-const NO_MISSION = 'Add your mission when you’re ready';
+const NO_MISSION = 'Add your Mission when you’re ready';
 const COACH_ID = '00000000-0000-4000-8000-000000000001';
 const MOBILE = '+447700900123'; // an invented number (Ofcom's drama range)
 
@@ -259,9 +259,9 @@ if (part(2)) {
       pass(`no mission ${width}px: opens /performance-plan/…?step=mission`, Boolean(landed), page.url());
       const question = await until(async () => {
         const q = page.locator('.ds-guide-question');
-        return (await q.count()) && (await q.first().innerText()).includes('What’s your mission?');
+        return (await q.count()) && (await q.first().innerText()).includes('What’s your Mission?');
       }, 20000);
-      pass(`no mission ${width}px: the mission step ("What’s your mission?")`, Boolean(question));
+      pass(`no mission ${width}px: the mission step ("What’s your Mission?")`, Boolean(question));
       pass(`no mission ${width}px: never the old Personal Operating Plan page`, !path(page).startsWith('/personal-operating-plan'));
       await shot(page, `no-mission-step-${width}`);
     } finally {

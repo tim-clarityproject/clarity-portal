@@ -17,6 +17,9 @@
 //     Evidence), no crosshair used as a plus;
 //   - no console errors.
 //
+//   - the outside Health Check follows the device, light or dark (Tim, 10
+//     Nov, 23:22): its own page on four screens, and the portal's own route.
+//
 // It also saves a light screenshot of every page at both widths into the
 // folder given (Tim's screens folder), named by page.
 //
@@ -298,6 +301,139 @@ for (const width of [1280, 390]) {
     await context.close();
   }
 }
+
+// ---------------------------------------------------------------------------
+// The outside Health Check (Tim, 10 Nov, 23:22): it follows the person's
+// device, light or dark, like every other page. Its own page
+// (health-check.html, which Vercel serves for /health-check/*) is opened with
+// invented answers and the two database calls answered here, so nothing is
+// read or saved anywhere: the welcome screen, signing in, the first question
+// and the results, at both sizes, on a device set to light and one set to
+// dark. Then the portal's own /health-check route, which must follow the
+// device too, even when the portal on this device is set the other way.
+const HC_ONLY = !ONLY || ONLY.test('health-check');
+const HC_CSF = ['Win and keep enterprise clients', 'A product customers recommend', 'A team with the right skills in the right roles', 'Cash to invest ahead of growth'];
+const HC_PR = [
+  { t: 'Enterprise sales team', c: [3, 2, 2, 3], p: 2, r: 5, s: '2025-09', f: '2026-12' },
+  { t: 'Customer success programme', c: [3, 3, 1, 2], p: 4, r: 3, s: '2026-01', f: '2027-03' },
+  { t: 'Pricing review', c: [2, 2, 0, 3], p: 3, r: 2, s: '2026-06', f: '2026-12' },
+  { t: 'Hiring plan for 2027', c: [2, 1, 2, 2], p: 1, r: 4, s: '2026-10', f: '2027-06' },
+  { t: 'Partner channel', c: [2, 1, 1, 1], p: 3, r: 3, s: '2026-04', f: 'open' },
+  { t: 'New office fit-out', c: [0, 0, 1, 1], p: 4, r: 4, s: '2026-07', f: '2026-11' },
+  { t: 'Data platform', c: [1, 3, 1, 2], p: 5, r: 3, s: '2025-11', f: '2026-12' },
+];
+const hcAnswers = (complete) => (complete ? {
+  objective: 'Double recurring revenue by 2028 while keeping client satisfaction high.',
+  csfs: HC_CSF.map((text, i) => ({ id: `f${i}`, text, level: [3, 2, 2, 1][i] })),
+  projects: HC_PR.map((p, i) => ({ id: `p${i}`, text: p.t, started: p.s, due: p.f })),
+  ratings: { owner: Object.fromEntries(HC_PR.map((p, i) => [`p${i}`, { contrib: Object.fromEntries(p.c.map((v, k) => [`f${k}`, v])), progress: p.p, resource: p.r }])) },
+  completedAt: '2026-10-27T09:00:00.000Z',
+} : {});
+
+/** Runs in the Health Check's own page. */
+function measureHealthCheck() {
+  const vis = (el) => {
+    const b = el.getBoundingClientRect();
+    const st = getComputedStyle(el);
+    return b.width > 0 && b.height > 0 && st.visibility !== 'hidden' && st.display !== 'none' && Number(st.opacity) > 0.05 && !el.closest('[hidden],[inert]');
+  };
+  const label = (el) => `${String(el.className?.baseVal ?? el.className ?? '').split(' ')[0] || el.tagName.toLowerCase()} "${(el.textContent || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 30)}"`;
+  const hc = document.querySelector('.hc');
+  const small = [];
+  for (const el of document.querySelectorAll('button, a, select, textarea, input, [role=radio], [role=checkbox], [role=switch], summary')) {
+    if (!vis(el) || el.disabled || el.getAttribute('aria-hidden') === 'true') continue;
+    const b = el.getBoundingClientRect();
+    const stretch = (p) => p.content !== 'none' && p.position === 'absolute' && (parseFloat(p.height) || 0) >= 43.5 && (parseFloat(p.width) || 0) >= 43.5;
+    if ((b.height >= 43.5 && b.width >= 43.5) || stretch(getComputedStyle(el, '::after')) || stretch(getComputedStyle(el, '::before'))) continue;
+    // A link inside a sentence is as tall as its line (WCAG's inline exception).
+    if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.parentElement && el.parentElement.innerText.trim().length > el.innerText.trim().length + 12) continue;
+    small.push(`${label(el)} ${Math.round(b.width)}x${Math.round(b.height)}`);
+  }
+  const heading = [...document.querySelectorAll('.hc h1, .hc h2, .hc .qh')].find(vis);
+  return {
+    small,
+    sideways: document.documentElement.scrollWidth - window.innerWidth,
+    background: hc ? getComputedStyle(hc).backgroundColor : null,
+    behind: getComputedStyle(document.documentElement).backgroundColor,
+    textColour: heading ? getComputedStyle(heading).color : null,
+    scheme: hc ? getComputedStyle(hc).colorScheme : null,
+    text: (hc || document.body).innerText,
+  };
+}
+
+if (HC_ONLY) {
+  for (const width of [1280, 390]) {
+    for (const mode of ['light', 'dark']) {
+      const phone = width < 600;
+      for (const screen of ['welcome', 'sign-in', 'first-question', 'results']) {
+        const tag = `health-check ${screen} ${width}px ${mode}`;
+        const complete = screen === 'results';
+        const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: mode, reducedMotion: 'reduce' });
+        const errors = [];
+        try {
+          // Nothing leaves this machine: the two database calls are answered here, everything else outside is stopped.
+          await context.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
+            const url = route.request().url();
+            const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
+            if (url.endsWith('/rpc/alignment_open')) return json({ ok: true, status: complete ? 'complete' : 'invited', current_step: null, data: hcAnswers(complete), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: complete ? '2026-10-27 09:30:00' : null, client_label: 'Kestrel Group', coach_name: 'Tim' });
+            if (url.endsWith('/rpc/alignment_save')) return json({ ok: true, version: 2, updated_at: '2026-10-27 10:00:00', status: 'in_progress' });
+            return route.abort();
+          });
+          await context.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
+          // As vercel.json does: /health-check/* is the Health Check's own page.
+          await context.route(/\/health-check\/[^/.]+$/, async (route) => {
+            if (route.request().resourceType() !== 'document') return route.continue();
+            return route.fulfill({ response: await route.fetch({ url: `${APP}/health-check.html` }) });
+          });
+          // The portal on this device is set the other way: the Health Check has no such setting and follows the device.
+          await context.addInitScript((other) => { try { localStorage.setItem('clarity-colour-mode', other); localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } }, mode === 'light' ? 'dark' : 'light');
+          const page = await context.newPage();
+          page.on('pageerror', (e) => errors.push(e.message));
+          page.on('console', (m) => { if (m.type() === 'error' && !/WebSocket|\[vite\]|Vite server|Failed to load resource|net::ERR|favicon/.test(m.text())) errors.push(m.text().slice(0, 160)); });
+          await page.goto(`${APP}/health-check/tok-calm-rules-0000000000000000000000000000`);
+          await page.locator('#hc-email, .wlc .btn.full').first().waitFor({ timeout: 20000 });
+          if (screen !== 'welcome') {
+            const begin = page.getByRole('button', { name: 'Begin the Health Check' });
+            if (await begin.isVisible().catch(() => false)) await begin.click();
+            await page.locator('#hc-email').waitFor({ timeout: 10000 });
+          }
+          if (screen === 'first-question' || screen === 'results') {
+            await page.locator('#hc-email').fill('sam.example@invented.test');
+            await page.locator('#hc-code').fill('ABC234');
+            await page.locator('form button[type=submit]').click();
+            await page.locator(complete ? '.gst b' : '.hc-main .page h2').first().waitFor({ timeout: 15000 });
+          }
+          await page.evaluate(() => document.fonts.ready);
+          await sleep(700);
+          const r = await page.evaluate(measureHealthCheck);
+          pass(`${tag}: the page and its text follow the device (${mode})`, r.background === BACKGROUND[mode] && r.behind === BACKGROUND[mode] && r.textColour === TEXT[mode] && r.scheme === mode, `${r.background} ${r.behind} ${r.textColour} ${r.scheme}`);
+          pass(`${tag}: every tap area is 44px or more`, r.small.length === 0, r.small.slice(0, 6).join('; '));
+          pass(`${tag}: no sideways scroll`, r.sideways <= 0, `${r.sideways}px`);
+          pass(`${tag}: no console errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
+          if (out) await page.screenshot({ path: join(out, `health-check-${screen}-${width === 1280 ? '1280' : '390x844'}-${mode}.png`), fullPage: true });
+        } catch (e) {
+          pass(`${tag}: opened`, false, e.message.split('\n')[0]);
+        }
+        await context.close();
+      }
+      // The portal's own /health-check route (kept for rolling back): the device's mode, not the portal's saved choice.
+      const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, locale: 'en-GB', colorScheme: mode });
+      try {
+        await context.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => route.abort());
+        await context.addInitScript((other) => { try { localStorage.setItem('clarity-colour-mode', other); } catch { /* blocked */ } }, mode === 'light' ? 'dark' : 'light');
+        const page = await context.newPage();
+        await page.goto(`${APP}/health-check/tok-calm-rules-0000000000000000000000000000`);
+        await page.waitForFunction(() => document.documentElement.getAttribute('data-theme'), null, { timeout: 15000 });
+        const got = await page.evaluate(() => ({ theme: document.documentElement.getAttribute('data-theme'), background: getComputedStyle(document.documentElement).backgroundColor }));
+        pass(`health-check, the portal's own route ${width}px ${mode}: follows the device, not the portal's saved choice`, got.theme === mode && got.background === BACKGROUND[mode], `${got.theme} ${got.background}`);
+      } catch (e) {
+        pass(`health-check, the portal's own route ${width}px ${mode}: opened`, false, e.message.split('\n')[0]);
+      }
+      await context.close();
+    }
+  }
+}
+
 await browser.close();
 
 console.log(fails.join('\n'));

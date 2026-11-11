@@ -635,7 +635,7 @@ if (part(3)) {
     const q = quiets.find((t) => t.includes('mission')) || '';
     // M2: it appears once two weeks after joining, so it depends on when the test account was made.
     const joinedDays = Math.floor((zoneInstant(LONDON, FIXED_TODAY, '10:00') - new Date(signIn.user.created_at)) / 86400000);
-    pass(`new, no coach: "Ready to add your mission?" ${joinedDays >= 14 ? 'shows' : 'waits'} (${joinedDays} days after joining)`, joinedDays >= 14 ? q.includes('Ready to add your mission?') : !q, q);
+    pass(`new, no coach: "Ready to add your Mission?" ${joinedDays >= 14 ? 'shows' : 'waits'} (${joinedDays} days after joining)`, joinedDays >= 14 ? q.includes('Ready to add your Mission?') : !q, q);
     pass('new, no coach: any other quiet line is the monthly review’s (Phase 5)', quiets.filter((t) => !t.includes('mission')).every((t) => t.includes('Your monthly review is ready.')), quiets.join(' | '));
     if (q) {
       await nn.page.locator('.ds-quiet', { hasText: 'mission' }).getByRole('button', { name: 'Not now' }).click();

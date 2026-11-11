@@ -620,6 +620,10 @@ function DebriefFlow({ userId, today, loaded, view }) {
     if (h.measure === 'yes_no_days_limit' || h.measure === 'yes_no_days_target') {
       return <LoggingWeekRow key={h.id} {...common} kind="yesno" values={h.values} onChange={(d, v) => putLog(h.id, d, v)} />;
     }
+    // A rated habit: a mint box for each day, never a number (Tim, 10 Nov, 23:22).
+    if (h.measure === 'rating') {
+      return <LoggingWeekRow key={h.id} {...common} kind="rating" values={h.values} onChange={(d, v) => putLog(h.id, d, v)} />;
+    }
     const texts = Object.fromEntries(view.days.map((d) => [d.key, typed[`${h.id}:${d.key}`] ?? toText(h.shown[d.key])]));
     return (
       <LoggingWeekRow

@@ -28,7 +28,7 @@ export function m12SleepHours(entries) {
 /**
  * M12: sleep quality over a period: the most common answer; on a tie, the
  * middle one of those tied in scale order (the lower middle for an even
- * number; Claude). Green for Good or Very good.
+ * number; Claude). Green for the two best answers (the saved keys good and very_good, read "Very good" and "Excellent" since 10 Nov).
  */
 export function m12SleepQuality(entries) {
   const counts = new Map();

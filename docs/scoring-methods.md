@@ -296,11 +296,18 @@ These come from the daily tools and the debrief. None is part of the Performance
 | Signal | From | How it's summarised | Green means |
 |---|---|---|---|
 | Sleep hours | Plan my day, "Total hours", half-hour steps | Average a night over the period | Nights of 7 hours or more (adult guideline, claim C20) |
-| Sleep quality | Plan my day, Very poor to Very good | The most common answer; on a tie, the middle one (Claude) | Good or Very good |
+| Sleep quality | Daily plan, the five words Poor to Excellent (see below) | The most common answer; on a tie, the middle one (Claude) | Very good or Excellent |
 | Stress | Weekly debrief, Not at all to Very much | Each week's answer, as a line | "Not at all" or "A little" |
-| Way of being (for example calm under pressure) | Review my day, 1 to 10 | Average, whole number | 7 or more (Claude) |
+| Way of being (for example calm under pressure) | Daily review, the five words Poor to Excellent (see below) | Average of the saved figures, whole number, read as its word | Very good or better (7 or more on the saved 1 to 10; Claude) |
 | Emotional control | After-action reviews, meeting and feedback reviews, Above or below the line | Share of reviews above the line each week (Tim, 26 Oct) | 70% or more |
 | Breathing | Breathe | Sessions a week | Any week with a session (Claude) |
+
+**Way of being and Sleep quality are five words (Tim, 10 Nov, 23:22; methods 1.5).** Both use the "how good" scale of M1 and M9.1: Poor, Fair, Good, Very good, Excellent, scoring **0, 25, 50, 75 and 100**. Nothing saved changes shape, no existing answer's score changes, and every answer keeps its date. Nothing in the database changes.
+- **Way of being** stays on its saved 1 to 10. A word saves the top of its band: Poor 2, Fair 4, Good 6, Very good 8, Excellent 10. An older figure reads by the objective's bands (M9.1): 1 to 2 Poor, 3 to 4 Fair, 5 to 6 Good, 7 to 8 Very good, 9 to 10 Excellent. The average is still worked out on the saved figures and rounded to a whole number, then read as its word; a week is green at 7 or more, which reads "Very good or better". The words' scores are the same line: score = (saved figure − 2) ÷ 8 × 100.
+- **Worked example M12-W1 (test `tests/performance/ratings.test.mjs`):** a week rated Good, Very good, Very good, Excellent and Good saves 6, 8, 8, 10 and 6. The average is 38 ÷ 5 = 7.6, shown as 8, which reads **Very good**, a green week. In the words' scores that is (50 + 75 + 75 + 100 + 50) ÷ 5 = 70, nearest Very good (75).
+- **Worked example M12-W2:** three older answers of 7, 5 and 9 out of 10 now read Very good, Good and Excellent. Their average is still 21 ÷ 3 = **7**, still green, and reads Very good. Nothing about them was changed.
+- **Sleep quality** keeps its five saved keys, which read straight across in order: `very_poor` Poor (0), `poor` Fair (25), `fair` Good (50), `good` Very good (75), `very_good` Excellent (100). The summary is still the most common answer, and green is still the two best answers, which now read Very good and Excellent. (The Monthly review's own sleep, eating and health questions, M13, keep their words, Very poor to Very good.)
+- **Worked example M12-S1:** five nights saved as `very_poor`, `fair`, `good`, `good` and `very_good` read Poor, Good, Very good, Very good and Excellent. The most common answer is still `good`, now read **Very good**, and still green.
 
 Odd entries (for example 20 hours of sleep) are asked about once and left out of summaries and patterns until confirmed (pattern rule 14). Sensible ranges (Claude): sleep 2 to 14 hours.
 
@@ -352,10 +359,10 @@ The 23 pattern rules are in START-HERE section 5d. This section sets the exact m
 | ID | Possible cause | Result | Data |
 |---|---|---|---|
 | L1 | Sleep hours: 7 or more against under 7 | That day's day score (M14.2) | Daily |
-| L2 | Sleep quality: Good or Very good against the rest | That day's day score | Daily |
+| L2 | Sleep quality: Very good or Excellent (the two best answers; "Good or Very good" until 10 Nov, the same saved keys) against the rest | That day's day score | Daily |
 | L3 | Each habit: kept up (100%) against not | The weekly score of the Strategy it serves, **worked out without that habit** | Weekly |
 | L4 | Weekly stress: "Not at all" or "A little" against the rest | Weekly Performance score | Weekly |
-| L5 | Way of being, for example calm under pressure: weekly average 7 or more against under 7 | Weekly Performance score | Weekly |
+| L5 | Way of being, for example calm under pressure: weekly average Very good or better (7 or more on the saved 1 to 10) against less | Weekly Performance score | Weekly |
 | L6 | A Strategy at or above the standard against below | Its Outcome Objective's change 2 to 4 weeks later | Weekly |
 | Q1, Q2 | Up to 2 of the person's own questions, built from their own habits and measures (rule 21) | Any result above | As chosen |
 
@@ -659,6 +666,7 @@ Until each check has run, the "How it works" page says the score is "not yet che
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 (addition) | 11 Nov 2026 | Way of being (Daily review and dashboard) and Sleep quality (Daily plan) are the same five words (Tim, 10 Nov, 23:22; M12). Way of being stays on its saved 1 to 10, with a word saving 2, 4, 6, 8 or 10 and an older figure reading 1 to 2 Poor, 3 to 4 Fair, 5 to 6 Good, 7 to 8 Very good, 9 to 10 Excellent; sleep quality keeps its five saved keys, read straight across (very_poor Poor to very_good Excellent). Green reads "Very good or better" and "Very good or Excellent". No score changes and no database change (worked examples M12-W1, M12-W2 and M12-S1). |
 | 1.5 (addition) | 10 Nov 2026 | Ratings are five words (rule 29i): a habit's daily rating and an objective's rating both read Poor, Fair, Good, Very good, Excellent, scoring 0, 25, 50, 75 and 100. Saved values keep their shape (1 to 5; 0 to 10 with words saving 0, 2.5, 5, 7.5, 10); earlier out-of-10 figures read 0 to 2 Poor, 3 to 4 Fair, 5 to 6 Good, 7 to 8 Very good, 9 to 10 Excellent. No score changes and no database change (M1 rating rule, M9.1; worked examples M1-R1 and M9-R1). |
 | 1.5 | 5 Nov 2026 | Bands for a list of scores (M0.8; Tim, 5 Nov, 10:59): 67 and above good, 50 to 66 mid, below 50 low, and the single lowest in the list coral (ties: the first), replacing the single level of 70. The check-in's "Lowest: …" line is removed; the colour says it. No score's arithmetic changed. |
 | 1.4 | 28 Oct 2026 | The Health Check's results rethink (M20.1; Tim, 28 Oct, 14:00 to 15:26): each CSF is Critical, Very important or Important, weighted 1.4, 1.2 and 1, so strategic importance = Σ(contribution × weight) ÷ Σ(3 × weight) × 100, and every CSF at Very important gives exactly the old figures (test case M20-4); each Health Check sets its own line for important, 30% to 80%, 50% unless changed, used everywhere "above 50%" was; the headline ("2 of 5" important projects moving well, with the rest adding up to the total); up to three questions to start with (Timing, Progress, Resource, CSF cover, or On track); dot size from resource. Older Health Checks score and read as before. |

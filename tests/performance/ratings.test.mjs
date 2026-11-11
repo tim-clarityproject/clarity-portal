@@ -18,7 +18,15 @@ import {
   ratingStep,
   ratingValue,
   ratingWord,
+  WAY_RATING_OPTIONS,
+  sleepQualityScore,
+  sleepQualityWord,
+  wayRatingOption,
+  wayRatingWord,
 } from '../../src/lib/performance/words.js';
+import { SLEEP_QUALITY_OPTIONS, sleepWords } from '../../src/lib/performance/dayPlan.js';
+import { qualityWords, usualQuality } from '../../src/lib/performance/sleepChart.js';
+import { m12SleepQuality, m12WayOfBeing, SLEEP_QUALITY } from '../../src/lib/scores/m12.js';
 import { m1RatingScore } from '../../src/lib/scores/m1.js';
 
 test('the five words, and their scores of 0, 25, 50, 75 and 100', () => {
@@ -91,4 +99,58 @@ test('odd saved figures read as a word or as nothing, never as text that isn’t
   assert.equal(objectiveTarget({ kind: 'rating', target: 7 }), 'target Very good');
   // The editor shows an older 7 as Very good without changing it: the answer shown is 7.5, the saved 7 stays until a word is tapped.
   assert.equal(ratingOption(7), '7.5');
+});
+
+// Way of being and Sleep quality in the five words (Tim, 10 Nov, 23:22;
+// docs/scoring-methods.md M12, worked examples M12-W1, M12-W2 and M12-S1).
+test('the way of being: a word saves 2, 4, 6, 8 or 10 on the saved 1 to 10, and an older figure reads as its band', () => {
+  assert.deepEqual(WAY_RATING_OPTIONS.map((o) => [o.value, o.label]), [[2, 'Poor'], [4, 'Fair'], [6, 'Good'], [8, 'Very good'], [10, 'Excellent']]);
+  // Every figure the database allows (1 to 10): the objective's bands.
+  assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(wayRatingWord), ['Poor', 'Poor', 'Fair', 'Fair', 'Good', 'Good', 'Very good', 'Very good', 'Excellent', 'Excellent']);
+  // An older 7 shows "Very good" chosen; nothing shows nothing.
+  assert.equal(wayRatingOption(7), 8);
+  assert.equal(wayRatingOption(1), 2);
+  assert.equal(wayRatingOption(null), null);
+  assert.equal(wayRatingWord(null), '');
+  // The words score 0, 25, 50, 75 and 100.
+  assert.deepEqual(WAY_RATING_OPTIONS.map((o) => ratingScore(o.value)), [0, 25, 50, 75, 100]);
+});
+
+test('M12-W1: a week rated Good, Very good, Very good, Excellent and Good averages Very good, a green week', () => {
+  const saved = ['Good', 'Very good', 'Very good', 'Excellent', 'Good'].map((w) => WAY_RATING_OPTIONS.find((o) => o.label === w).value);
+  assert.deepEqual(saved, [6, 8, 8, 10, 6]);
+  const week = m12WayOfBeing(saved);
+  assert.equal(week.shown, 8); // 38 ÷ 5 = 7.6
+  assert.equal(week.green, true);
+  assert.equal(wayRatingWord(week.shown), 'Very good');
+  // In the words' scores: (50 + 75 + 75 + 100 + 50) ÷ 5 = 70, nearest Very good (75).
+  assert.equal(saved.map(ratingScore).reduce((a, b) => a + b, 0) / saved.length, 70);
+});
+
+test('M12-W2: older out-of-10 answers keep their figures and scores, and only read differently', () => {
+  const older = [7, 5, 9];
+  assert.deepEqual(older.map(wayRatingWord), ['Very good', 'Good', 'Excellent']);
+  const week = m12WayOfBeing(older);
+  assert.equal(week.shown, 7); // unchanged: 21 ÷ 3
+  assert.equal(week.green, true);
+  assert.equal(wayRatingWord(week.shown), 'Very good');
+  // Below green stays below: 6 on average reads Good.
+  assert.equal(m12WayOfBeing([6, 6, 5]).green, false);
+  assert.equal(wayRatingWord(m12WayOfBeing([6, 6, 5]).shown), 'Good');
+});
+
+test('M12-S1: sleep quality keeps its saved keys, which read straight across in order', () => {
+  assert.deepEqual(SLEEP_QUALITY_OPTIONS.map((o) => [o.value, o.label]), [['very_poor', 'Poor'], ['poor', 'Fair'], ['fair', 'Good'], ['good', 'Very good'], ['very_good', 'Excellent']]);
+  assert.deepEqual(SLEEP_QUALITY.map(sleepQualityWord), ['Poor', 'Fair', 'Good', 'Very good', 'Excellent']);
+  assert.deepEqual(SLEEP_QUALITY.map(sleepQualityScore), [0, 25, 50, 75, 100]);
+  assert.deepEqual(SLEEP_QUALITY.map(qualityWords), ['Poor', 'Fair', 'Good', 'Very good', 'Excellent']);
+  assert.equal(sleepQualityWord(null), '');
+  assert.equal(sleepQualityWord('excellent'), ''); // never a key that isn't saved
+  // Five nights saved before the change: very_poor, fair, good, good, very_good.
+  const nights = ['very_poor', 'fair', 'good', 'good', 'very_good'];
+  assert.deepEqual(nights.map(sleepQualityWord), ['Poor', 'Good', 'Very good', 'Very good', 'Excellent']);
+  // The usual quality is still the most common answer (the same key as before), now read "Very good".
+  assert.deepEqual(m12SleepQuality(nights.map((value) => ({ value }))), { answer: 'good', green: true });
+  assert.equal(qualityWords(usualQuality(nights)), 'Very good');
+  assert.equal(sleepWords({ hours: 8, quality: 'very_good' }), '8 hours, excellent');
 });

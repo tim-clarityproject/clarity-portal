@@ -206,11 +206,13 @@ test('the morning’s reminder names both Strategies of the day; the follow-up n
 });
 
 test('the way of being question, and the summary’s words', () => {
-  assert.equal(wayQuestion('Calm under pressure'), 'On a scale of 1 to 10, how calm under pressure were you today?');
-  assert.equal(wayQuestion('  '), 'On a scale of 1 to 10, how was today?');
-  assert.equal(wayQuestion('CEO-level calm.'), 'On a scale of 1 to 10, how CEO-level calm were you today?');
-  assert.equal(howYouWere('Calm under pressure', 7), 'Calm under pressure, 7/10');
-  assert.equal(howYouWere('', 6), 'Today, 6/10');
+  assert.equal(wayQuestion('Calm under pressure'), 'How calm under pressure were you today?');
+  assert.equal(wayQuestion('  '), 'How was today?');
+  assert.equal(wayQuestion('CEO-level calm.'), 'How CEO-level calm were you today?');
+  assert.equal(howYouWere('Calm under pressure', 7), 'Calm under pressure, Very good');
+  assert.equal(howYouWere('Calm under pressure', 8), 'Calm under pressure, Very good');
+  assert.equal(howYouWere('', 6), 'Today, Good');
+  assert.equal(howYouWere('Calm', null), '');
   assert.equal(howYouWere('Calm', null), '');
   const strategies = [{ value: 'grow', label: 'Grow through referrals' }, { value: 'craft', label: 'Deepen my coaching craft' }];
   assert.deepEqual(movedLines({ craft: 3, grow: 1 }, strategies), ['Grow through referrals, Low', 'Deepen my coaching craft, High']);

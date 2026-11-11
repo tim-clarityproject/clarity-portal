@@ -190,7 +190,7 @@ export default function PersonalOperatingPlan() {
         <div className="plan-page">
           <PageHeader title="Personal operating plan" info={pageText.personalOperatingPlan} />
           <EmptyState
-            question="You don't have a plan yet. Start with your mission, add the strategies that bring it to life, then the tactics you will do every day."
+            question="You don't have a plan yet. Start with your Mission, add the strategies that bring it to life, then the tactics you will do every day."
             action={{ label: 'Create your plan', onClick: () => navigate('/personal-operating-plan-edit', { state: { isNew: true } }) }}
           />
           {archivedCount > 0 && (
@@ -238,7 +238,7 @@ export default function PersonalOperatingPlan() {
         </div>
 
         <div className="pop-mission-card">
-          <span className="ui-section-heading" style={{ marginTop: 0 }}>Your mission</span>
+          <span className="ui-section-heading" style={{ marginTop: 0 }}>Your Mission</span>
           <p className="pop-mission-text">{mission.title}</p>
         </div>
 

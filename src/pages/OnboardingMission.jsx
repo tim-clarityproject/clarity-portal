@@ -89,7 +89,7 @@ export default function OnboardingMission() {
     }, 80);
 
     const animateQuestion = () => {
-      const questionText = 'What\'s your big mission?';
+      const questionText = 'What\'s your big Mission?';
       let qIndex = 0;
 
       const questionInterval = setInterval(() => {
@@ -114,7 +114,7 @@ export default function OnboardingMission() {
 
   const handleSaveMission = async () => {
     if (!mission.trim()) {
-      toast.error('Your mission is empty. Type your mission, then save.');
+      toast.error('Your Mission is empty. Type your Mission, then save.');
       return;
     }
 
@@ -135,7 +135,7 @@ export default function OnboardingMission() {
       }, 500);
     } catch (error) {
       console.error('Error saving mission:', error);
-      toast.error('Your mission didn’t save. Check your connection and try again.');
+      toast.error('Your Mission didn’t save. Check your connection and try again.');
       setIsSaving(false);
     }
   };
@@ -225,7 +225,7 @@ export default function OnboardingMission() {
               animation: showInput ? 'slideUp 0.6s ease-out forwards' : 'none',
             }}>
               {question}
-              {question.length < "What's your big mission?".length && (
+              {question.length < "What's your big Mission?".length && (
                 <span style={{
                   animation: 'blink 1s infinite',
                   marginLeft: '8px',
@@ -240,7 +240,7 @@ export default function OnboardingMission() {
               <div style={{ animation: 'fadeIn 0.6s ease-in' }}>
                 <TextBox
                   className="onboarding-mission-box"
-                  ariaLabel="Your mission"
+                  ariaLabel="Your Mission"
                   who="me"
                   lines="one"
                   value={mission}

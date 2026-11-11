@@ -55,7 +55,7 @@ import usePlanSaves from './usePlanSaves';
 //         and where it got to, for the next panel to start from
 
 export const PART_TITLE = {
-  mission: 'Edit my mission',
+  mission: 'Edit my Mission',
   objective: 'Edit this objective',
   strategy: 'Edit this Strategy',
   habit: 'Edit this habit',
@@ -195,7 +195,7 @@ function PartEditor({ userId, part, open, data, start, onDone, onGone }) {
   let body = null;
   let unfinished = null;
   if (part.kind === 'mission') {
-    eyeProps = who('mission', 'Your mission');
+    eyeProps = who('mission', 'Your Mission');
     body = (
       <>
         <TextBox
@@ -207,7 +207,7 @@ function PartEditor({ userId, part, open, data, start, onDone, onGone }) {
         />
       </>
     );
-    unfinished = 'Write your mission to save it.';
+    unfinished = 'Write your Mission to save it.';
   } else if (objective) {
     eyeProps = who('progress', 'Your Outcome Objective figures and scores');
     body = (

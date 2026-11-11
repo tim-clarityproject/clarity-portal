@@ -23,7 +23,7 @@ export default function PlanMissionPanel({ open, onClose }) {
     : {
       audience: view.missionShared ? 'coach' : 'me',
       coachName: view.coachName,
-      name: 'Your mission',
+      name: 'Your Mission',
       onChange: async (next) => {
         const isOn = next === 'coach';
         await saveSharing(userId, 'mission', isOn);

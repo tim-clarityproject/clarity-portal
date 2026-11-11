@@ -215,7 +215,7 @@ function TypeDemo() {
   return (
     <div className="dr-type">
       <div><small>Page title, Nekst capitals</small><span className="dr-type-page">Performance Sprint 4</span></div>
-      <div><small>Screen question, sentence case</small><span className="dr-type-question">What 2 to 4 results would show your mission is moving?</span></div>
+      <div><small>Screen question, sentence case</small><span className="dr-type-question">What 2 to 4 results would show your Mission is moving?</span></div>
       <div><small>Body, 17px</small><span>Enter today’s number for each habit.</span></div>
       <div><small>Secondary, 15px</small><span className="dr-type-secondary">Your performance score updates as you go.</span></div>
       <div><small>Big number, Nekst Light</small><span className="dr-type-number">78%</span></div>
@@ -335,7 +335,7 @@ function MissionPanelDemo() {
         mission="Be a world-class high-performance coach"
         objectives={PLAN_OBJECTIVES}
         score={{ value: 88, good: true }}
-        who={{ audience: shared ? 'coach' : 'me', name: 'Your mission', onChange: async (next) => setShared(next === 'coach') }}
+        who={{ audience: shared ? 'coach' : 'me', name: 'Your Mission', onChange: async (next) => setShared(next === 'coach') }}
         onSystemLink={() => { setOpen(false); setSystem(true); }}
         onOpenPlan={() => setOpen(false)}
       />
@@ -615,7 +615,7 @@ function SectionDemo() {
     <div className="dr-stack dr-stack--fill">
       <Section as="h4" title="Outcome Objectives" />
       <div>
-        <p className="dr-question">What 2 to 4 results would show your mission is moving?</p>
+        <p className="dr-question">What 2 to 4 results would show your Mission is moving?</p>
         <p className="dr-nudge">Pick ones you can track.</p>
       </div>
     </div>
@@ -627,14 +627,14 @@ function ButtonsDemo() {
   return (
     <div className="dr-stack">
       <div className="dr-row">
-        <Button variant="primary" onClick={() => toast.show('Saved')}>Save my mission</Button>
+        <Button variant="primary" onClick={() => toast.show('Saved')}>Save my Mission</Button>
         <AddButton onClick={() => toast.show('This adds a to-do.')}>Add a to-do</AddButton>
         <Button variant="text" onClick={() => toast.show('Sprint details open here.')}>See the sprint details</Button>
       </div>
       <span className="dr-small">The coral button on hover, then disabled, for comparison:</span>
       <div className="dr-row" aria-hidden="true">
-        <span className="ds-btn ds-btn--primary dr-hover-sample">Save my mission</span>
-        <span className="ds-btn ds-btn--primary" aria-disabled="true">Save my mission</span>
+        <span className="ds-btn ds-btn--primary dr-hover-sample">Save my Mission</span>
+        <span className="ds-btn ds-btn--primary" aria-disabled="true">Save my Mission</span>
       </div>
     </div>
   );
@@ -926,9 +926,9 @@ function WhoSeesDemo() {
   const [team, setTeam] = useState('Win back the two key accounts');
   return (
     <div className="dr-stack dr-stack--fill">
-      <TextBox label="What’s your mission?" who={shared ? 'coach' : 'me'} value={mission} onChange={setMission} maxLength={120} />
+      <TextBox label="What’s your Mission?" who={shared ? 'coach' : 'me'} value={mission} onChange={setMission} maxLength={120} />
       <ChipRow label="Sharing">
-        <Chip pressed={shared} onClick={() => setShared((v) => !v)}>Share my mission with my coach</Chip>
+        <Chip pressed={shared} onClick={() => setShared((v) => !v)}>Share my Mission with my coach</Chip>
       </ChipRow>
       <TextBox label="What went well today?" who="me" value={well} onChange={setWell} placeholder="e.g. I held the line in the board meeting" />
       <TextBox label="What’s the team’s one priority this quarter?" who="team" value={team} onChange={setTeam} lines="one" />
@@ -1412,7 +1412,7 @@ function Gallery() {
             <p><New /><b>One add button everywhere</b> (Tim, 26 Oct): an outlined pill with words only (no icon, 5 Nov), words that say what it adds (“Add objective”, “Add agenda item”, “Add a to-do”, “Add another”), coral only on hover or keyboard focus, and full width on a phone.</p>
             <p><New /><b>Hover never looks disabled</b> (23 Oct): a slightly brighter coral in dark and a slightly deeper coral in light, with black text in both.</p>
             <p>A disabled coral button is the coral at 35% opacity.</p>
-            <p><b>“My” where it’s theirs</b> (Save my mission, Add my win, Add my to-do), otherwise verb and thing (Add a to-do, See it full screen).</p>
+            <p><b>“My” where it’s theirs</b> (Save my Mission, Add my win, Add my to-do), otherwise verb and thing (Add a to-do, See it full screen).</p>
             <p>Never Submit, OK or Go.</p>
           </>
         )} />
@@ -1720,7 +1720,7 @@ function Gallery() {
         <GallerySection id="c35" title="My Mission panel" demo={MissionPanelDemo} rules={(
           <>
             <p><New /><b>Opened from the header’s My Mission pill.</b></p>
-            <p>Who sees the mission (the eye can be tapped), the mission, each objective with its figure on the right, the score this week so far, the system link and “Open my plan”.</p>
+            <p>Who sees the Mission (the eye can be tapped), the Mission, each objective with its figure on the right, the score this week so far, the system link and “Open my plan”.</p>
             <p>It drops below the header on a laptop and rises from the bottom on a phone.</p>
             <p><New /><b>The Individual Performance System</b> pop-up uses the one-pager’s words, one sentence per line.</p>
             <p>The two-way link uses the turned chevron, never a text arrow, and the plan’s box is outlined in the text colour, never coral.</p>

@@ -94,6 +94,46 @@ export function habitRatingWord(value) {
 /** The answers for a habit's daily rating: the five words, saving 1 to 5. */
 export const HABIT_RATING_OPTIONS = Object.freeze(RATING_WORDS.map((label, i) => ({ value: i + 1, label })));
 
+// Way of being (Daily review and the dashboard) and Sleep quality (Daily
+// plan) use the same five words (Tim, 10 Nov, 23:22; docs/scoring-methods.md
+// M12). Nothing saved changes shape:
+// - the way of being stays on its saved 1 to 10: a word saves 2, 4, 6, 8 or
+//   10 (the top of its band), and an older figure reads 1 to 2 Poor, 3 to 4
+//   Fair, 5 to 6 Good, 7 to 8 Very good, 9 to 10 Excellent, the objective's
+//   bands, keeping its date. Averages are still worked out on the saved
+//   figures, so no score changes;
+// - sleep quality keeps its five saved keys, which read straight across in
+//   order: very_poor Poor, poor Fair, fair Good, good Very good, very_good
+//   Excellent.
+/** The figure a word saves for the way of being, on its 1 to 10: 2, 4, 6, 8 or 10. */
+export const wayRatingValue = (step) => (step + 1) * 2;
+
+/** The answers for the way of being's rating: the five words, saving 2, 4, 6, 8 or 10. */
+export const WAY_RATING_OPTIONS = Object.freeze(RATING_WORDS.map((label, step) => ({ value: wayRatingValue(step), label })));
+
+/** A saved way-of-being rating (1 to 10) as the answer it shows, or null. */
+export function wayRatingOption(value) {
+  const step = ratingStep(value);
+  return step == null ? null : wayRatingValue(step);
+}
+
+/** "Very good" for a saved way-of-being rating, or an average of them ('' when none). */
+export const wayRatingWord = (value) => ratingWord(value);
+
+const SLEEP_QUALITY_KEYS = ['very_poor', 'poor', 'fair', 'good', 'very_good'];
+
+/** "Very good" for a saved sleep quality key ('' when there is none). */
+export function sleepQualityWord(key) {
+  const i = SLEEP_QUALITY_KEYS.indexOf(key);
+  return i === -1 ? '' : RATING_WORDS[i];
+}
+
+/** The word's score out of 100 for a saved sleep quality key: 0, 25, 50, 75 or 100 (null when none). */
+export function sleepQualityScore(key) {
+  const i = SLEEP_QUALITY_KEYS.indexOf(key);
+  return i === -1 ? null : i * 25;
+}
+
 /** An objective's figure on its own: "£172k", "31", "Very good". */
 export function objectiveFigure(objective, value) {
   if (objective.kind === 'rating') return ratingWord(value);

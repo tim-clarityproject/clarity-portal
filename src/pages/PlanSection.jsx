@@ -5,7 +5,7 @@ import pageText from '../content/pageText';
 
 const CARDS = [
   { title: 'Daily plan', description: 'Set your intentions and priorities.', route: '/plan-my-day' },
-  { title: 'Personal operating plan', description: 'Define your mission, strategies and tactics.', route: '/personal-operating-plan' },
+  { title: 'Personal operating plan', description: 'Define your Mission, strategies and tactics.', route: '/personal-operating-plan' },
   { title: 'All planning tools', description: 'Meetings, decisions, contingencies and more.', route: '/planning-tools' },
 ];
 

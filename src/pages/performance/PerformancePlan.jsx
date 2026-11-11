@@ -241,12 +241,12 @@ export default function PerformancePlan() {
             <section className="ds-mission-card" aria-labelledby="ipp-mission">
               <div className="ds-mission-card-head">
                 {/* The eye beside the title it belongs to (5e rules 10 and 29d). */}
-                <h2 id="ipp-mission" className="ds-mission-card-label">{titleWithAside('My Mission', <WhoSees {...who('mission', 'Your mission')} />)}</h2>
+                <h2 id="ipp-mission" className="ds-mission-card-label">{titleWithAside('My Mission', <WhoSees {...who('mission', 'Your Mission')} />)}</h2>
               </div>
               {view.mission
                 ? <p className="ds-mission-card-text">{keepWords(view.mission)}</p>
-                : <p className="ds-mission-card-text ipp-muted">Your mission isn’t written yet.</p>}
-              <Button variant="text" className="ds-part-edit" onClick={() => openPart({ kind: 'mission', id: null })}>Edit my mission</Button>
+                : <p className="ds-mission-card-text ipp-muted">Your Mission isn’t written yet.</p>}
+              <Button variant="text" className="ds-part-edit" onClick={() => openPart({ kind: 'mission', id: null })}>Edit my Mission</Button>
             </section>
 
             <AlignmentCheck lines={view.alignment} className="ipp-align" />

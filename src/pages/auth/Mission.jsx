@@ -273,7 +273,7 @@ export default function Mission() {
     e.preventDefault();
     const trimmed = missionValue.trim();
     if (!trimmed) {
-      setMissionError('Write your mission to continue.');
+      setMissionError('Write your Mission to continue.');
       setShakeToken((t) => t + 1);
       return;
     }
@@ -291,7 +291,7 @@ export default function Mission() {
       localStorage.removeItem('justConfirmedEmail');
       navigate('/auth/finished');
     } catch (err) {
-      setMissionError('Your mission didn’t save. Check your connection and try again.');
+      setMissionError('Your Mission didn’t save. Check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -389,7 +389,7 @@ export default function Mission() {
             setMissionValue(text.slice(0, MAX_MISSION_LENGTH));
             if (missionError) setMissionError('');
           }}
-          placeholder="Type your mission here"
+          placeholder="Type your Mission here"
           maxLength={MAX_MISSION_LENGTH}
         />
 
@@ -431,7 +431,7 @@ export default function Mission() {
       <div className="ui-root">
         <div className="auth-sticky-save" ref={setSaveBarRef}>
           <AuthPrimaryButton type="submit" form="mission-form" loading={isSaving}>
-            Save my mission
+            Save my Mission
           </AuthPrimaryButton>
         </div>
       </div>,

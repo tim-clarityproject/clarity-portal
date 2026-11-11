@@ -270,13 +270,17 @@ async function backUntil(page, question) {
 }
 // With no way of being from the morning, Daily review first asks how they
 // wanted to be (Tim, 5 Nov); then the rating.
+// The rating is the five words (Tim, 10 Nov), each saving 2, 4, 6, 8 or 10.
+const RATING_WORD = { 2: 'Poor', 4: 'Fair', 6: 'Good', 8: 'Very good', 10: 'Excellent' };
 async function rate(page, n) {
+  const name = RATING_WORD[n];
+  if (!name) throw new Error(`No word saves ${n}.`);
   if ((await heading(page)) === 'How did you want to be today?') {
     await page.getByRole('textbox', { name: 'In your own words' }).fill('Calm');
     await page.getByRole('button', { name: 'Use these words' }).click();
-    await until(async () => (await page.getByRole('radio', { name: String(n), exact: true }).count()) > 0, 8000);
+    await until(async () => (await page.getByRole('radio', { name, exact: true }).count()) > 0, 8000);
   }
-  await page.getByRole('radio', { name: String(n), exact: true }).click();
+  await page.getByRole('radio', { name, exact: true }).click();
 }
 async function nextUntil(page, question) {
   for (let i = 0; i < 10 && (await heading(page)) !== question; i += 1) await next(page);
@@ -1177,9 +1181,9 @@ if (run('zones')) {
       if ((await heading(page)) === 'How did you want to be today?') {
         await page.getByRole('textbox', { name: 'In your own words' }).fill('Calm');
         await page.getByRole('button', { name: 'Use these words' }).click();
-        await until(async () => (await page.getByRole('radio', { name: '5', exact: true }).count()) > 0, 8000);
+        await until(async () => (await page.getByRole('radio', { name: 'Good', exact: true }).count()) > 0, 8000);
       }
-      await page.getByRole('radio', { name: '5', exact: true }).click();
+      await page.getByRole('radio', { name: 'Good', exact: true }).click();
       await settled(page);
       await until(async () => (await dayReviews()).length > 0, 10000);
       const r = await dayReviews();

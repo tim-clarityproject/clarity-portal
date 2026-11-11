@@ -40,8 +40,8 @@ export function SuggestionDemo() {
       <QuietLines
         items={[{
           key: 'mission',
-          lines: ['Ready to add your mission?'],
-          action: { label: 'Add my mission', onClick: () => say('Opens the mission step.') },
+          lines: ['Ready to add your Mission?'],
+          action: { label: 'Add my Mission', onClick: () => say('Opens the Mission step.') },
           onDismiss: () => say('We won’t ask again.'),
         }]}
       />

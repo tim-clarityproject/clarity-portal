@@ -451,7 +451,7 @@ export function patternCardWords(card, names = {}) {
   const trend = (gap) => `After allowing for your general trend, the gap was ${points(gap)}.`;
 
   if (card.id === 'L1' || card.id === 'L2') {
-    const after = card.id === 'L1' ? 'nights of 7 hours or more' : 'nights you rated Good or Very good';
+    const after = card.id === 'L1' ? 'nights of 7 hours or more' : 'nights you rated Very good or Excellent';
     const rest = card.id === 'L1' ? 'after less' : 'after other nights';
     const ratio = card.swing ? Math.round((Math.abs(card.gap) / card.swing) * 10) / 10 : null;
     return {
@@ -493,7 +493,7 @@ export function patternCardWords(card, names = {}) {
   if (card.id === 'L4' || card.id === 'L5') {
     const when = card.id === 'L4'
       ? 'In weeks your stress was “Not at all” or “A little”'
-      : 'In weeks you rated how you wanted to be 7 or more on average';
+      : 'In weeks you rated how you wanted to be Very good or better on average';
     return {
       ...base,
       line: `${when}, your performance score was ${points(card.gap)} higher.`,
@@ -502,7 +502,7 @@ export function patternCardWords(card, names = {}) {
       how: [
         card.id === 'L4'
           ? `Compared ${times(inGroup, 'week', 'weeks')} when your stress was “Not at all” or “A little” with ${times(outGroup, 'week', 'weeks')} when it was more.`
-          : `Compared ${times(inGroup, 'week', 'weeks')} when you averaged 7 or more with ${times(outGroup, 'week', 'weeks')} when you averaged less.`,
+          : `Compared ${times(inGroup, 'week', 'weeks')} when you averaged Very good or better with ${times(outGroup, 'week', 'weeks')} when you averaged less.`,
         card.values ? `Average ${pct(card.values[0])} against ${pct(card.values[1])}.` : null,
         trend(card.gap),
         swingWords(card.gap, card.swing, 'performance score', true),

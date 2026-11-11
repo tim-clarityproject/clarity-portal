@@ -248,7 +248,8 @@ async function planDay(day, i, { picks, lastNight = [], panel = false }) {
   await open('/daily-plan');
   pass(`${tag}: opens on Sleep`, (await heading()) === 'How did you sleep last night?', await heading());
   await page.getByRole('button', { name: 'Half an hour more' }).click();
-  await page.getByRole('radio', { name: 'Good', exact: true }).click();
+  // Sleep quality is the five words (Tim, 10 Nov): "Very good" saves the key 'good', as "Good" did.
+  await page.getByRole('radio', { name: 'Very good', exact: true }).click();
   await next();
   await body().locator('textarea').first().fill(`Grateful for day ${i + 1}.`);
   await next();
@@ -301,8 +302,9 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
   pass(`${tag}: opens on today's to-dos`, (await heading()) === 'Which of today’s to‑dos did you do?', await heading());
   for (const name of ticks) pass(`${tag}: ticked "${name}"`, Boolean(await tick(name)));
   await next();
-  pass(`${tag}: Be`, (await heading()) === 'On a scale of 1 to 10, how decisive were you today?', await heading());
-  await page.getByRole('radio', { name: '7', exact: true }).click();
+  pass(`${tag}: Be`, (await heading()) === 'How decisive were you today?', await heading());
+  // The way of being is rated in the five words (Tim, 10 Nov): "Very good" saves 8 on the saved 1 to 10.
+  await page.getByRole('radio', { name: 'Very good', exact: true }).click();
   await next();
   pass(`${tag}: Numbers`, (await heading()) === 'Log today', await heading()); // "Log today", as Home (Tim, 5 Nov)
   const typed = {};
@@ -361,7 +363,7 @@ async function reviewDay(day, i, { ticks, win = false, tomorrow = [] }) {
     const r = (await db.from('day_reviews').select('*').eq('user_id', me).eq('local_date', day)).data?.[0];
     return r?.status === 'finished' ? r : null;
   });
-  pass(`${tag}: saved as finished, with tomorrow's list`, Boolean(row) && JSON.stringify(row.tomorrow || []) === JSON.stringify(tomorrow) && row.way_of_being_rating === 7, JSON.stringify(row?.tomorrow));
+  pass(`${tag}: saved as finished, with tomorrow's list`, Boolean(row) && JSON.stringify(row.tomorrow || []) === JSON.stringify(tomorrow) && row.way_of_being_rating === 8, JSON.stringify(row?.tomorrow));
   for (const [name, value] of Object.entries(typed)) {
     pass(`${tag}: ${name} logged in the sprint`, Number(await logOf(name, day)) === value, `${await logOf(name, day)} vs ${value}`);
   }

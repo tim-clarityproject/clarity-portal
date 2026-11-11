@@ -35,7 +35,7 @@ import { isNavPhone } from './design/pageLock';
 // part 4, 30 Oct): the top inset is added here, and the sides' insets by
 // src/pwa-standalone.css on every touch screen. As a Home Screen app the
 // whole page already starts below the top inset, so it isn't added twice.
-const NO_MISSION = 'Add your mission when you’re ready';
+const NO_MISSION = 'Add your Mission when you’re ready';
 export const MISSION_STEP = '/performance-plan/build?step=mission';
 
 // Whether the mission fits on two lines in the pill, measured as it is
@@ -402,7 +402,7 @@ export default function DesignHeader({ className = '' }) {
                     <div className="hdr-mis-full">
                       <p>{keepWords(mission)}</p>
                       <button type="button" className="ds-link" onClick={openEditMission}>
-                        Edit mission
+                        Edit Mission
                       </button>
                     </div>
                   </div>

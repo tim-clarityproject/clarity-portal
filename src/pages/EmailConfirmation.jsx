@@ -175,7 +175,7 @@ export default function EmailConfirmation() {
           </div>
         )}
         headline="YOU ARE IN."
-        sub="Taking you to your mission."
+        sub="Taking you to your Mission."
       >
         <span />
       </AuthShell>

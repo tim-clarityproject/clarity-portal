@@ -35,7 +35,8 @@ export const SLEEP_OWN_LINE = 'This is your own target range.';
 export const SLEEP_CHART_STARTS = 'Your chart starts after your second night.';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const QUALITY_WORDS = { very_poor: 'Very poor', poor: 'Poor', fair: 'Fair', good: 'Good', very_good: 'Very good' };
+// The five words (Tim, 10 Nov, 23:22): the saved keys read straight across, in order.
+const QUALITY_WORDS = { very_poor: 'Poor', poor: 'Fair', fair: 'Good', good: 'Very good', very_good: 'Excellent' };
 
 const half = (n) => Math.round(n * 2) / 2;
 const onScale = (n) => Number.isFinite(n) && n >= SLEEP_TARGET_MIN && n <= SLEEP_TARGET_MAX && half(n) === n;

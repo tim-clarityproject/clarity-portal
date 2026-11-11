@@ -13,7 +13,7 @@
 import { weekday } from '../scores/dates.js';
 import { addDayKey, dayPlanView } from './dayPlan';
 import { settingForWeek, toMeasure } from './rows';
-import { plainNumber } from './words';
+import { plainNumber, wayRatingWord } from './words';
 import { sprintPageView } from './sprintPage';
 
 export const REVIEW_TEXT_MAX = 4000;   // went_well, differently, on_my_mind
@@ -39,10 +39,10 @@ export function reviewDayFor({ today, hour, yesterdayPlanned = false, yesterdayR
   return today;
 }
 
-/** "On a scale of 1 to 10, how calm under pressure were you today?" (M5). */
+/** "How calm under pressure were you today?" (M5), answered in the five words, never 1 to 10 (Tim, 10 Nov, 23:22). */
 export function wayQuestion(way) {
   const w = (way || '').trim().replace(/[.!?]+$/, '');
-  return w ? `On a scale of 1 to 10, how ${lowerFirst(w)} were you today?` : 'On a scale of 1 to 10, how was today?';
+  return w ? `How ${lowerFirst(w)} were you today?` : 'How was today?';
 }
 
 /** The morning's reminder (M5): both Strategies of the day, by name. */
@@ -378,8 +378,9 @@ export function movedLines(moved = {}, strategies = []) {
   return strategies.filter((s) => moved[s.value] != null).map((s) => `${s.label}, ${MOVED_LEVELS[moved[s.value]]}`);
 }
 
-/** "Calm under pressure, 7/10" for the summary. */
+/** "Calm under pressure, Very good" for the summary (a saved 1 to 10 reads as its word). */
 export function howYouWere(way, rating) {
-  if (rating == null) return '';
-  return `${(way || '').trim() || 'Today'}, ${rating}/10`;
+  const word = wayRatingWord(rating);
+  if (!word) return '';
+  return `${(way || '').trim() || 'Today'}, ${word}`;
 }

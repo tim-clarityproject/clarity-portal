@@ -248,7 +248,8 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await shot(page, `${tag}-1-sleep`);
   await page.getByRole('button', { name: 'Half an hour more' }).click();
   pass(`${tag}: the first press starts from 7 hours`, (await page.locator('.ds-stepper-value').textContent()).trim() === '7.5');
-  await page.getByRole('radio', { name: 'Good', exact: true }).click();
+  // Sleep quality is the five words (Tim, 10 Nov): "Very good" saves the key 'good', as "Good" did.
+  await page.getByRole('radio', { name: 'Very good', exact: true }).click();
   await next(page);
 
   // 2. Gratitude
@@ -323,7 +324,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await checkScreen(page, `${tag} summary`, { eye: false });
   await shot(page, `${tag}-8-summary`);
   const summary = await page.locator('.ds-guide-summary').innerText();
-  for (const words of ['7.5 hours, good', 'Breakfast with my daughter before school.', 'Decisive', '1. Draft the Harbour case study', 'Highest priority', NIGHT, 'Training sessions', 'Grow through referrals', 'If it happens, block 11:00 to 12:00']) {
+  for (const words of ['7.5 hours, very good', 'Breakfast with my daughter before school.', 'Decisive', '1. Draft the Harbour case study', 'Highest priority', NIGHT, 'Training sessions', 'Grow through referrals', 'If it happens, block 11:00 to 12:00']) {
     pass(`${tag}: the summary shows "${words}"`, summary.includes(words));
   }
   const tagColour = await page.locator('.day-tag').evaluate((el) => getComputedStyle(el).color);

@@ -95,10 +95,10 @@ export function buildSnapshot(title, strategies) {
 // found, shaped so the caller can show it next to the right field.
 export function validatePlan(title, strategies) {
   if (!title || !title.trim()) {
-    return { field: 'mission', message: 'Your mission statement is required.' };
+    return { field: 'mission', message: 'Your Mission statement is required.' };
   }
   if (title.length > LIMITS.mission) {
-    return { field: 'mission', message: `Keep your mission statement to ${LIMITS.mission} characters.` };
+    return { field: 'mission', message: `Keep your Mission statement to ${LIMITS.mission} characters.` };
   }
   for (let si = 0; si < strategies.length; si++) {
     const s = strategies[si];

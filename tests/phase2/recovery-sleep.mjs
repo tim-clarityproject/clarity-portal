@@ -298,7 +298,7 @@ if (part('question')) {
       });
       pass(`${tag}: heading`, facts.heading === 'How did you sleep last night?', facts.heading);
       pass(`${tag}: "Total hours" and "Quality" on one screen`, facts.labels.includes('Total hours') && facts.labels.some((l) => l.startsWith('Quality')) && facts.oneScreen, facts.labels.join(' | '));
-      pass(`${tag}: quality in the portal's five words`, ['Very poor', 'Poor', 'Fair', 'Good', 'Very good'].every((w) => facts.options.includes(w)), facts.options.join(', '));
+      pass(`${tag}: quality in the portal's five words`, ['Poor', 'Fair', 'Good', 'Very good', 'Excellent'].every((w) => facts.options.includes(w)), facts.options.join(', '));
       const plus = page.locator('.rec-sleep .ds-stepper-btn').nth(1);
       const minus = page.locator('.rec-sleep .ds-stepper-btn').nth(0);
       const value = () => page.locator('.rec-sleep .ds-stepper-value').textContent();
@@ -313,12 +313,13 @@ if (part('question')) {
       pass(`${tag}: no higher than 14`, (await value()) === '14', await value());
       for (let i = 0; i < 15; i += 1) await minus.click({ force: true });
       pass(`${tag}: back to 6.5`, (await value()) === '6.5', await value());
-      await page.locator('.rec-sleep').getByText('Fair', { exact: true }).click();
+      // The five words (Tim, 10 Nov): "Good" saves the key 'fair', as "Fair" did.
+      await page.locator('.rec-sleep').getByText('Good', { exact: true }).click();
       await page.getByRole('button', { name: 'Save my sleep' }).click();
       const toast = await page.waitForSelector('.ds-toast-text', { timeout: 8000 }).then((t) => t.textContent()).catch(() => null);
       pass(`${tag}: "Saved"`, toast === 'Saved', toast);
       const sent = state.writes.find((w) => w.table === 'day_plans');
-      pass(`${tag}: today's day plan sent with 6.5 and Fair`, Boolean(sent && /"local_date":"2026-11-03"/.test(sent.body) && /"sleep_hours":6.5/.test(sent.body) && /"sleep_quality":"fair"/.test(sent.body)), sent?.body?.slice(0, 160));
+      pass(`${tag}: today's day plan sent with 6.5 and Good (saved as 'fair')`, Boolean(sent && /"local_date":"2026-11-03"/.test(sent.body) && /"sleep_hours":6.5/.test(sent.body) && /"sleep_quality":"fair"/.test(sent.body)), sent?.body?.slice(0, 160));
       await page.waitForTimeout(100);
       const grow = await page.evaluate(() => {
         const bar = document.querySelector('.ds-schart-bar--grow');

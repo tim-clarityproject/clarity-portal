@@ -248,7 +248,8 @@ await everyLayout('running-with-link', async (page) => go(page, '/performance-sp
   await page.waitForSelector('.rec-sleep');
   // Total hours is the stepper now, as Daily plan's (Tim, 3 Nov): 7.5 is one press on from 7.
   await page.getByRole('button', { name: 'Half an hour more' }).click();
-  await page.getByRole('radio', { name: 'Good', exact: true }).click();
+  // Sleep quality is the five words (Tim, 10 Nov): "Very good" saves the key 'good', as "Good" did.
+  await page.getByRole('radio', { name: 'Very good', exact: true }).click();
   await layoutChecks(page, '390px light sleep panel', 'light');
   await page.getByRole('button', { name: 'Save my sleep' }).click();
   const plan = await until(async () => (await db.from('day_plans').select('*').eq('user_id', me).eq('local_date', today)).data?.[0], 10000);

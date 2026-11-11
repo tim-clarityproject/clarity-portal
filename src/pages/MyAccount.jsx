@@ -254,9 +254,9 @@ export default function MyAccount() {
         <Section id="mission-section" title="My Mission" className="ipp-section account-section">
           <div className="account-row">
             <div className="account-row-text">
-              <p className="account-row-title">{keepWords(personalGoal || 'Your mission isn’t written yet.')}</p>
+              <p className="account-row-title">{keepWords(personalGoal || 'Your Mission isn’t written yet.')}</p>
             </div>
-            <Button variant="text" onClick={editMission}>{personalGoal ? 'Edit my mission' : 'Write my mission'}</Button>
+            <Button variant="text" onClick={editMission}>{personalGoal ? 'Edit my Mission' : 'Write my Mission'}</Button>
           </div>
           <SwitchRow
             label="Show my Mission at the top of every page"

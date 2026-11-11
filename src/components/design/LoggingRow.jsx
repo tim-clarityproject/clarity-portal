@@ -1,8 +1,9 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import keepWords from './keepWords';
 import StepIcon from './StepIcon';
 import Chevron from './Chevron';
 import { Bar } from './Stat';
+import ChartTips from './ChartTips';
 import './design.css';
 
 // "12,000" (or "1,250.5") typed or pasted into a box that takes decimals:
@@ -201,6 +202,55 @@ export function LoggingRow({
   );
 }
 
+// A rated habit's week (Tim, 10 Nov, 23:22): a box for each day, filled
+// with a shade of mint for a rated day, stronger for better days, with no
+// number and no word in it. Pointing at a box, focusing it or tapping it
+// shows its word in the shared pop-up ("Good", then the day), and a screen
+// reader hears "Tuesday 10 Nov, Good". Tapping a box also opens the five
+// words under the row, to rate that day or change it; tapping the chosen
+// word again clears it. A day not rated stays empty.
+function RatingDays({ name, days, values, onChange, dashEmpty }) {
+  const [open, setOpen] = useState(null);
+  const day = days.find((d) => d.key === open && !d.later) || null;
+  const stepOf = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Math.min(5, Math.max(1, Math.round(Number(v)))));
+  return (
+    <>
+      <ChartTips className="ds-logweek-rate-zone">
+        <div className="ds-logweek-days ds-logweek-days--rate" style={{ '--days': days.length }} role="group" aria-label={name}>
+          {days.map((d) => {
+            const step = stepOf(values[d.key]);
+            const word = step ? RATINGS[step - 1].label : '';
+            return (
+              <div key={d.key} className={`ds-logweek-rate${d.today ? ' ds-logweek--today' : ''}`}>
+                <span aria-hidden="true">{d.box}</span>
+                <button
+                  type="button"
+                  className={`ds-logweek-rate-box${step ? ` ds-logweek-rate-box--${step}` : ''}${dashEmpty && !step && !d.later ? ' ds-logweek-rate-box--empty' : ''}`}
+                  disabled={d.later}
+                  aria-expanded={d.later ? undefined : open === d.key}
+                  aria-label={`${d.full}, ${d.later ? 'still to come' : word || 'not rated'}`}
+                  data-rating={step || undefined}
+                  data-tip={d.later ? undefined : JSON.stringify({ value: word || 'Not rated', when: d.full, extra: [] })}
+                  onClick={() => setOpen(open === d.key ? null : d.key)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </ChartTips>
+      {day && (
+        <PressRow
+          options={RATINGS}
+          value={stepOf(values[day.key])}
+          onChange={(v) => onChange(day.key, v)}
+          label={`${name}, ${day.full}`}
+          className="ds-log-press--rate ds-logweek-rate-choose"
+        />
+      )}
+    </>
+  );
+}
+
 // The week view of one habit (M1 hrow with view 'week'): a box for each
 // day shown (the working days, and any day off already logged; M0.3),
 // later days greyed out and today marked; or Yes and No in words for
@@ -210,6 +260,9 @@ export function LoggingRow({
 //               onChange(day, text) as typed, onBlur(day) when left.
 // kind 'yesno': `values` holds 1, 0 or nothing per day; a tap goes
 //               Yes, then No, then back to not logged.
+// kind 'rating': `values` holds 1 to 5 or nothing per day; each day is a
+//               box in a shade of mint (RatingDays); onChange(day, 1 to 5
+//               or null).
 // kind 'tick':  `value` true or false; onChange(value).
 // days:         [{ key, box: 'Mo', full: 'Monday 26 Oct', today, later }]
 //               (the weekly debrief passes every day of a finished week,
@@ -268,6 +321,8 @@ export function LoggingWeekRow({
         })}
       </div>
     );
+  } else if (kind === 'rating') {
+    entry = <RatingDays name={name} days={days} values={values} onChange={onChange} dashEmpty={dashEmpty} />;
   } else {
     // Every box is as wide as the longest figure in the row needs (12,500
     // steps is never cut off), at least 44px; a row that no longer fits

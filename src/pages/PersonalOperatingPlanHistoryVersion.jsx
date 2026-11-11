@@ -131,7 +131,7 @@ export default function PersonalOperatingPlanHistoryVersion() {
         </div>
 
         <div className="pop-mission-card">
-          <span className="ui-section-heading" style={{ marginTop: 0 }}>Your mission</span>
+          <span className="ui-section-heading" style={{ marginTop: 0 }}>Your Mission</span>
           <p className="pop-mission-text">{version.snapshot.mission?.title}</p>
         </div>
 

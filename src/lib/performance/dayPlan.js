@@ -14,6 +14,7 @@ import { m12IsOdd, SLEEP_QUALITY } from '../scores/index.js';
 import { openRecovery, settingForWeek, toMeasure } from './rows';
 import { sprintPageView } from './sprintPage';
 import { carriedOver, carriedSource, thingKey } from './windDown';
+import { sleepQualityWord } from './words';
 
 export const MAX_DAY_TODOS = 3;       // day_plan_limits: up to three things to do
 export const MAX_DAY_STRATEGIES = 2;  // one recommended, two at most
@@ -22,7 +23,8 @@ export const DAY_TEXT_MAX = 300;      // grateful_for, biggest_risk, risk_respon
 export const SLEEP_MAX_HOURS = 14;    // M5's stepper stops here
 
 export const SLEEP_QUALITY_OPTIONS = Object.freeze(
-  ['Very poor', 'Poor', 'Fair', 'Good', 'Very good'].map((label, i) => ({ value: SLEEP_QUALITY[i], label })),
+  // The five words (Tim, 10 Nov, 23:22): the saved keys stay as they are and read straight across, in order.
+  SLEEP_QUALITY.map((value) => ({ value, label: sleepQualityWord(value) })),
 );
 
 // UNDEFINED (decisions 23 Oct, 13:16): the suggestions are to be drafted in

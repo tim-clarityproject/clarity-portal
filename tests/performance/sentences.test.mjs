@@ -36,6 +36,6 @@ test('time as a person says it', () => {
 });
 
 test('the way of being is named in both questions (rule 64)', () => {
-  assert.equal(wayQuestion('Calm under pressure'), 'On a scale of 1 to 10, how calm under pressure were you today?');
+  assert.equal(wayQuestion('Calm under pressure'), 'How calm under pressure were you today?');
   assert.equal(whereQuestion('Calm under pressure'), 'Where did being calm under pressure show today?');
 });

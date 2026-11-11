@@ -299,11 +299,12 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await next(page);
 
   // 2. Be
-  pass(`${tag}: Be names the way of being`, (await heading(page)) === 'On a scale of 1 to 10, how calm under pressure were you today?', await heading(page));
+  pass(`${tag}: Be names the way of being`, (await heading(page)) === 'How calm under pressure were you today?', await heading(page));
   await checkScreen(page, `${tag} be`);
-  await page.getByRole('radio', { name: '7', exact: true }).click();
+  // Rated in the five words, never 1 to 10 (Tim, 10 Nov): "Very good" saves 8.
+  pass(`${tag}: the rating is the five words, with no numbers`, (await page.getByRole('radiogroup').first().innerText()).replace(/\s+/g, ' ').trim() === 'Poor Fair Good Very good Excellent', await page.getByRole('radiogroup').first().innerText());
+  await page.getByRole('radio', { name: 'Very good', exact: true }).click();
   await body(page).locator('textarea').first().fill('In the Harbour call, when the price question came up.');
-  pass(`${tag}: the scale's ends are in words`, (await page.locator('.ds-scale-ends').innerText()).includes('1 is not at all'));
   await shot(page, `${tag}-2-be`);
   await next(page);
 
@@ -377,7 +378,7 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await shot(page, `${tag}-8-summary`);
   const summary = await page.locator('.ds-guide-summary').innerText();
   for (const label of ['What you got done', 'How you showed up', 'What went well', 'What you’d do differently', 'How today aligned with your Strategies', 'Priorities for tomorrow', 'Anything else on your mind']) pass(`${tag}: the summary's label "${label}"`, summary.includes(label));
-  for (const words of ['2 of 3 done', 'Plus 1 more from this week’s list.', 'Calm under pressure, 7/10', 'In the Harbour call', 'The Harbour call landed', 'Plus 1 unplanned win.', 'Leave ten minutes between calls.', 'Grow through referrals, High', `1. ${THINGS[0]}`, `3. ${THINGS[2]}`, NOTE]) {
+  for (const words of ['2 of 3 done', 'Plus 1 more from this week’s list.', 'Calm under pressure, Very good', 'In the Harbour call', 'The Harbour call landed', 'Plus 1 unplanned win.', 'Leave ten minutes between calls.', 'Grow through referrals, High', `1. ${THINGS[0]}`, `3. ${THINGS[2]}`, NOTE]) {
     pass(`${tag}: the summary shows "${words}"`, summary.includes(words), summary.slice(0, 300));
   }
   if (deep) {
@@ -423,7 +424,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
   try {
     const row = await playThrough(page, tag, { deep });
     if (deep) {
-      pass('saved: the rating, where it showed, the answers and three things for tomorrow', row.way_of_being_rating === 7 && row.where_it_showed.startsWith('In the Harbour call')
+      pass('saved: the rating, where it showed, the answers and three things for tomorrow', row.way_of_being_rating === 8 && row.where_it_showed.startsWith('In the Harbour call')
         && row.went_well.startsWith('The Harbour call') && row.differently === 'Leave ten minutes between calls.' && JSON.stringify(row.tomorrow) === JSON.stringify(THINGS) && row.on_my_mind === NOTE, JSON.stringify(row));
       const drs = (await db.from('day_review_strategies').select('strategy_id, level').eq('day_review_id', row.id)).data;
       pass('saved: the Strategy that moved, High', drs.length === 1 && drs[0].strategy_id === sid('Grow through referrals') && drs[0].level === 3, JSON.stringify(drs));
@@ -497,8 +498,8 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       const name = (await late.page.locator('.ds-guide-name').textContent()).trim();
       pass('just after midnight: the review is the day before\'s, its date in the top bar', /^Daily review, Thu \d+ \w+$/.test(name), name);
       await next(late.page);
-      pass('just after midnight: it asks about the day before\'s way of being', (await heading(late.page)) === 'On a scale of 1 to 10, how patient were you today?', await heading(late.page));
-      await late.page.getByRole('radio', { name: '6', exact: true }).click();
+      pass('just after midnight: it asks about the day before\'s way of being', (await heading(late.page)) === 'How patient were you today?', await heading(late.page));
+      await late.page.getByRole('radio', { name: 'Good', exact: true }).click();
       const saved = await until(async () => (await db.from('day_reviews').select('local_date, way_of_being_rating').eq('user_id', me).eq('local_date', thursday)).data?.[0]?.way_of_being_rating === 6, 10000);
       pass('just after midnight: the answer is saved on the day before', Boolean(saved));
       const none = (await db.from('day_reviews').select('id').eq('user_id', me).eq('local_date', friday)).data;

@@ -6,7 +6,7 @@ import pageText from '../content/pageText';
 const PLAN_ROWS = [
   { title: 'Daily plan', description: 'Set your intentions and priorities.', route: '/plan-my-day' },
   { title: 'Meeting planner', description: "Bad meetings kill team morale. Let's get it right.", route: '/plan-meeting' },
-  { title: 'Personal operating plan', description: 'Define your mission, strategies and tactics.', route: '/personal-operating-plan' },
+  { title: 'Personal operating plan', description: 'Define your Mission, strategies and tactics.', route: '/personal-operating-plan' },
 ];
 
 // Same routes as the Decision tools hub (prompt 7). Inversion is not in
@@ -25,7 +25,7 @@ const COMING_SOON_ROWS = [
   { title: 'I need to make a new hire', description: 'Plan and prepare for bringing on new team members.' },
   { title: 'I need to onboard a new team member', description: 'Guide and support new team members in their first weeks.' },
   { title: 'I want to focus my energy wisely', description: 'Decide where your time and attention matter most.' },
-  { title: 'I want to set meaningful goals', description: 'Turn your mission into goals you can act on.' },
+  { title: 'I want to set meaningful goals', description: 'Turn your Mission into goals you can act on.' },
 ];
 
 function LockIcon() {

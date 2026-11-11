@@ -182,8 +182,8 @@ test('recent ways of being: the last two, once each, before the day', () => {
 });
 
 test('the summary’s words and the saved row', () => {
-  assert.equal(sleepWords({ hours: 7.5, quality: 'good' }), '7.5 hours, good');
-  assert.equal(sleepWords({ hours: null, quality: 'very_poor' }), 'Very poor');
+  assert.equal(sleepWords({ hours: 7.5, quality: 'good' }), '7.5 hours, very good');
+  assert.equal(sleepWords({ hours: null, quality: 'very_poor' }), 'Poor');
   assert.equal(sleepWords({ hours: 1, quality: null }), '1 hour');
   assert.equal(ifItHappens('Block 11:00 to 12:00.'), 'If it happens, block 11:00 to 12:00.');
   assert.deepEqual(answersToRow({ hours: 7, quality: 'fair', grateful: '  ', way: ' Patient ', risk: '', response: 'x' }),

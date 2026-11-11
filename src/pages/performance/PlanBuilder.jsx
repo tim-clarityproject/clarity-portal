@@ -268,7 +268,7 @@ function PlanTool({ userId, data, mode }) {
       },
     };
   };
-  const missionWho = who('mission', 'Your mission');
+  const missionWho = who('mission', 'Your Mission');
   const progressWho = who('progress', 'Your Outcome Objective figures and scores');
 
   // ------------------------------------------------------------ edits
@@ -318,10 +318,10 @@ function PlanTool({ userId, data, mode }) {
   const missionStep = {
     key: 'mission',
     name: 'Mission',
-    question: 'What’s your mission?',
+    question: 'What’s your Mission?',
     nudges: ['Write the big aim that drives your daily performance.', 'You can change it any time.'],
     example: MISSION_EXAMPLE,
-    nextLabel: 'Save my mission',
+    nextLabel: 'Save my Mission',
     // The eye beside the question (rule 29d, Tim, 5 Nov).
     eye: <WhoSees {...missionWho} />,
     render: () => (
@@ -343,7 +343,7 @@ function PlanTool({ userId, data, mode }) {
             <TextBox label="Who do you serve?" value={draft.help.serve} onChange={(serve) => set((d) => ({ help: { ...d.help, serve } }))} />
             <TextBox label="What does great look like in 3 years?" value={draft.help.great} onChange={(great) => set((d) => ({ help: { ...d.help, great } }))} />
             <div className="plan-help-act">
-              <Button onClick={() => set((d) => ({ mission: draftMission(d.help) }))}>Draft my mission</Button>
+              <Button onClick={() => set((d) => ({ mission: draftMission(d.help) }))}>Draft my Mission</Button>
             </div>
           </div>
         ) : (
@@ -358,7 +358,7 @@ function PlanTool({ userId, data, mode }) {
   const objectivesStep = {
     key: 'objectives',
     name: 'Objectives',
-    question: 'What 2 to 4 results would show your mission is moving?',
+    question: 'What 2 to 4 results would show your Mission is moving?',
     nudges: ['Pick ones you can track.'],
     tip: { key: 'performance-plan-saves', text: 'Everything saves as you go.' },
     eye: <WhoSees {...progressWho} />,

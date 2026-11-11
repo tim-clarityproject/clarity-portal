@@ -32,7 +32,7 @@ const CHAIN = [
   },
   {
     name: 'Outcome Objectives',
-    lines: ['2 to 4 results by which progress on your mission is measured.', 'Each is a number, a milestone or a rating out of 10.'],
+    lines: ['2 to 4 results by which progress on your Mission is measured.', 'Each is a number, a milestone or a rating.'],
     join: 'delivered through',
   },
   {
@@ -50,7 +50,7 @@ export function PerformanceSystemBody() {
   return (
     <div className="ds-system">
       <div className="ds-system-lead">
-        <p>Your mission sits at the top.</p>
+        <p>Your Mission sits at the top.</p>
         <p>Your plan says what you aim for and how.</p>
         <p>Your sprints are where you do the work, week by week.</p>
       </div>

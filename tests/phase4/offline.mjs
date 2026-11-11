@@ -243,7 +243,7 @@ async function planMyDay(page) {
     }
     if (h === 'How did you sleep last night?') {
       await page.getByRole('button', { name: 'Half an hour more' }).click();
-      await page.getByRole('radio', { name: 'Good', exact: true }).click();
+      await page.getByRole('radio', { name: 'Very good', exact: true }).click();
     } else if (h === 'What’s one thing you’re grateful for today?') {
       await body.locator('textarea').first().fill('A quiet flight with time to think.');
     } else if (h === 'How do you want to be today?') {
@@ -277,8 +277,8 @@ async function reviewMyDay(page) {
         return (await page.locator('.ds-end-title').count()) > 0;
       }, 15000);
     }
-    if (/^On a scale of 1 to 10/.test(h)) {
-      await page.getByRole('radio', { name: '7', exact: true }).click();
+    if (/^How .+ were you today\?$/.test(h)) {
+      await page.getByRole('radio', { name: 'Very good', exact: true }).click();
     } else if (h === 'What went well today?') {
       await body.locator('textarea').first().fill('Wrote the plan on the flight.');
     } else if (h === 'What would you do differently next time?') {
