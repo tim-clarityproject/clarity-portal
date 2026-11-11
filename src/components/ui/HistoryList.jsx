@@ -209,7 +209,7 @@ export default function HistoryList({
         <button type="button" className="hlist-sort-link" onClick={() => setSortOrder((o) => (o === 'new' ? 'old' : 'new'))}>
           {sortOrder === 'new' ? 'Newest first' : 'Oldest first'}
           {/* The one chevron (Tim, 26 Oct): down for newest first, up for oldest first. */}
-          <Chevron direction={sortOrder === 'new' ? 'down' : 'up'} size="sm" />
+          <Chevron direction={sortOrder === 'new' ? 'down' : 'up'} size="sm" beside="words" />
         </button>
       </div>
       )}
@@ -350,6 +350,9 @@ const HLIST_CSS = `
   cursor: pointer;
   transition: color var(--dur) var(--ease);
 }
+
+/* The sort link's chevron is centred on its words (Tim, 11 Nov): measured here, it sat a pixel high. */
+.ui-root .hlist-sort-link .ds-chevron-line { --chev-nudge: 1px; }
 
 .ui-root .hlist-sort-link:hover,
 .ui-root .hlist-sort-link:focus-visible {

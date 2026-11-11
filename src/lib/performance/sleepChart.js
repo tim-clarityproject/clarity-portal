@@ -10,7 +10,7 @@
 // night".
 //
 // Quality stays the portal's five words (Tim, 3 Nov, 15:02: one quality
-// question everywhere, no database change). "Average quality" is the most
+// question everywhere, no database change). "Usual quality" is the most
 // common word across the Recovery's nights, ties going to the better word
 // (Tim, 3 Nov).
 //

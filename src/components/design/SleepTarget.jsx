@@ -35,7 +35,7 @@ const SAVE_ERROR = 'That didn’t save. Check your connection and try again.';
 export function SleepTargetLink({ open, onToggle, controls }) {
   return (
     <Button variant="text" className="ds-starget-link" aria-expanded={open} aria-controls={controls} onClick={onToggle}>
-      Change my target range
+      Edit my target range
     </Button>
   );
 }

@@ -1661,6 +1661,10 @@
   text-align: left;
 }
 
+/* The fold's arrow is centred on this name's capitals (design.css, .ds-collapse--caps). */
+.ui-root .ck-areas .ds-collapse--caps,
+.ui-root .ds-collapse--caps:has(.ck-fold-title) { --collapse-caps-size: var(--fs-fold-head); }
+
 .ui-root .ck-fold-title {
   font-family: var(--font-display);
   text-transform: uppercase;

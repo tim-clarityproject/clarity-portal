@@ -119,7 +119,7 @@ const TOC = [
   ['c5', 'Buttons'], ['c6', 'Crosshairs'], ['c7', 'Stats'], ['c8', 'Dial and charts'], ['c9', 'Lists'], ['c10', 'Logging rows'],
   ['c11', 'Tiles'], ['c12', 'Controls'], ['c20', 'Drop-downs'], ['c23', 'Pills on phones'], ['c24', 'Who can see this'], ['c25', 'Steady text box'], ['c26', 'Focus mode'], ['c28', 'Calendar'], ['c27', 'Guided tools'], ['c21', 'Filter'], ['c22', 'Show less'],
   ['c13', 'Messages'], ['c14', 'Loading'], ['c15', 'Panels'], ['c16', 'Empty space'],
-  ['c45', 'Scales and levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'], ['c50', 'Rules of 5 Nov'],
+  ['c45', 'Levels'], ['c46', 'Rows to pick and add'], ['c47', 'Notes and switches'], ['c48', 'Figures in a week'], ['c49', 'Summaries and celebrating'], ['c50', 'Rules of 5 Nov'],
   ['c32', 'Outcome Objectives'], ['c33', 'Alignment check'], ['c34', 'Strategy tiles'], ['c35', 'My Mission panel'],
   ['c54', 'Home'], ['c17', 'Breathe button'], ['c29', 'Bold crosshair'], ['c30', 'Status changes'], ['c18', 'Sign in'], ['c19', 'Choosing a mode'], ['c31', 'PDFs'],
 ];
@@ -1652,10 +1652,9 @@ function Gallery() {
           </>
         )} />
 
-        <GallerySection id="c45" title="Scales and levels" demo={ScaleLevelDemo} rules={(
+        <GallerySection id="c45" title="Levels" demo={ScaleLevelDemo} rules={(
           <>
-            <p><New /><b>A 1 to 10 scale</b> (M5 Daily review): ten equal boxes in one row, five by two on a phone, with what each end means in words underneath.</p>
-            <p>The chosen number fills in the text colour, never coral; tapping it again clears it.</p>
+            <p><b>No 1 to 10 scale</b> (removed 11 Nov): ratings are five words, Poor to Excellent, chosen as answer rows (the Daily review’s way of being, sleep quality) or as mint boxes in the week grid.</p>
             <p><New /><b>Rows that open Low, Medium and High inside</b> (M5 “Which Strategies moved today?”): choosing a row outlines it and opens the follow-up in the same row, starting at Medium.</p>
             <p>The follow-up names the thing it asks about (writing rule 64): “How much did “Grow through referrals” move?”.</p>
             <p>Only the chosen row grows, so nothing else on the screen moves.</p>

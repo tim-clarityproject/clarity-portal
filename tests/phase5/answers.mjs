@@ -286,7 +286,7 @@ try {
             pass(`dashboard ${tag}: "Green weeks averaged Very good or better."`, text.includes('Green weeks averaged Very good or better.'), text.slice(-200));
           } else {
             // Saved as very_poor, fair, very_good, good and poor: they read Poor, Good, Excellent, Very good and Fair.
-            pass(`dashboard ${tag}: sleep quality reads in the five words`, new RegExp(`Average quality ${WORD_RE}\\b`).test(text) && /\bExcellent\b/.test(text), text.slice(0, 200));
+            pass(`dashboard ${tag}: sleep quality reads in the five words`, new RegExp(`Usual quality ${WORD_RE}\\b`).test(text) && /\bExcellent\b/.test(text), text.slice(0, 200));
           }
           pass(`dashboard ${tag}: no number rating in "${title}"`, !NUMBERED.test(text), NUMBERED.exec(text)?.[0]);
         }

@@ -217,11 +217,11 @@ test('Outcome Objectives: progress, pace, effort, the change this sprint and the
   assert.equal(o2.of, 'Target Excellent');
   assert.equal(o3.line, null);
   assert.equal(o3.value, '8 months');
-  assert.equal(o3.of, 'left');
+  assert.equal(o3.of, 'to go');
   // Its date shows once, at the end of its bar.
   assert.equal(o3.label, '');
   assert.equal(o3.bar.dueText, '30 Jun 2027');
-  assert.equal(v.chain.objectives.summary, '1 of 2 are improving this sprint, and the milestone is due by 30 Jun 2027, 8 months left.');
+  assert.equal(v.chain.objectives.summary, '1 of 2 are improving this sprint, and the milestone is due by 30 Jun 2027, 8 months to go.');
 });
 
 test('Strategies: the strip for the span, the latest figure, last week at the standard', () => {

@@ -100,8 +100,8 @@ test('the words: days, whole weeks, days left and the greeting', () => {
   assert.equal(dayCountWords(7), '1 week');
   assert.equal(dayCountWords(14), '2 weeks');
   assert.equal(dayCountWords(30), '30 days');
-  assert.equal(daysLeftWords(1), '1 day left.');
-  assert.equal(daysLeftWords(4), '4 days left.');
+  assert.equal(daysLeftWords(1), '1 day to go.');
+  assert.equal(daysLeftWords(4), '4 days to go.');
   assert.equal(greeting(7), 'Good morning');
   assert.equal(greeting(13), 'Good afternoon');
   assert.equal(greeting(20), 'Good evening');

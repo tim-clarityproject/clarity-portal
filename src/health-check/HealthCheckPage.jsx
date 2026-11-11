@@ -637,7 +637,7 @@ function Page() {
       return (
         <div className="dto rv" style={{ '--i': 4 }}>
           {day && <span className="exact">{formatDocDate(day).slice(4)}</span>}
-          <button type="button" className="text" onClick={() => setPanel(`exact:${kind}`)}>{day ? 'Change the exact date' : 'Add an exact date'}</button>
+          <button type="button" className="text" onClick={() => setPanel(`exact:${kind}`)}>{day ? 'Edit the exact date' : 'Add an exact date'}</button>
         </div>
       );
     };
@@ -729,7 +729,7 @@ function Page() {
   };
   const footer = !inFlow ? null : step.screen === 'results' ? (
     <div className="ft">
-      <button type="button" className="back" aria-label="Back" onClick={goBack}><Chev dir="lf" />Back</button>
+      <button type="button" className="back" aria-label="Back" onClick={goBack}><Chev dir="lf" caps />Back</button>
       <div className="pdfm">
         <button type="button" className="btn" aria-haspopup="menu" aria-expanded={pdf.open} disabled={pdf.busy} style={{ width: phone ? '100%' : undefined }}
           onClick={() => setPdf((p) => ({ ...p, open: !p.open }))}>{pdf.busy ? 'Making your PDF' : 'Download PDF'}</button>
@@ -743,7 +743,7 @@ function Page() {
     </div>
   ) : (
     <div className="ft">
-      <button type="button" className="back" aria-label="Back" onClick={goBack}><Chev dir="lf" />Back</button>
+      <button type="button" className="back" aria-label="Back" onClick={goBack}><Chev dir="lf" caps />Back</button>
       <div className="r">
         {reached && !last && <button type="button" className="text" onClick={() => moveTo(hasGaps(draft) ? nextStep(at('projects'), draft, true) : at('results'))}>Back to results</button>}
         <button type="button" className="btn" disabled={!valid} onClick={goNext}>{last ? 'See my results' : 'Next'}</button>

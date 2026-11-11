@@ -190,7 +190,7 @@ export default function OnePager({ draft, onEmailLink, onCreateAccount, onEdit, 
                   className={`al-rr${hl === r.n ? ' al-hl' : ''}`}
                   tabIndex={0}
                   role="button"
-                  aria-label={`${r.n}, ${r.text}. Open this project to change its ratings`}
+                  aria-label={`${r.n}, ${r.text}. Open this project to edit its ratings`}
                   onClick={() => onOpenProject(r.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onOpenProject(r.id); } }}
                   onMouseEnter={() => setHl(r.n)}

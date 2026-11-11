@@ -77,7 +77,7 @@ export default function WhoSees({ audience = 'me', coachName, name, onChange }) 
         type="button"
         ref={buttonRef}
         className="ds-who ds-who--eye"
-        aria-label={`${sentence} Change who can see this.`}
+        aria-label={`${sentence} Edit who can see this.`}
         aria-haspopup="dialog"
         onClick={() => { setHover(false); setOpen(true); }}
         onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHover(true); }}
@@ -165,7 +165,7 @@ export function CoachSees({ parts, onToggle, coachName }) {
         type="button"
         ref={buttonRef}
         className="ds-who ds-who--eye"
-        aria-label={`${sentence} Change what ${who === 'Your coach' ? 'your coach sees' : `${who} sees`}.`}
+        aria-label={`${sentence} Edit what ${who === 'Your coach' ? 'your coach sees' : `${who} sees`}.`}
         aria-haspopup="dialog"
         onClick={() => { setHover(false); setOpen(true); }}
         onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHover(true); }}

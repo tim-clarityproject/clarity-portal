@@ -103,7 +103,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
     <div className="wol-acts">
       <Button variant="primary" onClick={() => navigate('/life-balance-review/check-in')}>New check-in</Button>
       <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}><TargetIcon />Set targets</Button>
-      <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}><PenIcon />Change your areas</Button>
+      <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}><PenIcon />Edit your areas</Button>
     </div>
   );
 
@@ -357,7 +357,7 @@ function OnePager({ all, initialCheckins, initialStyle, initialTo, savedId }) {
         {gone.length ? (
           <p className="wol-gone">
             {`Not on your wheel: ${gone.join(', ')}. Past scores are kept. `}
-            <Button variant="text" className="wol-qlink wol-qlink--in" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>Change your areas</Button>
+            <Button variant="text" className="wol-qlink wol-qlink--in" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>Edit your areas</Button>
           </p>
         ) : null}
 

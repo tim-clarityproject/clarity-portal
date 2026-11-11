@@ -35,7 +35,7 @@ test('the empty frame until two nights hold hours', () => {
   assert.equal(recoverySleepView({ recovery, nights: [night('2026-11-02', null, 'good'), night('2026-11-03', 7, null)], today: '2026-11-03', target }).enough, false);
 });
 
-test('Average quality: the most common word, ties going to the better word', () => {
+test('Usual quality: the most common word, ties going to the better word', () => {
   assert.equal(usualQuality(['fair', 'good', 'fair', 'good', 'poor']), 'good');
   assert.equal(usualQuality(['very_poor', 'very_poor', 'very_good']), 'very_poor');
   assert.equal(usualQuality([null, 'nonsense']), null);

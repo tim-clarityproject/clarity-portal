@@ -63,7 +63,7 @@ export function m9TimeLeft(asOf, dueOn) {
   let unit;
   if (n < 14) { count = n; unit = 'day'; } else if (months < 3) { count = Math.floor(n / 7); unit = 'week'; } else { count = months; unit = 'month'; }
   const words = `${count} ${unit}${count === 1 ? '' : 's'}`;
-  return { days, unit, count, text: days > 0 ? `${words} left` : `${words} overdue` };
+  return { days, unit, count, text: days > 0 ? `${words} to go` : `${words} overdue` };
 }
 
 function addMonths(day, k) {

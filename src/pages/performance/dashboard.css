@@ -601,6 +601,13 @@
   color: var(--text-2);
 }
 
+/* The arrow is centred on the fold's name: its line takes the name's font
+   and line height, so the two stand on one baseline (Tim, 11 Nov). */
+.ui-root .dash-fold-mark .ds-chevron-line {
+  font-size: var(--fs-text);
+  line-height: var(--lh-text);
+}
+
 .ui-root .dash-fv {
   display: inline-flex;
   align-items: center;

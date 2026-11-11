@@ -74,8 +74,8 @@ export function PerformanceSystemBody() {
       </section>
 
       <div className="ds-system-link">
-        <p><Chevron direction="down" size="sm" />Your tactics go into each sprint</p>
-        <p><Chevron direction="up" size="sm" />Your scores and debriefs update your objectives and plan</p>
+        <p><Chevron direction="down" size="sm" beside="words" />Your tactics go into each sprint</p>
+        <p><Chevron direction="up" size="sm" beside="words" />Your scores and debriefs update your objectives and plan</p>
       </div>
 
       <section className="ds-system-box ds-system-box--sprint" aria-labelledby="ds-system-sprint">

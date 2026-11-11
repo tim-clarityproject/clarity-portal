@@ -327,7 +327,7 @@ function SectionHead({ id, title, closed, toggle, as: H = 'h2' }) {
     <H className="dash-sec-h">
       <button type="button" className="dash-colb" aria-expanded={open} onClick={() => toggle(id)}>
         <span>{title}</span>
-        <DisclosureArrow open={open} />
+        <DisclosureArrow open={open} beside="capitals" />
       </button>
     </H>
   );
@@ -616,7 +616,7 @@ function SleepBody({ row, target, changeTarget, navigate }) {
   return (
     <>
       <Lab text="Hours a night, night by night" eye={<WhoSees audience="me" />} />
-      {row.usual && <div className="dash-sleep-figs"><Stat label="Average quality" value={row.usual} /></div>}
+      {row.usual && <div className="dash-sleep-figs"><Stat label="Usual quality" value={row.usual} /></div>}
       <SleepChart slots={row.slots} target={target} note={target.own ? null : SLEEP_SUGGESTED_LINE} enough={row.enough} empty={SLEEP_EMPTY} label={SLEEP_LABEL} />
       {row.enough && (
         <ChartTable caption="Sleep each night of this sprint" columns={[{ key: 'night', label: 'Night' }, { key: 'hours', label: 'Hours' }, { key: 'quality', label: 'Quality' }]} rows={row.table} />

@@ -15,6 +15,12 @@
 //     setting, and the menu button never sits over a logo or content;
 //   - no old names (Plan my day, Review my day, the check-in, Performance
 //     Evidence), no crosshair used as a plus;
+//   - no answer with a grey second line that repeats or rewords it (Tim,
+//     11 Nov, 12:51);
+//   - every chevron beside one line of text is centred on that text, on the
+//     middle of its x-height or of its capitals, within 0.5px, open and
+//     closed (Tim, 11 Nov, 14:36; tests/phase5/chevrons.mjs), read at twice
+//     the pixels a point (an ordinary phone or laptop screen);
 //   - no console errors.
 //
 //   - the outside Health Check follows the device, light or dark (Tim, 10
@@ -31,6 +37,7 @@ import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { chevronsOff, measureChevrons } from './chevrons.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -54,7 +61,7 @@ if (!env.TEST_SUPABASE_URL?.includes(TEST_REF)) throw new Error('Not the test pr
 const sleep = (ms) => new Promise((r) => { setTimeout(r, ms); });
 
 // [name, address, what to do once it's open (optional)]
-const PAGES = [
+const PAGES_ALL = [
   ['home', '/welcome'],
   ['menu', '/welcome', 'menu'],
   ['hub-personal', '/personal'],
@@ -81,7 +88,8 @@ const PAGES = [
   ['sprint-review-worked', '/performance-sprint/review', 'review:1'],
   ['sprint-review-next-time', '/performance-sprint/review', 'review:2'],
   ['build-working-days', '/performance-plan/build', 'build:4'],
-].filter(([name]) => !ONLY || ONLY.test(name));
+];
+const PAGES = PAGES_ALL.filter(([name]) => !ONLY || ONLY.test(name));
 
 const BACKGROUND = { dark: 'rgb(0, 0, 0)', light: 'rgb(249, 248, 245)' };
 const TEXT = { dark: 'rgb(255, 255, 255)', light: 'rgb(0, 0, 0)' };
@@ -189,6 +197,29 @@ function measure({ phone }) {
       if (r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) over.push(label(el));
     }
   }
+  // No repeated second line under an answer (Tim, 11 Nov, 12:51): a grey
+  // second line may only add something the answer can't say. It repeats the
+  // answer when, with the small words taken out, everything it says is
+  // already in the answer (or the other way round), or most of it is.
+  const SMALL = new Set(['i', 'i’ll', "i'll", 'i’m', "i'm", 'it', 'its', 'it’s', 'the', 'a', 'an', 'my', 'me', 'to', 'is', 'are', 'be', 'of', 'and', 'or', 'for', 'in', 'on', 'at', 'this', 'that', 'need', 'want', 'will', 'do', 'eg', 'e.g', 'each', 'with', 'your', 'you']);
+  const wordsOf = (t) => [...new Set(t.toLowerCase().replace(/[“”"().,:;!?]/g, ' ').split(/\s+/).map((w) => w.replace(/(ing|ed|s)$/, '')).filter((w) => w && !SMALL.has(w)))];
+  const repeats = [];
+  for (const answer of root.querySelectorAll('.ds-answer, .ds-seg-btn, .ds-level-row, [role=radio], [role=option], [role=checkbox].ds-answer, .opts5 button, .ddl button')) {
+    if (!vis(answer)) continue;
+    const note = answer.querySelector('.ds-answer-note, .ds-dd-hint, small, .ds-pick-detail');
+    if (!note || !vis(note)) continue;
+    const second = note.innerText.replace(/\s+/g, ' ').trim();
+    const first = answer.innerText.replace(/\s+/g, ' ').trim().replace(second, '').trim();
+    if (!first || !second) continue;
+    const a = wordsOf(first);
+    const b = wordsOf(second);
+    if (!a.length || !b.length) continue;
+    const shared = b.filter((w) => a.includes(w)).length;
+    const inAnswer = shared / b.length; // how much of the second line the answer already says
+    const ofAnswer = a.filter((w) => b.includes(w)).length / a.length; // how much of the answer the second line says again
+    if (inAnswer >= 0.75 || (ofAnswer >= 0.75 && shared >= 2)) repeats.push(`"${first.slice(0, 40)}" / "${second.slice(0, 40)}"`);
+  }
+
   const page = document.querySelector('.ui-root') || document.body;
   const heading = document.querySelector('.ds-page-title, .ds-guide-question, .ds-guide-title, .ds-hub-page h1, h1');
   return {
@@ -199,6 +230,7 @@ function measure({ phone }) {
     eyeNotes,
     longTitles,
     over,
+    repeats,
     sideways: document.documentElement.scrollWidth - window.innerWidth,
     theme: document.documentElement.getAttribute('data-theme'),
     background: getComputedStyle(document.documentElement).backgroundColor,
@@ -283,6 +315,7 @@ for (const width of [1280, 390]) {
         pass(`${tag}: no "Performance Sprint" followed by a number`, !numbered, numbered?.[0]);
         const rating = /out of 10\b|\b\d+(\.\d+)?\/10\b|\b1 to 5\b|rated 1\b/i.exec(r.text);
         pass(`${tag}: no numbered ratings`, !rating, rating ? `"${r.text.slice(Math.max(0, rating.index - 30), rating.index + 30).replace(/\n/g, ' ')}"` : '');
+        pass(`${tag}: no second line that repeats its answer`, r.repeats.length === 0, r.repeats.slice(0, 4).join('; '));
         pass(`${tag}: no title in capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
         const old = /plan my day|review my day|hardware and software check-in|monthly check-in|first check-in|performance evidence/i.exec(r.text);
         pass(`${tag}: no old names`, !old, old?.[0]);
@@ -441,6 +474,137 @@ if (HC_ONLY) {
       }
       await context.close();
     }
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Chevrons centred on their text (Tim, 11 Nov, 14:36): every chevron beside
+// one line of words sits on the middle of that text's x-height (lowercase)
+// or of its capitals, within 0.5px, closed and open. Read from the screen's
+// own pixels on a screen with two pixels to a point (tests/phase5/chevrons.mjs),
+// on every page in scope at both sizes, with every fold and drop-down opened
+// in turn, and on the outside Health Check.
+const CHEVRONS = !ONLY || ONLY.test('chevrons');
+if (CHEVRONS) {
+  for (const width of [1280, 390]) {
+    const phone = width < 600;
+    const context = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, deviceScaleFactor: 2, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'light', reducedMotion: 'reduce' });
+    await context.route('**/*', (route) => {
+      const url = route.request().url();
+      if (/resend\.com|sendgrid|mailgun|postmarkapp|smtp/i.test(url)) return route.abort();
+      if (/supabase\.co/.test(url) && !url.includes(TEST_HOST)) return route.abort();
+      if (/\/functions\/v1\/|\/api\//.test(url)) return route.abort();
+      // Nothing is saved while folds are opened and closed.
+      if (/supabase\.co\/rest\/v1\//.test(url) && !/\/rpc\//.test(url) && !['GET', 'HEAD', 'OPTIONS'].includes(route.request().method())) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      return route.fallback();
+    });
+    const page = await context.newPage();
+    let measured = 0;
+    try {
+      await page.goto(`${APP}/auth/login`);
+      await page.fill('input[type=email]', env.TEST_CLIENT_EMAIL);
+      await page.fill('input[type=password]', env.TEST_CLIENT_PASSWORD);
+      await page.keyboard.press('Enter');
+      await page.waitForURL(/welcome/, { timeout: 30000 });
+      const paths = [...new Set(PAGES_ALL.filter(([, , act]) => !act).map(([, path]) => path)), '/personal/plan', '/life-balance-review'];
+      for (const path of paths) {
+        const tag = `chevrons ${path} ${width}px`;
+        try {
+          await page.goto(`${APP}${path}`);
+          await page.waitForLoadState('networkidle').catch(() => null);
+          await page.evaluate(() => document.fonts.ready);
+          await sleep(1000);
+          const closed = await measureChevrons(page);
+          measured += closed.length;
+          pass(`${tag}: every chevron is centred on its text`, chevronsOff(closed).length === 0, chevronsOff(closed).slice(0, 4).join('; '));
+          // Open each fold and drop-down in turn (a drop-down's list is measured, then closed again).
+          let opened = 0;
+          for (let i = 0; i < 14; i += 1) {
+            const next = page.locator('[aria-expanded=false]:has(.ds-chevron)').first();
+            if (!(await next.count())) break;
+            const ok = await next.click({ timeout: 2000 }).then(() => true).catch(() => false);
+            if (!ok) break;
+            opened += 1;
+            await sleep(350);
+            if (await page.locator('[role=listbox]').count()) {
+              const list = await measureChevrons(page);
+              measured += list.length;
+              pass(`${tag}: with a drop-down open, every chevron is centred on its text`, chevronsOff(list).length === 0, chevronsOff(list).slice(0, 4).join('; '));
+              await page.keyboard.press('Escape');
+              await sleep(250);
+              break;
+            }
+          }
+          if (opened) {
+            await sleep(500);
+            const open = await measureChevrons(page);
+            measured += open.length;
+            pass(`${tag}: with its folds open, every chevron is centred on its text`, chevronsOff(open).length === 0, chevronsOff(open).slice(0, 4).join('; '));
+          }
+        } catch (e) {
+          pass(`${tag}: measured`, false, e.message.split('\n')[0]);
+        }
+      }
+      // Back beside a guided tool's name (the Daily review's second screen; nothing is saved).
+      try {
+        await page.goto(`${APP}/daily-review`);
+        await page.waitForSelector('.ds-guide-question', { timeout: 20000 });
+        for (let i = 0; i < 3 && !(await page.locator('.ds-guide-back').count()); i += 1) {
+          await page.getByRole('button', { name: /^(Next|Skip)$/ }).first().click({ timeout: 3000 }).catch(() => null);
+          await sleep(600);
+        }
+        await page.evaluate(() => document.fonts.ready);
+        await sleep(600);
+        const guide = (await measureChevrons(page)).filter((c) => c.label.startsWith('ds-guide-back'));
+        measured += guide.length;
+        pass(`chevrons, a guided tool's Back ${width}px: centred on the capitals of the tool's name`, guide.length === 1 && chevronsOff(guide).length === 0, guide.length ? chevronsOff(guide).join('; ') : 'Back was not found');
+      } catch (e) {
+        pass(`chevrons, a guided tool's Back ${width}px: measured`, false, e.message.split('\n')[0]);
+      }
+    } catch (e) {
+      pass(`chevrons ${width}px: signed in`, false, e.message.split('\n')[0]);
+    }
+    pass(`chevrons ${width}px: chevrons beside text were found and measured (${measured})`, measured >= 20, `${measured}`);
+    await context.close();
+
+    // The outside Health Check: Back on the sign-in screen, and the first question's own chevrons.
+    const hc = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, deviceScaleFactor: 2, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'light', reducedMotion: 'reduce' });
+    try {
+      await hc.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
+        const url = route.request().url();
+        const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
+        if (url.endsWith('/rpc/alignment_open')) return json({ ok: true, status: 'complete', current_step: null, data: hcAnswers(true), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: '2026-10-27 09:30:00', client_label: 'Kestrel Group', coach_name: 'Tim' });
+        if (url.endsWith('/rpc/alignment_save')) return json({ ok: true, version: 2, updated_at: '2026-10-27 10:00:00', status: 'complete' });
+        return route.abort();
+      });
+      await hc.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
+      await hc.route(/\/health-check\/[^/.]+$/, async (route) => {
+        if (route.request().resourceType() !== 'document') return route.continue();
+        return route.fulfill({ response: await route.fetch({ url: `${APP}/health-check.html` }) });
+      });
+      await hc.addInitScript(() => { try { localStorage.setItem('hc-quick-guide-watched', '1'); } catch { /* blocked */ } });
+      const page2 = await hc.newPage();
+      await page2.goto(`${APP}/health-check/tok-calm-rules-0000000000000000000000000000`);
+      await page2.locator('#hc-email, .wlc .btn.full').first().waitFor({ timeout: 20000 });
+      const begin = page2.getByRole('button', { name: 'Begin the Health Check' });
+      if (await begin.isVisible().catch(() => false)) await begin.click();
+      await page2.locator('#hc-email').waitFor({ timeout: 10000 });
+      await page2.evaluate(() => document.fonts.ready);
+      await sleep(600);
+      const signIn = await measureChevrons(page2);
+      pass(`chevrons, Health Check sign-in ${width}px: Back's chevron is centred on its word`, signIn.length >= 1 && chevronsOff(signIn).length === 0, signIn.length ? chevronsOff(signIn).join('; ') : 'no chevron found');
+      await page2.locator('#hc-email').fill('sam.example@invented.test');
+      await page2.locator('#hc-code').fill('ABC234');
+      await page2.locator('form button[type=submit]').click();
+      await page2.locator('.gst b').first().waitFor({ timeout: 15000 });
+      await sleep(700);
+      const results = await measureChevrons(page2);
+      pass(`chevrons, Health Check results ${width}px: every chevron is centred on its text`, results.length >= 1 && chevronsOff(results).length === 0, results.length ? chevronsOff(results).join('; ') : 'no chevron found');
+    } catch (e) {
+      pass(`chevrons, Health Check ${width}px: measured`, false, e.message.split('\n')[0]);
+    }
+    await hc.close();
   }
 }
 

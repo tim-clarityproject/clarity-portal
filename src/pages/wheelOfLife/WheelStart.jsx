@@ -64,7 +64,7 @@ export default function WheelStart() {
 
         <div className="wol-qrow wol-rv" style={{ '--i': 5 }}>
           <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/areas', { state: { from: here } })}>
-            <PenIcon />Change your areas
+            <PenIcon />Edit your areas
           </Button>
           {count > 0 ? (
             <Button variant="text" className="wol-qlink" onClick={() => navigate('/life-balance-review/targets', { state: { from: here } })}>

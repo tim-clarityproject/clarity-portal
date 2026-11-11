@@ -1,7 +1,7 @@
 // Nothing is ever lost (experience rule 2; Tim's check of 10 Nov, 09:15).
 // A change made from a summary (Change beside an answer) is kept the moment
 // it's made: a refresh, or closing the tab and opening the tool again,
-// reopens that same step with the change still there and "Save my change"
+// reopens that same step with the change still there and "Save my edit"
 // still going straight back to the summary.
 //
 //   A  Daily plan, finished: Change To-dos, choose a third, refresh.
@@ -127,8 +127,8 @@ async function next() {
   throw new Error(`Next didn't move on from "${before}"`);
 }
 const change = async (label) => {
-  await page.getByRole('button', { name: new RegExp(`^(Change|Add) ${label}$`) }).click();
-  await until(async () => (await nextLabel()) === 'Save my change', 5000);
+  await page.getByRole('button', { name: new RegExp(`^(Edit|Add) ${label}$`, "i") }).click();
+  await until(async () => (await nextLabel()) === 'Save my edit', 5000);
 };
 const onSummary = async () => Boolean(await until(async () => (await page.locator('.ds-guide-summary').count()) > 0, 8000));
 // A tap in the first moment after a screen appears is ignored (a double
@@ -195,12 +195,12 @@ try {
   await page.reload();
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
   pass('A: after a refresh the same step is open', (await heading()) === DO, await heading());
-  pass('A: the button still reads Save my change', (await nextLabel()) === 'Save my change', await nextLabel());
+  pass('A: the button still reads Save my edit', (await nextLabel()) === 'Save my edit', await nextLabel());
   await page.waitForSelector('.ds-answer--pick', { timeout: 15000 });
   for (const name of [DRAFT, SHORT, TRAIN]) pass(`A: "${name}" is still chosen`, await pressed(name));
   await sleep(1500); // every late read has landed
   pass('A: the third is still chosen once the quiet refresh has landed', await pressed(TRAIN));
-  pass('A: Save my change goes straight back to the summary', await saveMyChange());
+  pass('A: Save my edit goes straight back to the summary', await saveMyChange());
   pass('A: the summary lists the third', (await summaryText()).includes(TRAIN), await summaryText());
   pass('A: the habit is in the database', (await until(async () => (await dayHabits()).length === 1)) === true);
   await page.reload();
@@ -217,7 +217,7 @@ try {
   await page.reload();
   clearDelays();
   await page.waitForSelector('.ds-answer--pick', { timeout: 30000 });
-  pass('B: after a refresh mid-save the same step is open', (await heading()) === DO && (await nextLabel()) === 'Save my change', `${await heading()} / ${await nextLabel()}`);
+  pass('B: after a refresh mid-save the same step is open', (await heading()) === DO && (await nextLabel()) === 'Save my edit', `${await heading()} / ${await nextLabel()}`);
   pass('B: the change is still there', !(await pressed(SHORT)) && (await pressed(DRAFT)) && (await pressed(TRAIN)));
   await until(() => queueEmpty(), 20000);
   await sleep(1500);
@@ -228,7 +228,7 @@ try {
     return r.length === 1 ? r : null;
   });
   pass('B: the database holds the change', Boolean(rows));
-  pass('B: Save my change goes back to the summary', await saveMyChange());
+  pass('B: Save my edit goes back to the summary', await saveMyChange());
   pass('B: the summary no longer lists it', !(await summaryText()).includes(SHORT), await summaryText());
 
   // C. Typed words, refreshed at once.
@@ -237,9 +237,9 @@ try {
   await page.locator('.ds-guide-body textarea').first().fill(WORDS);
   await page.reload();
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
-  pass('C: after a refresh the gratitude step is open', /grateful/.test(await heading()) && (await nextLabel()) === 'Save my change', `${await heading()} / ${await nextLabel()}`);
+  pass('C: after a refresh the gratitude step is open', /grateful/.test(await heading()) && (await nextLabel()) === 'Save my edit', `${await heading()} / ${await nextLabel()}`);
   pass('C: the typed words are still there', (await until(async () => (await page.locator('.ds-guide-body textarea').first().inputValue()) === WORDS, 5000)) === true);
-  pass('C: Save my change goes back to the summary', await saveMyChange());
+  pass('C: Save my edit goes back to the summary', await saveMyChange());
   pass('C: the summary shows the words', (await summaryText()).includes(WORDS));
   pass('C: the database has the words', (await until(async () => (await dayPlan())?.grateful_for === WORDS)) === true);
 
@@ -252,9 +252,9 @@ try {
   watch(page);
   await page.goto(`${APP}${PLAN}`);
   await page.waitForSelector('.ds-guide-question', { timeout: 30000 });
-  pass('D: opened again, the risk step is open', /risk/.test(await heading()) && (await nextLabel()) === 'Save my change', `${await heading()} / ${await nextLabel()}`);
+  pass('D: opened again, the risk step is open', /risk/.test(await heading()) && (await nextLabel()) === 'Save my edit', `${await heading()} / ${await nextLabel()}`);
   pass('D: the typed words are still there', (await until(async () => (await page.locator('.ds-guide-body textarea').first().inputValue()) === RISK, 5000)) === true);
-  pass('D: Save my change goes back to the summary', await saveMyChange());
+  pass('D: Save my edit goes back to the summary', await saveMyChange());
   pass('D: the summary shows the words', (await summaryText()).includes(RISK));
   pass('D: the database has the words', (await until(async () => (await dayPlan())?.biggest_risk === RISK)) === true);
 
@@ -299,7 +299,7 @@ try {
   const first = page.locator('.ds-guide-summary-change').first();
   const what = await first.getAttribute('aria-label');
   await first.click();
-  await until(async () => (await nextLabel()) === 'Save my change' || !(await page.locator('.ds-guide-next').count()), 5000);
+  await until(async () => (await nextLabel()) === 'Save my edit' || !(await page.locator('.ds-guide-next').count()), 5000);
   const step = await heading();
   await page.reload();
   await page.waitForSelector('.ds-guide-question, .ds-guide-title', { timeout: 30000 });

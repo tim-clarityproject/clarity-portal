@@ -1083,7 +1083,9 @@ html:has(.ui-root) {
 }
 
 /* The chevron's visible strokes, not its square, on the content edge and 14px before the label. */
-.ui-root .ui-back-link .ui-back-link-icon {
+/* (The chevron stands on its label's baseline, inside .ds-chevron-line, so
+   it is centred on the label's capitals: the line carries the insets.) */
+.ui-root .ui-back-link .ds-chevron-line {
   margin-left: calc(-1 * var(--chev-left-inset));
   margin-right: calc(-1 * var(--chev-right-inset));
 }

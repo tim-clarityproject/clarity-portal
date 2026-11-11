@@ -25,7 +25,7 @@ function BinIcon() {
 
 // Back: the one chevron, turned to point left (Tim, 26 Oct).
 function ArrowLeftIcon() {
-  return <Chevron direction="left" size="sm" className="ui-back-link-icon" />;
+  return <Chevron direction="left" size="sm" beside="capitals" className="ui-back-link-icon" />;
 }
 
 export function DiscardLink({ onClick, label = 'Discard', ...props }) {

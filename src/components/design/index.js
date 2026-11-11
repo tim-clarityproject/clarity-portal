@@ -37,7 +37,6 @@ export { default as HelpPanel } from './HelpPanel';
 export { default as StatusAction } from './StatusAction';
 export { default as StatementPanel } from './StatementPanel';
 export { default as MultiChoice } from './MultiChoice';
-export { default as ScaleChoice } from './ScaleChoice';
 export { default as LevelChoice } from './LevelChoice';
 export { default as RowList } from './RowList';
 export { default as PriorityRows } from './PriorityRows';

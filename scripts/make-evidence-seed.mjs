@@ -126,11 +126,21 @@ export function seedSql(reg) {
  * The register as 031 first seeded it. 031 has already run on the test
  * project, so it keeps the words it was written with; names changed since
  * are changed in the database by their own migration, never by rewriting
- * 031. Since 10 Nov the register says "Confidence Bank" where 031 says
- * "Performance Evidence" (the tool's name, its key performance_evidence, and
- * where claim C10 shows): migration 041 carries that rename.
+ * 031. Migration 041 carries the 10 Nov renames: where the register now
+ * says Confidence Bank, Daily plan, Daily review, Monthly review, First
+ * review and Monthly Hardware and Software review, 031 says Performance
+ * Evidence, Plan my day, Review my day, Check-in, First check-in and
+ * Hardware and Software check-in (in a tool's name, and so its key, and in
+ * where a claim shows). The longer names are put back first.
  */
-const RENAMED_SINCE_031 = [['Confidence Bank', 'Performance Evidence']];
+const RENAMED_SINCE_031 = [
+  ['Confidence Bank', 'Performance Evidence'],
+  ['Monthly Hardware and Software review', 'Hardware and Software check-in'],
+  ['First review', 'First check-in'],
+  ['Monthly review', 'Check-in'],
+  ['Daily plan', 'Plan my day'],
+  ['Daily review', 'Review my day'],
+];
 export function asFirstSeeded(reg) {
   const old = (text) => RENAMED_SINCE_031.reduce((t, [now, then]) => (typeof t === 'string' ? t.replaceAll(now, then) : t), text);
   return {

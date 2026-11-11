@@ -29,7 +29,7 @@ Each claim has where it shows in the portal, its strength, its sources (Part C) 
 |---|---|---|---|---|---|
 | C1 | Tracking your progress makes you more likely to reach your goals, especially when you record it or share it. | Sprint, dashboard, debrief, How it works | Moderate (close to strong) | R1 | Effects are larger when progress is written down or shared. |
 | C2 | Specific, demanding goals lead to better performance than vague ones. | Outcome Objectives, set-up | Strong | R2 | Very complex tasks need learning goals as well as outcome goals. |
-| C3 | Deciding in advance "if this happens, I'll do that" makes it more likely you'll act when it counts. | Pressure plan, Plan my day's biggest risk | Strong | R3 | Effects are larger when the plan is worded as a true if-then, the person is motivated and the plan is rehearsed. |
+| C3 | Deciding in advance "if this happens, I'll do that" makes it more likely you'll act when it counts. | Pressure plan, Daily plan's biggest risk | Strong | R3 | Effects are larger when the plan is worded as a true if-then, the person is motivated and the plan is rehearsed. |
 | C4 | Goals you pursue for your own reasons get more sustained effort and are reached more often than goals driven by pressure. | Goal check, Find my sweet spot | Moderate | R4, R5 | Longitudinal studies, much of it with students; motivation measured by self-report. |
 | C5 | People perform and persist better when they feel ownership, growing competence and connection. | How it works, organisation pitch ("agree the what, own the how") | Moderate | R5 | Mostly surveys at work, so the links are associations; the portal applies the theory, not tests it. |
 | C9 | New habits take weeks to months to become automatic, and missing a day now and then doesn't undo them. | Sprint length, kind streaks, How it works | Early | R9 | Few studies measured time to a habit, many at high risk of bias; the time varied from days to most of a year. Never say "66 days" as a rule. |
@@ -38,32 +38,32 @@ Each claim has where it shows in the portal, its strength, its sources (Part C) 
 ### Reviewing and learning
 | ID | Claim | Where it shows | Strength | Sources | Caveat |
 |---|---|---|---|---|---|
-| C6 | Regular structured debriefs improve performance. | Weekly debrief, after-action review, Review my day | Strong | R6 | Gains are biggest when debriefs are structured and focus on what to do next time. |
+| C6 | Regular structured debriefs improve performance. | Weekly debrief, after-action review, Daily review | Strong | R6 | Gains are biggest when debriefs are structured and focus on what to do next time. |
 | C7 | Coaching improves performance, goal attainment and wellbeing at work. | How it works, organisation pitch | Moderate | R7 | The trials-only review found signs of publication bias, and larger effects on self-reported than on observed outcomes. |
 | C8 | Questions that focus on solutions and what's working move people towards their goals faster than questions about problems. | Writing rules, Get unstuck, the debrief's "What still went well?" | Early | R8 | A pilot and two single-session experiments, mostly with students. |
 
 ### Hardware: the body
 | ID | Claim | Where it shows | Strength | Sources | Caveat |
 |---|---|---|---|---|---|
-| C11 | Too little sleep slows attention, reactions and thinking. | Check-in, Hardware explanation, sleep patterns | Strong | R11 | Clearest for attention and working memory, smaller for reasoning. Mostly lab studies; people often don't notice their own decline. |
+| C11 | Too little sleep slows attention, reactions and thinking. | Monthly review, Hardware explanation, sleep patterns | Strong | R11 | Clearest for attention and working memory, smaller for reasoning. Mostly lab studies; people often don't notice their own decline. |
 | C12 | Slow, controlled breathing can help settle your body and reduce stress. | Breathe | Moderate | R12 | Effects on stress are small; many trials at some risk of bias; evidence for any one technique is early. Slow breathing reliably raises heart rate variability, a marker of the body's calming system. |
 | C17 | Switching off and recovering from work helps people sustain energy and performance. | Recovery, Home's recharge question | Moderate | R17 | Mostly surveys over time; some recovery training trials. |
 | C18 | Timing light exposure and shifting sleep before travel can reduce jet lag. | Travel and jet lag plan | Moderate (light shifts the body clock); Early (full travel plans) | R18 | Expert reviews and an expert consensus, built mostly on lab studies; the consensus itself says field evidence is lacking. The portal gives no melatonin or medication advice. |
-| C20 | Adults need 7 hours of sleep or more a night. | Check-in scoring, "green nights" | Strong | R20 | A population guideline; individual need varies. |
+| C20 | Adults need 7 hours of sleep or more a night. | Monthly review scoring, "green nights" | Strong | R20 | A population guideline; individual need varies. |
 | C48 | 7 to 9 hours a night is the range suggested for adults aged 18 to 64. | Recovery's sleep chart ("Your target range 7 to 9 hours", "Suggested for adults aged 18 to 64."), the sleep target range in My Account | Strong | R20 | A population guideline from expert consensus; individual need varies, so the person can change their own range (4 to 12 hours). The National Sleep Foundation gives 7 to 9 hours for adults 18 to 64 (and 7 to 8 from 65); the AASM and SRS consensus gives 7 hours or more, also published in Sleep, 38(6), 843–844. |
-| C21 | Adults are advised at least 150 minutes of moderate activity, or 75 vigorous, a week, plus muscle strengthening on 2 or more days. | Check-in movement questions | Strong | R21 | Guidelines for health, not for performance. |
-| C22 | Long hours of sitting carry extra health risk, which enough activity largely offsets. | Check-in sitting question | Moderate | R22 | From observational studies. |
-| C23 | The UK low-risk guideline is no more than 14 units a week, spread over 3 or more days. | Check-in alcohol questions and units guide | Strong | R23 | A UK guideline; other countries differ. The heavy-session question uses the UK version of AUDIT-C's third question (6 units for women, 8 for men), with our own wording and time frame. |
-| C49 | A pint of beer or cider is about 2.3 units, a bottle or can of beer about 2, a standard glass of wine 2.1, a large glass 3 and a single spirit 1. | Check-in alcohol question (the units added up from the drinks counted) | Strong | R48 | The NHS's own figures. Strengths vary, so these are typical drinks: the pint is the NHS's 14 units for 6 pints of average-strength beer, and the bottle or can is the middle of the NHS's 1.7 (330ml at 5%) and 2.4 (440ml at 5.5%). People can type other drinks in units. |
-| C24 | Short, single questions can track sleep quality, stress and health reliably enough to follow change over time. | Check-in, Plan my day, team pulse | Moderate | R24 | Validated mostly for comparing groups or in patient samples; not a substitute for full questionnaires or diagnosis. Our questions are worded our own way, so they aren't the validated items themselves. |
-| C30 | Software relies on hardware being maintained, so we look after both. | First check-in, How it works | Our model, built on C11, C17, C21 | R11, R17, R21 | The links between body and decision-making are well supported; the Hardware and Software frame is Tim's. |
+| C21 | Adults are advised at least 150 minutes of moderate activity, or 75 vigorous, a week, plus muscle strengthening on 2 or more days. | Monthly review movement questions | Strong | R21 | Guidelines for health, not for performance. |
+| C22 | Long hours of sitting carry extra health risk, which enough activity largely offsets. | Monthly review sitting question | Moderate | R22 | From observational studies. |
+| C23 | The UK low-risk guideline is no more than 14 units a week, spread over 3 or more days. | Monthly review alcohol questions and units guide | Strong | R23 | A UK guideline; other countries differ. The heavy-session question uses the UK version of AUDIT-C's third question (6 units for women, 8 for men), with our own wording and time frame. |
+| C49 | A pint of beer or cider is about 2.3 units, a bottle or can of beer about 2, a standard glass of wine 2.1, a large glass 3 and a single spirit 1. | Monthly review alcohol question (the units added up from the drinks counted) | Strong | R48 | The NHS's own figures. Strengths vary, so these are typical drinks: the pint is the NHS's 14 units for 6 pints of average-strength beer, and the bottle or can is the middle of the NHS's 1.7 (330ml at 5%) and 2.4 (440ml at 5.5%). People can type other drinks in units. |
+| C24 | Short, single questions can track sleep quality, stress and health reliably enough to follow change over time. | Monthly review, Daily plan, team pulse | Moderate | R24 | Validated mostly for comparing groups or in patient samples; not a substitute for full questionnaires or diagnosis. Our questions are worded our own way, so they aren't the validated items themselves. |
+| C30 | Software relies on hardware being maintained, so we look after both. | First review, How it works | Our model, built on C11, C17, C21 | R11, R17, R21 | The links between body and decision-making are well supported; the Hardware and Software frame is Tim's. |
 
 ### Emotions and reflection
 | ID | Claim | Where it shows | Strength | Sources | Caveat |
 |---|---|---|---|---|---|
 | C13 | Putting a feeling into precise words can reduce its intensity. | Emotional wash | Early | R13 | Mostly lab and brain-imaging studies; a 2026 review found body and brain effects fairly consistent but effects on how people feel mixed. |
 | C14 | Writing about difficult experiences can help, a little. | Journal | Moderate | R14 | Effects are small and vary. |
-| C15 | Noticing what you're grateful for can lift wellbeing, a little. | Plan my day | Moderate | R15 | Small effects, often no better than other positive activities. |
+| C15 | Noticing what you're grateful for can lift wellbeing, a little. | Daily plan | Moderate | R15 | Small effects, often no better than other positive activities. |
 
 ### Planning for risk, strengths and teams
 | ID | Claim | Where it shows | Strength | Sources | Caveat |
@@ -83,7 +83,7 @@ Each claim has where it shows in the portal, its strength, its sources (Part C) 
 | C31 | The Performance score, impact weights (1, 2, 3), weighting Strategies by objectives served, and the 85% standard. | Sprint, dashboard, How it works | Our model | Methods M4 to M7 | Sensible choices, not research findings. Said plainly. |
 | C32 | Shuffle (permutation) tests check whether a link in someone's own data is likely to be chance. | Patterns | Strong (method) | R32 | Assumes the shuffled data are interchangeable, which time trends break; that's why the method removes the trend and shuffles within blocks (methods M14.4 and M14.5). Says nothing about cause. |
 | C33 | Correcting for checking many links at once keeps false patterns rare. | Patterns | Strong (method) | R33 | Controls the share of false finds, not each one; the go-live simulation checks the real rate (methods M14.7). |
-| C47 | A change only counts as real when it's bigger than the measure's usual swing from one time to the next. | Check-in results, What improved, M23 checks | Strong (method) | R47 | The swing has to be worked out from real data first (methods M13 and M23). |
+| C47 | A change only counts as real when it's bigger than the measure's usual swing from one time to the next. | Monthly review results, What improved, M23 checks | Strong (method) | R47 | The swing has to be worked out from real data first (methods M13 and M23). |
 
 ### Practitioner models (said as "our model")
 | ID | Model | Where it shows | Strength |
@@ -109,10 +109,10 @@ Strength is the strength of the evidence behind the tool's main idea, not proof 
 | Individual Performance Plan | Mission, Outcome Objectives, Strategies, Tactics (Tim's OST method); specific, challenging goals | C2, C1, C31 | Moderate (goals: strong; the four-layer structure: our model) | |
 | Performance Sprint | Short goal cycles with weekly tracking and a Recovery between sprints | C1, C2, C9, C17, C42 | Moderate | |
 | Weekly performance debrief | Structured debriefs; tracking progress | C6, C1 | Strong | |
-| Plan my day | If-then planning; small next steps; sleep tracking with a standard sleep diary item; gratitude | C3, C10, C24, C15 | Moderate | |
-| Review my day | Debriefs; progress and small wins | C6, C10 | Moderate | |
+| Daily plan | If-then planning; small next steps; sleep tracking with a standard sleep diary item; gratitude | C3, C10, C24, C15 | Moderate | |
+| Daily review | Debriefs; progress and small wins | C6, C10 | Moderate | |
 | Individual Performance Dashboard | Tracking progress; patterns from the person's own data | C1, C32, C33 | Moderate (tracking); the pattern method is strong, but a finding is only one person's link | |
-| Hardware and Software check-in | Plain single questions informed by validated measures and public guidelines | C11, C20 to C24, C30, C47 | Moderate | |
+| Monthly Hardware and Software review | Plain single questions informed by validated measures and public guidelines | C11, C20 to C24, C30, C47 | Moderate | |
 | Recovery | Recovery from work demands | C17 | Moderate | |
 | Find my sweet spot | Strengths use; self-concordance; James A. King's sweet spot | C19, C4, C26 | Moderate (strengths and self-concordance); the Venn itself: our model | Flag |
 | Understand their sweet spot | As above, used by a boss to shape a role | C19, C26 | Early | Flag |

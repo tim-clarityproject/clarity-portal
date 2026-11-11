@@ -111,6 +111,69 @@
   transform: translateX(var(--arrow-shift)) rotate(-135deg);
 }
 
+/* A chevron beside one line of text is centred on that text (Tim, 11 Nov,
+   14:36): on the middle of the x-height beside lowercase words, and the
+   middle of the cap height beside capitals, within half a pixel, open and
+   closed. It stands on the text's own baseline instead of in the middle of
+   its box, so the answer never depends on the row's height:
+   - .ds-chevron-line is one line of the words' own font (a zero-width
+     strut gives it their baseline), as wide as the chevron;
+   - .ds-chevron-base marks the baseline, with no height of its own, so the
+     line never grows;
+   - the chevron's square stands on that baseline and is lowered until its
+     middle is half an x-height (or half a cap height) above it.
+   The line takes its font from where it sits. Where the words beside it
+   are set in another size or font, the rule for that place gives the line
+   the same one (search for .ds-chevron-line). */
+.ui-root .ds-chevron-line {
+  display: inline-block;
+  flex: none;
+  width: var(--arrow-size);
+  vertical-align: baseline;
+  white-space: nowrap;
+  --chev-half: 0.5ex;
+  /* What measuring left over (11 Nov): the strokes sat a touch high. */
+  --chev-nudge: 0.15px;
+}
+
+.ui-root .ds-chevron-line.ds-chevron-line--sm { width: var(--who-icon); }
+
+/* Capitals: half the cap height (0.335em is Nekst's, for a browser without the cap unit). */
+.ui-root .ds-chevron-line.ds-chevron-line--caps { --chev-half: 0.335em; --chev-nudge: 0.38px; }
+@supports (height: 1cap) {
+  .ui-root .ds-chevron-line.ds-chevron-line--caps { --chev-half: 0.5cap; }
+}
+
+.ui-root .ds-chevron-line::before { content: '\200B'; }
+
+.ui-root .ds-chevron-base {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+  vertical-align: baseline;
+}
+
+.ui-root .ds-chevron-base > .ds-chevron {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  translate: 0 calc(50% - var(--chev-half) + var(--chev-nudge));
+}
+
+/* Pointing down, the corner's strokes sit half a pixel lower in their
+   square than pointing up (measured, 11 Nov): this evens them out. */
+.ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 calc(47.2% - var(--chev-half) + var(--chev-nudge)); }
+
+/* A browser draws text and boxes on whole pixels, each rounded on its own,
+   so a part-pixel shift could land the chevron a pixel away from where its
+   words landed. Shifted by a whole number of pixels from the words'
+   baseline, it lands with them every time. */
+@supports (translate: 0 round(nearest, 1.4px, 1px)) {
+  .ui-root .ds-chevron-base > .ds-chevron { translate: 0 round(nearest, calc(50% - var(--chev-half) + var(--chev-nudge)), 1px); }
+  .ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 round(nearest, calc(47.2% - var(--chev-half) + var(--chev-nudge)), 1px); }
+}
+
 /* Drop-downs and folds: grey, beside the box's words. */
 .ui-root .ds-arrow {
   background-color: var(--text-2);
@@ -1706,7 +1769,8 @@
   width: 100%;
   min-height: var(--row-min-h) !important;
   padding: var(--space-px12) var(--row-pad-x) !important;
-  border: var(--line-w) solid var(--line);
+  /* The edges colour, so an answer at rest reaches 3 to 1 against the page in both modes (Tim, 11 Nov). */
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-field);
   font-family: var(--font-body);
   font-size: var(--fs-option) !important;
@@ -1722,7 +1786,7 @@
 @media (hover: hover) {
   .ui-root .ds-answer:hover {
     color: var(--text);
-    border-color: var(--quiet-line);
+    border-color: var(--text-2);
   }
 }
 
@@ -1912,6 +1976,14 @@
 .ui-root .ds-collapse-head > span:first-child {
   min-width: 0;
   overflow-wrap: break-word;
+}
+
+/* A summary that is a name in capitals: the arrow's line takes the name's
+   font, so it stands on the same baseline and is centred on its capitals.
+   A page whose name is another size says so with --collapse-caps-size. */
+.ui-root .ds-collapse--caps > .ds-collapse-head .ds-chevron-line {
+  font-family: var(--font-display);
+  font-size: var(--collapse-caps-size, var(--fs-note));
 }
 
 /* A fixed box, so the arrow can turn without nudging the row wider. */
@@ -3513,6 +3585,14 @@
 .ui-root .ds-guide-back .ds-chevron {
   width: var(--who-icon);
   height: var(--who-icon);
+}
+
+/* Centred on the capitals of the tool's name beside it: the chevron's line
+   takes the name's font, so both stand on one baseline (Tim, 11 Nov). */
+.ui-root .ds-guide-back .ds-chevron-line {
+  font-family: var(--font-display);
+  font-size: var(--fs-tool-name);
+  line-height: var(--lh-text);
 }
 
 .ui-root .ds-guide-back:hover,
@@ -6463,74 +6543,6 @@
 
 /* ---------- Phase 3: the daily tools' shared parts ---------- */
 
-/* A 1 to 10 scale (M5 sc10): ten across, five by two on a phone. */
-.ui-root .ds-scale {
-  min-width: 0;
-  max-width: var(--scale-max-w);
-  letter-spacing: normal;
-}
-
-.ui-root .ds-scale-row {
-  display: grid;
-  grid-template-columns: repeat(var(--scale-n, 10), minmax(0, 1fr));
-  gap: var(--space-px6);
-}
-
-.ui-root .ds-scale-btn {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(var(--tap-min) + var(--space-1)) !important;
-  padding: 0 !important;
-  border: var(--line-w) solid var(--field-line);
-  border-radius: var(--radius-input);
-  font-family: var(--font-body);
-  font-size: var(--fs-option) !important;
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
-  -webkit-tap-highlight-color: transparent;
-}
-
-@media (hover: hover) {
-  .ui-root .ds-scale-btn:hover {
-    color: var(--text);
-    border-color: var(--text);
-  }
-}
-
-.ui-root .ds-scale-btn[aria-checked='true'] {
-  background: var(--text);
-  border-color: var(--text);
-  color: var(--on-text);
-}
-
-.ui-root .ds-scale-btn:focus-visible {
-  outline: var(--focus-w) solid var(--coral-text);
-  outline-offset: var(--space-px2);
-}
-
-.ui-root .ds-scale-ends {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
-  font-size: var(--fs-meta);
-  line-height: var(--lh-text);
-  color: var(--label);
-}
-
-@media (max-width: 600px) {
-  .ui-root .ds-scale-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-}
-
-@container guide (max-width: 600px) {
-  .ui-root .ds-scale-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-}
-
 /* Rows that open Low, Medium and High inside (M5 mvr). */
 .ui-root .ds-levels {
   display: grid;
@@ -6539,13 +6551,13 @@
 }
 
 .ui-root .ds-level-row {
-  border: var(--line-w) solid var(--line);
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-field);
   transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
 }
 
 @media (hover: hover) {
-  .ui-root .ds-level-row:hover { border-color: var(--quiet-line); }
+  .ui-root .ds-level-row:hover { border-color: var(--text-2); }
 }
 
 .ui-root .ds-level-row--on,
@@ -6897,7 +6909,8 @@
 
 .ui-root .ds-logweek-yn.ds-logweek-yn--empty {
   border-style: dashed;
-  border-color: var(--quiet-line);
+  /* The edges colour: a dashed empty box still reaches 3 to 1 (Tim, 11 Nov). */
+  border-color: var(--field-line);
 }
 
 .ui-root .ds-logweek-total {
@@ -6921,7 +6934,7 @@
 
 .ui-root .ds-logweek-box.ds-logweek-box--empty input {
   border-style: dashed;
-  border-color: var(--quiet-line);
+  border-color: var(--field-line);
 }
 
 /* A stat in a soft panel (a summary's facts), and the celebration. */

@@ -610,6 +610,7 @@ function SprintBody({
           </div>
           <div className="sprint-later">
             <Collapsible
+              capitals
               summary={(
                 <span className="sprint-later-head">
                   <span className="sprint-later-title">Later in this sprint</span>

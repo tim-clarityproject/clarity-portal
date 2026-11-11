@@ -31,9 +31,9 @@ export function dayCountWords(n) {
   return n === 1 ? '1 day' : `${n} days`;
 }
 
-/** "4 days left." (M15 banner). */
+/** "4 days to go." (M15 banner; countdowns read "to go", never "left": Tim, 11 Nov). */
 export function daysLeftWords(n) {
-  return n === 1 ? '1 day left.' : `${n} days left.`;
+  return n === 1 ? '1 day to go.' : `${n} days to go.`;
 }
 
 /** "Good morning", "Good afternoon" or "Good evening", from the hour on the person's clock. */

@@ -664,7 +664,7 @@ function AreaFold({ title, fold }) {
   if (!fold.rows.length) return null;
   return (
     <div className="ck-fold">
-      <Collapsible summary={(
+      <Collapsible capitals summary={(
         <span className="ck-fold-head">
           <span className="ck-fold-title">{title}</span>
         </span>
@@ -1026,7 +1026,7 @@ function CheckinRead({ userId, today, loaded, row }) {
           eye={null}
         />
         <div className="ck-change">
-          <Button onClick={() => navigate(`${checkinPath(row.month)}/answers`, { state: { from: checkinPath(row.month) } })}>Change my answers</Button>
+          <Button onClick={() => navigate(`${checkinPath(row.month)}/answers`, { state: { from: checkinPath(row.month) } })}>Edit my answers</Button>
         </div>
       </div>
     </div>

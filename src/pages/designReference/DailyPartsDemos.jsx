@@ -10,7 +10,6 @@ import {
   NotePanel,
   ObjectiveFigureRow,
   RowList,
-  ScaleChoice,
   Stat,
   StatGroup,
   Stepper,
@@ -38,13 +37,11 @@ const DO_LIST = [
   { value: 't2', label: 'Book a physio assessment', detail: 'Maintain my availability to do good work', tags: ['Rolled over from week 3'] },
 ];
 
-/** The 1 to 10 scale and the Low, Medium, High rows. */
+/** The Low, Medium, High rows. (The 1 to 10 scale went on 11 Nov: ratings are five words.) */
 export function ScaleLevelDemo() {
-  const [rating, setRating] = useState(7);
   const [moved, setMoved] = useState({ s3: 3 });
   return (
     <div className="dr-stack dr-stack--fill">
-      <ScaleChoice ariaLabel="How calm under pressure were you today?" who="me" value={rating} onChange={setRating} lowLabel="1 is not at all" highLabel="10 is completely" />
       <LevelChoice
         ariaLabel="Which Strategies moved today?"
         who="me"

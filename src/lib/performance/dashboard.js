@@ -402,7 +402,7 @@ function objectiveRows(d, today, sprint, weeks) {
         effortLine: null,
         bar: { kind: 'timeline', gone, reached, dueText: due ? shortDate(due) : null },
         value: reached ? 'Done' : left ? (left.count === 0 ? 'Today' : plural(left.count, left.unit)) : '',
-        of: reached || !left ? '' : left.days < 0 ? 'overdue' : left.count === 0 ? '' : 'left',
+        of: reached || !left ? '' : left.days < 0 ? 'overdue' : left.count === 0 ? '' : 'to go',
         // Its date shows once, at the end of its bar (29n).
         label: '',
         improving: false,

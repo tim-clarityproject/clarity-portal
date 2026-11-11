@@ -108,7 +108,7 @@ export const HABIT_MEASURES = Object.freeze([
   { value: 'yes_no_days_limit', label: 'I’ll say yes or no each day, under a limit', hint: 'e.g. no more than 2 late finishes' },
   { value: 'yes_no_weekly', label: 'I’ll say yes or no once a week', hint: 'e.g. a strategic block happened' },
   { value: 'count_limit', label: 'I’ll keep a daily count under a limit', hint: 'e.g. no more than 2 coffees', per: 'day' },
-  { value: 'rating', label: 'I’ll rate it each day, from Poor to Excellent', hint: 'e.g. focus, rated each day' },
+  { value: 'rating', label: 'I’ll rate it each day, from Poor to Excellent', hint: 'e.g. focus' },
 ]);
 
 export const IMPACTS = Object.freeze([

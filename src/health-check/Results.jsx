@@ -84,7 +84,7 @@ export default function Results({ draft, asOf, theirs = false, phone, sort, onSo
   return (
     <>
       <div className="obj1 rv" style={{ '--i': 2 }}>
-        <div className="oh"><small>Objective</small>{!theirs && <button type="button" className="chg" onClick={() => onChange('objective')}>Change</button>}</div>
+        <div className="oh"><small>Objective</small>{!theirs && <button type="button" className="chg" onClick={() => onChange('objective')}>Edit</button>}</div>
         <p>{draft.objective}</p>
       </div>
       <AtAGlance headline={headline} questions={questions} onPoint={setLit} />
@@ -111,7 +111,7 @@ export default function Results({ draft, asOf, theirs = false, phone, sort, onSo
         <div className="sech">
           {/* In capitals the abbreviation would read "CSFS", so headings never carry it. */}
           <div><h3>Critical Success Factors</h3></div>
-          {!theirs && <button type="button" className="chg" onClick={() => onChange('csf')}>Change</button>}
+          {!theirs && <button type="button" className="chg" onClick={() => onChange('csf')}>Edit</button>}
         </div>
         <div className="csfs">
           {factors.map((f, i) => (
@@ -133,7 +133,7 @@ export default function Results({ draft, asOf, theirs = false, phone, sort, onSo
             <p>{srt[2]}<InfoButton lines={ORDER_LINES} label="How it’s worked out" /></p>
             {!theirs && <p>Choose a project to edit its answers.</p>}
           </div>
-          {!theirs && <button type="button" className="chg" onClick={() => onChange('projects')}>Change</button>}
+          {!theirs && <button type="button" className="chg" onClick={() => onChange('projects')}>Edit</button>}
         </div>
         <div className="sortr">
           <span className="fl">Sort by</span>

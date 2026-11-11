@@ -92,7 +92,7 @@ for (const device of ['light', 'dark']) {
   for (const [i, mode] of [[0, 'dark'], [1, 'light']]) {
     const pane = page.locator('#c3b .dr-pane').nth(i);
     // The eye that opens "What Tim sees" (by its words, not its place: the gallery has grown).
-    await pane.locator('button.ds-who[aria-label*="Change what"]').first().click();
+    await pane.locator('button.ds-who[aria-label*="Edit what"]').first().click();
     await page.waitForTimeout(450);
     const sw = await page.evaluate(() => [...document.querySelectorAll(".ds-switch[aria-checked='true']")].map((el) => getComputedStyle(el).backgroundColor));
     pass(`Colour, device ${device}, ${mode} pane: switches that are on (${sw.length})`, sw.length > 0 && sw.every((c) => c === MINT[mode]), [...new Set(sw)].join(', '));

@@ -280,7 +280,7 @@ function suggestionInTurn(input) {
       list: priorities,
       lines: priorities.length ? ['They’re waiting in tomorrow’s Daily plan.'] : ['Nothing is set for tomorrow yet.'],
       action: null,
-      link: { label: 'Change my review', to: input.reviewTo || '/daily-review' },
+      link: { label: 'Edit my review', to: input.reviewTo || '/daily-review' },
     };
   }
   // Before 04:00: yesterday's review, if yesterday was planned and not reviewed (dayReview.js reviewDayFor).

@@ -447,7 +447,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
           {/* Two taps from Home, always (experience rule 21). */}
           <div className="home-links">
             {/* Planning after reviewing isn't offered for the same day, and
-                the done card has "Change my review" (Tim, 5 Nov). */}
+                the done card has "Edit my review" (Tim, 5 Nov). */}
             {card?.key !== 'plan' && !dayDone && <Button variant="text" onClick={() => go('/daily-plan')}>Daily plan</Button>}
             {card?.key !== 'review' && card?.key !== 'done' && <Button variant="text" onClick={() => go('/daily-review')}>Daily review</Button>}
           </div>

@@ -232,7 +232,7 @@ await everyLayout('running-with-link', async (page) => go(page, '/performance-sp
   const r = await rowsNow();
   pass('Good morning-style greeting with the first name', /^Good (morning|afternoon|evening)/i.test(await text(page, 'h1')), await text(page, 'h1'));
   pass('the banner says until when', plain(await text(page, '.ds-rec-banner-lead')) === `You're in recovery until ${dayName(recoveryEndOn(r.open), today)}.`);
-  pass('... and the days left', (await text(page, '.ds-rec-banner-left')) === '7 days left.');
+  pass('... and the days to go', (await text(page, '.ds-rec-banner-left')) === '7 days to go.');
   pass('the daily question', (await text(page, '.rec-qh')) === 'What would help you recharge today?');
   // The eye alone, its words for screen readers (rules of 5 Nov).
   pass('it is Only you', ((await page.locator('.rec-qfoot .ds-who').first().getAttribute('aria-label')) || (await text(page, '.rec-qfoot .ds-who'))).includes('Only you'));
@@ -352,7 +352,7 @@ await everyLayout('check-in', async (page) => {
   await page.waitForSelector('.rec-banner', { timeout: 15000 });
   let r = await rowsNow();
   pass('... it now ends 3 days from today', recoveryEndOn(r.open) === addDays(today, 3), `${recoveryEndOn(r.open)}`);
-  pass('... and the day says 3 days left', (await text(page, '.ds-rec-banner-left')) === '3 days left.');
+  pass('... and the day says 3 days to go', (await text(page, '.ds-rec-banner-left')) === '3 days to go.');
   await page.getByRole('button', { name: 'Add a few more days' }).click();
   await page.waitForSelector('.rec-question');
   pass('Add a few more days asks How many more days?', (await text(page, '.rec-question')) === 'How many more days?');

@@ -106,7 +106,8 @@ function exampleFor(example, role) {
 }
 
 // Back: the one chevron, turned to point left (Tim, 26 Oct).
-const ARROW = <Chevron direction="left" size="sm" />;
+// It sits beside the tool's name, in capitals, and is centred on those capitals (Tim, 11 Nov).
+const ARROW = <Chevron direction="left" size="sm" beside="capitals" />;
 
 function Tip({ tip, onClosed }) {
   const [shown, setShown] = useState(() => !readJson(TIP_PREFIX + tip.key, false));
@@ -535,7 +536,7 @@ export default function GuidedTool({
                 <button type="button" className="ds-guide-skip" onClick={skip}>{skipLabel}</button>
               )}
               <button type="button" className="ds-btn ds-btn--primary ds-guide-next" onClick={next}>
-                {changing ? 'Save my change' : (step.nextLabel || (last ? finishLabel : 'Next'))}
+                {changing ? 'Save my edit' : (step.nextLabel || (last ? finishLabel : 'Next'))}
               </button>
             </div>
           </div>
@@ -561,13 +562,17 @@ export default function GuidedTool({
 //   step:  null for a row that can't be changed here.
 // emptyWord: "Skipped" (M5) instead of "Not yet"; the action then reads
 // "Add" for an empty row (M5: "Skipped" with an Add link).
+// A row's label inside a sentence: "How it went" as "how it went". Names keep their capital (Mission, Strategy, Outcome Objectives, I).
+const inSentence = (label) => (/^(I\b|Mission|My Mission|Strateg|Outcome|Hardware|Software|Monthly|Daily|Weekly|First|Performance|Confidence)/.test(label) || !/^[A-Z][a-z]/.test(label) ? label : label[0].toLowerCase() + label.slice(1));
+
 export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEmpty = false }) {
   return (
     <div className="ds-guide-summary">
       {rows.map((row) => {
         const lines = Array.isArray(row.value) ? row.value.filter(Boolean) : null;
         const has = lines ? lines.length > 0 : Boolean(row.value);
-        const action = has || !addWhenEmpty ? 'Change' : 'Add';
+        // "Edit", never "Change" (Tim, 11 Nov, 12:59); a screen reader hears "Edit how it went".
+        const action = has || !addWhenEmpty ? 'Edit' : 'Add';
         return (
           <div key={row.label} className="ds-guide-summary-row">
             <span className="ds-guide-summary-label">{row.label}</span>
@@ -583,7 +588,7 @@ export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEm
               <button
                 type="button"
                 className="ds-guide-summary-change"
-                aria-label={`${action} ${row.label}`}
+                aria-label={`${action} ${inSentence(row.label)}`}
                 onClick={() => onChange(row.step, { fromSummary: true })}
               >
                 {action}

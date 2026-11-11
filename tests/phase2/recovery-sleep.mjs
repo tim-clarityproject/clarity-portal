@@ -31,7 +31,7 @@
 //    inside, "Last night was inside your target range." and "Keep doing
 //    what’s working." with nothing else to do; above likewise.
 // 4. target: 7 to 9 hours marked "Suggested for adults aged 18 to 64.";
-//    "Change my target range" opens two steppers in place ("From 7 hours",
+//    "Edit my target range" opens two steppers in place ("From 7 hours",
 //    "To 9 hours"), half hours from 4 to 12, the start always below the
 //    end; it saves by itself with "Saved", then "This is your own target
 //    range."; the chart follows; the same control in My Account.
@@ -235,7 +235,7 @@ const chartFacts = (page) => page.evaluate(() => {
     // Beside the title's last letter, 12px after it (5e rule 29d; 10 Nov: never at the far edge).
     whoRight: who && head ? (who.querySelector('svg, .ds-icon') || who).getBoundingClientRect().left - head.getBoundingClientRect().left : null,
     last: stat('Last night'),
-    average: stat('Average quality'),
+    average: stat('Usual quality'),
     bars,
     axis,
     band: band ? { box: r(band), top: bs.borderTopStyle, bottom: bs.borderBottomStyle, colour: bs.borderTopColor, bg: bs.backgroundColor } : null,
@@ -373,7 +373,7 @@ if (part('chart')) {
       pass(`${tag}: "Last night" 6.5 in Nekst Light`, f.last?.value === '6.5' && /nekst/i.test(f.last.font) && Number(f.last.weight) <= 300, JSON.stringify(f.last));
       pass(`${tag}: "hours" small and grey beside it`, f.last?.unit === 'hours' && f.last.unitSize < f.last.valueSize && f.last.unitColour !== 'rgb(255, 255, 255)' && f.last.unitColour !== 'rgb(0, 0, 0)', JSON.stringify(f.last));
       // The saved keys read straight across in the five words (Tim, 10 Nov, 23:22): the most common key, 'good', reads "Very good".
-      pass(`${tag}: "Average quality Very good" (most common)`, f.average?.value === 'Very good', f.average?.value);
+      pass(`${tag}: "Usual quality Very good" (most common)`, f.average?.value === 'Very good', f.average?.value);
       pass(`${tag}: one bar per day of the Recovery (7)`, f.bars.length === 7, String(f.bars.length));
       const states = f.bars.map((b) => /--(good|below|none|next)/.exec(b.cls)?.[1]);
       pass(`${tag}: inside or above mint, below grey, to come stubs`, states.join(',') === 'good,below,none,good,below,next,next', states.join(','));
@@ -456,9 +456,9 @@ if (part('chart')) {
 // ------------------------------------------------------------------ 3. the action
 if (part('action')) {
   const CASES = {
-    below: { lines: ['Last night was under your target range.', 'Tonight, Sleep wind down could help.'], links: ['Open Sleep wind down', 'Change my target range'] },
-    inside: { lines: ['Last night was inside your target range.', 'Keep doing what’s working.'], links: ['Change my target range'] },
-    above: { lines: ['Last night was above your target range.', 'Keep doing what’s working.'], links: ['Change my target range'] },
+    below: { lines: ['Last night was under your target range.', 'Tonight, Sleep wind down could help.'], links: ['Open Sleep wind down', 'Edit my target range'] },
+    inside: { lines: ['Last night was inside your target range.', 'Keep doing what’s working.'], links: ['Edit my target range'] },
+    above: { lines: ['Last night was above your target range.', 'Keep doing what’s working.'], links: ['Edit my target range'] },
   };
   for (const [key, want] of Object.entries(CASES)) {
     for (const width of [1280, 360]) {
@@ -487,8 +487,8 @@ if (part('target')) {
     await recoveryHome(page);
     let f = await chartFacts(page);
     pass(`${tag}: starts at 7 to 9, "Suggested for adults aged 18 to 64."`, /Your target range 7 to 9 hours\s*Suggested for adults aged 18 to 64\./.test((phone ? f.strip?.text : f.side?.text) || ''), (phone ? f.strip?.text : f.side?.text));
-    const link = page.getByRole('button', { name: 'Change my target range' });
-    pass(`${tag}: "Change my target range" closed`, (await link.getAttribute('aria-expanded')) === 'false');
+    const link = page.getByRole('button', { name: 'Edit my target range' });
+    pass(`${tag}: "Edit my target range" closed`, (await link.getAttribute('aria-expanded')) === 'false');
     const linkBox = await link.boundingBox();
     pass(`${tag}: the link is 44px tall`, linkBox && linkBox.height >= 43.5, String(linkBox?.height));
     const before = await page.evaluate(() => document.querySelector('.ds-schart')?.getBoundingClientRect().top + scrollY);
@@ -543,7 +543,7 @@ if (part('target')) {
     await still(page);
     const acc = await page.locator('.account-row--sleep').innerText().catch(() => '');
     pass(`${tag}: My Account (Settings) shows it`, /Sleep target range/.test(acc) && acc.includes(`${pair} hours`), acc.replace(/\s+/g, ' '));
-    const accLink = page.locator('.account-row--sleep').getByRole('button', { name: 'Change my target range' });
+    const accLink = page.locator('.account-row--sleep').getByRole('button', { name: 'Edit my target range' });
     await (phone ? accLink.tap() : accLink.click());
     await still(page);
     const accRows = await page.evaluate(() => [...document.querySelectorAll('.account-sleep-target .ds-starget-row')].length);

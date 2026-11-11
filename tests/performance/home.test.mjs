@@ -80,14 +80,14 @@ test('the three day states: not planned, planned, then reviewed or closed until 
   assert.equal(dayState({ hour: 2, dayPlanned: false, reviewed: false, yesterday: { reviewed: true } }), 'reviewed');
   assert.equal(dayState({ hour: 4, dayPlanned: false, reviewed: false, yesterday: { reviewed: true } }), 'not-planned');
 
-  // The done card: tomorrow's priorities 1 to 3, waiting in tomorrow's Daily plan, and Change my review.
+  // The done card: tomorrow's priorities 1 to 3, waiting in tomorrow's Daily plan, and Edit my review.
   const done = homeSuggestion(base({ hour: 11, dayPlanned: true, reviewed: true, tomorrow: ['Send the Q3 numbers', '', 'Book the physio', 'Call Jo', 'A fourth'] }));
   assert.equal(done.key, 'done');
   assert.equal(done.label, 'Priorities for tomorrow');
   assert.deepEqual(done.list, ['Send the Q3 numbers', 'Book the physio', 'Call Jo']);
   assert.deepEqual(done.lines, ['They’re waiting in tomorrow’s Daily plan.']);
   assert.equal(done.action, null); // no Daily plan, no coral button
-  assert.equal(done.link.label, 'Change my review');
+  assert.equal(done.link.label, 'Edit my review');
   assert.deepEqual(homeSuggestion(base({ hour: 18, reviewed: true })).lines, ['Nothing is set for tomorrow yet.']);
   assert.deepEqual(tomorrowPriorities(['  a ', null, 'b']), ['a', 'b']);
   // Before 04:00 the day before's review keeps the day done.

@@ -410,7 +410,7 @@ function RecoverySleep({ recovery, grow }) {
       {(last?.hours != null || average) && (
         <div className="rec-sleep-figs">
           {last?.hours != null && <Stat label="Last night" value={hoursFigure(last.hours)} unit="hours" />}
-          {average && <Stat label="Average quality" value={average} className="rec-sleep-word" />}
+          {average && <Stat label="Usual quality" value={average} className="rec-sleep-word" />}
         </div>
       )}
       <SleepChart

@@ -320,11 +320,11 @@ test('M9: missing dates don\'t crash', () => {
 test('M9.2: time left in the unit that fits', () => {
   assert.equal(S.m9TimeLeft('2026-10-26', '2026-10-26').text, 'due today');
   assert.equal(S.m9TimeLeft('2026-10-26', '2026-10-23').text, '3 days overdue');
-  assert.equal(S.m9TimeLeft('2026-10-26', '2026-10-27').text, '1 day left');
-  assert.equal(S.m9TimeLeft('2026-10-26', '2026-11-08').text, '13 days left');
-  assert.equal(S.m9TimeLeft('2026-10-26', '2026-11-09').text, '2 weeks left');
-  assert.equal(S.m9TimeLeft('2026-10-26', '2027-01-25').text, '13 weeks left');
-  assert.equal(S.m9TimeLeft('2026-10-26', '2027-01-26').text, '3 months left');
+  assert.equal(S.m9TimeLeft('2026-10-26', '2026-10-27').text, '1 day to go');
+  assert.equal(S.m9TimeLeft('2026-10-26', '2026-11-08').text, '13 days to go');
+  assert.equal(S.m9TimeLeft('2026-10-26', '2026-11-09').text, '2 weeks to go');
+  assert.equal(S.m9TimeLeft('2026-10-26', '2027-01-25').text, '13 weeks to go');
+  assert.equal(S.m9TimeLeft('2026-10-26', '2027-01-26').text, '3 months to go');
 });
 
 test('M9.3: effort on track within 3 points of the standard', () => {

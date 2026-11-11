@@ -202,14 +202,14 @@ export default function InversionStep3Plan() {
         <div className="inv-recap">
           <p>{goal}</p>
           <Button variant="text" onClick={() => goToStep('/pre-mortem')}>
-            Change
+            Edit
           </Button>
         </div>
 
         <div className="plan-section-top" style={{ marginBottom: 'var(--space-2)' }}>
           <span className="ui-section-heading">Risks</span>
           <Button variant="text" onClick={() => goToStep('/pre-mortem/risks')}>
-            Change risks
+            Edit risks
           </Button>
         </div>
 

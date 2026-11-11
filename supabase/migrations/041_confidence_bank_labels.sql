@@ -7,8 +7,16 @@
 -- the sharing list's other label with an old name, from the 10 Nov renames
 -- (the Monthly Hardware and Software review and the First review).
 --
+-- Added to again on 11 Nov, evening (decisions part 5, 11 Nov, 16:30 to
+-- 16:45), still before it was ever run: every other old name the database
+-- stores, from the 10 Nov renames ("Plan my day" is the Daily plan, "Review
+-- my day" the Daily review, "Check-in" the Monthly review and "First
+-- check-in" the First review). The whole schema and its seed data were
+-- searched: they are stored only in the evidence library (031).
+--
 -- WHAT THIS DOES (plain English)
---   Four stored labels change their words.
+--   Nineteen stored labels change their words: the four below, then the
+--   fifteen listed under "THE 10 NOV RENAMES".
 --   Three still said "Performance Evidence". They now say "Confidence Bank":
 --     1. sharing_parts(): the label of the 'evidence' part in the list of
 --        what a person can share with their coach (026, rewritten in 033),
@@ -21,16 +29,47 @@
 --     4. sharing_parts(): the label of the 'checkin' part, which was
 --        "Monthly check-in, including the First check-in", now "Monthly
 --        review, including the First review".
+--
+--   THE 10 NOV RENAMES in the evidence library (031):
+--     evidence_tools, the tool's name (its key stays as it is):
+--       5. plan_my_day: "Plan my day" becomes "Daily plan".
+--       6. review_my_day: "Review my day" becomes "Daily review".
+--       7. hardware_and_software_check_in: "Hardware and Software check-in"
+--          becomes "Monthly Hardware and Software review".
+--     evidence_claims, where the claim shows (in each, "Plan my day" becomes
+--     "Daily plan", "Review my day" becomes "Daily review", "First check-in"
+--     becomes "First review" and "Check-in" becomes "Monthly review"):
+--       8.  C3:  "Pressure plan, Daily plan's biggest risk"
+--       9.  C6:  "Weekly debrief, after-action review, Daily review"
+--       10. C11: "Monthly review, Hardware explanation, sleep patterns"
+--       11. C15: "Daily plan"
+--       12. C20: "Monthly review scoring, "green nights""
+--       13. C21: "Monthly review movement questions"
+--       14. C22: "Monthly review sitting question"
+--       15. C23: "Monthly review alcohol questions and units guide"
+--       16. C24: "Monthly review, Daily plan, team pulse"
+--       17. C30: "First review, How it works"
+--       18. C47: "Monthly review results, What improved, M23 checks"
+--       19. C49: "Monthly review alcohol question (the units added up from
+--           the drinks counted)"
+--           (the test project was seeded before C49 was added, so it
+--           has eighteen of these nineteen; a database seeded later has all)
+--
 --   Only the words people read change. The parts' keys ('evidence',
---   'checkin'), the tool's key ('performance_evidence'), the tables
+--   'checkin'), the tools' keys ('performance_evidence', 'plan_my_day',
+--   'review_my_day', 'hardware_and_software_check_in'), the tables
 --   performance_evidence and checkins and every saved row keep their names,
---   and no rule changes.
+--   and no rule changes. Nothing a person wrote is touched: a habit, a
+--   journal title or a plan that happens to say "check-in" stays as written.
+--   (Left as they are, because nobody reads them in the portal: the notes
+--   attached to tables and columns, and one error message inside
+--   pulse_send_create, "A pulse is short or the full check-in.")
 --
 -- WHO CAN SEE WHAT (no change)
 --
 -- SAFE TO RUN TWICE
 --   The function is replaced with the same text; each update only touches
---   a row that still holds the old words.
+--   a row that still holds the old words, so a second run changes nothing.
 --
 -- NEEDS 026, 031 and 033 first. On a database without them (live before
 -- go-live) the parts that are missing are skipped, with no error.
@@ -71,6 +110,28 @@ begin
     update public.evidence_tools
        set name = 'Confidence Bank'
      where key = 'performance_evidence' and name = 'Performance Evidence';
+    -- The 10 Nov renames: the tool's name only, never its key.
+    update public.evidence_tools set name = 'Daily plan'
+     where key = 'plan_my_day' and name = 'Plan my day';
+    update public.evidence_tools set name = 'Daily review'
+     where key = 'review_my_day' and name = 'Review my day';
+    update public.evidence_tools set name = 'Monthly Hardware and Software review'
+     where key = 'hardware_and_software_check_in' and name = 'Hardware and Software check-in';
+  end if;
+
+  -- The 10 Nov renames, where a claim shows. "First check-in" goes first, so
+  -- it never becomes "First Monthly review".
+  if to_regclass('public.evidence_claims') is not null then
+    update public.evidence_claims
+       set where_it_shows = replace(replace(replace(replace(where_it_shows,
+             'First check-in', 'First review'),
+             'Check-in', 'Monthly review'),
+             'Plan my day', 'Daily plan'),
+             'Review my day', 'Daily review')
+     where where_it_shows like '%Check-in%'
+        or where_it_shows like '%First check-in%'
+        or where_it_shows like '%Plan my day%'
+        or where_it_shows like '%Review my day%';
   end if;
 end
 $labels$;

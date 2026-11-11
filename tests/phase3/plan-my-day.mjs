@@ -403,7 +403,7 @@ for (const [width, mode] of sizes) {
       // A set plan opens on its summary, still changeable.
       await openPlan(page);
       pass('a set plan opens on its summary', (await heading(page)) === 'This was your plan', await heading(page));
-      pass('its answers can still be changed', (await page.getByRole('button', { name: 'Change Gratitude' }).count()) === 1);
+      pass('its answers can still be changed', (await page.getByRole('button', { name: 'Edit gratitude' }).count()) === 1);
     }
   } catch (e) {
     pass(`${tag}: the play-through finished`, false, e.message);

@@ -5,7 +5,15 @@ import Icon from './Icon';
 // The Health Check's own parts, built to the mock-up (M7b version 4): every
 // hover and focus is coral, every control is at least 44px to tap.
 
-export const Chev = ({ dir = 'dn' }) => <span className={`chev ${dir}`} aria-hidden="true" />;
+// A chevron beside words is centred on those words (Tim, 11 Nov, 14:36): on
+// the middle of the x-height beside lowercase words, the middle of the cap
+// height beside capitals (`caps`). It stands on the words' own baseline
+// (.chev-line in hc.css), as the portal's own chevron does.
+export const Chev = ({ dir = 'dn', caps = false }) => (
+  <span className={`chev-line${caps ? ' caps' : ''}`} aria-hidden="true">
+    <span className="chev-base"><span className={`chev ${dir}`} /></span>
+  </span>
+);
 export const Cross = ({ className = '' }) => <span className={`x ${className}`.trim()} aria-hidden="true" />;
 
 /** The bold crosshair, from its one shared drawing. */

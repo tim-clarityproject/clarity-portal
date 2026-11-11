@@ -159,7 +159,7 @@ test('view: objectives, alignment gap, Strategy scores from M5 so far', () => {
   assert.equal(v.objectives[0].strategyCount, 2);
   assert.equal(v.objectives[2].flagged, true);
   assert.equal(v.objectives[2].figure, '£120k');
-  assert.equal(v.objectives[1].timeLeft, '8 months left');
+  assert.equal(v.objectives[1].timeLeft, '8 months to go');
   assert.equal(v.alignmentOk, false);
   assert.equal(v.alignment[0].text, 'Annual revenue has no Strategy working on it');
   assert.deepEqual(v.strategies[1].serves, [1, 2]);

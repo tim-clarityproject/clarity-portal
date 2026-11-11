@@ -247,7 +247,7 @@ try {
       await page.goto(`${APP}/daily-review/${day}`);
       await page.waitForSelector('.ds-guide-question, .ds-guide-title', { timeout: 30000 });
       await sleep(1000);
-      const change = page.getByRole('button', { name: /^(Change|Add) How you showed up/ });
+      const change = page.getByRole('button', { name: /^(Edit|Add) how you showed up/i });
       if (await change.count()) await change.first().click();
       await sleep(800);
       return heading(page);

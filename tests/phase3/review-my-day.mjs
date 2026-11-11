@@ -459,7 +459,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       // A finished review opens on its summary, still changeable.
       await open(page, '/daily-review');
       pass('a finished review opens on its summary', (await heading(page)) === 'This was your day', await heading(page));
-      pass('its answers can still be changed', (await page.getByRole('button', { name: /^Change (Differently|What you’d do differently)/ }).count()) === 1);
+      pass('its answers can still be changed', (await page.getByRole('button', { name: /^Edit (differently|what you’d do differently)/i }).count()) === 1);
     }
   } catch (e) {
     pass(`${tag}: the play-through finished`, false, e.message);
