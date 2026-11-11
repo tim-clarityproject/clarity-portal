@@ -14,6 +14,9 @@
 // code goes only into the person's own email and the answers email (to the
 // coach who made the link, who set it); never into the owner's notice.
 //
+// The link in each email starts with one of the portal's own addresses
+// (_portalOrigin.js), never the request's host.
+//
 // Environment variables (Vercel): RESEND_API_KEY, ALIGNMENT_EMAIL_FROM,
 // ALIGNMENT_NOTIFY_TO, SUPABASE_SERVICE_ROLE_KEY (only to ask who made the
 // link), and the Supabase URL and anon key the app already has
@@ -23,6 +26,7 @@ import {
   linkEmail, completeEmail, completionSummary, completionRecipients, finishedEmail, ownerList, ukDate, ukDateTime,
 } from './_alignmentEmails.js';
 import { parseDbTimestamp } from '../src/lib/dateFormatter.js';
+import { portalOrigin } from './_portalOrigin.js';
 
 const KINDS = ['link', 'complete'];
 
@@ -95,9 +99,9 @@ export default async function handler(req, res) {
     return reply(res, 400, { ok: false, error: 'invalid' });
   }
 
-  // The site's own origin, so a preview sends preview links.
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
-  const origin = `https://${String(host).split(',')[0].trim()}`;
+  // Only ever one of the portal's own addresses, never the request's host
+  // (a forged host gets the live address): a preview still sends preview links.
+  const origin = portalOrigin(req.headers);
 
   try {
     if (kind === 'link') {

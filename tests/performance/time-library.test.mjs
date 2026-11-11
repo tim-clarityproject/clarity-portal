@@ -5,13 +5,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  isZone, mustBeZone, zoneLabel, zonePlace, zoneCountry, usesTwelveHour,
+  isZone, mustBeZone, zoneLabel, zonePlace, zoneCountry, usesTwelveHour, mainCityZone, NAMED_ZONES,
   wallClock, offsetMinutes, instantAt, dayIn, addDays, savedTime, savedTimeAt, readSavedTime,
   clockWords, timeWords, dayWords, whenWords, bothWords, sessionWhenWords,
   seriesRule, seriesCalls, nextCall,
   onQuarterHour, nextQuarterHour, clearOfOthers, sociable, bookingProblem, offeredStarts,
   clockChanges, callsThatMove, clockChangeLine,
-  publicHolidayOn, publicHolidayFor, holidayLine,
+  publicHolidayOn, publicHolidayFor, holidayLine, holidayName, HOLIDAY_DATA_CREDIT,
   morningOf, inTheMorning, dayBeforeReminderAt, hourBeforeReminderAt, nextLeadingIdeasAt,
 } from '../../src/lib/time/index.js';
 
@@ -274,15 +274,52 @@ test('only 07:00 to 20:00 in the booker’s own time is offered, unless they cho
   const open = [{ start: instantAt('2026-11-12', '09:00', UK), end: instantAt('2026-11-12', '17:00', UK) }];
   const forNy = offeredStarts({ day: '2026-11-12', minutes: 20, clientZone: NY, bookerZone: NY, open });
   assert.ok(forNy.length > 0);
-  assert.ok(forNy.every((s) => wallClock(s, NY).time >= '07:00' && wallClock(s, NY).time <= '20:00'));
+  assert.ok(forNy.every((s) => wallClock(s, NY).time >= '07:00' && wallClock(new Date(s.getTime() + 20 * 60000), NY).time <= '20:00'));
   assert.equal(wallClock(forNy[0], NY).time, '07:00');
   const all = offeredStarts({ day: '2026-11-12', minutes: 20, clientZone: NY, bookerZone: NY, open, earlyAndLate: true });
   assert.equal(wallClock(all[0], NY).time, '04:00');
   assert.ok(all.length > forNy.length);
-  // 20:00 itself is offered; 20:15 is not.
+  // The moment itself: 20:00 is inside, 20:15 and 06:45 are not.
   assert.equal(sociable(instantAt('2026-11-12', '20:00', NY), NY), true);
   assert.equal(sociable(instantAt('2026-11-12', '20:15', NY), NY), false);
   assert.equal(sociable(instantAt('2026-11-12', '06:45', NY), NY), false);
+});
+
+test('a call must END by 20:00 in the booker’s own time, not start by it (11 Nov): 60 minutes last starts at 19:00, 30 minutes at 19:30', () => {
+  const at = (time, zone = NY) => instantAt('2026-11-12', time, zone);
+  const lastStart = (minutes, zone = NY, extra = {}) => wallClock(offeredStarts({ day: '2026-11-12', minutes, clientZone: zone, bookerZone: zone, ...extra }).at(-1), zone).time;
+  assert.equal(lastStart(60), '19:00');
+  assert.equal(lastStart(30), '19:30');
+  assert.equal(lastStart(40), '19:15'); // 19:15 to 19:55; 19:30 would end at 20:10
+  assert.equal(lastStart(20), '19:30'); // 19:45 would end at 20:05
+  assert.equal(lastStart(15), '19:45');
+  assert.equal(lastStart(90), '18:30');
+  // The first start is still 07:00, whatever the length.
+  for (const minutes of [20, 30, 40, 60, 90]) assert.equal(wallClock(offeredStarts({ day: '2026-11-12', minutes, clientZone: NY, bookerZone: NY })[0], NY).time, '07:00');
+  // One call at a time: on the edge it is offered, a quarter hour later it is not.
+  assert.equal(bookingProblem({ start: at('19:00'), minutes: 60, clientZone: NY }), null);
+  assert.equal(bookingProblem({ start: at('19:15'), minutes: 60, clientZone: NY }), 'early-late');
+  assert.equal(bookingProblem({ start: at('20:00'), minutes: 60, clientZone: NY }), 'early-late');
+  assert.equal(bookingProblem({ start: at('19:30'), minutes: 30, clientZone: NY }), null);
+  assert.equal(bookingProblem({ start: at('19:45'), minutes: 30, clientZone: NY }), 'early-late');
+  assert.equal(bookingProblem({ start: at('06:45'), minutes: 30, clientZone: NY }), 'early-late');
+  assert.equal(sociable(at('19:00'), NY, { minutes: 60 }), true);
+  assert.equal(sociable(at('19:01'), NY, { minutes: 60 }), false);
+  // "Show early and late times" still lifts the limit, at both ends.
+  assert.equal(bookingProblem({ start: at('20:00'), minutes: 60, clientZone: NY, earlyAndLate: true }), null);
+  assert.equal(bookingProblem({ start: at('05:00'), minutes: 60, clientZone: NY, earlyAndLate: true }), null);
+  assert.equal(lastStart(60, NY, { earlyAndLate: true }), '23:45');
+  // Half-hour and 45-minute zones: quarter-hour starts in their own time, ending by 20:00 there.
+  assert.equal(lastStart(60, 'Asia/Kolkata'), '19:00');
+  assert.equal(lastStart(30, 'America/St_Johns'), '19:30');
+  assert.equal(lastStart(60, 'Asia/Kathmandu'), '19:00');
+  // Booked by someone else (a UK booker, a New York client): the limit is the booker's own time, the quarter hours the client's.
+  const forUk = offeredStarts({ day: '2026-11-12', minutes: 60, clientZone: NY, bookerZone: UK });
+  assert.equal(wallClock(forUk.at(-1), UK).time, '19:00');
+  assert.equal(wallClock(forUk[0], UK).time, '07:00');
+  // A call that would run past midnight is never inside the hours.
+  assert.equal(sociable(at('23:30'), NY, { minutes: 60 }), false);
+  assert.throws(() => sociable(at('19:00'), NY, { minutes: -5 }), /length in minutes/);
 });
 
 test('offered starts respect a day with a clock change and "not before"', () => {
@@ -537,3 +574,111 @@ test('a public holiday: a country in small letters is the same country, and a da
   assert.deepEqual(two.map((h) => h.name), ['Thanksgiving Day', 'Christmas Day']);
 });
 
+
+// Zone labels come from a fixed list of main city names (Claude's call, 11
+// Nov, 08:25): no label reads oddly, for any zone the device knows.
+test('no zone label reads oddly: every zone is a real city, island or country, never a state’s sub-area, and never with an underscore', () => {
+  assert.equal(zoneLabel('America/Indiana/Knox'), 'Chicago time');
+  assert.equal(zoneLabel('America/North_Dakota/Center'), 'Chicago time');
+  assert.equal(zoneLabel('America/Indiana/Indianapolis'), 'New York time');
+  assert.equal(zoneLabel('America/Kentucky/Louisville'), 'New York time');
+  assert.equal(zoneLabel('America/Boise'), 'Denver time');
+  assert.equal(zoneLabel('America/Juneau'), 'Anchorage time');
+  assert.equal(zoneLabel('US/Eastern'), 'New York time');
+  assert.equal(zoneLabel('US/Hawaii'), 'Hawaii time');
+  assert.equal(zoneLabel('Canada/Newfoundland'), 'St John’s time');
+  assert.equal(zoneLabel('America/Iqaluit'), 'Toronto time');
+  assert.equal(zoneLabel('America/Argentina/Rio_Gallegos'), 'Buenos Aires time');
+  assert.equal(zoneLabel('Australia/NSW'), 'Sydney time');
+  assert.equal(zoneLabel('Indian/Christmas'), 'Christmas Island time');
+  assert.equal(zoneLabel('Pacific/Easter'), 'Easter Island time');
+  assert.equal(zoneLabel('Antarctica/Troll'), 'Troll Station time');
+  assert.equal(zoneLabel('Europe/Kiev'), 'Kyiv time');
+  assert.equal(zoneLabel('Asia/Calcutta'), 'India time');
+
+  // Every zone the device lists, and every older name the fixed lists know.
+  const all = [...new Set([...Intl.supportedValuesOf('timeZone'), ...NAMED_ZONES])].filter(isZone);
+  assert.ok(all.length > 400, `${all.length} zones`);
+  // Words that are a state, a region or a direction, not a place people would say a time in.
+  const ODD = /\b(Indiana|Kentucky|North Dakota|Knox|Center|New Salem|Beulah|Tell City|Vevay|Marengo|Winamac|Vincennes|Monticello|Petersburg|Argentina|ComodRivadavia|ACT|NSW|LHI|General|BajaNorte|BajaSur|Continental|EasterIsland|DeNoronha|Acre|East|West|North|South|Central|Eastern|Mountain|Pacific|Atlantic|Michigan|Arizona|Alaska|Aleutian(?! Islands)|Starke|Saskatchewan|Yukon|Newfoundland|Queensland|Victoria|Tasmania|Yancowinna|Zulu|Universal|Greenwich|UCT)\b/;
+  // A bare word that reads as something else before "time".
+  const BARE = /^(Christmas|Easter|Wake|Midway|Canary|Troll|Center|Knox|Norfolk|Cocos|Faroe|Faeroe|Cayman|Chatham|Comoro|Samoa time|Virgin|Mahe)$/;
+  const odd = [];
+  for (const zone of all) {
+    const place = zonePlace(zone);
+    const label = zoneLabel(zone);
+    const problems = [
+      /[_/]/.test(label) && 'an underscore or a slash',
+      /\d/.test(label) && 'a number',
+      !/^[A-Z]/.test(place) && 'no capital',
+      // Letters, spaces, hyphens, full stops and apostrophes only (São Tomé, Port-au-Prince, St John’s, Dumont d’Urville).
+      !/^[\p{L}][\p{L} .’'-]*[\p{L}]$/u.test(place) && 'odd characters',
+      /[a-z][A-Z]/.test(place.replace('McMurdo', '')) && 'two words run together',
+      ODD.test(place) && place !== 'South Pole' && place !== 'South Georgia' && 'a state, a region or a direction',
+      BARE.test(place) && 'a bare word that reads as something else',
+      label !== `${place} time` && 'not "<place> time"',
+    ].filter(Boolean);
+    if (problems.length) odd.push(`${zone} -> "${label}" (${problems.join(', ')})`);
+  }
+  assert.deepEqual(odd, []);
+});
+
+test('a zone read as its main city keeps exactly that city’s clock, every day for two years', () => {
+  const offsets = (zone) => {
+    const out = [];
+    for (let t = Date.UTC(2026, 0, 1, 12); t < Date.UTC(2028, 0, 1); t += 86400000) out.push(offsetMinutes(new Date(t), zone));
+    return out.join();
+  };
+  const all = [...new Set([...Intl.supportedValuesOf('timeZone'), ...NAMED_ZONES])].filter(isZone);
+  let mapped = 0;
+  for (const zone of all) {
+    const main = mainCityZone(zone);
+    if (main === zone) continue;
+    mapped += 1;
+    assert.equal(isZone(main), true, `${zone} -> ${main}`);
+    assert.equal(mainCityZone(main), main, `${main} is a main city itself`);
+    assert.equal(offsets(zone), offsets(main), `${zone} keeps ${main}'s clock`);
+    // And the same clock for its readers: 12-hour for the US and Canada.
+    assert.equal(usesTwelveHour(zone), usesTwelveHour(main), `${zone} and ${main} read the same clock`);
+  }
+  assert.ok(mapped >= 60, `${mapped} zones read as a main city`);
+});
+
+test('a holiday moved off a weekend reads "(observed)", never "(substitute day)" (11 Nov)', async () => {
+  assert.equal(holidayName('Independence Day (substitute day)'), 'Independence Day (observed)');
+  assert.equal(holidayName('Christmas Day (Substitute Day)'), 'Christmas Day (observed)');
+  assert.equal(holidayName('Boxing Day  (substitute)'), 'Boxing Day (observed)');
+  assert.equal(holidayName('Independence Day (observed)'), 'Independence Day (observed)');
+  assert.equal(holidayName('Thanksgiving Day'), 'Thanksgiving Day');
+  assert.equal(holidayName(null), '');
+  // 4 July 2026 is a Saturday: the US observes it on Friday 3 July.
+  const us = await publicHolidayOn('2026-07-03', 'US');
+  assert.equal(us.name, 'Independence Day (observed)');
+  assert.equal(holidayLine(us), 'That’s Independence Day (observed) in the US.');
+  assert.equal((await publicHolidayOn('2026-07-04', 'US')).name, 'Independence Day');
+  // Boxing Day 2026 is a Saturday: England's bank holiday is Monday 28 Dec.
+  assert.equal(holidayLine(await publicHolidayOn('2026-12-28', 'GB', 'ENG')), 'That’s Boxing Day (observed) in the UK.');
+  // No holiday name the package gives for the countries clients are most likely in says "substitute".
+  for (const [country, region] of [['US'], ['CA', 'ON'], ['GB', 'ENG'], ['GB', 'SCT'], ['IE'], ['AU'], ['NZ']]) {
+    for (let year = 2026; year <= 2028; year += 1) {
+      for (let m = 1; m <= 12; m += 1) {
+        for (let d = 1; d <= 28; d += 9) {
+          const h = await publicHolidayOn(`${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, country, region);
+          if (h) assert.doesNotMatch(h.name, /substitute/i, `${country} ${h.name}`);
+        }
+      }
+    }
+  }
+});
+
+test('the holiday data’s credit names the package, its source and its licence (CC-BY-SA-4.0), and docs/credits.md says the same', async () => {
+  const { readFileSync } = await import('node:fs');
+  assert.match(HOLIDAY_DATA_CREDIT.text, /date-holidays/);
+  assert.match(HOLIDAY_DATA_CREDIT.text, /Creative Commons Attribution-ShareAlike 4\.0/);
+  assert.equal(HOLIDAY_DATA_CREDIT.licence, 'https://creativecommons.org/licenses/by-sa/4.0/');
+  const credits = readFileSync(new URL('../../docs/credits.md', import.meta.url), 'utf8');
+  assert.ok(credits.includes(HOLIDAY_DATA_CREDIT.text) && credits.includes(HOLIDAY_DATA_CREDIT.source) && credits.includes(HOLIDAY_DATA_CREDIT.licence));
+  const pkg = JSON.parse(readFileSync(new URL('../../node_modules/date-holidays/package.json', import.meta.url), 'utf8'));
+  assert.match(pkg.license, /CC-BY-SA-4\.0/);
+  assert.ok(credits.includes(pkg.version), 'the credited version is the one installed');
+});

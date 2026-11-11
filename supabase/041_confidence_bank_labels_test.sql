@@ -6,13 +6,15 @@
 --   Reads only (it makes nothing):
 --     1. sharing_parts() still lists the same ten parts, with the same
 --        audience, starting choice and per-item setting as 033, and only
---        the 'evidence' label changed, to "Confidence Bank, chosen each
---        time"; signed-in people can still call it and signed-out people
+--        two labels changed: 'evidence', to "Confidence Bank, chosen each
+--        time", and 'checkin', to "Monthly review, including the First
+--        review"; signed-in people can still call it and signed-out people
 --        still can't;
 --     2. evidence_claims C10 and evidence_tools 'performance_evidence' say
 --        Confidence Bank, their keys unchanged, and no other row of either
 --        table changed its words;
---     3. "Performance Evidence" is left in none of the three places;
+--     3. "Performance Evidence" is left in none of the three places, and
+--        "check-in" in no sharing label;
 --     4. the migration recorded itself.
 --
 --   It ends with the notice 041 CHECKS PASSED, or stops with FAILED and a
@@ -30,6 +32,8 @@ begin
   if n <> 10 then bad := bad || format('sharing_parts lists %s parts, not 10', n); end if;
   select label into t from public.sharing_parts() where part = 'evidence';
   if t is distinct from 'Confidence Bank, chosen each time' then bad := bad || format('the evidence label is "%s"', t); end if;
+  select label into t from public.sharing_parts() where part = 'checkin';
+  if t is distinct from 'Monthly review, including the First review' then bad := bad || format('the checkin label is "%s"', t); end if;
   select count(*) into n from public.sharing_parts() s
    where (s.part, s.audience, s.default_on, s.per_item) in (
      ('mission', 'coach', true, false), ('checkin', 'coach', true, false), ('progress', 'coach', false, false),
@@ -38,13 +42,13 @@ begin
      ('org_wellbeing', 'organisation', false, true));
   if n <> 10 then bad := bad || format('only %s of the 10 parts keep their settings', n); end if;
   select count(*) into n from public.sharing_parts() s
-   where s.label in ('Mission', 'Monthly check-in, including the First check-in',
+   where s.label in ('Mission',
      'Progress: scores, Outcome Objective figures, the sprint at a glance and patterns',
      'Weekly debrief, chosen each week', 'Find my sweet spot, chosen each time', 'Session prep, chosen each time',
      'Recovery: what would help you recharge, chosen each day',
      'Recovery: that it started and until when ("Let [coach] know")',
      'Wellbeing: Hardware and Software scores and areas, named, to the sponsor and leaders, chosen for each organisation');
-  if n <> 9 then bad := bad || format('%s of the 9 other labels are as they were, not 9', n); end if;
+  if n <> 8 then bad := bad || format('%s of the 8 other labels are as they were, not 8', n); end if;
   if not has_function_privilege('authenticated', 'public.sharing_parts()', 'execute') then bad := bad || 'signed-in people can no longer call sharing_parts'; end if;
   if has_function_privilege('anon', 'public.sharing_parts()', 'execute') then bad := bad || 'signed-out people can call sharing_parts'; end if;
 
@@ -59,6 +63,8 @@ begin
   -- 3. none left
   select count(*) into n from public.sharing_parts() where label like '%Performance Evidence%';
   if n > 0 then bad := bad || 'sharing_parts still says Performance Evidence'; end if;
+  select count(*) into n from public.sharing_parts() where label ilike '%check-in%';
+  if n > 0 then bad := bad || format('%s sharing labels still say check-in', n); end if;
   select count(*) into n from public.evidence_claims where where_it_shows like '%Performance Evidence%' or wording like '%Performance Evidence%';
   if n > 0 then bad := bad || format('%s claims still say Performance Evidence', n); end if;
   select count(*) into n from public.evidence_tools where name like '%Performance Evidence%' or based_on like '%Performance Evidence%';

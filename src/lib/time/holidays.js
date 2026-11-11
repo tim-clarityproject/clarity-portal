@@ -5,7 +5,9 @@
 //
 // The dates come from the date-holidays package (pinned in package.json),
 // loaded only when a booking is checked, so it is never part of the
-// portal's first load.
+// portal's first load. Its holiday data is under CC-BY-SA-4.0: the credit
+// is in docs/credits.md, and goes in the help page's footer when that page
+// is built (HOLIDAY_DATA_CREDIT below).
 import { instantAt, mustBeDay, wallClock } from './instants.js';
 import { countryWords, isZone, zoneCountry } from './zones.js';
 
@@ -14,6 +16,13 @@ const library = () => {
   if (!load) load = import('date-holidays').then((m) => m.default || m);
   return load;
 };
+
+/**
+ * A holiday's name as the portal writes it: the day a holiday is moved to
+ * when it falls on a weekend reads "(observed)", never the package's
+ * "(substitute day)" (Claude's call, 11 Nov, 08:25).
+ */
+export const holidayName = (name) => String(name ?? '').replace(/\s*\((?:substitute day|substitute|observed)\)/gi, ' (observed)').replace(/\s+/g, ' ').trim();
 
 /**
  * The public holiday on a day in a country, or null.
@@ -37,7 +46,7 @@ export async function publicHolidayOn(day, country, region) {
   const found = hd.isHoliday(isZone(zone) ? instantAt(day, '12:00', zone) : new Date(y, m - 1, d, 12));
   const list = Array.isArray(found) ? found : [];
   const holiday = list.find((h) => h.type === 'public') || null;
-  return holiday ? { name: holiday.name, country } : null;
+  return holiday ? { name: holidayName(holiday.name), country } : null;
 }
 
 /** The public holiday a call falls on for the client, from its instant and their zone. */
@@ -47,3 +56,13 @@ export async function publicHolidayFor(instant, clientZone, { country = zoneCoun
 
 /** "That’s Thanksgiving in the US": shown before a booking on a holiday is confirmed. */
 export const holidayLine = (holiday) => (holiday ? `That’s ${holiday.name === 'Thanksgiving Day' ? 'Thanksgiving' : holiday.name} in ${countryWords(holiday.country)}.` : null);
+
+/**
+ * The credit the holiday data's licence asks for (CC-BY-SA-4.0): shown in
+ * docs/credits.md, and in the help page's footer once the help page exists.
+ */
+export const HOLIDAY_DATA_CREDIT = Object.freeze({
+  text: 'Public holiday dates come from date-holidays by commenthol and its contributors, used under the Creative Commons Attribution-ShareAlike 4.0 licence.',
+  source: 'https://github.com/commenthol/date-holidays',
+  licence: 'https://creativecommons.org/licenses/by-sa/4.0/',
+});

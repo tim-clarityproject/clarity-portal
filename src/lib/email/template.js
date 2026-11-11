@@ -76,6 +76,8 @@ export const oneLine = (s) => String(s ?? '').replace(TURNS, '').replace(BREAKS,
 const LINK_PLACEHOLDERS = ['{{ .ConfirmationURL }}', '{{ unsubscribe_url }}'];
 export function safeHref(href) {
   if (LINK_PLACEHOLDERS.includes(href)) return href;
+  // A developer's own machine (api/_portalOrigin.js gives this only off a deployment).
+  if (typeof href === 'string' && /^http:\/\/localhost:\d{2,5}\/[A-Za-z0-9\-._~/]*$/.test(href)) return href;
   let url = null;
   // eslint-disable-next-line no-control-regex
   try { url = typeof href === 'string' && /^https:\/\/[a-z0-9[][^\s\u0000-\u001F\u007F-\u009F\u2028\u2029<>"'\\]*$/i.test(href) ? new URL(href) : null; } catch { url = null; }

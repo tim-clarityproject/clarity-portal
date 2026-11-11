@@ -3,9 +3,13 @@
 -- Phase 5 finish, step 2 (Tim, 10 Nov, decisions part 5, 10:10: "Performance
 -- Evidence becomes the Confidence Bank").
 --
+-- Added on 11 Nov (decisions part 5, 11 Nov, 08:25), before it was ever run:
+-- the sharing list's other label with an old name, from the 10 Nov renames
+-- (the Monthly Hardware and Software review and the First review).
+--
 -- WHAT THIS DOES (plain English)
---   Three stored labels still said "Performance Evidence". They now say
---   "Confidence Bank":
+--   Four stored labels change their words.
+--   Three still said "Performance Evidence". They now say "Confidence Bank":
 --     1. sharing_parts(): the label of the 'evidence' part in the list of
 --        what a person can share with their coach (026, rewritten in 033),
 --        now "Confidence Bank, chosen each time".
@@ -13,9 +17,14 @@
 --        ticks, unplanned wins, Confidence Bank".
 --     3. evidence_tools 'performance_evidence' (031): the tool's name, now
 --        "Confidence Bank".
---   Only the words people read change. The part's key ('evidence'), the
---   tool's key ('performance_evidence'), the table performance_evidence and
---   every saved row keep their names, and no rule changes.
+--   One still said "check-in":
+--     4. sharing_parts(): the label of the 'checkin' part, which was
+--        "Monthly check-in, including the First check-in", now "Monthly
+--        review, including the First review".
+--   Only the words people read change. The parts' keys ('evidence',
+--   'checkin'), the tool's key ('performance_evidence'), the tables
+--   performance_evidence and checkins and every saved row keep their names,
+--   and no rule changes.
 --
 -- WHO CAN SEE WHAT (no change)
 --
@@ -39,7 +48,7 @@ begin
       as $body$
         values
           ('mission',         'coach',        true,  false, 'Mission'),
-          ('checkin',         'coach',        true,  false, 'Monthly check-in, including the First check-in'),
+          ('checkin',         'coach',        true,  false, 'Monthly review, including the First review'),
           ('progress',        'coach',        false, false, 'Progress: scores, Outcome Objective figures, the sprint at a glance and patterns'),
           ('debrief',         'coach',        false, true,  'Weekly debrief, chosen each week'),
           ('sweet_spot',      'coach',        false, true,  'Find my sweet spot, chosen each time'),

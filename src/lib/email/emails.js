@@ -22,7 +22,10 @@ const possessive = (name) => `${name}’s`;
 /**
  * To the person who did the Health Check ("Email my link"): their results,
  * with the email address and access code that open them (Tim, 10 Nov,
- * 13:31: so they can copy them instead of searching for them).
+ * 13:31: so they can copy them instead of searching for them). It never
+ * carries a "Talk it through with Tim" link or any booking link (Tim, 10
+ * Nov, 23:53: people only get the Health Check when a call or a workshop is
+ * already arranged).
  */
 export function healthCheckResultsEmail({ link, organisation, dateText, email, code }) {
   const org = oneLine(organisation);
@@ -50,9 +53,10 @@ export function healthCheckFinishedForCoachEmail({ link, organisation, email, co
   const org = oneLine(organisation);
   return {
     brand: 'portal',
-    subject: `${org} finished their Health Check`,
+    // With no organisation name, never a subject that starts with a space (Claude's call, 11 Nov).
+    subject: org ? `${org} finished their Health Check` : 'A Health Check has finished',
     blocks: [
-      { type: 'heading', text: `${org} finished their Health Check.` },
+      { type: 'heading', text: org ? `${org} finished their Health Check.` : 'A Health Check has finished.' },
       { type: 'text', text: `They finished on ${finishedText}.` },
       { type: 'button', label: 'Open the results', href: link },
       { type: 'details', rows: [['Email', email], ['Access code', code]] },
@@ -75,9 +79,9 @@ export function healthCheckFinishedNoteEmail({ organisation, dateText }) {
   const org = oneLine(organisation);
   return {
     brand: 'portal',
-    subject: `${org} finished a Health Check`,
+    subject: org ? `${org} finished a Health Check` : 'A Health Check has finished',
     blocks: [
-      { type: 'heading', text: `${org} finished a Health Check.` },
+      { type: 'heading', text: org ? `${org} finished a Health Check.` : 'A Health Check has finished.' },
       { type: 'text', text: `They finished on ${dateText}.` },
       { type: 'text', text: 'The answers went only to the coach who sent the link.', quiet: true },
     ],

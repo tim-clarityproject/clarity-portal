@@ -8,7 +8,12 @@
 // offset ("-05:00") and never letters ("EST", which is used all year even
 // in summer, and "IST", which is India, Ireland or Israel).
 
-/** Zones whose plain name isn't their city: a country with one clock, or a name with punctuation. */
+/**
+ * Zones whose plain name isn't a place people would say: a country with one
+ * clock, a name with punctuation, an island or a station whose bare name
+ * reads oddly before "time" ("Christmas time", "Easter time", "Troll time"),
+ * and the tz database's older spellings.
+ */
 const PLACE_NAMES = {
   'Europe/London': 'UK',
   'Europe/Belfast': 'UK',
@@ -20,13 +25,146 @@ const PLACE_NAMES = {
   'Asia/Calcutta': 'India',
   'America/St_Johns': 'St John’s',
   'Asia/Ho_Chi_Minh': 'Ho Chi Minh City',
+  'Asia/Saigon': 'Ho Chi Minh City',
   'Asia/Kathmandu': 'Nepal',
   'Asia/Katmandu': 'Nepal',
   'Asia/Singapore': 'Singapore',
   'Asia/Hong_Kong': 'Hong Kong',
   'Pacific/Honolulu': 'Hawaii',
+  'America/Adak': 'Aleutian Islands',
   UTC: 'UTC',
   'Etc/UTC': 'UTC',
+  'Etc/UCT': 'UTC',
+  'Etc/Universal': 'UTC',
+  'Etc/Zulu': 'UTC',
+  'Etc/Greenwich': 'UTC',
+  // Older spellings.
+  'Asia/Rangoon': 'Yangon',
+  'Asia/Ujung_Pandang': 'Makassar',
+  'Asia/Thimbu': 'Thimphu',
+  'Asia/Ulan_Bator': 'Ulaanbaatar',
+  'Asia/Ashkhabad': 'Ashgabat',
+  'Asia/Dacca': 'Dhaka',
+  'Asia/Macao': 'Macau',
+  'Asia/Chungking': 'Chongqing',
+  'Europe/Kiev': 'Kyiv',
+  'Africa/Asmera': 'Asmara',
+  'America/Godthab': 'Nuuk',
+  'America/Coral_Harbour': 'Atikokan',
+  'Atlantic/Faeroe': 'Faroe Islands',
+  'Pacific/Truk': 'Chuuk',
+  'Pacific/Yap': 'Chuuk',
+  'Pacific/Ponape': 'Pohnpei',
+  'Pacific/Enderbury': 'Kanton',
+  'Pacific/Samoa': 'American Samoa',
+  // Islands and island countries.
+  'Atlantic/Faroe': 'Faroe Islands',
+  'Atlantic/Canary': 'Canary Islands',
+  'Atlantic/Jan_Mayen': 'Jan Mayen',
+  'America/Cayman': 'Cayman Islands',
+  'America/Virgin': 'St Thomas',
+  'Indian/Christmas': 'Christmas Island',
+  'Indian/Cocos': 'Cocos Islands',
+  'Indian/Comoro': 'Comoros',
+  'Indian/Mahe': 'Seychelles',
+  'Pacific/Easter': 'Easter Island',
+  'Pacific/Midway': 'Midway Atoll',
+  'Pacific/Wake': 'Wake Island',
+  'Pacific/Norfolk': 'Norfolk Island',
+  'Pacific/Chatham': 'Chatham Islands',
+  'Pacific/Tongatapu': 'Tonga',
+  'Pacific/Efate': 'Vanuatu',
+  'Pacific/Guadalcanal': 'Solomon Islands',
+  'Pacific/Apia': 'Samoa',
+  'Pacific/Pago_Pago': 'American Samoa',
+  'Pacific/Funafuti': 'Tuvalu',
+  'Pacific/Rarotonga': 'Cook Islands',
+  'Pacific/Fakaofo': 'Tokelau',
+  'Pacific/Majuro': 'Marshall Islands',
+  'Pacific/Wallis': 'Wallis and Futuna',
+  'Australia/Lord_Howe': 'Lord Howe Island',
+  'Australia/LHI': 'Lord Howe Island',
+  // Research stations.
+  'Antarctica/Casey': 'Casey Station',
+  'Antarctica/Davis': 'Davis Station',
+  'Antarctica/Mawson': 'Mawson Station',
+  'Antarctica/Vostok': 'Vostok Station',
+  'Antarctica/Syowa': 'Syowa Station',
+  'Antarctica/Rothera': 'Rothera Station',
+  'Antarctica/Palmer': 'Palmer Station',
+  'Antarctica/Troll': 'Troll Station',
+  'Antarctica/McMurdo': 'McMurdo Station',
+  'Antarctica/South_Pole': 'South Pole',
+  'Antarctica/DumontDUrville': 'Dumont d’Urville Station',
+  'Antarctica/Macquarie': 'Macquarie Island',
+};
+
+/**
+ * The fixed list of main cities (Claude's call, 11 Nov, 08:25): a zone named
+ * after a state's sub-area, a small place or a region reads as the main city
+ * that keeps exactly the same clock all year, so America/Indiana/Knox is
+ * "Chicago time", never "Knox time". Each is checked against its main city's
+ * clock through two years (tests/performance/time-library.test.mjs).
+ */
+const NEW_YORK = 'America/New_York';
+const CHICAGO = 'America/Chicago';
+const DENVER = 'America/Denver';
+const ANCHORAGE = 'America/Anchorage';
+const TORONTO = 'America/Toronto';
+const WINNIPEG = 'America/Winnipeg';
+const EDMONTON = 'America/Edmonton';
+const HALIFAX = 'America/Halifax';
+const WHITEHORSE = 'America/Whitehorse';
+const BUENOS_AIRES = 'America/Argentina/Buenos_Aires';
+const MAIN_CITY_ZONE = {
+  // United States
+  'America/Detroit': NEW_YORK, 'America/Kentucky/Louisville': NEW_YORK, 'America/Kentucky/Monticello': NEW_YORK,
+  'America/Indiana/Indianapolis': NEW_YORK, 'America/Indiana/Vincennes': NEW_YORK, 'America/Indiana/Winamac': NEW_YORK,
+  'America/Indiana/Marengo': NEW_YORK, 'America/Indiana/Petersburg': NEW_YORK, 'America/Indiana/Vevay': NEW_YORK,
+  'America/Indianapolis': NEW_YORK, 'America/Louisville': NEW_YORK, 'America/Fort_Wayne': NEW_YORK,
+  'US/Eastern': NEW_YORK, 'US/Michigan': NEW_YORK, 'US/East-Indiana': NEW_YORK,
+  'America/Indiana/Tell_City': CHICAGO, 'America/Indiana/Knox': CHICAGO, 'America/Knox_IN': CHICAGO, 'America/Menominee': CHICAGO,
+  'America/North_Dakota/Center': CHICAGO, 'America/North_Dakota/New_Salem': CHICAGO, 'America/North_Dakota/Beulah': CHICAGO,
+  'US/Central': CHICAGO, 'US/Indiana-Starke': CHICAGO,
+  'America/Boise': DENVER, 'America/Shiprock': DENVER, 'US/Mountain': DENVER,
+  'US/Arizona': 'America/Phoenix',
+  'US/Pacific': 'America/Los_Angeles',
+  'America/Juneau': ANCHORAGE, 'America/Sitka': ANCHORAGE, 'America/Metlakatla': ANCHORAGE, 'America/Yakutat': ANCHORAGE,
+  'America/Nome': ANCHORAGE, 'US/Alaska': ANCHORAGE,
+  'America/Atka': 'America/Adak', 'US/Aleutian': 'America/Adak',
+  'US/Hawaii': 'Pacific/Honolulu', 'Pacific/Johnston': 'Pacific/Honolulu',
+  'US/Samoa': 'Pacific/Pago_Pago',
+  // Canada
+  'America/Iqaluit': TORONTO, 'America/Montreal': TORONTO, 'America/Nipigon': TORONTO, 'America/Thunder_Bay': TORONTO,
+  'America/Pangnirtung': TORONTO, 'Canada/Eastern': TORONTO,
+  'America/Rankin_Inlet': WINNIPEG, 'America/Resolute': WINNIPEG, 'America/Rainy_River': WINNIPEG, 'Canada/Central': WINNIPEG,
+  'America/Cambridge_Bay': EDMONTON, 'America/Inuvik': EDMONTON, 'America/Yellowknife': EDMONTON, 'Canada/Mountain': EDMONTON,
+  'America/Glace_Bay': HALIFAX, 'America/Goose_Bay': HALIFAX, 'America/Moncton': HALIFAX, 'Canada/Atlantic': HALIFAX,
+  'America/Swift_Current': 'America/Regina', 'Canada/Saskatchewan': 'America/Regina',
+  'America/Dawson': WHITEHORSE, 'America/Creston': WHITEHORSE, 'America/Dawson_Creek': WHITEHORSE, 'America/Fort_Nelson': WHITEHORSE,
+  'Canada/Yukon': WHITEHORSE,
+  'Canada/Pacific': 'America/Vancouver',
+  'Canada/Newfoundland': 'America/St_Johns',
+  // Argentina: one clock for the whole country.
+  'America/Argentina/Catamarca': BUENOS_AIRES, 'America/Argentina/ComodRivadavia': BUENOS_AIRES, 'America/Argentina/Cordoba': BUENOS_AIRES,
+  'America/Argentina/Jujuy': BUENOS_AIRES, 'America/Argentina/La_Rioja': BUENOS_AIRES, 'America/Argentina/Mendoza': BUENOS_AIRES,
+  'America/Argentina/Rio_Gallegos': BUENOS_AIRES, 'America/Argentina/Salta': BUENOS_AIRES, 'America/Argentina/San_Juan': BUENOS_AIRES,
+  'America/Argentina/San_Luis': BUENOS_AIRES, 'America/Argentina/Tucuman': BUENOS_AIRES, 'America/Argentina/Ushuaia': BUENOS_AIRES,
+  'America/Buenos_Aires': BUENOS_AIRES, 'America/Catamarca': BUENOS_AIRES, 'America/Cordoba': BUENOS_AIRES, 'America/Jujuy': BUENOS_AIRES,
+  'America/Mendoza': BUENOS_AIRES, 'America/Rosario': BUENOS_AIRES,
+  // Regions named instead of a city.
+  'Australia/ACT': 'Australia/Sydney', 'Australia/Canberra': 'Australia/Sydney', 'Australia/NSW': 'Australia/Sydney',
+  'Australia/Victoria': 'Australia/Melbourne', 'Australia/Queensland': 'Australia/Brisbane', 'Australia/Lindeman': 'Australia/Brisbane',
+  'Australia/South': 'Australia/Adelaide', 'Australia/Broken_Hill': 'Australia/Adelaide', 'Australia/Yancowinna': 'Australia/Adelaide',
+  'Australia/North': 'Australia/Darwin', 'Australia/West': 'Australia/Perth', 'Australia/Tasmania': 'Australia/Hobart',
+  'Australia/Currie': 'Australia/Hobart',
+  'Brazil/East': 'America/Sao_Paulo', 'Brazil/West': 'America/Manaus', 'Brazil/Acre': 'America/Rio_Branco', 'Brazil/DeNoronha': 'America/Noronha',
+  'America/Porto_Acre': 'America/Rio_Branco',
+  'Chile/Continental': 'America/Santiago', 'Chile/EasterIsland': 'Pacific/Easter',
+  'Mexico/General': 'America/Mexico_City', 'Mexico/BajaNorte': 'America/Tijuana', 'Mexico/BajaSur': 'America/Mazatlan',
+  'America/Ensenada': 'America/Tijuana', 'America/Santa_Isabel': 'America/Tijuana',
+  'Europe/Busingen': 'Europe/Zurich',
+  'Arctic/Longyearbyen': 'Europe/Oslo',
 };
 
 // The United States and Canada, by zone (the tz database's zone1970.tab
@@ -110,9 +248,18 @@ export function mustBeZone(zone) {
 /** "New York", "UK", "Chicago", "Sydney": the place, for "10:00 Chicago time". */
 export function zonePlace(zone) {
   if (PLACE_NAMES[zone]) return PLACE_NAMES[zone];
+  // A sub-area, a small place or a region: its main city, from the fixed list.
+  const main = MAIN_CITY_ZONE[zone];
+  if (main) return PLACE_NAMES[main] || main.split('/').pop().replace(/_/g, ' ');
   const city = String(zone).split('/').pop() || String(zone);
   return city.replace(/_/g, ' ');
 }
+
+/** The main city's zone a zone is read as ("America/Indiana/Knox" as "America/Chicago"), or the zone itself. For tests. */
+export const mainCityZone = (zone) => MAIN_CITY_ZONE[zone] || zone;
+
+/** Every zone the fixed lists name. For tests. */
+export const NAMED_ZONES = Object.freeze([...new Set([...Object.keys(PLACE_NAMES), ...Object.keys(MAIN_CITY_ZONE)])]);
 
 /** "New York time", "UK time": always a place, never letters (rule 6). */
 export const zoneLabel = (zone) => `${zonePlace(zone)} time`;

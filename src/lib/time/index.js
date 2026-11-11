@@ -7,7 +7,7 @@
 // (The device's own clock on screen, "07:53" in whatever zone the phone is
 // in, stays with src/lib/dateFormatter.js, CLAUDE.md rule 19: inside the
 // portal the screen already shows the person's own time.)
-export { isZone, mustBeZone, zonePlace, zoneLabel, zoneCountry, usesTwelveHour, countryWords, countryAdjective, deviceZone } from './zones.js';
+export { isZone, mustBeZone, zonePlace, zoneLabel, zoneCountry, usesTwelveHour, countryWords, countryAdjective, deviceZone, mainCityZone, NAMED_ZONES } from './zones.js';
 export { wallClock, offsetMinutes, instantAt, dayIn, addDays, daysBetween, weekdayOf, savedTime, savedTimeAt, readSavedTime } from './instants.js';
 export { clockWords, timeWords, dayWords, dayKeyWords, whenWords, bothWords, relativeDayWords, sessionWhenWords } from './words.js';
 export { seriesRule, seriesCalls, nextCall } from './series.js';
@@ -16,7 +16,7 @@ export {
   onQuarterHour, nextQuarterHour, clearOfOthers, sociable, bookingProblem, offeredStarts,
 } from './booking.js';
 export { clockChanges, callsThatMove, clockChangeLine } from './clockChanges.js';
-export { publicHolidayOn, publicHolidayFor, holidayLine } from './holidays.js';
+export { publicHolidayOn, publicHolidayFor, holidayLine, holidayName, HOLIDAY_DATA_CREDIT } from './holidays.js';
 export {
   MORNING_HOUR, MORNING_ENDS, LEADING_IDEAS_WEEKDAY, PUBLIC_LIST_ZONE,
   morningOf, inTheMorning, dayBeforeReminderAt, hourBeforeReminderAt, nextLeadingIdeasAt,

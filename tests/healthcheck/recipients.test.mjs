@@ -178,20 +178,25 @@ async function post({ headers = { host: 'preview.example.invalid' }, body }) {
 }
 const ASK = { token: 'test-token-not-real', email: GUEST, code: 'Zq7#Kp', kind: 'link' };
 
-test('a host that is not a plain site name never becomes the link: nothing is sent, and it can be tried again', async () => {
-  for (const host of ['portal.example.invalid@other.example', 'with space.example', '"><script>alert(1)</script>', 'javascript:alert(1)//', 'other.example\r\nX: y', '']) {
-    calls = [];
-    standIn({ hasCoach: true, coachEmail: COACH });
-    const { res, sent } = await post({ headers: { host }, body: ASK });
-    assert.equal(res.statusCode, 502, host);
-    assert.equal(sent.length, 0, host);
-    assert.ok(calls.some((c) => c.url.endsWith('/alignment_email_failed')), 'the send is undone');
+test('the request’s host never becomes the link: a forged or odd host gets the live address (allow-list, 11 Nov)', async () => {
+  const LIVE = 'https://portal.theclarityproject.co.uk/health-check/test-token-not-real';
+  for (const host of ['evil.example', 'preview.example.invalid', 'portal.example.invalid@other.example', 'with space.example', '"><script>alert(1)</script>', 'javascript:alert(1)//', 'other.example\r\nX: y', '', 'a.example.invalid, b.example.invalid', 'portal.theclarityproject.co.uk.evil.example']) {
+    for (const headers of [{ host }, { 'x-forwarded-host': host, host: 'portal.theclarityproject.co.uk' }]) {
+      calls = [];
+      standIn({ hasCoach: true, coachEmail: COACH });
+      const { res, sent } = await post({ headers, body: ASK });
+      assert.equal(res.statusCode, 200, host);
+      assert.equal(sent.length, 1, host);
+      // every link that is sent is the live address, ending in the Health Check's own path
+      assert.deepEqual([...sent[0].html.matchAll(/<a[^>]*href="([^"]*)"/g)].map((m) => m[1]), [LIVE], host);
+      assert.ok(sent[0].text.includes(LIVE) && !/evil\.example|example\.invalid\/health-check|other\.example/.test(sent[0].html + sent[0].text), host);
+    }
   }
-  // every link that is sent is an https address ending in the Health Check's own path
+  // The portal's own address is kept as it is.
   calls = [];
   standIn({ hasCoach: true, coachEmail: COACH });
-  const { sent } = await post({ headers: { host: 'a.example.invalid, b.example.invalid' }, body: ASK });
-  assert.deepEqual([...sent[0].html.matchAll(/<a[^>]*href="([^"]*)"/g)].map((m) => m[1]), ['https://a.example.invalid/health-check/test-token-not-real']);
+  const { sent } = await post({ headers: { host: 'portal.theclarityproject.co.uk' }, body: ASK });
+  assert.deepEqual([...sent[0].html.matchAll(/<a[^>]*href="([^"]*)"/g)].map((m) => m[1]), [LIVE]);
 });
 
 test('a request that is not the right shape is refused before the database is asked, and no reply or log ever holds the address, the code or the link', async () => {

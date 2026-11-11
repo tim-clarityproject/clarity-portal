@@ -5,8 +5,11 @@
 //     CLIENT's time, so half-hour and 45-minute zones (India, Newfoundland,
 //     Nepal) still get tidy starts;
 //   - there are always at least 15 clear minutes between any two calls;
-//   - only times from 07:00 to 20:00 in the BOOKER's own time are offered,
-//     unless they choose "Show early and late times".
+//   - only calls that start at 07:00 or later and END by 20:00 in the
+//     BOOKER's own time (the client's, when the client books) are offered,
+//     unless they choose "Show early and late times" (Claude's reading of
+//     Tim's "07:00 to 20:00", 11 Nov, 08:25): a 60-minute call's last start
+//     is 19:00, a 30-minute call's 19:30.
 import { addDays, instantAt, toDate, wallClock } from './instants.js';
 
 export const GAP_MINUTES = 15;
@@ -52,24 +55,31 @@ export function clearOfOthers(start, minutes, bookings = [], gap = GAP_MINUTES) 
   });
 }
 
-/** Whether an instant falls from 07:00 up to 20:00 in a zone (the booker's own time). */
-export function sociable(instant, zone, { from = SOCIABLE_FROM, to = SOCIABLE_TO } = {}) {
-  const w = wallClock(instant, zone);
-  const m = w.hour * 60 + w.minute;
-  return m >= minutesOf(from) && m <= minutesOf(to);
+/**
+ * Whether a call from `instant` for `minutes` sits inside 07:00 to 20:00 in
+ * a zone (the booker's own time): it starts at 07:00 or later and has ended
+ * by 20:00 the same day. With no length given, it is the moment itself that
+ * must fall from 07:00 up to 20:00.
+ */
+export function sociable(instant, zone, { minutes = 0, from = SOCIABLE_FROM, to = SOCIABLE_TO } = {}) {
+  if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes < 0) throw new Error('A call has a length in minutes, above zero.');
+  const start = wallClock(instant, zone);
+  const end = wallClock(ms(instant) + minutes * MIN, zone);
+  if (end.date !== start.date) return false; // it would run past midnight
+  return start.hour * 60 + start.minute >= minutesOf(from) && end.hour * 60 + end.minute <= minutesOf(to);
 }
 
 /**
  * Why a start can't be booked, or null when it can:
  *   'quarter'   not on a quarter hour in the client's time
  *   'gap'       within 15 minutes of another booking
- *   'early-late' outside 07:00 to 20:00 for the booker (only when they
- *               haven't chosen "Show early and late times")
+ *   'early-late' it starts before 07:00 or ends after 20:00 for the booker
+ *               (only when they haven't chosen "Show early and late times")
  */
 export function bookingProblem({ start, minutes, clientZone, bookerZone = clientZone, bookings = [], earlyAndLate = false }) {
   if (!onQuarterHour(start, clientZone)) return 'quarter';
   if (!clearOfOthers(start, minutes, bookings)) return 'gap';
-  if (!earlyAndLate && !sociable(start, bookerZone)) return 'early-late';
+  if (!earlyAndLate && !sociable(start, bookerZone, { minutes: length(minutes) })) return 'early-late';
   return null;
 }
 
