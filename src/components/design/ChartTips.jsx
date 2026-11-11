@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { themeProps, useThemeScope } from './themeScope';
 import { pushLayer } from './layers';
+import { readTip, tipNow } from './tipWords';
 import './design.css';
 
 // The chart pop-up (Tim, 26 Oct; M4 dashboard v46): one shared pop-up
@@ -42,14 +43,6 @@ export function tipProps({ value, when, extra = [], kind, name }) {
     role: 'img',
     'aria-label': words.filter(Boolean).join(', '),
   };
-}
-
-function readTip(el) {
-  try {
-    return JSON.parse(el.getAttribute('data-tip'));
-  } catch {
-    return null;
-  }
 }
 
 function edgeOf(el) {
@@ -151,7 +144,17 @@ export default function ChartTips({ children, className = '' }) {
     window.addEventListener('resize', hide);
     shown.el.setAttribute('aria-describedby', idRef);
     const el = shown.el;
+    // The mark's words changed while its pop-up is open (a day rated by
+    // keyboard, with the pop-up kept open): the pop-up follows its mark,
+    // or closes when the mark has no words any more.
+    const watch = new MutationObserver(() => {
+      const tip = tipNow(el, shown.tip);
+      if (!tip) hide();
+      else if (tip !== shown.tip) setShown({ ...shown, tip });
+    });
+    watch.observe(el, { attributes: true, attributeFilter: ['data-tip'] });
     return () => {
+      watch.disconnect();
       removeLayer();
       window.removeEventListener('pointerdown', onDown, true);
       window.removeEventListener('scroll', place, true);

@@ -77,6 +77,7 @@ import {
   wayQuestion,
   WAY_RATING_OPTIONS,
   wayRatingOption,
+  wayRatingSaved,
   wayRatingTapped,
   whereQuestion,
 } from '../../lib/performance';
@@ -287,7 +288,8 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
     onRestore: (d) => {
       if (!d || typeof d !== 'object') return;
       typedYet.current = true;
-      setAnswers((a) => ({ ...a, ...d }));
+      // A rating the column wouldn't take (a damaged draft) is no rating: it shows no word and saves nothing.
+      setAnswers((a) => ({ ...a, ...d, rating: wayRatingSaved(d.rating ?? a.rating) }));
     },
   });
   const { clear: clearWinDraft } = useDraft({

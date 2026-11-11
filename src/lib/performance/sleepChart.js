@@ -24,6 +24,7 @@
 import { addDays, daysBetween } from '../scores/dates.js';
 import { SLEEP_QUALITY } from '../scores/index.js';
 import { recoveryEndOn } from './rows';
+import { sleepQualityWord } from './words';
 
 export const SLEEP_TARGET_DEFAULT = Object.freeze({ from: 7, to: 9 });
 export const SLEEP_TARGET_MIN = 4;    // hours, the lowest start
@@ -35,8 +36,6 @@ export const SLEEP_OWN_LINE = 'This is your own target range.';
 export const SLEEP_CHART_STARTS = 'Your chart starts after your second night.';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-// The five words (Tim, 10 Nov, 23:22): the saved keys read straight across, in order.
-const QUALITY_WORDS = { very_poor: 'Poor', poor: 'Fair', fair: 'Good', good: 'Very good', very_good: 'Excellent' };
 
 const half = (n) => Math.round(n * 2) / 2;
 const onScale = (n) => Number.isFinite(n) && n >= SLEEP_TARGET_MIN && n <= SLEEP_TARGET_MAX && half(n) === n;
@@ -74,7 +73,8 @@ export function nightDate(key) {
 
 /** "Good", from the stored word. */
 export function qualityWords(q) {
-  return QUALITY_WORDS[q] || null;
+  // The five words (Tim, 10 Nov, 23:22), from the one list of them: only a saved key has a word (never "constructor").
+  return sleepQualityWord(q) || null;
 }
 
 /**

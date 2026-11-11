@@ -128,6 +128,17 @@ export function wayRatingTapped(saved, tapped) {
   return wayRatingOption(saved) === tapped ? null : tapped;
 }
 
+/**
+ * A way-of-being rating as its column takes it: a whole number from 1 to
+ * 10, or nothing. Anything else (a draft on the device that was damaged, a
+ * half figure, 0 or 12) is no rating, so it never reaches the database as
+ * a save that is refused again and again.
+ */
+export function wayRatingSaved(value) {
+  const n = isFigure(value) ? Number(value) : null;
+  return Number.isInteger(n) && n >= 1 && n <= 10 ? n : null;
+}
+
 /** "Very good" for a saved way-of-being rating, or an average of them ('' when none). */
 export const wayRatingWord = (value) => ratingWord(value);
 

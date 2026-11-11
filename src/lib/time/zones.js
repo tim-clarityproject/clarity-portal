@@ -245,18 +245,22 @@ export function mustBeZone(zone) {
   return zone;
 }
 
+// A list's own entry for a name, or nothing: never something every object
+// carries ("constructor", "toString", "__proto__"), and only for text.
+const own = (list, key) => (typeof key === 'string' && Object.hasOwn(list, key) ? list[key] : undefined);
+
 /** "New York", "UK", "Chicago", "Sydney": the place, for "10:00 Chicago time". */
 export function zonePlace(zone) {
-  if (PLACE_NAMES[zone]) return PLACE_NAMES[zone];
+  if (own(PLACE_NAMES, zone)) return own(PLACE_NAMES, zone);
   // A sub-area, a small place or a region: its main city, from the fixed list.
-  const main = MAIN_CITY_ZONE[zone];
-  if (main) return PLACE_NAMES[main] || main.split('/').pop().replace(/_/g, ' ');
+  const main = own(MAIN_CITY_ZONE, zone);
+  if (main) return own(PLACE_NAMES, main) || main.split('/').pop().replace(/_/g, ' ');
   const city = String(zone).split('/').pop() || String(zone);
   return city.replace(/_/g, ' ');
 }
 
 /** The main city's zone a zone is read as ("America/Indiana/Knox" as "America/Chicago"), or the zone itself. For tests. */
-export const mainCityZone = (zone) => MAIN_CITY_ZONE[zone] || zone;
+export const mainCityZone = (zone) => own(MAIN_CITY_ZONE, zone) || zone;
 
 /** Every zone the fixed lists name. For tests. */
 export const NAMED_ZONES = Object.freeze([...new Set([...Object.keys(PLACE_NAMES), ...Object.keys(MAIN_CITY_ZONE)])]);
@@ -268,7 +272,7 @@ export const zoneLabel = (zone) => `${zonePlace(zone)} time`;
 export function zoneCountry(zone) {
   if (US_ZONES.has(zone)) return 'US';
   if (CANADA_ZONES.has(zone)) return 'CA';
-  return COUNTRY_BY_ZONE[zone] || null;
+  return own(COUNTRY_BY_ZONE, zone) || null;
 }
 
 /** US and Canadian readers see 12-hour times; everyone else 24-hour (rule 8). */
@@ -277,10 +281,10 @@ export const usesTwelveHour = (zone) => US_ZONES.has(zone) || CANADA_ZONES.has(z
 const COUNTRY_ADJECTIVES = { US: 'US', CA: 'Canadian', GB: 'UK', IE: 'Irish', AU: 'Australian', NZ: 'New Zealand', IN: 'Indian' };
 
 /** "US", "Canadian", "UK": a country before a noun ("US clocks", "Canadian clients"), or null when there's no plain word for it. */
-export const countryAdjective = (country) => COUNTRY_ADJECTIVES[country] || null;
+export const countryAdjective = (country) => own(COUNTRY_ADJECTIVES, country) || null;
 
 /** "the US", "Canada", "the UK": a country inside a sentence. */
-export const countryWords = (country) => COUNTRY_WORDS[country] || country;
+export const countryWords = (country) => own(COUNTRY_WORDS, country) || country;
 
 /** The device's own zone, or null where the browser doesn't say. */
 export function deviceZone() {

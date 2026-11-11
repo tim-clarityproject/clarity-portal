@@ -426,6 +426,16 @@ if (HC_ONLY) {
         await page.waitForFunction(() => document.documentElement.getAttribute('data-theme'), null, { timeout: 15000 });
         const got = await page.evaluate(() => ({ theme: document.documentElement.getAttribute('data-theme'), background: getComputedStyle(document.documentElement).backgroundColor }));
         pass(`health-check, the portal's own route ${width}px ${mode}: follows the device, not the portal's saved choice`, got.theme === mode && got.background === BACKGROUND[mode], `${got.theme} ${got.background}`);
+        // Typed with capitals, the app opens the same page: it follows the device too (break-it tester, 11 Nov).
+        await page.goto(`${APP}/Health-Check/tok-calm-rules-0000000000000000000000000000`);
+        await page.waitForFunction(() => document.documentElement.getAttribute('data-theme'), null, { timeout: 15000 });
+        const capitals = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+        pass(`health-check, the portal's own route ${width}px ${mode}: the same with capitals in the address`, capitals === mode, capitals);
+        // Any other page still follows the saved choice (set the other way here).
+        await page.goto(`${APP}/auth/login`);
+        await page.waitForFunction(() => document.documentElement.getAttribute('data-theme'), null, { timeout: 15000 });
+        const elsewhere = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+        pass(`health-check ${width}px ${mode}: every other page keeps the saved choice`, elsewhere === (mode === 'light' ? 'dark' : 'light'), elsewhere);
       } catch (e) {
         pass(`health-check, the portal's own route ${width}px ${mode}: opened`, false, e.message.split('\n')[0]);
       }

@@ -13,7 +13,7 @@
 import { weekday } from '../scores/dates.js';
 import { addDayKey, dayPlanView } from './dayPlan';
 import { settingForWeek, toMeasure } from './rows';
-import { plainNumber, wayRatingWord } from './words';
+import { plainNumber, wayRatingSaved, wayRatingWord } from './words';
 import { sprintPageView } from './sprintPage';
 
 export const REVIEW_TEXT_MAX = 4000;   // went_well, differently, on_my_mind
@@ -26,7 +26,8 @@ export const DIFFERENTLY_EXAMPLE = 'Leave ten minutes between calls, so I start 
 export const TOMORROW_EXAMPLE = 'Call Evan before 09:00 about the referral.';
 export const MOVED_LEVELS = Object.freeze({ 1: 'Low', 2: 'Medium', 3: 'High' });
 
-const lowerFirst = (t) => (t && !/^.[A-Z]/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t);
+// "Calm" reads "calm" inside a sentence; an acronym ("CEO-like") and the word "I" ("I’m present") keep their capital.
+const lowerFirst = (t) => (t && !/^(?:.[A-Z]|I(?![a-z]))/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t);
 
 /**
  * Which day a review is for. UNDEFINED (audit R0, a review done after
@@ -220,7 +221,8 @@ export function reviewAnswersFromRow(row) {
 export function reviewAnswersToRow(a) {
   const text = (v) => (v && v.trim() ? v.trim() : null);
   return {
-    way_of_being_rating: a.rating ?? null,
+    // A whole number from 1 to 10 or nothing, whatever a draft on the device held.
+    way_of_being_rating: wayRatingSaved(a.rating),
     where_it_showed: text(a.where),
     went_well: text(a.wentWell),
     differently: text(a.differently),

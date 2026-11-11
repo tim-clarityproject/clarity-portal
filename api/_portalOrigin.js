@@ -31,8 +31,9 @@ export function allowedOrigins(env = process.env) {
 }
 
 /** The first host a request names, in lower case ('' when it names none). */
-function askedHost(headers = {}) {
-  const raw = headers['x-forwarded-host'] ?? headers.host ?? '';
+function askedHost(headers) {
+  // No headers at all (null included) names no host.
+  const raw = headers?.['x-forwarded-host'] ?? headers?.host ?? '';
   const first = Array.isArray(raw) ? raw[0] : String(raw).split(',')[0];
   return String(first ?? '').trim().toLowerCase();
 }
@@ -46,7 +47,9 @@ export function portalOrigin(headers, env = process.env) {
   const match = allowedOrigins(env).find((origin) => origin === `https://${asked}`);
   if (match) return match;
   // A developer's own machine, never a deployment: localhost with its port.
+  // The port must be a real one (1 to 65535), or the link would open nothing.
   const local = !env.VERCEL && !env.VERCEL_ENV ? LOCAL_HOST.exec(asked) : null;
-  if (local) return `http://localhost:${Number(local[1])}`;
+  const port = local ? Number(local[1]) : 0;
+  if (port >= 1 && port <= 65535) return `http://localhost:${port}`;
   return LIVE_ORIGIN;
 }

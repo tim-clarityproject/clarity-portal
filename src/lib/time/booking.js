@@ -66,7 +66,10 @@ export function sociable(instant, zone, { minutes = 0, from = SOCIABLE_FROM, to 
   const start = wallClock(instant, zone);
   const end = wallClock(ms(instant) + minutes * MIN, zone);
   if (end.date !== start.date) return false; // it would run past midnight
-  return start.hour * 60 + start.minute >= minutesOf(from) && end.hour * 60 + end.minute <= minutesOf(to);
+  // To the millisecond: a call that ends half a minute past 20:00 has not ended by 20:00.
+  const endMs = ms(instant) + minutes * MIN;
+  const past = end.second * 1000 + (((endMs % 1000) + 1000) % 1000);
+  return start.hour * 60 + start.minute >= minutesOf(from) && end.hour * 60 + end.minute + past / MIN <= minutesOf(to);
 }
 
 /**

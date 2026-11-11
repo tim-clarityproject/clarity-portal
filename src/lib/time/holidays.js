@@ -22,7 +22,8 @@ const library = () => {
  * when it falls on a weekend reads "(observed)", never the package's
  * "(substitute day)" (Claude's call, 11 Nov, 08:25).
  */
-export const holidayName = (name) => String(name ?? '').replace(/\s*\((?:substitute day|substitute|observed)\)/gi, ' (observed)').replace(/\s+/g, ' ').trim();
+// (Spaces are made single first, so a very long name is read once through; said twice, it is written once.)
+export const holidayName = (name) => String(name ?? '').replace(/\s+/g, ' ').replace(/ ?\((?:substitute day|substitute|observed)\)/gi, ' (observed)').replace(/(?: \(observed\))+/g, ' (observed)').replace(/ {2,}/g, ' ').trim();
 
 /**
  * The public holiday on a day in a country, or null.

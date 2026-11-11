@@ -53,7 +53,8 @@
   var choice = read();
 
   function outsideHealthCheck() {
-    var path = window.location.pathname;
+    // In lower case: the app opens the page whatever capitals the address is typed with.
+    var path = String(window.location.pathname || '').toLowerCase();
     return path === '/health-check' || path === '/health-check.html' || path.indexOf('/health-check/') === 0;
   }
 
@@ -114,7 +115,8 @@
 
   // Another tab changed the choice.
   window.addEventListener('storage', function (e) {
-    if (e.key !== KEY) return;
+    // (No key at all: another tab cleared everything on this device.)
+    if (e.key !== KEY && e.key !== null) return;
     choice = read();
     apply();
     announce();
