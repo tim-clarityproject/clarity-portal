@@ -1301,7 +1301,7 @@ function RulesOfFiveNovDemo() {
 
       <p className="dr-small">Back at the top (rules 29o and 29t): the chevron on the content edge, 14px before the tool’s name</p>
       <div className="ds-guide-bar dr-rules5-bar">
-        <button type="button" className="ds-guide-back" aria-label="Back"><Chevron direction="left" size="sm" /></button>
+        <button type="button" className="ds-guide-back" aria-label="Back"><Chevron direction="left" size="sm" beside="capitals" /></button>
         <b className="ds-guide-name">Daily review</b>
         <IconButton label="Close" />
       </div>

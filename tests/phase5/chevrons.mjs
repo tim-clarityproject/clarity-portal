@@ -62,6 +62,10 @@ function collect(only = null) {
     const control = chev.closest('button, a, summary, label, [role=button], [role=combobox]') || chev.parentElement;
     if (!control || !vis(control)) continue;
     const cb = chev.getBoundingClientRect();
+    // Covered by something else (an open drop-down's list lying over the sort
+    // link): its pixels are the list's, not the chevron's, so it isn't read.
+    const onTop = document.elementFromPoint(cb.left + cb.width / 2, cb.top + cb.height / 2);
+    if (onTop && onTop !== chev && !control.contains(onTop) && !onTop.contains(chev)) continue;
     // The words on the chevron's own row: text nodes inside the control whose line crosses the chevron's middle band.
     const walker = document.createTreeWalker(control, NodeFilter.SHOW_TEXT);
     const lines = [];

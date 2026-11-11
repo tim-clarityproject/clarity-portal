@@ -131,6 +131,11 @@
   width: var(--arrow-size);
   vertical-align: baseline;
   white-space: nowrap;
+  /* The chevron starts at the line's left edge wherever it sits: a button
+     centres its text, which would push the chevron half its width to the
+     right (the Filter button, the sort link). */
+  text-align: left;
+  text-indent: 0;
   --chev-half: 0.5ex;
   /* What measuring left over (11 Nov): the strokes sat a touch high. */
   --chev-nudge: 0.15px;
@@ -5763,7 +5768,8 @@
   justify-content: center;
   gap: var(--space-px2);
   padding: var(--space-2) var(--space-1);
-  border: var(--line-w) solid var(--line);
+  /* An answer at rest: the edges colour, 3 to 1 against the page (rule 8a), as .ds-answer. */
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-field);
   color: var(--text-2);
   text-align: center;
@@ -5801,9 +5807,10 @@
 }
 
 @media (hover: hover) {
-  .ui-root .ds-lens-tile:hover {
+  /* Hover is a step stronger than rest; the chosen tile keeps its own, stronger edge. */
+  .ui-root .ds-lens-tile:not([aria-checked='true']):hover {
     color: var(--text);
-    border-color: var(--quiet-line);
+    border-color: var(--text-2);
   }
 }
 
@@ -6716,6 +6723,13 @@
 .ui-root .ds-expand-head:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
+}
+
+/* The row's arrow is centred on the title's words: its line takes the
+   title's font, so the two stand on one baseline (rule 29ao). */
+.ui-root .ds-expand-head .ds-chevron-line {
+  font-size: var(--fs-secondary);
+  line-height: var(--lh-text);
 }
 
 .ui-root .ds-expand-title {

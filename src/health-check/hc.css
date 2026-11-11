@@ -132,7 +132,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
    baseline and is lowered until its middle is half an x-height (half a cap
    height beside capitals) above it. The same build as the portal's
    .ds-chevron-line, with the same measured corrections. */
-.chev-line { display: inline-block; flex: none; width: 14px; vertical-align: baseline; white-space: nowrap; --chev-half: 0.5ex; --chev-nudge: 0.15px; }
+.chev-line { display: inline-block; flex: none; width: 14px; vertical-align: baseline; white-space: nowrap; text-align: left; text-indent: 0; --chev-half: 0.5ex; --chev-nudge: 0.15px; }
 .chev-line.caps { --chev-half: 0.335em; --chev-nudge: 0.38px; }
 @supports (height: 1cap) { .chev-line.caps { --chev-half: 0.5cap; } }
 .chev-line::before { content: '\200B'; }
@@ -248,7 +248,8 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .wrow p { margin: 0; display: flex; gap: 12px; align-items: baseline; font-size: calc(16 * var(--u)); }
 .wrow p .n { color: var(--ph); font-size: calc(13 * var(--u)); min-width: 12px; }
 .seg { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0 24px; }
-.seg button { all: unset; cursor: pointer; box-sizing: border-box; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; font-size: calc(15 * var(--u)); color: var(--t2); transition: border-color var(--d2) var(--ease), color var(--d2) var(--ease); }
+/* An answer at rest takes the edges colour, 3 to 1 against the page (rule 8a). */
+.seg button { all: unset; cursor: pointer; box-sizing: border-box; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; border: 1px solid var(--edge); border-radius: 999px; font-size: calc(15 * var(--u)); color: var(--t2); transition: border-color var(--d2) var(--ease), color var(--d2) var(--ease); }
 .seg button:hover, .seg button[aria-checked="true"] { border-color: var(--accent); }
 /* the chosen one: a 1px coral edge and the text colour, no inset shadow (version 47) */
 .seg button[aria-checked="true"] { color: var(--fg); }
@@ -291,7 +292,8 @@ svg.ic .f { fill: currentColor; stroke: none; }
 .sech h3 { margin: 0; font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .12em; font-size: calc(16 * var(--u)); line-height: 1.3; overflow-wrap: normal; }
 .sech p { margin: 8px 0 0; color: var(--t2); font-size: calc(15 * var(--u)); max-width: 39.7em; }
 .sech p + p { margin-top: 4px; }
-.chg { all: unset; cursor: pointer; font-size: calc(14 * var(--u)); color: var(--t2); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--g4); min-height: 44px; display: inline-flex; align-items: center; flex: none; }
+/* A short word (Edit) still gets the full 44px tap area; the word stays at the right-hand edge. */
+.chg { all: unset; cursor: pointer; font-size: calc(14 * var(--u)); color: var(--t2); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--g4); min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; flex: none; }
 .chg:hover, .chg:focus-visible { color: var(--accent); }
 .chg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .exb { margin-top: 18px; padding: 16px 20px; border-radius: 16px; background: var(--surface); font-size: calc(15 * var(--u)); color: var(--t2); }

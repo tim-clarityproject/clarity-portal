@@ -116,7 +116,7 @@ export function MenuPins({ pins = [], onGo, tabIndex }) {
           <li key={p.key}>
             <a href={p.to} onClick={goHandler(onGo, p)} tabIndex={tabIndex}>
               <span>{p.name}</span>
-              <Chevron direction="right" size="sm" />
+              <Chevron direction="right" size="sm" beside="words" />
             </a>
           </li>
         ))}
