@@ -331,10 +331,15 @@ async function playThrough(page, tag, { deep = false } = {}) {
   } else {
     await checkScreen(page, `${tag} numbers`);
   }
-  const focus = page.getByRole('textbox', { name: `Focus, Saturday ${Number(SAT.slice(8))} Oct` });
-  await focus.fill('4');
-  await focus.blur();
-  pass(`${tag}: a day filled in loses its dashed edge`, !(await focus.locator('xpath=..').getAttribute('class')).includes('--empty'));
+  // A rated habit's day is a box of mint, never a number (Tim, 10 Nov, 23:22): tap the day, then choose its word.
+  const saturday = `Saturday ${Number(SAT.slice(8))} Oct`;
+  const focus = page.getByRole('group', { name: 'Focus', exact: true }).getByRole('button', { name: new RegExp(`^${saturday}, `) });
+  pass(`${tag}: a day not rated is an empty box with a dashed edge`, (await focus.getAttribute('aria-label')) === `${saturday}, not rated` && (await focus.getAttribute('class')).includes('--empty'), await focus.getAttribute('aria-label'));
+  await focus.click();
+  await page.getByRole('group', { name: `Focus, ${saturday}`, exact: true }).getByRole('button', { name: 'Very good', exact: true }).click();
+  await page.waitForFunction((el) => el?.getAttribute('data-rating') === '4', await focus.elementHandle(), { timeout: 5000 }).catch(() => null);
+  pass(`${tag}: a day rated Very good fills with its shade and says its word`, (await focus.getAttribute('aria-label')) === `${saturday}, Very good` && (await focus.getAttribute('data-rating')) === '4', await focus.getAttribute('aria-label'));
+  pass(`${tag}: a day filled in loses its dashed edge`, !(await focus.getAttribute('class')).includes('--empty'));
   await shot(page, `${tag}-1-numbers`);
   await next(page);
 

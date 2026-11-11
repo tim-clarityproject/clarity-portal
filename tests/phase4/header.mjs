@@ -120,7 +120,9 @@ async function newContext({ width = 1280, height, mode = 'dark', touch, mission,
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     }
     if (mission !== undefined && /\/rest\/v1\/performance_plans\?/.test(url) && /status=eq\.active/.test(url)) {
-      const res = await route.fetch();
+      // A read still on its way when the page is closed has nowhere to go: leave it.
+      const res = await route.fetch().catch(() => null);
+      if (!res) return null;
       let body = await res.json();
       const set = (r) => (r && typeof r === 'object' ? { ...r, mission } : r);
       body = Array.isArray(body) ? body.map(set) : set(body);
