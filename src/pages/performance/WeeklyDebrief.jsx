@@ -710,8 +710,13 @@ function DebriefFlow({ userId, today, loaded, view }) {
               name={o.name}
               entryLabel={`${o.name} now`}
               value={o.kind === 'rating' ? ratingOption(figTyped[o.id] ?? o.value) : (figTyped[o.id] ?? toText(o.value))}
-              // A rating's own word tapped again changes nothing: an older figure is never rewritten as the word's own.
-              onChange={(text) => { if (o.kind !== 'rating' || text !== ratingOption(figTyped[o.id] ?? o.value)) typeFigure(o, text); }}
+              // A rating's own word tapped: the figure stays exactly as it is (an older 7 is never rewritten
+              // as the word's own 7.5). If this week has no figure yet, that same figure is saved for the week.
+              onChange={(text) => {
+                const same = o.kind === 'rating' && text === ratingOption(figTyped[o.id] ?? o.value);
+                if (!same) typeFigure(o, text);
+                else if (figTyped[o.id] == null) typeFigure(o, /^(10|[0-9](\.5)?)$/.test(toText(o.value)) ? toText(o.value) : text);
+              }}
               options={o.kind === 'rating' ? OBJECTIVE_RATING_OPTIONS : undefined}
               unit={o.unit}
               decimals={o.decimals}

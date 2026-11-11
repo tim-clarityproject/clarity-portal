@@ -360,7 +360,8 @@ async function playThrough(page, tag, { deep = false } = {}) {
   await clients.fill('33');
   const change = await until(async () => (await page.locator('.ds-objfig', { hasText: 'Coaching clients' }).locator('.ds-objfig-change--good').count()) === 1, 4000);
   pass(`${tag}: the change at a glance, mint`, Boolean(change) && (await page.locator('.ds-objfig', { hasText: 'Coaching clients' }).locator('.ds-objfig-change').innerText()) === '+2');
-  // A rating is one of five words (10 Nov).
+  // A rating is one of five words (10 Nov). Last week's figure was 7, which reads "Very good": tapping its own
+  // word saves that same 7 for this week, never the word's own 7.5 (an older figure is never rewritten; 11 Nov).
   await page.locator('.ds-objfig', { hasText: 'How world-class is my coaching?' }).getByRole('radio', { name: 'Very good', exact: true }).click();
   if (deep) {
     await page.locator('.ds-objfig', { hasText: 'Publish my coaching book' }).getByRole('button', { name: 'Mark as done' }).click();
@@ -502,7 +503,7 @@ for (const [width, mode] of sizes.filter(([w, m]) => !only || only.includes(`${w
       pass('the habit log typed in the debrief is in the sprint', Number((await db.from('habit_logs').select('value').eq('sprint_habit_id', hid('Focus')).eq('local_date', SAT)).data?.[0]?.value) === 4);
       const figs = (await db.from('objective_figures').select('objective_id, value, recorded_on, sprint_id, sprint_week').eq('user_id', me).eq('sprint_id', sprint.id).eq('sprint_week', WEEK)).data;
       const fig = (name) => figs.find((f) => f.objective_id === oid(name));
-      pass('objective figures saved for the week, on its last day (M9)', figs.length === 2 && Number(fig('Coaching clients')?.value) === 33 && Number(fig('How world-class is my coaching?')?.value) === 7.5 && figs.every((f) => f.recorded_on === weekEnd), JSON.stringify(figs));
+      pass('objective figures saved for the week, on its last day (M9)', figs.length === 2 && Number(fig('Coaching clients')?.value) === 33 && Number(fig('How world-class is my coaching?')?.value) === 7 && figs.every((f) => f.recorded_on === weekEnd), JSON.stringify(figs));
       const reached = (await db.from('outcome_objectives').select('reached_on').eq('id', oid('Publish my coaching book'))).data?.[0]?.reached_on;
       pass('the milestone is reached on the week\'s last day', reached === weekEnd, reached);
       const todo = (await db.from('todos').select('sprint_id, planned_week, source, source_id, strategy_id, created_on').eq('user_id', me).eq('text', TODO)).data;
