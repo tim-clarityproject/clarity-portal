@@ -1,9 +1,10 @@
-import { useId, useState } from 'react';
+import { useId, useLayoutEffect, useState } from 'react';
 import keepWords from './keepWords';
 import StepIcon from './StepIcon';
 import Chevron from './Chevron';
 import { Bar } from './Stat';
 import ChartTips from './ChartTips';
+import { pushLayer } from './layers';
 import './design.css';
 
 // "12,000" (or "1,250.5") typed or pasted into a box that takes decimals:
@@ -208,10 +209,15 @@ export function LoggingRow({
 // shows its word in the shared pop-up ("Good", then the day), and a screen
 // reader hears "Tuesday 10 Nov, Good". Tapping a box also opens the five
 // words under the row, to rate that day or change it; tapping the chosen
-// word again clears it. A day not rated stays empty.
+// word again clears it; Escape closes the pop-up, then the words. A day
+// not rated stays empty.
 function RatingDays({ name, days, values, onChange, dashEmpty }) {
   const [open, setOpen] = useState(null);
   const day = days.find((d) => d.key === open && !d.later) || null;
+  // Escape closes the five words (after the pop-up, which sits on top of them
+  // in the shared Escape layers), never the tool or panel they are in.
+  // A layout effect, so this layer is in place before the pop-up's own (set in an ordinary effect) and the pop-up stays on top.
+  useLayoutEffect(() => (day ? pushLayer(() => setOpen(null)) : undefined), [day?.key]); // eslint-disable-line react-hooks/exhaustive-deps
   const stepOf = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Math.min(5, Math.max(1, Math.round(Number(v)))));
   return (
     <>

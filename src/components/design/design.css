@@ -909,13 +909,18 @@
 .ui-root .ds-logweek-rate-box.ds-logweek-rate-box--empty { border-style: dashed; }
 .ui-root .ds-logweek-rate-box:disabled { opacity: 0.35; cursor: default; }
 
+/* A day's box is a button as well as a mark with a pop-up: the shared
+   pop-up's rules for a mark (the default cursor, no outline) come later in
+   this file with the same weight, so these name the zone to win. */
+.ui-root .ds-logweek-rate-zone .ds-logweek-rate-box:not(:disabled) { cursor: pointer; }
+
 /* The day whose five words are open under the row. */
-.ui-root .ds-logweek-rate-box[aria-expanded='true'] {
+.ui-root .ds-logweek-rate-zone .ds-logweek-rate-box[aria-expanded='true'] {
   outline: var(--focus-w) solid var(--text);
   outline-offset: var(--space-px2);
 }
 
-.ui-root .ds-logweek-rate-box:focus-visible {
+.ui-root .ds-logweek-rate-zone .ds-logweek-rate-box:focus-visible {
   outline: var(--focus-w) solid var(--coral-text);
   outline-offset: var(--space-px2);
 }

@@ -138,7 +138,7 @@ try {
         pass(`week grid ${tag}: the rated habit has a box for each day`, facts.boxes.length >= 5, JSON.stringify(facts.boxes.map((b) => b.label)));
         pass(`week grid ${tag}: five shades, each at least 3 to 1 against the page, the surface and the boxes`, facts.tokens.every((t) => facts.grounds.every((g) => contrast(t, g) >= 3)), facts.tokens.map((t) => facts.grounds.map((g) => contrast(t, g).toFixed(2)).join('/')).join(' '));
         const steps = facts.tokens.slice(1).map((t, i) => contrast(t, facts.tokens[i]));
-        pass(`week grid ${tag}: each shade is told apart from the next (1.25 to 1 or more)`, steps.every((s) => s >= 1.25), steps.map((s) => s.toFixed(2)).join(' '));
+        pass(`week grid ${tag}: each shade is told apart from the next (1.3 to 1 or more)`, steps.every((s) => s >= 1.3), steps.map((s) => s.toFixed(2)).join(' '));
         // Stronger for better days: further from the page with each step.
         const fromPage = facts.tokens.map((t) => contrast(t, facts.grounds[0]));
         pass(`week grid ${tag}: better days are stronger`, fromPage.every((c, i) => i === 0 || c > fromPage[i - 1]), fromPage.map((c) => c.toFixed(1)).join(' '));
@@ -178,7 +178,13 @@ try {
         pass(`week grid ${tag}: each word is 44px or more`, small === 0, `${small}`);
         const box = await row.boundingBox();
         await shot('week-grid-sprint', { fullPage: false, clip: { x: 0, y: Math.max(0, box.y - 90), width, height: Math.min(phone ? 620 : 420, box.height + 180) } });
+        // The open day is marked, so the words under the row belong to a day you can see.
+        pass(`week grid ${tag}: the open day is outlined`, (await first.evaluate((el) => getComputedStyle(el).outlineStyle)) === 'solid', await first.evaluate((el) => getComputedStyle(el).outlineStyle));
+        // Escape closes the pop-up first, then the five words; the page stays where it is.
         await page.keyboard.press('Escape');
+        pass(`week grid ${tag}: Escape closes the pop-up first`, Boolean(await until(async () => (await tip.count()) === 0, 3000)) && (await chooser.count()) === 1);
+        await page.keyboard.press('Escape');
+        pass(`week grid ${tag}: then the five words`, Boolean(await until(async () => (await chooser.count()) === 0, 3000)) && new URL(page.url()).pathname === '/performance-sprint', page.url());
 
         // Rate a day that isn't rated yet, see it fill, then clear it again (once: 1280 light).
         if (width === 1280 && mode === 'light') {

@@ -26,13 +26,13 @@
   --on-good: #000000;
   /* A day's rating in the week grid (Tim, 10 Nov, 23:22): five shades of
      mint, Poor (1) to Excellent (5), stronger for better days. Each is at
-     least 3 to 1 against the page, the surface and the boxes, and about
-     1.4 to 1 from the next, in both modes. Never the only signal: every
+     least 3 to 1 against the page, the surface and the boxes, and 1.3 to 1
+     or more from the next, in both modes. Never the only signal: every
      box says its word on tap, hover and focus, and to a screen reader. */
   --rate-1: #2B7259;
   --rate-2: #2A926D;
   --rate-3: #2AB583;
-  --rate-4: #23D897;
+  --rate-4: #22D393;
   --rate-5: #5FEFBB;
   --scrim: rgba(0, 0, 0, 0.62);
 
