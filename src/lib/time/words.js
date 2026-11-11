@@ -7,7 +7,7 @@
 //   - both days when they differ: "Mon 16 Nov, 08:00 Sydney time (Sun 15
 //     Nov, 21:00 UK time)".
 // The words follow the READER's zone: whoever the time is shown to.
-import { wallClock, dayIn, addDays } from './instants.js';
+import { wallClock, dayIn, addDays, mustBeDay } from './instants.js';
 import { usesTwelveHour, zoneLabel } from './zones.js';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -35,7 +35,7 @@ export function dayWords(instant, zone, { year = false, long = false } = {}) {
 
 /** A day key in words: "Sun 1 Nov". No clock is read. */
 export function dayKeyWords(date, { year = false, long = false } = {}) {
-  const [y, m, d] = String(date).split('-').map(Number);
+  const [y, m, d] = mustBeDay(date).split('-').map(Number);
   const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
   return `${(long ? LONG_DAY_NAMES : DAY_NAMES)[weekday]} ${d} ${MONTHS[m - 1]}${year ? ` ${y}` : ''}`;
 }

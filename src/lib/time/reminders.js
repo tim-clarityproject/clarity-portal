@@ -3,7 +3,7 @@
 // reader's own time, never by UK clocks, so nobody is woken at 03:00.
 // Nothing sends these yet (booking and Kit come in Phase 6a); these work
 // out the instants.
-import { addDays, dayIn, instantAt, wallClock, weekdayOf } from './instants.js';
+import { addDays, dayIn, instantAt, toDate, wallClock, weekdayOf } from './instants.js';
 
 export const MORNING_HOUR = '07:00';
 export const MORNING_ENDS = '09:00';
@@ -29,7 +29,7 @@ export function dayBeforeReminderAt(sessionInstant, readerZone) {
 }
 
 /** When the last reminder goes: 1 hour before. It never gives a clock time, so it can't be wrong. */
-export const hourBeforeReminderAt = (sessionInstant) => new Date(new Date(sessionInstant).getTime() - 3600000);
+export const hourBeforeReminderAt = (sessionInstant) => new Date(toDate(sessionInstant).getTime() - 3600000);
 
 /** The next Thursday 07:00 in a reader's zone, at or after now: when their Leading Ideas goes. */
 export function nextLeadingIdeasAt(zone, now = new Date()) {

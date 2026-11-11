@@ -89,9 +89,13 @@ export function isZone(zone) {
   if (typeof zone !== 'string' || !zone) return false;
   if (zone !== 'UTC' && zone !== 'Etc/UTC' && !/^[A-Za-z_]+\/[A-Za-z0-9_+\-/]+$/.test(zone)) return false;
   if (/^Etc\/GMT/i.test(zone)) return false;
+  // A place name is written as the tz database writes it ("America/New_York").
+  // The device would take "america/new_york" too, but nothing here would know
+  // it: it would be written "new york time", on a 24-hour clock.
+  if (zone.split('/').some((part) => !/^[A-Z]/.test(part))) return false;
   try {
-    new Intl.DateTimeFormat('en-GB', { timeZone: zone });
-    return true;
+    const known = new Intl.DateTimeFormat('en-GB', { timeZone: zone }).resolvedOptions().timeZone;
+    return known === zone || known.toLowerCase() !== zone.toLowerCase();
   } catch {
     return false;
   }
@@ -99,7 +103,7 @@ export function isZone(zone) {
 
 /** The zone, or an error saying why it can't be saved. */
 export function mustBeZone(zone) {
-  if (!isZone(zone)) throw new Error(`"${zone}" is not a place-name time zone (for example America/New_York). Offsets and letters are never saved.`);
+  if (!isZone(zone)) throw new Error(`"${String(zone).slice(0, 60)}" is not a place-name time zone (for example America/New_York). Offsets and letters are never saved.`);
   return zone;
 }
 

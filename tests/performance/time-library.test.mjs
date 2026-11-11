@@ -415,3 +415,125 @@ test('"today" for a client is their own day: Los Angeles and Sydney at the same 
   assert.equal(dayIn('America/Los_Angeles', instantAt('2026-11-10', '23:59', 'America/Los_Angeles')), '2026-11-10');
   assert.equal(dayIn('America/Los_Angeles', new Date(instantAt('2026-11-10', '23:59', 'America/Los_Angeles').getTime() + 60000)), '2026-11-11');
 });
+
+// ---------------------------------------------------------------- hostile and edge input (the break-it pass, 10 Nov)
+test('a day or a time that doesn’t exist is refused, never rolled on to another day', () => {
+  for (const [day, time] of [['2026-02-30', '07:00'], ['2026-13-01', '07:00'], ['0000-00-00', '00:00'], ['2026-1-5', '07:00'], ['2026-11-10', '24:00'], ['2026-11-10', '23:60'], ['2026-11-10', '-1:00'], ['2026-11-10', '7:30'], ['2026-11-10', '07:30:59'], ['2026-11-10', '0x10:00'], ['2026-11-10', 730], [null, null], [20261110, '07:30']]) {
+    assert.throws(() => instantAt(day, time, UK), /is not a (day|time of day)/, `${day} ${time}`);
+  }
+  assert.equal(iso(instantAt('2028-02-29', '23:59', UK)), '2028-02-29T23:59:00.000Z');
+  for (const day of ['junk', '', null, undefined, '2026-02-30', '2026-11', 20261110]) {
+    assert.throws(() => addDays(day, 1), /is not a day/, String(day));
+    assert.throws(() => seriesRule({ time: '07:30', zone: NY, from: day }), /day/, String(day));
+    assert.throws(() => offeredStarts({ day, minutes: 60, clientZone: UK }), /is not a day/, String(day));
+  }
+  // "2" + 1 was once "21" days, and 1.5 a silent whole day
+  for (const days of ['2', 1.5, NaN, null]) assert.throws(() => addDays('2026-11-10', days), /whole numbers/, String(days));
+  assert.throws(() => seriesRule({ time: '07:30', zone: NY, from: '2026-01-05', until: '2026-02-31' }), /is not a day/);
+  assert.throws(() => seriesRule({ time: ['07:30'], zone: NY, from: '2026-01-05' }), /HH:MM/);
+});
+
+test('nothing is never a time: null is not 1 Jan 1970', () => {
+  for (const nothing of [null, undefined, true, false, {}, [], '', 'junk', new Date(NaN)]) {
+    assert.throws(() => wallClock(nothing, UK), /Not a time/, String(nothing));
+    assert.throws(() => savedTime(nothing, UK), /Not a time/, String(nothing));
+    assert.throws(() => whenWords(nothing, UK), /Not a time/, String(nothing));
+    assert.throws(() => hourBeforeReminderAt(nothing), /Not a time/, String(nothing));
+    // (left out, these two mean "now")
+    if (nothing !== undefined) assert.throws(() => clockChanges(UK, nothing), /Not a time/, String(nothing));
+    if (nothing !== undefined) assert.throws(() => nextCall({ time: '07:30', zone: NY, from: '2026-01-05' }, nothing), /Not a time/, String(nothing));
+  }
+  assert.throws(() => readSavedTime({ at: '1Z', zone: UK }), /UTC instant/);
+  assert.throws(() => readSavedTime({ at: '2026-01-01Z', zone: UK }), /UTC instant/);
+  assert.equal(iso(readSavedTime({ at: '2026-01-01T00:00:00Z', zone: UK }).at), '2026-01-01T00:00:00.000Z');
+});
+
+test('a zone is written as the tz database writes it: "america/new_york" is refused, not shown as "new york time" on a 24-hour clock', () => {
+  for (const z of ['america/new_york', 'EUROPE/LONDON', 'europe/london', 'us/eastern', 'America/new_york', 'Etc/utc', 'Europe/London ', 'Europe/London; DROP', {}, ['Europe/London'], 'A/'.repeat(5000)]) assert.equal(isZone(z), false, String(z).slice(0, 30));
+  for (const z of ['US/Eastern', 'Asia/Calcutta', 'America/Argentina/ComodRivadavia', 'America/Port-au-Prince', 'Africa/Dar_es_Salaam', 'Europe/Isle_of_Man', 'Australia/ACT', 'Etc/UTC']) assert.equal(isZone(z), true, z);
+  // every zone the device lists is a zone here, with a plain place name and no letters or offsets in its words
+  for (const z of Intl.supportedValuesOf('timeZone')) {
+    assert.equal(isZone(z), true, z);
+    assert.doesNotMatch(zoneLabel(z), /[/_]|GMT|Etc|^ ?time$/, z);
+    if (z !== 'UTC') assert.doesNotMatch(whenWords(new Date('2026-07-15T03:21:00Z'), z), /\b[A-Z]{2,5}T\b|GMT|UTC|[+-]\d\d:?\d\d|NaN|Invalid|undefined/, z);
+  }
+  let message = '';
+  try { mustBeZone('x'.repeat(10000)); } catch (e) { message = e.message; }
+  assert.ok(message.length < 200, 'the error doesn’t repeat 10,000 characters');
+});
+
+test('looking for clock changes always ends, from any second of the day', () => {
+  // From 30 seconds past the hour, with the change exactly an hour on, the search for the minute once went round for ever.
+  assert.deepEqual(clockChanges(UK, new Date('2026-10-25T00:00:30Z'), 7).map((c) => [iso(c.at), c.date, c.direction]), [['2026-10-25T01:00:00.000Z', '2026-10-25', 'back']]);
+  for (const z of [UK, NY, 'Australia/Lord_Howe', 'Pacific/Chatham', 'America/Havana']) {
+    for (const change of clockChanges(z, new Date('2026-01-01T00:00:00Z'), 365)) {
+      for (const secondsBefore of [1, 30, 59, 61, 119, 3599, 3601, 21599, 21601, 86399.5]) {
+        const found = clockChanges(z, new Date(change.at.getTime() - secondsBefore * 1000), 1);
+        assert.deepEqual(found.map((c) => [iso(c.at), c.date]), [[iso(change.at), change.date]], `${z}, ${secondsBefore} seconds before`);
+      }
+    }
+  }
+  assert.equal(clockChanges('Australia/Lord_Howe', new Date('2026-01-01T00:00:00Z'), 365)[0].minutes, 30);
+  assert.equal(clockChanges(NY, new Date('2026-01-01T00:00:13Z'), 4000).length, 22);
+  assert.deepEqual(clockChanges(NY, new Date('2026-01-01T00:00:00Z'), 0), []);
+  assert.throws(() => clockChanges(NY, new Date(), Infinity), /number of days/);
+});
+
+test('a clock change at midnight is on the day that midnight starts (Cuba, Chile, Lebanon)', () => {
+  const day = (zone, from) => clockChanges(zone, new Date(from), 7).map((c) => `${c.direction} ${c.date}`);
+  assert.deepEqual(day('America/Havana', '2026-03-04T00:00:00Z'), ['forward 2026-03-08']); // Sunday 00:00 becomes 01:00
+  assert.deepEqual(day('Asia/Beirut', '2026-03-25T00:00:00Z'), ['forward 2026-03-29']);
+  assert.deepEqual(day('America/Santiago', '2026-09-02T00:00:00Z'), ['forward 2026-09-06']);
+  assert.deepEqual(day(UK, '2026-03-25T00:00:00Z'), ['forward 2026-03-29']);
+  assert.deepEqual(day(NY, '2026-10-28T00:00:00Z'), ['back 2026-11-01']);
+  assert.equal(clockChangeLine({ coachZone: UK, change: { ...clockChanges('America/Havana', new Date('2026-03-04T00:00:00Z'), 7)[0], zone: 'America/Havana' }, moves: [] }), 'Havana clocks go forward on Sunday 8 Mar.');
+  // 07:00 still exists on those days, and the day-before reminder is still on the day before
+  for (const z of ['America/Havana', 'America/Santiago', 'Asia/Beirut', 'Africa/Cairo']) {
+    for (const change of clockChanges(z, new Date('2026-01-01T00:00:00Z'), 365)) {
+      for (const off of [-1, 0, 1]) {
+        const sessionDay = addDays(wallClock(change.at, z).date, off);
+        const at = wallClock(dayBeforeReminderAt(instantAt(sessionDay, '10:00', z), z), z);
+        assert.deepEqual([at.date, at.time], [addDays(sessionDay, -1), '07:00'], `${z} ${sessionDay}`);
+      }
+    }
+  }
+});
+
+test('a series that hasn’t started yet has a next call; one that has ended has none; a window needs both ends', () => {
+  const rule = { every: 2, weekday: 1, time: '07:30', zone: NY, from: '2027-06-07' };
+  assert.equal(nextCall(rule, new Date('2026-11-10T00:00:00Z')).date, '2027-06-07');
+  assert.equal(nextCall({ ...rule, from: '2026-01-05', until: '2026-02-01' }, new Date('2026-11-10T00:00:00Z')), null);
+  assert.throws(() => seriesCalls(rule, { from: new Date('2026-01-01T00:00:00Z') }), /Not a time/);
+  // 50 years of a weekly series stops at the limit
+  assert.equal(seriesCalls({ ...rule, every: 1, from: '2026-01-05' }, { from: new Date('2026-01-01T00:00:00Z'), to: new Date('2076-01-01T00:00:00Z') }).length, 500);
+  // a time the clocks skip is an hour on that one week; a time that happens twice is its first
+  const skipped = seriesCalls({ weekday: 7, time: '02:30', zone: NY, from: '2026-03-01' }, { from: new Date('2026-03-01T00:00:00Z'), to: new Date('2026-03-20T00:00:00Z') });
+  assert.deepEqual(skipped.map((c) => wallClock(c.at, NY).time), ['02:30', '03:30', '02:30']);
+});
+
+test('a booking that can’t be read is refused, never treated as free time', () => {
+  const day = '2026-11-16';
+  assert.throws(() => offeredStarts({ day, minutes: 60, clientZone: UK, bookings: [{ start: 'junk', end: null }] }), /Not a time/);
+  assert.throws(() => offeredStarts({ day, minutes: 60, clientZone: UK, bookings: [{ start: '2026-11-16T12:00:00Z', end: '2026-11-16T10:00:00Z' }] }), /in that order/);
+  assert.throws(() => offeredStarts({ day, minutes: 60, clientZone: UK, bookings: [null] }), /in that order/);
+  assert.throws(() => offeredStarts({ day, minutes: 60, clientZone: UK, notBefore: 'junk' }), /Not a time/);
+  for (const minutes of [0, -30, NaN, Infinity, null, undefined, '60']) assert.throws(() => offeredStarts({ day, minutes, clientZone: UK }), /length in minutes/, String(minutes));
+  // exactly 15 clear minutes is enough; a second less is not
+  const start = new Date('2026-11-16T10:00:00Z');
+  assert.equal(clearOfOthers(start, 60, [{ start: new Date('2026-11-16T11:15:00Z'), end: new Date('2026-11-16T12:00:00Z') }]), true);
+  assert.equal(clearOfOthers(start, 60, [{ start: new Date('2026-11-16T11:14:59Z'), end: new Date('2026-11-16T12:00:00Z') }]), false);
+  // a booker a day away from the client (Hawaii and Kiritimati): both days are written
+  const far = offeredStarts({ day, minutes: 60, clientZone: 'Pacific/Kiritimati', bookerZone: 'Pacific/Honolulu' });
+  assert.equal(bothWords(far[0], 'Pacific/Honolulu', 'Pacific/Kiritimati', { withDay: true }), 'Mon 16 Nov, 7:00 am Hawaii time (Tue 17 Nov, 07:00 Kiritimati time)');
+});
+
+test('a public holiday: a country in small letters is the same country, and a day that doesn’t exist is refused', async () => {
+  assert.deepEqual(await publicHolidayOn('2026-12-25', 'us'), { name: 'Christmas Day', country: 'US' });
+  assert.equal(holidayLine(await publicHolidayOn('2026-11-26', 'us')), 'That’s Thanksgiving in the US.');
+  for (const country of ['', 'ZZ', 123, null, undefined, {}, '<script>', '__proto__']) assert.equal(await publicHolidayOn('2026-12-25', country), null, String(country));
+  await assert.rejects(() => publicHolidayOn('2026-13-01', 'US'), /is not a day/);
+  await assert.rejects(() => publicHolidayOn('junk', 'US'), /is not a day/);
+  const two = await Promise.all([publicHolidayOn('2026-11-26', 'US'), publicHolidayOn('2026-12-25', 'GB')]);
+  assert.deepEqual(two.map((h) => h.name), ['Thanksgiving Day', 'Christmas Day']);
+});
+

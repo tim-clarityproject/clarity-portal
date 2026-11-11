@@ -8,13 +8,14 @@
 // Sunday 1 Nov. Your calls with US clients stay at their usual time for
 // them; for you, Tyson's Monday call moves from 12:30 to 13:30 UK time
 // this week."
-import { offsetMinutes, wallClock } from './instants.js';
+import { offsetMinutes, toDate, wallClock } from './instants.js';
 import { nextCall, seriesCalls } from './series.js';
 import { clockWords, dayKeyWords } from './words.js';
 import { countryAdjective, zoneCountry, zoneLabel, zonePlace } from './zones.js';
 
 const HOUR = 3600000;
 const DAY = 24 * HOUR;
+const STEP = 6 * HOUR;
 
 /**
  * The clock changes in a zone from an instant, for some days ahead.
@@ -22,22 +23,31 @@ const DAY = 24 * HOUR;
  *   `date` is the local day of the change; `minutes` how far the clock moves.
  */
 export function clockChanges(zone, from = new Date(), days = 7) {
-  const start = from instanceof Date ? from.getTime() : new Date(from).getTime();
+  const start = toDate(from).getTime();
+  if (!Number.isFinite(Number(days))) throw new Error('Clock changes are looked for over a number of days.');
   const end = start + days * DAY;
   const out = [];
   let before = offsetMinutes(start, zone);
-  for (let t = start + HOUR; t <= end; t += HOUR) {
+  // Six hours at a time (no place changes its clocks twice in six hours), so years ahead take a moment, not seconds.
+  for (let from6 = start; from6 < end; from6 += STEP) {
+    const t = Math.min(from6 + STEP, end);
     const now = offsetMinutes(t, zone);
     if (now !== before) {
-      // Narrow the hour down to the minute the clocks change.
-      let lo = t - HOUR;
-      let hi = t;
+      // Narrow it down to the minute the clocks change, in whole minutes:
+      // `lo` is always on the old clock and `hi` on the new one, and every
+      // step lands strictly between them, so the search always ends (a
+      // start that wasn't on a whole minute once left it going round for
+      // ever when the change fell in the last minute of a step).
+      let lo = Math.floor(from6 / 60000) * 60000;
+      let hi = Math.ceil(t / 60000) * 60000;
       while (hi - lo > 60000) {
-        const mid = Math.floor((lo + hi) / 2 / 60000) * 60000;
+        const mid = lo + Math.floor((hi - lo) / 120000) * 60000;
         if (offsetMinutes(mid, zone) === before) lo = mid; else hi = mid;
       }
-      // The local day it happens on, read just before the change.
-      out.push({ at: new Date(hi), date: wallClock(hi - 1000, zone).date, direction: now > before ? 'forward' : 'back', minutes: Math.abs(now - before) });
+      // The local day it happens on, by the clock that is changing: a change
+      // at midnight (Cuba, Chile, Lebanon, Egypt) is on the day that midnight
+      // starts, "Sunday at 00:00", not the Saturday a second before it.
+      out.push({ at: new Date(hi), date: new Date(hi + before * 60000).toISOString().slice(0, 10), direction: now > before ? 'forward' : 'back', minutes: Math.abs(now - before) });
       before = now;
     }
   }
@@ -58,7 +68,7 @@ export function clockChanges(zone, from = new Date(), days = 7) {
  * @returns {{ name, zone, change: {at,date,direction,minutes,zone}, call: {at,date}, was: 'HH:MM', now: 'HH:MM' }[]}
  */
 export function callsThatMove({ coachZone, series, from = new Date(), days = 7 }) {
-  const start = from instanceof Date ? from : new Date(from);
+  const start = toDate(from);
   const end = new Date(start.getTime() + days * DAY);
   const moved = [];
   for (const s of series) {

@@ -6,7 +6,7 @@
 // The dates come from the date-holidays package (pinned in package.json),
 // loaded only when a booking is checked, so it is never part of the
 // portal's first load.
-import { instantAt, wallClock } from './instants.js';
+import { instantAt, mustBeDay, wallClock } from './instants.js';
 import { countryWords, isZone, zoneCountry } from './zones.js';
 
 let load = null;
@@ -23,7 +23,10 @@ const library = () => {
  * @returns {Promise<{ name: string, country: string } | null>}
  */
 export async function publicHolidayOn(day, country, region) {
-  if (!country) return null;
+  if (typeof country !== 'string' || !country) return null;
+  mustBeDay(day);
+  // "us" is the US: the package takes either, and the words (countryWords) know only capitals.
+  country = country.toUpperCase();
   const Holidays = await library();
   const hd = region ? new Holidays(country, region, { languages: ['en'] }) : new Holidays(country, { languages: ['en'] });
   // Noon on the day by the country's own clock, which is how the package

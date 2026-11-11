@@ -7,7 +7,7 @@
 //   - there are always at least 15 clear minutes between any two calls;
 //   - only times from 07:00 to 20:00 in the BOOKER's own time are offered,
 //     unless they choose "Show early and late times".
-import { addDays, instantAt, wallClock } from './instants.js';
+import { addDays, instantAt, toDate, wallClock } from './instants.js';
 
 export const GAP_MINUTES = 15;
 export const QUARTER_MINUTES = 15;
@@ -16,7 +16,12 @@ export const SOCIABLE_TO = '20:00';
 export const EARLY_AND_LATE_LABEL = 'Show early and late times';
 
 const MIN = 60000;
-const ms = (t) => (t instanceof Date ? t.getTime() : new Date(t).getTime());
+const ms = (t) => toDate(t).getTime();
+// A call's length: a real number of minutes above zero, or nothing can be checked against it.
+const length = (minutes) => {
+  if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes <= 0) throw new Error('A call has a length in minutes, above zero.');
+  return minutes;
+};
 const minutesOf = (time) => { const [h, m] = String(time).split(':').map(Number); return h * 60 + m; };
 
 /** Whether an instant is on a quarter hour in the client's own time. */
@@ -39,8 +44,12 @@ export function nextQuarterHour(instant, clientZone) {
  */
 export function clearOfOthers(start, minutes, bookings = [], gap = GAP_MINUTES) {
   const s = ms(start);
-  const e = s + minutes * MIN;
-  return bookings.every((b) => e + gap * MIN <= ms(b.start) || s >= ms(b.end) + gap * MIN);
+  const e = s + length(minutes) * MIN;
+  return bookings.every((b) => {
+    // A booking that can't be read is refused, never quietly treated as free time.
+    if (!b || ms(b.end) < ms(b.start)) throw new Error('A booking has a start and an end, in that order.');
+    return e + gap * MIN <= ms(b.start) || s >= ms(b.end) + gap * MIN;
+  });
 }
 
 /** Whether an instant falls from 07:00 up to 20:00 in a zone (the booker's own time). */
@@ -78,6 +87,8 @@ export function bookingProblem({ start, minutes, clientZone, bookerZone = client
  * @returns {Date[]} instants, earliest first
  */
 export function offeredStarts({ day, minutes, clientZone, bookerZone = clientZone, bookings = [], open = null, earlyAndLate = false, notBefore = null }) {
+  length(minutes);
+  const notBeforeMs = notBefore == null ? null : ms(notBefore);
   const dayStart = instantAt(day, '00:00', bookerZone);
   const dayEnd = instantAt(addDays(day, 1), '00:00', bookerZone);
   const out = [];
@@ -86,7 +97,7 @@ export function offeredStarts({ day, minutes, clientZone, bookerZone = clientZon
     // A clock change inside the day can leave a start off the quarter hour.
     if (!onQuarterHour(start, clientZone)) continue;
     if (wallClock(start, bookerZone).date !== day) continue;
-    if (notBefore && t < ms(notBefore)) continue;
+    if (notBeforeMs != null && t < notBeforeMs) continue;
     if (open && !open.some((o) => t >= ms(o.start) && t + minutes * MIN <= ms(o.end))) continue;
     if (bookingProblem({ start, minutes, clientZone, bookerZone, bookings, earlyAndLate })) continue;
     out.push(start);

@@ -11,18 +11,20 @@
 //     zone: 'America/New_York'   the anchor zone, by place name
 //     from: 'YYYY-MM-DD'  the first call's day, in the anchor zone
 //     until?: 'YYYY-MM-DD' the last day a call can fall on (optional) }
-import { addDays, daysBetween, instantAt, wallClock, weekdayOf } from './instants.js';
+import { addDays, daysBetween, instantAt, mustBeDay, toDate, wallClock, weekdayOf } from './instants.js';
 import { mustBeZone } from './zones.js';
 
 /** Checks a rule and returns it tidy; anything that could drift is refused. */
 export function seriesRule({ every = 1, weekday, time, zone, from, until = null }) {
   mustBeZone(zone);
   if (!Number.isInteger(every) || every < 1 || every > 52) throw new Error('A series repeats every 1 to 52 weeks.');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(from))) throw new Error('A series starts on a day.');
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(time))) throw new Error('A series has a time, as HH:MM.');
+  if (typeof from !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(from)) throw new Error('A series starts on a day.');
+  mustBeDay(from);
+  if (typeof time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('A series has a time, as HH:MM.');
   const day = weekday ?? weekdayOf(from);
   if (!Number.isInteger(day) || day < 1 || day > 7) throw new Error('A series falls on a weekday, Monday 1 to Sunday 7.');
-  if (until != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(until))) throw new Error('A series ends on a day.');
+  if (until != null && (typeof until !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(until))) throw new Error('A series ends on a day.');
+  if (until != null) mustBeDay(until);
   // The first call is the first such weekday on or after `from`.
   const first = addDays(from, (day - weekdayOf(from) + 7) % 7);
   return { every, weekday: day, time, zone, from: first, until };
@@ -35,8 +37,9 @@ export function seriesRule({ every = 1, weekday, time, zone, from, until = null 
  */
 export function seriesCalls(rule, { from, to, limit = 500 }) {
   const r = seriesRule(rule);
-  const start = from instanceof Date ? from : new Date(from);
-  const end = to instanceof Date ? to : new Date(to);
+  // A window with no start or no end is refused: with no end the calls would run on to the limit.
+  const start = toDate(from);
+  const end = toDate(to);
   const out = [];
   // Start a little before the window, in whole steps from the first call.
   const firstDay = wallClock(new Date(start.getTime() - 2 * 86400000), r.zone).date;
@@ -55,8 +58,10 @@ export function seriesCalls(rule, { from, to, limit = 500 }) {
 
 /** The next call of a series at or after an instant, or null when it has ended. */
 export function nextCall(rule, now = new Date()) {
-  const start = now instanceof Date ? now : new Date(now);
+  const start = toDate(now);
   const r = seriesRule(rule);
-  const calls = seriesCalls(r, { from: start, to: new Date(start.getTime() + (r.every * 7 + 8) * 86400000), limit: 1 });
+  // A series that hasn't started yet has its first call next, however far off.
+  const first = instantAt(r.from, r.time, r.zone);
+  const calls = seriesCalls(r, { from: start, to: new Date(Math.max(start.getTime(), first.getTime()) + (r.every * 7 + 8) * 86400000), limit: 1 });
   return calls[0] || null;
 }

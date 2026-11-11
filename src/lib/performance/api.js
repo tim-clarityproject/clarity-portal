@@ -14,6 +14,7 @@
 // says so when it can't.
 
 import { supabase } from '../supabase';
+import { deviceZone } from '../time/index.js';
 import { newId, noteVersions, saveOrQueue } from '../syncQueue';
 import { nextVersion, planChangeKind } from './versions';
 import { pickDebriefWeek } from './debrief';
@@ -49,11 +50,10 @@ async function one(query) {
 
 /** The device's own time zone (IANA name), or null. */
 export function deviceTimeZone() {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
-  } catch {
-    return null;
-  }
+  // Only a real place-name zone is ever saved (the one time library's
+  // check): a device reporting an offset, letters or junk saves nothing,
+  // so the database's own today never meets a value it can't read.
+  return deviceZone();
 }
 
 /**

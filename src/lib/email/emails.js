@@ -13,10 +13,9 @@
 // reader's own zone with a city or country name, 12-hour for readers in
 // the US and Canada, dates in words. The 1-hour reminder never gives a
 // clock time, so it can never be wrong.
-import { EMAIL_SIGN_OFF } from './template.js';
+import { EMAIL_SIGN_OFF, oneLine } from './template.js';
 import { sessionWhenWords, timeWords, relativeDayWords } from '../time/index.js';
 
-const oneLine = (s) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
 const possessive = (name) => `${name}’s`;
 
 // ---------------------------------------------------------------- Health Check

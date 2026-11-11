@@ -59,7 +59,36 @@ export const EMAIL_IMAGES = Object.freeze({
 
 const C = EMAIL_COLOURS;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }[c]));
-const oneLine = (s) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
+// One line, whatever was typed: every kind of line break and control
+// character becomes a space (a subject must never gain a second line, and
+// the plain text must never gain a made-up footer or link line), and the
+// characters that turn text round (the direction overrides) are dropped.
+// eslint-disable-next-line no-control-regex
+const BREAKS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]+/g;
+const TURNS = /[\u202A-\u202E\u2066-\u2069]/g;
+export const oneLine = (s) => String(s ?? '').replace(TURNS, '').replace(BREAKS, ' ').trim();
+
+// The only addresses a link may have: an https address, or one of the two
+// services' own placeholders, whole, in the templates saved outside the
+// code (Supabase's link, Kit's unsubscribe link). Anything else (javascript:,
+// data:, http:, an address with a name and password before the host, a line
+// break) is refused, so the email is not sent with it.
+const LINK_PLACEHOLDERS = ['{{ .ConfirmationURL }}', '{{ unsubscribe_url }}'];
+export function safeHref(href) {
+  if (LINK_PLACEHOLDERS.includes(href)) return href;
+  let url = null;
+  // eslint-disable-next-line no-control-regex
+  try { url = typeof href === 'string' && /^https:\/\/[a-z0-9[][^\s\u0000-\u001F\u007F-\u009F\u2028\u2029<>"'\\]*$/i.test(href) ? new URL(href) : null; } catch { url = null; }
+  if (!url || url.protocol !== 'https:' || !url.hostname || url.username || url.password) throw new Error('An email link must be an https address.');
+  return href;
+}
+// An image is inside the email (cid:), on an https address, one of this
+// build's own files (the test page), or the PNG itself (the browser checks).
+function safeSrc(src) {
+  if (typeof src === 'string' && (/^cid:[a-z-]+$/.test(src) || (/^\/[a-z0-9@._/-]+$/i.test(src) && !src.startsWith('//')) || /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(src))) return src;
+  return safeHref(src);
+}
+const SLOT = '{{ message_content }}';
 
 const row = (html, style = '') => `<tr><td style="${style}">${html}</td></tr>`;
 // Reading text is 1.6 tall; the small parts (the sign-in box, the time, the quiet link, the footer) are 1.5, as in the mock-up.
@@ -68,11 +97,11 @@ const text = (size, colour, extra = '', lineHeight = 1.6) => `font-family:${BODY
 function brandHtml(brand, src) {
   if (brand === 'project') {
     const i = EMAIL_IMAGES.project;
-    return row(`<img src="${esc(src('project'))}" width="${i.width}" height="${i.height}" alt="${i.alt}" style="display:block;border:0;width:${i.width}px;max-width:100%;height:auto;${text(16, C.text)}">`);
+    return row(`<img src="${esc(safeSrc(src('project')))}" width="${i.width}" height="${i.height}" alt="${i.alt}" style="display:block;border:0;width:${i.width}px;max-width:100%;height:auto;${text(16, C.text)}">`);
   }
   const i = EMAIL_IMAGES.crosshair;
   return row(`<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-<td style="padding:0 12px 0 0;vertical-align:middle;"><img src="${esc(src('crosshair'))}" width="${i.width}" height="${i.height}" alt="" style="display:block;border:0;width:${i.width}px;height:${i.height}px;"></td>
+<td style="padding:0 12px 0 0;vertical-align:middle;"><img src="${esc(safeSrc(src('crosshair')))}" width="${i.width}" height="${i.height}" alt="" style="display:block;border:0;width:${i.width}px;height:${i.height}px;"></td>
 <td style="vertical-align:middle;font-family:${BODY_FONT};font-size:11px;line-height:1.5;letter-spacing:0.16em;text-transform:uppercase;color:${C.text};">The Clarity Portal</td>
 </tr></table>`);
 }
@@ -82,7 +111,7 @@ const linkStyle = (colour, line = C.line) => `color:${colour};text-decoration:un
 function footerLine(line) {
   if (typeof line === 'string') return esc(line);
   const links = Array.isArray(line) ? line : [line];
-  return links.map((l) => `<a href="${esc(l.href)}" style="color:${C.quiet};text-decoration:underline;">${esc(l.label)}</a>`).join(' &middot; ');
+  return links.map((l) => `<a href="${esc(safeHref(l.href))}" style="color:${C.quiet};text-decoration:underline;">${esc(l.label)}</a>`).join(' &middot; ');
 }
 
 function blockHtml(b, first) {
@@ -98,7 +127,7 @@ function blockHtml(b, first) {
       // on a link, so the cell carries the same padding for Outlook alone
       // (mso-padding-alt), or its button would shrink to the words.
       return row(`<table role="presentation" cellspacing="0" cellpadding="0" border="0" class="cta"><tr>
-<td class="btn-cell" bgcolor="${C.coral}" style="background:${C.coral};border-radius:999px;text-align:center;mso-padding-alt:16px 24px;"><a class="btn" href="${esc(b.href)}" style="display:inline-block;padding:16px 24px;font-family:${TITLE_FONT};font-size:12px;line-height:16px;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;color:#000000;text-decoration:none;border-radius:999px;">${esc(b.label)}</a></td>
+<td class="btn-cell" bgcolor="${C.coral}" style="background:${C.coral};border-radius:999px;text-align:center;mso-padding-alt:16px 24px;"><a class="btn" href="${esc(safeHref(b.href))}" style="display:inline-block;padding:16px 24px;font-family:${TITLE_FONT};font-size:12px;line-height:16px;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;color:#000000;text-decoration:none;border-radius:999px;">${esc(b.label)}</a></td>
 ${b.time ? `<td class="cta-time" style="padding:0 0 0 16px;vertical-align:middle;${text(14, C.quiet, '', 1.5)}">${esc(b.time)}</td>` : ''}
 </tr></table>`, 'padding:28px 0 0;');
     case 'details':
@@ -109,9 +138,9 @@ ${b.time ? `<td class="cta-time" style="padding:0 0 0 16px;vertical-align:middle
 </tr>`).join('')}</table>
 </td></tr></table>`, 'padding:22px 0 0;');
     case 'link':
-      return row(`<a href="${esc(b.href)}" style="font-family:${BODY_FONT};font-size:15px;line-height:1.5;${linkStyle(C.text)}">${esc(b.label)}</a>`, `padding:20px 0 0;${text(15, C.text, '', 1.5)}`);
+      return row(`<a href="${esc(safeHref(b.href))}" style="font-family:${BODY_FONT};font-size:15px;line-height:1.5;${linkStyle(C.text)}">${esc(b.label)}</a>`, `padding:20px 0 0;${text(15, C.text, '', 1.5)}`);
     case 'coral-link':
-      return row(`<a href="${esc(b.href)}" style="font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${C.text};text-decoration:underline;text-decoration-color:${C.coral};text-decoration-thickness:2px;text-underline-offset:4px;">${esc(b.label)}</a>`, `padding:10px 0 0;${text(16, C.text)}`);
+      return row(`<a href="${esc(safeHref(b.href))}" style="font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${C.text};text-decoration:underline;text-decoration-color:${C.coral};text-decoration-thickness:2px;text-underline-offset:4px;">${esc(b.label)}</a>`, `padding:10px 0 0;${text(16, C.text)}`);
     case 'files':
       return row(b.names.map((n) => `<span style="display:inline-block;margin:0 8px 8px 0;padding:8px 12px;border:1px solid ${C.line};border-radius:8px;${text(13, C.quiet)}">${esc(n)}</span>`).join(''), 'padding:22px 0 0;');
     case 'label':
@@ -125,6 +154,7 @@ ${b.time ? `<td class="cta-time" style="padding:0 0 0 16px;vertical-align:middle
       return row(`${b.lead ? `<span style="${text(14, C.quiet)}">${esc(b.lead)}</span><br>` : ''}${esc(b.text)}${b.after ? `<br><span style="${text(14, C.quiet)}">${esc(b.after)}</span>` : ''}`, `padding:${b.lead ? 12 : 10}px 0 0;${text(16, C.text, 'text-wrap:pretty;')}`);
     case 'slot':
       // Where another service puts the message itself (Kit's {{ message_content }}); only ever a fixed placeholder, never a person's words.
+      if (b.placeholder !== SLOT) throw new Error('The only slot an email has is Kit’s own message placeholder.');
       return row(b.placeholder, `padding:0;${text(16, C.text)}`);
     case 'section':
       return `${row('', `padding:64px 0 0;border-bottom:1px solid ${C.line};font-size:0;line-height:0;`)}${row(`<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">${b.blocks.map((x, i) => blockHtml(x.type === 'text' ? { ...x, sectionText: true } : x, i === 0)).join('\n')}</table>`, 'padding:4px 0 0;')}`;
@@ -140,19 +170,23 @@ function footerHtml(footer, sectionBefore) {
 }
 
 // ---------------------------------------------------------------- plain text
+// Each piece of an email is one line of the plain text, whatever was typed
+// into it: a name with line breaks in it can't write a footer or a link line
+// of its own (`t`).
+const t = oneLine;
 function blockText(b) {
   switch (b.type) {
-    case 'heading': return [b.text, ''];
-    case 'text': return [b.text, ''];
-    case 'button': return [`${b.label}${b.time ? ` (${b.time})` : ''}:`, b.href, ''];
-    case 'details': return [...b.rows.map(([label, value]) => `${label}: ${value}`), ''];
-    case 'link': return [`${b.label}:`, b.href, ''];
-    case 'coral-link': return [`${b.label}:`, b.href, ''];
-    case 'files': return ['Attached:', ...b.names.map((n) => `- ${n}`), ''];
-    case 'label': return [`${b.text}:`];
-    case 'quote': return [b.text, ...(b.by ? [b.by] : []), ''];
-    case 'question': return [b.text, ''];
-    case 'note': return [...(b.lead ? [b.lead] : []), b.text, ...(b.after ? [b.after] : []), ''];
+    case 'heading': return [t(b.text), ''];
+    case 'text': return [t(b.text), ''];
+    case 'button': return [`${t(b.label)}${b.time ? ` (${t(b.time)})` : ''}:`, safeHref(b.href), ''];
+    case 'details': return [...b.rows.map(([label, value]) => `${t(label)}: ${t(value)}`), ''];
+    case 'link': return [`${t(b.label)}:`, safeHref(b.href), ''];
+    case 'coral-link': return [`${t(b.label)}:`, safeHref(b.href), ''];
+    case 'files': return ['Attached:', ...b.names.map((n) => `- ${t(n)}`), ''];
+    case 'label': return [`${t(b.text)}:`];
+    case 'quote': return [t(b.text), ...(b.by ? [t(b.by)] : []), ''];
+    case 'question': return [t(b.text), ''];
+    case 'note': return [...(b.lead ? [t(b.lead)] : []), t(b.text), ...(b.after ? [t(b.after)] : []), ''];
     case 'slot': return [b.placeholder, ''];
     case 'section': return ['----', '', ...b.blocks.flatMap(blockText)];
     default: throw new Error(`The email template has no "${b.type}" part.`);
@@ -162,10 +196,10 @@ function blockText(b) {
 function footerText(footer) {
   const out = ['----'];
   for (const l of footer.lines) {
-    if (typeof l === 'string') out.push(l);
-    else for (const link of (Array.isArray(l) ? l : [l])) out.push(`${link.label}: ${link.href}`);
+    if (typeof l === 'string') out.push(t(l));
+    else for (const link of (Array.isArray(l) ? l : [l])) out.push(`${t(link.label)}: ${safeHref(link.href)}`);
   }
-  if (footer.legal) out.push(footer.legal);
+  if (footer.legal) out.push(t(footer.legal));
   return out;
 }
 

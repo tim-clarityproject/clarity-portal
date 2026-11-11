@@ -168,3 +168,83 @@ test('the recipient rules on their own', () => {
   assert.equal(m.subject, 'A & B Ltd finished a Health Check');
   assert.ok(m.html.includes('A &amp; B Ltd'));
 });
+
+// ---------------------------------------------------------------- the break-it pass (10 Nov)
+// The handler run directly with any headers and body; the database and Resend are still stood in for.
+async function post({ headers = { host: 'preview.example.invalid' }, body }) {
+  const res = { statusCode: 0, body: null, setHeader() {}, status(c) { this.statusCode = c; return this; }, json(b) { this.body = b; return this; } };
+  await handler({ method: 'POST', headers, body }, res);
+  return { res, sent: calls.filter((c) => c.url === 'https://api.resend.com/emails').map((c) => c.body) };
+}
+const ASK = { token: 'test-token-not-real', email: GUEST, code: 'Zq7#Kp', kind: 'link' };
+
+test('a host that is not a plain site name never becomes the link: nothing is sent, and it can be tried again', async () => {
+  for (const host of ['portal.example.invalid@other.example', 'with space.example', '"><script>alert(1)</script>', 'javascript:alert(1)//', 'other.example\r\nX: y', '']) {
+    calls = [];
+    standIn({ hasCoach: true, coachEmail: COACH });
+    const { res, sent } = await post({ headers: { host }, body: ASK });
+    assert.equal(res.statusCode, 502, host);
+    assert.equal(sent.length, 0, host);
+    assert.ok(calls.some((c) => c.url.endsWith('/alignment_email_failed')), 'the send is undone');
+  }
+  // every link that is sent is an https address ending in the Health Check's own path
+  calls = [];
+  standIn({ hasCoach: true, coachEmail: COACH });
+  const { sent } = await post({ headers: { host: 'a.example.invalid, b.example.invalid' }, body: ASK });
+  assert.deepEqual([...sent[0].html.matchAll(/<a[^>]*href="([^"]*)"/g)].map((m) => m[1]), ['https://a.example.invalid/health-check/test-token-not-real']);
+});
+
+test('a request that is not the right shape is refused before the database is asked, and no reply or log ever holds the address, the code or the link', async () => {
+  const logged = [];
+  const real = {};
+  for (const k of ['log', 'error', 'warn', 'info', 'debug']) { real[k] = console[k]; console[k] = (...a) => logged.push(a.map(String).join(' ')); }
+  const replies = [];
+  try {
+    for (const body of [undefined, null, 'x', [], [ASK], 5, {}, { ...ASK, token: undefined }, { ...ASK, token: 12345678 }, { ...ASK, token: ['a'.repeat(10)] }, { ...ASK, token: 'short' }, { ...ASK, token: 'x'.repeat(100000) }, { ...ASK, email: 'x'.repeat(100000) }, { ...ASK, email: 5 }, { ...ASK, code: ['1'] }, { ...ASK, code: '1'.repeat(13) }, { ...ASK, kind: 'owner' }, { ...ASK, kind: '__proto__' }, { ...ASK, kind: ['link'] }]) {
+      calls = [];
+      standIn({ hasCoach: true, coachEmail: COACH });
+      const { res } = await post({ body });
+      assert.deepEqual([res.statusCode, res.body], [400, { ok: false, error: 'invalid' }]);
+      assert.equal(calls.length, 0, 'nothing was asked or sent');
+      replies.push(JSON.stringify(res.body));
+    }
+    // sends that go, a send that doesn't, and a coach who can't be found
+    for (const [kind, options] of [['link', {}], ['complete', {}], ['complete', { sendFails: () => true }], ['complete', { coachEmail: null }]]) {
+      calls = [];
+      standIn({ hasCoach: true, coachEmail: COACH, ...options });
+      const { res, sent } = await post({ body: { ...ASK, kind } });
+      replies.push(JSON.stringify(res.body));
+      const note = sent.find((m) => m.subject.includes('finished a Health Check'));
+      if (note) for (const secret of [ASK.code, GUEST, ASK.token, 'Access code']) assert.ok(!`${note.subject} ${note.html} ${note.text}`.includes(secret), 'the owner\'s note holds no code, address or link');
+      const answers = sent.find((m) => m.subject.includes('finished their Health Check'));
+      if (answers) assert.ok(answers.text.includes(`Access code: ${ASK.code}`), 'the coach\'s own email has the code');
+    }
+  } finally {
+    for (const k of Object.keys(real)) console[k] = real[k];
+  }
+  assert.deepEqual(logged, [], 'nothing is logged');
+  for (const secret of [ASK.code, GUEST, ASK.token]) assert.ok(!replies.join(' ').includes(secret));
+});
+
+test('a Health Check with no organisation, no address or no answers still makes an email with no markup of its own', async () => {
+  const realStandIn = globalThis.fetch;
+  for (const change of [{ client_label: null }, { respondent_email: null }, { data: null }, { data: {} }, { data: { objective: '<b>x</b>', projects: 'x', csfs: 5, ratings: 'y' } }]) {
+    calls = [];
+    standIn({ hasCoach: true, coachEmail: COACH });
+    const inner = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+      const r = await inner(url, init);
+      if (!String(url).endsWith('/alignment_email_check')) return r;
+      const check = await r.json();
+      return { ok: true, json: async () => ({ ...check, ...change }) };
+    };
+    const { res, sent } = await post({ body: { ...ASK, kind: 'complete' } });
+    assert.equal(res.statusCode, 200, JSON.stringify(change));
+    for (const m of sent) {
+      assert.ok(!/[\r\n]/.test(m.subject));
+      assert.ok(!m.html.includes('<b>x</b>') && !/undefined|null|NaN|\[object/.test(m.text), JSON.stringify(change));
+    }
+  }
+  globalThis.fetch = realStandIn;
+});
+
