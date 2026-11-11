@@ -391,6 +391,11 @@ const ALLOWED = [
   { screen: /debrief, your days/, side: 'both', re: /^strateg(y|ies) that moved$/, why: 'M1’s “Strategy that moved”, plural when several moved that day' },
   { side: 'app', re: /^(on last night's list|to-do this week|habit, .*|rolled over from week #|rolls over from week #|highest priority|done)$/, why: 'the mock-up’s dotted line split into separate labels, the Strategy and the tag (26 Oct rule 5)' },
   // Tim, 10 Nov (part 5 and Phase 5 calm layout):
+  // Tim, 10 Nov, 23:22 (Phase 5 answers): Sleep quality and the way of being are the five words.
+  { side: 'mock', re: /^very poor$/, why: 'five words (Tim, 10 Nov, 23:22): sleep quality reads Poor, Fair, Good, Very good, Excellent; "Very poor" is gone (CLAUDE.md 26d)' },
+  { side: 'app', re: /^excellent$/, why: 'five words (Tim, 10 Nov, 23:22): sleep quality and the way of being read Poor, Fair, Good, Very good, Excellent (CLAUDE.md 26d)' },
+  { side: 'mock', re: /^(on a scale of # to #,? how .+ were you (today|<day>)\?|# is not at all|# is completely|.+, #\/#)$/, why: 'five words (Tim, 10 Nov, 23:22): the way of being is rated Poor to Excellent, never 1 to 10 (CLAUDE.md 26d)' },
+  { side: 'app', re: /^(how .+ were you (today|<day>)\?|poor|fair|good|very good|.+, (poor|fair|good|very good|excellent))$/, why: 'five words (Tim, 10 Nov, 23:22): the way of being is rated Poor to Excellent, never 1 to 10 (CLAUDE.md 26d)' },
   { side: 'mock', re: /^(plan my day|review my day)$/, why: 'renamed (Tim, 10 Nov): Plan my day is the Daily plan and Review my day is the Daily review (CLAUDE.md 26a)' },
   { side: 'app', re: /^(daily plan|daily review)$/, why: 'renamed (Tim, 10 Nov): Plan my day is the Daily plan and Review my day is the Daily review (CLAUDE.md 26a)' },
   { side: 'mock', re: /^(here's your day, <name>\.|here's your day, sam\.|check it over\.|change anything you need to\.)$/, why: 'calm layout (Tim, 10 Nov): the summary loses its greeting and its two nudges; its heading is “This was your plan”' },

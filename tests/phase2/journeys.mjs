@@ -530,10 +530,15 @@ try {
     }
   }
   const energy = [4, 3, 5, 4, 2];
+  // A rated habit's day is a box of mint, never a number (Tim, 10 Nov, 23:22): tap the day, then choose its word.
+  const WORD = ['Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
   for (const [i, k] of days.entries()) {
-    await logRow('Energy').getByRole('textbox', { name: new RegExp(dayAria(k)) }).fill(String(energy[i]));
-    await logRow('Energy').getByRole('textbox', { name: new RegExp(dayAria(k)) }).blur();
+    const box = logRow('Energy').getByRole('button', { name: new RegExp(`^${dayAria(k)}, `) });
+    await box.click();
+    await logRow('Energy').getByRole('group', { name: new RegExp(`^Energy, ${dayAria(k)}$`) }).getByRole('button', { name: WORD[energy[i] - 1], exact: true }).click();
+    await page.waitForFunction((el) => el?.getAttribute('data-rating') != null, await box.elementHandle(), { timeout: 5000 }).catch(() => null);
   }
+  pass('log a week: each rated day says its word, with no number in the box', (await logRow('Energy').locator('.ds-logweek-rate-box').evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label').split(', ').pop()}|${e.innerText.trim()}`).join(' '))) === energy.map((n) => `${WORD[n - 1]}|`).join(' '), await logRow('Energy').locator('.ds-logweek-rate-box').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')).join(' ; ')));
   await logRow('Weekly referral review').getByRole('checkbox').click().catch(async () => {
     await logRow('Weekly referral review').getByRole('button', { name: 'Weekly referral review', exact: true }).click();
   });

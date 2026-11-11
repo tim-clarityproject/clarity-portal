@@ -1058,7 +1058,7 @@ if (run('midnight')) {
     await context.setOffline(false);
     await page.waitForTimeout(1500);
     pass('midnight: a review carried past midnight keeps its day in the top bar', (await toolName(page)) === 'Daily review' || /Wed 21 Oct/.test(await toolName(page)), await toolName(page));
-    pass('midnight: ... and its step', /how calm under pressure were you today\?$/.test(await heading(page)), await heading(page));
+    pass('midnight: ... and its step', /^How calm under pressure were you today\?$/.test(await heading(page)), await heading(page));
     await rate(page, 8);
     await settled(page);
     await until(async () => (await dayReviews()).length > 0, 10000);

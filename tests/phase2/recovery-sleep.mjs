@@ -372,7 +372,8 @@ if (part('chart')) {
       pass(`${tag}: "Only you" beside the title, not at the far edge`, /Only you/.test(f.who || '') && f.whoRight != null && f.whoRight > 20 && f.whoRight < 160, `${f.who} ${f.whoRight}`);
       pass(`${tag}: "Last night" 6.5 in Nekst Light`, f.last?.value === '6.5' && /nekst/i.test(f.last.font) && Number(f.last.weight) <= 300, JSON.stringify(f.last));
       pass(`${tag}: "hours" small and grey beside it`, f.last?.unit === 'hours' && f.last.unitSize < f.last.valueSize && f.last.unitColour !== 'rgb(255, 255, 255)' && f.last.unitColour !== 'rgb(0, 0, 0)', JSON.stringify(f.last));
-      pass(`${tag}: "Average quality Good" (most common)`, f.average?.value === 'Good', f.average?.value);
+      // The saved keys read straight across in the five words (Tim, 10 Nov, 23:22): the most common key, 'good', reads "Very good".
+      pass(`${tag}: "Average quality Very good" (most common)`, f.average?.value === 'Very good', f.average?.value);
       pass(`${tag}: one bar per day of the Recovery (7)`, f.bars.length === 7, String(f.bars.length));
       const states = f.bars.map((b) => /--(good|below|none|next)/.exec(b.cls)?.[1]);
       pass(`${tag}: inside or above mint, below grey, to come stubs`, states.join(',') === 'good,below,none,good,below,next,next', states.join(','));
@@ -407,7 +408,7 @@ if (part('chart')) {
       if (touch) await bar.tap(); else await bar.hover();
       await still(page);
       const tip = await popUp(page);
-      pass(`${tag}: pop-up on ${touch ? 'tap' : 'hover'}: hours, night, quality`, tip && tip.lines.join(' | ') === '6 hours | Day 2, night of 30 Oct. | Quality: Poor.', tip?.lines?.join(' | '));
+      pass(`${tag}: pop-up on ${touch ? 'tap' : 'hover'}: hours, night, quality`, tip && tip.lines.join(' | ') === '6 hours | Day 2, night of 30 Oct. | Quality: Fair.', tip?.lines?.join(' | '));
       pass(`${tag}: pop-up 12px inside the screen`, tip && tip.left >= 11.5 && tip.right >= 11.5 && tip.top >= 11.5 && tip.bottom >= 11.5, JSON.stringify(tip));
       const after = await boxes(page);
       pass(`${tag}: the pop-up moves nothing`, before.join(';') === after.join(';'));
@@ -428,7 +429,7 @@ if (part('chart')) {
         rows: [...document.querySelectorAll('.rec-sleep-sec tbody tr')].map((tr) => tr.innerText.replace(/\s+/g, ' ').trim()),
       }));
       pass(`${tag}: table columns Night, Hours, Quality`, table.head.join(',') === 'Night,Hours,Quality', table.head.join(','));
-      pass(`${tag}: a row per answered night`, table.rows.length === 4 && /29 Oct/.test(table.rows[0]) && /7\.5 hours/.test(table.rows[0]) && /Good/.test(table.rows[0]), table.rows.join(' / '));
+      pass(`${tag}: a row per answered night`, table.rows.length === 4 && /29 Oct/.test(table.rows[0]) && /7\.5 hours/.test(table.rows[0]) && /Very good/.test(table.rows[0]), table.rows.join(' / '));
       await ctx.close();
     }
   }
@@ -437,7 +438,7 @@ if (part('chart')) {
     const { ctx, page } = await open({ nights: NIGHTS.tie });
     await recoveryHome(page);
     const f = await chartFacts(page);
-    pass('chart: a tie goes to the better word (Fair 2, Good 2: Good)', f?.average?.value === 'Good', f?.average?.value);
+    pass('chart: a tie goes to the better word (the keys fair 2 and good 2, read Good and Very good: Very good)', f?.average?.value === 'Very good', f?.average?.value);
     await ctx.close();
   }
   // Before two nights: the empty frame with one line.

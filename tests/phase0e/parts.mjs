@@ -114,8 +114,9 @@ const hcSession = {
     ratings: { owner: Object.fromEntries([0, 1, 2, 3, 4, 5].map((i) => [`p${i}`, { contrib: { f0: 3 - (i % 4), f1: (i + 1) % 4, f2: 3 }, progress: [4, 5, 2, 1, 3, 4][i], resource: 2 }])) },
   },
 };
-async function openHealthCheck(width, touch) {
-  const ctx = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: touch, isMobile: touch });
+// The Health Check follows the device, light or dark (Tim, 10 Nov, 23:22), so the device's mode is set here.
+async function openHealthCheck(width, touch, mode = 'dark') {
+  const ctx = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: touch, isMobile: touch, colorScheme: mode });
   await ctx.route(/supabase\.co/, (route) => {
     const url = route.request().url();
     if (/rpc\/alignment_open/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(hcSession) });
@@ -140,6 +141,13 @@ async function openHealthCheck(width, touch) {
     good.length > 0 && outlines.every((d) => d.stroke === 'rgb(163, 163, 160)') && !dots.some((d) => CORALS.includes(d.fill) || CORALS.includes(d.stroke)));
   if (out) await page.screenshot({ path: join(out, 'health-check-results.png'), fullPage: true });
   await ctx.close();
+  // The same results on a device set to light: deep green dots, and still no coral.
+  const light = await openHealthCheck(1280, false, 'light');
+  const lightDots = await light.page.evaluate(() => [...document.querySelectorAll('.al-pt .al-core')].map((c) => ({ fill: getComputedStyle(c).fill, stroke: getComputedStyle(c).stroke })));
+  const lightGood = lightDots.filter((d) => d.fill === MINT.light);
+  pass(`Colour, Health Check results on a light device: deep green dots (${lightGood.length}), none in the dark mint, no coral`,
+    lightGood.length > 0 && lightGood.length === good.length && !lightDots.some((d) => d.fill === MINT.dark || CORALS.includes(d.fill) || CORALS.includes(d.stroke)), JSON.stringify(lightDots.slice(0, 3)));
+  await light.ctx.close();
 }
 
 // ---- 2. pop-ups -------------------------------------------------------------
