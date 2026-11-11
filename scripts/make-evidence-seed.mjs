@@ -122,6 +122,24 @@ export function seedSql(reg) {
   return out.join('\n');
 }
 
+/**
+ * The register as 031 first seeded it. 031 has already run on the test
+ * project, so it keeps the words it was written with; names changed since
+ * are changed in the database by their own migration, never by rewriting
+ * 031. Since 10 Nov the register says "Confidence Bank" where 031 says
+ * "Performance Evidence" (the tool's name, its key performance_evidence, and
+ * where claim C10 shows): migration 041 carries that rename.
+ */
+const RENAMED_SINCE_031 = [['Confidence Bank', 'Performance Evidence']];
+export function asFirstSeeded(reg) {
+  const old = (text) => RENAMED_SINCE_031.reduce((t, [now, then]) => (typeof t === 'string' ? t.replaceAll(now, then) : t), text);
+  return {
+    ...reg,
+    claims: reg.claims.map((c) => ({ ...c, whereItShows: old(c.whereItShows) })),
+    tools: reg.tools.map((t) => ({ ...t, name: old(t.name) })),
+  };
+}
+
 export function counts(reg) {
   return {
     references: reg.refs.length,
@@ -134,7 +152,7 @@ export function counts(reg) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const reg = parseRegister(fs.readFileSync(REGISTER, 'utf8'));
+  const reg = asFirstSeeded(parseRegister(fs.readFileSync(REGISTER, 'utf8')));
   const sql = fs.readFileSync(TEMPLATE, 'utf8')
     .replace('-- @SEED@', seedSql(reg))
     .replaceAll('@VERSION@', reg.version)

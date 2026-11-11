@@ -117,6 +117,17 @@ export function wayRatingOption(value) {
   return step == null ? null : wayRatingValue(step);
 }
 
+/**
+ * The figure to save when a word is tapped: the word's own figure, or
+ * nothing when it is the word already showing, so a second tap clears the
+ * rating (as the 1 to 10 row did) and an older figure is never rewritten by
+ * tapping its own word (a saved 7 shows "Very good"; tapping it must not
+ * turn the 7 into an 8).
+ */
+export function wayRatingTapped(saved, tapped) {
+  return wayRatingOption(saved) === tapped ? null : tapped;
+}
+
 /** "Very good" for a saved way-of-being rating, or an average of them ('' when none). */
 export const wayRatingWord = (value) => ratingWord(value);
 

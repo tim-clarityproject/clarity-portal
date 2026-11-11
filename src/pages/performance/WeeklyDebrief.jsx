@@ -710,7 +710,8 @@ function DebriefFlow({ userId, today, loaded, view }) {
               name={o.name}
               entryLabel={`${o.name} now`}
               value={o.kind === 'rating' ? ratingOption(figTyped[o.id] ?? o.value) : (figTyped[o.id] ?? toText(o.value))}
-              onChange={(text) => typeFigure(o, text)}
+              // A rating's own word tapped again changes nothing: an older figure is never rewritten as the word's own.
+              onChange={(text) => { if (o.kind !== 'rating' || text !== ratingOption(figTyped[o.id] ?? o.value)) typeFigure(o, text); }}
               options={o.kind === 'rating' ? OBJECTIVE_RATING_OPTIONS : undefined}
               unit={o.unit}
               decimals={o.decimals}

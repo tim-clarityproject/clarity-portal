@@ -22,6 +22,7 @@ import {
   sleepQualityScore,
   sleepQualityWord,
   wayRatingOption,
+  wayRatingTapped,
   wayRatingWord,
 } from '../../src/lib/performance/words.js';
 import { SLEEP_QUALITY_OPTIONS, sleepWords } from '../../src/lib/performance/dayPlan.js';
@@ -153,4 +154,17 @@ test('M12-S1: sleep quality keeps its saved keys, which read straight across in 
   assert.deepEqual(m12SleepQuality(nights.map((value) => ({ value }))), { answer: 'good', green: true });
   assert.equal(qualityWords(usualQuality(nights)), 'Very good');
   assert.equal(sleepWords({ hours: 8, quality: 'very_good' }), '8 hours, excellent');
+});
+
+test('the way of being: tapping the word already showing clears it, and never rewrites an older figure', () => {
+  // A saved 7 shows "Very good" (8). Tapping "Very good" clears the rating; it never turns the 7 into an 8.
+  assert.equal(wayRatingTapped(7, 8), null);
+  assert.equal(wayRatingTapped(8, 8), null);
+  for (const saved of [1, 3, 5, 7, 9]) assert.equal(wayRatingTapped(saved, wayRatingOption(saved)), null);
+  // Another word saves its own figure, and the first tap with nothing saved saves it too.
+  assert.equal(wayRatingTapped(7, 10), 10);
+  assert.equal(wayRatingTapped(7, 6), 6);
+  for (const o of WAY_RATING_OPTIONS) assert.equal(wayRatingTapped(null, o.value), o.value);
+  // Cleared, then tapped again: the word's own figure.
+  assert.equal(wayRatingTapped(wayRatingTapped(7, 8), 8), 8);
 });

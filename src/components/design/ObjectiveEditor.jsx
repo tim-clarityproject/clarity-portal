@@ -34,11 +34,13 @@ export default function ObjectiveEditor({
   const kind = OBJECTIVE_KINDS.find((k) => k.value === o.kind) || OBJECTIVE_KINDS[0];
   const rating = o.kind === 'rating';
   const figure = (key, label) => {
-    // A rating is one of five words, never a number (5e rule 29i).
+    // A rating is one of five words, never a number (5e rule 29i). Tapping the word
+    // already showing changes nothing: an older figure (a saved 7 shows "Very good")
+    // is never rewritten as the word's own figure (7.5) by tapping its own word.
     if (rating) {
       return (
         <div className="ds-objed-field ds-objed-field--rating">
-          <Choice label={label} options={OBJECTIVE_RATING_OPTIONS} value={ratingOption(o[key])} onChange={(v) => onChange({ [key]: v })} />
+          <Choice label={label} options={OBJECTIVE_RATING_OPTIONS} value={ratingOption(o[key])} onChange={(v) => { if (v !== ratingOption(o[key])) onChange({ [key]: v }); }} />
         </div>
       );
     }

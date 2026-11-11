@@ -77,6 +77,7 @@ import {
   wayQuestion,
   WAY_RATING_OPTIONS,
   wayRatingOption,
+  wayRatingTapped,
   whereQuestion,
 } from '../../lib/performance';
 import './performance.css';
@@ -625,7 +626,8 @@ function ReviewFlow({ userId, date, today, pinned, loaded }) {
               ariaLabel={wayQuestion(way)}
               options={WAY_RATING_OPTIONS}
               value={wayRatingOption(answers.rating)}
-              onChange={(rating) => change({ rating })}
+              // The chosen word tapped again clears the rating; a saved 7 is never turned into an 8 by tapping its own word.
+              onChange={(rating) => change({ rating: wayRatingTapped(answers.rating, rating) })}
               form="rows"
             />
           </div>
