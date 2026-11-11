@@ -394,7 +394,9 @@ function objectiveRows(d, today, sprint, weeks) {
       const due = objective.dueOn;
       const span = due ? Math.max(1, daysBetween(set, due)) : 1;
       const gone = due ? Math.max(0, Math.min(1, daysBetween(set, today) / span)) : 0;
-      const left = due && !reached ? m9TimeLeft(today, due) : null;
+      const time = due && !reached ? m9TimeLeft(today, due) : null;
+      // A date that can't be read has no time to show.
+      const left = time?.unit ? time : null;
       return {
         ...base,
         // No line describing what the bar and the figure show (5e rule 9).

@@ -122,11 +122,13 @@ begin
   end if;
 
   -- The 10 Nov renames, where a claim shows. "First check-in" goes first, so
-  -- it never becomes "First Monthly review".
+  -- it never becomes "First Monthly review" (nor does "First Check-in",
+  -- should a label have been typed that way by hand).
   if to_regclass('public.evidence_claims') is not null then
     update public.evidence_claims
-       set where_it_shows = replace(replace(replace(replace(where_it_shows,
+       set where_it_shows = replace(replace(replace(replace(replace(where_it_shows,
              'First check-in', 'First review'),
+             'First Check-in', 'First review'),
              'Check-in', 'Monthly review'),
              'Plan my day', 'Daily plan'),
              'Review my day', 'Daily review')

@@ -14,9 +14,17 @@
 //     are in it;
 //   - the text's middle is read the same way, from one plain letter of the
 //     words as it was really drawn (a letter as tall as "x" beside lowercase
-//     words, a flat capital beside capitals). Where the words have no such
-//     letter it comes from the font's own measures: the baseline, less half
-//     the height of "x" or of "H".
+//     words, a flat capital beside capitals; failing those a round one, o or
+//     O, whose middle is the same). Where the words have no such letter it
+//     comes from the font's own measures: the baseline, less half the height
+//     of "x" or of "H".
+//
+// What it will not pass over (break-it, 11 Nov): the chevron is read with
+// the words around it left undrawn, so a first letter close by is never
+// taken for part of it; and a chevron built to sit beside words that is
+// left on a row of its own, pushed off the side of the screen or not drawn
+// at all is listed by chevronsOff as a fault. Everything else it could not
+// measure is in the list's `skipped`, each with its reason.
 //
 // A chevron counts as "beside text" when it and one line of words share a
 // row inside the same control (a button, a link, a summary or a label), or
@@ -62,10 +70,16 @@ function collect(only = null) {
     const control = chev.closest('button, a, summary, label, [role=button], [role=combobox]') || chev.parentElement;
     if (!control || !vis(control)) continue;
     const cb = chev.getBoundingClientRect();
+    // Built to sit beside words (Chevron's `beside`, the Health Check's own line).
+    const beside = Boolean(chev.closest('.ds-chevron-line, .chev-line'));
+    const name = `${String(control.className?.baseVal ?? control.className ?? '').split(' ')[0] || control.tagName.toLowerCase()} "${(control.innerText || control.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 34)}"`;
+    // Its square as it stands before it is turned (a turned square's own box is wider than its strokes).
+    const square = { x: cb.left + cb.width / 2 - chev.offsetWidth / 2, y: cb.top + cb.height / 2 - chev.offsetHeight / 2, width: chev.offsetWidth, height: chev.offsetHeight };
+    const skip = (why, lines = 0) => out.push({ skip: why, label: name, beside, lines, box: square });
     // Covered by something else (an open drop-down's list lying over the sort
     // link): its pixels are the list's, not the chevron's, so it isn't read.
     const onTop = document.elementFromPoint(cb.left + cb.width / 2, cb.top + cb.height / 2);
-    if (onTop && onTop !== chev && !control.contains(onTop) && !onTop.contains(chev)) continue;
+    if (onTop && onTop !== chev && !control.contains(onTop) && !onTop.contains(chev)) { skip('covered'); continue; }
     // The words on the chevron's own row: text nodes inside the control whose line crosses the chevron's middle band.
     const walker = document.createTreeWalker(control, NodeFilter.SHOW_TEXT);
     const lines = [];
@@ -79,7 +93,8 @@ function collect(only = null) {
       for (const r of rects) lines.push({ r, parent, text: n.textContent.trim() });
     }
     // A button that is the chevron alone (Back beside a guided tool's name): the words are the name right after it.
-    if (!lines.length && control.nextElementSibling && vis(control.nextElementSibling)) {
+    // (Not a button whose own words are only hidden, as the Health Check's phone Back is: what comes after that is another button.)
+    if (!lines.length && !control.textContent.trim() && control.nextElementSibling && vis(control.nextElementSibling)) {
       const after = document.createTreeWalker(control.nextElementSibling, NodeFilter.SHOW_TEXT);
       for (let n = after.nextNode(); n; n = after.nextNode()) {
         if (!n.textContent.trim() || !n.parentElement || !vis(n.parentElement)) continue;
@@ -88,12 +103,14 @@ function collect(only = null) {
         for (const r of [...range.getClientRects()].filter((x) => x.width > 0 && x.height > 0)) lines.push({ r, parent: n.parentElement, text: n.textContent.trim() });
       }
     }
-    if (!lines.length) continue;
-    // Distinct lines of words (by their tops), anywhere in the control.
-    const tops = [...new Set(lines.map((l) => Math.round(l.r.top)))];
+    if (!lines.length) { skip('no words'); continue; }
+    // Distinct lines of words (by their tops), anywhere in the control: tops
+    // within 3px of each other are one line (words of two sizes on one row).
+    const tops = [];
+    for (const t of lines.map((l) => l.r.top + l.r.height / 2).sort((a, b) => a - b)) if (!tops.length || t - tops[tops.length - 1] > 3) tops.push(t);
     const mid = cb.top + cb.height / 2;
     const onRow = lines.filter((l) => l.r.top - 2 <= mid && l.r.bottom + 2 >= mid);
-    if (!onRow.length) continue;
+    if (!onRow.length) { skip('off its row', tops.length); continue; }
     // The control's own words: the first on that row, in reading order (a
     // fold's name, not the figure that may sit between it and the chevron).
     const line = onRow[0];
@@ -109,22 +126,36 @@ function collect(only = null) {
     // a capital with a flat top and foot beside capitals, a lowercase letter
     // as tall as "x" and no taller beside lowercase words.
     let letter = null;
-    const want = capitals ? /[HEFILTNMZKXBDPRU]/ : /[xvwznmur]/;
+    // Flat letters first; then round ones, which overshoot the line by the
+    // same hair above and below, so their middle is the same middle. A
+    // letter is passed over when a neighbour's own strokes reach into its
+    // box (the bar of the T in "Tue" lies over its u, and would be read as
+    // the u's top).
+    const wants = capitals ? [/[HEFILTNMZKXBDPRU]/, /[OCSG]/] : [/[xvwznmur]/, /[aceos]/];
+    const reachesOn = /[TVWYFPfr'’"“/]/;
+    const reachesBack = /[TVWYfjy'’"”/]/;
     const node = [...line.parent.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim()) || null;
-    if (node) {
-      const drawn = cs.textTransform === 'uppercase' ? node.textContent.toUpperCase() : node.textContent;
-      for (let i = 0; i < drawn.length && !letter; i += 1) {
-        if (!want.test(drawn[i])) continue;
-        const one = document.createRange();
-        one.setStart(node, i);
-        one.setEnd(node, i + 1);
-        const r = one.getClientRects()[0];
-        if (r && r.width > 2 && Math.abs(r.top - line.r.top) < 2) letter = { x: r.left, y: r.top, width: r.width, height: r.height };
+    if (node && node.textContent.toUpperCase().length === node.textContent.length) {
+      const raw = node.textContent;
+      const drawn = cs.textTransform === 'uppercase' ? raw.toUpperCase() : raw;
+      for (const want of wants) {
+        for (let i = 0; i < drawn.length && !letter; i += 1) {
+          if (!want.test(drawn[i])) continue;
+          if (reachesOn.test(drawn[i - 1] || '') || reachesBack.test(drawn[i + 1] || '')) continue;
+          const one = document.createRange();
+          one.setStart(node, i);
+          one.setEnd(node, i + 1);
+          const r = one.getClientRects()[0];
+          if (r && r.width > 2 && Math.abs(r.top - line.r.top) < 2) letter = { x: r.left, y: r.top, width: r.width, height: r.height };
+        }
+        if (letter) break;
       }
     }
     out.push({
       letter,
-      label: `${String(control.className?.baseVal ?? control.className ?? '').split(' ')[0] || control.tagName.toLowerCase()} "${(control.innerText || control.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 34)}"`,
+      label: name,
+      beside,
+      square,
       box: { x: cb.left, y: cb.top, width: cb.width, height: cb.height },
       capitals,
       font: `${parseFloat(cs.fontSize)}px ${cs.fontFamily.split(',')[0].replace(/["']/g, '')}`,
@@ -140,8 +171,14 @@ function collect(only = null) {
 }
 
 /** The visible strokes' top and bottom inside a box, in CSS pixels, from the screen's own pixels. */
-async function strokeMiddle(page, box, pad = 3) {
+async function strokeMiddle(page, box, pad = 3, view = null) {
   const clip = { x: Math.max(0, Math.floor(box.x) - pad), y: Math.max(0, Math.floor(box.y) - pad), width: Math.ceil(box.width) + 2 * pad, height: Math.ceil(box.height) + 2 * pad };
+  // Kept inside the screen: a chevron at the very edge is still read.
+  if (view) {
+    clip.width = Math.min(clip.width, view.width - clip.x);
+    clip.height = Math.min(clip.height, view.height - clip.y);
+    if (clip.width < 1 || clip.height < 1) return null;
+  }
   const png = (await page.screenshot({ clip })).toString('base64');
   const scan = await page.evaluate(async ({ data, cssHeight }) => {
     const img = new Image();
@@ -187,23 +224,68 @@ async function strokeMiddle(page, box, pad = 3) {
 export async function measureChevrons(page) {
   const count = await page.evaluate(collect, null);
   const out = [];
+  // What could not be measured, and why: { label, why, fault }. A chevron
+  // built to sit beside words (Chevron's `beside`) that is left on a row of
+  // its own, pushed off the side of the screen or not drawn at all is a
+  // fault, not something to pass over (chevronsOff lists those too).
+  const skipped = [];
+  const view = page.viewportSize();
   for (let i = 0; i < count; i += 1) {
     const [c] = await page.evaluate(collect, i);
-    if (!c || c.lines !== 1) continue;
-    const view = page.viewportSize();
+    if (!c) continue;
+    if (c.skip) {
+      // Beside one line of its own words, but not on that line.
+      skipped.push({ n: i, label: c.label, why: c.skip, fault: c.beside && c.skip === 'off its row' && c.lines === 1 ? 'is not on the row of its words' : '' });
+      continue;
+    }
+    // Off the side of the screen (its square as it stands, not the wider box of a turned square).
+    if (c.square.x < -1 || c.square.x + c.square.width > view.width + 1) {
+      skipped.push({ n: i, label: c.label, why: 'off the side', fault: c.beside ? 'is off the side of the screen' : '' });
+      continue;
+    }
+    if (c.lines !== 1) { skipped.push({ n: i, label: c.label, why: `${c.lines} lines of words`, fault: '' }); continue; }
     // Only what is on the screen can be read from its pixels.
-    if (c.box.y < 3 || c.box.x < 3 || c.box.y + c.box.height > view.height - 3 || c.box.x + c.box.width > view.width - 3) continue;
-    const middle = await strokeMiddle(page, c.box);
-    if (middle == null) continue;
+    if (c.square.y < 0 || c.square.y + c.square.height > view.height) { skipped.push({ n: i, label: c.label, why: 'above or below the screen', fault: '' }); continue; }
+    // The chevron's own strokes only: the words around it are left undrawn
+    // while it is read. (Its box, turned, is wider than its strokes and
+    // reaches a first letter 6px away, whose taller strokes were then read
+    // as the chevron's and hid a chevron 1.75px low: break-it, 11 Nov.)
+    await page.evaluate((n) => {
+      const chev = document.querySelector(`[data-chev-n="${n}"]`);
+      const control = chev?.closest('button, a, summary, label, [role=button], [role=combobox]') || chev?.parentElement;
+      const around = control?.parentElement || control;
+      if (!around) return;
+      if (!document.getElementById('chev-quiet-style')) {
+        const st = document.createElement('style');
+        st.id = 'chev-quiet-style';
+        st.textContent = '[data-chev-quiet], [data-chev-quiet] * { -webkit-text-fill-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; }';
+        document.head.appendChild(st);
+      }
+      around.setAttribute('data-chev-quiet', '');
+    }, i);
+    const middle = await strokeMiddle(page, c.box, 3, view);
+    await page.evaluate(() => { for (const el of document.querySelectorAll('[data-chev-quiet]')) el.removeAttribute('data-chev-quiet'); });
+    if (middle == null) { skipped.push({ n: i, label: c.label, why: 'nothing drawn', fault: c.beside ? 'cannot be seen: nothing is drawn where it stands' : '' }); continue; }
     // The words' middle as drawn (one letter's own pixels), or from the font's measures when no plain letter is there.
-    const drawn = c.letter ? await strokeMiddle(page, c.letter, 0) : null;
+    const drawn = c.letter ? await strokeMiddle(page, c.letter, 0, view) : null;
     const wordsMiddle = drawn ?? c.wordsMiddle;
-    out.push({ label: c.label, off: middle - wordsMiddle, read: drawn == null ? 'measures' : 'pixels', capitals: c.capitals, state: c.state, font: c.font, chevEm: c.chevEm, dir: c.dir, line: c.line });
+    out.push({ n: i, label: c.label, off: middle - wordsMiddle, read: drawn == null ? 'measures' : 'pixels', capitals: c.capitals, state: c.state, font: c.font, chevEm: c.chevEm, dir: c.dir, line: c.line });
   }
-  await page.evaluate(() => { for (const el of document.querySelectorAll('[data-chev-n]')) el.removeAttribute('data-chev-n'); });
+  await page.evaluate(() => { for (const el of document.querySelectorAll('[data-chev-n]')) el.removeAttribute('data-chev-n'); document.getElementById('chev-quiet-style')?.remove(); });
+  out.skipped = skipped;
   return out;
 }
 
-/** The ones more than 0.5px off, as words for a failing check. */
-export const chevronsOff = (list, tolerance = 0.5) => list.filter((c) => Math.abs(c.off) > tolerance)
-  .map((c) => `${c.label}${c.state ? ` (${c.state})` : ''}: ${c.off > 0 ? 'below' : 'above'} the middle of the ${c.capitals ? 'capitals' : 'x-height'} by ${Math.abs(c.off).toFixed(2)}px`);
+/**
+ * The ones more than 0.5px off, as words for a failing check; and, when the
+ * list is measureChevrons' own, the chevrons beside words that could not be
+ * measured because they are plainly wrong (off their row, off the screen,
+ * not drawn).
+ */
+export const chevronsOff = (list, tolerance = 0.5) => [
+  ...list.filter((c) => !Number.isFinite(c.off) || Math.abs(c.off) > tolerance)
+    .map((c) => (Number.isFinite(c.off)
+      ? `${c.label}${c.state ? ` (${c.state})` : ''}: ${c.off > 0 ? 'below' : 'above'} the middle of the ${c.capitals ? 'capitals' : 'x-height'} by ${Math.abs(c.off).toFixed(2)}px`
+      : `${c.label}${c.state ? ` (${c.state})` : ''}: could not be measured`)),
+  ...(list.skipped || []).filter((c) => c.fault).map((c) => `${c.label}: ${c.fault}`),
+];

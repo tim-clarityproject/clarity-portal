@@ -144,8 +144,14 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
   .chev-base > .chev { translate: 0 round(nearest, calc(50% - var(--chev-half) + var(--chev-nudge)), 1px); }
   .chev-base > .chev.dn { translate: 0 round(nearest, calc(47.2% - var(--chev-half) + var(--chev-nudge)), 1px); }
 }
-/* Measured on this page (11 Nov): Back's sat 0.6px high. */
-.backl .chev-line { width: 16px; --chev-nudge: 1.4px; }
+/* A browser without the translate property (before 2022): lowered with bottom instead, from the chevron's own size (14px; 16px beside Back). */
+@supports not (translate: 0 1px) {
+  .chev-base > .chev { bottom: calc(var(--chev-half) - 7px - var(--chev-nudge)); }
+  .backl .chev-base > .chev, .back .chev-base > .chev { bottom: calc(var(--chev-half) - 8px - var(--chev-nudge)); }
+  @media (max-width: 640px) { .ft .back .chev-base > .chev { bottom: calc(var(--chev-half) - 7px - var(--chev-nudge)); } }
+}
+/* (No nudge of its own: the 1.4px once here came from a reading that took the B of "Back" for part of the chevron, and left it 1.25px low.) */
+.backl .chev-line { width: 16px; }
 .dd .chev-line { --chev-nudge: 0.07px; }
 
 .chev.dn { transform: translateY(22%) rotate(-45deg); }

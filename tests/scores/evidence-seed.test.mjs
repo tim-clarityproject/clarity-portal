@@ -19,6 +19,7 @@ const migration = read('supabase/migrations/041_confidence_bank_labels.sql');
 const shows041 = (text) => text
   .replaceAll('Performance Evidence', 'Confidence Bank')
   .replaceAll('First check-in', 'First review')
+  .replaceAll('First Check-in', 'First review')
   .replaceAll('Check-in', 'Monthly review')
   .replaceAll('Plan my day', 'Daily plan')
   .replaceAll('Review my day', 'Daily review');
@@ -32,7 +33,7 @@ const TOOL_NAMES_041 = {
 
 test('041 holds the replacements these checks copy, in the same order', () => {
   const at = (words) => migration.indexOf(words);
-  const order = ["'First check-in', 'First review'", "'Check-in', 'Monthly review'", "'Plan my day', 'Daily plan'", "'Review my day', 'Daily review'"].map(at);
+  const order = ["'First check-in', 'First review'", "'First Check-in', 'First review'", "             'Check-in', 'Monthly review'", "'Plan my day', 'Daily plan'", "'Review my day', 'Daily review'"].map(at);
   assert.ok(order.every((i) => i > 0), 'each replacement is in 041');
   assert.deepEqual([...order].sort((a, b) => a - b), order, '"First check-in" is replaced before "Check-in"');
   assert.ok(at("replace(where_it_shows, 'Performance Evidence', 'Confidence Bank')") > 0);
@@ -56,6 +57,14 @@ test('where a claim shows: 041 run a second time changes nothing, and never make
     assert.equal(shows041(once), once, claim.id);
     assert.doesNotMatch(once, /First Monthly review|check-in|Plan my day|Review my day|Performance Evidence/i, claim.id);
   }
+});
+
+test('where a claim shows: words typed by hand before 041 never become "First Monthly review" (break-it, 11 Nov)', () => {
+  assert.equal(shows041('First Check-in questions'), 'First review questions');
+  assert.equal(shows041('Check-in and First check-in'), 'Monthly review and First review');
+  assert.equal(shows041('Review my day, Plan my day\'s First Check-in'), 'Daily review, Daily plan\'s First review');
+  // Already in the new words, or his own: left as written.
+  for (const own of ['Monthly review, Hardware explanation', 'Recovery’s daily check-in', '']) assert.equal(shows041(own), own);
 });
 
 test('a tool’s name: only the four tools 041 renames differ from the register, under the keys 041 looks for', () => {

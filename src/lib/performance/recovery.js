@@ -33,7 +33,11 @@ export function dayCountWords(n) {
 
 /** "4 days to go." (M15 banner; countdowns read "to go", never "left": Tim, 11 Nov). */
 export function daysLeftWords(n) {
-  return n === 1 ? '1 day to go.' : `${n} days to go.`;
+  // Only a whole number of days still to come has words: never "0 days to
+  // go.", "-3 days to go." or "NaN days to go." (the banner then shows no line).
+  const days = Number(n);
+  if (n == null || n === '' || !Number.isInteger(days) || days < 1) return '';
+  return days === 1 ? '1 day to go.' : `${days} days to go.`;
 }
 
 /** "Good morning", "Good afternoon" or "Good evening", from the hour on the person's clock. */

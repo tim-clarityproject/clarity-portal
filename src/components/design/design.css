@@ -179,6 +179,14 @@
   .ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 round(nearest, calc(47.2% - var(--chev-half) + var(--chev-nudge)), 1px); }
 }
 
+/* A browser without the translate property (before 2022) would leave the
+   chevron standing on the baseline, about 5px high. There it is lowered
+   by the same amount with bottom, from its own size. */
+@supports not (translate: 0 1px) {
+  .ui-root .ds-chevron-base > .ds-chevron { bottom: calc(var(--chev-half) - var(--arrow-size) / 2 - var(--chev-nudge)); }
+  .ui-root .ds-chevron-base > .ds-chevron.ds-chevron--sm { bottom: calc(var(--chev-half) - var(--who-icon) / 2 - var(--chev-nudge)); }
+}
+
 /* Drop-downs and folds: grey, beside the box's words. */
 .ui-root .ds-arrow {
   background-color: var(--text-2);

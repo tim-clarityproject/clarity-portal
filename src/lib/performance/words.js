@@ -231,3 +231,21 @@ export function servesLine(numbers) {
   if (numbers.length === 1) return `Serves objective ${numbers[0]}`;
   return `Serves objectives ${numbers.slice(0, -1).join(', ')} and ${numbers[numbers.length - 1]}`;
 }
+
+/**
+ * A summary row's label inside a sentence, for the words a screen reader
+ * hears on its Edit link (5e rule 29am): "How it went" as "how it went".
+ * Names keep their capital (Mission, Strategy, Outcome Objectives, I, a
+ * person's name before "’s", a day or a month), and so does anything that
+ * doesn't start with one capital and a small letter ("UK time", "3 things").
+ * A label that isn't words (missing, a number, a drawn part) gives a number
+ * as written or nothing, never "undefined" or "[object Object]".
+ */
+const KEEPS_CAPITAL = /^(I\b|Mission|My Mission|Strateg|Outcome|Hardware|Software|Monthly|Daily|Weekly|First|Performance Sprint|Performance Plan|Individual Performance|Confidence Bank|(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\b|(January|February|March|April|May|June|July|August|September|October|November|December)\b|[A-Z][a-z]+[’']s\b)/;
+export function inSentence(label) {
+  if (typeof label === 'number' && Number.isFinite(label)) return String(label);
+  if (typeof label !== 'string') return '';
+  const words = label.trim();
+  if (KEEPS_CAPITAL.test(words) || !/^[A-Z][a-z]/.test(words)) return words;
+  return words[0].toLowerCase() + words.slice(1);
+}

@@ -201,8 +201,12 @@ function measure({ phone }) {
   // second line may only add something the answer can't say. It repeats the
   // answer when, with the small words taken out, everything it says is
   // already in the answer (or the other way round), or most of it is.
-  const SMALL = new Set(['i', 'i’ll', "i'll", 'i’m', "i'm", 'it', 'its', 'it’s', 'the', 'a', 'an', 'my', 'me', 'to', 'is', 'are', 'be', 'of', 'and', 'or', 'for', 'in', 'on', 'at', 'this', 'that', 'need', 'want', 'will', 'do', 'eg', 'e.g', 'each', 'with', 'your', 'you']);
-  const wordsOf = (t) => [...new Set(t.toLowerCase().replace(/[“”"().,:;!?]/g, ' ').split(/\s+/).map((w) => w.replace(/(ing|ed|s)$/, '')).filter((w) => w && !SMALL.has(w)))];
+  // (The same rule as repeatsItsAnswer in tests/performance/second-lines.test.mjs: keep the two alike.)
+  const SMALL = new Set(['i', 'i’ll', "i'll", 'i’m', "i'm", 'it', 'its', 'it’s', 'the', 'a', 'an', 'my', 'me', 'to', 'is', 'are', 'be', 'of', 'and', 'or', 'for', 'in', 'on', 'at', 'this', 'that', 'need', 'want', 'will', 'do', 'eg', 'e', 'g', 'each', 'with', 'your', 'you']);
+  const NOT = new Set(['not', 'no', 'never', 'without', 'don’t', "don't", 'won’t', "won't", 'can’t', "can't"]);
+  const tokens = (t) => String(t ?? '').toLowerCase().replace(/[“”"().,:;!?/–—-]/g, ' ').split(/\s+/).filter(Boolean);
+  const stem = (w) => (w.length > 4 ? w.replace(/(ing|ed|es|s)$/, '') : w).replace(/e$/, '').replace(/([b-df-hj-np-tv-z])\1$/, '$1');
+  const wordsOf = (t) => [...new Set(tokens(t).filter((w) => !SMALL.has(w)).map(stem).filter((w) => w && !SMALL.has(w)))];
   const repeats = [];
   for (const answer of root.querySelectorAll('.ds-answer, .ds-seg-btn, .ds-level-row, [role=radio], [role=option], [role=checkbox].ds-answer, .opts5 button, .ddl button')) {
     if (!vis(answer)) continue;
@@ -211,6 +215,8 @@ function measure({ phone }) {
     const second = note.innerText.replace(/\s+/g, ' ').trim();
     const first = answer.innerText.replace(/\s+/g, ' ').trim().replace(second, '').trim();
     if (!first || !second) continue;
+    if (tokens(first).join(' ') === tokens(second).join(' ')) { repeats.push(`"${first.slice(0, 40)}" / "${second.slice(0, 40)}"`); continue; }
+    if (tokens(first).some((w) => NOT.has(w)) !== tokens(second).some((w) => NOT.has(w))) continue;
     const a = wordsOf(first);
     const b = wordsOf(second);
     if (!a.length || !b.length) continue;

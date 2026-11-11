@@ -53,12 +53,21 @@ function lastChangeDay(objective, asOf) {
  * "3 days overdue" at the ends. Calendar time.
  */
 export function m9TimeLeft(asOf, dueOn) {
-  const days = daysBetween(asOf, dueOn);
+  // A date that can't be read (missing, or not a day like 2026-11-11) gives
+  // no words, never "NaN weeks" and never an error on the page.
+  const isDay = (key) => typeof key === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(key);
+  const days = isDay(asOf) && isDay(dueOn) ? daysBetween(asOf, dueOn) : NaN;
+  if (!Number.isFinite(days)) return { days: null, unit: null, count: null, text: '' };
   if (days === 0) return { days, unit: 'day', count: 0, text: 'due today' };
   const n = Math.abs(days);
   const [later, earlier] = days > 0 ? [dueOn, asOf] : [asOf, dueOn];
-  let months = 0;
-  while (addMonths(earlier, months + 1) <= later) months += 1;
+  // Whole calendar months from the earlier day to the later one, worked out
+  // from the two dates (never counted one month at a time: a date in the
+  // year 9999 would take over a million steps).
+  const [y1, m1] = earlier.split('-').map(Number);
+  const [y2, m2] = later.split('-').map(Number);
+  let months = Math.max(0, (y2 - y1) * 12 + (m2 - m1));
+  if (months > 0 && addMonths(earlier, months) > later) months -= 1;
   let count;
   let unit;
   if (n < 14) { count = n; unit = 'day'; } else if (months < 3) { count = Math.floor(n / 7); unit = 'week'; } else { count = months; unit = 'month'; }
