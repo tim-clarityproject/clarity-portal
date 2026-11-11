@@ -12,7 +12,7 @@ import './design.css';
 // again).
 //
 // RecoveryBanner (M15 .rbanner): the top of Recovery's daily page. "You're
-// in recovery until Mon 2 Nov." on the left and "4 days left." on the
+// in recovery until Mon 2 Nov." on the left and "4 days to go." on the
 // right, wrapping under it on a narrow screen.
 //
 // RecoveryLinks (M15 .rlinks): the quiet text links that sit under them,

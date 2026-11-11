@@ -62,8 +62,10 @@
 --   and no rule changes. Nothing a person wrote is touched: a habit, a
 --   journal title or a plan that happens to say "check-in" stays as written.
 --   (Left as they are, because nobody reads them in the portal: the notes
---   attached to tables and columns, and one error message inside
---   pulse_send_create, "A pulse is short or the full check-in.")
+--   attached to tables and columns, and two error messages the app never
+--   shows as written (friendlyError): pulse_send_create's "A pulse is short
+--   or the full check-in." and day_plan_limits' "Plan my day holds up to 3
+--   to-dos.")
 --
 -- WHO CAN SEE WHAT (no change)
 --

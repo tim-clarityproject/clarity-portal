@@ -563,7 +563,7 @@ export default function GuidedTool({
 // emptyWord: "Skipped" (M5) instead of "Not yet"; the action then reads
 // "Add" for an empty row (M5: "Skipped" with an Add link).
 // A row's label inside a sentence: "How it went" as "how it went". Names keep their capital (Mission, Strategy, Outcome Objectives, I).
-const inSentence = (label) => (/^(I\b|Mission|My Mission|Strateg|Outcome|Hardware|Software|Monthly|Daily|Weekly|First|Performance|Confidence)/.test(label) || !/^[A-Z][a-z]/.test(label) ? label : label[0].toLowerCase() + label.slice(1));
+const inSentence = (label) => (/^(I\b|Mission|My Mission|Strateg|Outcome|Hardware|Software|Monthly|Daily|Weekly|First|Performance Sprint|Performance Plan|Individual Performance|Confidence Bank)/.test(label) || !/^[A-Z][a-z]/.test(label) ? label : label[0].toLowerCase() + label.slice(1));
 
 export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEmpty = false }) {
   return (

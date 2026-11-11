@@ -241,10 +241,10 @@ function SystemPopup({ open, onClose }) {
 
 // Invented example plan (M1's): four objectives, four Strategies.
 const PLAN_OBJECTIVES = [
-  { id: 'o1', number: 1, name: 'Coaching clients', kind: 'number', kindLabel: null, dateText: 'By 31 Dec 2027', timeLeft: '14 months left', figure: '31', target: 'of 40', progress: 0.78, strategyCount: 2, stripFigure: '31 of 40' },
-  { id: 'o2', number: 2, name: 'How world-class is my coaching?', kind: 'rating', kindLabel: 'Rated out of 10', dateText: 'By 31 Dec 2027', timeLeft: '14 months left', figure: '7/10', target: 'target 9/10', progress: 0.78, strategyCount: 2, stripFigure: '7/10 of 9/10' },
-  { id: 'o3', number: 3, name: 'Annual revenue', kind: 'number', kindLabel: null, dateText: 'By 31 Dec 2027', timeLeft: '14 months left', figure: '£172k', target: 'of £250k', progress: 0.69, strategyCount: 0, flagged: true, stripFigure: '£172k of £250k' },
-  { id: 'o4', number: 4, name: 'Publish my coaching book', kind: 'milestone', kindLabel: 'Milestone', dateText: 'By 30 Jun 2027', timeLeft: '8 months left', strategyCount: 1, stripFigure: 'Not yet, by 30 Jun 2027' },
+  { id: 'o1', number: 1, name: 'Coaching clients', kind: 'number', kindLabel: null, dateText: 'By 31 Dec 2027', timeLeft: '14 months to go', figure: '31', target: 'of 40', progress: 0.78, strategyCount: 2, stripFigure: '31 of 40' },
+  { id: 'o2', number: 2, name: 'How world-class is my coaching?', kind: 'rating', kindLabel: 'Rated out of 10', dateText: 'By 31 Dec 2027', timeLeft: '14 months to go', figure: '7/10', target: 'target 9/10', progress: 0.78, strategyCount: 2, stripFigure: '7/10 of 9/10' },
+  { id: 'o3', number: 3, name: 'Annual revenue', kind: 'number', kindLabel: null, dateText: 'By 31 Dec 2027', timeLeft: '14 months to go', figure: '£172k', target: 'of £250k', progress: 0.69, strategyCount: 0, flagged: true, stripFigure: '£172k of £250k' },
+  { id: 'o4', number: 4, name: 'Publish my coaching book', kind: 'milestone', kindLabel: 'Milestone', dateText: 'By 30 Jun 2027', timeLeft: '8 months to go', strategyCount: 1, stripFigure: 'Not yet, by 30 Jun 2027' },
 ];
 
 const PLAN_STRATEGY = {
@@ -533,7 +533,7 @@ function RecoveryDemo() {
     <div className="dr-stack dr-stack--fill">
       <DayCounter value={days} onChange={setDays} min={1} max={30} words={dayCountWords} suggested={7} label="How many days?" />
       <span className="dr-small">{`Your recovery ends on ${dayName(shiftDay('2026-10-26', days), '2026-10-26')}.`}</span>
-      <RecoveryBanner until="You’re in recovery until Mon 2 Nov." left="4 days left." />
+      <RecoveryBanner until="You’re in recovery until Mon 2 Nov." left="4 days to go." />
       <RecoveryNotice
         lead="You’re in recovery until Mon 2 Nov."
         lines={[shown ? 'Your results show as normal for this visit.' : 'Your scores and standards are hidden until you’re back.']}
@@ -871,7 +871,7 @@ const MEASURE_OPTIONS = [
   { value: 'amt', label: 'Amount with a unit', hint: 'e.g. steps or litres of water' },
   { value: 'yn', label: 'Yes or no', hint: 'e.g. phone off by 21:00' },
   { value: 'lim', label: 'Keep under a limit', hint: 'e.g. no more than 2 late finishes' },
-  { value: 'rate', label: 'Rating 1 to 5', hint: 'e.g. focus, rated each day' },
+  { value: 'rate', label: 'Rating, Poor to Excellent', hint: 'e.g. focus' },
 ];
 
 function ChoicesDemo() {
@@ -1052,9 +1052,9 @@ function CollapsibleDemo() {
   const average = Math.round(finished.reduce((s, w) => s + w.value, 0) / finished.length);
   const left = DEMO_WEEKS.filter((w) => w.value == null).length;
   return (
-    <Collapsible summary={`Sprint details: average ${average}%, ${left} weeks left`}>
+    <Collapsible summary={`Sprint details: average ${average}%, ${left} weeks to go`}>
       <p>{`Your average performance score so far is ${average}%, across ${finished.length} finished weeks.`}</p>
-      <p>{`Performance Sprint 4 has ${left} weeks left after this one, then Recovery.`}</p>
+      <p>{`Performance Sprint 4 has ${left} weeks to go after this one, then Recovery.`}</p>
     </Collapsible>
   );
 }
