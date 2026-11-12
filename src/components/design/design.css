@@ -124,6 +124,25 @@
     forced-color-adjust: none;
     background-color: CanvasText !important;
   }
+  /* Ticks drawn as a line on a filled shape (a chosen answer in a
+     pick-several list, a ticked box, the small win, a finished plan step):
+     the fill went the same way, leaving the tick in the page's colour on
+     the page, so ticked and unticked looked the same. The shape takes the
+     system's text colour and the tick the page's. */
+  .ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark,
+  .ui-root .ds-check-box[aria-checked='true'] > span,
+  .ui-root .ds-win-tick,
+  .ui-root .ds-planstep--done .ds-planstep-mark {
+    forced-color-adjust: none;
+    background-color: CanvasText !important;
+    border-color: CanvasText !important;
+  }
+  .ui-root .ds-answer--pick[aria-pressed='true'] .ds-pick-mark svg,
+  .ui-root .ds-check-box[aria-checked='true'] svg,
+  .ui-root .ds-win-tick svg,
+  .ui-root .ds-planstep--done .ds-planstep-mark svg {
+    stroke: Canvas !important;
+  }
 }
 
 /* A chevron beside one line of text is centred on that text (Tim, 11 Nov,

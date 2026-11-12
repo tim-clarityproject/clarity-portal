@@ -441,7 +441,7 @@ html:has(.ui-root) {
   min-height: 52px !important;
   padding: 0 16px !important;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: 12px;
   font-family: var(--font-body);
   font-size: calc(16 * var(--u, 1px));
@@ -950,7 +950,7 @@ html:has(.ui-root) {
   height: auto;
   padding: 11px 18px !important;
   border-radius: 22px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   background: transparent;
   font-family: var(--font-body);
   font-size: calc(13 * var(--u, 1px)) !important;
@@ -3466,7 +3466,10 @@ span.tc-editable:focus-visible {
 .ui-root .tsa-stepper-btn:hover,
 .ui-root .tsa-stepper-btn:focus-visible {
   color: var(--text);
-  border-color: var(--btn-line);
+  /* A step stronger than the edge at rest (rule 8a): it was the fainter
+     line colour, so the edge faded on hover once the rest took the edges
+     colour (12 Nov). */
+  border-color: var(--text-2);
 }
 
 .ui-root .tsa-stepper input {

@@ -128,7 +128,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 .x { display: inline-block; flex: none; width: 14px; height: 14px; background-color: var(--fg); -webkit-mask: var(--cross) center/contain no-repeat; mask: var(--cross) center/contain no-repeat; }
 .x.close { transform: rotate(45deg); width: 18px; height: 18px; background-color: var(--t2); }
 /* Windows high-contrast mode (Tim, 12 Nov): the masked icons keep their shape and take the system's text colour. */
-@media (forced-colors: active) { .spin, .x, .chev { forced-color-adjust: none; background-color: CanvasText !important; } }
+@media (forced-colors: active) { .spin, .x, .chev, .ddl button[aria-selected="true"]::after { forced-color-adjust: none; background-color: CanvasText !important; } }
 .chev { display: inline-block; flex: none; width: 14px; height: 14px; background-color: currentColor; -webkit-mask: var(--cross) center/contain no-repeat; mask: var(--cross) center/contain no-repeat; clip-path: polygon(0 0, 100% 0, 100% 100%); transition: transform var(--d3) var(--ease); }
 /* Centred on the words beside it (Tim, 11 Nov): the chevron stands on their
    baseline and is lowered until its middle is half an x-height (half a cap
