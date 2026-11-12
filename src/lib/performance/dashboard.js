@@ -903,10 +903,14 @@ export function dashboardView(d, { today, span = 'sprint', target, patterns = nu
   const milestones = objectives.filter((o) => o.kind === 'milestone' && !o.result.reached && o.objective.dueOn);
   const improvingCount = numbers.filter((o) => o.improving || o.reached).length;
   const ms = milestones[0];
-  const msWords = ms ? `, and the milestone is due by ${shortDate(ms.objective.dueOn)}, ${m9TimeLeft(today, ms.objective.dueOn).text}` : '';
+  // "is due today", never the date and "due today" together (Tim, 12 Nov);
+  // and no stray comma when the time left has no words.
+  const msLeft = ms ? m9TimeLeft(today, ms.objective.dueOn) : null;
+  const msDue = !ms ? '' : msLeft.days === 0 ? 'the milestone is due today' : `the milestone is due by ${shortDate(ms.objective.dueOn)}${msLeft.text ? `, ${msLeft.text}` : ''}`;
+  const msWords = ms ? `, and ${msDue}` : '';
   const objSummary = numbers.length
     ? `${improvingCount} of ${numbers.length} ${numbers.length === 1 ? 'is' : 'are'} improving this sprint${msWords}.`
-    : ms ? `The milestone is due by ${shortDate(ms.objective.dueOn)}, ${m9TimeLeft(today, ms.objective.dueOn).text}.` : 'You haven’t set an Outcome Objective yet.';
+    : ms ? `T${msDue.slice(1)}.` : 'You haven’t set an Outcome Objective yet.';
   const lastWeek = [...here].reverse().find((w) => w.finished) || null;
   const lastWeekScores = lastWeek ? (d.strategies || []).map((s) => lastWeek.strategies.get(s.id)).filter((v) => v != null) : [];
   const atStd = lastWeekScores.filter((v) => m0AtStandard(v, sprint.standard)).length;

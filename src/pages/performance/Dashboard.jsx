@@ -554,7 +554,7 @@ function Fold({ row, phone, children }) {
             {!phone && <Mini bars={row.mini} />}
           </span>
         )}
-        <span className="dash-fold-mark"><DisclosureArrow open={open} /></span>
+        <span className="dash-fold-mark"><DisclosureArrow open={open} beside={row.line ? 'block' : 'words'} /></span>
       </button>
       {open && <div id={id} className="dash-fold-b">{children}</div>}
     </div>

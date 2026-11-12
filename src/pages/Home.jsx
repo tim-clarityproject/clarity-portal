@@ -479,6 +479,7 @@ function TodayBody({ userId, user, now, today, sprint, view, day }) {
               {weekly.length > 0 && (
                 <div className="home-fold">
                   <Collapsible
+                    twoLines
                     summary={(
                       <span className="home-fold-head">
                         <span className="home-fold-title">This week</span>

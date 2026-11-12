@@ -603,6 +603,9 @@
 
 /* The arrow is centred on the fold's name: its line takes the name's font
    and line height, so the two stand on one baseline (Tim, 11 Nov). */
+/* A fold with a line under its name: the arrow is centred on the two together (design.css, .ds-chevron--block). */
+.ui-root .dash-fold-mark { --chev-block-shift: calc(0.2075 * var(--fs-text) - 0.2175 * var(--fs-note)); }
+
 .ui-root .dash-fold-mark .ds-chevron-line {
   font-size: var(--fs-text);
   line-height: var(--lh-text);

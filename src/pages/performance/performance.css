@@ -1320,6 +1320,10 @@
   display: block;
 }
 
+/* The arrow is centred on the name and the line under it together (design.css, .ds-chevron--block). */
+.ui-root .home-fold .ds-collapse-mark { --chev-block-nudge: -0.3px; --chev-block-shift: calc(0.1175 * var(--fs-fold-head) - 0.2175 * var(--fs-note)); }
+.ui-root .deb-days .ds-collapse-mark { --chev-block-shift: calc(-0.025 * var(--fs-note)); }
+
 .ui-root .home-fold-title {
   display: block;
   font-family: var(--font-display);

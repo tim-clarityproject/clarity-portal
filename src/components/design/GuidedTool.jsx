@@ -586,7 +586,7 @@ export function GuidedSummary({ rows, onChange, emptyWord = 'Not yet', addWhenEm
               <button
                 type="button"
                 className="ds-guide-summary-change"
-                aria-label={`${action} ${inSentence(row.label)}`.trim()}
+                aria-label={`${action} ${row.editName || inSentence(row.label)}`.trim()}
                 onClick={() => onChange(row.step, { fromSummary: true })}
               >
                 {action}

@@ -20,7 +20,12 @@
 //   - every chevron beside one line of text is centred on that text, on the
 //     middle of its x-height or of its capitals, within 0.5px, open and
 //     closed (Tim, 11 Nov, 14:36; tests/phase5/chevrons.mjs), read at twice
-//     the pixels a point (an ordinary phone or laptop screen);
+//     the pixels a point (an ordinary phone or laptop screen); one beside
+//     a name with a line under it is centred on the two together, within
+//     1px; the portal's own (older) Health Check route is measured too
+//     (Tim, 12 Nov; CHEV_PARTS=pages,health-check,old-route runs a part);
+//   - every outlined edge reaches 3 to 1 against what it sits on (Tim, 12
+//     Nov; tests/phase5/edges.mjs);
 //   - no console errors.
 //
 //   - the outside Health Check follows the device, light or dark (Tim, 10
@@ -38,6 +43,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { chevronsOff, measureChevrons } from './chevrons.mjs';
+import { outlinedEdges } from './edges.mjs';
 
 const APP = process.env.APP_URL || 'http://localhost:5173';
 const TEST_REF = 'gqtqljngeenqzxneucoc';
@@ -322,6 +328,8 @@ for (const width of [1280, 390]) {
         const rating = /out of 10\b|\b\d+(\.\d+)?\/10\b|\b1 to 5\b|rated 1\b/i.exec(r.text);
         pass(`${tag}: no numbered ratings`, !rating, rating ? `"${r.text.slice(Math.max(0, rating.index - 30), rating.index + 30).replace(/\n/g, ' ')}"` : '');
         pass(`${tag}: no second line that repeats its answer`, r.repeats.length === 0, r.repeats.slice(0, 4).join('; '));
+        const lowEdges = await page.evaluate(outlinedEdges);
+        pass(`${tag}: every outlined edge reaches 3 to 1`, lowEdges.length === 0, lowEdges.slice(0, 6).join('; '));
         pass(`${tag}: no title in capitals over 3 words`, r.longTitles.length === 0, r.longTitles.join('; '));
         const old = /plan my day|review my day|hardware and software check-in|monthly check-in|first check-in|performance evidence/i.exec(r.text);
         pass(`${tag}: no old names`, !old, old?.[0]);
@@ -492,6 +500,8 @@ if (HC_ONLY) {
 // on every page in scope at both sizes, with every fold and drop-down opened
 // in turn, and on the outside Health Check.
 const CHEVRONS = !ONLY || ONLY.test('chevrons');
+// CHEV_PARTS=pages,health-check,old-route runs some of it (all three unless told).
+const CHEV_PARTS = (process.env.CHEV_PARTS || 'pages,health-check,old-route').split(',');
 if (CHEVRONS) {
   for (const width of [1280, 390]) {
     const phone = width < 600;
@@ -507,7 +517,7 @@ if (CHEVRONS) {
     });
     const page = await context.newPage();
     let measured = 0;
-    try {
+    if (CHEV_PARTS.includes('pages')) try {
       await page.goto(`${APP}/auth/login`);
       await page.fill('input[type=email]', env.TEST_CLIENT_EMAIL);
       await page.fill('input[type=password]', env.TEST_CLIENT_PASSWORD);
@@ -571,12 +581,12 @@ if (CHEVRONS) {
     } catch (e) {
       pass(`chevrons ${width}px: signed in`, false, e.message.split('\n')[0]);
     }
-    pass(`chevrons ${width}px: chevrons beside text were found and measured (${measured})`, measured >= 20, `${measured}`);
+    if (CHEV_PARTS.includes('pages')) pass(`chevrons ${width}px: chevrons beside text were found and measured (${measured})`, measured >= 20, `${measured}`);
     await context.close();
 
     // The outside Health Check: Back on the sign-in screen, and the first question's own chevrons.
     const hc = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, deviceScaleFactor: 2, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'light', reducedMotion: 'reduce' });
-    try {
+    if (CHEV_PARTS.includes('health-check')) try {
       await hc.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
         const url = route.request().url();
         const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
@@ -611,6 +621,47 @@ if (CHEVRONS) {
       pass(`chevrons, Health Check ${width}px: measured`, false, e.message.split('\n')[0]);
     }
     await hc.close();
+
+    // The portal's own /health-check route (the older page, kept for rolling
+    // back; Tim, 12 Nov): Back beside its word, and the results' sort arrows.
+    const old = await browser.newContext({ viewport: { width, height: phone ? 844 : 900 }, hasTouch: phone, isMobile: phone, deviceScaleFactor: 2, locale: 'en-GB', timezoneId: 'Europe/London', colorScheme: 'light', reducedMotion: 'reduce' });
+    if (CHEV_PARTS.includes('old-route')) try {
+      await old.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => {
+        const url = route.request().url();
+        const json = (o) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
+        if (url.endsWith('/rpc/alignment_open')) return json({ ok: true, status: 'complete', current_step: null, data: hcAnswers(true), version: 1, updated_at: '2026-10-27 09:30:00.123', completed_at: '2026-10-27 09:30:00', client_label: 'Kestrel Group', coach_name: 'Tim' });
+        if (url.endsWith('/rpc/alignment_save')) return json({ ok: true, version: 2, updated_at: '2026-10-27 10:00:00', status: 'complete' });
+        return route.abort();
+      });
+      await old.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
+      const page3 = await old.newPage();
+      await page3.goto(`${APP}/health-check/tok-calm-rules-0000000000000000000000000000`);
+      await page3.locator('input[type=email]').waitFor({ timeout: 20000 });
+      await page3.locator('input[type=email]').fill('sam.example@invented.test');
+      await page3.locator('.al-otp-input').fill('ABC234');
+      await page3.locator('form button[type=submit]').click();
+      await page3.locator('.al-back').waitFor({ timeout: 15000 });
+      await page3.evaluate(() => document.fonts.ready);
+      await sleep(900);
+      const list = await measureChevrons(page3);
+      const back = list.filter((c) => c.label.startsWith('al-back'));
+      pass(`chevrons, the portal's own Health Check route ${width}px: Back's chevron is centred on its word`, back.length === 1 && chevronsOff(back).length === 0, back.length ? chevronsOff(back).join('; ') : 'Back was not found');
+      pass(`chevrons, the portal's own Health Check route ${width}px: every chevron beside words is centred on them (${list.length})`, chevronsOff(list).length === 0, chevronsOff(list).slice(0, 4).join('; '));
+      // Its results table sorts by a heading or a pill, whose arrow then shows beside the words.
+      const sorter = page3.locator('.al-hb, .fpills-btn').first();
+      if (await sorter.count()) {
+        await sorter.click({ timeout: 3000 }).catch(() => null);
+        await sleep(500);
+        const sorted = (await measureChevrons(page3));
+        const arrows = sorted.filter((c) => !c.label.startsWith('al-back'));
+        pass(`chevrons, the portal's own Health Check route ${width}px: the sort arrow is centred on its words (${arrows.length})`, chevronsOff(arrows).length === 0, chevronsOff(arrows).join('; '));
+        if (process.env.CHEV_SHOW) console.log(`old route sorted ${width}: ${sorted.map((c) => `${c.label} ${c.off.toFixed(2)} ${c.capitals ? 'caps' : 'lower'} ${c.font}`).join(' | ')} || skipped: ${sorted.skipped.map((s) => `${s.label}: ${s.why}`).join(' | ')}`);
+      } else if (process.env.CHEV_SHOW) console.log(`old route ${width}: no sort heading or pill on this screen`);
+      if (process.env.CHEV_SHOW) console.log(`old route ${width}: ${list.map((c) => `${c.label} ${c.off.toFixed(2)}`).join(' | ')} || skipped: ${list.skipped.map((s) => `${s.label}: ${s.why}`).join(' | ')}`);
+    } catch (e) {
+      pass(`chevrons, the portal's own Health Check route ${width}px: measured`, false, e.message.split('\n')[0]);
+    }
+    await old.close();
   }
 }
 

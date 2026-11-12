@@ -351,8 +351,8 @@ const HLIST_CSS = `
   transition: color var(--dur) var(--ease);
 }
 
-/* The sort link's chevron is centred on its words (Tim, 11 Nov): measured here, it sat a pixel high. */
-.ui-root .hlist-sort-link .ds-chevron-line { --chev-nudge: 1px; }
+/* The sort link's chevron is centred on its words (Tim, 11 Nov): measured here, it sat a little high. */
+.ui-root .hlist-sort-link .ds-chevron-line { --chev-nudge: 0.2px; }
 
 .ui-root .hlist-sort-link:hover,
 .ui-root .hlist-sort-link:focus-visible {

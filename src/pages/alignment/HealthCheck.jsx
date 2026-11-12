@@ -745,7 +745,7 @@ export default function HealthCheck() {
   const footer = onWelcome ? null : (
     <div className={`al-foot${onDone ? ' al-foot--wide' : ''}`}>
       <div className="al-foot-left">
-        <button type="button" className="al-back" onClick={goBack}><Chevron direction="left" size="sm" /><span>Back</span></button>
+        <button type="button" className="al-back" onClick={goBack}><Chevron direction="left" size="sm" beside="words" /><span>Back</span></button>
         {editing && !onDone && (
           <button
             type="button"

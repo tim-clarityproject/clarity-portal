@@ -737,7 +737,7 @@ function DebriefFlow({ userId, today, loaded, view }) {
         <div>
           {view.yourDays.length > 0 && (
             <div className="deb-days">
-              <Collapsible summary={(
+              <Collapsible twoLines summary={(
                 <span className="sprint-later-head">
                   <span className="sprint-later-title">Your days</span>
                   <span className="sprint-later-line">{yourDaysLine(view.yourDays.length)}</span>

@@ -35,7 +35,7 @@ function EditButton({ label, onClick }) {
 
 // The sort direction: the one chevron (Tim, 26 Oct), down for high to
 // low and up for low to high.
-const Arrow = ({ up }) => <Chevron direction={up ? 'up' : 'down'} size="sm" className="al-dir" />;
+const Arrow = ({ up }) => <Chevron direction={up ? 'up' : 'down'} size="sm" beside="capitals" className="al-dir" />;
 
 function ProjectCards({ onEmailLink, onCreateAccount, email }) {
   const emailNote = {

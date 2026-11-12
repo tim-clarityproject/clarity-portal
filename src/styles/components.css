@@ -88,7 +88,7 @@ html:has(.ui-root) {
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--text);
-  border: 1px solid var(--btn-line);
+  border: 1px solid var(--field-line);
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-button) !important;
@@ -208,6 +208,16 @@ html:has(.ui-root) {
   flex-shrink: 0;
 }
 
+/* Windows high-contrast mode (Tim, 12 Nov): a masked icon keeps its shape
+   and takes the system's text colour (see design.css). */
+@media (forced-colors: active) {
+  .ui-cross,
+  .auth-btn-spinner {
+    forced-color-adjust: none;
+    background-color: CanvasText !important;
+  }
+}
+
 /* ============================================================
    Pre-login Welcome flow buttons (src/pages/auth/*,
    src/components/auth/AuthButton.jsx). Deliberately a different,
@@ -281,7 +291,7 @@ html:has(.ui-root) {
   padding: 0 24px !important;
   border-radius: 999px;
   background: transparent;
-  border: 1px solid var(--btn-line);
+  border: 1px solid var(--field-line);
   color: var(--text);
   font-family: var(--font-display);
   font-weight: 400;
@@ -1088,6 +1098,8 @@ html:has(.ui-root) {
 .ui-root .ui-back-link .ds-chevron-line {
   margin-left: calc(-1 * var(--chev-left-inset));
   margin-right: calc(-1 * var(--chev-right-inset));
+  /* Pointing left it sat a quarter of a pixel lower than the folds' arrows (measured without rounding, 12 Nov). */
+  --chev-nudge: 0.13px;
 }
 
 .ui-root .ui-back-link:hover .ui-back-link-icon,
@@ -1169,7 +1181,7 @@ html:has(.ui-root) {
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--coral-text);
-  border: 1px solid var(--outline);
+  border: 1px solid var(--field-line);
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--fs-button) !important;
@@ -1391,7 +1403,7 @@ html:has(.ui-root) {
   width: 100%;
   box-sizing: border-box;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: var(--radius-input);
   color: var(--text);
   font-family: var(--font-body);
@@ -3444,7 +3456,7 @@ span.tc-editable:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: var(--radius-pill);
   color: var(--text-2);
   font-size: calc(18 * var(--u, 1px));
@@ -3461,7 +3473,7 @@ span.tc-editable:focus-visible {
   width: 48px;
   text-align: center;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: var(--radius-input);
   color: var(--text);
   font-family: var(--font-body);

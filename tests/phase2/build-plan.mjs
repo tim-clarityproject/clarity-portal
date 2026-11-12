@@ -314,6 +314,10 @@ try {
 
   // Ready.
   const ready = await page.locator('.ds-guide-body').textContent();
+  {
+    const editLabels = await page.locator('.ds-guide-summary-change').evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')));
+    pass('build: Ready, a screen reader hears "Edit the start date" (12 Nov)', editLabels.includes('Edit the start date') && !editLabels.some((l) => /^edit starts$/i.test(l || '')), editLabels.join(' | '));
+  }
   pass('build: Ready title', (await heading(page)) === 'Your plan and first sprint');
   pass('build: Ready lists the plan', ready.includes('Coaching clients') && ready.includes('31 now, target 40, by 15 Dec 2026')
     && ready.includes('Milestone, by 20 Jan 2027') && ready.includes('Good now, target Very good, by 26 Feb 2027')

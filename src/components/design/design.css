@@ -111,6 +111,21 @@
   transform: translateX(var(--arrow-shift)) rotate(-135deg);
 }
 
+/* Windows high-contrast mode (forced colours; Tim, 12 Nov). The crosshair,
+   the chevron and the ticks are a flat colour seen through a mask, and that
+   mode replaces a part's background colour with the page's own, so they
+   vanished. They keep their shape and take the system's text colour. */
+@media (forced-colors: active) {
+  .ui-root .ds-cross,
+  .ui-root .ds-chevron,
+  .ui-root .ds-borb-cross,
+  .ui-root .ds-answer--multi[aria-pressed='true']::after,
+  .ui-root .ds-option[aria-selected='true']::after {
+    forced-color-adjust: none;
+    background-color: CanvasText !important;
+  }
+}
+
 /* A chevron beside one line of text is centred on that text (Tim, 11 Nov,
    14:36): on the middle of the x-height beside lowercase words, and the
    middle of the cap height beside capitals, within half a pixel, open and
@@ -170,14 +185,10 @@
    square than pointing up (measured, 11 Nov): this evens them out. */
 .ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 calc(47.2% - var(--chev-half) + var(--chev-nudge)); }
 
-/* A browser draws text and boxes on whole pixels, each rounded on its own,
-   so a part-pixel shift could land the chevron a pixel away from where its
-   words landed. Shifted by a whole number of pixels from the words'
-   baseline, it lands with them every time. */
-@supports (translate: 0 round(nearest, 1.4px, 1px)) {
-  .ui-root .ds-chevron-base > .ds-chevron { translate: 0 round(nearest, calc(50% - var(--chev-half) + var(--chev-nudge)), 1px); }
-  .ui-root .ds-chevron-base > .ds-chevron.ds-chevron--down { translate: 0 round(nearest, calc(47.2% - var(--chev-half) + var(--chev-nudge)), 1px); }
-}
+/* No rounding (Tim, 12 Nov): the shift is the exact part-pixel amount, so
+   the chevron stays within half a pixel of its words at every text size.
+   (A whole-pixel shift, tried on 11 Nov, left Back up to 0.75px low at
+   the largest sizes.) */
 
 /* A browser without the translate property (before 2022) would leave the
    chevron standing on the baseline, about 5px high. There it is lowered
@@ -186,6 +197,31 @@
   .ui-root .ds-chevron-base > .ds-chevron { bottom: calc(var(--chev-half) - var(--arrow-size) / 2 - var(--chev-nudge)); }
   .ui-root .ds-chevron-base > .ds-chevron.ds-chevron--sm { bottom: calc(var(--chev-half) - var(--who-icon) / 2 - var(--chev-nudge)); }
 }
+
+/* Beside a name with a line under it (Tim, 12 Nov): the chevron is centred
+   on the two lines together, from the top of the name's capitals to the
+   last line's baseline. Its row centres it on the words' boxes; the words
+   themselves sit off the middle of their boxes by an amount that depends on
+   the two lines' fonts and sizes, so each place gives that amount as
+   --chev-block-shift, in its own text sizes, and it holds at every text
+   size:
+     half of (the space above the first line's capitals
+              less the space under the last line's baseline)
+     for a line of size S and line height L: above = S * (L/2 + a/2 - d/2 - c),
+     under = S * (L/2 - a/2 + d/2), where a, d and c are the font's ascent,
+     descent and cap height (DM Sans 0.99, 0.31, 0.70; Nekst 0.78, 0.22, 0.67).
+   The strokes' own place in their square is evened out too (half a pixel
+   lower pointing down than pointing up), and --chev-block-nudge is what
+   measuring left over. The browser puts the row and each line of words on
+   whole screen pixels separately, so a reading can still be up to about
+   half a pixel either way. */
+.ui-root .ds-chevron--block { translate: 0 calc(var(--chev-block-shift, 0px) + var(--chev-block-nudge, -0.15px)); }
+.ui-root .ds-chevron--block.ds-chevron--down { translate: 0 calc(-2.8% + var(--chev-block-shift, 0px) + var(--chev-block-nudge, -0.15px)); }
+/* The week line on Home: a small label over the big figure. */
+.ui-root .ds-weekline-chevron.ds-chevron--block { --chev-block-nudge: -0.65px; --chev-block-shift: calc(0.1575 * var(--fs-meta) - 0.1725 * var(--fs-week-figure)); }
+
+/* A drop-down's arrow sat a touch higher than a fold's (measured without rounding at five text sizes, 12 Nov). */
+.ui-root .ds-dd .ds-chevron-line { --chev-nudge: 0.28px; }
 
 /* Drop-downs and folds: grey, beside the box's words. */
 .ui-root .ds-arrow {
@@ -257,7 +293,7 @@
 
 .ui-root .ds-btn--outline {
   padding: 0 var(--space-px20) !important;
-  border: var(--line-w) solid var(--outline);
+  border: var(--line-w) solid var(--field-line);
   color: var(--text);
   transition: border-color var(--dur) var(--ease);
 }
@@ -1300,6 +1336,10 @@
   }
 }
 
+/* Every outlined edge reaches 3 to 1 (Tim, 12 Nov; rule 8a): outlined
+   buttons (the Add button is one), the Breathe and chat buttons, the
+   segmented control's outer edge and chips take the edges colour,
+   --field-line, never the fainter line colours. */
 /* ---------- Controls ---------- */
 
 .ui-root .ds-seg {
@@ -1307,7 +1347,7 @@
   display: inline-flex;
   flex-wrap: nowrap;
   max-width: 100%;
-  border: var(--line-w) solid var(--line);
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-pill);
   padding: var(--space-px3);
   gap: var(--space-px2);
@@ -1368,7 +1408,7 @@
   align-items: center;
   min-height: var(--chip-h) !important;
   padding: 0 var(--space-3) !important;
-  border: var(--line-w) solid var(--line);
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-pill);
   font-family: var(--font-body);
   font-size: var(--fs-note) !important;
@@ -2460,7 +2500,7 @@
   height: var(--breathe-h);
   min-height: var(--breathe-h) !important;
   padding: 0 var(--space-px22) 0 var(--breathe-pad-l) !important;
-  border: var(--line-w) solid var(--line);
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-pill);
   background: var(--bg);
   font-family: var(--font-display);
@@ -3347,7 +3387,8 @@
 
 .ui-root .ds-guide-steps button[aria-current='step'] {
   color: var(--text);
-  border-color: var(--quiet-line);
+  /* An outlined edge, so the edges colour (3 to 1; Tim, 12 Nov). */
+  border-color: var(--field-line);
 }
 
 .ui-root .ds-guide-steps button.ds-guide-done {
@@ -4177,7 +4218,7 @@
   /* 44px, as breathe-orb.html's header (29 Oct; M2 drew 40px) */
   min-height: var(--tap-min) !important;
   padding: 0 var(--space-px18) !important;
-  border: var(--line-w) solid var(--outline);
+  border: var(--line-w) solid var(--field-line);
   border-radius: var(--radius-pill);
   font-family: var(--font-body);
   font-size: var(--fs-note) !important;
@@ -8093,15 +8134,18 @@
 }
 
 @media (max-width: 600px) {
+  /* No gap between the rows: while the line is hidden its empty row would
+     still hold the gap and push the chevron off the words' middle (12 Nov). */
   .ui-root .ds-weekline {
     grid-template-columns: minmax(0, 1fr) var(--space-px20);
-    gap: var(--space-1) var(--space-px12);
+    gap: 0 var(--space-px12);
   }
   .ui-root .ds-weekline-line {
     grid-column: 1;
     grid-row: 2;
     justify-self: start;
     text-align: left;
+    margin-top: var(--space-1);
   }
   .ui-root .ds-weekline-chevron {
     grid-column: 2;

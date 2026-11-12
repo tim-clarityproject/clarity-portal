@@ -289,6 +289,9 @@ try {
   const ready = await page.locator('.ds-guide-body').textContent();
   pass('Ready: title Performance Sprint, with no number (10 Nov)', /^Performance Sprint$/i.test((await heading(page)).trim()), await heading(page));
   pass('Ready: the summary rows', ready.includes('6 weeks') && ready.includes('Autumn push') && ready.includes('Today, ') && ready.includes('80%') && ready.includes(`${planHabits.length} habits`), ready.slice(0, 300));
+  // The start date's link, for a screen reader (Tim, 12 Nov): "Edit the start date", never "Edit starts".
+  const editLabels = await page.locator('.ds-guide-summary-change').evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')));
+  pass('Ready: a screen reader hears "Edit the start date"', editLabels.includes('Edit the start date') && !editLabels.some((l) => /^edit starts$/i.test(l || '')), editLabels.join(' | '));
   pass('Ready: the added habit is for this sprint only', ready.includes('Walk between meetings is for this sprint only.'));
   pass('Ready: says it finishes Sprint 1', ready.includes('Starting it finishes your current sprint.'));
   await shot(page, 'flow-ready');

@@ -18,16 +18,21 @@ import './design.css';
 //            on the middle of the x-height beside lowercase words and the
 //            middle of the cap height beside capitals, by standing on the
 //            text's own baseline (see .ds-chevron-line in design.css)
-//            rather than in the middle of its box. Left out, it sits in
-//            the middle of its own square (a button with no words).
+//            rather than in the middle of its box. 'block' when it sits
+//            beside a name with a line under it (Tim, 12 Nov): its row
+//            centres it, and the place gives --chev-block-shift so it
+//            lands on the middle of the two lines together (see
+//            .ds-chevron--block). Left out, it sits in the middle of its
+//            own square (a button with no words).
 // Always decorative: the control around it carries the words or
 // aria-expanded.
 export default function Chevron({ direction = 'down', size = 'md', beside = null, className = '' }) {
   const classes = ['ds-chevron', `ds-chevron--${direction}`];
   if (size === 'sm') classes.push('ds-chevron--sm');
+  if (beside === 'block') classes.push('ds-chevron--block');
   if (className) classes.push(className);
   const glyph = <span className={classes.join(' ')} aria-hidden="true" />;
-  if (!beside) return glyph;
+  if (!beside || beside === 'block') return glyph;
   return (
     <span className={`ds-chevron-line${size === 'sm' ? ' ds-chevron-line--sm' : ''}${beside === 'capitals' ? ' ds-chevron-line--caps' : ''}`} aria-hidden="true">
       <span className="ds-chevron-base">{glyph}</span>

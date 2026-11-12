@@ -124,7 +124,7 @@ export function MiniDial({ weeks = [], dayInWeek = 0, date, line, label, onClick
         {line && (
           <span className="ds-mdial-line">
             {link ? <span className="ds-mdial-link">{keepWords(line)}</span> : keepWords(line)}
-            {link && <Chevron direction="right" size="sm" className="ds-mdial-chev" />}
+            {link && <Chevron direction="right" size="sm" beside="words" className="ds-mdial-chev" />}
           </span>
         )}
       </span>
@@ -165,7 +165,7 @@ export function WeekLine({ label, figure, good = false, line, onClick }) {
         {figure && <span className={`ds-weekline-figure${good ? ' ds-weekline-figure--good' : ''}`}>{figure}</span>}
       </span>
       {line && <span className="ds-weekline-line">{line}</span>}
-      <Chevron direction="right" size="sm" className="ds-weekline-chevron" />
+      <Chevron direction="right" size="sm" beside="block" className="ds-weekline-chevron" />
     </button>
   );
 }

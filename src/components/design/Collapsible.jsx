@@ -8,7 +8,9 @@ import './design.css';
 // capitals: the summary is a name in capitals (a section's name), so the
 //           arrow is centred on its capitals and takes its font from
 //           `.ds-collapse--caps` (Tim, 11 Nov).
-export default function Collapsible({ summary, children, defaultOpen = false, capitals = false }) {
+// twoLines: the summary is a name with a line under it, so the arrow is
+//           centred on the two together (Tim, 12 Nov).
+export default function Collapsible({ summary, children, defaultOpen = false, capitals = false, twoLines = false }) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = useId();
   return (
@@ -21,7 +23,7 @@ export default function Collapsible({ summary, children, defaultOpen = false, ca
         onClick={() => setOpen((v) => !v)}
       >
         <span>{summary}</span>
-        <span className="ds-collapse-mark"><DisclosureArrow open={open} beside={capitals ? 'capitals' : 'words'} /></span>
+        <span className="ds-collapse-mark"><DisclosureArrow open={open} beside={twoLines ? 'block' : capitals ? 'capitals' : 'words'} /></span>
       </button>
       <div id={bodyId} className="ds-collapse-body" inert={!open}>
         <div>

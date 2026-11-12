@@ -224,6 +224,16 @@ test('Outcome Objectives: progress, pace, effort, the change this sprint and the
   assert.equal(v.chain.objectives.summary, '1 of 2 are improving this sprint, and the milestone is due by 30 Jun 2027, 8 months to go.');
 });
 
+test('A milestone due today reads "is due today.", never the date and "due today" together (Tim, 12 Nov)', () => {
+  const v = dashboardView(rows(), { today: '2027-06-30', target });
+  const s = v.chain.objectives.summary;
+  assert.match(s, /the milestone is due today\.$/i);
+  assert.doesNotMatch(s, /due by/);
+  assert.doesNotMatch(s, /, \.|,\./);
+  // The day before, it still gives the date and the time to go.
+  assert.match(dashboardView(rows(), { today: '2027-06-29', target }).chain.objectives.summary, /the milestone is due by 30 Jun 2027, 1 day to go\.$/);
+});
+
 test('Strategies: the strip for the span, the latest figure, last week at the standard', () => {
   const v = dashboardView(rows(), { today: TODAY, target });
   const [a, b] = v.chain.strategies.rows;

@@ -127,6 +127,8 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 /* crosshairs and the chevron (the corner of the same crosshair) */
 .x { display: inline-block; flex: none; width: 14px; height: 14px; background-color: var(--fg); -webkit-mask: var(--cross) center/contain no-repeat; mask: var(--cross) center/contain no-repeat; }
 .x.close { transform: rotate(45deg); width: 18px; height: 18px; background-color: var(--t2); }
+/* Windows high-contrast mode (Tim, 12 Nov): the masked icons keep their shape and take the system's text colour. */
+@media (forced-colors: active) { .spin, .x, .chev { forced-color-adjust: none; background-color: CanvasText !important; } }
 .chev { display: inline-block; flex: none; width: 14px; height: 14px; background-color: currentColor; -webkit-mask: var(--cross) center/contain no-repeat; mask: var(--cross) center/contain no-repeat; clip-path: polygon(0 0, 100% 0, 100% 100%); transition: transform var(--d3) var(--ease); }
 /* Centred on the words beside it (Tim, 11 Nov): the chevron stands on their
    baseline and is lowered until its middle is half an x-height (half a cap
@@ -139,11 +141,7 @@ h2.t { margin: 0; font-family: var(--display); font-weight: 400; text-transform:
 .chev-base { display: inline-block; position: relative; width: 0; height: 0; vertical-align: baseline; }
 .chev-base > .chev { position: absolute; left: 0; bottom: 0; translate: 0 calc(50% - var(--chev-half) + var(--chev-nudge)); }
 .chev-base > .chev.dn { translate: 0 calc(47.2% - var(--chev-half) + var(--chev-nudge)); }
-/* A whole number of pixels from the words' baseline, so it lands with them (see the portal's design.css). */
-@supports (translate: 0 round(nearest, 1.4px, 1px)) {
-  .chev-base > .chev { translate: 0 round(nearest, calc(50% - var(--chev-half) + var(--chev-nudge)), 1px); }
-  .chev-base > .chev.dn { translate: 0 round(nearest, calc(47.2% - var(--chev-half) + var(--chev-nudge)), 1px); }
-}
+/* No rounding (Tim, 12 Nov): the exact part-pixel shift, so it stays within half a pixel at every text size (see the portal's design.css). */
 /* A browser without the translate property (before 2022): lowered with bottom instead, from the chevron's own size (14px; 16px beside Back). */
 @supports not (translate: 0 1px) {
   .chev-base > .chev { bottom: calc(var(--chev-half) - 7px - var(--chev-nudge)); }

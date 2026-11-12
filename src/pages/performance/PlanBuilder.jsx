@@ -622,7 +622,7 @@ function PlanTool({ userId, data, mode }) {
       out.push(
         { label: 'Working days', step: stepAt('days'), value: workingDaysWords(draft.workingDays) },
         { label: 'Length', step: stepAt('length'), value: weeks ? `${weeks} weeks${sprint.tpl ? ', for your first 90 days in a new role' : ''}` : '' },
-        { label: 'Starts', step: stepAt('start'), value: sprint.start === today ? `Today, ${dayLabel(sprint.start)}` : dayLabel(sprint.start) },
+        { label: 'Starts', editName: 'the start date', step: stepAt('start'), value: sprint.start === today ? `Today, ${dayLabel(sprint.start)}` : dayLabel(sprint.start) },
         { label: 'Performance standard', step: stepAt('standard'), value: std != null ? `${std}%` : '' },
       );
     }

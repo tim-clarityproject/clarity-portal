@@ -554,7 +554,7 @@ function SprintFlow({ userId, data, today, number, running, proceed, onStart }) 
           rows={[
             { label: 'Length', step: stepAt('length'), value: weeks ? `${weeks} weeks${sprint.tpl ? ', for your first 90 days in a new role' : ''}` : '' },
             { label: 'Label', step: stepAt('length'), value: label || 'None' },
-            { label: 'Starts', step: stepAt('start'), value: sprint.start === today ? `Today, ${dayLabel(sprint.start)}` : dayLabel(sprint.start) },
+            { label: 'Starts', editName: 'the start date', step: stepAt('start'), value: sprint.start === today ? `Today, ${dayLabel(sprint.start)}` : dayLabel(sprint.start) },
             { label: 'Performance standard', step: stepAt('standard'), value: standard != null ? `${standard}%` : '' },
             { label: 'Habits', step: stepAt('habits'), value: habitsValue },
           ]}
