@@ -789,3 +789,20 @@
   border: var(--line-w) solid var(--line);
   border-radius: var(--radius-tile);
 }
+
+/* A fold whose name has a line under it: the arrow is centred on the two
+   together (design.css, .ds-chevron--block). Both lines are the body font
+   at the body line height, as the dashboard's folds are. */
+.ui-root .dr-fold-two .ds-collapse-mark { --chev-block-shift: calc(0.2075 * var(--fs-text) - 0.2175 * var(--fs-note)); }
+
+.ui-root .dr-fold-two-head,
+.ui-root .dr-fold-two-name,
+.ui-root .dr-fold-two-line {
+  display: block;
+}
+
+.ui-root .dr-fold-two-line {
+  font-size: var(--fs-note);
+  line-height: var(--lh-text);
+  color: var(--text-2);
+}

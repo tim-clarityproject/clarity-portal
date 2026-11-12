@@ -218,7 +218,7 @@ function sprintSteps(a, set, role, openCalendar) {
             rows={[
               { label: 'Length', value: unless('length', `${weeks} weeks${a.tpl ? ' · first 90 days in a new role' : ''}`), step: 0 },
               { label: 'Label', value: unless('length', a.label.trim() || 'None'), step: 0 },
-              { label: 'Starts', value: unless('start', dayLabel(a.start)), step: 1 },
+              { label: 'Starts', editName: 'the start date', value: unless('start', dayLabel(a.start)), step: 1 },
               { label: 'Performance standard', value: unless('standard', standard != null ? `${standard}%` : ''), step: 2 },
               { label: 'Next time', value: unless('better', a.better.trim()), step: 3 },
               { label: 'Bouncing back', value: unless('bounce', a.bounce || ''), step: 4 },

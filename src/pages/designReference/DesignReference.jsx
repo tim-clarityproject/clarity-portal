@@ -1052,10 +1052,26 @@ function CollapsibleDemo() {
   const average = Math.round(finished.reduce((s, w) => s + w.value, 0) / finished.length);
   const left = DEMO_WEEKS.filter((w) => w.value == null).length;
   return (
-    <Collapsible summary={`Sprint details: average ${average}%, ${left} weeks to go`}>
-      <p>{`Your average performance score so far is ${average}%, across ${finished.length} finished weeks.`}</p>
-      <p>{`Performance Sprint 4 has ${left} weeks to go after this one, then Recovery.`}</p>
-    </Collapsible>
+    <div className="dr-stack dr-stack--fill">
+      <Collapsible summary={`Sprint details: average ${average}%, ${left} weeks to go`}>
+        <p>{`Your average performance score so far is ${average}%, across ${finished.length} finished weeks.`}</p>
+        <p>{`Performance Sprint 4 has ${left} weeks to go after this one, then Recovery.`}</p>
+      </Collapsible>
+      {/* A name with a line under it: the arrow is centred on the two together (rule 29ao, 12 Nov). */}
+      <div className="dr-fold-two">
+        <Collapsible
+          twoLines
+          summary={(
+            <span className="dr-fold-two-head">
+              <span className="dr-fold-two-name">Sprint details</span>
+              <span className="dr-fold-two-line">{`Your average is ${average}%, with ${left} weeks to go.`}</span>
+            </span>
+          )}
+        >
+          <p>{`Your average performance score so far is ${average}%, across ${finished.length} finished weeks.`}</p>
+        </Collapsible>
+      </div>
+    </div>
   );
 }
 
@@ -1583,6 +1599,7 @@ function Gallery() {
           <>
             <p>One line with the key fact and the arrow; tap to see the detail.</p>
             <p><New />The arrow turns to point up while it is open.</p>
+            <p><New />The arrow is centred on the words beside it. Beside a name with a line under it, it is centred on the two together.</p>
           </>
         )} />
 

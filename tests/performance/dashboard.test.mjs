@@ -234,6 +234,33 @@ test('A milestone due today reads "is due today.", never the date and "due today
   assert.match(dashboardView(rows(), { today: '2027-06-29', target }).chain.objectives.summary, /the milestone is due by 30 Jun 2027, 1 day to go\.$/);
 });
 
+test('The milestone sentence in every case: alone, overdue, unreadable, reached, two of them (12 Nov)', () => {
+  const base = rows().planObjectives;
+  const stone = base.find((o) => o.kind === 'milestone');
+  const summary = (planObjectives, today = TODAY) => dashboardView(rows({ planObjectives, objectives: planObjectives.map((o) => ({ id: o.id })) }), { today, target }).chain.objectives.summary;
+  const sound = (s) => { assert.doesNotMatch(s, /NaN|undefined|null|, ?\.|,,|\.\.|  /, s); assert.match(s, /^[A-Z0-9].*\.$/, s); };
+  // With no number objectives the sentence starts with its capital.
+  assert.equal(summary([stone]), 'The milestone is due by 30 Jun 2027, 8 months to go.');
+  assert.equal(summary([stone], '2027-06-30'), 'The milestone is due today.');
+  // Overdue: a full sentence, with no stray comma.
+  assert.equal(summary([stone], '2027-07-02'), 'The milestone is due by 30 Jun 2027, 2 days overdue.');
+  assert.equal(summary(base, '2027-07-02'), '1 of 2 are improving this sprint, and the milestone is due by 30 Jun 2027, 2 days overdue.');
+  // A date that can't be read gives no milestone words, never "NaN".
+  for (const bad of ['not a date', '2027-6-30', '', null]) {
+    const odd = { ...stone, due_on: bad };
+    assert.equal(summary([odd]), 'You haven’t set an Outcome Objective yet.', String(bad));
+    assert.equal(summary([...base.slice(0, 2), odd]), '1 of 2 are improving this sprint.', String(bad));
+    // The readable one after it is the one named.
+    assert.equal(summary([odd, { ...stone, id: 'o4', sort_order: 3 }], '2027-06-30'), 'The milestone is due today.', String(bad));
+  }
+  // A milestone already reached is not named.
+  assert.equal(summary([...base.slice(0, 2), { ...stone, reached_on: '2026-10-01' }]), '1 of 2 are improving this sprint.');
+  // Two milestones: the first in the plan's order is the one named.
+  const two = [stone, { ...stone, id: 'o4', name: 'Second', due_on: '2026-12-31', sort_order: 3 }];
+  assert.equal(summary(two), 'The milestone is due by 30 Jun 2027, 8 months to go.');
+  for (const day of [TODAY, '2026-12-31', '2027-06-29', '2027-06-30', '2027-07-01', '2030-01-01']) { sound(summary(base, day)); sound(summary([stone], day)); sound(summary(two, day)); }
+});
+
 test('Strategies: the strip for the span, the latest figure, last week at the standard', () => {
   const v = dashboardView(rows(), { today: TODAY, target });
   const [a, b] = v.chain.strategies.rows;

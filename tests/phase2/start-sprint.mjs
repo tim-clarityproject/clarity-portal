@@ -292,6 +292,13 @@ try {
   // The start date's link, for a screen reader (Tim, 12 Nov): "Edit the start date", never "Edit starts".
   const editLabels = await page.locator('.ds-guide-summary-change').evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')));
   pass('Ready: a screen reader hears "Edit the start date"', editLabels.includes('Edit the start date') && !editLabels.some((l) => /^edit starts$/i.test(l || '')), editLabels.join(' | '));
+  // The link opens the start step, and "Save my edit" comes back to the summary with nothing changed.
+  await page.getByRole('button', { name: 'Edit the start date', exact: true }).click();
+  await page.waitForTimeout(650);
+  pass('Ready: "Edit the start date" opens the start step', (await heading(page)).trim() === 'When does it start?', await heading(page));
+  pass('Ready: the opened step saves with "Save my edit"', (await page.locator('.ds-guide-next').textContent()).trim() === 'Save my edit', await page.locator('.ds-guide-next').textContent());
+  await next(page);
+  pass('Ready: "Save my edit" comes back to the summary, unchanged', /^Performance Sprint$/i.test((await heading(page)).trim()) && (await page.locator('.ds-guide-body').textContent()) === ready, await heading(page));
   pass('Ready: the added habit is for this sprint only', ready.includes('Walk between meetings is for this sprint only.'));
   pass('Ready: says it finishes Sprint 1', ready.includes('Starting it finishes your current sprint.'));
   await shot(page, 'flow-ready');

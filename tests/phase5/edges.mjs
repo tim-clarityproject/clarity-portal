@@ -4,6 +4,18 @@
 // against its own colour where it has one. Filled parts (a coral button, a
 // ticked box) and plain lines between rows are not outlines.
 //
+// What it also reads (functionality tester, 12 Nov):
+//   - a text box whose edge is drawn on the box around it (a `div` or a
+//     `label` that holds the field) is read from that box;
+//   - a box to type into never counts as "filled" just because its edge is
+//     the same colour as its fill: if the fill doesn't stand out from what
+//     is behind it, the box has no edge to see, and it is listed;
+//   - a colour the browser gives in the `color(srgb …)` form (a mixed or
+//     see-through colour) is read as the colour it is, not as near black.
+// What it does not read: an edge drawn with `outline` or a shadow instead
+// of a border, an edge on some sides only (an underline is a line, not an
+// outline), and the hover and focus states.
+//
 // outlinedEdges runs in the page (page.evaluate(outlinedEdges)) and gives
 // the ones under 3 to 1, each as `name "words" ratio`. With `all` it gives
 // every outline it measured, for a count.
@@ -17,21 +29,57 @@ export function outlinedEdges(all = false) {
   const root = document.querySelector('.ds-guide--fullscreen') || document.body;
   const lowEdges = [];
   const every = [];
-  const rgba = (c) => { const m = c.match(/[\d.]+/g)?.map(Number) || [0, 0, 0, 0]; return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1 }; };
+  const rgba = (c) => {
+    // "color(srgb 0.5 0.5 0.5 / 0.4)": parts from 0 to 1 (a percentage alpha too).
+    const mixed = /^color\(\s*srgb\s+([^)]+)\)/.exec(c);
+    if (mixed) {
+      const [rgb, alpha] = mixed[1].split('/');
+      const m = rgb.trim().split(/\s+/).map((v) => (v === 'none' ? 0 : Number(v)));
+      const a = alpha == null ? 1 : alpha.trim().endsWith('%') ? parseFloat(alpha) / 100 : Number(alpha);
+      return { r: m[0] * 255, g: m[1] * 255, b: m[2] * 255, a: Number.isFinite(a) ? a : 1 };
+    }
+    const m = c.match(/[\d.]+/g)?.map(Number) || [0, 0, 0, 0];
+    return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1 };
+  };
   const lum = ({ r, g, b }) => { const f = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
   const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)]; return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   const behind = (el) => { for (let p = el.parentElement; p; p = p.parentElement) { const c = rgba(getComputedStyle(p).backgroundColor); if (c.a > 0.95) return c; } return rgba(getComputedStyle(document.documentElement).backgroundColor); };
-  for (const el of root.querySelectorAll('button, a, input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select, [role=radio], [role=checkbox], [role=tab], [role=option], [role=radiogroup], [role=tablist], [role=group], .ds-seg')) {
-    if (!vis(el) || el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
+  // An edge all the way round, in one colour that can be seen.
+  const outline = (el) => {
     const st = getComputedStyle(el);
     const sides = ['Top', 'Right', 'Bottom', 'Left'].map((s) => ({ w: parseFloat(st[`border${s}Width`]), style: st[`border${s}Style`], c: st[`border${s}Color`] }));
-    if (!sides.every((s) => s.w >= 0.5 && s.style !== 'none' && s.style !== 'hidden' && s.c === sides[0].c)) continue;
+    if (!sides.every((s) => s.w >= 0.5 && s.style !== 'none' && s.style !== 'hidden' && s.c === sides[0].c)) return null;
     const edge = rgba(sides[0].c);
-    if (edge.a < 0.05) continue;
+    return edge.a < 0.05 ? null : edge;
+  };
+  const TYPED = 'input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]), textarea, select';
+  const parts = new Set();
+  for (const el of root.querySelectorAll(`button, a, ${TYPED}, [role=radio], [role=checkbox], [role=tab], [role=option], [role=radiogroup], [role=tablist], [role=group], .ds-seg`)) {
+    if (!vis(el) || el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
+    parts.add(el);
+    // A box to type into with no edge of its own: the edge may be on the box
+    // that holds it (up to two boxes out, and only one that fits the field:
+    // a card that happens to hold a field is not the field's outline).
+    if (!el.matches(TYPED) || outline(el)) continue;
+    const fb = el.getBoundingClientRect();
+    for (let p = el.parentElement, n = 0; p && p !== root && n < 2; p = p.parentElement, n += 1) {
+      const pb = p.getBoundingClientRect();
+      if (pb.height > fb.height + 24) break;
+      if (vis(p) && outline(p)) { parts.add(p); break; }
+    }
+  }
+  for (const el of parts) {
+    const st = getComputedStyle(el);
+    const edge = outline(el);
+    if (!edge) continue;
     const own = rgba(st.backgroundColor);
     const back = behind(el);
-    // Filled: its own colour already stands out from what is behind it, or the edge is the fill's own colour.
-    if (own.a > 0.95 && (ratio(own, back) >= 3 || ratio(edge, own) < 1.05)) continue;
+    // Filled: its own colour already stands out from what is behind it, or
+    // the edge is the fill's own colour (a filled pill). A box to type into
+    // is never let off the second way: with a fill that doesn't stand out
+    // and an edge of the same colour, it has no edge to see.
+    const typed = el.matches(TYPED) || (!el.matches('button, a, [role]') && Boolean(el.querySelector(TYPED)));
+    if (own.a > 0.95 && (ratio(own, back) >= 3 || (!typed && ratio(edge, own) < 1.05))) continue;
     // A see-through edge is read as it lands on what is behind it.
     const mix = { r: edge.r * edge.a + back.r * (1 - edge.a), g: edge.g * edge.a + back.g * (1 - edge.a), b: edge.b * edge.a + back.b * (1 - edge.a) };
     // Against what is outside it and, where it has a colour of its own, what is inside it.

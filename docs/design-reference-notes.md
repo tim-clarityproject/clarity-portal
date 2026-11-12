@@ -15,8 +15,9 @@ Tim's rule (12 Nov): every outlined edge reaches at least 3 to 1 in light and da
 | Segmented control, outer edge (`.ds-seg`) | "Today / This week" on the sprint page | `--line` | 1.2 to 1.4 | edges colour |
 | Chip (`.ds-chip`) | the journal's prompt chips | `--line` | 1.3 to 1.4 | edges colour |
 | Current step pill in a guided tool's step list | plan builder, sprint start | `--quiet-line` | 1.9 to 2.4 | edges colour |
-| Older outlined buttons (`.ui-btn-ghost`, `.auth-btn-ghost`, `.dng`) | sign-in screens and pages not yet rebuilt | `--btn-line` | 1.9 | edges colour |
-| Older text boxes and steppers (`.plan-input`, `.tsa-stepper`) | Plan a meeting, Time audit | `--line` | 1.3 | edges colour |
+| Older outlined buttons (`.ui-btn-ghost`, `.auth-btn-ghost`, `.dng`) | sign-in screens and pages not yet rebuilt | `--btn-line` (`.dng`: `--outline`, the same grey) | 1.9 | edges colour |
+| Older text boxes and steppers (`.plan-input`; `.tsa-stepper-btn` and the stepper's own box) | Plan a meeting, Time audit | `--line` | 1.3 | edges colour; the stepper button's hover is a step stronger (`--text-2`; it was `--btn-line`, fainter than the new edge) |
+| Sign-in fields and example pills (`.auth-input`, `.auth-example-pill`) | sign-in screens | `--line` | 1.3 | edges colour |
 
 `--line`, `--btn-line` and `--outline` stay for lines between rows and for chart marks. They are no longer used for the outline of anything to tap or type into.
 
@@ -25,8 +26,9 @@ The reference's own examples of these parts (the Add button, the segmented contr
 ## 12 Nov 2026: chevrons
 
 - A chevron beside one line of text is shifted by the exact amount, with no rounding to whole pixels, so it stays within 0.5px at every text size.
-- A chevron beside a name with a line under it (a dashboard fold, Home's "This week", Home's week line) is centred on the two lines together, from the top of the name's capitals to the last line's baseline.
+- A chevron beside a name with a line under it (a dashboard fold, Home's "This week", Home's week line, the weekly debrief's "Your days", and an expandable row on a phone, where its summary sits under its title) is centred on the two lines together, from the top of the name's capitals to the last line's baseline.
+- Home's week line with nothing scored yet has no figure: on a laptop the chevron is centred on the label's words, and on a phone on the label and the line under it.
 
 ## 12 Nov 2026: Windows high-contrast mode
 
-Masked icons (the chevron, the close crosshair, ticks) are drawn in the system's text colour in Windows high-contrast mode. The reference does not show this mode.
+Masked icons (the chevron, the close crosshair, ticks) are drawn in the system's text colour in Windows high-contrast mode. A ticked box, a chosen pick-several answer, the small win and a done plan step are filled with that colour, with the tick in the page's colour, so ticked and unticked still differ. The reference does not show this mode.

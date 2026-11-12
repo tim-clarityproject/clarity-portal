@@ -25,7 +25,7 @@ export default function ExpandList({ label, items = [], className = '' }) {
         const bodyId = `${baseId}-${i}`;
         return (
           <div key={item.key} role="listitem" className={`ds-expand-item${isOpen ? ' ds-expand-item--open' : ''}`}>
-            <button type="button" className="ds-expand-head" aria-expanded={isOpen} aria-controls={bodyId} onClick={() => flip(item.key)}>
+            <button type="button" className={`ds-expand-head${item.summary ? ' ds-expand-head--lined' : ''}`} aria-expanded={isOpen} aria-controls={bodyId} onClick={() => flip(item.key)}>
               <span className="ds-expand-title">{item.title}</span>
               {item.summary && <span className="ds-expand-summary">{item.summary}</span>}
               <span className="ds-collapse-mark"><DisclosureArrow open={isOpen} /></span>

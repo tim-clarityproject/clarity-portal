@@ -159,7 +159,7 @@ export function DayFocus({ way, strategies = [] }) {
  */
 export function WeekLine({ label, figure, good = false, line, onClick }) {
   return (
-    <button type="button" className="ds-weekline" onClick={onClick}>
+    <button type="button" className={`ds-weekline${figure ? '' : ' ds-weekline--nofigure'}${line ? ' ds-weekline--lined' : ''}`} onClick={onClick}>
       <span className="ds-weekline-score">
         <span className="ds-weekline-label">{label}</span>
         {figure && <span className={`ds-weekline-figure${good ? ' ds-weekline-figure--good' : ''}`}>{figure}</span>}

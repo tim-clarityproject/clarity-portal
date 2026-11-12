@@ -902,7 +902,9 @@ export function dashboardView(d, { today, span = 'sprint', target, patterns = nu
   const numbers = objectives.filter((o) => o.kind !== 'milestone');
   const milestones = objectives.filter((o) => o.kind === 'milestone' && !o.result.reached && o.objective.dueOn);
   const improvingCount = numbers.filter((o) => o.improving || o.reached).length;
-  const ms = milestones[0];
+  // The first milestone whose date can be read: one that can't has no
+  // sentence, never "due by NaN undefined NaN".
+  const ms = milestones.find((o) => m9TimeLeft(today, o.objective.dueOn).days != null) || null;
   // "is due today", never the date and "due today" together (Tim, 12 Nov);
   // and no stray comma when the time left has no words.
   const msLeft = ms ? m9TimeLeft(today, ms.objective.dueOn) : null;

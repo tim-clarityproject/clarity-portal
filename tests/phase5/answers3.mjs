@@ -14,6 +14,13 @@
 //   - the outside Health Check's "Edit the exact date": a project with an
 //     exact due date shows the link, and it opens the day picker.
 //
+//   - in that mode a ticked box, a chosen pick-several answer, the small
+//     win and a done plan step are filled with the system's text colour and
+//     differ from unticked ones (read in the design gallery, once a run).
+//
+// Each check was tried with the thing it guards broken in the page (a
+// fainter edge colour, the high-contrast rule overridden): each went red.
+//
 // (A chevron beside a name with a line under it, and the portal's own Health
 // Check route, are measured by calm-rules' chevrons part; "Edit the start
 // date" by tests/phase2/start-sprint.mjs and build-plan.mjs; "is due today."
@@ -132,6 +139,7 @@ const openHealthCheck = async (context, open) => {
 };
 
 const browser = await chromium.launch();
+let ticksRead = false;
 try {
   for (const width of [1280, 390].filter((w) => !process.env.SIZES || process.env.SIZES.split(',').includes(String(w)))) {
     for (const mode of ['light', 'dark'].filter((m) => !process.env.MODES || process.env.MODES.split(',').includes(m))) {
@@ -292,6 +300,55 @@ try {
         if (out) await p3.screenshot({ path: join(out, `high-contrast-health-check-${size}-${mode}.png`), fullPage: true });
       } catch (e) { pass(`high contrast, Health Check ${tag}: checked`, false, e.message.split('\n')[0]); }
       await forcedHc.close();
+
+      // Ticked boxes, chosen pick-several answers, the small win and a done
+      // plan step (functionality tester, 12 Nov): in high-contrast mode each
+      // is filled with the system's text colour, with its tick in the page's,
+      // and an unticked one is not filled. Read in the design gallery, which
+      // shows them all with no sign-in (local and previews only); once a run.
+      if (!ticksRead) {
+        ticksRead = true;
+        const forcedGallery = await browser.newContext({ ...base, forcedColors: 'active' });
+        await forcedGallery.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => route.abort());
+        try {
+          const gp = await forcedGallery.newPage();
+          await gp.goto(`${APP}/design-reference`);
+          await gp.locator('.ds-check-box').first().waitFor({ state: 'attached', timeout: 30000 });
+          await gp.evaluate(() => document.fonts.ready);
+          await sleep(800);
+          const ticks = await gp.evaluate(() => {
+            const probe = document.createElement('span');
+            probe.style.cssText = 'color: CanvasText; background-color: Canvas; forced-color-adjust: none;';
+            document.body.appendChild(probe);
+            const text = getComputedStyle(probe).color;
+            const canvas = getComputedStyle(probe).backgroundColor;
+            probe.remove();
+            const shown = (el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
+            const read = (selector) => [...document.querySelectorAll(selector)].filter(shown).map((el) => ({ fill: getComputedStyle(el).backgroundColor, tick: el.querySelector('svg') ? getComputedStyle(el.querySelector('svg')).stroke : '' }));
+            return {
+              text,
+              canvas,
+              on: {
+                'a ticked box': read('.ds-check-box[aria-checked="true"] > span'),
+                'a chosen pick-several answer': read('.ds-answer--pick[aria-pressed="true"] .ds-pick-mark'),
+                'the small win': read('.ds-win-tick'),
+                'a done plan step': read('.ds-planstep--done .ds-planstep-mark'),
+              },
+              off: {
+                'an unticked box': read('.ds-check-box[aria-checked="false"] > span'),
+                'an answer not chosen': read('.ds-answer--pick[aria-pressed="false"] .ds-pick-mark'),
+              },
+            };
+          });
+          for (const [name, list] of Object.entries(ticks.on)) {
+            pass(`high contrast, the gallery: ${name} is filled with the system's text colour, its tick in the page's (${list.length})`, list.length >= 1 && list.every((t) => t.fill === ticks.text && t.tick === ticks.canvas), list.length ? [...new Set(list.map((t) => `${t.fill}, tick ${t.tick}`))].join('; ') : 'none found');
+          }
+          for (const [name, list] of Object.entries(ticks.off)) {
+            pass(`high contrast, the gallery: ${name} is not filled, so it differs from a ticked one (${list.length})`, list.length >= 1 && list.every((t) => t.fill !== ticks.text), list.length ? [...new Set(list.map((t) => t.fill))].join('; ') : 'none found');
+          }
+        } catch (e) { pass('high contrast, the gallery: ticked parts checked', false, e.message.split('\n')[0]); }
+        await forcedGallery.close();
+      }
     }
   }
 } finally {
